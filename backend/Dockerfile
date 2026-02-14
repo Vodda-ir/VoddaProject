@@ -1,10 +1,13 @@
+# syntax=docker/dockerfile:1
 FROM golang:1.23-alpine AS builder
 WORKDIR /app
 COPY go.mod go.sum* ./
-ENV GOPROXY=https://goproxy.io,direct
-RUN go mod download
+# ENV GOPROXY=https://goproxy.io,direct
+RUN --mount=type=cache,target=/go/pkg/mod \
+    go mod download
 COPY . .
-RUN CGO_ENABLED=0 go build -o /backend .
+RUN --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 go build -o /backend .
 
 FROM alpine:3.19
 WORKDIR /app
