@@ -2,11 +2,11 @@ package main
 
 import (
 	"log"
-	"path/filepath"
 
-	"vodda/backend/internal/auth"
-	"vodda/backend/internal/config"
-	"vodda/backend/internal/database"
+	"vodda/backend/src/config"
+	"vodda/backend/src/controllers"
+	"vodda/backend/src/database"
+	"vodda/backend/src/services"
 
 	"github.com/gin-gonic/gin"
 )
@@ -17,20 +17,24 @@ func main() {
 		log.Fatal(err)
 	}
 
-	db, err := database.Connect(cfg.MySQLDSN)
+	gormDB, err := database.Connect(cfg.MySQLDSN)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer db.Close()
 
-	migrationsPath := filepath.Join("db", "migrations")
-	if err := database.RunMigrations(db, migrationsPath); err != nil {
+	sqlDB, err := gormDB.DB()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer sqlDB.Close()
+
+	if err := database.Migrate(gormDB); err != nil {
 		log.Fatal(err)
 	}
 
-	authRepo := auth.NewRepository(db)
-	authUC := auth.NewUsecase(authRepo, cfg.JWTSecret, cfg.JWTRefresh)
-	authHandler := auth.NewHandler(authUC)
+	authRepo := services.NewAuthRepository(sqlDB)
+	authService := services.NewAuthService(authRepo, cfg.JWTSecret, cfg.JWTRefresh)
+	authController := controllers.NewAuthController(authService)
 
 	r := gin.Default()
 	r.Use(corsMiddleware())
@@ -41,8 +45,8 @@ func main() {
 
 	authGroup := r.Group("/auth")
 	{
-		authGroup.POST("/request-otp", authHandler.RequestOTP)
-		authGroup.POST("/verify-otp", authHandler.VerifyOTP)
+		authGroup.POST("/request-otp", authController.RequestOTP)
+		authGroup.POST("/verify-otp", authController.VerifyOTP)
 	}
 
 	port := ":" + cfg.Port

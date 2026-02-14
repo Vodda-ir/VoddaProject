@@ -1,23 +1,25 @@
-package auth
+package services
 
 import "database/sql"
 
-type Repository interface {
+// AuthRepository defines data access for auth.
+type AuthRepository interface {
 	CreateOTP(mobile, code string, expiresAt sql.NullTime) error
 	VerifyOTP(mobile, code string) (bool, error)
 	CreateUserIfNotExists(mobile, name string) (int64, error)
 	GetUserRoles(userID int64) ([]string, error)
 }
 
-type repository struct {
+type authRepository struct {
 	db *sql.DB
 }
 
-func NewRepository(db *sql.DB) Repository {
-	return &repository{db: db}
+// NewAuthRepository creates an AuthRepository.
+func NewAuthRepository(db *sql.DB) AuthRepository {
+	return &authRepository{db: db}
 }
 
-func (r *repository) CreateOTP(mobile, code string, expiresAt sql.NullTime) error {
+func (r *authRepository) CreateOTP(mobile, code string, expiresAt sql.NullTime) error {
 	_, err := r.db.Exec(
 		"INSERT INTO otp_requests (mobile, code, expires_at) VALUES (?, ?, ?)",
 		mobile, code, expiresAt,
@@ -25,7 +27,7 @@ func (r *repository) CreateOTP(mobile, code string, expiresAt sql.NullTime) erro
 	return err
 }
 
-func (r *repository) VerifyOTP(mobile, code string) (bool, error) {
+func (r *authRepository) VerifyOTP(mobile, code string) (bool, error) {
 	var id int64
 	err := r.db.QueryRow(
 		"SELECT id FROM otp_requests WHERE mobile = ? AND code = ? AND verified_at IS NULL AND expires_at > NOW()",
@@ -41,7 +43,7 @@ func (r *repository) VerifyOTP(mobile, code string) (bool, error) {
 	return err == nil, err
 }
 
-func (r *repository) CreateUserIfNotExists(mobile, name string) (int64, error) {
+func (r *authRepository) CreateUserIfNotExists(mobile, name string) (int64, error) {
 	res, err := r.db.Exec("INSERT IGNORE INTO users (mobile, name) VALUES (?, ?)", mobile, name)
 	if err != nil {
 		return 0, err
@@ -56,7 +58,7 @@ func (r *repository) CreateUserIfNotExists(mobile, name string) (int64, error) {
 	return uid, err
 }
 
-func (r *repository) GetUserRoles(userID int64) ([]string, error) {
+func (r *authRepository) GetUserRoles(userID int64) ([]string, error) {
 	rows, err := r.db.Query("SELECT role FROM user_roles WHERE user_id = ?", userID)
 	if err != nil {
 		return nil, err
@@ -64,11 +66,11 @@ func (r *repository) GetUserRoles(userID int64) ([]string, error) {
 	defer rows.Close()
 	var roles []string
 	for rows.Next() {
-		var r string
-		if err := rows.Scan(&r); err != nil {
+		var role string
+		if err := rows.Scan(&role); err != nil {
 			return nil, err
 		}
-		roles = append(roles, r)
+		roles = append(roles, role)
 	}
 	if len(roles) == 0 {
 		roles = []string{"learner"}

@@ -7,6 +7,13 @@
 ```
 VoddaProject/
 ├── backend/          # Go + Gin + MySQL
+│   ├── main.go
+│   └── src/
+│       ├── config/
+│       ├── database/
+│       ├── models/
+│       ├── controllers/
+│       └── services/
 ├── main/             # Next.js (وب)
 ├── app/              # Flutter + Riverpod (موبایل)
 ├── docker-compose.yml
@@ -60,7 +67,7 @@ docker compose down -v
 ```bash
 cd backend
 go mod download
-go run ./cmd/api
+go run .
 ```
 
 **Web (main):**

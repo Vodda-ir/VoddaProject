@@ -20,22 +20,16 @@ VoddaProject/
 
 ## 2. بک‌اند Go
 
-### مسیرها
-- `backend/cmd/api/` — نقطه ورود
-- `backend/internal/` — ماژول‌ها با معماری کلین
-
-### ساختار Clean در هر ماژول
+### ساختار
 ```
-internal/
-├── auth/           # domain, usecase, handler, repo
-├── users/
-├── teachers/
-├── bookings/
-├── sessions/
-├── wallet/
-├── ratings/
-├── notifications/
-└── admin/
+backend/
+├── main.go
+└── src/
+    ├── config/      # تنظیمات
+    ├── database/    # اتصال و migration
+    ├── models/      # مدل‌های GORM
+    ├── controllers/ # هندلرهای HTTP
+    └── services/     # منطق کسب‌وکار و repository
 ```
 
 ### پشته فنی
@@ -119,16 +113,8 @@ app/
 - `wallets`, `transactions`, `withdraw_requests`
 - `ratings`, `notifications`, `otp_requests`
 
-### Migration‌ها
-در `backend/db/migrations/` به‌صورت ترتیبی:
-1. `001_users_and_roles.sql`
-2. `002_teacher_profiles.sql`
-3. `003_availability_and_bookings.sql`
-4. `004_sessions.sql`
-5. `005_wallets_and_transactions.sql`
-6. `006_withdraw_requests.sql`
-7. `007_ratings_notifications_otp.sql`
-8. `008_indexes_constraints.sql`
+### Migration
+Migration با **GORM AutoMigrate** و بر اساس مدل‌های تعریف‌شده در `backend/internal/models/` انجام می‌شود. هنگام اجرای بک‌اند، جداول به‌طور خودکار ایجاد یا به‌روزرسانی می‌شوند.
 
 ---
 
