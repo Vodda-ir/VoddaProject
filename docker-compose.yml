@@ -1,0 +1,61 @@
+name: vodda
+
+services:
+  mysql:
+    image: mysql:8
+    container_name: vodda_mysql
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-vodda}
+      MYSQL_USER: ${MYSQL_USER:-vodda}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-vodda}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-vodda}
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - vodda_net
+
+  backend:
+    build:
+      context: ./backend
+    container_name: vodda_backend
+    env_file:
+      - .env
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "${BACKEND_PORT:-5566}:8080"
+    networks:
+      - vodda_net
+
+  main:
+    build:
+      context: ./main
+    container_name: vodda_main
+    env_file:
+      - .env
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:5566
+    depends_on:
+      - backend
+    ports:
+      - "${MAIN_PORT:-5567}:3000"
+    networks:
+      - vodda_net
+
+volumes:
+  mysql_data:
+
+networks:
+  vodda_net:
+    driver: bridge
