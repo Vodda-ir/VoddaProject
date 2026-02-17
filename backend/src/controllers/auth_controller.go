@@ -49,3 +49,23 @@ func (c *AuthController) VerifyOTP(ctx *gin.Context) {
 	}
 	ctx.JSON(http.StatusOK, res)
 }
+
+// Me returns the current user profile. Requires AuthMiddleware.
+func (c *AuthController) Me(ctx *gin.Context) {
+	userIDVal, exists := ctx.Get("user_id")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID, ok := userIDVal.(int64)
+	if !ok {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "invalid user context"})
+		return
+	}
+	me, err := c.authService.GetMe(userID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get profile"})
+		return
+	}
+	ctx.JSON(http.StatusOK, me)
+}

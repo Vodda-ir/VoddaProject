@@ -6,6 +6,7 @@ import (
 	"vodda/backend/src/config"
 	"vodda/backend/src/controllers"
 	"vodda/backend/src/database"
+	"vodda/backend/src/middleware"
 	"vodda/backend/src/services"
 
 	"github.com/gin-gonic/gin"
@@ -48,6 +49,9 @@ func main() {
 		authGroup.POST("/request-otp", authController.RequestOTP)
 		authGroup.POST("/verify-otp", authController.VerifyOTP)
 	}
+
+	authMiddleware := middleware.AuthMiddleware(cfg.JWTSecret)
+	r.GET("/me", authMiddleware, authController.Me)
 
 	port := ":" + cfg.Port
 	log.Printf("Server starting on %s", port)

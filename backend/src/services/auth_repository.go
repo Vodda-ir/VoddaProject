@@ -8,6 +8,7 @@ type AuthRepository interface {
 	VerifyOTP(mobile, code string) (bool, error)
 	CreateUserIfNotExists(mobile, name string) (int64, error)
 	GetUserRoles(userID int64) ([]string, error)
+	GetUserByID(userID int64) (mobile, name string, err error)
 }
 
 type authRepository struct {
@@ -76,4 +77,9 @@ func (r *authRepository) GetUserRoles(userID int64) ([]string, error) {
 		roles = []string{"learner"}
 	}
 	return roles, nil
+}
+
+func (r *authRepository) GetUserByID(userID int64) (mobile, name string, err error) {
+	err = r.db.QueryRow("SELECT mobile, name FROM users WHERE id = ?", userID).Scan(&mobile, &name)
+	return mobile, name, err
 }

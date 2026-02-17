@@ -1,0 +1,18 @@
+# Dockerfile for debugging main (Next.js dev server with hot-reload)
+# syntax=docker/dockerfile:1
+FROM node:24-alpine
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+RUN --mount=type=cache,target=/root/.npm npm install
+
+# Copy source (will be overridden by volume mount in compose for live edits)
+COPY . .
+
+# Expose Next.js dev port
+EXPOSE 3000
+
+# Run dev server with hot-reload
+CMD ["npm", "run", "dev"]

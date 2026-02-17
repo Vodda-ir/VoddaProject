@@ -32,6 +32,15 @@ type TokenResponse struct {
 	ExpiresIn    int64  `json:"expires_in"`
 }
 
+// MeResponse is the response for GET /me.
+type MeResponse struct {
+	ID         int64    `json:"id"`
+	Mobile     string   `json:"mobile"`
+	Name       string   `json:"name"`
+	Roles      []string `json:"roles"`
+	ActiveRole string   `json:"active_role"`
+}
+
 // Claims for JWT.
 type Claims struct {
 	Sub        int64    `json:"sub"`
@@ -115,5 +124,34 @@ func (s *AuthService) VerifyOTP(mobile, code string) (*TokenResponse, error) {
 		AccessToken:  access,
 		RefreshToken: refresh,
 		ExpiresIn:    900,
+	}, nil
+}
+
+// GetMe returns the current user profile and roles by user ID.
+func (s *AuthService) GetMe(userID int64) (*MeResponse, error) {
+	mobile, name, err := s.repo.GetUserByID(userID)
+	if err != nil {
+		return nil, err
+	}
+	roles, err := s.repo.GetUserRoles(userID)
+	if err != nil {
+		return nil, err
+	}
+	activeRole := "learner"
+	for _, r := range roles {
+		if r == "learner" {
+			break
+		}
+		if r == "teacher" || r == "admin" {
+			activeRole = r
+			break
+		}
+	}
+	return &MeResponse{
+		ID:         userID,
+		Mobile:     mobile,
+		Name:       name,
+		Roles:      roles,
+		ActiveRole: activeRole,
 	}, nil
 }

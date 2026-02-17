@@ -1,0 +1,17 @@
+# Air configuration for hot-reload in debug mode
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  cmd = "go build -o ./tmp/main ."
+  bin = "./tmp/main"
+  include_ext = ["go", "toml"]
+  exclude_dir = ["tmp", "vendor"]
+  exclude_unchanged = true
+
+[log]
+  time = false
+
+[color]
+  main = "magenta"
+  watcher = "cyan"
