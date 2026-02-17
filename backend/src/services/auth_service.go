@@ -1,16 +1,24 @@
 package services
 
 import (
+	"bytes"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"log"
+	"math/rand"
+	"net/http"
 	"time"
+
+	"vodda/backend/src/config"
 
 	"github.com/golang-jwt/jwt/v5"
 )
 
 // Auth request/response types
-const OTPStub = "123456" // For testing; replace with real OTP in production
+const OTPStub = "123456" // For testing when SMS not configured
 
 var ErrInvalidOTP = errors.New("invalid or expired OTP")
 
@@ -55,20 +63,70 @@ type AuthService struct {
 	repo       AuthRepository
 	jwtSecret  string
 	jwtRefresh string
+	smsConfig  config.SMSConfig
 }
 
 // NewAuthService creates an AuthService.
-func NewAuthService(repo AuthRepository, jwtSecret, jwtRefresh string) *AuthService {
+func NewAuthService(repo AuthRepository, jwtSecret, jwtRefresh string, smsConfig config.SMSConfig) *AuthService {
 	return &AuthService{
 		repo:       repo,
 		jwtSecret:  jwtSecret,
 		jwtRefresh: jwtRefresh,
+		smsConfig:  smsConfig,
 	}
 }
 
 func (s *AuthService) RequestOTP(mobile string) error {
-	expiresAt := time.Now().Add(5 * time.Minute)
-	return s.repo.CreateOTP(mobile, OTPStub, sql.NullTime{Time: expiresAt, Valid: true})
+	expiresAt := time.Now().Add(2 * time.Minute)
+	var code string
+	if s.smsConfig.APIKey != "" && s.smsConfig.BodyID != "" {
+		code = s.generateOTP()
+		if err := s.sendSMSVerification(mobile, code); err != nil {
+			log.Printf("[SMS] Send failed: %v", err)
+			return err
+		}
+	} else {
+		code = OTPStub
+		log.Printf("[SMS] Not configured, use code %s for %s", code, mobile)
+	}
+	return s.repo.CreateOTP(mobile, code, sql.NullTime{Time: expiresAt, Valid: true})
+}
+
+func (s *AuthService) generateOTP() string {
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+	return fmt.Sprintf("%06d", rng.Intn(1000000))
+}
+
+func (s *AuthService) sendSMSVerification(mobile, code string) error {
+	// Melipayamak (ملی پیامک) API - same as karmania_project
+	apiKey := s.smsConfig.APIKey
+	url := fmt.Sprintf("https://console.melipayamak.com/api/send/shared/%s", apiKey)
+	payload := map[string]interface{}{
+		"bodyId": s.smsConfig.BodyID,
+		"to":     mobile,
+		"args":   []string{code},
+	}
+	jsonPayload, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonPayload))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("SMS send failed: %s", string(body))
+	}
+	log.Printf("[SMS] Sent to %s", mobile)
+	return nil
 }
 
 func (s *AuthService) VerifyOTP(mobile, code string) (*TokenResponse, error) {

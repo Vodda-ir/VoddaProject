@@ -19,7 +19,7 @@ type AuthState = {
 type AuthContextValue = AuthState & {
   login: (accessToken: string) => Promise<void>;
   logout: () => void;
-  refetchMe: () => Promise<void>;
+  refetchMe: (opts?: { clearTokenOnError?: boolean }) => Promise<boolean>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -28,25 +28,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<MeResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const refetchMe = useCallback(async () => {
+  const refetchMe = useCallback(async (opts?: { clearTokenOnError?: boolean }) => {
+    const clearOnError = opts?.clearTokenOnError !== false;
     const token = getAccessToken();
     if (!token) {
       setUser(null);
-      return;
+      return false;
     }
     try {
       const me = await api.auth.getMe();
       setUser(me);
+      return true;
     } catch {
-      clearAccessToken();
+      if (clearOnError) {
+        clearAccessToken();
+      }
       setUser(null);
+      return false;
     }
   }, []);
 
   const login = useCallback(
     async (accessToken: string) => {
       setAccessToken(accessToken);
-      await refetchMe();
+      let ok = await refetchMe({ clearTokenOnError: false });
+      if (!ok && getAccessToken()) {
+        await new Promise((r) => setTimeout(r, 500));
+        await refetchMe({ clearTokenOnError: false });
+      }
     },
     [refetchMe]
   );
@@ -62,15 +71,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
       return;
     }
-    api.auth
-      .getMe()
-      .then(setUser)
-      .catch(() => {
-        clearAccessToken();
-        setUser(null);
-      })
+    refetchMe()
       .finally(() => setLoading(false));
-  }, []);
+  }, [refetchMe]);
 
   const value: AuthContextValue = {
     user,

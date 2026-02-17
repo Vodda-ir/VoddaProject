@@ -7,6 +7,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -43,10 +44,21 @@ export function Header() {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="outline" size="sm">
-                        پروفایل
+                        {user.name?.trim() || user.mobile || "پروفایل"}
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuContent align="end" className="w-56 rounded-xl">
+                      <DropdownMenuLabel>
+                        <div className="flex flex-col gap-0.5">
+                          <span className="font-medium">
+                            {user.name?.trim() || "کاربر"}
+                          </span>
+                          <span className="text-xs text-muted-foreground font-normal">
+                            {user.mobile}
+                          </span>
+                        </div>
+                      </DropdownMenuLabel>
+                      <DropdownMenuSeparator />
                       <DropdownMenuItem asChild>
                         <Link href="/app/dashboard">پنل کاربری</Link>
                       </DropdownMenuItem>

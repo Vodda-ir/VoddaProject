@@ -34,7 +34,7 @@ func main() {
 	}
 
 	authRepo := services.NewAuthRepository(sqlDB)
-	authService := services.NewAuthService(authRepo, cfg.JWTSecret, cfg.JWTRefresh)
+	authService := services.NewAuthService(authRepo, cfg.JWTSecret, cfg.JWTRefresh, cfg.SMS)
 	authController := controllers.NewAuthController(authService)
 
 	r := gin.Default()

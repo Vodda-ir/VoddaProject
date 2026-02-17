@@ -11,6 +11,13 @@ type Config struct {
 	MySQLDSN   string
 	JWTSecret  string
 	JWTRefresh string
+	SMS        SMSConfig
+}
+
+type SMSConfig struct {
+	APIKey string
+	BodyID string
+	Sender string
 }
 
 func Load() (*Config, error) {
@@ -29,6 +36,11 @@ func Load() (*Config, error) {
 		MySQLDSN:   dsn,
 		JWTSecret:  getEnv("JWT_ACCESS_SECRET", "dev-secret"),
 		JWTRefresh: getEnv("JWT_REFRESH_SECRET", "dev-refresh"),
+		SMS: SMSConfig{
+			APIKey: getEnv("SMS_API_KEY", "d73eef48d3654155b9215a4315d7e34f"),
+			BodyID: getEnv("SMS_BODY_ID", "345715"),
+			Sender: getEnv("SMS_SENDER", "Vodda"),
+		},
 	}, nil
 }
 
