@@ -8,7 +8,10 @@ type AuthRepository interface {
 	VerifyOTP(mobile, code string) (bool, error)
 	CreateUserIfNotExists(mobile, name string) (int64, error)
 	GetUserRoles(userID int64) ([]string, error)
-	GetUserByID(userID int64) (mobile, name string, err error)
+	GetUserByID(userID int64) (mobile, name, activeRole string, err error)
+	UpdateUserName(userID int64, name string) error
+	SetActiveRole(userID int64, role string) error
+	AddUserRole(userID int64, role string) error
 }
 
 type authRepository struct {
@@ -45,7 +48,7 @@ func (r *authRepository) VerifyOTP(mobile, code string) (bool, error) {
 }
 
 func (r *authRepository) CreateUserIfNotExists(mobile, name string) (int64, error) {
-	res, err := r.db.Exec("INSERT IGNORE INTO users (mobile, name) VALUES (?, ?)", mobile, name)
+	res, err := r.db.Exec("INSERT IGNORE INTO users (mobile, name, active_role) VALUES (?, ?, 'learner')", mobile, name)
 	if err != nil {
 		return 0, err
 	}
@@ -79,7 +82,22 @@ func (r *authRepository) GetUserRoles(userID int64) ([]string, error) {
 	return roles, nil
 }
 
-func (r *authRepository) GetUserByID(userID int64) (mobile, name string, err error) {
-	err = r.db.QueryRow("SELECT mobile, name FROM users WHERE id = ?", userID).Scan(&mobile, &name)
-	return mobile, name, err
+func (r *authRepository) GetUserByID(userID int64) (mobile, name, activeRole string, err error) {
+	err = r.db.QueryRow("SELECT mobile, name, active_role FROM users WHERE id = ?", userID).Scan(&mobile, &name, &activeRole)
+	return mobile, name, activeRole, err
+}
+
+func (r *authRepository) UpdateUserName(userID int64, name string) error {
+	_, err := r.db.Exec("UPDATE users SET name = ?, updated_at = NOW() WHERE id = ?", name, userID)
+	return err
+}
+
+func (r *authRepository) SetActiveRole(userID int64, role string) error {
+	_, err := r.db.Exec("UPDATE users SET active_role = ?, updated_at = NOW() WHERE id = ?", role, userID)
+	return err
+}
+
+func (r *authRepository) AddUserRole(userID int64, role string) error {
+	_, err := r.db.Exec("INSERT IGNORE INTO user_roles (user_id, role) VALUES (?, ?)", userID, role)
+	return err
 }

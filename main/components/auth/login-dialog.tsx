@@ -14,7 +14,6 @@ import { Label } from "@/components/ui/label";
 import { InputOTP } from "@/components/ui/input-otp";
 import { api } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth/auth-context";
-import { setAccessToken } from "@/lib/auth/token";
 import { cn } from "@/lib/utils";
 
 const MOBILE_REGEX = /^09\d{9}$/;
@@ -84,7 +83,6 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
     setLoading(true);
     try {
       const res = await api.auth.verifyOtp(trimmedMobile, code.trim());
-      setAccessToken(res.access_token);
       await login(res.access_token);
       onOpenChange(false);
       setStep("phone");

@@ -30,11 +30,12 @@ services:
     environment:
       MYSQL_HOST: mysql
       MYSQL_PORT: 3306
+      BACKEND_PORT: ${BACKEND_PORT:-5566}
     depends_on:
       mysql:
         condition: service_healthy
     ports:
-      - "${BACKEND_PORT:-5566}:8080"
+      - "${BACKEND_PORT:-5566}:${BACKEND_PORT:-5566}"
     networks:
       - vodda_net
 
@@ -45,7 +46,7 @@ services:
     env_file:
       - .env
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:5566
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:5566}
     depends_on:
       - backend
     ports:

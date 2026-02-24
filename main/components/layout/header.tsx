@@ -15,8 +15,9 @@ import { useAuth } from "@/lib/auth/auth-context";
 import { LoginDialog } from "@/components/auth/login-dialog";
 
 export function Header() {
-  const { user, loading, logout } = useAuth();
+  const { user, loading, logout, switchRole } = useAuth();
   const [loginOpen, setLoginOpen] = useState(false);
+  const [switchingRole, setSwitchingRole] = useState<string | null>(null);
 
   return (
     <>
@@ -72,6 +73,24 @@ export function Header() {
                           <Link href="/admin/teachers/pending">پنل ادمین</Link>
                         </DropdownMenuItem>
                       )}
+                      <DropdownMenuSeparator />
+                      <DropdownMenuLabel>نقش فعال: {user.active_role}</DropdownMenuLabel>
+                      {user.roles.map((role) => (
+                        <DropdownMenuItem
+                          key={role}
+                          disabled={switchingRole !== null || role === user.active_role}
+                          onClick={async () => {
+                            setSwitchingRole(role);
+                            await switchRole(role as "learner" | "teacher" | "admin");
+                            setSwitchingRole(null);
+                          }}
+                        >
+                          {role === "learner" && "قرآن‌آموز"}
+                          {role === "teacher" && "استاد"}
+                          {role === "admin" && "ادمین"}
+                          {switchingRole === role ? " (در حال تغییر...)" : ""}
+                        </DropdownMenuItem>
+                      ))}
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
                         onClick={logout}

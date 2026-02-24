@@ -3,15 +3,17 @@ package config
 import (
 	"fmt"
 	"os"
+	"strconv"
 )
 
 type Config struct {
-	Env        string
-	Port       string
-	MySQLDSN   string
-	JWTSecret  string
-	JWTRefresh string
-	SMS        SMSConfig
+	Env                       string
+	Port                      string
+	MySQLDSN                  string
+	JWTSecret                 string
+	JWTRefresh                string
+	PlatformCommissionPercent int64
+	SMS                       SMSConfig
 }
 
 type SMSConfig struct {
@@ -31,14 +33,15 @@ func Load() (*Config, error) {
 		user, pass, host, port, db)
 
 	return &Config{
-		Env:        getEnv("APP_ENV", "development"),
-		Port:       getEnv("BACKEND_PORT", "5566"),
-		MySQLDSN:   dsn,
-		JWTSecret:  getEnv("JWT_ACCESS_SECRET", "dev-secret"),
-		JWTRefresh: getEnv("JWT_REFRESH_SECRET", "dev-refresh"),
+		Env:                       getEnv("APP_ENV", "development"),
+		Port:                      getEnv("BACKEND_PORT", "5566"),
+		MySQLDSN:                  dsn,
+		JWTSecret:                 getEnv("JWT_ACCESS_SECRET", "dev-secret"),
+		JWTRefresh:                getEnv("JWT_REFRESH_SECRET", "dev-refresh"),
+		PlatformCommissionPercent: getInt64Env("PLATFORM_COMMISSION_PERCENT", 15),
 		SMS: SMSConfig{
-			APIKey: getEnv("SMS_API_KEY", "d73eef48d3654155b9215a4315d7e34f"),
-			BodyID: getEnv("SMS_BODY_ID", "345715"),
+			APIKey: getEnv("SMS_API_KEY", ""),
+			BodyID: getEnv("SMS_BODY_ID", ""),
 			Sender: getEnv("SMS_SENDER", "Vodda"),
 		},
 	}, nil
@@ -49,4 +52,16 @@ func getEnv(key, fallback string) string {
 		return v
 	}
 	return fallback
+}
+
+func getInt64Env(key string, fallback int64) int64 {
+	raw := os.Getenv(key)
+	if raw == "" {
+		return fallback
+	}
+	parsed, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil {
+		return fallback
+	}
+	return parsed
 }

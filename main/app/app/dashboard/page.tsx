@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Card,
@@ -7,8 +10,18 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { api, type NotificationItem } from "@/lib/api/client";
 
 export default function DashboardPage() {
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+
+  useEffect(() => {
+    api.notifications
+      .list()
+      .then((res) => setNotifications(res.items.slice(0, 5)))
+      .catch(() => setNotifications([]));
+  }, []);
+
   return (
     <div className="space-y-6">
       <div>
@@ -39,6 +52,26 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>اعلان‌ها</CardTitle>
+          <CardDescription>آخرین اعلان‌های حساب شما</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {notifications.length === 0 ? (
+            <p className="text-sm text-muted-foreground">اعلانی ندارید.</p>
+          ) : (
+            notifications.map((n) => (
+              <div key={n.id} className="rounded-md border p-3 text-sm">
+                <p className="font-medium">{n.title}</p>
+                <p className="text-muted-foreground">{n.body}</p>
+              </div>
+            ))
+          )}
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle>پروفایل</CardTitle>

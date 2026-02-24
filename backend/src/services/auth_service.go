@@ -10,6 +10,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"strings"
 	"time"
 
 	"vodda/backend/src/config"
@@ -21,6 +22,7 @@ import (
 const OTPStub = "123456" // For testing when SMS not configured
 
 var ErrInvalidOTP = errors.New("invalid or expired OTP")
+var ErrInvalidRole = errors.New("invalid active role")
 
 // OTPRequest is the request body for requesting OTP.
 type OTPRequest struct {
@@ -33,7 +35,17 @@ type OTPVerify struct {
 	Code   string `json:"code" binding:"required"`
 }
 
-// TokenResponse is the response for successful OTP verification.
+// UpdateProfileRequest is the request body for updating profile.
+type UpdateProfileRequest struct {
+	Name string `json:"name" binding:"required"`
+}
+
+// SetActiveRoleRequest is the request body for switching active role.
+type SetActiveRoleRequest struct {
+	Role string `json:"role" binding:"required"`
+}
+
+// TokenResponse is the response for successful auth actions.
 type TokenResponse struct {
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
@@ -98,7 +110,6 @@ func (s *AuthService) generateOTP() string {
 }
 
 func (s *AuthService) sendSMSVerification(mobile, code string) error {
-	// Melipayamak (ملی پیامک) API - same as karmania_project
 	apiKey := s.smsConfig.APIKey
 	url := fmt.Sprintf("https://console.melipayamak.com/api/send/shared/%s", apiKey)
 	payload := map[string]interface{}{
@@ -137,6 +148,7 @@ func (s *AuthService) VerifyOTP(mobile, code string) (*TokenResponse, error) {
 	if !ok {
 		return nil, ErrInvalidOTP
 	}
+
 	userID, err := s.repo.CreateUserIfNotExists(mobile, "")
 	if err != nil {
 		return nil, err
@@ -145,16 +157,77 @@ func (s *AuthService) VerifyOTP(mobile, code string) (*TokenResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	activeRole := "learner"
-	for _, r := range roles {
-		if r == "learner" {
-			break
-		}
-		if r == "teacher" || r == "admin" {
-			activeRole = r
-			break
+
+	_, _, activeRole, err := s.repo.GetUserByID(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	normalizedRole := normalizeActiveRole(activeRole, roles)
+	if normalizedRole != activeRole {
+		if err := s.repo.SetActiveRole(userID, normalizedRole); err != nil {
+			return nil, err
 		}
 	}
+
+	return s.issueTokens(userID, roles, normalizedRole)
+}
+
+// GetMe returns the current user profile and roles by user ID.
+func (s *AuthService) GetMe(userID int64) (*MeResponse, error) {
+	mobile, name, activeRole, err := s.repo.GetUserByID(userID)
+	if err != nil {
+		return nil, err
+	}
+	roles, err := s.repo.GetUserRoles(userID)
+	if err != nil {
+		return nil, err
+	}
+	normalizedRole := normalizeActiveRole(activeRole, roles)
+	if normalizedRole != activeRole {
+		if err := s.repo.SetActiveRole(userID, normalizedRole); err != nil {
+			return nil, err
+		}
+	}
+	return &MeResponse{
+		ID:         userID,
+		Mobile:     mobile,
+		Name:       name,
+		Roles:      roles,
+		ActiveRole: normalizedRole,
+	}, nil
+}
+
+func (s *AuthService) UpdateProfile(userID int64, req UpdateProfileRequest) (*MeResponse, error) {
+	name := strings.TrimSpace(req.Name)
+	if name == "" {
+		return nil, fmt.Errorf("name is required")
+	}
+	if err := s.repo.UpdateUserName(userID, name); err != nil {
+		return nil, err
+	}
+	return s.GetMe(userID)
+}
+
+func (s *AuthService) SetActiveRole(userID int64, req SetActiveRoleRequest) (*TokenResponse, error) {
+	role := strings.TrimSpace(req.Role)
+	if !isValidRole(role) {
+		return nil, ErrInvalidRole
+	}
+	roles, err := s.repo.GetUserRoles(userID)
+	if err != nil {
+		return nil, err
+	}
+	if !hasRole(roles, role) {
+		return nil, ErrInvalidRole
+	}
+	if err := s.repo.SetActiveRole(userID, role); err != nil {
+		return nil, err
+	}
+	return s.issueTokens(userID, roles, role)
+}
+
+func (s *AuthService) issueTokens(userID int64, roles []string, activeRole string) (*TokenResponse, error) {
 	exp := time.Now().Add(15 * time.Minute)
 	claims := &Claims{
 		Sub:        userID,
@@ -185,31 +258,31 @@ func (s *AuthService) VerifyOTP(mobile, code string) (*TokenResponse, error) {
 	}, nil
 }
 
-// GetMe returns the current user profile and roles by user ID.
-func (s *AuthService) GetMe(userID int64) (*MeResponse, error) {
-	mobile, name, err := s.repo.GetUserByID(userID)
-	if err != nil {
-		return nil, err
-	}
-	roles, err := s.repo.GetUserRoles(userID)
-	if err != nil {
-		return nil, err
-	}
-	activeRole := "learner"
+func isValidRole(role string) bool {
+	return role == "learner" || role == "teacher" || role == "admin"
+}
+
+func hasRole(roles []string, role string) bool {
 	for _, r := range roles {
-		if r == "learner" {
-			break
-		}
-		if r == "teacher" || r == "admin" {
-			activeRole = r
-			break
+		if r == role {
+			return true
 		}
 	}
-	return &MeResponse{
-		ID:         userID,
-		Mobile:     mobile,
-		Name:       name,
-		Roles:      roles,
-		ActiveRole: activeRole,
-	}, nil
+	return false
+}
+
+func normalizeActiveRole(activeRole string, roles []string) string {
+	if hasRole(roles, activeRole) {
+		return activeRole
+	}
+	if hasRole(roles, "learner") {
+		return "learner"
+	}
+	if hasRole(roles, "teacher") {
+		return "teacher"
+	}
+	if hasRole(roles, "admin") {
+		return "admin"
+	}
+	return "learner"
 }

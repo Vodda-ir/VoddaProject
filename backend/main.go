@@ -36,6 +36,8 @@ func main() {
 	authRepo := services.NewAuthRepository(sqlDB)
 	authService := services.NewAuthService(authRepo, cfg.JWTSecret, cfg.JWTRefresh, cfg.SMS)
 	authController := controllers.NewAuthController(authService)
+	appService := services.NewAppService(sqlDB, cfg.PlatformCommissionPercent)
+	appController := controllers.NewAppController(appService)
 
 	r := gin.Default()
 	r.Use(corsMiddleware())
@@ -50,8 +52,43 @@ func main() {
 		authGroup.POST("/verify-otp", authController.VerifyOTP)
 	}
 
+	// Public teacher discovery endpoints
+	r.GET("/teachers", appController.ListTeachers)
+	r.GET("/teachers/:id", appController.GetTeacher)
+
 	authMiddleware := middleware.AuthMiddleware(cfg.JWTSecret)
-	r.GET("/me", authMiddleware, authController.Me)
+	protected := r.Group("/")
+	protected.Use(authMiddleware)
+	{
+		protected.GET("/me", authController.Me)
+		protected.PATCH("/me/profile", authController.UpdateProfile)
+		protected.POST("/me/active-role", authController.SetActiveRole)
+
+		protected.POST("/teacher/profile", appController.UpsertTeacherProfile)
+		protected.POST("/bookings", appController.CreateBooking)
+		protected.GET("/bookings/my", appController.ListMyBookings)
+		protected.GET("/teacher/bookings", appController.ListTeacherBookings)
+		protected.POST("/bookings/:id/accept", appController.AcceptBooking)
+		protected.POST("/bookings/:id/reject", appController.RejectBooking)
+
+		protected.POST("/sessions/:id/token", appController.SessionToken)
+		protected.POST("/sessions/:id/end", appController.EndSession)
+
+		protected.POST("/wallet/topup/initiate", appController.WalletTopupInitiate)
+		protected.POST("/wallet/topup/verify", appController.WalletTopupVerify)
+		protected.GET("/wallet/transactions", appController.WalletTransactions)
+		protected.POST("/wallet/withdraw-requests", appController.CreateWithdrawRequest)
+
+		protected.POST("/ratings", appController.CreateRating)
+		protected.GET("/notifications", appController.ListNotifications)
+		protected.POST("/notifications/:id/read", appController.MarkNotificationRead)
+
+		protected.GET("/admin/teachers/pending", appController.ListPendingTeachers)
+		protected.POST("/admin/teachers/:id/approve", appController.ApproveTeacher)
+		protected.POST("/admin/teachers/:id/reject", appController.RejectTeacher)
+		protected.GET("/admin/withdraw-requests", appController.ListWithdrawRequests)
+		protected.POST("/admin/withdraw-requests/:id/process", appController.ProcessWithdrawRequest)
+	}
 
 	port := ":" + cfg.Port
 	log.Printf("Server starting on %s", port)

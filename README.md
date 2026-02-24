@@ -84,14 +84,47 @@ flutter pub get
 flutter run -d web-server --web-port=5568
 ```
 
-## APIهای پایه
+## APIهای MVP (پیاده‌سازی فعلی)
 
-- `GET /healthz` — سلامت سرویس
-- `POST /auth/request-otp` — درخواست OTP (کد تست: 123456)
-- `POST /auth/verify-otp` — تایید OTP و دریافت token
+- سلامت و احراز هویت:
+`GET /healthz`,
+`POST /auth/request-otp`,
+`POST /auth/verify-otp`,
+`GET /me`,
+`PATCH /me/profile`,
+`POST /me/active-role`
+
+- استاد و جستجو:
+`POST /teacher/profile`,
+`GET /teachers`,
+`GET /teachers/:id`,
+`GET /admin/teachers/pending`,
+`POST /admin/teachers/:id/approve`,
+`POST /admin/teachers/:id/reject`
+
+- رزرو و جلسه:
+`POST /bookings`,
+`GET /bookings/my`,
+`GET /teacher/bookings`,
+`POST /bookings/:id/accept`,
+`POST /bookings/:id/reject`,
+`POST /sessions/:id/token`,
+`POST /sessions/:id/end`
+
+- کیف پول، برداشت، امتیاز، اعلان:
+`POST /wallet/topup/initiate`,
+`POST /wallet/topup/verify`,
+`GET /wallet/transactions`,
+`POST /wallet/withdraw-requests`,
+`GET /admin/withdraw-requests`,
+`POST /admin/withdraw-requests/:id/process`,
+`POST /ratings`,
+`GET /notifications`,
+`POST /notifications/:id/read`
 
 ## مستندات
 
 - `cursor_ins.md`: دستورالعمل ساخت پروژه
 - `vodda.md`: نیازمندی‌های MVP
 - `VODDA_3APP_BUILD_GUIDE.md`: راهنمای تفصیلی
+- `codex.md`: وضعیت پیشرفت اجرا و چک‌لیست فازها

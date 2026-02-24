@@ -18,6 +18,7 @@ type AuthState = {
 
 type AuthContextValue = AuthState & {
   login: (accessToken: string) => Promise<void>;
+  switchRole: (role: "learner" | "teacher" | "admin") => Promise<boolean>;
   logout: () => void;
   refetchMe: (opts?: { clearTokenOnError?: boolean }) => Promise<boolean>;
 };
@@ -60,6 +61,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [refetchMe]
   );
 
+  const switchRole = useCallback(
+    async (role: "learner" | "teacher" | "admin") => {
+      try {
+        const res = await api.auth.setActiveRole(role);
+        setAccessToken(res.access_token);
+        return refetchMe({ clearTokenOnError: false });
+      } catch {
+        return false;
+      }
+    },
+    [refetchMe]
+  );
+
   const logout = useCallback(() => {
     clearAccessToken();
     setUser(null);
@@ -79,6 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user,
     loading,
     login,
+    switchRole,
     logout,
     refetchMe,
   };
