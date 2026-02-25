@@ -18,15 +18,16 @@ export function Header() {
   const { user, loading, logout, switchRole } = useAuth();
   const [loginOpen, setLoginOpen] = useState(false);
   const [switchingRole, setSwitchingRole] = useState<string | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
     <>
       <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-14 items-center justify-between px-4">
+        <div className="container flex h-14 items-center justify-between gap-3 px-4">
           <Link href="/" className="font-bold text-lg text-primary">
             وُدّا
           </Link>
-          <nav className="flex items-center gap-4">
+          <nav className="hidden items-center gap-4 md:flex">
             <Link
               href="/about"
               className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
@@ -108,7 +109,82 @@ export function Header() {
               </>
             )}
           </nav>
+          <div className="md:hidden">
+            <Button variant="outline" size="sm" onClick={() => setMobileMenuOpen((prev) => !prev)}>
+              {mobileMenuOpen ? "بستن" : "منو"}
+            </Button>
+          </div>
         </div>
+        {mobileMenuOpen && (
+          <div className="border-t bg-background md:hidden">
+            <div className="container grid gap-2 px-4 py-3">
+              <Link
+                href="/about"
+                onClick={() => setMobileMenuOpen(false)}
+                className="rounded-xl bg-muted px-3 py-2 text-sm font-medium text-foreground"
+              >
+                درباره ما
+              </Link>
+              <Link
+                href="/teachers"
+                onClick={() => setMobileMenuOpen(false)}
+                className="rounded-xl bg-muted px-3 py-2 text-sm font-medium text-foreground"
+              >
+                اساتید
+              </Link>
+              {!loading && !user && (
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    setLoginOpen(true);
+                  }}
+                >
+                  ورود
+                </Button>
+              )}
+              {!loading && user && (
+                <>
+                  <Link
+                    href="/app/dashboard"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="rounded-xl bg-muted px-3 py-2 text-sm font-medium text-foreground"
+                  >
+                    پنل کاربری
+                  </Link>
+                  {user.roles.includes("teacher") && (
+                    <Link
+                      href="/teacher/dashboard"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="rounded-xl bg-muted px-3 py-2 text-sm font-medium text-foreground"
+                    >
+                      پنل مربی
+                    </Link>
+                  )}
+                  {user.roles.includes("admin") && (
+                    <Link
+                      href="/admin/teachers/pending"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="rounded-xl bg-muted px-3 py-2 text-sm font-medium text-foreground"
+                    >
+                      پنل ادمین
+                    </Link>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      logout();
+                    }}
+                  >
+                    خروج
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+        )}
       </header>
       <LoginDialog open={loginOpen} onOpenChange={setLoginOpen} />
     </>

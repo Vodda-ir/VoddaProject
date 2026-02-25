@@ -49,25 +49,20 @@ export default function PendingTeachersPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">اساتید در انتظار تأیید</h1>
-        <p className="text-muted-foreground">لیست پروفایل‌های در انتظار بررسی و تأیید</p>
-      </div>
-
-      {message && <p className="text-sm text-muted-foreground">{message}</p>}
+      {message && <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">{message}</p>}
 
       {loading ? (
-        <p className="text-muted-foreground">در حال بارگذاری...</p>
+        <p className="text-sm text-slate-500">در حال بارگذاری...</p>
       ) : items.length === 0 ? (
-        <Card>
+        <Card className="border-slate-200">
           <CardContent className="pt-6">
-            <p className="text-sm text-muted-foreground">در حال حاضر درخواستی در صف تأیید نیست.</p>
+            <p className="text-sm text-slate-500">در حال حاضر درخواستی در صف تأیید نیست.</p>
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-3">
+        <div className="grid gap-4 lg:grid-cols-2">
           {items.map((teacher) => (
-            <Card key={teacher.id}>
+            <Card key={teacher.id} className="border-slate-200">
               <CardHeader>
                 <CardTitle>{teacher.name || `استاد #${teacher.id}`}</CardTitle>
                 <CardDescription>
@@ -75,14 +70,10 @@ export default function PendingTeachersPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground mb-4">{teacher.bio || "بدون توضیح"}</p>
-                <div className="flex gap-2">
-                  <Button size="sm" onClick={() => updateStatus(teacher.id, "approve")}>
-                    تأیید
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => updateStatus(teacher.id, "reject")}>
-                    رد
-                  </Button>
+                <p className="mb-4 rounded-xl bg-slate-50 p-3 text-sm text-slate-600">{teacher.bio || "بدون توضیح"}</p>
+                <div className="flex flex-wrap gap-2">
+                  <Button size="sm" onClick={() => updateStatus(teacher.id, "approve")}>تأیید</Button>
+                  <Button size="sm" variant="outline" onClick={() => updateStatus(teacher.id, "reject")}>رد</Button>
                 </div>
               </CardContent>
             </Card>

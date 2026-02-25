@@ -66,76 +66,76 @@ export default function ProfilePage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">پروفایل</h1>
-        <p className="text-muted-foreground">اطلاعات حساب کاربری و نقش فعال</p>
+      {message && <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">{message}</p>}
+
+      <div className="grid gap-4 xl:grid-cols-3">
+        <Card className="border-slate-200 xl:col-span-2">
+          <CardHeader>
+            <CardTitle>اطلاعات شخصی</CardTitle>
+            <CardDescription>نام و اطلاعات تماس شما</CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="name">نام</Label>
+              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="نام شما" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="mobile">شماره موبایل</Label>
+              <Input id="mobile" type="tel" value={user?.mobile ?? ""} disabled />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="activeRole">نقش فعال</Label>
+              <Input id="activeRole" value={user?.active_role ?? "-"} disabled />
+            </div>
+            <div className="md:col-span-2">
+              <Button onClick={onSave} disabled={saving}>
+                {saving ? "در حال ذخیره..." : "ذخیره تغییرات"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-slate-200">
+          <CardHeader>
+            <CardTitle>تعویض نقش</CardTitle>
+            <CardDescription>نقش فعلی را سریع تغییر دهید</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {currentRoles.map((role) => (
+              <Button
+                key={role}
+                className="w-full justify-start"
+                variant={role === user?.active_role ? "default" : "outline"}
+                onClick={async () => {
+                  setMessage(null);
+                  const ok = await switchRole(role as "learner" | "teacher" | "admin");
+                  setMessage(ok ? "نقش فعال تغییر کرد." : "تغییر نقش ناموفق بود.");
+                }}
+              >
+                {role === "learner" && "قرآن‌آموز"}
+                {role === "teacher" && "استاد"}
+                {role === "admin" && "ادمین"}
+              </Button>
+            ))}
+          </CardContent>
+        </Card>
       </div>
-      <Card className="max-w-xl">
-        <CardHeader>
-          <CardTitle>اطلاعات شخصی</CardTitle>
-          <CardDescription>نام و اطلاعات تماس شما</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">نام</Label>
-            <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="نام شما" />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="mobile">شماره موبایل</Label>
-            <Input id="mobile" type="tel" value={user?.mobile ?? ""} disabled />
-          </div>
-          <Button onClick={onSave} disabled={saving}>
-            {saving ? "در حال ذخیره..." : "ذخیره تغییرات"}
-          </Button>
-          {message && <p className="text-sm text-muted-foreground">{message}</p>}
-        </CardContent>
-      </Card>
 
-      <Card className="max-w-xl">
-        <CardHeader>
-          <CardTitle>نقش فعال</CardTitle>
-          <CardDescription>
-            نقش فعلی شما: <span className="font-medium">{user?.active_role ?? "-"}</span>
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-wrap gap-2">
-          {currentRoles.map((role) => (
-            <Button
-              key={role}
-              variant={role === user?.active_role ? "default" : "outline"}
-              onClick={async () => {
-                setMessage(null);
-                const ok = await switchRole(role as "learner" | "teacher" | "admin");
-                setMessage(ok ? "نقش فعال تغییر کرد." : "تغییر نقش ناموفق بود.");
-              }}
-            >
-              {role === "learner" && "قرآن‌آموز"}
-              {role === "teacher" && "استاد"}
-              {role === "admin" && "ادمین"}
-            </Button>
-          ))}
-        </CardContent>
-      </Card>
-
-      <Card className="max-w-xl">
+      <Card className="border-slate-200">
         <CardHeader>
           <CardTitle>درخواست پروفایل استاد</CardTitle>
           <CardDescription>برای فعال شدن نقش استاد این فرم را تکمیل کنید</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="teacherSpecialty">تخصص</Label>
-            <Input
-              id="teacherSpecialty"
-              value={teacherSpecialty}
-              onChange={(e) => setTeacherSpecialty(e.target.value)}
-            />
+            <Input id="teacherSpecialty" value={teacherSpecialty} onChange={(e) => setTeacherSpecialty(e.target.value)} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="teacherLevel">سطح</Label>
             <select
               id="teacherLevel"
-              className="h-9 rounded-md border bg-transparent px-3 text-sm"
+              className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm"
               value={teacherLevel}
               onChange={(e) => setTeacherLevel(e.target.value as "beginner" | "intermediate" | "advanced")}
             >
@@ -144,7 +144,7 @@ export default function ProfilePage() {
               <option value="advanced">پیشرفته</option>
             </select>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2 md:col-span-2">
             <Label htmlFor="teacherBio">بیوگرافی</Label>
             <Input id="teacherBio" value={teacherBio} onChange={(e) => setTeacherBio(e.target.value)} />
           </div>
@@ -157,7 +157,9 @@ export default function ProfilePage() {
               onChange={(e) => setTeacherPrice(Number(e.target.value || 0))}
             />
           </div>
-          <Button onClick={onSubmitTeacherProfile}>ثبت درخواست استاد</Button>
+          <div className="flex items-end">
+            <Button onClick={onSubmitTeacherProfile}>ثبت درخواست استاد</Button>
+          </div>
         </CardContent>
       </Card>
     </div>

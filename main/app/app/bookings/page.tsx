@@ -103,24 +103,19 @@ export default function BookingsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">جلسات من</h1>
-        <p className="text-muted-foreground">ثبت رزرو جدید و پیگیری وضعیت جلسه‌ها</p>
-      </div>
+      {message && <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">{message}</p>}
 
-      {message && <p className="text-sm text-muted-foreground">{message}</p>}
-
-      <Card>
+      <Card className="border-slate-200">
         <CardHeader>
           <CardTitle>رزرو جلسه جدید</CardTitle>
           <CardDescription>استاد، تاریخ و زمان جلسه را انتخاب کنید</CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-3 md:grid-cols-2">
-          <div className="space-y-2">
+        <CardContent className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div className="space-y-2 xl:col-span-2">
             <Label htmlFor="teacher">استاد</Label>
             <select
               id="teacher"
-              className="h-9 rounded-md border bg-transparent px-3 text-sm"
+              className="h-10 w-full rounded-md border border-input bg-transparent px-3 text-sm"
               value={teacherId}
               onChange={(e) => setTeacherId(e.target.value)}
             >
@@ -144,82 +139,74 @@ export default function BookingsPage() {
             <Label htmlFor="slotEnd">پایان</Label>
             <Input id="slotEnd" type="time" value={slotEnd} onChange={(e) => setSlotEnd(e.target.value)} />
           </div>
-          <div className="space-y-2 md:col-span-2">
+          <div className="space-y-2 md:col-span-2 xl:col-span-3">
             <Label htmlFor="notes">توضیحات</Label>
             <Input id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="اختیاری" />
           </div>
-          <div className="md:col-span-2">
-            <Button onClick={createBooking}>ثبت رزرو</Button>
+          <div className="md:col-span-2 xl:col-span-1 xl:self-end">
+            <Button className="w-full" onClick={createBooking}>ثبت رزرو</Button>
           </div>
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>جلسات فعال</CardTitle>
-          <CardDescription>رزروهای در انتظار و تأییدشده</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {loading ? (
-            <p className="text-sm text-muted-foreground">در حال بارگذاری...</p>
-          ) : acceptedOrPending.length === 0 ? (
-            <p className="text-sm text-muted-foreground">جلسه فعالی ندارید.</p>
-          ) : (
-            acceptedOrPending.map((b) => (
-              <div key={b.id} className="rounded-md border p-3 text-sm">
-                <p>استاد: {b.teacher_name || `#${b.teacher_profile_id}`}</p>
-                <p>
-                  زمان: {b.slot_date} | {b.slot_start} - {b.slot_end}
-                </p>
-                <p>وضعیت: {b.status}</p>
-              </div>
-            ))
-          )}
-        </CardContent>
-      </Card>
+      <section className="grid gap-4 xl:grid-cols-2">
+        <Card className="border-slate-200">
+          <CardHeader>
+            <CardTitle>جلسات فعال</CardTitle>
+            <CardDescription>رزروهای در انتظار و تأییدشده</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {loading ? (
+              <p className="text-sm text-slate-500">در حال بارگذاری...</p>
+            ) : acceptedOrPending.length === 0 ? (
+              <div className="rounded-2xl border border-dashed p-5 text-center text-sm text-slate-500">جلسه فعالی ندارید.</div>
+            ) : (
+              acceptedOrPending.map((b) => (
+                <div key={b.id} className="rounded-2xl border border-slate-200 p-4 text-sm">
+                  <p>استاد: {b.teacher_name || `#${b.teacher_profile_id}`}</p>
+                  <p className="mt-1">زمان: {b.slot_date} | {b.slot_start} - {b.slot_end}</p>
+                  <p className="mt-2 inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium">وضعیت: {b.status}</p>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>تاریخچه جلسات</CardTitle>
-          <CardDescription>جلسات تکمیل‌شده یا ردشده</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {loading ? (
-            <p className="text-sm text-muted-foreground">در حال بارگذاری...</p>
-          ) : history.length === 0 ? (
-            <p className="text-sm text-muted-foreground">موردی یافت نشد.</p>
-          ) : (
-            history.map((b) => (
-              <div key={b.id} className="rounded-md border p-3 text-sm">
-                <p>استاد: {b.teacher_name || `#${b.teacher_profile_id}`}</p>
-                <p>
-                  زمان: {b.slot_date} | {b.slot_start} - {b.slot_end}
-                </p>
-                <p>وضعیت: {b.status}</p>
-                {b.status === "completed" && (
-                  <div className="mt-3 space-y-2">
-                    <Input
-                      value={ratingComments[b.id] || ""}
-                      onChange={(e) =>
-                        setRatingComments((prev) => ({ ...prev, [b.id]: e.target.value }))
-                      }
-                      placeholder="نظر شما (اختیاری)"
-                    />
-                    <div className="flex gap-2">
-                      <Button size="sm" onClick={() => submitRating(b.id, 5)}>
-                        ثبت امتیاز ۵
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={() => submitRating(b.id, 4)}>
-                        ثبت امتیاز ۴
-                      </Button>
+        <Card className="border-slate-200">
+          <CardHeader>
+            <CardTitle>تاریخچه جلسات</CardTitle>
+            <CardDescription>جلسات تکمیل‌شده یا ردشده</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {loading ? (
+              <p className="text-sm text-slate-500">در حال بارگذاری...</p>
+            ) : history.length === 0 ? (
+              <div className="rounded-2xl border border-dashed p-5 text-center text-sm text-slate-500">موردی یافت نشد.</div>
+            ) : (
+              history.map((b) => (
+                <div key={b.id} className="rounded-2xl border border-slate-200 p-4 text-sm">
+                  <p>استاد: {b.teacher_name || `#${b.teacher_profile_id}`}</p>
+                  <p className="mt-1">زمان: {b.slot_date} | {b.slot_start} - {b.slot_end}</p>
+                  <p className="mt-2 inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium">وضعیت: {b.status}</p>
+                  {b.status === "completed" && (
+                    <div className="mt-3 space-y-2 rounded-xl bg-slate-50 p-3">
+                      <Input
+                        value={ratingComments[b.id] || ""}
+                        onChange={(e) => setRatingComments((prev) => ({ ...prev, [b.id]: e.target.value }))}
+                        placeholder="نظر شما (اختیاری)"
+                      />
+                      <div className="flex flex-wrap gap-2">
+                        <Button size="sm" onClick={() => submitRating(b.id, 5)}>ثبت امتیاز ۵</Button>
+                        <Button size="sm" variant="outline" onClick={() => submitRating(b.id, 4)}>ثبت امتیاز ۴</Button>
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            ))
-          )}
-        </CardContent>
-      </Card>
+                  )}
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+      </section>
     </div>
   );
 }

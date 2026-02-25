@@ -64,64 +64,64 @@ export default function WalletPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">کیف پول</h1>
-        <p className="text-muted-foreground">موجودی و تراکنش‌ها</p>
-      </div>
+      {message && <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">{message}</p>}
 
-      {message && <p className="text-sm text-muted-foreground">{message}</p>}
+      <section className="grid gap-4 lg:grid-cols-[360px_minmax(0,1fr)]">
+        <Card className="border-slate-200">
+          <CardHeader>
+            <CardTitle>موجودی کیف پول</CardTitle>
+            <CardDescription>مدیریت شارژ حساب</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="rounded-2xl bg-slate-900 px-4 py-6 text-center text-2xl font-black text-white">
+              {wallet?.balance?.toLocaleString("fa-IR") ?? "۰"} تومان
+            </p>
+            <div className="space-y-2">
+              <Label htmlFor="amount">مبلغ شارژ</Label>
+              <Input
+                id="amount"
+                type="number"
+                value={amount}
+                onChange={(e) => setAmount(Number(e.target.value || 0))}
+              />
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
+              <Button onClick={initiateTopup}>شروع شارژ</Button>
+              <Button variant="outline" onClick={verifyTopup}>
+                تایید شارژ (MVP)
+              </Button>
+            </div>
+            {referenceId && <p className="text-xs text-slate-500">Reference: {referenceId}</p>}
+          </CardContent>
+        </Card>
 
-      <Card className="max-w-md">
-        <CardHeader>
-          <CardTitle>موجودی</CardTitle>
-          <CardDescription>اعتبار قابل استفاده</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <p className="text-2xl font-bold">
-            {wallet?.balance?.toLocaleString("fa-IR") ?? "۰"} تومان
-          </p>
-          <div className="space-y-2">
-            <Label htmlFor="amount">مبلغ شارژ</Label>
-            <Input
-              id="amount"
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(Number(e.target.value || 0))}
-            />
-          </div>
-          <div className="flex gap-2">
-            <Button size="sm" onClick={initiateTopup}>
-              شروع شارژ
-            </Button>
-            <Button size="sm" variant="outline" onClick={verifyTopup}>
-              تایید شارژ (MVP)
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>تراکنش‌های اخیر</CardTitle>
-          <CardDescription>تاریخچه واریز و برداشت</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          {loading ? (
-            <p className="text-sm text-muted-foreground">در حال بارگذاری...</p>
-          ) : wallet?.transactions?.length ? (
-            wallet.transactions.map((tx) => (
-              <div key={tx.id} className="rounded border p-3 text-sm">
-                <p>نوع: {tx.type}</p>
-                <p>مبلغ: {tx.amount.toLocaleString("fa-IR")}</p>
-                <p>توضیح: {tx.description || "-"}</p>
-                <p className="text-muted-foreground">{new Date(tx.created_at).toLocaleString("fa-IR")}</p>
+        <Card className="border-slate-200">
+          <CardHeader>
+            <CardTitle>تراکنش‌های اخیر</CardTitle>
+            <CardDescription>تاریخچه واریز و برداشت</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {loading ? (
+              <p className="text-sm text-slate-500">در حال بارگذاری...</p>
+            ) : wallet?.transactions?.length ? (
+              wallet.transactions.map((tx) => (
+                <div key={tx.id} className="rounded-2xl border border-slate-200 p-4 text-sm">
+                  <div className="grid gap-1 sm:grid-cols-2">
+                    <p>نوع: {tx.type}</p>
+                    <p>مبلغ: {tx.amount.toLocaleString("fa-IR")}</p>
+                  </div>
+                  <p className="mt-1 text-slate-600">توضیح: {tx.description || "-"}</p>
+                  <p className="mt-2 text-xs text-slate-500">{new Date(tx.created_at).toLocaleString("fa-IR")}</p>
+                </div>
+              ))
+            ) : (
+              <div className="rounded-2xl border border-dashed p-6 text-center text-sm text-slate-500">
+                تراکنشی ثبت نشده است.
               </div>
-            ))
-          ) : (
-            <p className="text-sm text-muted-foreground">تراکنشی ثبت نشده است.</p>
-          )}
-        </CardContent>
-      </Card>
+            )}
+          </CardContent>
+        </Card>
+      </section>
     </div>
   );
 }

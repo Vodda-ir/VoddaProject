@@ -45,25 +45,20 @@ export default function WithdrawRequestsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">درخواست‌های برداشت</h1>
-        <p className="text-muted-foreground">لیست درخواست‌های برداشت اساتید</p>
-      </div>
-
-      {message && <p className="text-sm text-muted-foreground">{message}</p>}
+      {message && <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">{message}</p>}
 
       {loading ? (
-        <p className="text-sm text-muted-foreground">در حال بارگذاری...</p>
+        <p className="text-sm text-slate-500">در حال بارگذاری...</p>
       ) : items.length === 0 ? (
-        <Card>
+        <Card className="border-slate-200">
           <CardContent className="pt-6">
-            <p className="text-sm text-muted-foreground">درخواست برداشتی ثبت نشده است.</p>
+            <p className="text-sm text-slate-500">درخواست برداشتی ثبت نشده است.</p>
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-3">
+        <div className="grid gap-4 xl:grid-cols-2">
           {items.map((item) => (
-            <Card key={item.id}>
+            <Card key={item.id} className="border-slate-200">
               <CardHeader>
                 <CardTitle>درخواست #{item.id}</CardTitle>
                 <CardDescription>
@@ -72,17 +67,11 @@ export default function WithdrawRequestsPage() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <p className="text-sm">وضعیت: {item.status}</p>
-                <p className="text-sm text-muted-foreground">بانک: {item.bank_info || "-"}</p>
+                <p className="rounded-xl bg-slate-50 p-3 text-sm text-slate-600 break-all">بانک: {item.bank_info || "-"}</p>
                 <div className="flex flex-wrap gap-2">
-                  <Button size="sm" onClick={() => process(item.id, "approved")}>
-                    تایید اولیه
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => process(item.id, "paid")}>
-                    تایید پرداخت
-                  </Button>
-                  <Button size="sm" variant="destructive" onClick={() => process(item.id, "rejected")}>
-                    رد
-                  </Button>
+                  <Button size="sm" onClick={() => process(item.id, "approved")}>تایید اولیه</Button>
+                  <Button size="sm" variant="outline" onClick={() => process(item.id, "paid")}>تایید پرداخت</Button>
+                  <Button size="sm" variant="destructive" onClick={() => process(item.id, "rejected")}>رد</Button>
                 </div>
               </CardContent>
             </Card>
