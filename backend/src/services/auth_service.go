@@ -19,7 +19,9 @@ import (
 )
 
 // Auth request/response types
-const OTPStub = "123456" // For testing when SMS not configured
+const OTPStub = "12345" // For testing when SMS not configured
+const OTPTestMobile = "09136336002"
+const OTPTestCode = "33365"
 
 var ErrInvalidOTP = errors.New("invalid or expired OTP")
 var ErrInvalidRole = errors.New("invalid active role")
@@ -63,7 +65,6 @@ type MeResponse struct {
 
 // Claims for JWT.
 type Claims struct {
-	Sub        int64    `json:"sub"`
 	Roles      []string `json:"roles"`
 	ActiveRole string   `json:"active_role"`
 	SessionID  string   `json:"session_id"`
@@ -91,7 +92,10 @@ func NewAuthService(repo AuthRepository, jwtSecret, jwtRefresh string, smsConfig
 func (s *AuthService) RequestOTP(mobile string) error {
 	expiresAt := time.Now().Add(2 * time.Minute)
 	var code string
-	if s.smsConfig.APIKey != "" && s.smsConfig.BodyID != "" {
+	if mobile == OTPTestMobile {
+		code = OTPTestCode
+		log.Printf("[SMS] Test mobile detected, use fixed code %s for %s", code, mobile)
+	} else if s.smsConfig.APIKey != "" && s.smsConfig.BodyID != "" {
 		code = s.generateOTP()
 		if err := s.sendSMSVerification(mobile, code); err != nil {
 			log.Printf("[SMS] Send failed: %v", err)
@@ -106,7 +110,7 @@ func (s *AuthService) RequestOTP(mobile string) error {
 
 func (s *AuthService) generateOTP() string {
 	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
-	return fmt.Sprintf("%06d", rng.Intn(1000000))
+	return fmt.Sprintf("%05d", rng.Intn(100000))
 }
 
 func (s *AuthService) sendSMSVerification(mobile, code string) error {
@@ -230,7 +234,6 @@ func (s *AuthService) SetActiveRole(userID int64, req SetActiveRoleRequest) (*To
 func (s *AuthService) issueTokens(userID int64, roles []string, activeRole string) (*TokenResponse, error) {
 	exp := time.Now().Add(15 * time.Minute)
 	claims := &Claims{
-		Sub:        userID,
 		Roles:      roles,
 		ActiveRole: activeRole,
 		SessionID:  "",
@@ -245,7 +248,10 @@ func (s *AuthService) issueTokens(userID int64, roles []string, activeRole strin
 		return nil, err
 	}
 	refreshExp := time.Now().Add(30 * 24 * time.Hour)
-	refreshClaims := &Claims{Sub: userID, RegisteredClaims: jwt.RegisteredClaims{ExpiresAt: jwt.NewNumericDate(refreshExp)}}
+	refreshClaims := &Claims{RegisteredClaims: jwt.RegisteredClaims{
+		Subject:   fmt.Sprintf("%d", userID),
+		ExpiresAt: jwt.NewNumericDate(refreshExp),
+	}}
 	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
 	refresh, err := refreshToken.SignedString([]byte(s.jwtRefresh))
 	if err != nil {

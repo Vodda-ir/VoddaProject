@@ -181,7 +181,7 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
                 <div dir="ltr" className="flex justify-center">
                   <InputOTP
                     id="otp"
-                    maxLength={6}
+                    maxLength={5}
                     value={code}
                     onChange={setCode}
                     dir="ltr"

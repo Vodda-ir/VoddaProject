@@ -56,7 +56,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _verifyOtp() async {
     final mobile = _mobileCtrl.text.trim();
     final code = _codeCtrl.text.trim();
-    if (!RegExp(r'^09\d{9}$').hasMatch(mobile) || code.length != 6) {
+    if (!RegExp(r'^09\d{9}$').hasMatch(mobile) || code.length != 5) {
       setState(() => _error = 'شماره موبایل یا کد نامعتبر است');
       return;
     }
@@ -105,7 +105,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(
                   labelText: 'کد تایید',
-                  hintText: '123456',
+                  hintText: '12345',
                 ),
               ),
             const SizedBox(height: 16),

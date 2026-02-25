@@ -37,7 +37,13 @@ func main() {
 	authService := services.NewAuthService(authRepo, cfg.JWTSecret, cfg.JWTRefresh, cfg.SMS)
 	authController := controllers.NewAuthController(authService)
 	appService := services.NewAppService(sqlDB, cfg.PlatformCommissionPercent)
-	appController := controllers.NewAppController(appService)
+	teacherController := controllers.NewTeacherController(appService)
+	bookingController := controllers.NewBookingController(appService)
+	sessionController := controllers.NewSessionController(appService)
+	walletController := controllers.NewWalletController(appService)
+	ratingController := controllers.NewRatingController(appService)
+	notificationController := controllers.NewNotificationController(appService)
+	adminController := controllers.NewAdminController(appService)
 
 	r := gin.Default()
 	r.Use(corsMiddleware())
@@ -53,8 +59,8 @@ func main() {
 	}
 
 	// Public teacher discovery endpoints
-	r.GET("/teachers", appController.ListTeachers)
-	r.GET("/teachers/:id", appController.GetTeacher)
+	r.GET("/teachers", teacherController.ListTeachers)
+	r.GET("/teachers/:id", teacherController.GetTeacher)
 
 	authMiddleware := middleware.AuthMiddleware(cfg.JWTSecret)
 	protected := r.Group("/")
@@ -64,30 +70,30 @@ func main() {
 		protected.PATCH("/me/profile", authController.UpdateProfile)
 		protected.POST("/me/active-role", authController.SetActiveRole)
 
-		protected.POST("/teacher/profile", appController.UpsertTeacherProfile)
-		protected.POST("/bookings", appController.CreateBooking)
-		protected.GET("/bookings/my", appController.ListMyBookings)
-		protected.GET("/teacher/bookings", appController.ListTeacherBookings)
-		protected.POST("/bookings/:id/accept", appController.AcceptBooking)
-		protected.POST("/bookings/:id/reject", appController.RejectBooking)
+		protected.POST("/teacher/profile", teacherController.UpsertTeacherProfile)
+		protected.POST("/bookings", bookingController.CreateBooking)
+		protected.GET("/bookings/my", bookingController.ListMyBookings)
+		protected.GET("/teacher/bookings", bookingController.ListTeacherBookings)
+		protected.POST("/bookings/:id/accept", bookingController.AcceptBooking)
+		protected.POST("/bookings/:id/reject", bookingController.RejectBooking)
 
-		protected.POST("/sessions/:id/token", appController.SessionToken)
-		protected.POST("/sessions/:id/end", appController.EndSession)
+		protected.POST("/sessions/:id/token", sessionController.SessionToken)
+		protected.POST("/sessions/:id/end", sessionController.EndSession)
 
-		protected.POST("/wallet/topup/initiate", appController.WalletTopupInitiate)
-		protected.POST("/wallet/topup/verify", appController.WalletTopupVerify)
-		protected.GET("/wallet/transactions", appController.WalletTransactions)
-		protected.POST("/wallet/withdraw-requests", appController.CreateWithdrawRequest)
+		protected.POST("/wallet/topup/initiate", walletController.WalletTopupInitiate)
+		protected.POST("/wallet/topup/verify", walletController.WalletTopupVerify)
+		protected.GET("/wallet/transactions", walletController.WalletTransactions)
+		protected.POST("/wallet/withdraw-requests", walletController.CreateWithdrawRequest)
 
-		protected.POST("/ratings", appController.CreateRating)
-		protected.GET("/notifications", appController.ListNotifications)
-		protected.POST("/notifications/:id/read", appController.MarkNotificationRead)
+		protected.POST("/ratings", ratingController.CreateRating)
+		protected.GET("/notifications", notificationController.ListNotifications)
+		protected.POST("/notifications/:id/read", notificationController.MarkNotificationRead)
 
-		protected.GET("/admin/teachers/pending", appController.ListPendingTeachers)
-		protected.POST("/admin/teachers/:id/approve", appController.ApproveTeacher)
-		protected.POST("/admin/teachers/:id/reject", appController.RejectTeacher)
-		protected.GET("/admin/withdraw-requests", appController.ListWithdrawRequests)
-		protected.POST("/admin/withdraw-requests/:id/process", appController.ProcessWithdrawRequest)
+		protected.GET("/admin/teachers/pending", adminController.ListPendingTeachers)
+		protected.POST("/admin/teachers/:id/approve", adminController.ApproveTeacher)
+		protected.POST("/admin/teachers/:id/reject", adminController.RejectTeacher)
+		protected.GET("/admin/withdraw-requests", adminController.ListWithdrawRequests)
+		protected.POST("/admin/withdraw-requests/:id/process", adminController.ProcessWithdrawRequest)
 	}
 
 	port := ":" + cfg.Port
