@@ -148,3 +148,33 @@
     @apply bg-background text-foreground font-sans;
   }
 }
+
+/* Persian datepicker polish */
+.vodda-persian-datepicker {
+  direction: rtl;
+  text-align: right;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.rmdp-wrapper {
+  border: 1px solid hsl(var(--border));
+  border-radius: 1rem;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
+}
+
+.rmdp-top-class {
+  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+  border-bottom: 1px solid hsl(var(--border));
+  border-top-left-radius: 1rem;
+  border-top-right-radius: 1rem;
+}
+
+.rmdp-day.rmdp-selected span:not(.highlight) {
+  background-color: hsl(var(--primary));
+  box-shadow: none;
+}
+
+.rmdp-day span:hover,
+.rmdp-week-day {
+  color: hsl(var(--foreground));
+}

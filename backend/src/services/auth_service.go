@@ -21,6 +21,7 @@ import (
 // Auth request/response types
 const OTPStub = "12345" // For testing when SMS not configured
 const OTPTestMobile = "09136336002"
+const OTPTestTeacherMobile = "09914932678"
 const OTPTestCode = "33365"
 
 var ErrInvalidOTP = errors.New("invalid or expired OTP")
@@ -92,7 +93,7 @@ func NewAuthService(repo AuthRepository, jwtSecret, jwtRefresh string, smsConfig
 func (s *AuthService) RequestOTP(mobile string) error {
 	expiresAt := time.Now().Add(2 * time.Minute)
 	var code string
-	if mobile == OTPTestMobile {
+	if mobile == OTPTestMobile || mobile == OTPTestTeacherMobile {
 		code = OTPTestCode
 		log.Printf("[SMS] Test mobile detected, use fixed code %s for %s", code, mobile)
 	} else if s.smsConfig.APIKey != "" && s.smsConfig.BodyID != "" {

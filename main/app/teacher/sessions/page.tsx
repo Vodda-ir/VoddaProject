@@ -11,6 +11,20 @@ import {
 import { Button } from "@/components/ui/button";
 import { api, type BookingSummary } from "@/lib/api/client";
 
+const persianDateFormatter = new Intl.DateTimeFormat("fa-IR-u-ca-persian", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+});
+
+function formatPersianDate(dateValue: string) {
+  const date = new Date(`${dateValue}T00:00:00`);
+  if (Number.isNaN(date.getTime())) {
+    return dateValue;
+  }
+  return persianDateFormatter.format(date);
+}
+
 export default function TeacherSessionsPage() {
   const [items, setItems] = useState<BookingSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -76,7 +90,7 @@ export default function TeacherSessionsPage() {
               pending.map((b) => (
                 <div key={b.id} className="rounded-2xl border border-slate-200 p-4 text-sm">
                   <p>قرآن‌آموز: {b.learner_name || `#${b.learner_id}`}</p>
-                  <p className="mt-1">زمان: {b.slot_date} | {b.slot_start} - {b.slot_end}</p>
+                  <p className="mt-1">زمان: {formatPersianDate(b.slot_date)} | {b.slot_start} - {b.slot_end}</p>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <Button size="sm" onClick={() => onAccept(b.id)}>پذیرش</Button>
                     <Button size="sm" variant="outline" onClick={() => onReject(b.id)}>رد</Button>
@@ -101,7 +115,7 @@ export default function TeacherSessionsPage() {
               accepted.map((b) => (
                 <div key={b.id} className="rounded-2xl border border-slate-200 p-4 text-sm">
                   <p>قرآن‌آموز: {b.learner_name || `#${b.learner_id}`}</p>
-                  <p className="mt-1">زمان: {b.slot_date} | {b.slot_start} - {b.slot_end}</p>
+                  <p className="mt-1">زمان: {formatPersianDate(b.slot_date)} | {b.slot_start} - {b.slot_end}</p>
                   <p className="mt-2 inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium">وضعیت: {b.status}</p>
                 </div>
               ))

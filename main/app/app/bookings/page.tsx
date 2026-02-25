@@ -12,10 +12,25 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PersianDatePicker } from "@/components/ui/persian-date-picker";
 import { api, type BookingSummary, type TeacherSummary } from "@/lib/api/client";
 
 function toTimeWithSeconds(v: string) {
   return v.length === 5 ? `${v}:00` : v;
+}
+
+const persianDateFormatter = new Intl.DateTimeFormat("fa-IR-u-ca-persian", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+});
+
+function formatPersianDate(dateValue: string) {
+  const date = new Date(`${dateValue}T00:00:00`);
+  if (Number.isNaN(date.getTime())) {
+    return dateValue;
+  }
+  return persianDateFormatter.format(date);
 }
 
 export default function BookingsPage() {
@@ -129,7 +144,7 @@ export default function BookingsPage() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="slotDate">تاریخ</Label>
-            <Input id="slotDate" type="date" value={slotDate} onChange={(e) => setSlotDate(e.target.value)} />
+            <PersianDatePicker id="slotDate" value={slotDate} onChange={setSlotDate} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="slotStart">شروع</Label>
@@ -164,7 +179,7 @@ export default function BookingsPage() {
               acceptedOrPending.map((b) => (
                 <div key={b.id} className="rounded-2xl border border-slate-200 p-4 text-sm">
                   <p>استاد: {b.teacher_name || `#${b.teacher_profile_id}`}</p>
-                  <p className="mt-1">زمان: {b.slot_date} | {b.slot_start} - {b.slot_end}</p>
+                  <p className="mt-1">زمان: {formatPersianDate(b.slot_date)} | {b.slot_start} - {b.slot_end}</p>
                   <p className="mt-2 inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium">وضعیت: {b.status}</p>
                 </div>
               ))
@@ -186,7 +201,7 @@ export default function BookingsPage() {
               history.map((b) => (
                 <div key={b.id} className="rounded-2xl border border-slate-200 p-4 text-sm">
                   <p>استاد: {b.teacher_name || `#${b.teacher_profile_id}`}</p>
-                  <p className="mt-1">زمان: {b.slot_date} | {b.slot_start} - {b.slot_end}</p>
+                  <p className="mt-1">زمان: {formatPersianDate(b.slot_date)} | {b.slot_start} - {b.slot_end}</p>
                   <p className="mt-2 inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium">وضعیت: {b.status}</p>
                   {b.status === "completed" && (
                     <div className="mt-3 space-y-2 rounded-xl bg-slate-50 p-3">

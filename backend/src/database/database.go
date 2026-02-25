@@ -50,6 +50,9 @@ func applyManualMigrations(db *gorm.DB) error {
 	if err := normalizeActiveRoles(db); err != nil {
 		return err
 	}
+	if err := seedSystemUsers(db); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -91,4 +94,75 @@ func normalizeActiveRoles(db *gorm.DB) error {
 		   OR active_role = ''
 		   OR active_role NOT IN ('learner', 'teacher', 'admin')
 	`).Error
+}
+
+func seedSystemUsers(db *gorm.DB) error {
+	adminID, err := upsertUserByMobile(db, "09136336002", "سید محمد امین عمرانی", "admin")
+	if err != nil {
+		return fmt.Errorf("seed admin user: %w", err)
+	}
+	if err := ensureUserRole(db, adminID, "admin"); err != nil {
+		return fmt.Errorf("seed admin role: %w", err)
+	}
+	if err := ensureUserRole(db, adminID, "learner"); err != nil {
+		return fmt.Errorf("seed admin learner role: %w", err)
+	}
+
+	teacherID, err := upsertUserByMobile(db, "09914932678", "سارا حقیقی", "teacher")
+	if err != nil {
+		return fmt.Errorf("seed teacher user: %w", err)
+	}
+	if err := ensureUserRole(db, teacherID, "teacher"); err != nil {
+		return fmt.Errorf("seed teacher role: %w", err)
+	}
+	if err := ensureUserRole(db, teacherID, "learner"); err != nil {
+		return fmt.Errorf("seed teacher learner role: %w", err)
+	}
+	if err := ensureTeacherProfileApproved(db, teacherID, "آموزش قرآن کریم", "intermediate", "مدرس قرآن", 200000); err != nil {
+		return fmt.Errorf("seed teacher profile: %w", err)
+	}
+
+	log.Println("System users seeded successfully")
+	return nil
+}
+
+func upsertUserByMobile(db *gorm.DB, mobile, name, activeRole string) (uint64, error) {
+	if err := db.Exec(`
+		INSERT INTO users (mobile, name, active_role, created_at, updated_at)
+		VALUES (?, ?, ?, NOW(), NOW())
+		ON DUPLICATE KEY UPDATE
+			name = VALUES(name),
+			active_role = VALUES(active_role),
+			updated_at = NOW()
+	`, mobile, name, activeRole).Error; err != nil {
+		return 0, err
+	}
+
+	var userID uint64
+	if err := db.Raw("SELECT id FROM users WHERE mobile = ? LIMIT 1", mobile).Scan(&userID).Error; err != nil {
+		return 0, err
+	}
+	if userID == 0 {
+		return 0, fmt.Errorf("user not found after upsert: %s", mobile)
+	}
+	return userID, nil
+}
+
+func ensureUserRole(db *gorm.DB, userID uint64, role string) error {
+	return db.Exec("INSERT IGNORE INTO user_roles (user_id, role, created_at) VALUES (?, ?, NOW())", userID, role).Error
+}
+
+func ensureTeacherProfileApproved(db *gorm.DB, userID uint64, specialty, level, bio string, pricePer30min int64) error {
+	return db.Exec(`
+		INSERT INTO teacher_profiles (user_id, specialty, level, bio, price_per30min, verification_status, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, 'approved', NOW(), NOW())
+		ON DUPLICATE KEY UPDATE
+			specialty = VALUES(specialty),
+			level = VALUES(level),
+			bio = VALUES(bio),
+			price_per30min = VALUES(price_per30min),
+			verification_status = 'approved',
+			deleted_at = NULL,
+			updated_at = NOW()
+	`, userID, specialty, level, bio, pricePer30min).Error
 }
