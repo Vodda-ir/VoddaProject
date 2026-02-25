@@ -58,6 +58,29 @@ docker compose down -v
 - Web (main): http://localhost:5567
 - App (Flutter): http://localhost:5568
 
+## مهاجرت و پایداری دیتا
+
+- مهاجرت دیتابیس در بک‌اند با `GORM AutoMigrate` و مستقیم از مدل‌ها انجام می‌شود (در startup سرویس backend).
+- `AutoMigrate` فقط ایجاد/به‌روزرسانی ساختار لازم را انجام می‌دهد و داده‌های قبلی را پاک نمی‌کند.
+- دیتابیس MySQL روی volume/persistent storage نگه‌داری می‌شود؛ در نتیجه با deploy معمولی از بین نمی‌رود.
+
+## Deploy اسکریپتی (Build لوکال + Deploy سرور)
+
+اسکریپت `deploy.sh` برای production اضافه شده است:
+
+1. ساخت ایمیج‌ها روی سیستم لوکال
+2. بسته‌بندی (`vodda-docker-bundle.zip`)
+3. انتقال به سرور
+4. `docker load` و `docker compose up -d` روی سرور
+
+نکته مهم: در سرور اگر فایل `.env` موجود باشد، حفظ می‌شود تا `JWT_*` و تنظیمات DB ثابت بماند و سشن‌ها/توکن‌ها بی‌دلیل منقضی نشوند.
+
+قبل از اجرا:
+
+1. `cp deploy.config.example deploy.config`
+2. مقادیر `SERVER_IP`, `SERVER_USER`, `SERVER_PATH`, `SSH_PASSWORD` را در `deploy.config` تنظیم کنید.
+3. `deploy.config` در gitignore است و نباید commit شود.
+
 ## اجرای لوکال (بدون Docker)
 
 1. MySQL را اجرا کنید (یا از Docker فقط برای mysql استفاده کنید).

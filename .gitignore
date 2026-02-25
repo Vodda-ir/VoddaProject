@@ -1,0 +1,9 @@
+# Deployment artifacts
+vodda-images.tar
+vodda-docker-bundle.zip
+
+# Local deploy helper secrets
+deploy.config
+
+# Production env (sensitive)
+.env.production

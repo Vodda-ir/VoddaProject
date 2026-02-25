@@ -24,7 +24,9 @@ services:
   backend:
     build:
       context: ./backend
+    image: vodda-backend:prod
     container_name: vodda_backend
+    restart: unless-stopped
     env_file:
       - .env
     environment:
@@ -42,7 +44,9 @@ services:
   main:
     build:
       context: ./main
+    image: vodda-main:prod
     container_name: vodda_main
+    restart: unless-stopped
     env_file:
       - .env
     environment:
