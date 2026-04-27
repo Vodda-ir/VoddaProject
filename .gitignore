@@ -1,9 +1,37 @@
-# Deployment artifacts
-vodda-images.tar
-vodda-docker-bundle.zip
-
-# Local deploy helper secrets
-deploy.config
-
-# Production env (sensitive)
+*.log
+.DS_Store
+.env
+.env.example.local
+.env.backup
 .env.production
+.phpactor.json
+.phpunit.result.cache
+/.codex
+/.cursor/
+/.idea
+/.nova
+/.phpunit.cache
+/.vscode
+/.zed
+/auth.json
+/node_modules
+/public/build
+/public/hot
+/public/storage
+/storage/*.key
+/storage/pail
+/vendor
+/web/.env
+/web/.phpunit.result.cache
+/web/bootstrap/cache/*.php
+/web/database/*.sqlite
+/web/public/build
+/web/public/hot
+/web/public/storage
+/web/storage/*.key
+/web/storage/pail
+/web/vendor
+_ide_helper.php
+Homestead.json
+Homestead.yaml
+Thumbs.db
