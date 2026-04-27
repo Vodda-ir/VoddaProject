@@ -1,16 +1,12 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-
-const _baseUrl = String.fromEnvironment(
-  'API_URL',
-  defaultValue: 'http://localhost:5566',
-);
+import '../config/app_config.dart';
 
 class ApiClient {
   final String baseUrl;
   String? _accessToken;
 
-  ApiClient({String? baseUrl}) : baseUrl = baseUrl ?? _baseUrl;
+  ApiClient({String? baseUrl}) : baseUrl = baseUrl ?? AppConfig.apiBaseUrl;
 
   void setToken(String token) => _accessToken = token;
   void clearToken() => _accessToken = null;

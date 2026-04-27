@@ -4,17 +4,55 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/auth/auth_provider.dart';
 import '../../features/auth/presentation/login_screen.dart';
+import '../../features/auth/presentation/verify_otp_screen.dart';
+import '../../features/splash/presentation/splash_screen.dart';
+import '../widgets/vodda_app_bar_title.dart';
+
+bool _isAuthenticated(BuildContext context) {
+  final auth = ProviderScope.containerOf(
+    context,
+    listen: false,
+  ).read(authStateProvider);
+  return auth.isAuthenticated;
+}
 
 final appRouter = GoRouter(
   initialLocation: '/',
   routes: [
     GoRoute(
       path: '/',
-      builder: (context, state) => const HomePage(),
+      builder: (context, state) => const SplashScreen(),
+    ),
+    GoRoute(
+      path: '/dashboard',
+      builder: (context, state) {
+        if (!_isAuthenticated(context)) {
+          return const LoginScreen();
+        }
+        return const DashboardPage();
+      },
     ),
     GoRoute(
       path: '/login',
-      builder: (context, state) => const LoginScreen(),
+      builder: (context, state) {
+        if (_isAuthenticated(context)) {
+          return const DashboardPage();
+        }
+        return const LoginScreen();
+      },
+    ),
+    GoRoute(
+      path: '/login/verify',
+      builder: (context, state) {
+        if (_isAuthenticated(context)) {
+          return const DashboardPage();
+        }
+        final mobile = state.uri.queryParameters['mobile'] ?? '';
+        if (mobile.isEmpty) {
+          return const LoginScreen();
+        }
+        return VerifyOtpScreen(mobile: mobile);
+      },
     ),
     GoRoute(
       path: '/teachers',
@@ -42,20 +80,27 @@ final appRouter = GoRouter(
   ],
 );
 
-class HomePage extends ConsumerWidget {
-  const HomePage({super.key});
+class DashboardPage extends ConsumerWidget {
+  const DashboardPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final auth = ref.watch(authStateProvider);
 
+    if (!auth.isAuthenticated) {
+      return const LoginScreen();
+    }
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('وُدّا'),
+        title: const VoddaAppBarTitle('وُدّا'),
         actions: [
           if (auth.isAuthenticated)
             IconButton(
-              onPressed: () => ref.read(authStateProvider.notifier).logout(),
+              onPressed: () async {
+                await ref.read(authStateProvider.notifier).logout();
+                context.go('/login');
+              },
               icon: const Icon(Icons.logout),
             ),
         ],
@@ -65,54 +110,80 @@ class HomePage extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text('پلتفرم آموزش قرآن و مداحی'),
-            const SizedBox(height: 16),
-            if (!auth.isAuthenticated)
-              FilledButton(
-                onPressed: () => context.go('/login'),
-                child: const Text('ورود با OTP'),
+            const SizedBox(height: 8),
+            Center(
+              child: Container(
+                width: 92,
+                height: 92,
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(28),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Theme.of(context).colorScheme.shadow.withOpacity(0.08),
+                      blurRadius: 24,
+                      offset: const Offset(0, 12),
+                    ),
+                  ],
+                ),
+                child: Image.asset('assets/images/logo.png'),
               ),
-            if (auth.isAuthenticated) ...[
-              Text('کاربر: ${auth.user?.name.isNotEmpty == true ? auth.user!.name : auth.user?.mobile ?? ''}'),
-              const SizedBox(height: 8),
-              Text('نقش فعال: ${auth.user?.activeRole ?? '-'}'),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                children: (auth.user?.roles ?? const [])
-                    .map(
-                      (role) => OutlinedButton(
-                        onPressed: role == auth.user?.activeRole
-                            ? null
-                            : () => ref.read(authStateProvider.notifier).switchRole(role),
-                        child: Text('تغییر به $role'),
-                      ),
-                    )
-                    .toList(),
-              ),
-            ],
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'پلتفرم آموزش قرآن و مداحی',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'نسخه‌ی موبایل وُدّا برای ورود، رزرو جلسه، کیف پول و پیگیری اعلان‌ها.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            Text('کاربر: ${auth.user?.name.isNotEmpty == true ? auth.user!.name : auth.user?.mobile ?? ''}'),
+            const SizedBox(height: 8),
+            Text('نقش فعال: ${auth.user?.activeRole ?? '-'}'),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              children: (auth.user?.roles ?? const [])
+                  .map(
+                    (role) => OutlinedButton(
+                      onPressed: role == auth.user?.activeRole
+                          ? null
+                          : () => ref.read(authStateProvider.notifier).switchRole(role),
+                      child: Text('تغییر به $role'),
+                    ),
+                  )
+                  .toList(),
+            ),
             const SizedBox(height: 20),
             FilledButton.tonal(
               onPressed: () => context.go('/teachers'),
               child: const Text('مشاهده اساتید'),
             ),
-            if (auth.isAuthenticated) ...[
-              const SizedBox(height: 10),
-              FilledButton.tonal(
-                onPressed: () => context.go('/bookings'),
-                child: const Text('جلسات من'),
-              ),
-              const SizedBox(height: 10),
-              FilledButton.tonal(
-                onPressed: () => context.go('/wallet'),
-                child: const Text('کیف پول'),
-              ),
-              const SizedBox(height: 10),
-              FilledButton.tonal(
-                onPressed: () => context.go('/notifications'),
-                child: const Text('اعلان‌ها'),
-              ),
-            ],
+            const SizedBox(height: 10),
+            FilledButton.tonal(
+              onPressed: () => context.go('/bookings'),
+              child: const Text('جلسات من'),
+            ),
+            const SizedBox(height: 10),
+            FilledButton.tonal(
+              onPressed: () => context.go('/wallet'),
+              child: const Text('کیف پول'),
+            ),
+            const SizedBox(height: 10),
+            FilledButton.tonal(
+              onPressed: () => context.go('/notifications'),
+              child: const Text('اعلان‌ها'),
+            ),
           ],
         ),
       ),
@@ -165,7 +236,7 @@ class _TeachersPageState extends ConsumerState<TeachersPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('اساتید')),
+      appBar: AppBar(title: const VoddaAppBarTitle('اساتید')),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
@@ -235,7 +306,7 @@ class _TeacherDetailPageState extends ConsumerState<TeacherDetailPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('جزئیات استاد')),
+      appBar: AppBar(title: const VoddaAppBarTitle('جزئیات استاد')),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
@@ -384,7 +455,7 @@ class _BookingsPageState extends ConsumerState<BookingsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('جلسات من')),
+      appBar: AppBar(title: const VoddaAppBarTitle('جلسات من')),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : Padding(
@@ -634,7 +705,7 @@ class _WalletPageState extends ConsumerState<WalletPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('کیف پول')),
+      appBar: AppBar(title: const VoddaAppBarTitle('کیف پول')),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : Padding(
@@ -761,7 +832,7 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('اعلان‌ها')),
+      appBar: AppBar(title: const VoddaAppBarTitle('اعلان‌ها')),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null

@@ -24,6 +24,16 @@ class AuthUser {
       activeRole: (json['active_role'] as String?) ?? 'learner',
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'mobile': mobile,
+      'name': name,
+      'roles': roles,
+      'active_role': activeRole,
+    };
+  }
 }
 
 class AuthState {
@@ -31,12 +41,14 @@ class AuthState {
   final String? refreshToken;
   final AuthUser? user;
   final bool loading;
+  final bool initialized;
 
   const AuthState({
     this.accessToken,
     this.refreshToken,
     this.user,
     this.loading = false,
+    this.initialized = true,
   });
 
   bool get isAuthenticated =>
@@ -47,6 +59,7 @@ class AuthState {
     String? refreshToken,
     AuthUser? user,
     bool? loading,
+    bool? initialized,
     bool clearUser = false,
   }) {
     return AuthState(
@@ -54,6 +67,7 @@ class AuthState {
       refreshToken: refreshToken ?? this.refreshToken,
       user: clearUser ? null : (user ?? this.user),
       loading: loading ?? this.loading,
+      initialized: initialized ?? this.initialized,
     );
   }
 }

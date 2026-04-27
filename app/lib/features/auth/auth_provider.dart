@@ -1,4 +1,9 @@
+import 'dart:convert';
+
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../../core/api/client.dart';
 import 'domain/auth_state.dart';
 import 'data/auth_repository.dart';
@@ -16,8 +21,13 @@ final authStateProvider = NotifierProvider<AuthNotifier, AuthState>(
 );
 
 class AuthNotifier extends Notifier<AuthState> {
+  static const _sessionStorageKey = 'vodda.auth.session';
+
   @override
-  AuthState build() => const AuthState();
+  AuthState build() {
+    _restoreSession();
+    return const AuthState(initialized: false);
+  }
 
   Future<void> requestOtp(String mobile) async {
     await ref.read(authRepositoryProvider).requestOtp(mobile);
@@ -43,7 +53,9 @@ class AuthNotifier extends Notifier<AuthState> {
         refreshToken: refreshToken,
         user: AuthUser.fromJson(me),
         loading: false,
+        initialized: true,
       );
+      await _persistSession();
     } catch (_) {
       state = state.copyWith(loading: false);
       rethrow;
@@ -67,7 +79,9 @@ class AuthNotifier extends Notifier<AuthState> {
         refreshToken: (res['refresh_token'] as String?) ?? state.refreshToken,
         user: AuthUser.fromJson(me),
         loading: false,
+        initialized: true,
       );
+      await _persistSession();
       return true;
     } catch (_) {
       state = state.copyWith(loading: false);
@@ -81,13 +95,86 @@ class AuthNotifier extends Notifier<AuthState> {
       ref.read(apiClientProvider).setToken(state.accessToken!);
       final me = await ref.read(authRepositoryProvider).getMe();
       state = state.copyWith(user: AuthUser.fromJson(me));
+      await _persistSession();
     } catch (_) {
       // ignore on refresh
     }
   }
 
-  void logout() {
+  Future<void> logout() async {
     ref.read(apiClientProvider).clearToken();
-    state = const AuthState();
+    state = const AuthState(initialized: true);
+    final prefs = await _safePrefs();
+    if (prefs == null) {
+      return;
+    }
+    await prefs.remove(_sessionStorageKey);
+  }
+
+  Future<void> _restoreSession() async {
+    final prefs = await _safePrefs();
+    if (prefs == null) {
+      ref.read(apiClientProvider).clearToken();
+      state = const AuthState(initialized: true);
+      return;
+    }
+    final raw = prefs.getString(_sessionStorageKey);
+    if (raw == null || raw.isEmpty) {
+      ref.read(apiClientProvider).clearToken();
+      state = const AuthState(initialized: true);
+      return;
+    }
+
+    try {
+      final payload = jsonDecode(raw) as Map<String, dynamic>;
+      final accessToken = payload['access_token'] as String?;
+      final refreshToken = payload['refresh_token'] as String?;
+      final userMap = payload['user'] as Map<String, dynamic>?;
+      if (accessToken == null || accessToken.isEmpty || userMap == null) {
+        ref.read(apiClientProvider).clearToken();
+        state = const AuthState(initialized: true);
+        await prefs.remove(_sessionStorageKey);
+        return;
+      }
+
+      ref.read(apiClientProvider).setToken(accessToken);
+      state = AuthState(
+        accessToken: accessToken,
+        refreshToken: refreshToken,
+        user: AuthUser.fromJson(userMap),
+        initialized: true,
+      );
+    } catch (_) {
+      ref.read(apiClientProvider).clearToken();
+      state = const AuthState(initialized: true);
+      await prefs.remove(_sessionStorageKey);
+    }
+  }
+
+  Future<void> _persistSession() async {
+    if (!state.isAuthenticated || state.user == null || state.accessToken == null) {
+      return;
+    }
+
+    final prefs = await _safePrefs();
+    if (prefs == null) {
+      return;
+    }
+    await prefs.setString(
+      _sessionStorageKey,
+      jsonEncode({
+        'access_token': state.accessToken,
+        'refresh_token': state.refreshToken,
+        'user': state.user!.toJson(),
+      }),
+    );
+  }
+
+  Future<SharedPreferences?> _safePrefs() async {
+    try {
+      return await SharedPreferences.getInstance();
+    } on MissingPluginException {
+      return null;
+    }
   }
 }
