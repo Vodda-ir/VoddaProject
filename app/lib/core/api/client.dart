@@ -11,25 +11,44 @@ class ApiClient {
   void setToken(String token) => _accessToken = token;
   void clearToken() => _accessToken = null;
 
-  Future<Map<String, dynamic>> get(String path) async {
-    final uri = Uri.parse('$baseUrl$path');
-    final headers = <String, String>{
-      'Content-Type': 'application/json',
-      if (_accessToken != null) 'Authorization': 'Bearer $_accessToken',
-    };
+  Future<Map<String, dynamic>> get(
+    String path, {
+    Map<String, dynamic>? queryParameters,
+  }) async {
+    final uri = _buildUri(path, queryParameters: queryParameters);
     final res = await http.get(uri, headers: headers);
     return _handleResponse(res);
   }
 
-  Future<Map<String, dynamic>> post(String path, Map<String, dynamic> body) async {
-    final uri = Uri.parse('$baseUrl$path');
-    final headers = <String, String>{
-      'Content-Type': 'application/json',
-      if (_accessToken != null) 'Authorization': 'Bearer $_accessToken',
-    };
+  Future<Map<String, dynamic>> post(
+    String path,
+    Map<String, dynamic> body, {
+    Map<String, dynamic>? queryParameters,
+  }) async {
+    final uri = _buildUri(path, queryParameters: queryParameters);
     final res = await http.post(uri, headers: headers, body: jsonEncode(body));
     return _handleResponse(res);
   }
+
+  Uri _buildUri(String path, {Map<String, dynamic>? queryParameters}) {
+    final baseUri = Uri.parse(baseUrl);
+    final normalizedPath = path.startsWith('/') ? path.substring(1) : path;
+
+    final qp = <String, String>{
+      ...baseUri.queryParameters,
+      ...?queryParameters?.map((key, value) => MapEntry(key, value.toString())),
+    };
+
+    return baseUri.replace(
+      path: '${baseUri.path.replaceFirst(RegExp(r'/$'), '')}/$normalizedPath',
+      queryParameters: qp.isEmpty ? null : qp,
+    );
+  }
+
+  Map<String, String> get headers => <String, String>{
+        'Content-Type': 'application/json',
+        if (_accessToken != null) 'Authorization': 'Bearer $_accessToken',
+      };
 
   Map<String, dynamic> _handleResponse(http.Response res) {
     if (res.statusCode >= 200 && res.statusCode < 300) {

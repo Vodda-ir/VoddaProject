@@ -10,6 +10,32 @@ final appTheme = ThemeData(
   colorScheme: _colorScheme,
   scaffoldBackgroundColor: const Color(0xFFF1F3F8),
   fontFamily: 'IranYekan',
+  visualDensity: VisualDensity.adaptivePlatformDensity,
+  textTheme: const TextTheme(
+    headlineMedium: TextStyle(
+      fontFamily: 'IranYekan',
+      fontWeight: FontWeight.w900,
+      color: Color(0xFF11254B),
+    ),
+    headlineSmall: TextStyle(
+      fontFamily: 'IranYekan',
+      fontWeight: FontWeight.w800,
+      color: Color(0xFF11254B),
+    ),
+    titleLarge: TextStyle(
+      fontFamily: 'IranYekan',
+      fontWeight: FontWeight.w800,
+      color: Color(0xFF11254B),
+    ),
+    bodyLarge: TextStyle(
+      fontFamily: 'IranYekan',
+      color: Color(0xFF11254B),
+    ),
+    bodyMedium: TextStyle(
+      fontFamily: 'IranYekan',
+      color: Color(0xFF5F6D84),
+    ),
+  ),
   appBarTheme: AppBarTheme(
     centerTitle: true,
     backgroundColor: const Color(0xFFF1F3F8),
@@ -23,20 +49,69 @@ final appTheme = ThemeData(
       color: _colorScheme.onSurface,
     ),
   ),
+  filledButtonTheme: FilledButtonThemeData(
+    style: FilledButton.styleFrom(
+      backgroundColor: const Color(0xFF2F9446),
+      foregroundColor: Colors.white,
+      textStyle: const TextStyle(
+        fontFamily: 'IranYekan',
+        fontWeight: FontWeight.w800,
+        fontSize: 17,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+    ),
+  ),
+  outlinedButtonTheme: OutlinedButtonThemeData(
+    style: OutlinedButton.styleFrom(
+      foregroundColor: const Color(0xFF2F9446),
+      side: const BorderSide(color: Color(0xFF2F9446)),
+      textStyle: const TextStyle(
+        fontFamily: 'IranYekan',
+        fontWeight: FontWeight.w800,
+        fontSize: 16,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+    ),
+  ),
+  choiceChipTheme: ChoiceChipThemeData(
+    backgroundColor: Colors.white,
+    selectedColor: const Color(0xFF2F9446),
+    labelStyle: const TextStyle(
+      fontFamily: 'IranYekan',
+      fontWeight: FontWeight.w700,
+    ),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(999),
+    ),
+  ),
   inputDecorationTheme: InputDecorationTheme(
     filled: true,
-    fillColor: Colors.white.withOpacity(0.9),
+    fillColor: Colors.white.withOpacity(0.96),
     border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(18),
       borderSide: BorderSide(color: _colorScheme.outlineVariant),
     ),
     enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(18),
       borderSide: BorderSide(color: _colorScheme.outlineVariant),
     ),
     focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(18),
       borderSide: BorderSide(color: _colorScheme.primary, width: 1.4),
+    ),
+    labelStyle: const TextStyle(
+      fontFamily: 'IranYekan',
+      fontWeight: FontWeight.w700,
+    ),
+    hintStyle: const TextStyle(
+      fontFamily: 'IranYekan',
+      color: Color(0xFF97A2B3),
     ),
     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
   ),

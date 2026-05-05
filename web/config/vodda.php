@@ -7,8 +7,8 @@ return [
     ],
     'commission_percent' => (int) env('VODDA_PLATFORM_COMMISSION_PERCENT', 10),
     'demo' => [
-        'admin_mobile' => env('VODDA_DEMO_ADMIN_MOBILE', '09000000000'),
-        'teacher_mobile' => env('VODDA_DEMO_TEACHER_MOBILE', '09000000001'),
-        'learner_mobile' => env('VODDA_DEMO_LEARNER_MOBILE', '09000000002'),
+        'admin_mobile' => env('VODDA_DEMO_ADMIN_MOBILE', '09136336002'),
+        'teacher_mobile' => env('VODDA_DEMO_TEACHER_MOBILE', '09135550011'),
+        'learner_mobile' => env('VODDA_DEMO_LEARNER_MOBILE', '09914932678'),
     ],
 ];

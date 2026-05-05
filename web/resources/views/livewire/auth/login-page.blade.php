@@ -30,9 +30,9 @@
 
         <div class="note">
             <strong>شماره‌های نمونه seed:</strong>
-            <span>`09000000000` ادمین</span>
-            <span>`09000000001` استاد</span>
-            <span>`09000000002` قرآن‌آموز</span>
+            <span>`09136336002` ادمین</span>
+            <span>`09135550011` استاد</span>
+            <span>`09914932678` قرآن‌آموز</span>
         </div>
     </div>
 </section>

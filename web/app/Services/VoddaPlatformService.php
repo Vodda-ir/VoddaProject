@@ -22,7 +22,9 @@ class VoddaPlatformService
     {
         $query = TeacherProfile::query()
             ->with('user')
+            ->with('availabilitySlots')
             ->withAvg('ratings as average_rating', 'score')
+            ->withCount('bookings as total_bookings')
             ->latest();
 
         if ($onlyApproved) {
@@ -52,7 +54,9 @@ class VoddaPlatformService
     {
         $teacher = TeacherProfile::query()
             ->with('user')
+            ->with('availabilitySlots')
             ->withAvg('ratings as average_rating', 'score')
+            ->withCount('bookings as total_bookings')
             ->find($teacherId);
 
         if (! $teacher) {
@@ -66,7 +70,9 @@ class VoddaPlatformService
     {
         $profile = TeacherProfile::query()
             ->with('user')
+            ->with('availabilitySlots')
             ->withAvg('ratings as average_rating', 'score')
+            ->withCount('bookings as total_bookings')
             ->where('user_id', $user->id)
             ->first();
 
@@ -127,7 +133,9 @@ class VoddaPlatformService
     {
         return TeacherProfile::query()
             ->with('user')
+            ->with('availabilitySlots')
             ->withAvg('ratings as average_rating', 'score')
+            ->withCount('bookings as total_bookings')
             ->where('verification_status', 'pending')
             ->latest()
             ->get()
@@ -553,7 +561,7 @@ class VoddaPlatformService
 
     public function serializeTeacher(TeacherProfile $teacher): array
     {
-        $teacher->loadMissing('user');
+        $teacher->loadMissing(['user', 'availabilitySlots']);
 
         return [
             'id' => $teacher->id,
@@ -565,6 +573,19 @@ class VoddaPlatformService
             'price_per_30min' => (int) $teacher->price_per_30min,
             'verification_status' => $teacher->verification_status,
             'average_rating' => round((float) ($teacher->average_rating ?? 0), 1),
+            'total_bookings' => (int) ($teacher->total_bookings ?? $teacher->bookings()->count()),
+            'availability_slots' => $teacher->availabilitySlots
+                ->sortBy([
+                    ['day_of_week', 'asc'],
+                    ['start_time', 'asc'],
+                ])
+                ->map(fn ($slot) => [
+                    'day_of_week' => (int) $slot->day_of_week,
+                    'start_time' => substr((string) $slot->start_time, 0, 8),
+                    'end_time' => substr((string) $slot->end_time, 0, 8),
+                ])
+                ->values()
+                ->all(),
         ];
     }
 
