@@ -1,12 +1,14 @@
 import '../../../../core/api/client.dart';
+import '../domain/otp_request_result.dart';
 
 class AuthRepository {
   final ApiClient _client;
 
   AuthRepository(this._client);
 
-  Future<void> requestOtp(String mobile) async {
-    await _client.post('/auth/request-otp', {'mobile': mobile});
+  Future<OtpRequestResult> requestOtp(String mobile) async {
+    final res = await _client.post('/auth/request-otp', {'mobile': mobile});
+    return OtpRequestResult.fromJson(res);
   }
 
   Future<Map<String, dynamic>> verifyOtp(String mobile, String code) async {

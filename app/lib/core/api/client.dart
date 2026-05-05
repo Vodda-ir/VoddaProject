@@ -55,16 +55,31 @@ class ApiClient {
       if (res.body.isEmpty) return {};
       return jsonDecode(res.body) as Map<String, dynamic>;
     }
-    throw ApiException(res.statusCode, res.body);
+    throw ApiException.fromResponse(res.statusCode, res.body);
   }
 }
 
 class ApiException implements Exception {
   final int statusCode;
   final String body;
+  final String message;
 
-  ApiException(this.statusCode, this.body);
+  ApiException(this.statusCode, this.body, this.message);
+
+  factory ApiException.fromResponse(int statusCode, String body) {
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is Map<String, dynamic>) {
+        final message = (decoded['error'] ?? decoded['message'] ?? body).toString();
+        return ApiException(statusCode, body, message);
+      }
+    } catch (_) {
+      // fall through
+    }
+
+    return ApiException(statusCode, body, body.isEmpty ? 'درخواست با خطا مواجه شد.' : body);
+  }
 
   @override
-  String toString() => 'ApiException: $statusCode $body';
+  String toString() => 'ApiException: $statusCode $message';
 }

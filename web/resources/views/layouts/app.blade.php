@@ -23,12 +23,12 @@
             <a class="{{ request()->routeIs('about') ? 'is-active' : '' }}" href="{{ route('about') }}">درباره ما</a>
             <a class="{{ request()->routeIs('teachers.*') ? 'is-active' : '' }}" href="{{ route('teachers.index') }}">اساتید</a>
             @auth
-                <a class="{{ request()->routeIs('app.*') ? 'is-active' : '' }}" href="{{ route('app.dashboard') }}">پنل کاربر</a>
+                <a class="{{ request()->routeIs('app.*') ? 'is-active' : '' }}" href="{{ route('app.dashboard') }}">حساب من</a>
                 @if($viewer?->hasRole('teacher'))
-                    <a class="{{ request()->routeIs('teacher.*') ? 'is-active' : '' }}" href="{{ route('teacher.dashboard') }}">پنل استاد</a>
+                    <a class="{{ request()->routeIs('teacher.*') ? 'is-active' : '' }}" href="{{ route('teacher.dashboard') }}">فضای تدریس</a>
                 @endif
                 @if($viewer?->hasRole('admin'))
-                    <a class="{{ request()->routeIs('admin.*') ? 'is-active' : '' }}" href="{{ route('admin.teachers.pending') }}">ادمین</a>
+                    <a class="{{ request()->routeIs('admin.*') ? 'is-active' : '' }}" href="{{ route('admin.teachers.pending') }}">مدیریت</a>
                 @endif
             @endauth
         </nav>
@@ -43,7 +43,7 @@
                             <button class="pill {{ $viewer?->active_role === $role ? 'pill--active' : '' }}" type="submit">
                                 @if($role === 'learner') قرآن‌آموز @endif
                                 @if($role === 'teacher') استاد @endif
-                                @if($role === 'admin') ادمین @endif
+                                @if($role === 'admin') مدیر @endif
                             </button>
                         </form>
                     @endforeach
@@ -58,7 +58,7 @@
                     <button class="button button--ghost" type="submit">خروج</button>
                 </form>
             @else
-                <a class="button" href="{{ route('login') }}">ورود با OTP</a>
+                <a class="button" href="{{ route('login') }}">ورود</a>
             @endauth
         </div>
     </div>
@@ -73,7 +73,14 @@
         <div class="flash flash--error">{{ $errors->first('app') }}</div>
     @endif
 
-    {{ $slot ?? '' }}
+    @php($layoutSlot = $slot ?? null)
+
+    @if($layoutSlot instanceof \Illuminate\Contracts\Support\Htmlable)
+        {{ $layoutSlot }}
+    @elseif(is_string($layoutSlot) && $layoutSlot !== '')
+        {!! $layoutSlot !!}
+    @endif
+
     @yield('content')
 </main>
 

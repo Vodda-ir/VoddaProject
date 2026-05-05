@@ -14,6 +14,12 @@ class LoginPage extends Component
 
     public bool $otpRequested = false;
 
+    public ?string $otpMessage = null;
+
+    public bool $otpReusedExistingCode = false;
+
+    public ?string $otpExpiresAt = null;
+
     public ?string $redirectTo = null;
 
     public function mount(): void
@@ -24,10 +30,14 @@ class LoginPage extends Component
     public function requestOtp(): void
     {
         $service = app(OtpAuthService::class);
-        $service->requestOtp($this->mobile);
+        $result = $service->requestOtp($this->mobile);
 
         $this->otpRequested = true;
-        session()->flash('status', 'کد ورود ارسال شد. در حالت پیش‌فرض از کد آزمایشی استفاده می‌شود.');
+        $this->code = '';
+        $this->otpMessage = (string) ($result['message'] ?? 'کد تأیید ارسال شد.');
+        $this->otpReusedExistingCode = (bool) ($result['reused_existing_code'] ?? false);
+        $this->otpExpiresAt = (string) ($result['expires_at'] ?? '');
+        $this->dispatch('vodda-otp-requested');
     }
 
     public function verifyOtp()
@@ -47,6 +57,24 @@ class LoginPage extends Component
         return view('livewire.auth.login-page')->layout('layouts.app', [
             'title' => 'ورود به وُدّا',
         ]);
+    }
+
+    public function collapseOtp(): void
+    {
+        $this->otpRequested = false;
+        $this->code = '';
+        $this->otpExpiresAt = null;
+        $this->otpReusedExistingCode = false;
+        $this->otpMessage = 'مهلت استفاده از کد تمام شد. برای دریافت کد تازه دوباره اقدام کنید.';
+    }
+
+    public function resetOtpFlow(): void
+    {
+        $this->otpRequested = false;
+        $this->code = '';
+        $this->otpExpiresAt = null;
+        $this->otpReusedExistingCode = false;
+        $this->otpMessage = null;
     }
 
     protected function defaultRouteFor($user): string

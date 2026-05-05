@@ -7,7 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/api/client.dart';
 import '../../../core/utils/formatters.dart';
-import '../data/vodda_repository.dart';
+// import '../data/vodda_repository.dart';
 import '../domain/vodda_models.dart';
 import '../vodda_provider.dart';
 
@@ -36,13 +36,17 @@ class VoddaPageScaffold extends StatelessWidget {
                 children: [
                   IconButton(
                     onPressed: () => context.pop(),
-                    icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF66748D)),
+                    icon: const Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: Color(0xFF66748D),
+                    ),
                   ),
                   Expanded(
                     child: Text(
                       title,
                       textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(
                             color: const Color(0xFF11254B),
                             fontWeight: FontWeight.w900,
                           ),
@@ -69,10 +73,7 @@ class VoddaPageScaffold extends StatelessWidget {
 class VoddaLoadingScaffold extends StatelessWidget {
   final String title;
 
-  const VoddaLoadingScaffold({
-    super.key,
-    required this.title,
-  });
+  const VoddaLoadingScaffold({super.key, required this.title});
 
   @override
   Widget build(BuildContext context) {
@@ -172,10 +173,7 @@ class VoddaAvatarBubble extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         gradient: LinearGradient(
-          colors: [
-            avatarColor(name),
-            avatarColor(name).withOpacity(0.72),
-          ],
+          colors: [avatarColor(name), avatarColor(name).withOpacity(0.72)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -282,7 +280,11 @@ class VoddaTeacherHeroCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(30),
               ),
               child: Center(
-                child: VoddaAvatarBubble(name: teacher.name, size: 160, textSize: 54),
+                child: VoddaAvatarBubble(
+                  name: teacher.name,
+                  size: 160,
+                  textSize: 54,
+                ),
               ),
             )
           else
@@ -298,7 +300,8 @@ class VoddaTeacherHeroCard extends StatelessWidget {
                       Text(
                         teacher.name,
                         textAlign: TextAlign.right,
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(
                               color: const Color(0xFF11254B),
                               fontWeight: FontWeight.w900,
                             ),
@@ -335,7 +338,9 @@ class VoddaTeacherHeroCard extends StatelessWidget {
                   icon: Icons.star_outline_rounded,
                   iconColor: const Color(0xFF5FBC6B),
                   label: 'امتیاز',
-                  value: toPersianDigits(teacher.averageRating.toStringAsFixed(1)),
+                  value: toPersianDigits(
+                    teacher.averageRating.toStringAsFixed(1),
+                  ),
                   accent: const Color(0xFFEAFCF0),
                 ),
               ),
@@ -374,10 +379,7 @@ class VoddaTeacherHeroCard extends StatelessWidget {
 class VoddaCompactTeacherHeader extends StatelessWidget {
   final Teacher teacher;
 
-  const VoddaCompactTeacherHeader({
-    super.key,
-    required this.teacher,
-  });
+  const VoddaCompactTeacherHeader({super.key, required this.teacher});
 
   @override
   Widget build(BuildContext context) {
@@ -387,7 +389,10 @@ class VoddaCompactTeacherHeader extends StatelessWidget {
           CircleAvatar(
             radius: 26,
             backgroundColor: const Color(0xFFF1F4FA),
-            child: const Icon(Icons.bookmark_border_rounded, color: Color(0xFF141D25)),
+            child: const Icon(
+              Icons.bookmark_border_rounded,
+              color: Color(0xFF141D25),
+            ),
           ),
           const Spacer(),
           Column(
@@ -436,17 +441,14 @@ class VoddaSectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        TextButton(
-          onPressed: onTap,
-          child: Text(actionLabel),
-        ),
+        TextButton(onPressed: onTap, child: Text(actionLabel)),
         const Spacer(),
         Text(
           title,
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: const Color(0xFF11254B),
-                fontWeight: FontWeight.w900,
-              ),
+            color: const Color(0xFF11254B),
+            fontWeight: FontWeight.w900,
+          ),
         ),
       ],
     );
@@ -485,10 +487,7 @@ class VoddaServiceTile extends StatelessWidget {
           Text(
             title,
             textAlign: TextAlign.center,
-            style: TextStyle(
-              color: textColor,
-              fontWeight: FontWeight.w800,
-            ),
+            style: TextStyle(color: textColor, fontWeight: FontWeight.w800),
           ),
         ],
       ),
@@ -525,7 +524,11 @@ class VoddaPromoBanner extends StatelessWidget {
               color: Colors.white.withOpacity(0.12),
               borderRadius: BorderRadius.circular(20),
             ),
-            child: const Icon(Icons.menu_book_rounded, color: Colors.white, size: 40),
+            child: const Icon(
+              Icons.menu_book_rounded,
+              color: Colors.white,
+              size: 40,
+            ),
           ),
           const Spacer(),
           Column(
@@ -626,16 +629,26 @@ class VoddaTeacherCard extends StatelessWidget {
             const SizedBox(height: 10),
             Row(
               children: [
-                const Icon(Icons.star_rounded, color: Color(0xFFFFA321), size: 18),
+                const Icon(
+                  Icons.star_rounded,
+                  color: Color(0xFFFFA321),
+                  size: 18,
+                ),
                 const SizedBox(width: 4),
                 Text(
                   toPersianDigits(teacher.averageRating.toStringAsFixed(1)),
-                  style: const TextStyle(color: Color(0xFF11254B), fontWeight: FontWeight.w800),
+                  style: const TextStyle(
+                    color: Color(0xFF11254B),
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
                 const Spacer(),
                 Text(
                   formatCurrency(teacher.pricePer30Min),
-                  style: const TextStyle(color: Color(0xFF2F9446), fontWeight: FontWeight.w900),
+                  style: const TextStyle(
+                    color: Color(0xFF2F9446),
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
               ],
             ),
@@ -645,7 +658,9 @@ class VoddaTeacherCard extends StatelessWidget {
               style: FilledButton.styleFrom(
                 backgroundColor: const Color(0xFF2F9446),
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
               ),
               child: const Text('رزرو استاد'),
             ),
@@ -678,18 +693,27 @@ class VoddaTeacherListCard extends StatelessWidget {
                 CircleAvatar(
                   radius: 24,
                   backgroundColor: const Color(0xFFF5F7FB),
-                  child: const Icon(Icons.bookmark_border_rounded, color: Color(0xFF141D25)),
+                  child: const Icon(
+                    Icons.bookmark_border_rounded,
+                    color: Color(0xFF141D25),
+                  ),
                 ),
                 const SizedBox(height: 14),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFF2F9446),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: const Text(
                     'انتخاب',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
               ],
@@ -829,7 +853,10 @@ class _VoddaBookingAccordionState extends State<VoddaBookingAccordion> {
             leading: AnimatedRotation(
               duration: const Duration(milliseconds: 160),
               turns: _expanded ? 0.5 : 0,
-              child: const Icon(Icons.expand_more_rounded, color: Color(0xFF718096)),
+              child: const Icon(
+                Icons.expand_more_rounded,
+                color: Color(0xFF718096),
+              ),
             ),
             title: Text(
               widget.title,
@@ -878,7 +905,11 @@ class VoddaBookingCard extends StatelessWidget {
             Row(
               children: [
                 if (onOpenTeacher != null)
-                  VoddaAvatarBubble(name: booking.teacherName, size: 78, textSize: 20),
+                  VoddaAvatarBubble(
+                    name: booking.teacherName,
+                    size: 78,
+                    textSize: 20,
+                  ),
                 const Spacer(),
                 Expanded(
                   flex: 3,
@@ -895,7 +926,11 @@ class VoddaBookingCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        formatDateTimeRange(booking.slotDate, booking.slotStart, booking.slotEnd),
+                        formatDateTimeRange(
+                          booking.slotDate,
+                          booking.slotStart,
+                          booking.slotEnd,
+                        ),
                         textAlign: TextAlign.right,
                         style: const TextStyle(
                           color: Color(0xFF7A8396),
@@ -915,7 +950,11 @@ class VoddaBookingCard extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(width: 6),
-                          Icon(Icons.access_time_rounded, color: bookingStatusColor(booking.status), size: 20),
+                          Icon(
+                            Icons.access_time_rounded,
+                            color: bookingStatusColor(booking.status),
+                            size: 20,
+                          ),
                         ],
                       ),
                     ],
@@ -928,10 +967,7 @@ class VoddaBookingCard extends StatelessWidget {
               Text(
                 booking.notes,
                 textAlign: TextAlign.right,
-                style: const TextStyle(
-                  color: Color(0xFF708094),
-                  height: 1.8,
-                ),
+                style: const TextStyle(color: Color(0xFF708094), height: 1.8),
               ),
             ],
             const SizedBox(height: 12),
@@ -942,7 +978,9 @@ class VoddaBookingCard extends StatelessWidget {
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xFF2F9446),
                     side: const BorderSide(color: Color(0xFF2F9446)),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                   ),
                   child: const Text('جزئیات'),
                 ),
@@ -965,17 +1003,16 @@ class VoddaBookingCard extends StatelessWidget {
 class VoddaNotificationTile extends ConsumerWidget {
   final VoddaNotification notification;
 
-  const VoddaNotificationTile({
-    super.key,
-    required this.notification,
-  });
+  const VoddaNotificationTile({super.key, required this.notification});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return GestureDetector(
       onTap: () async {
         if (!notification.isRead) {
-          await ref.read(voddaRepositoryProvider).markNotificationRead(notification.id);
+          await ref
+              .read(voddaRepositoryProvider)
+              .markNotificationRead(notification.id);
           ref.invalidate(notificationsProvider);
         }
       },
@@ -985,17 +1022,25 @@ class VoddaNotificationTile extends ConsumerWidget {
           color: notification.isRead ? Colors.white : const Color(0xFFEAF8EE),
           borderRadius: BorderRadius.circular(22),
           border: Border.all(
-            color: notification.isRead ? const Color(0xFFE6EDF5) : const Color(0xFFBFE4C9),
+            color: notification.isRead
+                ? const Color(0xFFE6EDF5)
+                : const Color(0xFFBFE4C9),
           ),
         ),
         child: Row(
           children: [
             CircleAvatar(
               radius: 24,
-              backgroundColor: notification.isRead ? const Color(0xFFF1F4FA) : const Color(0xFF2F9446),
+              backgroundColor: notification.isRead
+                  ? const Color(0xFFF1F4FA)
+                  : const Color(0xFF2F9446),
               child: Icon(
-                notification.isRead ? Icons.notifications_none_rounded : Icons.notifications_active_outlined,
-                color: notification.isRead ? const Color(0xFF6D7890) : Colors.white,
+                notification.isRead
+                    ? Icons.notifications_none_rounded
+                    : Icons.notifications_active_outlined,
+                color: notification.isRead
+                    ? const Color(0xFF6D7890)
+                    : Colors.white,
               ),
             ),
             const SizedBox(width: 12),
@@ -1118,10 +1163,7 @@ class VoddaProfileMenuTile extends StatelessWidget {
       ),
       subtitle: subtitle == null
           ? null
-          : Text(
-              subtitle!,
-              textAlign: TextAlign.right,
-            ),
+          : Text(subtitle!, textAlign: TextAlign.right),
     );
   }
 }
@@ -1166,10 +1208,7 @@ class VoddaMiniCounter extends StatelessWidget {
 class VoddaStatusBanner extends StatelessWidget {
   final String status;
 
-  const VoddaStatusBanner({
-    super.key,
-    required this.status,
-  });
+  const VoddaStatusBanner({super.key, required this.status});
 
   @override
   Widget build(BuildContext context) {
@@ -1231,7 +1270,13 @@ class VoddaPaymentMethodTile extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(icon, color: enabled ? const Color(0xFF111926) : const Color(0xFFAEAEAE), size: 34),
+            Icon(
+              icon,
+              color: enabled
+                  ? const Color(0xFF111926)
+                  : const Color(0xFFAEAEAE),
+              size: 34,
+            ),
             const Spacer(),
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
@@ -1239,7 +1284,9 @@ class VoddaPaymentMethodTile extends StatelessWidget {
                 Text(
                   title,
                   style: TextStyle(
-                    color: enabled ? const Color(0xFF11254B) : const Color(0xFFAEAEAE),
+                    color: enabled
+                        ? const Color(0xFF11254B)
+                        : const Color(0xFFAEAEAE),
                     fontSize: 20,
                     fontWeight: FontWeight.w900,
                   ),
@@ -1248,7 +1295,9 @@ class VoddaPaymentMethodTile extends StatelessWidget {
                 Text(
                   subtitle,
                   style: TextStyle(
-                    color: enabled ? const Color(0xFF68758A) : const Color(0xFFB6B6B6),
+                    color: enabled
+                        ? const Color(0xFF68758A)
+                        : const Color(0xFFB6B6B6),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -1291,10 +1340,7 @@ class VoddaEmptyStateCard extends StatelessWidget {
           Text(
             subtitle,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Color(0xFF69758A),
-              height: 1.8,
-            ),
+            style: const TextStyle(color: Color(0xFF69758A), height: 1.8),
           ),
         ],
       ),
@@ -1306,11 +1352,7 @@ class VoddaMetaRow extends StatelessWidget {
   final IconData icon;
   final String text;
 
-  const VoddaMetaRow({
-    super.key,
-    required this.icon,
-    required this.text,
-  });
+  const VoddaMetaRow({super.key, required this.icon, required this.text});
 
   @override
   Widget build(BuildContext context) {
@@ -1388,12 +1430,17 @@ Color avatarColor(String seed) {
     Color(0xFFEF4444),
   ];
 
-  final index = seed.runes.fold<int>(0, (sum, rune) => sum + rune) % palette.length;
+  final index =
+      seed.runes.fold<int>(0, (sum, rune) => sum + rune) % palette.length;
   return palette[index];
 }
 
 String initials(String value) {
-  final parts = value.trim().split(RegExp(r'\s+')).where((item) => item.isNotEmpty).toList();
+  final parts = value
+      .trim()
+      .split(RegExp(r'\s+'))
+      .where((item) => item.isNotEmpty)
+      .toList();
   if (parts.isEmpty) {
     return 'و';
   }
@@ -1406,7 +1453,9 @@ String initials(String value) {
 
 List<String> buildTimeOptions(Teacher teacher, DateTime date) {
   final dayOfWeek = date.weekday % 7;
-  final slots = teacher.availabilitySlots.where((slot) => slot.dayOfWeek == dayOfWeek).toList();
+  final slots = teacher.availabilitySlots
+      .where((slot) => slot.dayOfWeek == dayOfWeek)
+      .toList();
   if (slots.isEmpty) {
     return const [];
   }
@@ -1439,7 +1488,10 @@ String plusThirtyMinutes(String time) {
 }
 
 bool isPseudoBusy(DateTime date, String time) {
-  final seed = date.day + date.month + time.codeUnits.fold<int>(0, (sum, item) => sum + item);
+  final seed =
+      date.day +
+      date.month +
+      time.codeUnits.fold<int>(0, (sum, item) => sum + item);
   return seed % 5 == 0;
 }
 
@@ -1493,7 +1545,9 @@ void showWalletActions(BuildContext context, WidgetRef ref, int balance) {
               const SizedBox(height: 10),
               TextField(
                 controller: cardController,
-                decoration: const InputDecoration(labelText: 'شماره کارت برای برداشت'),
+                decoration: const InputDecoration(
+                  labelText: 'شماره کارت برای برداشت',
+                ),
               ),
               const SizedBox(height: 16),
               Row(
@@ -1501,7 +1555,8 @@ void showWalletActions(BuildContext context, WidgetRef ref, int balance) {
                   Expanded(
                     child: FilledButton(
                       onPressed: () async {
-                        final amount = int.tryParse(amountController.text.trim()) ?? 0;
+                        final amount =
+                            int.tryParse(amountController.text.trim()) ?? 0;
                         if (amount <= 0) {
                           return;
                         }
@@ -1516,13 +1571,22 @@ void showWalletActions(BuildContext context, WidgetRef ref, int balance) {
                           if (context.mounted) {
                             Navigator.of(context).pop();
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('شارژ کیف پول با موفقیت ثبت شد.')),
+                              const SnackBar(
+                                content: Text('شارژ کیف پول با موفقیت ثبت شد.'),
+                              ),
                             );
                           }
                         } catch (error) {
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(describeError(error, 'شارژ کیف پول انجام نشد.'))),
+                              SnackBar(
+                                content: Text(
+                                  describeError(
+                                    error,
+                                    'شارژ کیف پول انجام نشد.',
+                                  ),
+                                ),
+                              ),
                             );
                           }
                         }
@@ -1530,7 +1594,9 @@ void showWalletActions(BuildContext context, WidgetRef ref, int balance) {
                       style: FilledButton.styleFrom(
                         backgroundColor: const Color(0xFF2F9446),
                         foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
                       ),
                       child: const Text('شارژ آزمایشی'),
                     ),
@@ -1539,12 +1605,15 @@ void showWalletActions(BuildContext context, WidgetRef ref, int balance) {
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () async {
-                        final amount = int.tryParse(amountController.text.trim()) ?? 0;
+                        final amount =
+                            int.tryParse(amountController.text.trim()) ?? 0;
                         if (amount <= 0) {
                           return;
                         }
                         try {
-                          await ref.read(voddaRepositoryProvider).createWithdrawRequest(
+                          await ref
+                              .read(voddaRepositoryProvider)
+                              .createWithdrawRequest(
                                 amount: amount,
                                 bankInfo: {'card': cardController.text.trim()},
                               );
@@ -1552,13 +1621,22 @@ void showWalletActions(BuildContext context, WidgetRef ref, int balance) {
                           if (context.mounted) {
                             Navigator.of(context).pop();
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('درخواست برداشت ثبت شد.')),
+                              const SnackBar(
+                                content: Text('درخواست برداشت ثبت شد.'),
+                              ),
                             );
                           }
                         } catch (error) {
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(describeError(error, 'درخواست برداشت ثبت نشد.'))),
+                              SnackBar(
+                                content: Text(
+                                  describeError(
+                                    error,
+                                    'درخواست برداشت ثبت نشد.',
+                                  ),
+                                ),
+                              ),
                             );
                           }
                         }
@@ -1566,7 +1644,9 @@ void showWalletActions(BuildContext context, WidgetRef ref, int balance) {
                       style: OutlinedButton.styleFrom(
                         foregroundColor: const Color(0xFF2F9446),
                         side: const BorderSide(color: Color(0xFF2F9446)),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
                       ),
                       child: const Text('درخواست برداشت'),
                     ),
@@ -1634,7 +1714,11 @@ class VoddaTeachersMapCard extends StatelessWidget {
                         size: index == 0 ? 64 : 50,
                         textSize: index == 0 ? 18 : 14,
                       ),
-                      const Icon(Icons.location_on_rounded, color: Color(0xFF2F9446), size: 22),
+                      const Icon(
+                        Icons.location_on_rounded,
+                        color: Color(0xFF2F9446),
+                        size: 22,
+                      ),
                     ],
                   ),
                 );
@@ -1660,7 +1744,13 @@ class VoddaTeachersMapCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(22),
                   color: Colors.white,
                 ),
-                child: Center(child: VoddaAvatarBubble(name: featured.name, size: 60, textSize: 18)),
+                child: Center(
+                  child: VoddaAvatarBubble(
+                    name: featured.name,
+                    size: 60,
+                    textSize: 18,
+                  ),
+                ),
               ),
               const Spacer(),
               Expanded(
@@ -1681,7 +1771,10 @@ class VoddaTeachersMapCard extends StatelessWidget {
                     Text(
                       '${featured.specialty} - ${teacherLevelLabel(featured.level)}',
                       textAlign: TextAlign.right,
-                      style: const TextStyle(color: Color(0xFF6B7688), fontWeight: FontWeight.w700),
+                      style: const TextStyle(
+                        color: Color(0xFF6B7688),
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     const SizedBox(height: 6),
                     Text(
@@ -1700,7 +1793,9 @@ class VoddaTeachersMapCard extends StatelessWidget {
                 style: FilledButton.styleFrom(
                   backgroundColor: const Color(0xFF2F9446),
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
                 ),
                 child: const Text('جزئیات'),
               ),

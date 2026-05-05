@@ -11,12 +11,31 @@ use Illuminate\Support\Str;
 
 class OtpAuthService
 {
-    public function requestOtp(string $mobile): string
+    public function requestOtp(string $mobile): array
     {
         $mobile = $this->normalizeMobile($mobile);
-        $code = (string) config('vodda.otp.stub_code', '12345');
+        $existingOtp = OtpRequest::query()
+            ->where('mobile', $mobile)
+            ->whereNull('verified_at')
+            ->where('expires_at', '>', now())
+            ->latest('id')
+            ->first();
 
-        OtpRequest::query()->create([
+        if ($existingOtp) {
+            Log::info('vodda.otp.reused', [
+                'mobile' => $mobile,
+                'expires_at' => $existingOtp->expires_at?->toISOString(),
+            ]);
+
+            return $this->serializeOtpRequest(
+                otp: $existingOtp,
+                message: 'کد قبلی هنوز معتبر است. لطفاً از همان کد استفاده کنید.',
+                reusedExistingCode: true,
+            );
+        }
+
+        $code = (string) config('vodda.otp.stub_code', '12345');
+        $otp = OtpRequest::query()->create([
             'mobile' => $mobile,
             'code' => $code,
             'expires_at' => now()->addMinutes((int) config('vodda.otp.expires_in_minutes', 2)),
@@ -27,7 +46,11 @@ class OtpAuthService
             'code' => $code,
         ]);
 
-        return $code;
+        return $this->serializeOtpRequest(
+            otp: $otp,
+            message: 'کد تأیید ارسال شد.',
+            reusedExistingCode: false,
+        );
     }
 
     public function verifyForWeb(string $mobile, string $code): User
@@ -129,5 +152,18 @@ class OtpAuthService
         $user->syncActiveRole();
 
         return $user->fresh(['roles']);
+    }
+
+    protected function serializeOtpRequest(OtpRequest $otp, string $message, bool $reusedExistingCode): array
+    {
+        $expiresAt = $otp->expires_at;
+        $expiresInSeconds = max(0, ($expiresAt?->getTimestamp() ?? now()->getTimestamp()) - now()->getTimestamp());
+
+        return [
+            'message' => $message,
+            'reused_existing_code' => $reusedExistingCode,
+            'expires_in_seconds' => $expiresInSeconds,
+            'expires_at' => $expiresAt?->toISOString(),
+        ];
     }
 }

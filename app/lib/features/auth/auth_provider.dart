@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/api/client.dart';
 import 'domain/auth_state.dart';
+import 'domain/otp_request_result.dart';
 import 'data/auth_repository.dart';
 
 final apiClientProvider = Provider<ApiClient>((ref) {
@@ -29,8 +30,8 @@ class AuthNotifier extends Notifier<AuthState> {
     return const AuthState(initialized: false);
   }
 
-  Future<void> requestOtp(String mobile) async {
-    await ref.read(authRepositoryProvider).requestOtp(mobile);
+  Future<OtpRequestResult> requestOtp(String mobile) async {
+    return ref.read(authRepositoryProvider).requestOtp(mobile);
   }
 
   Future<void> verifyOtp(String mobile, String code) async {

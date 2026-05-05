@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\Rating;
+use App\Models\TeacherProfile;
 use App\Livewire\Admin\PendingTeachersPage;
 use App\Livewire\Admin\WithdrawRequestsPage;
 use App\Livewire\App\BookingsPage;
@@ -12,13 +14,41 @@ use App\Livewire\Teacher\IncomePage;
 use App\Livewire\Teacher\SessionsPage;
 use App\Livewire\Teachers\DirectoryPage;
 use App\Services\OtpAuthService;
+use App\Services\VoddaPlatformService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/healthz', fn () => response()->json(['status' => 'ok']));
 
-Route::view('/', 'pages.home')->name('home');
+Route::get('/', function (VoddaPlatformService $platform) {
+    return view('pages.home', [
+        'approvedTeachersCount' => rescue(
+            fn () => TeacherProfile::query()->where('verification_status', 'approved')->count(),
+            0,
+            false,
+        ),
+        'averageRating' => rescue(
+            fn () => round((float) Rating::query()->avg('score'), 1),
+            0,
+            false,
+        ),
+        'availabilitySlotsCount' => rescue(
+            fn () => TeacherProfile::query()
+                ->where('verification_status', 'approved')
+                ->withCount('availabilitySlots')
+                ->get()
+                ->sum('availability_slots_count'),
+            0,
+            false,
+        ),
+        'featuredTeachers' => rescue(
+            fn () => collect($platform->listTeachers())->take(3)->all(),
+            [],
+            false,
+        ),
+    ]);
+})->name('home');
 Route::view('/about', 'pages.about')->name('about');
 Route::get('/teachers', DirectoryPage::class)->name('teachers.index');
 

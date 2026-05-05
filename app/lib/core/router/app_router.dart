@@ -62,10 +62,16 @@ final appRouter = GoRouter(
           return const VoddaAppShell();
         }
         final mobile = state.uri.queryParameters['mobile'] ?? '';
+        final expiresAtRaw = state.uri.queryParameters['expires_at'];
+        final reusedExistingCode = state.uri.queryParameters['reused'] == '1';
         if (mobile.isEmpty) {
           return const LoginScreen();
         }
-        return VerifyOtpScreen(mobile: mobile);
+        return VerifyOtpScreen(
+          mobile: mobile,
+          expiresAt: DateTime.tryParse(expiresAtRaw ?? '') ?? DateTime.now().add(const Duration(minutes: 2)),
+          reusedExistingCode: reusedExistingCode,
+        );
       },
     ),
     GoRoute(

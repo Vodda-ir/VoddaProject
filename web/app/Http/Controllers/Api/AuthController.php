@@ -14,11 +14,9 @@ class AuthController extends Controller
             'mobile' => ['required', 'string'],
         ]);
 
-        $otpAuthService->requestOtp($data['mobile']);
-
-        return response()->json([
-            'message' => 'OTP sent',
-        ]);
+        return response()->json(
+            $otpAuthService->requestOtp($data['mobile']),
+        );
     }
 
     public function verifyOtp(Request $request, OtpAuthService $otpAuthService)
