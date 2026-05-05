@@ -24,9 +24,18 @@ class VoddaApp extends StatelessWidget {
     return MaterialApp.router(
       title: 'وُدّا',
       debugShowCheckedModeBanner: false,
+      builder: (context, child) {
+        final mediaQuery = MediaQuery.of(context);
+        return MediaQuery(
+          data: mediaQuery.copyWith(
+            textScaler: const TextScaler.linear(0.94),
+          ),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
       locale: const Locale('fa'),
       supportedLocales: const [Locale('fa'), Locale('en')],
-      localizationsDelegates: const [
+      localizationsDelegates: [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,

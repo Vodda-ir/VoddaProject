@@ -12,28 +12,77 @@ final appTheme = ThemeData(
   fontFamily: 'IranYekan',
   visualDensity: VisualDensity.adaptivePlatformDensity,
   textTheme: const TextTheme(
+    displaySmall: TextStyle(
+      fontFamily: 'IranYekan',
+      fontSize: 28,
+      fontWeight: FontWeight.w900,
+      color: Color(0xFF11254B),
+    ),
     headlineMedium: TextStyle(
       fontFamily: 'IranYekan',
+      fontSize: 22,
       fontWeight: FontWeight.w900,
       color: Color(0xFF11254B),
     ),
     headlineSmall: TextStyle(
       fontFamily: 'IranYekan',
+      fontSize: 20,
       fontWeight: FontWeight.w800,
       color: Color(0xFF11254B),
     ),
     titleLarge: TextStyle(
       fontFamily: 'IranYekan',
+      fontSize: 18,
       fontWeight: FontWeight.w800,
+      color: Color(0xFF11254B),
+    ),
+    titleMedium: TextStyle(
+      fontFamily: 'IranYekan',
+      fontSize: 16,
+      fontWeight: FontWeight.w700,
+      color: Color(0xFF11254B),
+    ),
+    titleSmall: TextStyle(
+      fontFamily: 'IranYekan',
+      fontSize: 14,
+      fontWeight: FontWeight.w700,
       color: Color(0xFF11254B),
     ),
     bodyLarge: TextStyle(
       fontFamily: 'IranYekan',
+      fontSize: 15,
+      height: 1.7,
       color: Color(0xFF11254B),
     ),
     bodyMedium: TextStyle(
       fontFamily: 'IranYekan',
+      fontSize: 14,
+      height: 1.7,
       color: Color(0xFF5F6D84),
+    ),
+    bodySmall: TextStyle(
+      fontFamily: 'IranYekan',
+      fontSize: 12,
+      height: 1.6,
+      color: Color(0xFF7B8799),
+    ),
+    labelLarge: TextStyle(
+      fontFamily: 'IranYekan',
+      fontSize: 14,
+      fontWeight: FontWeight.w700,
+      color: Color(0xFF11254B),
+    ),
+    labelMedium: TextStyle(
+      fontFamily: 'IranYekan',
+      fontSize: 12,
+      fontWeight: FontWeight.w700,
+      color: Color(0xFF5F6D84),
+    ),
+    labelSmall: TextStyle(
+      fontFamily: 'IranYekan',
+      fontSize: 11,
+      fontWeight: FontWeight.w600,
+      color: Color(0xFF7B8799),
     ),
   ),
   appBarTheme: AppBarTheme(
@@ -44,7 +93,7 @@ final appTheme = ThemeData(
     scrolledUnderElevation: 0,
     titleTextStyle: TextStyle(
       fontFamily: 'IranYekan',
-      fontSize: 20,
+      fontSize: 18,
       fontWeight: FontWeight.w700,
       color: _colorScheme.onSurface,
     ),
@@ -56,7 +105,7 @@ final appTheme = ThemeData(
       textStyle: const TextStyle(
         fontFamily: 'IranYekan',
         fontWeight: FontWeight.w800,
-        fontSize: 17,
+        fontSize: 15,
       ),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(18),
@@ -71,7 +120,7 @@ final appTheme = ThemeData(
       textStyle: const TextStyle(
         fontFamily: 'IranYekan',
         fontWeight: FontWeight.w800,
-        fontSize: 16,
+        fontSize: 15,
       ),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(18),
@@ -79,7 +128,7 @@ final appTheme = ThemeData(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
     ),
   ),
-  choiceChipTheme: ChoiceChipThemeData(
+  chipTheme: ChipThemeData(
     backgroundColor: Colors.white,
     selectedColor: const Color(0xFF2F9446),
     labelStyle: const TextStyle(
@@ -107,10 +156,12 @@ final appTheme = ThemeData(
     ),
     labelStyle: const TextStyle(
       fontFamily: 'IranYekan',
+      fontSize: 14,
       fontWeight: FontWeight.w700,
     ),
     hintStyle: const TextStyle(
       fontFamily: 'IranYekan',
+      fontSize: 14,
       color: Color(0xFF97A2B3),
     ),
     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),

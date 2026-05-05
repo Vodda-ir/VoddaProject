@@ -161,7 +161,7 @@ class VoddaAvatarBubble extends StatelessWidget {
     super.key,
     required this.name,
     required this.size,
-    this.textSize = 26,
+    this.textSize = 22,
   });
 
   @override
@@ -236,7 +236,7 @@ class VoddaInfoStatCard extends StatelessWidget {
             textAlign: TextAlign.right,
             style: const TextStyle(
               color: Color(0xFF11254B),
-              fontSize: 18,
+              fontSize: 16,
               fontWeight: FontWeight.w900,
             ),
           ),
@@ -308,7 +308,7 @@ class VoddaTeacherHeroCard extends StatelessWidget {
                         teacher.specialty,
                         style: const TextStyle(
                           color: Color(0xFF90A0B4),
-                          fontSize: 18,
+                          fontSize: 15,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -397,7 +397,7 @@ class VoddaCompactTeacherHeader extends StatelessWidget {
                 teacher.name,
                 style: const TextStyle(
                   color: Color(0xFF11254B),
-                  fontSize: 20,
+                  fontSize: 18,
                   fontWeight: FontWeight.w900,
                 ),
               ),
@@ -406,7 +406,7 @@ class VoddaCompactTeacherHeader extends StatelessWidget {
                 formatCurrency(teacher.pricePer30Min),
                 style: const TextStyle(
                   color: Color(0xFF66748D),
-                  fontSize: 16,
+                  fontSize: 14,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -535,7 +535,7 @@ class VoddaPromoBanner extends StatelessWidget {
                 title,
                 style: const TextStyle(
                   color: Color(0xFFFFDE74),
-                  fontSize: 28,
+                  fontSize: 24,
                   fontWeight: FontWeight.w900,
                 ),
               ),
@@ -608,7 +608,7 @@ class VoddaTeacherCard extends StatelessWidget {
               textAlign: TextAlign.right,
               style: const TextStyle(
                 color: Color(0xFF11254B),
-                fontSize: 18,
+                fontSize: 16,
                 fontWeight: FontWeight.w900,
               ),
             ),
@@ -704,7 +704,7 @@ class VoddaTeacherListCard extends StatelessWidget {
                     teacherLevelLabel(teacher.level),
                     style: const TextStyle(
                       color: Color(0xFF3B88E8),
-                      fontSize: 18,
+                      fontSize: 16,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
@@ -714,7 +714,7 @@ class VoddaTeacherListCard extends StatelessWidget {
                     textAlign: TextAlign.right,
                     style: const TextStyle(
                       color: Color(0xFF11254B),
-                      fontSize: 20,
+                      fontSize: 18,
                       fontWeight: FontWeight.w900,
                     ),
                   ),

@@ -82,7 +82,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                       'وُدّا',
                       style: TextStyle(
                         color: Color(0xFF10224A),
-                        fontSize: 30,
+                        fontSize: 26,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
@@ -92,7 +92,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Color(0xFF6B7688),
-                        fontSize: 15,
+                        fontSize: 14,
                         fontWeight: FontWeight.w500,
                         height: 1.8,
                       ),

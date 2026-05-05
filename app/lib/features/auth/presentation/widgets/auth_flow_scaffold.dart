@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:pinput/pinput.dart';
 
 enum AuthHeroVariant {
   mobile,
@@ -84,7 +85,7 @@ class AuthFlowScaffold extends StatelessWidget {
                                       : 'مرحله ۲ از ۲',
                                   style: theme.textTheme.labelLarge?.copyWith(
                                     color: const Color(0xFF23894A),
-                                    fontSize: 13,
+                                    fontSize: 12,
                                     fontWeight: FontWeight.w700,
                                   ),
                                 ),
@@ -97,7 +98,7 @@ class AuthFlowScaffold extends StatelessWidget {
                               style: theme.textTheme.headlineSmall?.copyWith(
                                 color: const Color(0xFF10224A),
                                 fontWeight: FontWeight.w800,
-                                fontSize: 26,
+                                fontSize: 22,
                                 height: 1.18,
                               ),
                             ),
@@ -107,7 +108,7 @@ class AuthFlowScaffold extends StatelessWidget {
                               textAlign: TextAlign.center,
                               style: theme.textTheme.bodyMedium?.copyWith(
                                 color: const Color(0xFF687387),
-                                fontSize: 14,
+                                fontSize: 13,
                                 height: 1.7,
                               ),
                             ),
@@ -228,7 +229,7 @@ class AuthPrimaryButton extends StatelessWidget {
               maxLines: 1,
               style: const TextStyle(
                 fontFamily: 'IranYekan',
-                fontSize: 16,
+                fontSize: 15,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0,
                 height: 1.1,
@@ -264,7 +265,7 @@ class AuthPhoneField extends StatelessWidget {
           LengthLimitingTextInputFormatter(11),
         ],
         style: const TextStyle(
-          fontSize: 18,
+          fontSize: 16,
           fontWeight: FontWeight.w600,
           letterSpacing: 0.6,
           color: Color(0xFF17302B),
@@ -272,9 +273,9 @@ class AuthPhoneField extends StatelessWidget {
         decoration: InputDecoration(
           filled: true,
           fillColor: const Color(0xFFEAF8EE),
-          hintText: '0912 345 6789',
+          hintText: '09xxxxxxxxx',
           hintStyle: TextStyle(
-            fontSize: 18,
+            fontSize: 16,
             color: const Color(0xFF758294).withOpacity(0.65),
             letterSpacing: 0.4,
           ),
@@ -294,31 +295,13 @@ class AuthPhoneField extends StatelessWidget {
               width: 1.6,
             ),
           ),
-          prefixIcon: Container(
-            alignment: Alignment.center,
-            width: 74,
-            margin: const EdgeInsets.symmetric(vertical: 10),
-            decoration: const BoxDecoration(
-              border: Border(
-                right: BorderSide(color: Color(0xFFBED8C5)),
-              ),
-            ),
-            child: const Text(
-              '+98',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF6B7B8E),
-              ),
-            ),
-          ),
         ),
       ),
     );
   }
 }
 
-class OtpCodeField extends StatefulWidget {
+class OtpCodeField extends StatelessWidget {
   final TextEditingController controller;
   final ValueChanged<String>? onChanged;
   final bool enabled;
@@ -333,102 +316,61 @@ class OtpCodeField extends StatefulWidget {
   });
 
   @override
-  State<OtpCodeField> createState() => _OtpCodeFieldState();
-}
-
-class _OtpCodeFieldState extends State<OtpCodeField> {
-  late final FocusNode _focusNode;
-
-  @override
-  void initState() {
-    super.initState();
-    _focusNode = FocusNode();
-    widget.controller.addListener(_rebuild);
-  }
-
-  @override
-  void dispose() {
-    widget.controller.removeListener(_rebuild);
-    _focusNode.dispose();
-    super.dispose();
-  }
-
-  void _rebuild() {
-    if (mounted) {
-      setState(() {});
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final value = widget.controller.text;
+    final defaultTheme = PinTheme(
+      width: 58,
+      height: 60,
+      textStyle: const TextStyle(
+        fontSize: 20,
+        fontWeight: FontWeight.w700,
+        color: Color(0xFF10224A),
+      ),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE9F8EC),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFCAE9D1)),
+      ),
+    );
 
-    return GestureDetector(
-      onTap: widget.enabled ? () => _focusNode.requestFocus() : null,
-      child: Directionality(
-        textDirection: TextDirection.ltr,
-        child: Stack(
-          children: [
-            Opacity(
-              opacity: 0.02,
-              child: TextField(
-                controller: widget.controller,
-                focusNode: _focusNode,
-                enabled: widget.enabled,
-                autofocus: true,
-                keyboardType: TextInputType.number,
-                maxLength: widget.length,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                  LengthLimitingTextInputFormatter(widget.length),
-                ],
-                onChanged: widget.onChanged,
-                decoration: const InputDecoration(
-                  counterText: '',
-                  border: InputBorder.none,
-                ),
-              ),
-            ),
-            IgnorePointer(
-              child: Row(
-                children: List.generate(widget.length, (index) {
-                  final hasValue = index < value.length;
-                  final char = hasValue ? value[index] : '';
-                  final isCurrent = value.length == index && value.length < widget.length;
-
-                  return Expanded(
-                    child: Padding(
-                      padding: EdgeInsets.only(left: index == widget.length - 1 ? 0 : 10),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 180),
-                        height: 60,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE9F8EC),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: isCurrent
-                                ? const Color(0xFF29C55B)
-                                : const Color(0xFFCAE9D1),
-                            width: isCurrent ? 1.6 : 1,
-                          ),
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          char,
-                          style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF10224A),
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                }),
-              ),
-            ),
-          ],
+    final focusedTheme = defaultTheme.copyDecorationWith(
+      border: Border.all(
+        color: const Color(0xFF29C55B),
+        width: 1.6,
+      ),
+      boxShadow: const [
+        BoxShadow(
+          color: Color(0x1F29C55B),
+          blurRadius: 12,
+          offset: Offset(0, 4),
         ),
+      ],
+    );
+
+    final submittedTheme = defaultTheme.copyDecorationWith(
+      border: Border.all(color: const Color(0xFF8FD8A2)),
+    );
+
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: Pinput(
+        controller: controller,
+        enabled: enabled,
+        length: length,
+        autofocus: true,
+        keyboardType: TextInputType.number,
+        inputFormatters: [
+          FilteringTextInputFormatter.digitsOnly,
+          LengthLimitingTextInputFormatter(length),
+        ],
+        defaultPinTheme: defaultTheme,
+        focusedPinTheme: focusedTheme,
+        submittedPinTheme: submittedTheme,
+        followingPinTheme: defaultTheme,
+        separatorBuilder: (index) => const SizedBox(width: 10),
+        pinputAutovalidateMode: PinputAutovalidateMode.disabled,
+        mainAxisAlignment: MainAxisAlignment.center,
+        onChanged: onChanged,
+        showCursor: false,
       ),
     );
   }

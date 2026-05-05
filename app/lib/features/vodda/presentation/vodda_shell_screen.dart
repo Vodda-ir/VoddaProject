@@ -633,7 +633,14 @@ class _BookingsTab extends ConsumerWidget {
                                 booking: booking,
                                 teacher: teacher,
                                 onOpen: () => onOpenBooking(booking),
-                                onOpenTeacher: teacher == null ? null : () => onOpenTeacher(teacher),
+                                onOpenTeacher: teacher == null
+                                    ? null
+                                    : () {
+                                        final resolvedTeacher = teacher;
+                                        if (resolvedTeacher != null) {
+                                          onOpenTeacher(resolvedTeacher);
+                                        }
+                                      },
                               ),
                             );
                           }).toList(),
@@ -1030,8 +1037,10 @@ class _BottomNav extends ConsumerWidget {
                       top: -2,
                       left: -2,
                       child: Container(
-                        minWidth: 24,
-                        height: 24,
+                        constraints: const BoxConstraints(
+                          minWidth: 24,
+                          minHeight: 24,
+                        ),
                         padding: const EdgeInsets.symmetric(horizontal: 6),
                         decoration: const BoxDecoration(
                           color: Color(0xFF42B79A),
