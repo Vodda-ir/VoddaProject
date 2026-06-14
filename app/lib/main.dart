@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -32,6 +33,20 @@ class VoddaApp extends ConsumerWidget {
       routerConfig: router,
       locale: const Locale('fa'),
       supportedLocales: const [Locale('fa'), Locale('en')],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ],
+      localeResolutionCallback: (locale, supportedLocales) {
+        if (locale != null && locale.languageCode == 'fa') {
+          return const Locale('fa');
+        }
+        if (locale != null && locale.languageCode == 'en') {
+          return const Locale('en');
+        }
+        return const Locale('fa'); // default to Persian
+      },
       // Force RTL for the whole app.
       builder: (context, child) => Directionality(
         textDirection: TextDirection.rtl,
