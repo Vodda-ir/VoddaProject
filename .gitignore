@@ -4,9 +4,7 @@ deploy.json
 vodda-docker-bundle.tar.gz*
 
 # env
-.env
-.env.local
-.env.production
+
 !.env.example
 
 # data
