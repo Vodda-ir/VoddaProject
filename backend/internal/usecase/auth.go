@@ -6,6 +6,7 @@ package usecase
 import (
 	"context"
 	"crypto/rand"
+	"log"
 	"math/big"
 	"strings"
 	"time"
@@ -63,11 +64,18 @@ func (uc *AuthUsecase) RequestOTP(ctx context.Context, mobile string) error {
 		return err
 	}
 
-	// In bypass mode (dev) we skip the actual SMS for the test code.
-	if uc.cfg.OTPTestBypassEnabled && code == uc.cfg.OTPTestCode {
+	// Dev mode: skip real SMS, just log the code.
+	if uc.cfg.OTPTestBypassEnabled {
+		log.Printf("📲 [dev] OTP for %s = %s", mobile, code)
 		return nil
 	}
-	return uc.sender.SendOTP(ctx, mobile, code)
+
+	// Production: send real SMS. Failure is logged but not fatal —
+	// the code is already in the database.
+	if err := uc.sender.SendOTP(ctx, mobile, code); err != nil {
+		log.Printf("⚠️  sms.ir send failed for %s: %v", mobile, err)
+	}
+	return nil
 }
 
 // VerifyOTP validates a code and returns a token, creating the user on first login.
