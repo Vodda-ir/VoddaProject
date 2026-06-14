@@ -33,8 +33,8 @@ func Run(db *gorm.DB) error {
 	}
 	log.Println("seed: populating demo data…")
 
-	// admin
-	admin := &domain.User{Name: "مدیر وُدّا", Mobile: "09000000000", Role: domain.RoleAdmin, City: "تهران", Active: true}
+	// admin — سیدمحمدامین عمرانی
+	admin := &domain.User{Name: "سیدمحمدامین عمرانی", Mobile: "09136336002", Role: domain.RoleAdmin, City: "تهران", Active: true}
 	db.Create(admin)
 
 	// a learner with wallet balance

@@ -48,7 +48,7 @@ func (s *SmsIR) SendOTP(ctx context.Context, mobile, code string) error {
 	body, _ := json.Marshal(verifyRequest{
 		Mobile:     mobile,
 		TemplateID: s.cfg.BodyID,
-		Parameters: []verifyParamKV{{Name: "CODE", Value: code}},
+		Parameters: []verifyParamKV{{Name: "VERIFICATIONCODE", Value: code}},
 	})
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.cfg.APIURL, bytes.NewReader(body))
 	if err != nil {

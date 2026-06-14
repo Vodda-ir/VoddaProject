@@ -31,6 +31,7 @@
 - ✅ config، اتصال DB (retry)، AutoMigrate، seed
 - ✅ مدل‌ها: User, Teacher, Service, Sample, WorkTime, Session, Review, Transaction, Withdrawal, OTP, Notification
 - ✅ احراز هویت: OTP پیامکی (sms.ir + stub) + JWT + bypass دیباگ
+- ✅ تنظیم سرویس پیامک sms.ir: قالب ۲۴۶۲۵۶ / پارامتر VERIFICATIONCODE / ادمین seed با شمارهٔ 09136336002 / کد پیشفرض لوکال 33365
 - ✅ API کاربران و پروفایل + become-teacher
 - ✅ API اساتید (لیست، جستجو، پروفایل)
 - ✅ API خدمات و زمان‌های کاری استاد

@@ -7,9 +7,9 @@ vodda-docker-bundle.tar.gz*
 
 !.env.example
 
-# data
-data/
-**/data/mysql/
+# data (only root-level Docker volumes)
+/data/
+/data/mysql/
 
 # backend (Go)
 backend/bin/

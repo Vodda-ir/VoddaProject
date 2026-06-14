@@ -80,13 +80,13 @@ func Load() *Config {
 		OTPResendCooldown: getDuration("OTP_RESEND_COOLDOWN", 2*time.Minute),
 		SMS: SMSConfig{
 			APIURL:         getEnv("SMS_API_URL", "https://api.sms.ir/v1/send/verify"),
-			APIKey:         getEnv("SMS_API_KEY", ""),
-			BodyID:         getInt("SMS_BODY_ID", 0),
+			APIKey:         getEnv("SMS_API_KEY", "gqgjNgGVa2EqRPIsMbL0tGdI8XIUhhcu4DvGP3cd8tJBlXa3VsR5j1W9hNzNaCAe"),
+			BodyID:         getInt("SMS_BODY_ID", 246256),
 			RequestTimeout: getDuration("SMS_REQUEST_TIMEOUT", 20*time.Second),
 		},
 		OTPTestBypassEnabled: getBool("OTP_TEST_BYPASS_ENABLED", true),
 		OTPTestCode:          getEnv("OTP_TEST_CODE", "33365"),
-		OTPTestMobile:        getEnv("OTP_TEST_MOBILE", ""),
+		OTPTestMobile:        getEnv("OTP_TEST_MOBILE", "09136336002"),
 		AutoSeed:             getBool("AUTO_SEED", true),
 		Zarinpal: ZarinpalConfig{
 			MerchantID: getEnv("ZARINPAL_MERCHANT_ID", ""),
