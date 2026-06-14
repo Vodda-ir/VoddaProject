@@ -1,0 +1,11 @@
+FROM node:24-alpine3.21
+WORKDIR /app
+RUN corepack enable
+COPY package.json pnpm-lock.yaml* package-lock.json* ./
+RUN if [ -f pnpm-lock.yaml ]; then corepack pnpm i; \
+    elif [ -f package-lock.json ]; then npm ci; \
+    else npm install; fi
+COPY . .
+ENV NEXT_TELEMETRY_DISABLED=1
+EXPOSE 3421
+CMD ["npm", "run", "dev"]

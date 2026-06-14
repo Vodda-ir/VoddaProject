@@ -1,0 +1,37 @@
+name: vodda
+description: "وُدّا — همراهِ یادگیری قرآن و مداحی"
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.12.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+
+  # state management
+  flutter_riverpod: ^2.6.1
+
+  # routing
+  go_router: ^14.6.2
+
+  # networking
+  dio: ^5.7.0
+
+  # local storage (token)
+  shared_preferences: ^2.3.3
+
+  # value equality
+  equatable: ^2.0.7
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  # NOTE: bundle a Persian font (e.g. Vazirmatn) under assets/fonts/ and declare
+  # it here for production. The app falls back to the platform font otherwise.

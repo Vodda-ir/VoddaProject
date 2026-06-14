@@ -1,0 +1,70 @@
+services:
+  mysql:
+    platform: ${DOCKER_PLATFORM:-linux/amd64}
+    image: mysql:8.0
+    pull_policy: never
+    command: ["--max_allowed_packet=512M", "--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD:?DB_PASSWORD is required}
+      - MYSQL_DATABASE=${DB_NAME:-vodda}
+    ports:
+      - "${MYSQL_PORT:-3422}:3306"
+    volumes:
+      - ./data/mysql:/var/lib/mysql
+    networks:
+      - vodda-network
+    restart: unless-stopped
+
+  backend:
+    platform: ${DOCKER_PLATFORM:-linux/amd64}
+    image: vodda-backend:prod
+    pull_policy: never
+    depends_on:
+      - mysql
+    environment:
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=${BACKEND_INTERNAL_PORT:-3420}
+      - APP_ENV=production
+      - FRONTEND_BASE_URL=${FRONTEND_BASE_URL:-https://vodda.ir}
+      - DB_HOST=${DB_HOST:-mysql}
+      - DB_PORT=${DB_PORT:-3306}
+      - DB_USER=${DB_USER:-root}
+      - DB_PASSWORD=${DB_PASSWORD:?DB_PASSWORD is required}
+      - DB_NAME=${DB_NAME:-vodda}
+      - JWT_SECRET=${JWT_SECRET:?JWT_SECRET is required}
+      - TOKEN_EXPIRATION=${TOKEN_EXPIRATION:-720h}
+      - SMS_API_URL=${SMS_API_URL:-https://api.sms.ir/v1/send/verify}
+      - SMS_API_KEY=${SMS_API_KEY:?SMS_API_KEY is required}
+      - SMS_BODY_ID=${SMS_BODY_ID:?SMS_BODY_ID is required}
+      - OTP_TEST_BYPASS_ENABLED=${OTP_TEST_BYPASS_ENABLED:-false}
+      - AUTO_SEED=${AUTO_SEED:-false}
+      - ZARINPAL_MERCHANT_ID=${ZARINPAL_MERCHANT_ID:?ZARINPAL_MERCHANT_ID is required}
+      - ZARINPAL_SANDBOX=${ZARINPAL_SANDBOX:-false}
+      - PLATFORM_COMMISSION_PERCENT=${PLATFORM_COMMISSION_PERCENT:-15}
+    ports:
+      - "${BACKEND_PORT:-3420}:${BACKEND_INTERNAL_PORT:-3420}"
+    networks:
+      - vodda-network
+    restart: unless-stopped
+
+  frontend:
+    platform: ${DOCKER_PLATFORM:-linux/amd64}
+    image: vodda-frontend:prod
+    pull_policy: never
+    depends_on:
+      - backend
+    environment:
+      - PORT=${FRONTEND_INTERNAL_PORT:-3421}
+      - HOSTNAME=0.0.0.0
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_BASE_URL=/api/v1
+      - SERVER_API_URL=${SERVER_API_URL:-http://backend:3420/api/v1}
+    ports:
+      - "${FRONTEND_PORT:-3421}:${FRONTEND_INTERNAL_PORT:-3421}"
+    networks:
+      - vodda-network
+    restart: unless-stopped
+
+networks:
+  vodda-network:
+    driver: bridge

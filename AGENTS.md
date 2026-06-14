@@ -27,4 +27,16 @@ mysql : 3422
 
 بعد از اتمام README رو هم کامل کن و یه پوشه docs براش بساز
 
-این کامند طراحی هست برات :
+این کامند طراحی اپ هست برات :
+Fetch this design file, read its readme, and implement the relevant aspects of the design. https://api.anthropic.com/v1/design/h/4t-ufF6R6JC273k_cabA3A?open_file=Vodda+User+App.html
+Implement: Vodda User App.html
+
+این کامند طراحی وبسایت هست:
+Fetch this design file, read its readme, and implement the relevant aspects of the design. https://api.anthropic.com/v1/design/h/iNhNPn2jPd6N6MzzANiWCA?open_file=Vodda+Website.html
+Implement: Vodda Website.html
+
+و این هم کامند طراحی پنل های سایت هست:
+Fetch this design file, read its readme, and implement the relevant aspects of the design. https://api.anthropic.com/v1/design/h/PMAULGZRHBUqln2gIQW7hg?open_file=Vodda+Panels.html
+Implement: Vodda Panels.html
+
+بر اساس این ها شروع کن و چک لیست درست کن هر کار میکنی تو چک لیست ثبت کن منم ببینم.

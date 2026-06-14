@@ -1,0 +1,78 @@
+services:
+  mysql:
+    platform: ${DOCKER_PLATFORM:-linux/amd64}
+    image: mysql:8.0
+    command: ["--max_allowed_packet=512M", "--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD:-vodda_secret}
+      - MYSQL_DATABASE=${DB_NAME:-vodda}
+    ports:
+      - "${MYSQL_PORT:-3422}:3306"
+    volumes:
+      - ./data/mysql:/var/lib/mysql
+    networks:
+      - vodda-network
+    restart: unless-stopped
+
+  backend:
+    platform: ${DOCKER_PLATFORM:-linux/amd64}
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    image: vodda-backend:dev
+    depends_on:
+      - mysql
+    environment:
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=3420
+      - APP_ENV=${APP_ENV:-development}
+      - FRONTEND_BASE_URL=${FRONTEND_BASE_URL:-http://localhost:3421}
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USER=${DB_USER:-root}
+      - DB_PASSWORD=${DB_PASSWORD:-vodda_secret}
+      - DB_NAME=${DB_NAME:-vodda}
+      - JWT_SECRET=${JWT_SECRET:-dev-insecure-secret}
+      - OTP_TEST_BYPASS_ENABLED=${OTP_TEST_BYPASS_ENABLED:-true}
+      - OTP_TEST_CODE=${OTP_TEST_CODE:-33365}
+      - OTP_TEST_MOBILE=${OTP_TEST_MOBILE:-}
+      - AUTO_SEED=${AUTO_SEED:-true}
+      - ZARINPAL_SANDBOX=${ZARINPAL_SANDBOX:-true}
+      - PLATFORM_COMMISSION_PERCENT=${PLATFORM_COMMISSION_PERCENT:-15}
+    volumes:
+      - ./backend:/app
+    ports:
+      - "${BACKEND_PORT:-3420}:3420"
+    networks:
+      - vodda-network
+
+  frontend:
+    platform: ${DOCKER_PLATFORM:-linux/amd64}
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    image: vodda-frontend:dev
+    depends_on:
+      - backend
+    environment:
+      - PORT=3421
+      - HOSTNAME=0.0.0.0
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_BASE_URL=/api/v1
+      - SERVER_API_URL=${SERVER_API_URL:-http://backend:3420/api/v1}
+      - WATCHPACK_POLLING=true
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+    ports:
+      - "${FRONTEND_PORT:-3421}:3421"
+    networks:
+      - vodda-network
+
+volumes:
+  frontend_node_modules:
+    driver: local
+
+networks:
+  vodda-network:
+    driver: bridge

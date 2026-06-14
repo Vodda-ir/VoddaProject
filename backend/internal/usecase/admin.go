@@ -1,0 +1,100 @@
+package usecase
+
+import (
+	"context"
+
+	"vodda/backend/internal/domain"
+)
+
+// AdminUsecase powers the admin panel: moderation and reporting.
+type AdminUsecase struct {
+	users    domain.UserRepository
+	teachers domain.TeacherRepository
+	sessions domain.SessionRepository
+	wallet   domain.WalletRepository
+	notif    domain.NotificationRepository
+}
+
+// NewAdminUsecase builds an AdminUsecase.
+func NewAdminUsecase(u domain.UserRepository, t domain.TeacherRepository, s domain.SessionRepository, w domain.WalletRepository, n domain.NotificationRepository) *AdminUsecase {
+	return &AdminUsecase{users: u, teachers: t, sessions: s, wallet: w, notif: n}
+}
+
+// Dashboard aggregates headline metrics for the admin home.
+type Dashboard struct {
+	Learners        int64 `json:"learners"`
+	Teachers        int64 `json:"teachers"`
+	PendingTeachers int64 `json:"pending_teachers"`
+	Sessions        int64 `json:"sessions"`
+	DoneSessions    int64 `json:"done_sessions"`
+	ChargeVolume    int64 `json:"charge_volume"`
+	Commission      int64 `json:"commission"`
+}
+
+// Dashboard computes the admin dashboard metrics.
+func (uc *AdminUsecase) Dashboard(ctx context.Context) (*Dashboard, error) {
+	d := &Dashboard{}
+	d.Learners, _ = uc.users.Count(ctx, domain.RoleLearner)
+	d.Teachers, _ = uc.teachers.Count(ctx, "")
+	d.PendingTeachers, _ = uc.teachers.Count(ctx, domain.TeacherPending)
+	d.Sessions, _ = uc.sessions.Count(ctx, "")
+	d.DoneSessions, _ = uc.sessions.Count(ctx, domain.SessionDone)
+	d.ChargeVolume, _ = uc.wallet.SumByType(ctx, domain.TxCharge)
+	d.Commission, _ = uc.wallet.SumByType(ctx, domain.TxCommission)
+	return d, nil
+}
+
+// ListUsers returns paginated accounts, optionally by role.
+func (uc *AdminUsecase) ListUsers(ctx context.Context, role domain.Role, limit, offset int) ([]domain.User, int64, error) {
+	return uc.users.List(ctx, role, limit, offset)
+}
+
+// SetUserActive toggles account access.
+func (uc *AdminUsecase) SetUserActive(ctx context.Context, id uint, active bool) error {
+	u, err := uc.users.ByID(ctx, id)
+	if err != nil {
+		return err
+	}
+	u.Active = active
+	return uc.users.Update(ctx, u)
+}
+
+// ListTeachers returns teachers filtered by status.
+func (uc *AdminUsecase) ListTeachers(ctx context.Context, status domain.TeacherStatus, limit, offset int) ([]domain.Teacher, int64, error) {
+	return uc.teachers.List(ctx, domain.TeacherFilter{Status: status, Limit: limit, Offset: offset})
+}
+
+// ReviewTeacher approves or rejects a pending teacher profile.
+func (uc *AdminUsecase) ReviewTeacher(ctx context.Context, id uint, approve bool) (*domain.Teacher, error) {
+	t, err := uc.teachers.ByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if approve {
+		t.Status = domain.TeacherApproved
+		t.Verified = true
+		uc.notify(ctx, t.UserID, "پروفایل تأیید شد", "پروفایل استادی شما تأیید و منتشر شد.")
+	} else {
+		t.Status = domain.TeacherRejected
+		t.Verified = false
+		uc.notify(ctx, t.UserID, "پروفایل رد شد", "پروفایل استادی شما تأیید نشد.")
+	}
+	if err := uc.teachers.Update(ctx, t); err != nil {
+		return nil, err
+	}
+	return t, nil
+}
+
+// ListSessions returns paginated sessions filtered by status.
+func (uc *AdminUsecase) ListSessions(ctx context.Context, status domain.SessionStatus, limit, offset int) ([]domain.Session, int64, error) {
+	return uc.sessions.List(ctx, status, limit, offset)
+}
+
+// ListWithdrawals returns payout requests filtered by status.
+func (uc *AdminUsecase) ListWithdrawals(ctx context.Context, status domain.WithdrawalStatus, limit, offset int) ([]domain.Withdrawal, int64, error) {
+	return uc.wallet.Withdrawals(ctx, status, limit, offset)
+}
+
+func (uc *AdminUsecase) notify(ctx context.Context, userID uint, title, body string) {
+	_ = uc.notif.Create(ctx, &domain.Notification{UserID: userID, Title: title, Body: body})
+}

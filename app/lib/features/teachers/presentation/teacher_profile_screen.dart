@@ -1,0 +1,101 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/fa.dart';
+import '../data/teacher_repository.dart';
+import '../domain/teacher.dart';
+
+final _teacherByIdProvider = FutureProvider.family<Teacher, int>(
+  (ref, id) => ref.watch(teacherRepositoryProvider).byId(id),
+);
+
+class TeacherProfileScreen extends ConsumerWidget {
+  const TeacherProfileScreen({super.key, required this.id});
+  final int id;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final teacher = ref.watch(_teacherByIdProvider(id));
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('پروفایل استاد')),
+      body: teacher.when(
+        loading: () => const Center(child: CircularProgressIndicator(color: AppColors.olive600)),
+        error: (e, _) => Center(child: Text('خطا: $e', style: const TextStyle(color: AppColors.rose))),
+        data: (t) => ListView(
+          padding: const EdgeInsets.all(20),
+          children: [
+            Center(
+              child: Column(
+                children: [
+                  CircleAvatar(
+                    radius: 44,
+                    backgroundColor: AppColors.olive100,
+                    child: Text(t.field.contains('مداحی') ? '🎤' : '📖', style: const TextStyle(fontSize: 38)),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(t.name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.ink)),
+                  const SizedBox(height: 4),
+                  Text(t.tag, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.olive600)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                _stat(Icons.star_rounded, faDigits(t.rating.toStringAsFixed(1)), 'امتیاز'),
+                _stat(Icons.event_available_outlined, faNumber(t.sessions), 'جلسه'),
+                _stat(Icons.people_alt_outlined, faNumber(t.followers), 'دنبال‌کننده'),
+              ],
+            ),
+            const SizedBox(height: 20),
+            const Text('درباره استاد', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.ink)),
+            const SizedBox(height: 8),
+            Text(t.bio, style: const TextStyle(fontSize: 14, height: 1.7, color: AppColors.ink2)),
+            const SizedBox(height: 20),
+            const Text('خدمات', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.ink)),
+            const SizedBox(height: 8),
+            ...t.services.map((s) => Card(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  child: ListTile(
+                    leading: const CircleAvatar(backgroundColor: AppColors.olive100, child: Icon(Icons.menu_book, color: AppColors.olive600)),
+                    title: Text(s.title, style: const TextStyle(fontWeight: FontWeight.w700)),
+                    subtitle: Text('${faNumber(s.duration)} دقیقه'),
+                    trailing: Text(toman(s.price), style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.olive700)),
+                  ),
+                )),
+          ],
+        ),
+      ),
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.all(16),
+        child: SizedBox(
+          height: 52,
+          child: ElevatedButton(
+            onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('رزرو جلسه — به‌زودی')),
+            ),
+            child: const Text('رزرو جلسه'),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _stat(IconData icon, String value, String label) => Expanded(
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(18)),
+          child: Column(
+            children: [
+              Icon(icon, color: AppColors.olive500, size: 22),
+              const SizedBox(height: 6),
+              Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.ink)),
+              Text(label, style: const TextStyle(fontSize: 12, color: AppColors.ink3)),
+            ],
+          ),
+        ),
+      );
+}

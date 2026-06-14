@@ -1,0 +1,84 @@
+/* ───────────────────────────────────────────────
+   Vodda — Spiritual & Calm design tokens
+   Soft olive + earthy / sand neutrals
+─────────────────────────────────────────────── */
+:root{
+  /* sand / warm neutrals */
+  --sand-50:#FAF8F2;
+  --sand-100:#F4F0E7;
+  --sand-150:#EDE8DB;
+  --sand-200:#E4DDCC;
+  --surface:#FFFFFF;
+  --surface-warm:#FCFAF4;
+
+  /* olive — soft, natural */
+  --olive-900:#2E3622;
+  --olive-800:#3C472B;
+  --olive-700:#4C5A36;
+  --olive-600:#5E6E43;
+  --olive-500:#728350;
+  --olive-400:#93A172;
+  --olive-300:#B6C09B;
+  --olive-200:#D6DCC4;
+  --olive-100:#E8ECDB;
+  --olive-50:#F2F5EA;
+
+  /* ink — warm near-black text */
+  --ink:#2A2820;
+  --ink-2:#56524733;
+  --ink-2s:#565247;
+  --ink-3:#8C8675;
+  --ink-4:#ABA593;
+
+  /* accents */
+  --gold:#BF9540;
+  --gold-soft:#E7D5A8;
+  --gold-bg:#F7EFD9;
+  --clay:#B0745A;
+  --clay-bg:#F6E7DF;
+  --rose:#A65151;
+  --info:#5E7E8C;
+
+  /* status */
+  --ok:#5E6E43;
+  --pending:#BF9540;
+  --danger:#A65151;
+
+  /* radii */
+  --r-xs:10px;
+  --r-sm:14px;
+  --r-md:18px;
+  --r-lg:24px;
+  --r-xl:30px;
+
+  /* shadow */
+  --sh-sm:0 1px 3px rgba(46,54,34,.05), 0 1px 2px rgba(46,54,34,.04);
+  --sh-md:0 6px 22px rgba(46,54,34,.07), 0 2px 6px rgba(46,54,34,.04);
+  --sh-lg:0 14px 40px rgba(46,54,34,.10), 0 4px 12px rgba(46,54,34,.05);
+  --sh-olive:0 10px 28px rgba(76,90,54,.28);
+
+  --font:'Yekan Bakh','Vazirmatn',system-ui,sans-serif;
+}
+
+*{box-sizing:border-box;margin:0;padding:0;}
+*::-webkit-scrollbar{width:0;height:0;display:none;}
+*{scrollbar-width:none;}
+
+html,body{font-family:var(--font);color:var(--ink);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;}
+input,textarea{font-family:inherit;}
+
+.num{font-feature-settings:"ss01";}
+
+/* fade / slide helpers for screen transitions.
+   Base state is fully visible; motion only runs when the browser supports it,
+   so content is never left hidden if an animation is frozen/skipped. */
+@keyframes vodda-fade{from{transform:translateY(10px);}to{transform:none;}}
+@media (prefers-reduced-motion: no-preference){
+  .scr-enter{animation:vodda-fade .34s cubic-bezier(.2,.7,.3,1) both;}
+}
+@keyframes vodda-pop{from{transform:scale(.9);}to{transform:none;}}
+
+/* subtle 8-point star geometric motif used very sparingly */
+.geo-faint{opacity:.05;}
