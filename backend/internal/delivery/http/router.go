@@ -78,6 +78,7 @@ func NewRouter(cfg *config.Config, h *Handler, tm *token.Manager) *gin.Engine {
 		teacher.PUT("/services/:id", h.UpdateService)
 		teacher.DELETE("/services/:id", h.DeleteService)
 		teacher.PUT("/work-times", h.SetWorkTimes)
+		teacher.GET("/work-times", h.MyWorkTimes)
 
 		teacher.GET("/sessions", h.TeacherSessions)
 		teacher.POST("/sessions/:id/accept", h.AcceptSession)

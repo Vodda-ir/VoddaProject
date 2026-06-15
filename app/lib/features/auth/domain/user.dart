@@ -12,6 +12,7 @@ class AppUser extends Equatable {
     required this.wallet,
     this.avatarUrl,
     this.teacherTag,
+    this.teacherAvailable = true,
   });
 
   final int id;
@@ -23,6 +24,7 @@ class AppUser extends Equatable {
   final int wallet;
   final String? avatarUrl;
   final String? teacherTag;
+  final bool teacherAvailable;
 
   bool get isTeacher => role == 'teacher' || role == 'admin';
 
@@ -38,6 +40,7 @@ class AppUser extends Equatable {
       wallet: j['wallet'] ?? 0,
       avatarUrl: j['avatar_url'] as String?,
       teacherTag: teacher?['tag'] as String?,
+      teacherAvailable: teacher?['available'] as bool? ?? true,
     );
   }
 

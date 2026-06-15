@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"errors"
 	"strings"
 
 	"vodda/backend/internal/domain"
@@ -35,15 +36,47 @@ func (uc *TeacherUsecase) Get(ctx context.Context, id uint) (*domain.Teacher, []
 }
 
 // Mine returns the teacher profile owned by the user.
+// Auto-creates a minimal teacher record if one doesn't exist yet.
 func (uc *TeacherUsecase) Mine(ctx context.Context, userID uint) (*domain.Teacher, error) {
-	return uc.teachers.ByUserID(ctx, userID)
+	t, err := uc.teachers.ByUserID(ctx, userID)
+	if err == nil {
+		return t, nil
+	}
+	if !errors.Is(err, domain.ErrNotFound) {
+		return nil, err
+	}
+	// Auto-create a minimal teacher profile
+	t = &domain.Teacher{UserID: userID}
+	if err := uc.teachers.Create(ctx, t); err != nil {
+		return nil, err
+	}
+	return t, nil
+}
+
+// MyWorkTimes returns the work times for the calling teacher.
+func (uc *TeacherUsecase) MyWorkTimes(ctx context.Context, userID uint) ([]domain.WorkTime, error) {
+	t, err := uc.teachers.ByUserID(ctx, userID)
+	if err != nil {
+		if errors.Is(err, domain.ErrNotFound) {
+			return nil, nil // no teacher record yet → empty list
+		}
+		return nil, err
+	}
+	return uc.teachers.WorkTimes(ctx, t.ID)
 }
 
 // UpdateMine updates editable teacher fields.
 func (uc *TeacherUsecase) UpdateMine(ctx context.Context, userID uint, in BecomeTeacherInput) (*domain.Teacher, error) {
 	t, err := uc.teachers.ByUserID(ctx, userID)
 	if err != nil {
-		return nil, err
+		if !errors.Is(err, domain.ErrNotFound) {
+			return nil, err
+		}
+		// Auto-create if not exists
+		t = &domain.Teacher{UserID: userID}
+		if err := uc.teachers.Create(ctx, t); err != nil {
+			return nil, err
+		}
 	}
 	if in.Tag != "" {
 		t.Tag = in.Tag
@@ -68,6 +101,9 @@ func (uc *TeacherUsecase) UpdateMine(ctx context.Context, userID uint, in Become
 	}
 	if in.Price60 > 0 {
 		t.Price60 = in.Price60
+	}
+	if in.Available != nil {
+		t.Available = *in.Available
 	}
 	if err := uc.teachers.Update(ctx, t); err != nil {
 		return nil, err

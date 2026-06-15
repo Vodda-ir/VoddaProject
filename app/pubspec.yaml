@@ -45,6 +45,9 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
+  assets:
+    - assets/images/vodda_logo.svg
+
   fonts:
     - family: IRANYekanXFaNum
       fonts:

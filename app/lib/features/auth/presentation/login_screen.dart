@@ -6,18 +6,22 @@ import 'package:go_router/go_router.dart';
 import 'package:pinput/pinput.dart';
 
 import '../../../core/network/error_message.dart';
+import '../../../core/providers.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/vodda_logo.dart';
 import '../data/auth_repository.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
-  const LoginScreen({super.key});
+  const LoginScreen({super.key, this.showSplash = false});
+
+  final bool showSplash;
 
   @override
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   final _mobile = TextEditingController();
   final _code = TextEditingController();
   final _codeFocus = FocusNode();
@@ -27,6 +31,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   String? _error;
 
   late final AnimationController _animCtrl;
+  late final AnimationController _introCtrl;
   late final Animation<double> _codeFade;
   late final Animation<double> _codeSlide;
 
@@ -39,6 +44,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     );
     _codeFade = CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut);
     _codeSlide = CurvedAnimation(parent: _animCtrl, curve: Curves.easeOutCubic);
+    _introCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+      value: widget.showSplash ? 0 : 1,
+    );
+    if (widget.showSplash) _finishSplash();
+  }
+
+  Future<void> _finishSplash() async {
+    await Future<void>.delayed(const Duration(seconds: 3));
+    if (!mounted) return;
+
+    final client = ref.read(dioClientProvider);
+    if (client.isAuthed) {
+      final prefs = ref.read(sharedPreferencesProvider);
+      context.go(prefs.getString('last_role') == 'teacher' ? '/t' : '/');
+      return;
+    }
+
+    await _introCtrl.forward();
   }
 
   Future<void> _requestOtp() async {
@@ -97,101 +122,127 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(28),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 20),
-                // Logo
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text(
-                      'وُدّا',
+        child: LayoutBuilder(
+          builder: (context, constraints) => AnimatedBuilder(
+            animation: _introCtrl,
+            builder: (context, child) {
+              final progress = Curves.easeInOutCubic.transform(
+                _introCtrl.value,
+              );
+              final logoWidth = 172 - (76 * progress);
+              final logoHeight = logoWidth * 2047 / 1772;
+              const titleHeight = 24.0;
+              const titleGap = 12.0;
+              final contentTop = ((constraints.maxHeight - 400) / 2).clamp(
+                20.0,
+                double.infinity,
+              );
+              final splashLogoTop =
+                  (constraints.maxHeight -
+                      logoHeight -
+                      titleGap -
+                      titleHeight) /
+                  2;
+              final logoTop =
+                  splashLogoTop * (1 - progress) + (contentTop * progress);
+              final titleTop = logoTop + logoHeight + titleGap;
+
+              return Stack(
+                children: [
+                  Positioned(
+                    top: logoTop,
+                    left: (constraints.maxWidth - logoWidth) / 2,
+                    width: logoWidth,
+                    height: logoHeight,
+                    child: const VoddaLogo(),
+                  ),
+                  Positioned(
+                    top: titleTop,
+                    left: 20,
+                    right: 20,
+                    height: titleHeight,
+                    child: const Text(
+                      ' نرم افزار تخصصی آموزش قرآن کریم',
+                      textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 34,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.olive700,
+                        color: AppColors.ink,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w900,
                       ),
                     ),
-                    const SizedBox(width: 6),
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 18),
-                      child: Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          color: AppColors.gold,
-                          shape: BoxShape.circle,
+                  ),
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      ignoring: progress < 1,
+                      child: Opacity(
+                        opacity: progress,
+                        child: Center(child: child),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+            child: _buildLoginForm(),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoginForm() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(28),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Final logo height + title gap + title height + requested spacing.
+          const SizedBox(height: 167),
+          _buildMobileField(),
+          const SizedBox(height: 16),
+          if (!_codeSent)
+            _submitBtn(
+              label: 'دریافت کد تأیید',
+              loading: _loadingOtp,
+              onTap: _requestOtp,
+            )
+          else
+            _buildCodeArea(),
+          if (_error != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 16),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.clayBg,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      LucideIcons.info,
+                      size: 18,
+                      color: AppColors.rose,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        _error!,
+                        style: const TextStyle(
+                          color: AppColors.rose,
+                          fontSize: 13,
                         ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 6),
-                const Text(
-                  'همراهِ یادگیری قرآن و مداحی',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: AppColors.ink3),
-                ),
-                const SizedBox(height: 40),
-
-                // --- Mobile number field ---
-                _buildMobileField(),
-                const SizedBox(height: 16),
-
-                // --- Submit / Code area ---
-                if (!_codeSent) ...[
-                  _submitBtn(
-                    label: 'دریافت کد تأیید',
-                    loading: _loadingOtp,
-                    onTap: _requestOtp,
-                  ),
-                ] else ...[
-                  _buildCodeArea(),
-                ],
-
-                // --- Error ---
-                if (_error != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 16),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.clayBg,
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            LucideIcons.info,
-                            size: 18,
-                            color: AppColors.rose,
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              _error!,
-                              style: const TextStyle(
-                                color: AppColors.rose,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-              ],
+              ),
             ),
-          ),
-        ),
+        ],
       ),
     );
   }
@@ -423,6 +474,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     _code.dispose();
     _codeFocus.dispose();
     _animCtrl.dispose();
+    _introCtrl.dispose();
     super.dispose();
   }
 }

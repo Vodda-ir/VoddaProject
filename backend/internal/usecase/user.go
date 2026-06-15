@@ -53,15 +53,16 @@ func (uc *UserUsecase) UpdateProfile(ctx context.Context, id uint, in UpdateProf
 
 // BecomeTeacherInput is the teacher onboarding payload.
 type BecomeTeacherInput struct {
-	Field   string
-	Tag     string
-	Level   string
-	City    string
-	Bio     string
-	Skills  []string
-	Price30 int64
-	Price60 int64
-	Female  bool
+	Field     string
+	Tag       string
+	Level     string
+	City      string
+	Bio       string
+	Skills    []string
+	Price30   int64
+	Price60   int64
+	Female    bool
+	Available *bool
 }
 
 // BecomeTeacher promotes a learner to a (pending) teacher profile.

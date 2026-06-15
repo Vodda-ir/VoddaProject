@@ -28,9 +28,11 @@ final routerProvider = Provider<GoRouter>((ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
 
   return GoRouter(
-    initialLocation: prefs.getString('last_role') == 'teacher' ? '/t' : '/',
+    initialLocation: '/launch',
     redirect: (context, state) {
+      final launching = state.matchedLocation == '/launch';
       final loggingIn = state.matchedLocation == '/login';
+      if (launching) return null;
       if (!client.isAuthed) return loggingIn ? null : '/login';
       // Save last role
       if (state.matchedLocation.startsWith('/t')) {
@@ -45,6 +47,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
+      GoRoute(
+        path: '/launch',
+        builder: (context, state) => const LoginScreen(showSplash: true),
+      ),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(
         path: '/teacher/:id',

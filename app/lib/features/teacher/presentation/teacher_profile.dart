@@ -6,6 +6,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/vodda_avatar.dart';
 import '../../auth/data/user_repository.dart';
+import '../data/teacher_repository.dart';
 
 /// Teacher profile / management screen.
 class TeacherProfile extends ConsumerWidget {
@@ -20,6 +21,7 @@ class TeacherProfile extends ConsumerWidget {
       orElse: () => null,
     );
     final tag = me.maybeWhen(data: (u) => u.teacherTag, orElse: () => 'مدرس');
+    final available = me.maybeWhen(data: (u) => u.teacherAvailable, orElse: () => true);
 
     final rows = [
       (
@@ -143,11 +145,11 @@ class TeacherProfile extends ConsumerWidget {
                   const Divider(height: 30, color: AppColors.sand100),
                   Row(
                     children: [
-                      const Expanded(
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
+                            const Text(
                               'وضعیت پذیرش جلسه',
                               style: TextStyle(
                                 fontSize: 13.5,
@@ -155,8 +157,8 @@ class TeacherProfile extends ConsumerWidget {
                               ),
                             ),
                             Text(
-                              'آماده دریافت درخواست جدید',
-                              style: TextStyle(
+                              available ? 'آماده دریافت درخواست جدید' : 'موقتاً غیرفعال',
+                              style: const TextStyle(
                                 fontSize: 11.5,
                                 color: AppColors.ink3,
                                 height: 1.6,
@@ -165,7 +167,13 @@ class TeacherProfile extends ConsumerWidget {
                           ],
                         ),
                       ),
-                      _Toggle(on: true),
+                      _Toggle(
+                        on: available,
+                        onChanged: (v) async {
+                          await ref.read(teacherRepositoryProvider).setAvailable(v);
+                          ref.invalidate(meProvider);
+                        },
+                      ),
                     ],
                   ),
                 ],
@@ -292,8 +300,9 @@ class TeacherProfile extends ConsumerWidget {
 }
 
 class _Toggle extends StatefulWidget {
-  const _Toggle({required this.on});
+  const _Toggle({required this.on, this.onChanged});
   final bool on;
+  final ValueChanged<bool>? onChanged;
 
   @override
   State<_Toggle> createState() => _ToggleState();
@@ -311,7 +320,10 @@ class _ToggleState extends State<_Toggle> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => setState(() => _on = !_on),
+      onTap: () {
+        setState(() => _on = !_on);
+        widget.onChanged?.call(_on);
+      },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         width: 46,

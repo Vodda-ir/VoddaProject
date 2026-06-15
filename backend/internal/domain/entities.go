@@ -89,6 +89,7 @@ type Teacher struct {
 	Price60   int64         `json:"price60"`
 	Female    bool          `json:"female"`
 	Verified  bool          `json:"verified"`
+	Available bool          `gorm:"default:true" json:"available"`
 	Status    TeacherStatus `gorm:"size:16;default:pending;index" json:"status"`
 	Rating    float64       `gorm:"default:0" json:"rating"`
 	Reviews   int           `gorm:"default:0" json:"reviews"`

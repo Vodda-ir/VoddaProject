@@ -169,7 +169,11 @@ func (h *Handler) BecomeTeacher(c *gin.Context) {
 		fail(c, domain.ErrValidation)
 		return
 	}
-	t, err := h.User.BecomeTeacher(c, userID(c), usecase.BecomeTeacherInput(in))
+	t, err := h.User.BecomeTeacher(c, userID(c), usecase.BecomeTeacherInput{
+		Field: in.Field, Tag: in.Tag, Level: in.Level, City: in.City,
+		Bio: in.Bio, Skills: in.Skills, Price30: in.Price30, Price60: in.Price60,
+		Female: in.Female,
+	})
 	if err != nil {
 		fail(c, err)
 		return
@@ -230,19 +234,21 @@ func (h *Handler) MyTeacher(c *gin.Context) {
 
 func (h *Handler) UpdateMyTeacher(c *gin.Context) {
 	var in struct {
-		Field   string   `json:"field"`
-		Tag     string   `json:"tag"`
-		Level   string   `json:"level"`
-		City    string   `json:"city"`
-		Bio     string   `json:"bio"`
-		Skills  []string `json:"skills"`
-		Price30 int64    `json:"price30"`
-		Price60 int64    `json:"price60"`
+		Field     string   `json:"field"`
+		Tag       string   `json:"tag"`
+		Level     string   `json:"level"`
+		City      string   `json:"city"`
+		Bio       string   `json:"bio"`
+		Skills    []string `json:"skills"`
+		Price30   int64    `json:"price30"`
+		Price60   int64    `json:"price60"`
+		Available *bool    `json:"available"`
 	}
 	_ = c.ShouldBindJSON(&in)
 	t, err := h.Teacher.UpdateMine(c, userID(c), usecase.BecomeTeacherInput{
 		Field: in.Field, Tag: in.Tag, Level: in.Level, City: in.City,
 		Bio: in.Bio, Skills: in.Skills, Price30: in.Price30, Price60: in.Price60,
+		Available: in.Available,
 	})
 	if err != nil {
 		fail(c, err)
@@ -315,6 +321,18 @@ func (h *Handler) SetWorkTimes(c *gin.Context) {
 	}
 	ok(c, gin.H{"saved": len(wt)})
 }
+
+// ── work times ──
+
+func (h *Handler) MyWorkTimes(c *gin.Context) {
+	wt, err := h.Teacher.MyWorkTimes(c, userID(c))
+	if err != nil {
+		fail(c, err)
+		return
+	}
+	ok(c, wt)
+}
+
 
 // ── sessions ──
 
