@@ -333,7 +333,6 @@ func (h *Handler) MyWorkTimes(c *gin.Context) {
 	ok(c, wt)
 }
 
-
 // ── sessions ──
 
 func (h *Handler) Book(c *gin.Context) {

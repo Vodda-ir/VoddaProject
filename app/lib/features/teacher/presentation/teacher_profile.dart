@@ -21,7 +21,10 @@ class TeacherProfile extends ConsumerWidget {
       orElse: () => null,
     );
     final tag = me.maybeWhen(data: (u) => u.teacherTag, orElse: () => 'مدرس');
-    final available = me.maybeWhen(data: (u) => u.teacherAvailable, orElse: () => true);
+    final available = me.maybeWhen(
+      data: (u) => u.teacherAvailable,
+      orElse: () => true,
+    );
 
     final rows = [
       (
@@ -157,7 +160,9 @@ class TeacherProfile extends ConsumerWidget {
                               ),
                             ),
                             Text(
-                              available ? 'آماده دریافت درخواست جدید' : 'موقتاً غیرفعال',
+                              available
+                                  ? 'آماده دریافت درخواست جدید'
+                                  : 'موقتاً غیرفعال',
                               style: const TextStyle(
                                 fontSize: 11.5,
                                 color: AppColors.ink3,
@@ -170,7 +175,9 @@ class TeacherProfile extends ConsumerWidget {
                       _Toggle(
                         on: available,
                         onChanged: (v) async {
-                          await ref.read(teacherRepositoryProvider).setAvailable(v);
+                          await ref
+                              .read(teacherRepositoryProvider)
+                              .setAvailable(v);
                           ref.invalidate(meProvider);
                         },
                       ),

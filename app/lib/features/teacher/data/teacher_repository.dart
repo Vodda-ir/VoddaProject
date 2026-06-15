@@ -24,16 +24,20 @@ class TeacherRepository {
     String icon = '',
   }) async {
     final dio = _ref.read(dioClientProvider).dio;
-    final res = await dio.post('/teacher/services', data: {
-      'title': title,
-      'duration': duration,
-      'price': price,
-      'icon': icon,
-    });
+    final res = await dio.post(
+      '/teacher/services',
+      data: {
+        'title': title,
+        'duration': duration,
+        'price': price,
+        'icon': icon,
+      },
+    );
     return res.data['data'] as Map<String, dynamic>;
   }
 
-  Future<void> updateService(int id, {
+  Future<void> updateService(
+    int id, {
     String? title,
     int? duration,
     int? price,
