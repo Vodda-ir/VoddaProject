@@ -87,7 +87,6 @@ class HomeScreen extends ConsumerWidget {
                         size: 58,
                         ring: true,
                         verified: t.verified,
-                        emoji: t.field.contains('مداحی') ? '🎤' : '📖',
                       ),
                       const SizedBox(height: 6),
                       Text(
@@ -177,7 +176,7 @@ class _Header extends ConsumerWidget {
         children: [
           Row(
             children: [
-              VoddaAvatar(size: 46, ring: true, emoji: '👤'),
+              VoddaAvatar(size: 46, ring: true),
               const SizedBox(width: 11),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

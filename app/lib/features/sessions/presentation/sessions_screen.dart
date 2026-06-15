@@ -160,7 +160,7 @@ class _SessionCard extends StatelessWidget {
           const SizedBox(height: 12),
           Row(
             children: [
-              const VoddaAvatar(size: 46, emoji: '📖'),
+              const VoddaAvatar(size: 46),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(

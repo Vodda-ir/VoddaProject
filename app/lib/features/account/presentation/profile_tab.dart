@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/vodda_avatar.dart';
 import '../../auth/data/auth_repository.dart';
 import '../../auth/data/user_repository.dart';
 
@@ -43,7 +44,7 @@ class ProfileTab extends ConsumerWidget {
               decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(24), boxShadow: const [BoxShadow(color: Color(0x0A2E3622), blurRadius: 6)]),
               child: Row(
                 children: [
-                  const CircleAvatar(radius: 31, backgroundColor: AppColors.olive100, child: Text('👤', style: TextStyle(fontSize: 26))),
+                  const VoddaAvatar(size: 62, ring: true),
                   const SizedBox(width: 14),
                   Expanded(
                     child: me.when(

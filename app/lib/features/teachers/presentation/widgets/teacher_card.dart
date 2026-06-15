@@ -46,7 +46,6 @@ class TeacherCard extends StatelessWidget {
                   size: 54,
                   ring: true,
                   verified: teacher.verified,
-                  emoji: teacher.field.contains('مداحی') ? '🎤' : '📖',
                 ),
                 const SizedBox(width: 12),
                 Expanded(

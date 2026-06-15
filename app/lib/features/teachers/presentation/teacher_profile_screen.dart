@@ -47,7 +47,6 @@ class TeacherProfileScreen extends ConsumerWidget {
                     size: 88,
                     ring: true,
                     verified: t.verified,
-                    emoji: t.field.contains('مداحی') ? '🎤' : '📖',
                   ),
                   const SizedBox(height: 12),
                   Text(
@@ -122,9 +121,14 @@ class TeacherProfileScreen extends ConsumerWidget {
               (s) => Card(
                 margin: const EdgeInsets.only(bottom: 10),
                 child: ListTile(
-                  leading: const CircleAvatar(
-                    backgroundColor: AppColors.olive100,
-                    child: Icon(Icons.menu_book, color: AppColors.olive600),
+                  leading: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: const BoxDecoration(
+                      color: AppColors.olive100,
+                      borderRadius: BorderRadius.all(Radius.circular(12)),
+                    ),
+                    child: const Icon(Icons.menu_book, color: AppColors.olive600),
                   ),
                   title: Text(
                     s.title,

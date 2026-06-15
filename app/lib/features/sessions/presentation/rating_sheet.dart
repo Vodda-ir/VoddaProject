@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/error_message.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/vodda_avatar.dart';
 import '../data/session_repository.dart';
 import '../domain/session.dart';
 
@@ -45,7 +46,7 @@ class _RatingSheetState extends ConsumerState<RatingSheet> {
           children: [
             Container(width: 42, height: 5, decoration: BoxDecoration(color: AppColors.sand200, borderRadius: BorderRadius.circular(9))),
             const SizedBox(height: 20),
-            const CircleAvatar(radius: 32, backgroundColor: AppColors.olive100, child: Text('📖', style: TextStyle(fontSize: 26))),
+            const VoddaAvatar(size: 64),
             const SizedBox(height: 12),
             Text('جلسه با ${widget.session.teacherName} چطور بود؟', textAlign: TextAlign.center, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
             const SizedBox(height: 4),

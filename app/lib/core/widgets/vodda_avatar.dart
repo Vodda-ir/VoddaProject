@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 
 /// Vodda-styled default avatar with geometric olive pattern.
-/// Mirrors the design's Avatar + Placeholder striped pattern.
 /// Never shows blue — always olive/sand tones.
+/// Defaults to a line-art person icon when no image is provided.
 class VoddaAvatar extends StatelessWidget {
   const VoddaAvatar({
     super.key,
@@ -12,7 +12,7 @@ class VoddaAvatar extends StatelessWidget {
     this.ring = false,
     this.verified = false,
     this.online = false,
-    this.emoji,
+    this.icon,
     this.imageUrl,
   });
 
@@ -20,11 +20,12 @@ class VoddaAvatar extends StatelessWidget {
   final bool ring;
   final bool verified;
   final bool online;
-  final String? emoji;
+  final IconData? icon;
   final String? imageUrl;
 
   @override
   Widget build(BuildContext context) {
+    final lineIcon = icon ?? Icons.person_outline_rounded;
     return Stack(
       clipBehavior: Clip.none,
       children: [
@@ -48,14 +49,26 @@ class VoddaAvatar extends StatelessWidget {
                 : null,
           ),
           clipBehavior: Clip.antiAlias,
-          child: imageUrl != null
-              ? Image.network(
-                  imageUrl!,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, e, s) =>
-                      _GeoPlaceholder(size: size, emoji: emoji),
-                )
-              : _GeoPlaceholder(size: size, emoji: emoji),
+          child: Stack(
+            children: [
+              // Patterned background
+              imageUrl != null
+                  ? Image.network(
+                      imageUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, e, s) => _GeoPlaceholder(size: size),
+                    )
+                  : _GeoPlaceholder(size: size),
+              // Line-icon overlay
+              Center(
+                child: Icon(
+                  lineIcon,
+                  size: size * 0.46,
+                  color: AppColors.olive400.withValues(alpha: 0.50),
+                ),
+              ),
+            ],
+          ),
         ),
         // Verified badge
         if (verified)
@@ -100,22 +113,20 @@ class VoddaAvatar extends StatelessWidget {
 
 /// Geometric striped placeholder — olive diagonal stripes + subtle 8-point star.
 class _GeoPlaceholder extends StatelessWidget {
-  const _GeoPlaceholder({required this.size, this.emoji});
+  const _GeoPlaceholder({required this.size});
   final double size;
-  final String? emoji;
 
   @override
   Widget build(BuildContext context) {
     return CustomPaint(
       size: Size(size, size),
-      painter: _StripedGeoPainter(emoji: emoji),
+      painter: _StripedGeoPainter(),
     );
   }
 }
 
 class _StripedGeoPainter extends CustomPainter {
-  _StripedGeoPainter({this.emoji});
-  final String? emoji;
+  _StripedGeoPainter();
 
   static const _color1 = AppColors.olive100;
   static const _color2 = AppColors.olive50;
@@ -206,24 +217,8 @@ class _StripedGeoPainter extends CustomPainter {
 
     canvas.drawPath(outerP, starPaint);
     canvas.drawPath(innerP, starPaint);
-
-    // Emoji in center if provided
-    if (emoji != null) {
-      final tp = TextPainter(
-        text: TextSpan(
-          text: emoji,
-          style: TextStyle(
-            fontSize: w * 0.38,
-            color: _accent.withValues(alpha: 0.45),
-          ),
-        ),
-        textDirection: TextDirection.ltr,
-      );
-      tp.layout();
-      tp.paint(canvas, Offset(cx - tp.width / 2, cy - tp.height / 2));
-    }
   }
 
   @override
-  bool shouldRepaint(covariant _StripedGeoPainter oldD) => emoji != oldD.emoji;
+  bool shouldRepaint(covariant _StripedGeoPainter oldD) => false;
 }
