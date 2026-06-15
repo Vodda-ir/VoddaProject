@@ -43,11 +43,7 @@ class TeacherProfileScreen extends ConsumerWidget {
             Center(
               child: Column(
                 children: [
-                  VoddaAvatar(
-                    size: 88,
-                    ring: true,
-                    verified: t.verified,
-                  ),
+                  VoddaAvatar(size: 88, ring: true, verified: t.verified),
                   const SizedBox(height: 12),
                   Text(
                     t.name,
@@ -128,7 +124,10 @@ class TeacherProfileScreen extends ConsumerWidget {
                       color: AppColors.olive100,
                       borderRadius: BorderRadius.all(Radius.circular(12)),
                     ),
-                    child: const Icon(Icons.menu_book, color: AppColors.olive600),
+                    child: const Icon(
+                      Icons.menu_book,
+                      color: AppColors.olive600,
+                    ),
                   ),
                   title: Text(
                     s.title,

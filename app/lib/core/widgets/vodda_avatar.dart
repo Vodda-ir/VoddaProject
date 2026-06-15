@@ -118,10 +118,7 @@ class _GeoPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      size: Size(size, size),
-      painter: _StripedGeoPainter(),
-    );
+    return CustomPaint(size: Size(size, size), painter: _StripedGeoPainter());
   }
 }
 

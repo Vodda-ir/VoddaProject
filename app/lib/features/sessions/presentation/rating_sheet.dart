@@ -24,12 +24,16 @@ class _RatingSheetState extends ConsumerState<RatingSheet> {
   Future<void> _submit() async {
     setState(() => _saving = true);
     try {
-      await ref.read(sessionRepositoryProvider).rate(widget.session.id, _rating, _text.text.trim());
+      await ref
+          .read(sessionRepositoryProvider)
+          .rate(widget.session.id, _rating, _text.text.trim());
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
       setState(() => _saving = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMessage(e))));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(errorMessage(e))));
       }
     }
   }
@@ -37,20 +41,39 @@ class _RatingSheetState extends ConsumerState<RatingSheet> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
       child: Container(
-        decoration: const BoxDecoration(color: AppColors.sand50, borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+        decoration: const BoxDecoration(
+          color: AppColors.sand50,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
         padding: const EdgeInsets.fromLTRB(22, 14, 22, 34),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(width: 42, height: 5, decoration: BoxDecoration(color: AppColors.sand200, borderRadius: BorderRadius.circular(9))),
+            Container(
+              width: 42,
+              height: 5,
+              decoration: BoxDecoration(
+                color: AppColors.sand200,
+                borderRadius: BorderRadius.circular(9),
+              ),
+            ),
             const SizedBox(height: 20),
             const VoddaAvatar(size: 64),
             const SizedBox(height: 12),
-            Text('جلسه با ${widget.session.teacherName} چطور بود؟', textAlign: TextAlign.center, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+            Text(
+              'جلسه با ${widget.session.teacherName} چطور بود؟',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            ),
             const SizedBox(height: 4),
-            Text(widget.session.service, style: const TextStyle(fontSize: 12.5, color: AppColors.ink3)),
+            Text(
+              widget.session.service,
+              style: const TextStyle(fontSize: 12.5, color: AppColors.ink3),
+            ),
             const SizedBox(height: 22),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -60,7 +83,11 @@ class _RatingSheetState extends ConsumerState<RatingSheet> {
                   onTap: () => setState(() => _rating = i + 1),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: Icon(on ? Icons.star_rounded : Icons.star_outline_rounded, size: 40, color: on ? AppColors.gold : AppColors.sand200),
+                    child: Icon(
+                      on ? Icons.star_rounded : Icons.star_outline_rounded,
+                      size: 40,
+                      color: on ? AppColors.gold : AppColors.sand200,
+                    ),
                   ),
                 );
               }),
@@ -69,7 +96,9 @@ class _RatingSheetState extends ConsumerState<RatingSheet> {
             TextField(
               controller: _text,
               maxLines: 3,
-              decoration: const InputDecoration(hintText: 'نظر خود را بنویسید… (اختیاری)'),
+              decoration: const InputDecoration(
+                hintText: 'نظر خود را بنویسید… (اختیاری)',
+              ),
             ),
             const SizedBox(height: 18),
             SizedBox(
@@ -78,7 +107,14 @@ class _RatingSheetState extends ConsumerState<RatingSheet> {
               child: ElevatedButton(
                 onPressed: _saving ? null : _submit,
                 child: _saving
-                    ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.4))
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2.4,
+                        ),
+                      )
                     : const Text('ثبت امتیاز'),
               ),
             ),

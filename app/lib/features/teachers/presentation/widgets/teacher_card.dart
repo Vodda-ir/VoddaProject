@@ -42,11 +42,7 @@ class TeacherCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                VoddaAvatar(
-                  size: 54,
-                  ring: true,
-                  verified: teacher.verified,
-                ),
+                VoddaAvatar(size: 54, ring: true, verified: teacher.verified),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(

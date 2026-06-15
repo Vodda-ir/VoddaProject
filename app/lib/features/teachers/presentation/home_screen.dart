@@ -7,6 +7,7 @@ import '../../../core/widgets/app_error.dart';
 import '../../../core/widgets/ui.dart';
 import '../../../core/widgets/vodda_avatar.dart';
 import '../../auth/data/user_repository.dart';
+import '../../teacher/presentation/role_sheet.dart';
 import '../data/teacher_repository.dart';
 import '../domain/teacher.dart';
 import 'widgets/teacher_card.dart';
@@ -83,11 +84,7 @@ class HomeScreen extends ConsumerWidget {
                   width: 60,
                   child: Column(
                     children: [
-                      VoddaAvatar(
-                        size: 58,
-                        ring: true,
-                        verified: t.verified,
-                      ),
+                      VoddaAvatar(size: 58, ring: true, verified: t.verified),
                       const SizedBox(height: 6),
                       Text(
                         t.name.split(' ').first,
@@ -162,6 +159,14 @@ class HomeScreen extends ConsumerWidget {
 class _Header extends ConsumerWidget {
   const _Header();
 
+  void _showRoleSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const RoleSheet(isTeacher: false),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final me = ref.watch(meProvider);
@@ -169,33 +174,74 @@ class _Header extends ConsumerWidget {
       data: (u) => u.name.isEmpty ? 'دوست' : u.name.split(' ').first,
       orElse: () => '',
     );
+    final isTeacher = me.maybeWhen(
+      data: (u) => u.isTeacher,
+      orElse: () => false,
+    );
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            children: [
-              VoddaAvatar(size: 46, ring: true),
-              const SizedBox(width: 11),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'وقت بخیر،',
-                    style: TextStyle(fontSize: 13, color: AppColors.ink3),
-                  ),
-                  Text(
-                    '$first جان 🌿',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.ink,
+          GestureDetector(
+            onTap: isTeacher ? () => _showRoleSheet(context) : null,
+            child: Row(
+              children: [
+                VoddaAvatar(size: 46, ring: true),
+                const SizedBox(width: 11),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'وقت بخیر،',
+                      style: TextStyle(fontSize: 13, color: AppColors.ink3),
                     ),
-                  ),
-                ],
-              ),
-            ],
+                    if (!isTeacher)
+                      Text(
+                        '$first جان 🌿',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.ink,
+                        ),
+                      )
+                    else
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '$first جان 🌿',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.ink,
+                            ),
+                          ),
+                          const Row(
+                            children: [
+                              Text(
+                                'تغییر حساب',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.olive700,
+                                ),
+                              ),
+                              SizedBox(width: 4),
+                              Icon(
+                                Icons.sync,
+                                size: 14,
+                                color: AppColors.olive600,
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
+              ],
+            ),
           ),
           Container(
             width: 44,
