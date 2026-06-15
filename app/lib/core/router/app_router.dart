@@ -58,6 +58,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       // Sub-screens without bottom nav (outside any ShellRoute)
       GoRoute(
+        path: '/profile/edit',
+        builder: (context, state) => const EditProfileScreen(),
+      ),
+      GoRoute(
         path: '/t/services',
         builder: (context, state) => const ServicesScreen(),
       ),
@@ -88,12 +92,6 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/profile',
             builder: (context, state) => const ProfileTab(),
-            routes: [
-              GoRoute(
-                path: 'edit',
-                builder: (context, state) => const EditProfileScreen(),
-              ),
-            ],
           ),
         ],
       ),
