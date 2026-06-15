@@ -128,6 +128,8 @@ func (uc *TeacherUsecase) AddService(ctx context.Context, userID uint, s *domain
 }
 
 // UpdateService edits a service owned by the teacher.
+// Only updates fields that are explicitly set (non-zero). Active is only
+// applied when s.ID is set AND the caller provides it via the handler.
 func (uc *TeacherUsecase) UpdateService(ctx context.Context, userID uint, s *domain.Service) error {
 	t, err := uc.teachers.ByUserID(ctx, userID)
 	if err != nil {
@@ -140,7 +142,36 @@ func (uc *TeacherUsecase) UpdateService(ctx context.Context, userID uint, s *dom
 	if existing.TeacherID != t.ID {
 		return domain.ErrForbidden
 	}
-	s.TeacherID = t.ID
+	// Merge: only overwrite fields that were provided
+	if s.Title != "" {
+		existing.Title = s.Title
+	}
+	if s.Duration > 0 {
+		existing.Duration = s.Duration
+	}
+	if s.Price > 0 {
+		existing.Price = s.Price
+	}
+	if s.Icon != "" {
+		existing.Icon = s.Icon
+	}
+	return uc.teachers.UpdateService(ctx, existing)
+}
+
+// ToggleServiceActive is a dedicated method to toggle a service's active state.
+func (uc *TeacherUsecase) ToggleServiceActive(ctx context.Context, userID uint, serviceID uint, active bool) error {
+	t, err := uc.teachers.ByUserID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	s, err := uc.teachers.ServiceByID(ctx, serviceID)
+	if err != nil {
+		return err
+	}
+	if s.TeacherID != t.ID {
+		return domain.ErrForbidden
+	}
+	s.Active = active
 	return uc.teachers.UpdateService(ctx, s)
 }
 

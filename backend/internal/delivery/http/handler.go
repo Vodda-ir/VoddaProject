@@ -268,7 +268,7 @@ func (h *Handler) AddService(c *gin.Context) {
 		fail(c, domain.ErrValidation)
 		return
 	}
-	s := &domain.Service{Title: in.Title, Duration: in.Duration, Price: in.Price, Icon: in.Icon}
+	s := &domain.Service{Title: in.Title, Duration: in.Duration, Price: in.Price, Icon: in.Icon, Active: false}
 	out, err := h.Teacher.AddService(c, userID(c), s)
 	if err != nil {
 		fail(c, err)
@@ -279,14 +279,31 @@ func (h *Handler) AddService(c *gin.Context) {
 
 func (h *Handler) UpdateService(c *gin.Context) {
 	var in struct {
-		Title    string `json:"title"`
-		Duration int    `json:"duration"`
-		Price    int64  `json:"price"`
-		Icon     string `json:"icon"`
-		Active   bool   `json:"active"`
+		Title    *string `json:"title"`
+		Duration *int    `json:"duration"`
+		Price    *int64  `json:"price"`
+		Icon     *string `json:"icon"`
+		Active   *bool   `json:"active"`
 	}
 	_ = c.ShouldBindJSON(&in)
-	s := &domain.Service{ID: paramID(c), Title: in.Title, Duration: in.Duration, Price: in.Price, Icon: in.Icon, Active: in.Active}
+	s := &domain.Service{ID: paramID(c)}
+	if in.Title != nil {
+		s.Title = *in.Title
+	}
+	if in.Duration != nil {
+		s.Duration = *in.Duration
+	}
+	if in.Price != nil {
+		s.Price = *in.Price
+	}
+	if in.Icon != nil {
+		s.Icon = *in.Icon
+	}
+	if in.Active != nil {
+		s.Active = *in.Active
+	}
+	// attach teacher ID and update
+	s.TeacherID = userID(c)
 	if err := h.Teacher.UpdateService(c, userID(c), s); err != nil {
 		fail(c, err)
 		return

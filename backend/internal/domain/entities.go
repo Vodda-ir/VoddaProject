@@ -122,7 +122,7 @@ type Service struct {
 	Duration  int    `json:"duration"` // minutes (30 / 60)
 	Price     int64  `json:"price"`
 	Icon      string `gorm:"size:30" json:"icon"`
-	Active    bool   `gorm:"default:true" json:"active"`
+	Active    bool   `gorm:"default:false" json:"active"`
 }
 
 // Sample is an audio work sample of a teacher.

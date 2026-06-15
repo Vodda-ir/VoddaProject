@@ -6,10 +6,8 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/fa.dart';
 import '../data/teacher_repository.dart';
 
-/// Teacher services management — connected to API.
 class ServicesScreen extends ConsumerStatefulWidget {
   const ServicesScreen({super.key});
-
   @override
   ConsumerState<ServicesScreen> createState() => _ServicesScreenState();
 }
@@ -23,7 +21,6 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
   @override
   Widget build(BuildContext context) {
     final services = ref.watch(myServicesProvider);
-
     return Scaffold(
       appBar: AppBar(title: const Text('خدمات من')),
       body: Column(
@@ -31,7 +28,7 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
           const Padding(
             padding: EdgeInsets.all(20),
             child: Text(
-              'خدماتی که برای قرآن‌آموزان قابل رزرو است.',
+              'خدماتی که برای قرآن‌آموزان قابل رزرو است. خدمت جدید پس از تأیید ادمین فعال می‌شود.',
               style: TextStyle(
                 fontSize: 13,
                 color: AppColors.ink3,
@@ -60,8 +57,7 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
                       separatorBuilder: (_, _) => const SizedBox(height: 12),
                       itemBuilder: (_, i) {
                         if (_adding && i == list.length) return _addForm();
-                        final s = list[i];
-                        return _serviceCard(s);
+                        return _serviceCard(list[i]);
                       },
                     ),
             ),
@@ -86,154 +82,240 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
 
   Widget _serviceCard(Map<String, dynamic> s) {
     final id = s['id'] as int;
-    final active = s['active'] as bool? ?? true;
+    final active = s['active'] as bool? ?? false;
     final title = s['title'] as String? ?? '';
     final duration = s['duration'] as int? ?? 30;
     final price = s['price'] as int? ?? 0;
-
-    return AnimatedOpacity(
-      duration: const Duration(milliseconds: 200),
-      opacity: active ? 1.0 : 0.55,
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: const [BoxShadow(color: Color(0x0A2E3622), blurRadius: 4)],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 46,
-              height: 46,
-              decoration: BoxDecoration(
-                color: AppColors.olive100,
-                borderRadius: BorderRadius.circular(13),
+    return GestureDetector(
+      onTap: () => _editService(id, title, duration, price),
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 200),
+        opacity: active ? 1.0 : 0.55,
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: const [
+              BoxShadow(color: Color(0x0A2E3622), blurRadius: 4),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: AppColors.olive100,
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                child: const Icon(
+                  LucideIcons.bookOpen,
+                  size: 23,
+                  color: AppColors.olive700,
+                ),
               ),
-              child: const Icon(
-                LucideIcons.bookOpen,
-                size: 23,
-                color: AppColors.olive700,
-              ),
-            ),
-            const SizedBox(width: 13),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
+              const SizedBox(width: 13),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            title,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        if (!active)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.goldBg,
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: const Text(
+                              'در انتظار تأیید',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.gold,
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${faNumber(duration)} دقیقه · ${faNumber(price)} تومان',
-                    style: const TextStyle(fontSize: 12, color: AppColors.ink3),
-                  ),
-                ],
+                    const SizedBox(height: 4),
+                    Text(
+                      '${faNumber(duration)} دقیقه · ${faNumber(price)} تومان',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.ink3,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            _Toggle(
-              on: active,
-              onChanged: (_) async {
-                await ref
-                    .read(teacherRepositoryProvider)
-                    .updateService(id, active: !active);
-                ref.invalidate(myServicesProvider);
-              },
-            ),
-          ],
+              _Toggle(
+                on: active,
+                onChanged: (v) async {
+                  await ref
+                      .read(teacherRepositoryProvider)
+                      .updateService(id, active: v);
+                  ref.invalidate(myServicesProvider);
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _addForm() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.olive500, width: 1.5),
-        boxShadow: const [BoxShadow(color: Color(0x0A2E3622), blurRadius: 4)],
-      ),
-      child: Column(
-        children: [
-          TextField(
-            controller: _titleCtrl,
-            decoration: const InputDecoration(
-              hintText: 'عنوان خدمت',
-              border: OutlineInputBorder(),
+  void _editService(int id, String title, int duration, int price) {
+    final tCtrl = TextEditingController(text: title);
+    final pCtrl = TextEditingController(text: price.toString());
+    int dur = duration;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('ویرایش خدمت'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: tCtrl,
+              decoration: const InputDecoration(labelText: 'عنوان'),
             ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: pCtrl,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'قیمت (تومان)'),
+            ),
+            const SizedBox(height: 10),
+            DropdownButtonFormField<int>(
+              initialValue: dur,
+              items: const [
+                DropdownMenuItem(value: 30, child: Text('۳۰ دقیقه')),
+                DropdownMenuItem(value: 60, child: Text('۶۰ دقیقه')),
+              ],
+              onChanged: (v) => dur = v ?? 30,
+              decoration: const InputDecoration(labelText: 'مدت'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('انصراف'),
           ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _priceCtrl,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    hintText: 'قیمت (تومان)',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              DropdownButton<int>(
-                value: _duration,
-                items: const [
-                  DropdownMenuItem(value: 30, child: Text('۳۰ دقیقه')),
-                  DropdownMenuItem(value: 60, child: Text('۶۰ دقیقه')),
-                ],
-                onChanged: (v) => setState(() => _duration = v ?? 30),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () {
-                    setState(() => _adding = false);
-                    _titleCtrl.clear();
-                    _priceCtrl.clear();
-                  },
-                  child: const Text('انصراف'),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () async {
-                    final title = _titleCtrl.text.trim();
-                    final price = int.tryParse(_priceCtrl.text.trim()) ?? 0;
-                    if (title.isEmpty || price <= 0) return;
-                    await ref
-                        .read(teacherRepositoryProvider)
-                        .addService(
-                          title: title,
-                          duration: _duration,
-                          price: price,
-                        );
-                    ref.invalidate(myServicesProvider);
-                    setState(() => _adding = false);
-                    _titleCtrl.clear();
-                    _priceCtrl.clear();
-                  },
-                  child: const Text('افزودن'),
-                ),
-              ),
-            ],
+          ElevatedButton(
+            onPressed: () async {
+              final nt = tCtrl.text.trim(),
+                  np = int.tryParse(pCtrl.text.trim()) ?? 0;
+              if (nt.isEmpty || np <= 0) return;
+              await ref
+                  .read(teacherRepositoryProvider)
+                  .updateService(id, title: nt, price: np, duration: dur);
+              ref.invalidate(myServicesProvider);
+              if (ctx.mounted) Navigator.pop(ctx);
+            },
+            child: const Text('ذخیره'),
           ),
         ],
       ),
     );
   }
+
+  Widget _addForm() => Container(
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: AppColors.surface,
+      borderRadius: BorderRadius.circular(18),
+      border: Border.all(color: AppColors.olive500, width: 1.5),
+      boxShadow: const [BoxShadow(color: Color(0x0A2E3622), blurRadius: 4)],
+    ),
+    child: Column(
+      children: [
+        TextField(
+          controller: _titleCtrl,
+          decoration: const InputDecoration(
+            hintText: 'عنوان خدمت',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _priceCtrl,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  hintText: 'قیمت (تومان)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            DropdownButton<int>(
+              value: _duration,
+              items: const [
+                DropdownMenuItem(value: 30, child: Text('۳۰ دقیقه')),
+                DropdownMenuItem(value: 60, child: Text('۶۰ دقیقه')),
+              ],
+              onChanged: (v) => setState(() => _duration = v ?? 30),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () {
+                  setState(() => _adding = false);
+                  _titleCtrl.clear();
+                  _priceCtrl.clear();
+                },
+                child: const Text('انصراف'),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: ElevatedButton(
+                onPressed: () async {
+                  final title = _titleCtrl.text.trim(),
+                      price = int.tryParse(_priceCtrl.text.trim()) ?? 0;
+                  if (title.isEmpty || price <= 0) return;
+                  await ref
+                      .read(teacherRepositoryProvider)
+                      .addService(
+                        title: title,
+                        duration: _duration,
+                        price: price,
+                      );
+                  ref.invalidate(myServicesProvider);
+                  setState(() => _adding = false);
+                  _titleCtrl.clear();
+                  _priceCtrl.clear();
+                },
+                child: const Text('افزودن'),
+              ),
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
 
   @override
   void dispose() {
