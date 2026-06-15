@@ -2,11 +2,17 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/fa.dart';
+import '../../../../core/widgets/vodda_avatar.dart';
 import '../../domain/teacher.dart';
 
 /// Teacher card used in carousels and the search list.
 class TeacherCard extends StatelessWidget {
-  const TeacherCard({super.key, required this.teacher, this.onTap, this.wide = false});
+  const TeacherCard({
+    super.key,
+    required this.teacher,
+    this.onTap,
+    this.wide = false,
+  });
 
   final Teacher teacher;
   final VoidCallback? onTap;
@@ -23,7 +29,11 @@ class TeacherCard extends StatelessWidget {
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(24),
           boxShadow: const [
-            BoxShadow(color: Color(0x122E3622), blurRadius: 22, offset: Offset(0, 6)),
+            BoxShadow(
+              color: Color(0x122E3622),
+              blurRadius: 22,
+              offset: Offset(0, 6),
+            ),
           ],
         ),
         child: Column(
@@ -32,13 +42,11 @@ class TeacherCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                CircleAvatar(
-                  radius: 27,
-                  backgroundColor: AppColors.olive100,
-                  child: Text(
-                    teacher.field.contains('مداحی') ? '🎤' : '📖',
-                    style: const TextStyle(fontSize: 22),
-                  ),
+                VoddaAvatar(
+                  size: 54,
+                  ring: true,
+                  verified: teacher.verified,
+                  emoji: teacher.field.contains('مداحی') ? '🎤' : '📖',
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -49,11 +57,21 @@ class TeacherCard extends StatelessWidget {
                         teacher.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: AppColors.ink),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 15,
+                          color: AppColors.ink,
+                        ),
                       ),
                       const SizedBox(height: 2),
-                      Text(teacher.tag,
-                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.olive600)),
+                      Text(
+                        teacher.tag,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.olive600,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -64,15 +82,30 @@ class TeacherCard extends StatelessWidget {
               children: [
                 const Icon(Icons.star_rounded, size: 16, color: AppColors.gold),
                 const SizedBox(width: 3),
-                Text(faDigits(teacher.rating.toStringAsFixed(1)),
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.gold)),
+                Text(
+                  faDigits(teacher.rating.toStringAsFixed(1)),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.gold,
+                  ),
+                ),
                 const SizedBox(width: 8),
-                const Icon(Icons.location_on_outlined, size: 14, color: AppColors.ink3),
+                const Icon(
+                  Icons.location_on_outlined,
+                  size: 14,
+                  color: AppColors.ink3,
+                ),
                 const SizedBox(width: 2),
-                Text(teacher.city, style: const TextStyle(fontSize: 12, color: AppColors.ink3)),
+                Text(
+                  teacher.city,
+                  style: const TextStyle(fontSize: 12, color: AppColors.ink3),
+                ),
                 const SizedBox(width: 8),
-                Text('${faNumber(teacher.sessions)} جلسه',
-                    style: const TextStyle(fontSize: 12, color: AppColors.ink3)),
+                Text(
+                  '${faNumber(teacher.sessions)} جلسه',
+                  style: const TextStyle(fontSize: 12, color: AppColors.ink3),
+                ),
               ],
             ),
             const SizedBox(height: 12),
@@ -82,16 +115,31 @@ class TeacherCard extends StatelessWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('هر جلسه از', style: TextStyle(fontSize: 10, color: AppColors.ink4)),
-                    Text('${faNumber(teacher.price30 / 1000)} هزار تومان',
-                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.ink)),
+                    const Text(
+                      'هر جلسه از',
+                      style: TextStyle(fontSize: 10, color: AppColors.ink4),
+                    ),
+                    Text(
+                      '${faNumber(teacher.price30 / 1000)} هزار تومان',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.ink,
+                      ),
+                    ),
                   ],
                 ),
                 ElevatedButton(
                   onPressed: onTap,
                   style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
+                    textStyle: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   child: const Text('رزرو جلسه'),
                 ),

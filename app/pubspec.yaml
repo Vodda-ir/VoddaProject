@@ -38,5 +38,29 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  # NOTE: bundle a Persian font (e.g. Vazirmatn) under assets/fonts/ and declare
-  # it here for production. The app falls back to the platform font otherwise.
+
+  fonts:
+    - family: IRANYekanXFaNum
+      fonts:
+        - asset: assets/font/IRANYekanXFaNum-Thin.ttf
+          weight: 100
+        - asset: assets/font/IRANYekanXFaNum-UltraLight.ttf
+          weight: 200
+        - asset: assets/font/IRANYekanXFaNum-Light.ttf
+          weight: 300
+        - asset: assets/font/IRANYekanXFaNum-Regular.ttf
+          weight: 400
+        - asset: assets/font/IRANYekanXFaNum-Medium.ttf
+          weight: 500
+        - asset: assets/font/IRANYekanXFaNum-DemiBold.ttf
+          weight: 600
+        - asset: assets/font/IRANYekanXFaNum-Bold.ttf
+          weight: 700
+        - asset: assets/font/IRANYekanXFaNum-ExtraBold.ttf
+          weight: 800
+        - asset: assets/font/IRANYekanXFaNum-Black.ttf
+          weight: 900
+        - asset: assets/font/IRANYekanXFaNum-Heavy.ttf
+          weight: 900
+        - asset: assets/font/IRANYekanXFaNum-ExtraBlack.ttf
+          weight: 900

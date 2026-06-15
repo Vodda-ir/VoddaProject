@@ -5,6 +5,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/fa.dart';
 import '../../../core/widgets/app_error.dart';
 import '../../../core/widgets/status_pill.dart';
+import '../../../core/widgets/vodda_avatar.dart';
 import '../data/session_repository.dart';
 import '../domain/session.dart';
 import 'rating_sheet.dart';
@@ -28,7 +29,10 @@ class _SessionsScreenState extends ConsumerState<SessionsScreen> {
         children: [
           const Padding(
             padding: EdgeInsets.fromLTRB(20, 12, 20, 16),
-            child: Text('جلسات من', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
+            child: Text(
+              'جلسات من',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
+            ),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 18),
@@ -42,10 +46,19 @@ class _SessionsScreenState extends ConsumerState<SessionsScreen> {
           ),
           Expanded(
             child: sessions.when(
-              loading: () => const Center(child: CircularProgressIndicator(color: AppColors.olive600)),
-              error: (e, _) => AppErrorView(error: e, onRetry: () => ref.invalidate(mySessionsProvider(_tab))),
+              loading: () => const Center(
+                child: CircularProgressIndicator(color: AppColors.olive600),
+              ),
+              error: (e, _) => AppErrorView(
+                error: e,
+                onRetry: () => ref.invalidate(mySessionsProvider(_tab)),
+              ),
               data: (list) => list.isEmpty
-                  ? const EmptyState(icon: Icons.calendar_today_outlined, title: 'جلسه‌ای نیست', sub: 'هنوز جلسه‌ای در این بخش ندارید.')
+                  ? const EmptyState(
+                      icon: Icons.calendar_today_outlined,
+                      title: 'جلسه‌ای نیست',
+                      sub: 'هنوز جلسه‌ای در این بخش ندارید.',
+                    )
                   : ListView.separated(
                       padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
                       itemCount: list.length,
@@ -73,9 +86,19 @@ class _SessionsScreenState extends ConsumerState<SessionsScreen> {
           decoration: BoxDecoration(
             color: on ? AppColors.olive600 : AppColors.surface,
             borderRadius: BorderRadius.circular(14),
-            boxShadow: const [BoxShadow(color: Color(0x0A2E3622), blurRadius: 6)],
+            boxShadow: const [
+              BoxShadow(color: Color(0x0A2E3622), blurRadius: 6),
+            ],
           ),
-          child: Text(label, textAlign: TextAlign.center, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: on ? Colors.white : AppColors.ink3)),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: on ? Colors.white : AppColors.ink3,
+            ),
+          ),
         ),
       ),
     );
@@ -98,7 +121,11 @@ class _SessionsScreenState extends ConsumerState<SessionsScreen> {
 }
 
 class _SessionCard extends StatelessWidget {
-  const _SessionCard({required this.session, required this.onRate, required this.onCancel});
+  const _SessionCard({
+    required this.session,
+    required this.onRate,
+    required this.onCancel,
+  });
   final Session session;
   final VoidCallback onRate;
   final VoidCallback onCancel;
@@ -120,21 +147,40 @@ class _SessionCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               StatusPill(status: s.status),
-              Text('${faNumber(s.duration)} دقیقه', style: const TextStyle(fontSize: 12, color: AppColors.ink3, fontWeight: FontWeight.w600)),
+              Text(
+                '${faNumber(s.duration)} دقیقه',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.ink3,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 12),
           Row(
             children: [
-              const CircleAvatar(radius: 23, backgroundColor: AppColors.olive100, child: Text('📖')),
+              const VoddaAvatar(size: 46, emoji: '📖'),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(s.teacherName, style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800)),
+                    Text(
+                      s.teacherName,
+                      style: const TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
                     const SizedBox(height: 3),
-                    Text(s.service, style: const TextStyle(fontSize: 12.5, color: AppColors.ink2)),
+                    Text(
+                      s.service,
+                      style: const TextStyle(
+                        fontSize: 12.5,
+                        color: AppColors.ink2,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -143,16 +189,35 @@ class _SessionCard extends StatelessWidget {
           const SizedBox(height: 13),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-            decoration: BoxDecoration(color: AppColors.sand50, borderRadius: BorderRadius.circular(13)),
+            decoration: BoxDecoration(
+              color: AppColors.sand50,
+              borderRadius: BorderRadius.circular(13),
+            ),
             child: Row(
               children: [
-                const Icon(Icons.calendar_today_outlined, size: 16, color: AppColors.olive500),
+                const Icon(
+                  Icons.calendar_today_outlined,
+                  size: 16,
+                  color: AppColors.olive500,
+                ),
                 const SizedBox(width: 5),
-                Text(_faDate(s.scheduledAt), style: const TextStyle(fontSize: 12.5, color: AppColors.ink2)),
+                Text(
+                  _faDate(s.scheduledAt),
+                  style: const TextStyle(fontSize: 12.5, color: AppColors.ink2),
+                ),
                 const SizedBox(width: 14),
-                const Icon(Icons.access_time, size: 16, color: AppColors.olive500),
+                const Icon(
+                  Icons.access_time,
+                  size: 16,
+                  color: AppColors.olive500,
+                ),
                 const SizedBox(width: 5),
-                Text(faDigits('${s.scheduledAt.hour.toString().padLeft(2, '0')}:${s.scheduledAt.minute.toString().padLeft(2, '0')}'), style: const TextStyle(fontSize: 12.5, color: AppColors.ink2)),
+                Text(
+                  faDigits(
+                    '${s.scheduledAt.hour.toString().padLeft(2, '0')}:${s.scheduledAt.minute.toString().padLeft(2, '0')}',
+                  ),
+                  style: const TextStyle(fontSize: 12.5, color: AppColors.ink2),
+                ),
               ],
             ),
           ),
@@ -168,7 +233,20 @@ class _SessionCard extends StatelessWidget {
         const SizedBox(height: 13),
         Row(
           children: [
-            Expanded(child: OutlinedButton(onPressed: onCancel, style: OutlinedButton.styleFrom(foregroundColor: AppColors.olive700, side: const BorderSide(color: AppColors.olive200), padding: const EdgeInsets.symmetric(vertical: 12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999))), child: const Text('لغو جلسه'))),
+            Expanded(
+              child: OutlinedButton(
+                onPressed: onCancel,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.olive700,
+                  side: const BorderSide(color: AppColors.olive200),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+                child: const Text('لغو جلسه'),
+              ),
+            ),
           ],
         ),
       ];
@@ -178,13 +256,19 @@ class _SessionCard extends StatelessWidget {
         const SizedBox(height: 13),
         Container(
           padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(color: AppColors.goldBg, borderRadius: BorderRadius.circular(13)),
+          decoration: BoxDecoration(
+            color: AppColors.goldBg,
+            borderRadius: BorderRadius.circular(13),
+          ),
           child: const Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(Icons.access_time, size: 16, color: AppColors.gold),
               SizedBox(width: 7),
-              Text('در انتظار تأیید استاد', style: TextStyle(fontSize: 12, color: AppColors.ink3)),
+              Text(
+                'در انتظار تأیید استاد',
+                style: TextStyle(fontSize: 12, color: AppColors.ink3),
+              ),
             ],
           ),
         ),
@@ -199,7 +283,10 @@ class _SessionCard extends StatelessWidget {
             onPressed: onRate,
             icon: const Icon(Icons.star_rounded, size: 18),
             label: const Text('ثبت امتیاز و نظر'),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.gold, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.gold,
+              foregroundColor: Colors.white,
+            ),
           ),
         ),
       ];
@@ -207,5 +294,6 @@ class _SessionCard extends StatelessWidget {
     return const [];
   }
 
-  static String _faDate(DateTime d) => faDigits('${d.year}/${d.month}/${d.day}');
+  static String _faDate(DateTime d) =>
+      faDigits('${d.year}/${d.month}/${d.day}');
 }
