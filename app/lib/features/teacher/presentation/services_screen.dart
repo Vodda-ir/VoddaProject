@@ -182,7 +182,7 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
   void _editService(int id, String title, int duration, int price) {
     final tCtrl = TextEditingController(text: title);
     final pCtrl = TextEditingController(text: price.toString());
-    int dur = duration;
+    int dur = duration > 0 ? duration : 30;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -267,7 +267,7 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
             ),
             const SizedBox(width: 10),
             DropdownButton<int>(
-              value: _duration,
+              value: _duration > 0 ? _duration : 30,
               items: const [
                 DropdownMenuItem(value: 30, child: Text('۳۰ دقیقه')),
                 DropdownMenuItem(value: 60, child: Text('۶۰ دقیقه')),
