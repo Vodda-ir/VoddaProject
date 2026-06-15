@@ -31,6 +31,9 @@ func NewRouter(cfg *config.Config, h *Handler, tm *token.Manager) *gin.Engine {
 		c.JSON(http.StatusOK, gin.H{"status": "ok", "service": "vodda-backend"})
 	})
 
+	// Serve uploaded files (avatars, etc.)
+	r.Static("/uploads", "./uploads")
+
 	api := r.Group("/api/v1")
 
 	// public

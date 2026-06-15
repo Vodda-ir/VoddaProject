@@ -13,4 +13,5 @@ var (
 	ErrOTPCooldown     = errors.New("please wait before requesting a new code")
 	ErrInsufficient    = errors.New("insufficient wallet balance")
 	ErrTeacherNotReady = errors.New("teacher profile not approved")
+	ErrInternal        = errors.New("internal server error")
 )

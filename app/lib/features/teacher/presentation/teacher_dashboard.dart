@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/fa.dart';
@@ -60,6 +60,10 @@ class _TeacherHeader extends ConsumerWidget {
       data: (u) => u.name.isEmpty ? 'استاد' : u.name.split(' ').first,
       orElse: () => '',
     );
+    final avatarUrl = me.maybeWhen(
+      data: (u) => u.avatarUrl,
+      orElse: () => null,
+    );
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
       child: Row(
@@ -69,7 +73,7 @@ class _TeacherHeader extends ConsumerWidget {
             onTap: () => _showRoleSheet(context),
             child: Row(
               children: [
-                const VoddaAvatar(size: 46, ring: true, verified: true),
+                VoddaAvatar(size: 46, ring: true, verified: true, imageUrl: avatarUrl),
                 const SizedBox(width: 11),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -114,7 +118,7 @@ class _TeacherHeader extends ConsumerWidget {
               alignment: Alignment.center,
               children: [
                 const Icon(
-                  LucideIcons.bell,
+                LucideIcons.bell,
                   size: 21,
                   color: AppColors.ink2,
                 ),
@@ -509,7 +513,7 @@ class _QuickManage extends StatelessWidget {
         'کیف پول',
         () => context.go('/t/wallet'),
       ),
-      (Icons.star_outline, 'نظرات قرآن‌آموزان', () {}),
+      (LucideIcons.star, 'نظرات قرآن‌آموزان', () {}),
     ];
 
     return Padding(

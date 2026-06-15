@@ -1,6 +1,10 @@
 package http
 
 import (
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -82,14 +86,66 @@ func (h *Handler) Me(c *gin.Context) {
 }
 
 func (h *Handler) UpdateMe(c *gin.Context) {
-	var in struct {
-		Name      string `json:"name"`
-		City      string `json:"city"`
-		Bio       string `json:"bio"`
-		AvatarURL string `json:"avatar_url"`
+	uid := userID(c)
+	in := usecase.UpdateProfileInput{}
+
+	// Check content type: multipart (with possible avatar file) vs plain JSON
+	contentType := c.ContentType() // case-insensitive, returns just the media type
+	if len(contentType) >= 9 && contentType[:9] == "multipart" {
+		// Multipart form: fields + optional avatar file
+		in.Name = c.PostForm("name")
+		in.City = c.PostForm("city")
+		in.Bio = c.PostForm("bio")
+
+		file, header, err := c.Request.FormFile("avatar")
+		if err == nil {
+			defer file.Close()
+
+			// Create uploads dir if not exists
+			uploadDir := "uploads/avatars"
+			if err := os.MkdirAll(uploadDir, 0755); err != nil {
+				fail(c, domain.ErrInternal)
+				return
+			}
+
+			// Generate unique filename: {userID}_{timestamp}.{ext}
+			ext := filepath.Ext(header.Filename)
+			if ext == "" {
+				ext = ".jpg"
+			}
+			filename := fmt.Sprintf("%d_%d%s", uid, time.Now().UnixNano(), ext)
+			savePath := filepath.Join(uploadDir, filename)
+
+			dst, err := os.Create(savePath)
+			if err != nil {
+				fail(c, domain.ErrInternal)
+				return
+			}
+			defer dst.Close()
+
+			if _, err := io.Copy(dst, file); err != nil {
+				fail(c, domain.ErrInternal)
+				return
+			}
+
+			in.AvatarURL = "/" + savePath
+		}
+	} else {
+		// Plain JSON body (backward compatible)
+		var jsonIn struct {
+			Name      string `json:"name"`
+			City      string `json:"city"`
+			Bio       string `json:"bio"`
+			AvatarURL string `json:"avatar_url"`
+		}
+		_ = c.ShouldBindJSON(&jsonIn)
+		in.Name = jsonIn.Name
+		in.City = jsonIn.City
+		in.Bio = jsonIn.Bio
+		in.AvatarURL = jsonIn.AvatarURL
 	}
-	_ = c.ShouldBindJSON(&in)
-	u, err := h.User.UpdateProfile(c, userID(c), usecase.UpdateProfileInput(in))
+
+	u, err := h.User.UpdateProfile(c, uid, in)
 	if err != nil {
 		fail(c, err)
 		return

@@ -179,6 +179,10 @@ class _Header extends ConsumerWidget {
       data: (u) => u.isTeacher,
       orElse: () => false,
     );
+    final avatarUrl = me.maybeWhen(
+      data: (u) => u.avatarUrl,
+      orElse: () => null,
+    );
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
@@ -189,7 +193,7 @@ class _Header extends ConsumerWidget {
             onTap: isTeacher ? () => _showRoleSheet(context) : null,
             child: Row(
               children: [
-                VoddaAvatar(size: 46, ring: true),
+                VoddaAvatar(size: 46, ring: true, imageUrl: avatarUrl),
                 const SizedBox(width: 11),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -257,11 +261,7 @@ class _Header extends ConsumerWidget {
             child: Stack(
               alignment: Alignment.center,
               children: [
-                const Icon(
-                  LucideIcons.bell,
-                  size: 21,
-                  color: AppColors.ink2,
-                ),
+                const Icon(LucideIcons.bell, size: 21, color: AppColors.ink2),
                 Positioned(
                   top: 11,
                   right: 12,
@@ -367,7 +367,11 @@ class _HeroRequest extends StatelessWidget {
                     CircleAvatar(
                       radius: 12,
                       backgroundColor: AppColors.olive600,
-                      child: Icon(LucideIcons.plus, size: 16, color: Colors.white),
+                      child: Icon(
+                        LucideIcons.plus,
+                        size: 16,
+                        color: Colors.white,
+                      ),
                     ),
                     SizedBox(width: 9),
                     Text(

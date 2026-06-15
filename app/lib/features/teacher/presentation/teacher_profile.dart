@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/vodda_avatar.dart';
@@ -15,6 +15,8 @@ class TeacherProfile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final me = ref.watch(meProvider);
     final name = me.maybeWhen(data: (u) => u.name, orElse: () => 'استاد وُدّا');
+    final avatarUrl = me.maybeWhen(data: (u) => u.avatarUrl, orElse: () => null);
+    final tag = me.maybeWhen(data: (u) => u.teacherTag, orElse: () => 'مدرس');
 
     final rows = [
       (
@@ -30,8 +32,8 @@ class TeacherProfile extends ConsumerWidget {
         () => context.push('/t/worktimes'),
       ),
       (LucideIcons.mic, 'نمونه‌کارها', '۳ فایل صوتی', null as void Function()?),
-      (Icons.description_outlined, 'مدارک و گواهی‌ها', 'تأییدشده', null),
-      (Icons.star_outline, 'نظرات قرآن‌آموزان', '۶۴ نظر', null),
+      (LucideIcons.fileText, 'مدارک و گواهی‌ها', 'تأییدشده', null),
+      (LucideIcons.star, 'نظرات قرآن‌آموزان', '۶۴ نظر', null),
     ];
 
     return SafeArea(
@@ -61,7 +63,7 @@ class TeacherProfile extends ConsumerWidget {
                 children: [
                   Row(
                     children: [
-                      const VoddaAvatar(size: 62, ring: true, verified: true),
+                      VoddaAvatar(size: 62, ring: true, verified: true, imageUrl: avatarUrl),
                       const SizedBox(width: 14),
                       Expanded(
                         child: Column(
@@ -75,9 +77,9 @@ class TeacherProfile extends ConsumerWidget {
                               ),
                             ),
                             const SizedBox(height: 3),
-                            const Text(
-                              'مدرس تجوید و روان‌خوانی',
-                              style: TextStyle(
+                            Text(
+                              tag ?? 'مدرس',
+                              style: const TextStyle(
                                 fontSize: 12.5,
                                 color: AppColors.olive600,
                                 fontWeight: FontWeight.w600,
@@ -87,7 +89,7 @@ class TeacherProfile extends ConsumerWidget {
                             Row(
                               children: [
                                 Icon(
-                                  LucideIcons.star,
+                                LucideIcons.star,
                                   size: 14,
                                   color: AppColors.gold,
                                 ),
@@ -112,17 +114,20 @@ class TeacherProfile extends ConsumerWidget {
                           ],
                         ),
                       ),
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: AppColors.olive50,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(
-                          LucideIcons.pencil,
-                          size: 19,
-                          color: AppColors.olive700,
+                      GestureDetector(
+                        onTap: () => context.push('/profile/edit'),
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: AppColors.olive50,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                            LucideIcons.pencil,
+                            size: 19,
+                            color: AppColors.olive700,
+                          ),
                         ),
                       ),
                     ],

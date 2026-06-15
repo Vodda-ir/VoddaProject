@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../config/app_config.dart';
 import '../theme/app_colors.dart';
 
 /// Vodda-styled default avatar with geometric olive pattern.
@@ -15,6 +17,7 @@ class VoddaAvatar extends StatelessWidget {
     this.online = false,
     this.icon,
     this.imageUrl,
+    this.localPath,
   });
 
   final double size;
@@ -23,6 +26,14 @@ class VoddaAvatar extends StatelessWidget {
   final bool online;
   final IconData? icon;
   final String? imageUrl;
+  final String? localPath;
+
+  /// Converts a relative URL (e.g. /uploads/avatars/x.jpg) to an absolute
+  /// URL with the server base (e.g. http://localhost:3420/uploads/avatars/x.jpg).
+  static String _fullUrl(String path) {
+    if (path.startsWith('http')) return path;
+    return '${AppConfig.serverBaseUrl}$path';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,21 +64,43 @@ class VoddaAvatar extends StatelessWidget {
           child: Stack(
             children: [
               // Patterned background
-              imageUrl != null
-                  ? Image.network(
-                      imageUrl!,
+              if (localPath != null)
+                Padding(
+                  padding: EdgeInsets.all(size * 0.06),
+                  child: ClipOval(
+                    child: Image.file(
+                      File(localPath!),
                       fit: BoxFit.cover,
+                      width: size,
+                      height: size,
                       errorBuilder: (_, e, s) => _GeoPlaceholder(size: size),
-                    )
-                  : _GeoPlaceholder(size: size),
-              // Line-icon overlay
-              Center(
-                child: Icon(
-                  lineIcon,
-                  size: size * 0.46,
-                  color: AppColors.olive400.withValues(alpha: 0.50),
+                    ),
+                  ),
+                )
+              else if (imageUrl != null)
+                Padding(
+                  padding: EdgeInsets.all(size * 0.06),
+                  child: ClipOval(
+                    child: Image.network(
+                      _fullUrl(imageUrl!),
+                      fit: BoxFit.cover,
+                      width: size,
+                      height: size,
+                      errorBuilder: (_, e, s) => _GeoPlaceholder(size: size),
+                    ),
+                  ),
+                )
+              else
+                _GeoPlaceholder(size: size),
+              // Line-icon overlay — only when no image is shown
+              if (localPath == null && imageUrl == null)
+                Center(
+                  child: Icon(
+                    lineIcon,
+                    size: size * 0.46,
+                    color: AppColors.olive400.withValues(alpha: 0.50),
+                  ),
                 ),
-              ),
             ],
           ),
         ),

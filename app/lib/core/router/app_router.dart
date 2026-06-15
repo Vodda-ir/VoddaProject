@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/account/presentation/edit_profile_screen.dart';
 import '../../features/account/presentation/profile_tab.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/sessions/presentation/booking_screen.dart';
@@ -87,6 +88,12 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/profile',
             builder: (context, state) => const ProfileTab(),
+            routes: [
+              GoRoute(
+                path: 'edit',
+                builder: (context, state) => const EditProfileScreen(),
+              ),
+            ],
           ),
         ],
       ),

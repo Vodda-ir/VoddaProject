@@ -14,13 +14,13 @@ class ProfileTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final me = ref.watch(meProvider);
-    final rows = <(IconData, String)>[
-      (LucideIcons.user, 'ویرایش پروفایل'),
-      (LucideIcons.heart, 'اساتید دلخواه'),
-      (LucideIcons.wallet, 'کیف پول و تراکنش‌ها'),
-      (LucideIcons.bell, 'اعلان‌ها'),
-      (LucideIcons.shield, 'حریم خصوصی و امنیت'),
-      (LucideIcons.helpCircle, 'پشتیبانی و قوانین'),
+    final rows = <(IconData, String, VoidCallback?)>[
+      (LucideIcons.user, 'ویرایش پروفایل', () => context.push('/profile/edit')),
+      (LucideIcons.heart, 'اساتید دلخواه', null),
+      (LucideIcons.wallet, 'کیف پول و تراکنش‌ها', null),
+      (LucideIcons.bell, 'اعلان‌ها', null),
+      (LucideIcons.shield, 'حریم خصوصی و امنیت', null),
+      (LucideIcons.helpCircle, 'پشتیبانی و قوانین', null),
     ];
 
     Future<void> logout() async {
@@ -54,7 +54,14 @@ class ProfileTab extends ConsumerWidget {
               ),
               child: Row(
                 children: [
-                  const VoddaAvatar(size: 62, ring: true),
+                  me.maybeWhen(
+                    data: (u) => VoddaAvatar(
+                      size: 62,
+                      ring: true,
+                      imageUrl: u.avatarUrl,
+                    ),
+                    orElse: () => const VoddaAvatar(size: 62, ring: true),
+                  ),
                   const SizedBox(width: 14),
                   Expanded(
                     child: me.when(
@@ -95,17 +102,20 @@ class ProfileTab extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: AppColors.olive50,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      LucideIcons.pencil,
-                      size: 19,
-                      color: AppColors.olive700,
+                  GestureDetector(
+                    onTap: () => context.push('/profile/edit'),
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: AppColors.olive50,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        LucideIcons.pencil,
+                        size: 19,
+                        color: AppColors.olive700,
+                      ),
                     ),
                   ),
                 ],
@@ -214,9 +224,10 @@ class ProfileTab extends ConsumerWidget {
                       ),
                       trailing: const Icon(
                         LucideIcons.chevronLeft,
+                        size: 18,
                         color: AppColors.ink4,
                       ),
-                      onTap: () {},
+                      onTap: rows[i].$3,
                     ),
                   ),
               ],
