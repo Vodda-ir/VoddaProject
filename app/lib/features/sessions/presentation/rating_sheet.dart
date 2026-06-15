@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/error_message.dart';
@@ -84,7 +85,7 @@ class _RatingSheetState extends ConsumerState<RatingSheet> {
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4),
                     child: Icon(
-                      on ? Icons.star_rounded : Icons.star_outline_rounded,
+                      on ? LucideIcons.star : LucideIcons.star,
                       size: 40,
                       color: on ? AppColors.gold : AppColors.sand200,
                     ),

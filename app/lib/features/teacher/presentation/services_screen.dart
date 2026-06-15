@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/fa.dart';
@@ -18,7 +19,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
       title: 'تصحیح قرائت و تجوید',
       dur: '۳۰ دقیقه',
       price: 80000,
-      icon: Icons.menu_book,
+      icon: LucideIcons.bookOpen,
       active: true,
     ),
     (
@@ -26,7 +27,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
       title: 'روان‌خوانی از پایه',
       dur: '۳۰ دقیقه',
       price: 80000,
-      icon: Icons.auto_stories,
+      icon: LucideIcons.bookOpen,
       active: true,
     ),
     (
@@ -34,7 +35,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
       title: 'دورهٔ تجوید پیشرفته',
       dur: '۶۰ دقیقه',
       price: 140000,
-      icon: Icons.workspace_premium_outlined,
+      icon: LucideIcons.award,
       active: false,
     ),
   ];
@@ -140,7 +141,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: () {},
-                icon: const Icon(Icons.add, size: 19),
+                icon: const Icon(LucideIcons.plus, size: 19),
                 label: const Text('افزودن خدمت جدید'),
               ),
             ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -49,7 +50,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
       appBar: AppBar(
         title: const Text('رزرو جلسه'),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(LucideIcons.arrowRight),
           onPressed: () =>
               _step > 1 && _step < 4 ? setState(() => _step--) : context.pop(),
         ),
@@ -331,7 +332,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
               shape: BoxShape.circle,
             ),
             child: const Icon(
-              Icons.check_circle_outline,
+              LucideIcons.checkCircle,
               size: 46,
               color: AppColors.olive600,
             ),

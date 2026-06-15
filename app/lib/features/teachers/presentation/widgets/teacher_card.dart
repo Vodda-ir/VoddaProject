@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/fa.dart';
@@ -75,7 +76,7 @@ class TeacherCard extends StatelessWidget {
             const SizedBox(height: 12),
             Row(
               children: [
-                const Icon(Icons.star_rounded, size: 16, color: AppColors.gold),
+                const Icon(LucideIcons.star, size: 16, color: AppColors.gold),
                 const SizedBox(width: 3),
                 Text(
                   faDigits(teacher.rating.toStringAsFixed(1)),
@@ -87,7 +88,7 @@ class TeacherCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 const Icon(
-                  Icons.location_on_outlined,
+                  LucideIcons.mapPin,
                   size: 14,
                   color: AppColors.ink3,
                 ),

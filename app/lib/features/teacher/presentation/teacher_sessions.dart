@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -172,7 +173,7 @@ class _TSessionCard extends StatelessWidget {
             child: Row(
               children: [
                 const Icon(
-                  Icons.calendar_today_outlined,
+                  LucideIcons.calendar,
                   size: 16,
                   color: AppColors.olive500,
                 ),
@@ -183,7 +184,7 @@ class _TSessionCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 14),
                 const Icon(
-                  Icons.access_time,
+                  LucideIcons.clock,
                   size: 16,
                   color: AppColors.olive500,
                 ),
@@ -203,7 +204,7 @@ class _TSessionCard extends StatelessWidget {
               height: 44,
               child: ElevatedButton.icon(
                 onPressed: () {},
-                icon: const Icon(Icons.call, size: 18),
+                icon: const Icon(LucideIcons.phone, size: 18),
                 label: const Text('شروع جلسه'),
               ),
             ),
@@ -221,7 +222,7 @@ class _TSessionCard extends StatelessWidget {
                 ...List.generate(
                   5,
                   (i) => Icon(
-                    Icons.star_rounded,
+                    LucideIcons.star,
                     size: 18,
                     color: i < 4 ? AppColors.gold : AppColors.sand200,
                   ),

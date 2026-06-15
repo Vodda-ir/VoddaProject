@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -62,7 +63,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                           decoration: const InputDecoration(
                             hintText: 'نام استاد یا تخصص…',
                             prefixIcon: Icon(
-                              Icons.search,
+                              LucideIcons.search,
                               color: AppColors.ink3,
                             ),
                             border: InputBorder.none,
@@ -106,11 +107,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   ),
                   const SizedBox(width: 8),
                 ],
-                const VChip(label: 'امتیاز بالا', icon: Icons.star_rounded),
+                const VChip(label: 'امتیاز بالا', icon: LucideIcons.star),
                 const SizedBox(width: 8),
                 const VChip(
                   label: 'نزدیک من',
-                  icon: Icons.location_on_outlined,
+                  icon: LucideIcons.mapPin,
                 ),
               ],
             ),

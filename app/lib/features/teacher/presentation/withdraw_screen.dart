@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -35,7 +36,7 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
                     borderRadius: BorderRadius.circular(46),
                   ),
                   child: const Icon(
-                    Icons.check_circle_outline,
+                    LucideIcons.checkCircle,
                     size: 52,
                     color: AppColors.olive600,
                   ),
@@ -224,7 +225,7 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Icon(
-                          Icons.credit_card,
+                          LucideIcons.creditCard,
                           size: 22,
                           color: AppColors.olive700,
                         ),
@@ -253,7 +254,7 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
                         ),
                       ),
                       const Icon(
-                        Icons.check,
+                        LucideIcons.check,
                         size: 18,
                         color: AppColors.olive600,
                       ),
@@ -272,7 +273,7 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
                 onPressed: _amount.text.isNotEmpty
                     ? () => setState(() => _done = true)
                     : null,
-                icon: const Icon(Icons.check, size: 19),
+                icon: const Icon(LucideIcons.check, size: 19),
                 label: const Text('ثبت درخواست برداشت'),
               ),
             ),

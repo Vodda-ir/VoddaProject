@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -91,7 +92,7 @@ class _TeacherHeader extends ConsumerWidget {
                           ),
                         ),
                         SizedBox(width: 5),
-                        Icon(Icons.sync, size: 15, color: AppColors.olive600),
+                        Icon(LucideIcons.refreshCw, size: 15, color: AppColors.olive600),
                       ],
                     ),
                   ],
@@ -113,7 +114,7 @@ class _TeacherHeader extends ConsumerWidget {
               alignment: Alignment.center,
               children: [
                 const Icon(
-                  Icons.notifications_none,
+                  LucideIcons.bell,
                   size: 21,
                   color: AppColors.ink2,
                 ),
@@ -269,7 +270,7 @@ class _RequestsBanner extends ConsumerWidget {
                   children: [
                     const Center(
                       child: Icon(
-                        Icons.message,
+                        LucideIcons.messageSquare,
                         size: 24,
                         color: AppColors.gold,
                       ),
@@ -328,7 +329,7 @@ class _RequestsBanner extends ConsumerWidget {
                 ),
               ),
               const Icon(
-                Icons.chevron_left,
+                LucideIcons.chevronLeft,
                 size: 20,
                 color: Color(0xFF9A7426),
               ),
@@ -428,7 +429,7 @@ class _NextSession extends StatelessWidget {
                   child: Row(
                     children: [
                       const Icon(
-                        Icons.calendar_today_outlined,
+                        LucideIcons.calendar,
                         size: 16,
                         color: AppColors.olive500,
                       ),
@@ -442,7 +443,7 @@ class _NextSession extends StatelessWidget {
                       ),
                       const SizedBox(width: 14),
                       const Icon(
-                        Icons.access_time,
+                        LucideIcons.clock,
                         size: 16,
                         color: AppColors.olive500,
                       ),
@@ -464,7 +465,7 @@ class _NextSession extends StatelessWidget {
                   height: 48,
                   child: ElevatedButton.icon(
                     onPressed: () {},
-                    icon: const Icon(Icons.call, size: 19),
+                    icon: const Icon(LucideIcons.phone, size: 19),
                     label: const Text('شروع جلسه'),
                   ),
                 ),
@@ -501,10 +502,10 @@ class _QuickManage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = [
-      (Icons.menu_book, 'خدمات من', () => context.push('/t/services')),
-      (Icons.access_time, 'زمان‌های کاری', () => context.push('/t/worktimes')),
+      (LucideIcons.bookOpen, 'خدمات من', () => context.push('/t/services')),
+      (LucideIcons.clock, 'زمان‌های کاری', () => context.push('/t/worktimes')),
       (
-        Icons.account_balance_wallet_outlined,
+        LucideIcons.wallet,
         'کیف پول',
         () => context.go('/t/wallet'),
       ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -17,18 +18,18 @@ class TeacherProfile extends ConsumerWidget {
 
     final rows = [
       (
-        Icons.menu_book,
+        LucideIcons.bookOpen,
         'خدمات من',
         '۵ خدمت فعال',
         () => context.push('/t/services'),
       ),
       (
-        Icons.access_time,
+        LucideIcons.clock,
         'زمان‌های کاری',
         '۵ روز فعال',
         () => context.push('/t/worktimes'),
       ),
-      (Icons.mic_none, 'نمونه‌کارها', '۳ فایل صوتی', null as void Function()?),
+      (LucideIcons.mic, 'نمونه‌کارها', '۳ فایل صوتی', null as void Function()?),
       (Icons.description_outlined, 'مدارک و گواهی‌ها', 'تأییدشده', null),
       (Icons.star_outline, 'نظرات قرآن‌آموزان', '۶۴ نظر', null),
     ];
@@ -86,7 +87,7 @@ class TeacherProfile extends ConsumerWidget {
                             Row(
                               children: [
                                 Icon(
-                                  Icons.star_rounded,
+                                  LucideIcons.star,
                                   size: 14,
                                   color: AppColors.gold,
                                 ),
@@ -119,7 +120,7 @@ class TeacherProfile extends ConsumerWidget {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Icon(
-                          Icons.edit_outlined,
+                          LucideIcons.pencil,
                           size: 19,
                           color: AppColors.olive700,
                         ),
@@ -199,7 +200,7 @@ class TeacherProfile extends ConsumerWidget {
                         ),
                         const SizedBox(width: 6),
                         const Icon(
-                          Icons.chevron_left,
+                          LucideIcons.chevronLeft,
                           size: 18,
                           color: AppColors.ink4,
                         ),
@@ -233,7 +234,7 @@ class TeacherProfile extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: const Icon(
-                        Icons.sync,
+                        LucideIcons.refreshCw,
                         size: 22,
                         color: AppColors.olive700,
                       ),
@@ -262,7 +263,7 @@ class TeacherProfile extends ConsumerWidget {
                       ),
                     ),
                     const Icon(
-                      Icons.chevron_left,
+                      LucideIcons.chevronLeft,
                       size: 20,
                       color: AppColors.olive500,
                     ),

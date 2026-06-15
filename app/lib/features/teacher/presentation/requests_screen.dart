@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -147,7 +148,7 @@ class _RequestCard extends ConsumerWidget {
             child: Row(
               children: [
                 const Icon(
-                  Icons.calendar_today_outlined,
+                  LucideIcons.calendar,
                   size: 16,
                   color: AppColors.olive500,
                 ),
@@ -158,7 +159,7 @@ class _RequestCard extends ConsumerWidget {
                 ),
                 const SizedBox(width: 14),
                 const Icon(
-                  Icons.access_time,
+                  LucideIcons.clock,
                   size: 16,
                   color: AppColors.olive500,
                 ),

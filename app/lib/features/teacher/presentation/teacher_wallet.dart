@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -76,7 +77,7 @@ class TeacherWallet extends ConsumerWidget {
                     height: 48,
                     child: ElevatedButton.icon(
                       onPressed: () => context.push('/t/withdraw'),
-                      icon: const Icon(Icons.download, size: 19),
+                      icon: const Icon(LucideIcons.download, size: 19),
                       label: const Text('درخواست برداشت وجه'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.white,
@@ -132,7 +133,7 @@ class TeacherWallet extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
-                        x.$2 ? Icons.monetization_on_outlined : Icons.download,
+                        x.$2 ? LucideIcons.coins : LucideIcons.download,
                         size: 21,
                         color: x.$2
                             ? AppColors.olive700

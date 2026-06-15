@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -230,7 +231,7 @@ class _Header extends ConsumerWidget {
                               ),
                               SizedBox(width: 4),
                               Icon(
-                                Icons.sync,
+                                LucideIcons.refreshCw,
                                 size: 14,
                                 color: AppColors.olive600,
                               ),
@@ -257,7 +258,7 @@ class _Header extends ConsumerWidget {
               alignment: Alignment.center,
               children: [
                 const Icon(
-                  Icons.notifications_none,
+                  LucideIcons.bell,
                   size: 21,
                   color: AppColors.ink2,
                 ),
@@ -317,7 +318,7 @@ class _HeroRequest extends StatelessWidget {
           children: [
             const Row(
               children: [
-                Icon(Icons.auto_awesome, size: 18, color: AppColors.goldSoft),
+                Icon(LucideIcons.sparkles, size: 18, color: AppColors.goldSoft),
                 SizedBox(width: 7),
                 Text(
                   'به وُدّا خوش آمدید',
@@ -366,7 +367,7 @@ class _HeroRequest extends StatelessWidget {
                     CircleAvatar(
                       radius: 12,
                       backgroundColor: AppColors.olive600,
-                      child: Icon(Icons.add, size: 16, color: Colors.white),
+                      child: Icon(LucideIcons.plus, size: 16, color: Colors.white),
                     ),
                     SizedBox(width: 9),
                     Text(
@@ -396,15 +397,15 @@ class _QuickCats extends StatelessWidget {
   Widget build(BuildContext context) {
     final cats = [
       (
-        Icons.menu_book,
+        LucideIcons.bookOpen,
         'آموزش قرآن',
         '۱۲۰+ استاد',
         AppColors.olive100,
         AppColors.olive700,
       ),
-      (Icons.mic_none, 'مداحی', '۴۰+ استاد', AppColors.clayBg, AppColors.clay),
+      (LucideIcons.mic, 'مداحی', '۴۰+ استاد', AppColors.clayBg, AppColors.clay),
       (
-        Icons.phone_in_talk_outlined,
+        LucideIcons.phoneCall,
         'مشاورهٔ صوتی',
         'گفت‌وگوی زنده',
         AppColors.goldBg,
@@ -522,7 +523,7 @@ class _FeaturedTeacher extends StatelessWidget {
                     const Row(
                       children: [
                         Icon(
-                          Icons.workspace_premium_outlined,
+                          LucideIcons.award,
                           size: 15,
                           color: AppColors.goldSoft,
                         ),
@@ -567,7 +568,7 @@ class _FeaturedTeacher extends StatelessWidget {
                       child: const Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.add, size: 15, color: Colors.white),
+                          Icon(LucideIcons.plus, size: 15, color: Colors.white),
                           SizedBox(width: 6),
                           Text(
                             'دنبال کردن',

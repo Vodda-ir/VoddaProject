@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -34,7 +35,7 @@ class RoleSheet extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           _roleOption(
-            icon: Icons.person_outline,
+            icon: LucideIcons.user,
             title: 'حساب قرآن آموز',
             sub: 'یافتن استاد و رزرو جلسه',
             active: !isTeacher,
@@ -45,7 +46,7 @@ class RoleSheet extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           _roleOption(
-            icon: Icons.workspace_premium_outlined,
+            icon: LucideIcons.award,
             title: 'حساب استاد',
             sub: 'مدیریت جلسات و درآمد',
             active: isTeacher,
@@ -120,7 +121,7 @@ class RoleSheet extends StatelessWidget {
             ),
             if (active)
               const Icon(
-                Icons.check_circle,
+                LucideIcons.checkCircle,
                 color: AppColors.olive600,
                 size: 22,
               ),

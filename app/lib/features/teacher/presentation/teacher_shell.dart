@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
 
@@ -9,35 +10,35 @@ class TeacherShell extends StatelessWidget {
   const TeacherShell({super.key, required this.child});
   final Widget child;
 
-  static const _tabs = [
+  static final _tabs = [
     (
       path: '/t',
-      icon: Icons.grid_view_outlined,
-      active: Icons.grid_view,
+      icon: LucideIcons.layoutGrid,
+      active: LucideIcons.layoutGrid,
       label: 'داشبورد',
     ),
     (
       path: '/t/requests',
-      icon: Icons.message_outlined,
-      active: Icons.message,
+      icon: LucideIcons.messageSquare,
+      active: LucideIcons.messageSquare,
       label: 'درخواست‌ها',
     ),
     (
       path: '/t/sessions',
-      icon: Icons.calendar_today_outlined,
-      active: Icons.calendar_today,
+      icon: LucideIcons.calendar,
+      active: LucideIcons.calendarDays,
       label: 'جلسات',
     ),
     (
       path: '/t/wallet',
-      icon: Icons.account_balance_wallet_outlined,
-      active: Icons.account_balance_wallet,
+      icon: LucideIcons.wallet,
+      active: LucideIcons.wallet,
       label: 'کیف پول',
     ),
     (
       path: '/t/profile',
-      icon: Icons.person_outline,
-      active: Icons.person,
+      icon: LucideIcons.user,
+      active: LucideIcons.user,
       label: 'پروفایل',
     ),
   ];

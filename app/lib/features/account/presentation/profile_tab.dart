@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/vodda_avatar.dart';
@@ -14,12 +15,12 @@ class ProfileTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final me = ref.watch(meProvider);
     final rows = <(IconData, String)>[
-      (Icons.person_outline, 'ویرایش پروفایل'),
-      (Icons.favorite_border, 'اساتید دلخواه'),
-      (Icons.account_balance_wallet_outlined, 'کیف پول و تراکنش‌ها'),
-      (Icons.notifications_none, 'اعلان‌ها'),
-      (Icons.shield_outlined, 'حریم خصوصی و امنیت'),
-      (Icons.help_outline, 'پشتیبانی و قوانین'),
+      (LucideIcons.user, 'ویرایش پروفایل'),
+      (LucideIcons.heart, 'اساتید دلخواه'),
+      (LucideIcons.wallet, 'کیف پول و تراکنش‌ها'),
+      (LucideIcons.bell, 'اعلان‌ها'),
+      (LucideIcons.shield, 'حریم خصوصی و امنیت'),
+      (LucideIcons.helpCircle, 'پشتیبانی و قوانین'),
     ];
 
     Future<void> logout() async {
@@ -76,7 +77,7 @@ class ProfileTab extends ConsumerWidget {
                           Row(
                             children: [
                               const Icon(
-                                Icons.location_on_outlined,
+                                LucideIcons.mapPin,
                                 size: 13,
                                 color: AppColors.ink3,
                               ),
@@ -102,7 +103,7 @@ class ProfileTab extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(
-                      Icons.edit_outlined,
+                      LucideIcons.pencil,
                       size: 19,
                       color: AppColors.olive700,
                     ),
@@ -136,7 +137,7 @@ class ProfileTab extends ConsumerWidget {
                                 borderRadius: BorderRadius.circular(14),
                               ),
                               child: const Icon(
-                                Icons.workspace_premium_outlined,
+                                LucideIcons.award,
                                 color: Colors.white,
                               ),
                             ),
@@ -165,7 +166,7 @@ class ProfileTab extends ConsumerWidget {
                               ),
                             ),
                             const Icon(
-                              Icons.sync,
+                              LucideIcons.refreshCw,
                               size: 20,
                               color: AppColors.olive600,
                             ),
@@ -212,7 +213,7 @@ class ProfileTab extends ConsumerWidget {
                         ),
                       ),
                       trailing: const Icon(
-                        Icons.chevron_left,
+                        LucideIcons.chevronLeft,
                         color: AppColors.ink4,
                       ),
                       onTap: () {},
@@ -227,7 +228,7 @@ class ProfileTab extends ConsumerWidget {
               width: double.infinity,
               child: TextButton.icon(
                 onPressed: logout,
-                icon: const Icon(Icons.logout, size: 19),
+                icon: const Icon(LucideIcons.logOut, size: 19),
                 label: const Text('خروج از حساب'),
                 style: TextButton.styleFrom(
                   foregroundColor: AppColors.rose,

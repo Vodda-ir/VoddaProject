@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -55,7 +56,7 @@ class _SessionsScreenState extends ConsumerState<SessionsScreen> {
               ),
               data: (list) => list.isEmpty
                   ? const EmptyState(
-                      icon: Icons.calendar_today_outlined,
+                      icon: LucideIcons.calendar,
                       title: 'جلسه‌ای نیست',
                       sub: 'هنوز جلسه‌ای در این بخش ندارید.',
                     )
@@ -196,7 +197,7 @@ class _SessionCard extends StatelessWidget {
             child: Row(
               children: [
                 const Icon(
-                  Icons.calendar_today_outlined,
+                  LucideIcons.calendar,
                   size: 16,
                   color: AppColors.olive500,
                 ),
@@ -207,7 +208,7 @@ class _SessionCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 14),
                 const Icon(
-                  Icons.access_time,
+                  LucideIcons.clock,
                   size: 16,
                   color: AppColors.olive500,
                 ),
@@ -263,7 +264,7 @@ class _SessionCard extends StatelessWidget {
           child: const Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.access_time, size: 16, color: AppColors.gold),
+              Icon(LucideIcons.clock, size: 16, color: AppColors.gold),
               SizedBox(width: 7),
               Text(
                 'در انتظار تأیید استاد',
@@ -281,7 +282,7 @@ class _SessionCard extends StatelessWidget {
           width: double.infinity,
           child: ElevatedButton.icon(
             onPressed: onRate,
-            icon: const Icon(Icons.star_rounded, size: 18),
+            icon: const Icon(LucideIcons.star, size: 18),
             label: const Text('ثبت امتیاز و نظر'),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.gold,

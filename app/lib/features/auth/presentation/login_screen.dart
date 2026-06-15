@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -169,7 +170,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                       child: Row(
                         children: [
                           const Icon(
-                            Icons.info_outline,
+                            LucideIcons.info,
                             size: 18,
                             color: AppColors.rose,
                           ),
@@ -244,7 +245,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
               ),
               hintTextDirection: TextDirection.ltr,
               prefixIcon: Icon(
-                Icons.phone_outlined,
+                LucideIcons.phone,
                 color: _codeSent ? AppColors.ink4 : AppColors.olive600,
               ),
               border: InputBorder.none,

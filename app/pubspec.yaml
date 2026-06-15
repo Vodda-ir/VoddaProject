@@ -28,6 +28,9 @@ dependencies:
   # themed OTP input
   pinput: ^5.0.0
 
+  # lucide icons
+  lucide_icons_flutter: ^3.1.14
+
   # value equality
   equatable: ^2.0.7
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../theme/app_colors.dart';
 
 /// Section header with an optional "see all" action, matching the design.
@@ -22,7 +23,7 @@ class SectionHeader extends StatelessWidget {
               child: Row(
                 children: [
                   Text(action!, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.olive600)),
-                  const Icon(Icons.chevron_left, size: 16, color: AppColors.olive600),
+                  const Icon(LucideIcons.chevronLeft, size: 16, color: AppColors.olive600),
                 ],
               ),
             ),

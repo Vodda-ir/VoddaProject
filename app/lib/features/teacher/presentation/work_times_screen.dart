@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
 
@@ -100,7 +101,7 @@ class _WorkTimesScreenState extends State<WorkTimesScreen> {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     const Icon(
-                                      Icons.access_time,
+                                      LucideIcons.clock,
                                       size: 14,
                                       color: AppColors.olive700,
                                     ),
@@ -130,7 +131,7 @@ class _WorkTimesScreenState extends State<WorkTimesScreen> {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Icon(
-                                    Icons.add,
+                                    LucideIcons.plus,
                                     size: 14,
                                     color: AppColors.ink3,
                                   ),
@@ -154,7 +155,7 @@ class _WorkTimesScreenState extends State<WorkTimesScreen> {
                         const Row(
                           children: [
                             Icon(
-                              Icons.add,
+                              LucideIcons.plus,
                               size: 15,
                               color: AppColors.olive600,
                             ),
@@ -183,7 +184,7 @@ class _WorkTimesScreenState extends State<WorkTimesScreen> {
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: () {},
-                icon: const Icon(Icons.check, size: 19),
+                icon: const Icon(LucideIcons.check, size: 19),
                 label: const Text('ذخیرهٔ تغییرات'),
               ),
             ),

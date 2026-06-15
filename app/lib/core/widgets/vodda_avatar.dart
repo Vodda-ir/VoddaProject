@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../theme/app_colors.dart';
 
 /// Vodda-styled default avatar with geometric olive pattern.
@@ -25,7 +26,7 @@ class VoddaAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final lineIcon = icon ?? Icons.person_outline_rounded;
+    final lineIcon = icon ?? LucideIcons.user;
     return Stack(
       clipBehavior: Clip.none,
       children: [
@@ -75,7 +76,7 @@ class VoddaAvatar extends StatelessWidget {
           Positioned(
             bottom: -2,
             right: -2,
-            child: _badge(Icons.check, AppColors.olive600),
+            child: _badge(LucideIcons.check, AppColors.olive600),
           ),
         // Online indicator
         if (online)

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/fa.dart';
@@ -25,7 +26,7 @@ class TeacherProfileScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('پروفایل استاد'),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(LucideIcons.arrowRight),
           onPressed: () => context.pop(),
         ),
       ),
@@ -69,20 +70,12 @@ class TeacherProfileScreen extends ConsumerWidget {
             Row(
               children: [
                 _stat(
-                  Icons.star_rounded,
+                  LucideIcons.star,
                   faDigits(t.rating.toStringAsFixed(1)),
                   'امتیاز',
                 ),
-                _stat(
-                  Icons.event_available_outlined,
-                  faNumber(t.sessions),
-                  'جلسه',
-                ),
-                _stat(
-                  Icons.people_alt_outlined,
-                  faNumber(t.followers),
-                  'دنبال‌کننده',
-                ),
+                _stat(LucideIcons.calendarCheck, faNumber(t.sessions), 'جلسه'),
+                _stat(LucideIcons.users, faNumber(t.followers), 'دنبال‌کننده'),
               ],
             ),
             const SizedBox(height: 20),
@@ -125,7 +118,7 @@ class TeacherProfileScreen extends ConsumerWidget {
                       borderRadius: BorderRadius.all(Radius.circular(12)),
                     ),
                     child: const Icon(
-                      Icons.menu_book,
+                      LucideIcons.bookOpen,
                       color: AppColors.olive600,
                     ),
                   ),
