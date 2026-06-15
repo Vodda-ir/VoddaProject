@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/fa.dart';
+import '../../../core/widgets/app_error.dart';
 import '../data/teacher_repository.dart';
 import '../domain/teacher.dart';
 
@@ -22,7 +24,7 @@ class TeacherProfileScreen extends ConsumerWidget {
       appBar: AppBar(title: const Text('پروفایل استاد')),
       body: teacher.when(
         loading: () => const Center(child: CircularProgressIndicator(color: AppColors.olive600)),
-        error: (e, _) => Center(child: Text('خطا: $e', style: const TextStyle(color: AppColors.rose))),
+        error: (e, _) => AppErrorView(error: e, onRetry: () => ref.invalidate(_teacherByIdProvider(id))),
         data: (t) => ListView(
           padding: const EdgeInsets.all(20),
           children: [
@@ -73,9 +75,7 @@ class TeacherProfileScreen extends ConsumerWidget {
         child: SizedBox(
           height: 52,
           child: ElevatedButton(
-            onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('رزرو جلسه — به‌زودی')),
-            ),
+            onPressed: () => context.push('/book/$id'),
             child: const Text('رزرو جلسه'),
           ),
         ),

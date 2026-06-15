@@ -2,15 +2,57 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ───────────────────────────────────────────────
+   Vodda design tokens — mirrors docs/design/styles.css
+─────────────────────────────────────────────── */
 :root {
   --sand-50: #faf8f2;
-  --olive-600: #5e6e43;
+  --sand-100: #f4f0e7;
+  --sand-150: #ede8db;
+  --sand-200: #e4ddcc;
+  --surface: #ffffff;
+  --surface-warm: #fcfaf4;
+
+  --olive-900: #2e3622;
+  --olive-800: #3c472b;
   --olive-700: #4c5a36;
-  --gold: #bf9540;
+  --olive-600: #5e6e43;
+  --olive-500: #728350;
+  --olive-400: #93a172;
+  --olive-300: #b6c09b;
+  --olive-200: #d6dcc4;
+  --olive-100: #e8ecdb;
+  --olive-50: #f2f5ea;
+
   --ink: #2a2820;
+  --ink-2s: #565247;
+  --ink-3: #8c8675;
+  --ink-4: #aba593;
+
+  --gold: #bf9540;
+  --gold-soft: #e7d5a8;
+  --gold-bg: #f7efd9;
+  --clay: #b0745a;
+  --clay-bg: #f6e7df;
+  --rose: #a65151;
+  --info: #5e7e8c;
+
+  --r-xs: 10px;
+  --r-sm: 14px;
+  --r-md: 18px;
+  --r-lg: 24px;
+  --r-xl: 30px;
+
+  --sh-sm: 0 1px 3px rgba(46, 54, 34, 0.05), 0 1px 2px rgba(46, 54, 34, 0.04);
+  --sh-md: 0 6px 22px rgba(46, 54, 34, 0.07), 0 2px 6px rgba(46, 54, 34, 0.04);
+  --sh-lg: 0 14px 40px rgba(46, 54, 34, 0.1), 0 4px 12px rgba(46, 54, 34, 0.05);
+  --sh-olive: 0 10px 28px rgba(76, 90, 54, 0.28);
+
+  --font: 'Yekan Bakh', 'Vazirmatn', system-ui, sans-serif;
 }
 
 * {
+  box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -18,12 +60,10 @@ html,
 body {
   padding: 0;
   margin: 0;
-  font-family: 'Yekan Bakh', 'Vazirmatn', system-ui, sans-serif;
+  font-family: var(--font);
   color: var(--ink);
-  background:
-    radial-gradient(1100px 700px at 70% -10%, #eef1e4 0%, transparent 55%),
-    radial-gradient(900px 600px at 10% 110%, #f2ece0 0%, transparent 50%),
-    #ede9df;
+  -webkit-font-smoothing: antialiased;
+  background: var(--sand-50);
 }
 
 a {
@@ -35,12 +75,46 @@ a {
   font-feature-settings: 'ss01';
 }
 
-/* hide scrollbars to match the app aesthetic */
+input::placeholder {
+  color: var(--ink-4);
+}
+
+/* ── responsive helpers used by the landing composition ── */
+@media (max-width: 900px) {
+  .hero-grid,
+  .cta-grid,
+  .footer-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .cat-grid,
+  .why-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+  .hero-visual,
+  .hide-md {
+    display: none !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .nav-links,
+  .hide-sm {
+    display: none !important;
+  }
+  .cat-grid,
+  .why-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .hero-search {
+    flex-wrap: wrap;
+  }
+}
+
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--olive-200, #d6dcc4);
+  background: var(--olive-200);
   border-radius: 8px;
 }

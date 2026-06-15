@@ -2,7 +2,12 @@
 // It has no dependency on any framework or database driver.
 package domain
 
-import "time"
+import (
+	"strings"
+	"time"
+
+	"gorm.io/gorm"
+)
 
 // Role enumerates account roles.
 type Role string
@@ -78,7 +83,8 @@ type Teacher struct {
 	Level     string        `gorm:"size:30" json:"level"`
 	City      string        `gorm:"size:80;index" json:"city"`
 	Bio       string        `gorm:"size:1000" json:"bio"`
-	Skills    string        `gorm:"size:500" json:"-"` // comma-separated, exposed via SkillList
+	Skills    string        `gorm:"size:500" json:"-"` // comma-separated storage
+	SkillList []string      `gorm:"-" json:"skills"`   // populated from Skills on read
 	Price30   int64         `json:"price30"`
 	Price60   int64         `json:"price60"`
 	Female    bool          `json:"female"`
@@ -94,6 +100,17 @@ type Teacher struct {
 	User     *User     `gorm:"foreignKey:UserID" json:"user,omitempty"`
 	Services []Service `gorm:"foreignKey:TeacherID" json:"services,omitempty"`
 	Samples  []Sample  `gorm:"foreignKey:TeacherID" json:"samples,omitempty"`
+}
+
+// AfterFind splits the stored comma-separated Skills into SkillList for output.
+func (t *Teacher) AfterFind(*gorm.DB) error {
+	t.SkillList = nil
+	for _, s := range strings.Split(t.Skills, ",") {
+		if s = strings.TrimSpace(s); s != "" {
+			t.SkillList = append(t.SkillList, s)
+		}
+	}
+	return nil
 }
 
 // Service is a bookable offering of a teacher.

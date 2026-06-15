@@ -25,6 +25,9 @@ dependencies:
   # local storage (token)
   shared_preferences: ^2.3.3
 
+  # themed OTP input
+  pinput: ^5.0.0
+
   # value equality
   equatable: ^2.0.7
 

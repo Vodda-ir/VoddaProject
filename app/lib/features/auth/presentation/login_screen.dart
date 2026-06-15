@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/network/error_message.dart';
 import '../../../core/theme/app_colors.dart';
 import '../data/auth_repository.dart';
 
@@ -29,7 +30,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       await ref.read(authRepositoryProvider).requestOtp(_mobile.text.trim());
       setState(() => _codeSent = true);
     } catch (e) {
-      setState(() => _error = 'ارسال کد ناموفق بود');
+      setState(() => _error = errorMessage(e));
     } finally {
       setState(() => _loading = false);
     }
@@ -44,7 +45,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       await ref.read(authRepositoryProvider).verifyOtp(_mobile.text.trim(), _code.text.trim());
       if (mounted) context.go('/');
     } catch (e) {
-      setState(() => _error = 'کد تأیید نامعتبر است');
+      setState(() => _error = errorMessage(e));
     } finally {
       setState(() => _loading = false);
     }
