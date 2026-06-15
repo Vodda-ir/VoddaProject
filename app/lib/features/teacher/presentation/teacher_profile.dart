@@ -15,7 +15,10 @@ class TeacherProfile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final me = ref.watch(meProvider);
     final name = me.maybeWhen(data: (u) => u.name, orElse: () => 'استاد وُدّا');
-    final avatarUrl = me.maybeWhen(data: (u) => u.avatarUrl, orElse: () => null);
+    final avatarUrl = me.maybeWhen(
+      data: (u) => u.avatarUrl,
+      orElse: () => null,
+    );
     final tag = me.maybeWhen(data: (u) => u.teacherTag, orElse: () => 'مدرس');
 
     final rows = [
@@ -63,7 +66,12 @@ class TeacherProfile extends ConsumerWidget {
                 children: [
                   Row(
                     children: [
-                      VoddaAvatar(size: 62, ring: true, verified: true, imageUrl: avatarUrl),
+                      VoddaAvatar(
+                        size: 62,
+                        ring: true,
+                        verified: true,
+                        imageUrl: avatarUrl,
+                      ),
                       const SizedBox(width: 14),
                       Expanded(
                         child: Column(
@@ -89,7 +97,7 @@ class TeacherProfile extends ConsumerWidget {
                             Row(
                               children: [
                                 Icon(
-                                LucideIcons.star,
+                                  LucideIcons.star,
                                   size: 14,
                                   color: AppColors.gold,
                                 ),

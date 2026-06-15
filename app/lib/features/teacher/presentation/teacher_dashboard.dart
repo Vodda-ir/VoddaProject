@@ -73,7 +73,12 @@ class _TeacherHeader extends ConsumerWidget {
             onTap: () => _showRoleSheet(context),
             child: Row(
               children: [
-                VoddaAvatar(size: 46, ring: true, verified: true, imageUrl: avatarUrl),
+                VoddaAvatar(
+                  size: 46,
+                  ring: true,
+                  verified: true,
+                  imageUrl: avatarUrl,
+                ),
                 const SizedBox(width: 11),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -96,7 +101,11 @@ class _TeacherHeader extends ConsumerWidget {
                           ),
                         ),
                         SizedBox(width: 5),
-                        Icon(LucideIcons.refreshCw, size: 15, color: AppColors.olive600),
+                        Icon(
+                          LucideIcons.refreshCw,
+                          size: 15,
+                          color: AppColors.olive600,
+                        ),
                       ],
                     ),
                   ],
@@ -117,11 +126,7 @@ class _TeacherHeader extends ConsumerWidget {
             child: Stack(
               alignment: Alignment.center,
               children: [
-                const Icon(
-                LucideIcons.bell,
-                  size: 21,
-                  color: AppColors.ink2,
-                ),
+                const Icon(LucideIcons.bell, size: 21, color: AppColors.ink2),
                 Positioned(
                   top: 11,
                   right: 12,
@@ -508,11 +513,7 @@ class _QuickManage extends StatelessWidget {
     final items = [
       (LucideIcons.bookOpen, 'خدمات من', () => context.push('/t/services')),
       (LucideIcons.clock, 'زمان‌های کاری', () => context.push('/t/worktimes')),
-      (
-        LucideIcons.wallet,
-        'کیف پول',
-        () => context.go('/t/wallet'),
-      ),
+      (LucideIcons.wallet, 'کیف پول', () => context.go('/t/wallet')),
       (LucideIcons.star, 'نظرات قرآن‌آموزان', () {}),
     ];
 
