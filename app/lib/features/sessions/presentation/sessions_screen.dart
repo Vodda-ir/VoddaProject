@@ -46,30 +46,49 @@ class _SessionsScreenState extends ConsumerState<SessionsScreen> {
             ),
           ),
           Expanded(
-            child: sessions.when(
-              loading: () => const Center(
-                child: CircularProgressIndicator(color: AppColors.olive600),
-              ),
-              error: (e, _) => AppErrorView(
-                error: e,
-                onRetry: () => ref.invalidate(mySessionsProvider(_tab)),
-              ),
-              data: (list) => list.isEmpty
-                  ? const EmptyState(
-                      icon: LucideIcons.calendar,
-                      title: 'جلسه‌ای نیست',
-                      sub: 'هنوز جلسه‌ای در این بخش ندارید.',
-                    )
-                  : ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                      itemCount: list.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 14),
-                      itemBuilder: (_, i) => _SessionCard(
-                        session: list[i],
-                        onRate: () => _openRating(list[i]),
-                        onCancel: () => _cancel(list[i]),
+            child: RefreshIndicator(
+              color: AppColors.olive600,
+              onRefresh: () async {
+                ref.invalidate(mySessionsProvider(_tab));
+                await ref.read(mySessionsProvider(_tab).future);
+              },
+              child: sessions.when(
+                loading: () => ListView(
+                  children: const [
+                    SizedBox(height: 200),
+                    Center(
+                      child: CircularProgressIndicator(color: AppColors.olive600),
+                    ),
+                  ],
+                ),
+                error: (e, _) => ListView(
+                  children: [
+                    SizedBox(
+                      height: 200,
+                      child: AppErrorView(
+                        error: e,
+                        onRetry: () => ref.invalidate(mySessionsProvider(_tab)),
                       ),
                     ),
+                  ],
+                ),
+                data: (list) => list.isEmpty
+                    ? const EmptyState(
+                        icon: LucideIcons.calendar,
+                        title: 'جلسه‌ای نیست',
+                        sub: 'هنوز جلسه‌ای در این بخش ندارید.',
+                      )
+                    : ListView.separated(
+                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                        itemCount: list.length,
+                        separatorBuilder: (_, _) => const SizedBox(height: 14),
+                        itemBuilder: (_, i) => _SessionCard(
+                          session: list[i],
+                          onRate: () => _openRating(list[i]),
+                          onCancel: () => _cancel(list[i]),
+                        ),
+                      ),
+              ),
             ),
           ),
         ],

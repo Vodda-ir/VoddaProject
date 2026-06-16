@@ -5,6 +5,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/fa.dart';
+import '../../../core/widgets/app_error.dart';
 import '../../../core/widgets/ui.dart';
 import '../../../core/widgets/vodda_avatar.dart';
 import '../../auth/data/user_repository.dart';
@@ -27,25 +28,35 @@ class TeacherDashboard extends ConsumerWidget {
     );
 
     return SafeArea(
-      child: ListView(
-        padding: const EdgeInsets.only(bottom: 24),
-        children: [
-          _TeacherHeader(me: me),
-          const SizedBox(height: 20),
-          // Earnings hero
-          _EarningsHero(),
-          const SizedBox(height: 22),
-          // Pending requests banner
-          _RequestsBanner(),
-          const SizedBox(height: 22),
-          // Next session
-          if (nextSession != null && nextSession.status == 'confirmed')
-            _NextSession(session: nextSession),
-          // Quick manage
-          const SizedBox(height: 22),
-          SectionHeader(title: 'مدیریت سریع'),
-          const _QuickManage(),
-        ],
+      child: RefreshIndicator(
+        color: AppColors.olive600,
+        onRefresh: () async {
+          ref.invalidate(meProvider);
+          ref.invalidate(myTeacherSessionsProvider('upcoming'));
+          ref.invalidate(myTeacherSessionsProvider('pending'));
+          ref.invalidate(transactionsProvider);
+          await ref.read(meProvider.future);
+        },
+        child: ListView(
+          padding: const EdgeInsets.only(bottom: 24),
+          children: [
+            _TeacherHeader(me: me),
+            const SizedBox(height: 20),
+            // Earnings hero
+            _EarningsHero(),
+            const SizedBox(height: 22),
+            // Pending requests banner
+            _RequestsBanner(),
+            const SizedBox(height: 22),
+            // Next session
+            if (nextSession != null && nextSession.status == 'confirmed')
+              _NextSession(session: nextSession),
+            // Quick manage
+            const SizedBox(height: 22),
+            SectionHeader(title: 'مدیریت سریع'),
+            const _QuickManage(),
+          ],
+        ),
       ),
     );
   }
@@ -269,12 +280,33 @@ class _RequestsBanner extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final pending = ref.watch(myTeacherSessionsProvider('pending'));
-    final count = pending.maybeWhen(data: (l) => l.length, orElse: () => 0);
-    final countStr = faNumber(count);
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: GestureDetector(
+    return pending.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 20),
+        child: SizedBox(
+          height: 78,
+          child: Center(
+            child: CircularProgressIndicator(color: AppColors.olive600, strokeWidth: 2.5),
+          ),
+        ),
+      ),
+      error: (e, _) => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: AppErrorView(
+          error: e,
+          compact: true,
+          onRetry: () => ref.invalidate(myTeacherSessionsProvider('pending')),
+        ),
+      ),
+      data: (list) {
+        final count = list.length;
+        final countStr = faNumber(count);
+        if (count == 0) return const SizedBox.shrink();
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: GestureDetector(
         onTap: () => context.go('/t/requests'),
         child: Container(
           padding: const EdgeInsets.all(16),
@@ -367,6 +399,8 @@ class _RequestsBanner extends ConsumerWidget {
           ),
         ),
       ),
+      );
+      },
     );
   }
 }

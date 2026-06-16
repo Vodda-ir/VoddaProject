@@ -118,23 +118,42 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           ),
           const SizedBox(height: 16),
           Expanded(
-            child: teachersAsync.when(
-              loading: () => const Center(
-                child: CircularProgressIndicator(color: AppColors.olive600),
-              ),
-              error: (e, _) => AppErrorView(
-                error: e,
-                onRetry: () => ref.invalidate(teachersProvider('')),
-              ),
-              data: (all) {
-                final list = all.where((t) {
-                  final byField = _field == 'all' || t.field == _field;
-                  final byQuery =
-                      _q.isEmpty || t.name.contains(_q) || t.tag.contains(_q);
-                  return byField && byQuery;
-                }).toList();
-                return _results(list);
+            child: RefreshIndicator(
+              color: AppColors.olive600,
+              onRefresh: () async {
+                ref.invalidate(teachersProvider(''));
+                await ref.read(teachersProvider('').future);
               },
+              child: teachersAsync.when(
+                loading: () => ListView(
+                  children: const [
+                    SizedBox(height: 200),
+                    Center(
+                      child: CircularProgressIndicator(color: AppColors.olive600),
+                    ),
+                  ],
+                ),
+                error: (e, _) => ListView(
+                  children: [
+                    SizedBox(
+                      height: 200,
+                      child: AppErrorView(
+                        error: e,
+                        onRetry: () => ref.invalidate(teachersProvider('')),
+                      ),
+                    ),
+                  ],
+                ),
+                data: (all) {
+                  final list = all.where((t) {
+                    final byField = _field == 'all' || t.field == _field;
+                    final byQuery =
+                        _q.isEmpty || t.name.contains(_q) || t.tag.contains(_q);
+                    return byField && byQuery;
+                  }).toList();
+                  return _results(list);
+                },
+              ),
             ),
           ),
         ],

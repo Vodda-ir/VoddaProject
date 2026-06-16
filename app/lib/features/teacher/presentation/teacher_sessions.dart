@@ -46,27 +46,46 @@ class _TeacherSessionsState extends ConsumerState<TeacherSessions> {
             ),
           ),
           Expanded(
-            child: sessions.when(
-              loading: () => const Center(
-                child: CircularProgressIndicator(color: AppColors.olive600),
-              ),
-              error: (e, _) => AppErrorView(
-                error: e,
-                onRetry: () => ref.invalidate(myTeacherSessionsProvider(_tab)),
-              ),
-              data: (list) => list.isEmpty
-                  ? const Center(
-                      child: Text(
-                        'جلسه‌ای نیست',
-                        style: TextStyle(color: AppColors.ink3),
-                      ),
-                    )
-                  : ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                      itemCount: list.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 14),
-                      itemBuilder: (_, i) => _TSessionCard(session: list[i]),
+            child: RefreshIndicator(
+              color: AppColors.olive600,
+              onRefresh: () async {
+                ref.invalidate(myTeacherSessionsProvider(_tab));
+                await ref.read(myTeacherSessionsProvider(_tab).future);
+              },
+              child: sessions.when(
+                loading: () => ListView(
+                  children: const [
+                    SizedBox(height: 200),
+                    Center(
+                      child: CircularProgressIndicator(color: AppColors.olive600),
                     ),
+                  ],
+                ),
+                error: (e, _) => ListView(
+                  children: [
+                    SizedBox(
+                      height: 200,
+                      child: AppErrorView(
+                        error: e,
+                        onRetry: () => ref.invalidate(myTeacherSessionsProvider(_tab)),
+                      ),
+                    ),
+                  ],
+                ),
+                data: (list) => list.isEmpty
+                    ? const Center(
+                        child: Text(
+                          'جلسه‌ای نیست',
+                          style: TextStyle(color: AppColors.ink3),
+                        ),
+                      )
+                    : ListView.separated(
+                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                        itemCount: list.length,
+                        separatorBuilder: (_, _) => const SizedBox(height: 14),
+                        itemBuilder: (_, i) => _TSessionCard(session: list[i]),
+                      ),
+              ),
             ),
           ),
         ],

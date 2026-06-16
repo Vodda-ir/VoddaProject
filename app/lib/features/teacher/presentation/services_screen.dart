@@ -4,6 +4,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/fa.dart';
+import '../../../core/widgets/app_error.dart';
 import '../data/teacher_repository.dart';
 
 class ServicesScreen extends ConsumerStatefulWidget {
@@ -37,29 +38,54 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
             ),
           ),
           Expanded(
-            child: services.when(
-              loading: () => const Center(
-                child: CircularProgressIndicator(color: AppColors.olive600),
-              ),
-              error: (e, _) => Center(
-                child: Text('خطا', style: TextStyle(color: AppColors.rose)),
-              ),
-              data: (list) => list.isEmpty && !_adding
-                  ? const Center(
-                      child: Text(
-                        'هنوز خدمتی تعریف نشده',
-                        style: TextStyle(color: AppColors.ink3),
-                      ),
-                    )
-                  : ListView.separated(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      itemCount: list.length + (_adding ? 1 : 0),
-                      separatorBuilder: (_, _) => const SizedBox(height: 12),
-                      itemBuilder: (_, i) {
-                        if (_adding && i == list.length) return _addForm();
-                        return _serviceCard(list[i]);
-                      },
+            child: RefreshIndicator(
+              color: AppColors.olive600,
+              onRefresh: () async {
+                ref.invalidate(myServicesProvider);
+                await ref.read(myServicesProvider.future);
+              },
+              child: services.when(
+                loading: () => ListView(
+                  children: const [
+                    SizedBox(height: 160),
+                    Center(
+                      child: CircularProgressIndicator(color: AppColors.olive600),
                     ),
+                  ],
+                ),
+                error: (e, _) => ListView(
+                  children: [
+                    SizedBox(
+                      height: 160,
+                      child: AppErrorView(
+                        error: e,
+                        onRetry: () => ref.invalidate(myServicesProvider),
+                      ),
+                    ),
+                  ],
+                ),
+                data: (list) => list.isEmpty && !_adding
+                    ? ListView(
+                        children: const [
+                          SizedBox(height: 80),
+                          Center(
+                            child: Text(
+                              'هنوز خدمتی تعریف نشده',
+                              style: TextStyle(color: AppColors.ink3),
+                            ),
+                          ),
+                        ],
+                      )
+                    : ListView.separated(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        itemCount: list.length + (_adding ? 1 : 0),
+                        separatorBuilder: (_, _) => const SizedBox(height: 12),
+                        itemBuilder: (_, i) {
+                          if (_adding && i == list.length) return _addForm();
+                          return _serviceCard(list[i]);
+                        },
+                      ),
+              ),
             ),
           ),
           if (!_adding)

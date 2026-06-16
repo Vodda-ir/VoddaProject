@@ -47,17 +47,35 @@ class RequestsScreen extends ConsumerWidget {
             ),
           ),
           Expanded(
-            child: sessions.when(
-              loading: () => const Center(
-                child: CircularProgressIndicator(color: AppColors.olive600),
-              ),
-              error: (e, _) => AppErrorView(
-                error: e,
-                onRetry: () =>
-                    ref.invalidate(myTeacherSessionsProvider('pending')),
-              ),
-              data: (list) => list.isEmpty
-                  ? const Center(
+            child: RefreshIndicator(
+              color: AppColors.olive600,
+              onRefresh: () async {
+                ref.invalidate(myTeacherSessionsProvider('pending'));
+                await ref.read(myTeacherSessionsProvider('pending').future);
+              },
+              child: sessions.when(
+                loading: () => ListView(
+                  children: const [
+                    SizedBox(height: 200),
+                    Center(
+                      child: CircularProgressIndicator(color: AppColors.olive600),
+                    ),
+                  ],
+                ),
+                error: (e, _) => ListView(
+                  children: [
+                    SizedBox(
+                      height: 200,
+                      child: AppErrorView(
+                        error: e,
+                        onRetry: () =>
+                            ref.invalidate(myTeacherSessionsProvider('pending')),
+                      ),
+                    ),
+                  ],
+                ),
+                data: (list) => list.isEmpty
+                    ? const Center(
                       child: Text(
                         'درخواستی در انتظار پاسخ نیست',
                         style: TextStyle(color: AppColors.ink3),
@@ -68,8 +86,7 @@ class RequestsScreen extends ConsumerWidget {
                       itemCount: list.length,
                       separatorBuilder: (_, _) => const SizedBox(height: 14),
                       itemBuilder: (_, i) => _RequestCard(session: list[i]),
-                    ),
-            ),
+                    ),              ),            ),
           ),
         ],
       ),

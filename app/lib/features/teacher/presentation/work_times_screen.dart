@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/app_error.dart';
 import '../data/teacher_repository.dart';
 
 class WorkTimesScreen extends ConsumerStatefulWidget {
@@ -61,24 +62,44 @@ class _WorkTimesScreenState extends ConsumerState<WorkTimesScreen> {
               ),
             ),
             Expanded(
-              child: workTimes.when(
-                loading: () => const Center(
-                  child: CircularProgressIndicator(color: AppColors.olive600),
-                ),
-                error: (e, _) => Center(
-                  child: Text('خطا', style: TextStyle(color: AppColors.rose)),
-                ),
-                data: (slots) {
-                  _originalSlots ??= List.from(slots);
-                  _slots = slots;
-                  return ListView(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    children: List.generate(
-                      7,
-                      (weekday) => _dayCard(weekday, slots),
-                    ),
-                  );
+              child: RefreshIndicator(
+                color: AppColors.olive600,
+                onRefresh: () async {
+                  ref.invalidate(myWorkTimesProvider);
+                  await ref.read(myWorkTimesProvider.future);
                 },
+                child: workTimes.when(
+                  loading: () => ListView(
+                    children: const [
+                      SizedBox(height: 160),
+                      Center(
+                        child: CircularProgressIndicator(color: AppColors.olive600),
+                      ),
+                    ],
+                  ),
+                  error: (e, _) => ListView(
+                    children: [
+                      SizedBox(
+                        height: 160,
+                        child: AppErrorView(
+                          error: e,
+                          onRetry: () => ref.invalidate(myWorkTimesProvider),
+                        ),
+                      ),
+                    ],
+                  ),
+                  data: (slots) {
+                    _originalSlots ??= List.from(slots);
+                    _slots = slots;
+                    return ListView(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      children: List.generate(
+                        7,
+                        (weekday) => _dayCard(weekday, slots),
+                      ),
+                    );
+                  },
+                ),
               ),
             ),
             Padding(

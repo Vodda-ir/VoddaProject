@@ -77,6 +77,7 @@
 - ✅ README کامل
 - ✅ مستندات `docs/` (architecture، api، deployment، design-system)
 - ✅ **مدیریت خطاهای شبکه با SnackBar**: ایجاد `SnackBarService` با global `scaffoldMessengerKey`، اینترسپتور خطای اتصال در DioClient، try-catch در تمام mutation methodهای ریپازیتوری (بدون rethrow تا کرش نکند)، بروزرسانی تمام screenها برای بررسی مقدار بازگشتی
+- ✅ **Pull-to-refresh در تمام صفحه‌ها**: اضافه شدن RefreshIndicator به همه صفحه‌های داده‌محور (HomeScreen, SearchScreen, SessionsScreen, WalletScreen, ProfileTab, TeacherProfileScreen, TeacherDashboard, RequestsScreen, TeacherSessions, TeacherWallet, TeacherProfile, ServicesScreen, WorkTimesScreen) + بهبود حالت‌های loading/error در TeacherDashboard و ServicesScreen و WorkTimesScreen
 - ⬜ تست‌های خودکار (Go unit + Flutter widget + e2e)
 
 ---

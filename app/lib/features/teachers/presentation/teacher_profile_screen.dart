@@ -38,8 +38,14 @@ class TeacherProfileScreen extends ConsumerWidget {
           error: e,
           onRetry: () => ref.invalidate(_teacherByIdProvider(id)),
         ),
-        data: (t) => ListView(
-          padding: const EdgeInsets.all(20),
+        data: (t) => RefreshIndicator(
+          color: AppColors.olive600,
+          onRefresh: () async {
+            ref.invalidate(_teacherByIdProvider(id));
+            await ref.read(_teacherByIdProvider(id).future);
+          },
+          child: ListView(
+            padding: const EdgeInsets.all(20),
           children: [
             Center(
               child: Column(
@@ -137,7 +143,8 @@ class TeacherProfileScreen extends ConsumerWidget {
                 ),
               ),
             ),
-          ],
+            ],
+          ),
         ),
       ),
       bottomNavigationBar: Padding(

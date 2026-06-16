@@ -21,8 +21,15 @@ class WalletScreen extends ConsumerWidget {
     }
 
     return SafeArea(
-      child: ListView(
-        padding: const EdgeInsets.only(bottom: 24),
+      child: RefreshIndicator(
+        color: AppColors.olive600,
+        onRefresh: () async {
+          ref.invalidate(meProvider);
+          ref.invalidate(transactionsProvider);
+          await ref.read(meProvider.future);
+        },
+        child: ListView(
+          padding: const EdgeInsets.only(bottom: 24),
         children: [
           const Padding(
             padding: EdgeInsets.fromLTRB(20, 12, 20, 16),
@@ -113,6 +120,7 @@ class WalletScreen extends ConsumerWidget {
             ),
           ),
         ],
+      ),
       ),
     );
   }
