@@ -50,17 +50,17 @@ function UserMenu({ name, role, avatar }: { name: string; role: string; avatar?:
               <a href="/panel/admin" style={panelLinkStyle}>
                 <span style={panelIconStyle('var(--olive-700)', 'var(--olive-100)')}><Icon name="shield" size={18} /></span>
                 <span style={{ flex: 1 }}>پنل مدیریت</span>
-                <Icon name="chevronLeft" size={14} style={{ color: 'var(--ink-4)' }} />
+                <Icon name="chevronL" size={14} style={{ color: 'var(--ink-4)' }} />
               </a>
               <a href="/panel/teacher" style={panelLinkStyle}>
                 <span style={panelIconStyle('var(--olive-600)', 'var(--olive-50)')}><Icon name="award" size={18} /></span>
                 <span style={{ flex: 1 }}>پنل مربی</span>
-                <Icon name="chevronLeft" size={14} style={{ color: 'var(--ink-4)' }} />
+                <Icon name="chevronL" size={14} style={{ color: 'var(--ink-4)' }} />
               </a>
               <a href="/panel/user" style={panelLinkStyle}>
                 <span style={panelIconStyle('var(--ink-2s)', 'var(--sand-100)')}><Icon name="user" size={18} /></span>
                 <span style={{ flex: 1 }}>پنل کاربری</span>
-                <Icon name="chevronLeft" size={14} style={{ color: 'var(--ink-4)' }} />
+                <Icon name="chevronL" size={14} style={{ color: 'var(--ink-4)' }} />
               </a>
             </div>
 

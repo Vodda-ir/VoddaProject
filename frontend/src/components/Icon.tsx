@@ -3,7 +3,7 @@ import type { CSSProperties } from 'react';
 // Line icon set ported from docs/design/vodda-icons.jsx (24×24, stroke=currentColor).
 type IconName =
   | 'home' | 'search' | 'calendar' | 'wallet' | 'user' | 'phone' | 'video'
-  | 'book' | 'mic' | 'star' | 'heart' | 'chevronL' | 'arrowL' | 'play'
+  | 'book' | 'mic' | 'star' | 'heart' | 'chevronL' | 'chevronUp' | 'arrowL' | 'play'
   | 'check' | 'checkCircle' | 'bell' | 'message' | 'pin' | 'clock' | 'shield'
   | 'award' | 'users' | 'sparkle' | 'download' | 'quran' | 'headphones'
   | 'settings' | 'logout' | 'edit' | 'grid' | 'list' | 'trending' | 'coins' | 'doc' | 'x';
@@ -45,6 +45,7 @@ export function Icon({
       ? <path d="M12 20s-7-4.3-9.2-8.5C1.3 8.6 2.8 5.5 6 5.5c2 0 3.2 1.2 4 2.3.8-1.1 2-2.3 4-2.3 3.2 0 4.7 3.1 3.2 6C19 15.7 12 20 12 20Z" fill="currentColor" stroke="none" />
       : <path {...p} d="M12 19.5s-6.5-4-8.5-7.8C2 8.7 3.4 6 6.2 6c1.9 0 3 1.1 3.8 2.2C10.8 7.1 11.9 6 13.8 6c2.8 0 4.2 2.7 2.7 5.7C14.5 15.5 12 19.5 12 19.5Z" />,
     chevronL: <path {...p} d="m14 6-6 6 6 6" />,
+    chevronUp: <path {...p} d="m6 14 6-6 6 6" />,
     arrowL: <><path {...p} d="M19 12H5" /><path {...p} d="m11 6-6 6 6 6" /></>,
     play: <path d="M8 5.5v13l11-6.5-11-6.5Z" fill="currentColor" stroke="currentColor" strokeWidth={stroke} strokeLinejoin="round" />,
     check: <path {...p} d="m5 12.5 4.5 4.5L19 7" />,
