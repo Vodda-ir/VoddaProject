@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/providers.dart';
+import '../../../core/services/snackbar_service.dart';
 import '../domain/user.dart';
 
 /// Reads/refreshes the current account.
@@ -16,34 +17,40 @@ class UserRepository {
     return AppUser.fromJson(res.data['data'] as Map<String, dynamic>);
   }
 
-  Future<AppUser> updateProfile({
+  /// Returns the updated user on success, null on error.
+  Future<AppUser?> updateProfile({
     required String name,
     required String city,
     required String bio,
     XFile? avatar,
   }) async {
-    final dio = _ref.read(dioClientProvider).dio;
+    try {
+      final dio = _ref.read(dioClientProvider).dio;
 
-    if (avatar != null) {
-      // Multipart upload with avatar
-      final formData = FormData.fromMap({
-        'name': name,
-        'city': city,
-        'bio': bio,
-        'avatar': await MultipartFile.fromFile(
-          avatar.path,
-          filename: 'avatar.jpg',
-        ),
-      });
-      final res = await dio.put('/me', data: formData);
+      if (avatar != null) {
+        // Multipart upload with avatar
+        final formData = FormData.fromMap({
+          'name': name,
+          'city': city,
+          'bio': bio,
+          'avatar': await MultipartFile.fromFile(
+            avatar.path,
+            filename: 'avatar.jpg',
+          ),
+        });
+        final res = await dio.put('/me', data: formData);
+        return AppUser.fromJson(res.data['data'] as Map<String, dynamic>);
+      }
+
+      final res = await dio.put(
+        '/me',
+        data: {'name': name, 'city': city, 'bio': bio},
+      );
       return AppUser.fromJson(res.data['data'] as Map<String, dynamic>);
+    } catch (e) {
+      SnackBarService.showError(e);
+      return null;
     }
-
-    final res = await dio.put(
-      '/me',
-      data: {'name': name, 'city': city, 'bio': bio},
-    );
-    return AppUser.fromJson(res.data['data'] as Map<String, dynamic>);
   }
 
   /// Updates only the teacher tag field — calls PUT /teacher/me.
@@ -56,7 +63,8 @@ class UserRepository {
       return true;
     } on DioException catch (e) {
       if (e.response?.statusCode == 404) return false; // not a teacher yet
-      rethrow;
+      SnackBarService.showError(e);
+      return false;
     }
   }
 }

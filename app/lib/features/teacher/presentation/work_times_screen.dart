@@ -335,8 +335,8 @@ class _WorkTimesScreenState extends ConsumerState<WorkTimesScreen> {
       return;
     }
     for (final s in _slots.where((x) => x['weekday'] == weekday)) {
-      final sf = _parseMin(s['from'] as String),
-          st = _parseMin(s['to'] as String);
+      final sf = _parseMin((s['from'] ?? '').toString()),
+          st = _parseMin((s['to'] ?? '').toString());
       if (sf < tMin && st > fMin) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('این بازه با بازهٔ دیگری تداخل دارد')),
@@ -352,9 +352,14 @@ class _WorkTimesScreenState extends ConsumerState<WorkTimesScreen> {
 
   String _fmt(TimeOfDay t) =>
       '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+
+  /// Safely parse "HH:MM" to total minutes. Returns 0 for unexpected input.
   int _parseMin(String s) {
-    final p = s.split(':');
-    return int.parse(p[0]) * 60 + int.parse(p[1]);
+    final p = s.trim().split(':');
+    if (p.length < 2) return 0;
+    final h = int.tryParse(p[0]) ?? 0;
+    final m = int.tryParse(p[1]) ?? 0;
+    return h * 60 + m;
   }
 
   void _confirmLeave() {
@@ -384,8 +389,8 @@ class _WorkTimesScreenState extends ConsumerState<WorkTimesScreen> {
 
   Future<void> _save() async {
     setState(() => _saving = true);
-    try {
-      await ref.read(teacherRepositoryProvider).saveWorkTimes(_slots);
+    final ok = await ref.read(teacherRepositoryProvider).saveWorkTimes(_slots);
+    if (ok) {
       _originalSlots = List.from(_slots);
       ref.invalidate(myWorkTimesProvider);
       if (mounted) {
@@ -397,9 +402,8 @@ class _WorkTimesScreenState extends ConsumerState<WorkTimesScreen> {
           ),
         );
       }
-    } finally {
-      if (mounted) setState(() => _saving = false);
     }
+    if (mounted) setState(() => _saving = false);
   }
 }
 

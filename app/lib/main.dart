@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/providers.dart';
 import 'core/router/app_router.dart';
+import 'core/services/snackbar_service.dart';
 import 'core/theme/app_colors.dart';
 import 'core/theme/app_theme.dart';
 
@@ -31,6 +32,7 @@ class VoddaApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'وُدّا',
       debugShowCheckedModeBanner: false,
+      scaffoldMessengerKey: scaffoldMessengerKey,
       theme: AppTheme.light(),
       scrollBehavior: const AppScrollBehavior(),
       routerConfig: router,

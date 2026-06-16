@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/network/error_message.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/vodda_avatar.dart';
 import '../data/session_repository.dart';
@@ -24,18 +23,13 @@ class _RatingSheetState extends ConsumerState<RatingSheet> {
 
   Future<void> _submit() async {
     setState(() => _saving = true);
-    try {
-      await ref
-          .read(sessionRepositoryProvider)
-          .rate(widget.session.id, _rating, _text.text.trim());
-      if (mounted) Navigator.of(context).pop(true);
-    } catch (e) {
+    final ok = await ref
+        .read(sessionRepositoryProvider)
+        .rate(widget.session.id, _rating, _text.text.trim());
+    if (ok && mounted) {
+      Navigator.of(context).pop(true);
+    } else {
       setState(() => _saving = false);
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(errorMessage(e))));
-      }
     }
   }
 

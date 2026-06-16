@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pinput/pinput.dart';
 
-import '../../../core/network/error_message.dart';
 import '../../../core/providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/vodda_logo.dart';
@@ -76,18 +75,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       _loadingOtp = true;
       _error = null;
     });
-    try {
-      await ref.read(authRepositoryProvider).requestOtp(phone);
+    final ok = await ref.read(authRepositoryProvider).requestOtp(phone);
+    if (ok) {
       setState(() => _codeSent = true);
       _animCtrl.forward();
       Future.delayed(const Duration(milliseconds: 450), () {
         if (mounted) _codeFocus.requestFocus();
       });
-    } catch (e) {
-      setState(() => _error = errorMessage(e));
-    } finally {
-      setState(() => _loadingOtp = false);
+    } else {
+      // Error already shown via SnackBar by the repository
     }
+    setState(() => _loadingOtp = false);
   }
 
   Future<void> _verify() async {
@@ -97,16 +95,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       _loadingVerify = true;
       _error = null;
     });
-    try {
-      await ref
-          .read(authRepositoryProvider)
-          .verifyOtp(_mobile.text.trim(), code);
+    final needProfile = await ref
+        .read(authRepositoryProvider)
+        .verifyOtp(_mobile.text.trim(), code);
+    if (needProfile == null) {
+      // Error already shown via SnackBar by the repository
+    } else {
       if (mounted) context.go('/');
-    } catch (e) {
-      setState(() => _error = errorMessage(e));
-    } finally {
-      setState(() => _loadingVerify = false);
     }
+    setState(() => _loadingVerify = false);
   }
 
   void _resetPhone() {

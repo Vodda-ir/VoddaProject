@@ -3,7 +3,6 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/network/error_message.dart';
 import '../../../core/providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/fa.dart';
@@ -45,8 +44,11 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
     try {
       final dio = ref.read(dioClientProvider).dio;
       final res = await dio.get('/teachers/${widget.teacherId}/work-times');
+      final raw = (res.data is Map) ? (res.data['data'] as List?) : null;
       _workTimes =
-          (res.data['data'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+          raw?.map((e) => Map<String, dynamic>.from(e as Map)).toList() ?? [];
+    } catch (_) {
+      _workTimes = [];
     } finally {
       if (mounted) setState(() => _loadingSlots = false);
     }
@@ -55,18 +57,23 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
   /// Generate available 30-min slots for the selected day from teacher's work times.
   List<String> _availableSlots() {
     final d = DateTime.now().add(Duration(days: _dayOffset));
-    // Persian week: 0=Sat … 6=Fri; Dart weekday: 1=Mon … 7=Sun
-    final weekday =
-        d.weekday % 7; // 0=Sun … 6=Sat → maps to Persian 0=Sat when offset
-    final persianWeekday = (weekday + 1) % 7; // align to 0=Sat … 6=Fri
-    final daySlots = _workTimes
-        .where((w) => w['weekday'] == persianWeekday)
-        .toList();
+    // Persian week: 0=Sat … 6=Fri.  Dart weekday 1=Mon → Persian 2
+    final persianWeekday = (d.weekday + 1) % 7;
 
     final slots = <String>[];
-    for (final s in daySlots) {
-      final from = _parseMin(s['from'] as String);
-      final to = _parseMin(s['to'] as String);
+    for (final w in _workTimes) {
+      // Compare weekday as int, tolerating String-encoded numbers from JSON.
+      final wd = w['weekday'];
+      if (wd == null) continue;
+      if ((wd is int ? wd : int.tryParse(wd.toString())) != persianWeekday)
+        continue;
+
+      final fromRaw = w['from'];
+      final toRaw = w['to'];
+      if (fromRaw == null || toRaw == null) continue;
+      final from = _parseMin(fromRaw.toString());
+      final to = _parseMin(toRaw.toString());
+      if (from == null || to == null || to <= from) continue;
       for (int m = from; m + 30 <= to; m += 30) {
         final h = m ~/ 60;
         final min = m % 60;
@@ -78,9 +85,15 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
     return slots;
   }
 
-  int _parseMin(String s) {
-    final p = s.split(':');
-    return int.parse(p[0]) * 60 + int.parse(p[1]);
+  /// Parses a time string like "14:00" or "14:00:00" into total minutes.
+  /// Returns null for malformed input instead of crashing.
+  int? _parseMin(String s) {
+    final p = s.trim().split(':');
+    if (p.length < 2) return null;
+    final h = int.tryParse(p[0]);
+    final m = int.tryParse(p[1]);
+    if (h == null || m == null) return null;
+    return h * 60 + m;
   }
 
   @override
@@ -425,6 +438,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: SizedBox(
+          width: double.infinity,
           height: 52,
           child: ElevatedButton(
             onPressed: !canNext || _saving ? null : () => _next(t),
@@ -460,20 +474,13 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
       int.parse(parts[0]),
       int.parse(parts[1]),
     );
-    try {
-      await ref
-          .read(sessionRepositoryProvider)
-          .book(teacherId: t.id, serviceId: _service!.id, at: at);
-      if (mounted) setState(() => _step = 4);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(errorMessage(e))));
-      }
-    } finally {
-      if (mounted) setState(() => _saving = false);
+    final ok = await ref
+        .read(sessionRepositoryProvider)
+        .book(teacherId: t.id, serviceId: _service!.id, at: at);
+    if (mounted && ok) {
+      setState(() => _step = 4);
     }
+    if (mounted) setState(() => _saving = false);
   }
 
   static String _weekday(DateTime d) {

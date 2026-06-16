@@ -194,10 +194,10 @@ class TeacherProfile extends ConsumerWidget {
                       _Toggle(
                         on: available,
                         onChanged: (v) async {
-                          await ref
+                          final ok = await ref
                               .read(teacherRepositoryProvider)
                               .setAvailable(v);
-                          ref.invalidate(meProvider);
+                          if (ok) ref.invalidate(meProvider);
                         },
                       ),
                     ],

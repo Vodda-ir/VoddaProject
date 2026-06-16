@@ -76,6 +76,7 @@
 ## فاز ۶ — نهایی‌سازی
 - ✅ README کامل
 - ✅ مستندات `docs/` (architecture، api، deployment، design-system)
+- ✅ **مدیریت خطاهای شبکه با SnackBar**: ایجاد `SnackBarService` با global `scaffoldMessengerKey`، اینترسپتور خطای اتصال در DioClient، try-catch در تمام mutation methodهای ریپازیتوری (بدون rethrow تا کرش نکند)، بروزرسانی تمام screenها برای بررسی مقدار بازگشتی
 - ⬜ تست‌های خودکار (Go unit + Flutter widget + e2e)
 
 ---

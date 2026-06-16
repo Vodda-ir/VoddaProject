@@ -74,26 +74,26 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       _saving = true;
       _error = null;
     });
-    try {
-      final repo = ref.read(userRepositoryProvider);
-      await repo.updateProfile(
-        name: _nameCtrl.text.trim(),
-        city: _cityCtrl.text.trim(),
-        bio: _bioCtrl.text.trim(),
-        avatar: _pickedImage,
-      );
-      if (_isTeacher) {
-        await repo.updateTeacherTag(_tagCtrl.text.trim());
-      }
-      ref.invalidate(meProvider);
-      // Force immediate re-fetch so the parent screen shows fresh data.
-      await ref.read(meProvider.future);
-      if (mounted) context.pop(true);
-    } catch (e) {
-      setState(() => _error = 'خطا در ذخیرهٔ تغییرات');
-    } finally {
+    final repo = ref.read(userRepositoryProvider);
+    final user = await repo.updateProfile(
+      name: _nameCtrl.text.trim(),
+      city: _cityCtrl.text.trim(),
+      bio: _bioCtrl.text.trim(),
+      avatar: _pickedImage,
+    );
+    if (user == null) {
+      // Error already shown via SnackBar by the repository
       if (mounted) setState(() => _saving = false);
+      return;
     }
+    if (_isTeacher) {
+      await repo.updateTeacherTag(_tagCtrl.text.trim());
+    }
+    ref.invalidate(meProvider);
+    // Force immediate re-fetch so the parent screen shows fresh data.
+    await ref.read(meProvider.future);
+    if (mounted) context.pop(true);
+    if (mounted) setState(() => _saving = false);
   }
 
   @override

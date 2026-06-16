@@ -175,10 +175,10 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
                     );
                     return;
                   }
-                  await ref
+                  final ok = await ref
                       .read(teacherRepositoryProvider)
                       .updateService(id, active: v);
-                  ref.invalidate(myServicesProvider);
+                  if (ok) ref.invalidate(myServicesProvider);
                 },
               ),
               const SizedBox(width: 4),
@@ -270,10 +270,10 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
               final nt = tCtrl.text.trim(),
                   np = int.tryParse(pCtrl.text.trim()) ?? 0;
               if (nt.isEmpty || np <= 0) return;
-              await ref
+              final ok = await ref
                   .read(teacherRepositoryProvider)
                   .updateService(id, title: nt, price: np, duration: dur);
-              ref.invalidate(myServicesProvider);
+              if (ok) ref.invalidate(myServicesProvider);
               if (ctx.mounted) Navigator.pop(ctx);
             },
             child: const Text('ذخیره'),
@@ -344,17 +344,19 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
                   final title = _titleCtrl.text.trim(),
                       price = int.tryParse(_priceCtrl.text.trim()) ?? 0;
                   if (title.isEmpty || price <= 0) return;
-                  await ref
+                  final result = await ref
                       .read(teacherRepositoryProvider)
                       .addService(
                         title: title,
                         duration: _duration,
                         price: price,
                       );
-                  ref.invalidate(myServicesProvider);
-                  setState(() => _adding = false);
-                  _titleCtrl.clear();
-                  _priceCtrl.clear();
+                  if (result != null) {
+                    ref.invalidate(myServicesProvider);
+                    setState(() => _adding = false);
+                    _titleCtrl.clear();
+                    _priceCtrl.clear();
+                  }
                 },
                 child: const Text('افزودن'),
               ),

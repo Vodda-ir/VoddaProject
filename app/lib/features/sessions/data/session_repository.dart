@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/providers.dart';
+import '../../../core/services/snackbar_service.dart';
 import '../domain/session.dart';
 
 /// Learner-facing session operations.
@@ -20,47 +21,82 @@ class SessionRepository {
         .toList();
   }
 
-  Future<void> book({
+  /// Returns true on success, false if an error occurred (SnackBar already shown).
+  Future<bool> book({
     required int teacherId,
     required int serviceId,
     required DateTime at,
     String note = '',
   }) async {
-    final dio = _ref.read(dioClientProvider).dio;
-    await dio.post(
-      '/sessions',
-      data: {
-        'teacher_id': teacherId,
-        'service_id': serviceId,
-        'scheduled_at': at.toUtc().toIso8601String(),
-        'note': note,
-      },
-    );
+    try {
+      final dio = _ref.read(dioClientProvider).dio;
+      await dio.post(
+        '/sessions',
+        data: {
+          'teacher_id': teacherId,
+          'service_id': serviceId,
+          'scheduled_at': at.toUtc().toIso8601String(),
+          'note': note,
+        },
+      );
+      return true;
+    } catch (e) {
+      SnackBarService.showError(e);
+      return false;
+    }
   }
 
-  Future<void> cancel(int id) async {
-    final dio = _ref.read(dioClientProvider).dio;
-    await dio.post('/sessions/$id/cancel');
+  /// Returns true on success, false if an error occurred.
+  Future<bool> cancel(int id) async {
+    try {
+      final dio = _ref.read(dioClientProvider).dio;
+      await dio.post('/sessions/$id/cancel');
+      return true;
+    } catch (e) {
+      SnackBarService.showError(e);
+      return false;
+    }
   }
 
   /// Teacher: accept a session request.
-  Future<void> accept(int id) async {
-    final dio = _ref.read(dioClientProvider).dio;
-    await dio.post('/sessions/$id/accept');
+  /// Returns true on success, false if an error occurred.
+  Future<bool> accept(int id) async {
+    try {
+      final dio = _ref.read(dioClientProvider).dio;
+      await dio.post('/sessions/$id/accept');
+      return true;
+    } catch (e) {
+      SnackBarService.showError(e);
+      return false;
+    }
   }
 
   /// Teacher: reject a session request.
-  Future<void> reject(int id, {String reason = ''}) async {
-    final dio = _ref.read(dioClientProvider).dio;
-    await dio.post('/sessions/$id/reject', data: {'reason': reason});
+  /// Returns true on success, false if an error occurred.
+  Future<bool> reject(int id, {String reason = ''}) async {
+    try {
+      final dio = _ref.read(dioClientProvider).dio;
+      await dio.post('/sessions/$id/reject', data: {'reason': reason});
+      return true;
+    } catch (e) {
+      SnackBarService.showError(e);
+      return false;
+    }
   }
 
-  Future<void> rate(int sessionId, int rating, String text) async {
-    final dio = _ref.read(dioClientProvider).dio;
-    await dio.post(
-      '/reviews',
-      data: {'session_id': sessionId, 'rating': rating, 'text': text},
-    );
+  /// Returns true on success, false if an error occurred.
+  Future<bool> rate(int sessionId, int rating, String text) async {
+    try {
+      final dio = _ref.read(dioClientProvider).dio;
+      await dio.post(
+        '/reviews',
+        data: {'session_id': sessionId, 'rating': rating, 'text': text},
+      );
+      return true;
+    } catch (e) {
+      SnackBarService.showError(e);
+      return false;
+    }
   }
 
   /// Teacher-facing sessions (requests, upcoming, past).

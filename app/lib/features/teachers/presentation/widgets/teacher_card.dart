@@ -87,11 +87,7 @@ class TeacherCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                const Icon(
-                  LucideIcons.mapPin,
-                  size: 14,
-                  color: AppColors.ink3,
-                ),
+                const Icon(LucideIcons.mapPin, size: 14, color: AppColors.ink3),
                 const SizedBox(width: 2),
                 Text(
                   teacher.city,
@@ -133,6 +129,7 @@ class TeacherCard extends StatelessWidget {
                       vertical: 8,
                     ),
                     textStyle: const TextStyle(
+                      fontFamily: 'IRANYekanXFaNum',
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                     ),

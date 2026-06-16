@@ -2,11 +2,18 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/providers.dart';
+import '../../../core/services/snackbar_service.dart';
 import '../../auth/data/user_repository.dart';
 
 /// A wallet ledger entry.
 class Tx extends Equatable {
-  const Tx({required this.id, required this.type, required this.title, required this.amount, required this.date});
+  const Tx({
+    required this.id,
+    required this.type,
+    required this.title,
+    required this.amount,
+    required this.date,
+  });
   final int id;
   final String type;
   final String title;
@@ -17,8 +24,16 @@ class Tx extends Equatable {
 
   factory Tx.fromJson(Map<String, dynamic> j) {
     final created = DateTime.tryParse(j['created_at'] ?? '');
-    final date = created != null ? '${created.year}/${created.month}/${created.day}' : '';
-    return Tx(id: j['id'] ?? 0, type: j['type'] ?? '', title: j['title'] ?? '', amount: j['amount'] ?? 0, date: date);
+    final date = created != null
+        ? '${created.year}/${created.month}/${created.day}'
+        : '';
+    return Tx(
+      id: j['id'] ?? 0,
+      type: j['type'] ?? '',
+      title: j['title'] ?? '',
+      amount: j['amount'] ?? 0,
+      date: date,
+    );
   }
 
   @override
@@ -36,12 +51,23 @@ class WalletRepository {
     return data.map((e) => Tx.fromJson(e as Map<String, dynamic>)).toList();
   }
 
-  Future<void> charge(int amount) async {
-    final dio = _ref.read(dioClientProvider).dio;
-    await dio.post('/wallet/charge', data: {'amount': amount});
-    _ref.invalidate(meProvider);
+  /// Returns true on success, false if an error occurred.
+  Future<bool> charge(int amount) async {
+    try {
+      final dio = _ref.read(dioClientProvider).dio;
+      await dio.post('/wallet/charge', data: {'amount': amount});
+      _ref.invalidate(meProvider);
+      return true;
+    } catch (e) {
+      SnackBarService.showError(e);
+      return false;
+    }
   }
 }
 
-final walletRepositoryProvider = Provider<WalletRepository>((ref) => WalletRepository(ref));
-final transactionsProvider = FutureProvider<List<Tx>>((ref) => ref.watch(walletRepositoryProvider).transactions());
+final walletRepositoryProvider = Provider<WalletRepository>(
+  (ref) => WalletRepository(ref),
+);
+final transactionsProvider = FutureProvider<List<Tx>>(
+  (ref) => ref.watch(walletRepositoryProvider).transactions(),
+);

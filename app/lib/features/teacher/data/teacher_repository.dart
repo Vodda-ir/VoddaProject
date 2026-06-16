@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/providers.dart';
+import '../../../core/services/snackbar_service.dart';
 
 /// Teacher-specific API operations.
 class TeacherRepository {
@@ -16,46 +17,64 @@ class TeacherRepository {
     return services.cast<Map<String, dynamic>>();
   }
 
-  /// Add a new service.
-  Future<Map<String, dynamic>> addService({
+  /// Add a new service. Returns the created service data, or null on error.
+  Future<Map<String, dynamic>?> addService({
     required String title,
     required int duration,
     required int price,
     String icon = '',
   }) async {
-    final dio = _ref.read(dioClientProvider).dio;
-    final res = await dio.post(
-      '/teacher/services',
-      data: {
-        'title': title,
-        'duration': duration,
-        'price': price,
-        'icon': icon,
-      },
-    );
-    return res.data['data'] as Map<String, dynamic>;
+    try {
+      final dio = _ref.read(dioClientProvider).dio;
+      final res = await dio.post(
+        '/teacher/services',
+        data: {
+          'title': title,
+          'duration': duration,
+          'price': price,
+          'icon': icon,
+        },
+      );
+      return res.data['data'] as Map<String, dynamic>;
+    } catch (e) {
+      SnackBarService.showError(e);
+      return null;
+    }
   }
 
-  Future<void> updateService(
+  /// Returns true on success, false if an error occurred.
+  Future<bool> updateService(
     int id, {
     String? title,
     int? duration,
     int? price,
     bool? active,
   }) async {
-    final dio = _ref.read(dioClientProvider).dio;
-    final data = <String, dynamic>{};
-    if (title != null) data['title'] = title;
-    if (duration != null) data['duration'] = duration;
-    if (price != null) data['price'] = price;
-    if (active != null) data['active'] = active;
-    await dio.put('/teacher/services/$id', data: data);
+    try {
+      final dio = _ref.read(dioClientProvider).dio;
+      final data = <String, dynamic>{};
+      if (title != null) data['title'] = title;
+      if (duration != null) data['duration'] = duration;
+      if (price != null) data['price'] = price;
+      if (active != null) data['active'] = active;
+      await dio.put('/teacher/services/$id', data: data);
+      return true;
+    } catch (e) {
+      SnackBarService.showError(e);
+      return false;
+    }
   }
 
-  /// Delete a service.
-  Future<void> deleteService(int id) async {
-    final dio = _ref.read(dioClientProvider).dio;
-    await dio.delete('/teacher/services/$id');
+  /// Delete a service. Returns true on success.
+  Future<bool> deleteService(int id) async {
+    try {
+      final dio = _ref.read(dioClientProvider).dio;
+      await dio.delete('/teacher/services/$id');
+      return true;
+    } catch (e) {
+      SnackBarService.showError(e);
+      return false;
+    }
   }
 
   /// Fetch current teacher's work times.
@@ -66,16 +85,28 @@ class TeacherRepository {
     return data.cast<Map<String, dynamic>>();
   }
 
-  /// Save work times (replaces all).
-  Future<void> saveWorkTimes(List<Map<String, dynamic>> slots) async {
-    final dio = _ref.read(dioClientProvider).dio;
-    await dio.put('/teacher/work-times', data: {'slots': slots});
+  /// Save work times (replaces all). Returns true on success.
+  Future<bool> saveWorkTimes(List<Map<String, dynamic>> slots) async {
+    try {
+      final dio = _ref.read(dioClientProvider).dio;
+      await dio.put('/teacher/work-times', data: {'slots': slots});
+      return true;
+    } catch (e) {
+      SnackBarService.showError(e);
+      return false;
+    }
   }
 
-  /// Toggle teacher availability.
-  Future<void> setAvailable(bool available) async {
-    final dio = _ref.read(dioClientProvider).dio;
-    await dio.put('/teacher/me', data: {'available': available});
+  /// Toggle teacher availability. Returns true on success.
+  Future<bool> setAvailable(bool available) async {
+    try {
+      final dio = _ref.read(dioClientProvider).dio;
+      await dio.put('/teacher/me', data: {'available': available});
+      return true;
+    } catch (e) {
+      SnackBarService.showError(e);
+      return false;
+    }
   }
 }
 
