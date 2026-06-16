@@ -166,15 +166,63 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
               _Toggle(
                 on: active,
                 onChanged: (v) async {
+                  if (v && !active) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('فعال‌سازی نیازمند تأیید ادمین است'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                    return;
+                  }
                   await ref
                       .read(teacherRepositoryProvider)
                       .updateService(id, active: v);
                   ref.invalidate(myServicesProvider);
                 },
               ),
+              const SizedBox(width: 4),
+              IconButton(
+                icon: const Icon(
+                  LucideIcons.trash2,
+                  size: 18,
+                  color: AppColors.ink4,
+                ),
+                onPressed: () => _confirmDelete(id, title),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _confirmDelete(int id, String title) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('حذف خدمت'),
+        content: Text('آیا مطمئنید می\u200Cخواهید "$title" را حذف کنید؟'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('انصراف'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              await ref.read(teacherRepositoryProvider).deleteService(id);
+              ref.invalidate(myServicesProvider);
+              if (ctx.mounted) Navigator.pop(ctx);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.rose,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('حذف'),
+          ),
+        ],
       ),
     );
   }

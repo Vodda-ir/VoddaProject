@@ -114,13 +114,14 @@ func (uc *TeacherUsecase) UpdateMine(ctx context.Context, userID uint, in Become
 // ── services ──
 
 // AddService creates a bookable service for the teacher.
+// New services are created with Active=false (pending admin approval).
 func (uc *TeacherUsecase) AddService(ctx context.Context, userID uint, s *domain.Service) (*domain.Service, error) {
 	t, err := uc.teachers.ByUserID(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
 	s.TeacherID = t.ID
-	s.Active = true
+	// Active defaults to false (pending) — admin must approve.
 	if err := uc.teachers.AddService(ctx, s); err != nil {
 		return nil, err
 	}
@@ -128,8 +129,8 @@ func (uc *TeacherUsecase) AddService(ctx context.Context, userID uint, s *domain
 }
 
 // UpdateService edits a service owned by the teacher.
-// Only updates fields that are explicitly set (non-zero). Active is only
-// applied when s.ID is set AND the caller provides it via the handler.
+// When title/duration/price are changed the service goes back to pending (Active=false).
+// When only Active is toggled, the provided value is applied directly.
 func (uc *TeacherUsecase) UpdateService(ctx context.Context, userID uint, s *domain.Service) error {
 	t, err := uc.teachers.ByUserID(ctx, userID)
 	if err != nil {
@@ -142,19 +143,32 @@ func (uc *TeacherUsecase) UpdateService(ctx context.Context, userID uint, s *dom
 	if existing.TeacherID != t.ID {
 		return domain.ErrForbidden
 	}
-	// Merge: only overwrite fields that were provided
+	// Track whether content fields are changing (title/duration/price).
+	contentChanged := false
 	if s.Title != "" {
 		existing.Title = s.Title
+		contentChanged = true
 	}
 	if s.Duration > 0 {
 		existing.Duration = s.Duration
+		contentChanged = true
 	}
 	if s.Price > 0 {
 		existing.Price = s.Price
+		contentChanged = true
 	}
 	if s.Icon != "" {
 		existing.Icon = s.Icon
 	}
+	// Active: if content changed → back to pending (false).
+	// Teachers can only deactivate (set Active=false); activation requires admin.
+	if contentChanged {
+		existing.Active = false
+	} else if !s.Active {
+		// Teacher is deactivating the service — allowed.
+		existing.Active = false
+	}
+	// Note: teacher cannot set Active=true; only admin can approve.
 	return uc.teachers.UpdateService(ctx, existing)
 }
 
