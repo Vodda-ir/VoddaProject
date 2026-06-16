@@ -74,19 +74,149 @@ class TeacherProfile extends ConsumerWidget {
         },
         child: ListView(
           padding: const EdgeInsets.only(bottom: 24),
-        children: [
-          const Padding(
-            padding: EdgeInsets.fromLTRB(20, 12, 20, 16),
-            child: Text(
-              'پروفایل استاد',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
+          children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(20, 12, 20, 16),
+              child: Text(
+                'پروفایل استاد',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
+              ),
             ),
-          ),
-          // Identity card
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 18),
-            child: Container(
-              padding: const EdgeInsets.all(16),
+            // Identity card
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 18),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: const [
+                    BoxShadow(color: Color(0x0A2E3622), blurRadius: 6),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        VoddaAvatar(
+                          size: 62,
+                          ring: true,
+                          verified: true,
+                          imageUrl: avatarUrl,
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                name,
+                                style: const TextStyle(
+                                  fontSize: 16.5,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                tag ?? 'مدرس',
+                                style: const TextStyle(
+                                  fontSize: 12.5,
+                                  color: AppColors.olive600,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 7),
+                              Row(
+                                children: [
+                                  Icon(
+                                    LucideIcons.star,
+                                    size: 14,
+                                    color: AppColors.gold,
+                                  ),
+                                  const SizedBox(width: 3),
+                                  const Text(
+                                    '۴.۸',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w800,
+                                      color: AppColors.gold,
+                                    ),
+                                  ),
+                                  const Text(
+                                    ' (۶۴ نظر)',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: AppColors.ink4,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () => context.push('/profile/edit'),
+                          child: Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: AppColors.olive50,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              LucideIcons.pencil,
+                              size: 19,
+                              color: AppColors.olive700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Divider(height: 30, color: AppColors.sand100),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'وضعیت پذیرش جلسه',
+                                style: TextStyle(
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              Text(
+                                available
+                                    ? 'آماده دریافت درخواست جدید'
+                                    : 'موقتاً غیرفعال',
+                                style: const TextStyle(
+                                  fontSize: 11.5,
+                                  color: AppColors.ink3,
+                                  height: 1.6,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        _Toggle(
+                          on: available,
+                          onChanged: (v) async {
+                            final ok = await ref
+                                .read(teacherRepositoryProvider)
+                                .setAvailable(v);
+                            if (ok) ref.invalidate(meProvider);
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            // Menu
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 20),
               decoration: BoxDecoration(
                 color: AppColors.surface,
                 borderRadius: BorderRadius.circular(24),
@@ -95,240 +225,110 @@ class TeacherProfile extends ConsumerWidget {
                 ],
               ),
               child: Column(
-                children: [
-                  Row(
-                    children: [
-                      VoddaAvatar(
-                        size: 62,
-                        ring: true,
-                        verified: true,
-                        imageUrl: avatarUrl,
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              name,
-                              style: const TextStyle(
-                                fontSize: 16.5,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                            const SizedBox(height: 3),
-                            Text(
-                              tag ?? 'مدرس',
-                              style: const TextStyle(
-                                fontSize: 12.5,
-                                color: AppColors.olive600,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 7),
-                            Row(
-                              children: [
-                                Icon(
-                                  LucideIcons.star,
-                                  size: 14,
-                                  color: AppColors.gold,
-                                ),
-                                const SizedBox(width: 3),
-                                const Text(
-                                  '۴.۸',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w800,
-                                    color: AppColors.gold,
-                                  ),
-                                ),
-                                const Text(
-                                  ' (۶۴ نظر)',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: AppColors.ink4,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      GestureDetector(
-                        onTap: () => context.push('/profile/edit'),
-                        child: Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: AppColors.olive50,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Icon(
-                            LucideIcons.pencil,
-                            size: 19,
-                            color: AppColors.olive700,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Divider(height: 30, color: AppColors.sand100),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'وضعیت پذیرش جلسه',
-                              style: TextStyle(
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            Text(
-                              available
-                                  ? 'آماده دریافت درخواست جدید'
-                                  : 'موقتاً غیرفعال',
-                              style: const TextStyle(
-                                fontSize: 11.5,
-                                color: AppColors.ink3,
-                                height: 1.6,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      _Toggle(
-                        on: available,
-                        onChanged: (v) async {
-                          final ok = await ref
-                              .read(teacherRepositoryProvider)
-                              .setAvailable(v);
-                          if (ok) ref.invalidate(meProvider);
-                        },
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-          // Menu
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 20),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: const [
-                BoxShadow(color: Color(0x0A2E3622), blurRadius: 6),
-              ],
-            ),
-            child: Column(
-              children: rows.map((r) {
-                return Container(
-                  decoration: BoxDecoration(
-                    border: r != rows.last
-                        ? const Border(
-                            bottom: BorderSide(color: AppColors.sand100),
-                          )
-                        : null,
-                  ),
-                  child: ListTile(
-                    leading: Icon(r.$1, color: AppColors.olive600, size: 21),
-                    title: Text(
-                      r.$2,
-                      style: const TextStyle(
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.w600,
-                      ),
+                children: rows.map((r) {
+                  return Container(
+                    decoration: BoxDecoration(
+                      border: r != rows.last
+                          ? const Border(
+                              bottom: BorderSide(color: AppColors.sand100),
+                            )
+                          : null,
                     ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          r.$3,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.ink4,
-                          ),
+                    child: ListTile(
+                      leading: Icon(r.$1, color: AppColors.olive600, size: 21),
+                      title: Text(
+                        r.$2,
+                        style: const TextStyle(
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w600,
                         ),
-                        const SizedBox(width: 6),
-                        const Icon(
-                          LucideIcons.chevronLeft,
-                          size: 18,
-                          color: AppColors.ink4,
-                        ),
-                      ],
-                    ),
-                    onTap: r.$4,
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-          // Switch back to learner
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
-            child: GestureDetector(
-              onTap: () => context.go('/'),
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.olive50,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: AppColors.olive100),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 46,
-                      height: 46,
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(14),
                       ),
-                      child: const Icon(
-                        LucideIcons.refreshCw,
-                        size: 22,
-                        color: AppColors.olive700,
-                      ),
-                    ),
-                    const SizedBox(width: 13),
-                    const Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            'بازگشت به حساب قرآن‌آموز',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w800,
+                            r.$3,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.ink4,
                             ),
                           ),
-                          SizedBox(height: 3),
-                          Text(
-                            'به‌عنوان قرآن‌آموز جلسه رزرو کنید',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: AppColors.ink2,
-                            ),
+                          const SizedBox(width: 6),
+                          const Icon(
+                            LucideIcons.chevronLeft,
+                            size: 18,
+                            color: AppColors.ink4,
                           ),
                         ],
                       ),
+                      onTap: r.$4,
                     ),
-                    const Icon(
-                      LucideIcons.chevronLeft,
-                      size: 20,
-                      color: AppColors.olive500,
-                    ),
-                  ],
+                  );
+                }).toList(),
+              ),
+            ),
+            // Switch back to learner
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
+              child: GestureDetector(
+                onTap: () => context.go('/'),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.olive50,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: AppColors.olive100),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 46,
+                        height: 46,
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: const Icon(
+                          LucideIcons.refreshCw,
+                          size: 22,
+                          color: AppColors.olive700,
+                        ),
+                      ),
+                      const SizedBox(width: 13),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'بازگشت به حساب قرآن‌آموز',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            SizedBox(height: 3),
+                            Text(
+                              'به‌عنوان قرآن‌آموز جلسه رزرو کنید',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.ink2,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(
+                        LucideIcons.chevronLeft,
+                        size: 20,
+                        color: AppColors.olive500,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
       ),
     );
   }

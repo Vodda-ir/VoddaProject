@@ -109,10 +109,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 ],
                 const VChip(label: 'امتیاز بالا', icon: LucideIcons.star),
                 const SizedBox(width: 8),
-                const VChip(
-                  label: 'نزدیک من',
-                  icon: LucideIcons.mapPin,
-                ),
+                const VChip(label: 'نزدیک من', icon: LucideIcons.mapPin),
               ],
             ),
           ),
@@ -129,7 +126,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   children: const [
                     SizedBox(height: 200),
                     Center(
-                      child: CircularProgressIndicator(color: AppColors.olive600),
+                      child: CircularProgressIndicator(
+                        color: AppColors.olive600,
+                      ),
                     ),
                   ],
                 ),

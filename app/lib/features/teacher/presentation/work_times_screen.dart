@@ -73,7 +73,9 @@ class _WorkTimesScreenState extends ConsumerState<WorkTimesScreen> {
                     children: const [
                       SizedBox(height: 160),
                       Center(
-                        child: CircularProgressIndicator(color: AppColors.olive600),
+                        child: CircularProgressIndicator(
+                          color: AppColors.olive600,
+                        ),
                       ),
                     ],
                   ),

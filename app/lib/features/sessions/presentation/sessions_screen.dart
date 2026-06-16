@@ -57,7 +57,9 @@ class _SessionsScreenState extends ConsumerState<SessionsScreen> {
                   children: const [
                     SizedBox(height: 200),
                     Center(
-                      child: CircularProgressIndicator(color: AppColors.olive600),
+                      child: CircularProgressIndicator(
+                        color: AppColors.olive600,
+                      ),
                     ),
                   ],
                 ),

@@ -287,7 +287,10 @@ class _RequestsBanner extends ConsumerWidget {
         child: SizedBox(
           height: 78,
           child: Center(
-            child: CircularProgressIndicator(color: AppColors.olive600, strokeWidth: 2.5),
+            child: CircularProgressIndicator(
+              color: AppColors.olive600,
+              strokeWidth: 2.5,
+            ),
           ),
         ),
       ),
@@ -307,99 +310,101 @@ class _RequestsBanner extends ConsumerWidget {
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: GestureDetector(
-        onTap: () => context.go('/t/requests'),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: AppColors.goldBg,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: AppColors.goldSoft),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 46,
-                height: 46,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Stack(
-                  children: [
-                    const Center(
-                      child: Icon(
-                        LucideIcons.messageSquare,
-                        size: 24,
-                        color: AppColors.gold,
-                      ),
+            onTap: () => context.go('/t/requests'),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.goldBg,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: AppColors.goldSoft),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 46,
+                    height: 46,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
                     ),
-                    if (count > 0)
-                      Positioned(
-                        top: -5,
-                        right: -5,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 5),
-                          constraints: const BoxConstraints(
-                            minWidth: 20,
-                            minHeight: 20,
+                    child: Stack(
+                      children: [
+                        const Center(
+                          child: Icon(
+                            LucideIcons.messageSquare,
+                            size: 24,
+                            color: AppColors.gold,
                           ),
-                          decoration: BoxDecoration(
-                            color: AppColors.clay,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: AppColors.goldBg,
-                              width: 2,
-                            ),
-                          ),
-                          child: Center(
-                            child: Text(
-                              countStr,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
+                        ),
+                        if (count > 0)
+                          Positioned(
+                            top: -5,
+                            right: -5,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 5,
+                              ),
+                              constraints: const BoxConstraints(
+                                minWidth: 20,
+                                minHeight: 20,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.clay,
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: AppColors.goldBg,
+                                  width: 2,
+                                ),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  countStr,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 13),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '$countStr درخواست جدید',
+                          style: const TextStyle(
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF7A5E1E),
+                          ),
                         ),
-                      ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 13),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '$countStr درخواست جدید',
-                      style: const TextStyle(
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF7A5E1E),
-                      ),
+                        const Text(
+                          'برای تأیید یا رد، لمس کنید',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF9A7426),
+                            height: 1.6,
+                          ),
+                        ),
+                      ],
                     ),
-                    const Text(
-                      'برای تأیید یا رد، لمس کنید',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF9A7426),
-                        height: 1.6,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                  const Icon(
+                    LucideIcons.chevronLeft,
+                    size: 20,
+                    color: Color(0xFF9A7426),
+                  ),
+                ],
               ),
-              const Icon(
-                LucideIcons.chevronLeft,
-                size: 20,
-                color: Color(0xFF9A7426),
-              ),
-            ],
+            ),
           ),
-        ),
-      ),
-      );
+        );
       },
     );
   }

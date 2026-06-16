@@ -58,7 +58,9 @@ class RequestsScreen extends ConsumerWidget {
                   children: const [
                     SizedBox(height: 200),
                     Center(
-                      child: CircularProgressIndicator(color: AppColors.olive600),
+                      child: CircularProgressIndicator(
+                        color: AppColors.olive600,
+                      ),
                     ),
                   ],
                 ),
@@ -68,25 +70,28 @@ class RequestsScreen extends ConsumerWidget {
                       height: 200,
                       child: AppErrorView(
                         error: e,
-                        onRetry: () =>
-                            ref.invalidate(myTeacherSessionsProvider('pending')),
+                        onRetry: () => ref.invalidate(
+                          myTeacherSessionsProvider('pending'),
+                        ),
                       ),
                     ),
                   ],
                 ),
                 data: (list) => list.isEmpty
                     ? const Center(
-                      child: Text(
-                        'درخواستی در انتظار پاسخ نیست',
-                        style: TextStyle(color: AppColors.ink3),
+                        child: Text(
+                          'درخواستی در انتظار پاسخ نیست',
+                          style: TextStyle(color: AppColors.ink3),
+                        ),
+                      )
+                    : ListView.separated(
+                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                        itemCount: list.length,
+                        separatorBuilder: (_, _) => const SizedBox(height: 14),
+                        itemBuilder: (_, i) => _RequestCard(session: list[i]),
                       ),
-                    )
-                  : ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                      itemCount: list.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 14),
-                      itemBuilder: (_, i) => _RequestCard(session: list[i]),
-                    ),              ),            ),
+              ),
+            ),
           ),
         ],
       ),

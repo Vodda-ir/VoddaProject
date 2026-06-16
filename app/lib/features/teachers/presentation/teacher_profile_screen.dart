@@ -46,103 +46,111 @@ class TeacherProfileScreen extends ConsumerWidget {
           },
           child: ListView(
             padding: const EdgeInsets.all(20),
-          children: [
-            Center(
-              child: Column(
+            children: [
+              Center(
+                child: Column(
+                  children: [
+                    VoddaAvatar(size: 88, ring: true, verified: t.verified),
+                    const SizedBox(height: 12),
+                    Text(
+                      t.name,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.ink,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      t.tag,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.olive600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
                 children: [
-                  VoddaAvatar(size: 88, ring: true, verified: t.verified),
-                  const SizedBox(height: 12),
-                  Text(
-                    t.name,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.ink,
-                    ),
+                  _stat(
+                    LucideIcons.star,
+                    faDigits(t.rating.toStringAsFixed(1)),
+                    'امتیاز',
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    t.tag,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.olive600,
-                    ),
+                  _stat(
+                    LucideIcons.calendarCheck,
+                    faNumber(t.sessions),
+                    'جلسه',
+                  ),
+                  _stat(
+                    LucideIcons.users,
+                    faNumber(t.followers),
+                    'دنبال‌کننده',
                   ),
                 ],
               ),
-            ),
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                _stat(
-                  LucideIcons.star,
-                  faDigits(t.rating.toStringAsFixed(1)),
-                  'امتیاز',
+              const SizedBox(height: 20),
+              const Text(
+                'درباره استاد',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.ink,
                 ),
-                _stat(LucideIcons.calendarCheck, faNumber(t.sessions), 'جلسه'),
-                _stat(LucideIcons.users, faNumber(t.followers), 'دنبال‌کننده'),
-              ],
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'درباره استاد',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-                color: AppColors.ink,
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              t.bio,
-              style: const TextStyle(
-                fontSize: 14,
-                height: 1.7,
-                color: AppColors.ink2,
+              const SizedBox(height: 8),
+              Text(
+                t.bio,
+                style: const TextStyle(
+                  fontSize: 14,
+                  height: 1.7,
+                  color: AppColors.ink2,
+                ),
               ),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'خدمات',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-                color: AppColors.ink,
+              const SizedBox(height: 20),
+              const Text(
+                'خدمات',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.ink,
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            ...t.services.map(
-              (s) => Card(
-                margin: const EdgeInsets.only(bottom: 10),
-                child: ListTile(
-                  leading: Container(
-                    width: 44,
-                    height: 44,
-                    decoration: const BoxDecoration(
-                      color: AppColors.olive100,
-                      borderRadius: BorderRadius.all(Radius.circular(12)),
+              const SizedBox(height: 8),
+              ...t.services.map(
+                (s) => Card(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  child: ListTile(
+                    leading: Container(
+                      width: 44,
+                      height: 44,
+                      decoration: const BoxDecoration(
+                        color: AppColors.olive100,
+                        borderRadius: BorderRadius.all(Radius.circular(12)),
+                      ),
+                      child: const Icon(
+                        LucideIcons.bookOpen,
+                        color: AppColors.olive600,
+                      ),
                     ),
-                    child: const Icon(
-                      LucideIcons.bookOpen,
-                      color: AppColors.olive600,
+                    title: Text(
+                      s.title,
+                      style: const TextStyle(fontWeight: FontWeight.w700),
                     ),
-                  ),
-                  title: Text(
-                    s.title,
-                    style: const TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                  subtitle: Text('${faNumber(s.duration)} دقیقه'),
-                  trailing: Text(
-                    toman(s.price),
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.olive700,
+                    subtitle: Text('${faNumber(s.duration)} دقیقه'),
+                    trailing: Text(
+                      toman(s.price),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.olive700,
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
             ],
           ),
         ),

@@ -57,7 +57,9 @@ class _TeacherSessionsState extends ConsumerState<TeacherSessions> {
                   children: const [
                     SizedBox(height: 200),
                     Center(
-                      child: CircularProgressIndicator(color: AppColors.olive600),
+                      child: CircularProgressIndicator(
+                        color: AppColors.olive600,
+                      ),
                     ),
                   ],
                 ),
@@ -67,7 +69,8 @@ class _TeacherSessionsState extends ConsumerState<TeacherSessions> {
                       height: 200,
                       child: AppErrorView(
                         error: e,
-                        onRetry: () => ref.invalidate(myTeacherSessionsProvider(_tab)),
+                        onRetry: () =>
+                            ref.invalidate(myTeacherSessionsProvider(_tab)),
                       ),
                     ),
                   ],

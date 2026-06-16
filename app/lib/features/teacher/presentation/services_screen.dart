@@ -49,7 +49,9 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
                   children: const [
                     SizedBox(height: 160),
                     Center(
-                      child: CircularProgressIndicator(color: AppColors.olive600),
+                      child: CircularProgressIndicator(
+                        color: AppColors.olive600,
+                      ),
                     ),
                   ],
                 ),
