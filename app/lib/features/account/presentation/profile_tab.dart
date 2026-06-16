@@ -16,8 +16,11 @@ class ProfileTab extends ConsumerWidget {
     final me = ref.watch(meProvider);
     final rows = <(IconData, String, VoidCallback?)>[
       (LucideIcons.user, 'ویرایش پروفایل', () => context.push('/profile/edit')),
-      (LucideIcons.heart, 'اساتید دلخواه', null),
-      (LucideIcons.wallet, 'کیف پول و تراکنش‌ها', null),
+      (
+        LucideIcons.wallet,
+        'کیف پول و تراکنش\u200Cها',
+        () => context.go('/wallet'),
+      ),
       (LucideIcons.bell, 'اعلان‌ها', null),
       (LucideIcons.shield, 'حریم خصوصی و امنیت', null),
       (LucideIcons.helpCircle, 'پشتیبانی و قوانین', null),

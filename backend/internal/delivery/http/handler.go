@@ -399,6 +399,8 @@ func (h *Handler) CancelSession(c *gin.Context) {
 func (h *Handler) TeacherSessions(c *gin.Context) {
 	var statuses []domain.SessionStatus
 	switch c.Query("when") {
+	case "pending":
+		statuses = []domain.SessionStatus{domain.SessionPending}
 	case "upcoming":
 		statuses = []domain.SessionStatus{domain.SessionPending, domain.SessionConfirmed}
 	case "past":

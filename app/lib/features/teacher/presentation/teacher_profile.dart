@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/fa.dart';
 import '../../../core/widgets/vodda_avatar.dart';
 import '../../auth/data/user_repository.dart';
 import '../data/teacher_repository.dart';
@@ -15,6 +16,9 @@ class TeacherProfile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final me = ref.watch(meProvider);
+    final services = ref.watch(myServicesProvider);
+    final workTimes = ref.watch(myWorkTimesProvider);
+
     final name = me.maybeWhen(data: (u) => u.name, orElse: () => 'استاد وُدّا');
     final avatarUrl = me.maybeWhen(
       data: (u) => u.avatarUrl,
@@ -26,22 +30,37 @@ class TeacherProfile extends ConsumerWidget {
       orElse: () => true,
     );
 
+    final serviceCount = services.maybeWhen(
+      data: (l) =>
+          '${faNumber(l.where((s) => s['active'] == true).length)} خدمت فعال',
+      orElse: () => '— خدمت',
+    );
+    final workDayCount = workTimes.maybeWhen(
+      data: (l) =>
+          '${faNumber(l.map((w) => w['weekday']).toSet().length)} روز فعال',
+      orElse: () => '— روز',
+    );
+
+    final reviewCount = me.maybeWhen(
+      data: (u) => '${faNumber(u.teacherReviews)} نظر',
+      orElse: () => '— نظر',
+    );
+
     final rows = [
       (
         LucideIcons.bookOpen,
         'خدمات من',
-        '۵ خدمت فعال',
+        serviceCount,
         () => context.push('/t/services'),
       ),
       (
         LucideIcons.clock,
-        'زمان‌های کاری',
-        '۵ روز فعال',
+        'زمان\u200Cهای کاری',
+        workDayCount,
         () => context.push('/t/worktimes'),
       ),
-      (LucideIcons.mic, 'نمونه‌کارها', '۳ فایل صوتی', null as void Function()?),
-      (LucideIcons.fileText, 'مدارک و گواهی‌ها', 'تأییدشده', null),
-      (LucideIcons.star, 'نظرات قرآن‌آموزان', '۶۴ نظر', null),
+      (LucideIcons.mic, 'نمونه\u200Cکارها', '—', null as void Function()?),
+      (LucideIcons.star, 'نظرات قرآن\u200Cآموزان', reviewCount, null),
     ];
 
     return SafeArea(

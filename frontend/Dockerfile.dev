@@ -3,7 +3,7 @@ WORKDIR /app
 RUN corepack enable
 COPY package.json pnpm-lock.yaml* package-lock.json* ./
 RUN if [ -f pnpm-lock.yaml ]; then corepack pnpm i; \
-    elif [ -f package-lock.json ]; then npm ci; \
+    elif [ -f package-lock.json ]; then npm install; \
     else npm install; fi
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1

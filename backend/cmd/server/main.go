@@ -54,7 +54,7 @@ func main() {
 	h := &delivery.Handler{
 		Auth:    usecase.NewAuthUsecase(userRepo, otpRepo, sender, tm, cfg),
 		User:    usecase.NewUserUsecase(userRepo, teacherRepo),
-		Teacher: usecase.NewTeacherUsecase(teacherRepo, reviewRepo),
+		Teacher: usecase.NewTeacherUsecase(teacherRepo, reviewRepo, userRepo),
 		Session: usecase.NewSessionUsecase(sessionRepo, teacherRepo, userRepo, walletRepo, notifRepo, cfg),
 		Wallet:  usecase.NewWalletUsecase(walletRepo, userRepo, teacherRepo, notifRepo),
 		Review:  usecase.NewReviewUsecase(reviewRepo, sessionRepo, teacherRepo),

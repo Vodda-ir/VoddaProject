@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/network/error_message.dart';
+import '../../../core/providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/fa.dart';
 import '../../../core/widgets/app_error.dart';
@@ -30,18 +31,57 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
   int _dayOffset = 1;
   String? _slot;
   bool _saving = false;
+  List<Map<String, dynamic>> _workTimes = [];
+  bool _loadingSlots = false;
 
-  static const _slots = [
-    '۰۹:۰۰',
-    '۱۰:۳۰',
-    '۱۲:۰۰',
-    '۱۶:۰۰',
-    '۱۷:۳۰',
-    '۱۹:۰۰',
-    '۲۰:۳۰',
-    '۲۲:۰۰',
-  ];
-  static const _slotHours = [9, 10, 12, 16, 17, 19, 20, 22];
+  @override
+  void initState() {
+    super.initState();
+    _fetchWorkTimes();
+  }
+
+  Future<void> _fetchWorkTimes() async {
+    setState(() => _loadingSlots = true);
+    try {
+      final dio = ref.read(dioClientProvider).dio;
+      final res = await dio.get('/teachers/${widget.teacherId}/work-times');
+      _workTimes =
+          (res.data['data'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    } finally {
+      if (mounted) setState(() => _loadingSlots = false);
+    }
+  }
+
+  /// Generate available 30-min slots for the selected day from teacher's work times.
+  List<String> _availableSlots() {
+    final d = DateTime.now().add(Duration(days: _dayOffset));
+    // Persian week: 0=Sat … 6=Fri; Dart weekday: 1=Mon … 7=Sun
+    final weekday =
+        d.weekday % 7; // 0=Sun … 6=Sat → maps to Persian 0=Sat when offset
+    final persianWeekday = (weekday + 1) % 7; // align to 0=Sat … 6=Fri
+    final daySlots = _workTimes
+        .where((w) => w['weekday'] == persianWeekday)
+        .toList();
+
+    final slots = <String>[];
+    for (final s in daySlots) {
+      final from = _parseMin(s['from'] as String);
+      final to = _parseMin(s['to'] as String);
+      for (int m = from; m + 30 <= to; m += 30) {
+        final h = m ~/ 60;
+        final min = m % 60;
+        slots.add(
+          '${h.toString().padLeft(2, '0')}:${min.toString().padLeft(2, '0')}',
+        );
+      }
+    }
+    return slots;
+  }
+
+  int _parseMin(String s) {
+    final p = s.split(':');
+    return int.parse(p[0]) * 60 + int.parse(p[1]);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -114,7 +154,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
       style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
     ),
     const SizedBox(height: 14),
-    ...t.services.map((s) {
+    ...t.services.where((s) => s.active).map((s) {
       final sel = _service?.id == s.id;
       return GestureDetector(
         onTap: () => setState(() => _service = s),
@@ -184,7 +224,10 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
           final d = DateTime.now().add(Duration(days: i + 1));
           final sel = _dayOffset == i + 1;
           return GestureDetector(
-            onTap: () => setState(() => _dayOffset = i + 1),
+            onTap: () => setState(() {
+              _dayOffset = i + 1;
+              _slot = null;
+            }),
             child: Container(
               width: 60,
               decoration: BoxDecoration(
@@ -226,36 +269,46 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
       style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
     ),
     const SizedBox(height: 14),
-    Wrap(
-      spacing: 10,
-      runSpacing: 10,
-      children: _slots.map((s) {
-        final sel = _slot == s;
-        return GestureDetector(
-          onTap: () => setState(() => _slot = s),
-          child: Container(
-            width: 78,
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: sel ? AppColors.olive600 : AppColors.surface,
-              borderRadius: BorderRadius.circular(13),
-              border: Border.all(
-                color: sel ? AppColors.olive600 : AppColors.sand200,
+    if (_loadingSlots)
+      const Center(child: CircularProgressIndicator(color: AppColors.olive600))
+    else ...[
+      if (_availableSlots().isEmpty)
+        const Text(
+          'این روز زمان خالی ندارد',
+          style: TextStyle(color: AppColors.ink3),
+        )
+      else
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: _availableSlots().map((s) {
+            final sel = _slot == s;
+            return GestureDetector(
+              onTap: () => setState(() => _slot = s),
+              child: Container(
+                width: 78,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: sel ? AppColors.olive600 : AppColors.surface,
+                  borderRadius: BorderRadius.circular(13),
+                  border: Border.all(
+                    color: sel ? AppColors.olive600 : AppColors.sand200,
+                  ),
+                ),
+                child: Text(
+                  s,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: sel ? Colors.white : AppColors.ink2,
+                  ),
+                ),
               ),
-            ),
-            child: Text(
-              s,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: sel ? Colors.white : AppColors.ink2,
-              ),
-            ),
-          ),
-        );
-      }).toList(),
-    ),
+            );
+          }).toList(),
+        ),
+    ],
   ];
 
   List<Widget> _confirmStep(Teacher t) {
@@ -399,8 +452,14 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
     // step 3 → book
     setState(() => _saving = true);
     final d = DateTime.now().add(Duration(days: _dayOffset));
-    final hour = _slotHours[_slots.indexOf(_slot!)];
-    final at = DateTime(d.year, d.month, d.day, hour, 0);
+    final parts = _slot!.split(':');
+    final at = DateTime(
+      d.year,
+      d.month,
+      d.day,
+      int.parse(parts[0]),
+      int.parse(parts[1]),
+    );
     try {
       await ref
           .read(sessionRepositoryProvider)

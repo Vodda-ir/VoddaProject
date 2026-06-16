@@ -8,6 +8,7 @@ class Service extends Equatable {
     required this.duration,
     required this.price,
     required this.icon,
+    this.active = false,
   });
 
   final int id;
@@ -15,14 +16,16 @@ class Service extends Equatable {
   final int duration;
   final int price;
   final String icon;
+  final bool active;
 
   factory Service.fromJson(Map<String, dynamic> j) => Service(
-        id: j['id'] ?? 0,
-        title: j['title'] ?? '',
-        duration: j['duration'] ?? 30,
-        price: j['price'] ?? 0,
-        icon: j['icon'] ?? 'book',
-      );
+    id: j['id'] ?? 0,
+    title: j['title'] ?? '',
+    duration: j['duration'] ?? 30,
+    price: j['price'] ?? 0,
+    icon: j['icon'] ?? 'book',
+    active: j['active'] ?? false,
+  );
 
   @override
   List<Object?> get props => [id];

@@ -10,6 +10,7 @@ import '../../../core/widgets/vodda_avatar.dart';
 import '../../auth/data/user_repository.dart';
 import '../../sessions/data/session_repository.dart';
 import '../../sessions/domain/session.dart';
+import '../../wallet/data/wallet_repository.dart';
 import 'role_sheet.dart';
 
 /// Teacher Dashboard — matches vodda-teacher-a.jsx TeacherDashboard.
@@ -19,7 +20,7 @@ class TeacherDashboard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final me = ref.watch(meProvider);
-    final sessions = ref.watch(mySessionsProvider('upcoming'));
+    final sessions = ref.watch(myTeacherSessionsProvider('upcoming'));
     final nextSession = sessions.maybeWhen(
       data: (list) => list.isNotEmpty ? list.first : null,
       orElse: () => null,
@@ -157,11 +158,23 @@ class _TeacherHeader extends ConsumerWidget {
   }
 }
 
-class _EarningsHero extends StatelessWidget {
+class _EarningsHero extends ConsumerWidget {
   const _EarningsHero();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final txs = ref.watch(transactionsProvider);
+    final me = ref.watch(meProvider);
+    final rating = me.maybeWhen(
+      data: (u) => u.teacherRating,
+      orElse: () => 4.8,
+    );
+    final income = txs.maybeWhen(
+      data: (list) =>
+          list.where((t) => t.credit).fold<int>(0, (s, t) => s + t.amount),
+      orElse: () => 0,
+    );
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
@@ -192,7 +205,7 @@ class _EarningsHero extends StatelessWidget {
             Row(
               children: [
                 Text(
-                  faDigits('3,650,000'),
+                  faNumber(income),
                   style: const TextStyle(
                     fontSize: 30,
                     fontWeight: FontWeight.w800,
@@ -213,13 +226,13 @@ class _EarningsHero extends StatelessWidget {
             const SizedBox(height: 16),
             Row(
               children: [
-                _earnCol('امروز', '۲۴۰ هزار'),
+                _earnCol('امروز', '—'),
                 Container(width: 1, height: 30, color: Colors.white24),
                 const SizedBox(width: 18),
-                _earnCol('این هفته', '۱,۱۲۰ هزار'),
+                _earnCol('این هفته', '—'),
                 Container(width: 1, height: 30, color: Colors.white24),
                 const SizedBox(width: 18),
-                _earnCol('امتیاز', '۴٫۸ ★'),
+                _earnCol('امتیاز', '${rating.toStringAsFixed(1)} ★'),
               ],
             ),
           ],
@@ -255,6 +268,10 @@ class _RequestsBanner extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final pending = ref.watch(myTeacherSessionsProvider('pending'));
+    final count = pending.maybeWhen(data: (l) => l.length, orElse: () => 0);
+    final countStr = faNumber(count);
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: GestureDetector(
@@ -284,49 +301,53 @@ class _RequestsBanner extends ConsumerWidget {
                         color: AppColors.gold,
                       ),
                     ),
-                    Positioned(
-                      top: -5,
-                      right: -5,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 5),
-                        constraints: const BoxConstraints(
-                          minWidth: 20,
-                          minHeight: 20,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.clay,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: AppColors.goldBg, width: 2),
-                        ),
-                        child: const Center(
-                          child: Text(
-                            '۳',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w800,
+                    if (count > 0)
+                      Positioned(
+                        top: -5,
+                        right: -5,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5),
+                          constraints: const BoxConstraints(
+                            minWidth: 20,
+                            minHeight: 20,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.clay,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: AppColors.goldBg,
+                              width: 2,
+                            ),
+                          ),
+                          child: Center(
+                            child: Text(
+                              countStr,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
                   ],
                 ),
               ),
               const SizedBox(width: 13),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '۳ درخواست جدید',
-                      style: TextStyle(
+                      '$countStr درخواست جدید',
+                      style: const TextStyle(
                         fontSize: 14.5,
                         fontWeight: FontWeight.w800,
                         color: Color(0xFF7A5E1E),
                       ),
                     ),
-                    Text(
+                    const Text(
                       'برای تأیید یا رد، لمس کنید',
                       style: TextStyle(
                         fontSize: 12,

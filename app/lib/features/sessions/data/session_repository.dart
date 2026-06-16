@@ -62,6 +62,19 @@ class SessionRepository {
       data: {'session_id': sessionId, 'rating': rating, 'text': text},
     );
   }
+
+  /// Teacher-facing sessions (requests, upcoming, past).
+  Future<List<Session>> teacherMine(String when) async {
+    final dio = _ref.read(dioClientProvider).dio;
+    final res = await dio.get(
+      '/teacher/sessions',
+      queryParameters: {if (when.isNotEmpty) 'when': when},
+    );
+    final data = (res.data['data'] as List?) ?? [];
+    return data
+        .map((e) => Session.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
 }
 
 final sessionRepositoryProvider = Provider<SessionRepository>(
@@ -70,4 +83,8 @@ final sessionRepositoryProvider = Provider<SessionRepository>(
 
 final mySessionsProvider = FutureProvider.family<List<Session>, String>(
   (ref, when) => ref.watch(sessionRepositoryProvider).mine(when),
+);
+
+final myTeacherSessionsProvider = FutureProvider.family<List<Session>, String>(
+  (ref, when) => ref.watch(sessionRepositoryProvider).teacherMine(when),
 );

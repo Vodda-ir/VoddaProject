@@ -42,10 +42,50 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  // ── public ──
   teachers: (q = '') =>
     request<ListResponse<Teacher>>(`/teachers${q ? `?q=${encodeURIComponent(q)}` : ''}`),
   teacher: (id: number) =>
     request<{ data: { teacher: Teacher; reviews: unknown[] } }>(`/teachers/${id}`),
+
+  // ── authenticated (pass token) ──
+  me: (token: string) =>
+    request<{ data: import('./auth').AuthUser }>('/me', {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+
+  // teacher
+  teacherMe: (token: string) =>
+    request<{ data: { services?: unknown[]; sessions?: unknown[]; [k: string]: unknown } }>(
+      '/teacher/me',
+      { headers: { Authorization: `Bearer ${token}` } },
+    ),
+  teacherSessions: (token: string, when: string) =>
+    request<{ data: unknown[] }>(`/teacher/sessions?when=${when}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+
+  // admin
+  adminDashboard: (token: string) =>
+    request<{ data: Record<string, unknown> }>('/admin/dashboard', {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+  adminPendingTeachers: (token: string) =>
+    request<ListResponse<Teacher>>('/admin/teachers?status=pending', {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+
+  // sessions (learner)
+  mySessions: (token: string, when: string) =>
+    request<{ data: unknown[] }>(`/sessions?when=${when}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+
+  // wallet
+  transactions: (token: string) =>
+    request<{ data: unknown[] }>('/wallet/transactions', {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
 };
 
 export function toman(n: number): string {

@@ -45,10 +45,12 @@ func (uc *AuthUsecase) RequestOTP(ctx context.Context, mobile string) error {
 		return domain.ErrValidation
 	}
 
-	// enforce resend cooldown
+	// enforce resend cooldown — if within cooldown, don't resend; tell client the
+	// previous code is still valid rather than returning an error.
 	if last, err := uc.otps.Latest(ctx, mobile); err == nil && last != nil {
 		if time.Since(last.CreatedAt) < uc.cfg.OTPResendCooldown {
-			return domain.ErrOTPCooldown
+			// Previous code is still valid — don't create a new one.
+			return nil
 		}
 	}
 

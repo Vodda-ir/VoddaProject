@@ -9,6 +9,15 @@ export type NavItem = { id: string; label: string; icon: Parameters<typeof Icon>
 
 const fa = (n: number | string) => String(n).replace(/[0-9]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[+d]);
 
+const switchItemStyle: CSSProperties = {
+  display: 'flex', alignItems: 'center', gap: 10, padding: '10px 10px', borderRadius: 11,
+  fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,.75)', textDecoration: 'none',
+};
+const switchIconStyle: CSSProperties = {
+  width: 34, height: 34, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center',
+  flexShrink: 0,
+};
+
 /** Dashboard shell matching docs/design/web-panels.jsx — dark sidebar + topbar. */
 export function PanelShell({
   brandSub,
@@ -17,23 +26,36 @@ export function PanelShell({
   title,
   sub,
   children,
+  onLogout,
 }: {
   brandSub: string;
   nav: NavItem[];
-  user: { name: string; role: string };
+  user: { name: string; role: string; avatarUrl?: string };
   title: string;
   sub?: string;
   children: (active: string) => ReactNode;
+  onLogout?: () => void;
 }) {
   const [active, setActive] = useState(nav[0]?.id);
+  const [userOpen, setUserOpen] = useState(false);
+
+  const roleLabel = user.role === 'admin' ? 'ادمین' : user.role === 'teacher' ? 'مربی' : 'قرآن آموز';
+
+  // All users can switch to any panel
+  const allPanels = [
+    { href: '/panel/admin', label: 'پنل مدیریت', icon: 'shield' as const, bg: 'rgba(255,255,255,.1)', fg: '#fff' },
+    { href: '/panel/teacher', label: 'پنل مربی', icon: 'award' as const, bg: 'rgba(255,255,255,.08)', fg: 'rgba(255,255,255,.7)' },
+    { href: '/panel/user', label: 'پنل کاربری', icon: 'user' as const, bg: 'rgba(255,255,255,.06)', fg: 'rgba(255,255,255,.6)' },
+  ];
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--sand-50)' }}>
       {/* sidebar */}
       <aside style={{ width: 244, flexShrink: 0, background: 'var(--olive-900)', color: 'rgba(255,255,255,.82)', display: 'flex', flexDirection: 'column', padding: '22px 16px', position: 'sticky', top: 0, height: '100vh' }} className="panel-aside">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 8px 4px' }}>
+        {/* Logo */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 8px 4px' }}>
+          <img src="/vodda-logo.svg" alt="وُدّا" style={{ width: 32, height: 32, filter: 'brightness(0) invert(1)' }} />
           <span style={{ fontWeight: 800, fontSize: 24, color: '#fff' }}>وُدّا</span>
-          <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--gold)', marginBottom: 10 }} />
         </div>
         <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,.45)', padding: '0 8px 22px' }}>{brandSub}</div>
         <nav style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>
@@ -58,14 +80,48 @@ export function PanelShell({
             );
           })}
         </nav>
-        <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 11, padding: 10, borderRadius: 14, background: 'rgba(255,255,255,.06)' }}>
-          <Avatar size={38} emoji="👤" />
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.name}</div>
-            <div style={{ fontSize: 11, color: 'rgba(255,255,255,.5)' }}>{user.role}</div>
-          </div>
-          <Icon name="logout" size={18} style={{ color: 'rgba(255,255,255,.5)' }} />
-        </a>
+
+        {/* User area with upward dropdown */}
+        <div style={{ position: 'relative' }}>
+          <button onClick={() => setUserOpen(!userOpen)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 11, width: '100%', padding: 10, borderRadius: 14,
+              background: 'rgba(255,255,255,.06)', cursor: 'pointer', border: 'none',
+              textAlign: 'start', fontFamily: 'var(--font)',
+            }}>
+            <Avatar size={38} imageUrl={user.avatarUrl} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.name}</div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,.5)' }}>{roleLabel}</div>
+            </div>
+            <Icon name="chevronUp" size={16} style={{ color: 'rgba(255,255,255,.4)', transition: 'transform .2s', transform: userOpen ? 'rotate(180deg)' : 'none' }} />
+          </button>
+
+          {userOpen && (
+            <>
+              <div style={{ position: 'fixed', inset: 0, zIndex: 40 }} onClick={() => setUserOpen(false)} />
+              <div style={{
+                position: 'absolute', bottom: 'calc(100% + 8px)', left: 0, right: 0,
+                background: '#1a1f14', borderRadius: 16, border: '1px solid rgba(255,255,255,.08)',
+                boxShadow: '0 -8px 32px rgba(0,0,0,.35)', padding: 10, zIndex: 50,
+              }}>
+                {allPanels.map(p => (
+                  <a key={p.href} href={p.href} onClick={() => setUserOpen(false)} style={switchItemStyle}>
+                    <span style={{ ...switchIconStyle, background: p.bg, color: p.fg }}><Icon name={p.icon} size={17} /></span>
+                    <span style={{ flex: 1 }}>{p.label}</span>
+                  </a>
+                ))}
+                <div style={{ borderTop: '1px solid rgba(255,255,255,.06)', marginTop: 4, paddingTop: 4 }}>
+                  <button onClick={() => { setUserOpen(false); onLogout?.(); }}
+                    style={{ ...switchItemStyle, color: '#E88C8C', width: '100%', border: 'none', background: 'none', cursor: 'pointer' }}>
+                    <span style={{ ...switchIconStyle, background: 'rgba(232,140,140,.15)', color: '#E88C8C' }}><Icon name="logout" size={17} /></span>
+                    خروج از حساب
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
       </aside>
 
       {/* main */}
@@ -161,7 +217,7 @@ export function StatusTag({ status }: { status: string }) {
 export function Placeholder({ label }: { label: string }) {
   return (
     <div style={{ border: '1px dashed var(--sand-200)', borderRadius: 18, padding: 64, textAlign: 'center', color: 'var(--ink-3)', background: 'rgba(255,255,255,.5)' }}>
-      بخش «{label}» — به API بک‌اند متصل می‌شود.
+      بخش «{label}» — به API بکاند متصل میشود.
     </div>
   );
 }

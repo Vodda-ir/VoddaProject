@@ -15,7 +15,7 @@ class RequestsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final sessions = ref.watch(mySessionsProvider('pending'));
+    final sessions = ref.watch(myTeacherSessionsProvider('pending'));
 
     return SafeArea(
       child: Column(
@@ -53,7 +53,8 @@ class RequestsScreen extends ConsumerWidget {
               ),
               error: (e, _) => AppErrorView(
                 error: e,
-                onRetry: () => ref.invalidate(mySessionsProvider('pending')),
+                onRetry: () =>
+                    ref.invalidate(myTeacherSessionsProvider('pending')),
               ),
               data: (list) => list.isEmpty
                   ? const Center(
@@ -188,7 +189,7 @@ class _RequestCard extends ConsumerWidget {
             child: ElevatedButton(
               onPressed: () async {
                 await ref.read(sessionRepositoryProvider).accept(session.id);
-                ref.invalidate(mySessionsProvider('pending'));
+                ref.invalidate(myTeacherSessionsProvider('pending'));
               },
               child: const Text('بررسی و پاسخ'),
             ),

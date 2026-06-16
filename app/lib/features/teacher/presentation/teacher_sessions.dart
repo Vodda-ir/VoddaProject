@@ -23,7 +23,7 @@ class _TeacherSessionsState extends ConsumerState<TeacherSessions> {
 
   @override
   Widget build(BuildContext context) {
-    final sessions = ref.watch(mySessionsProvider(_tab));
+    final sessions = ref.watch(myTeacherSessionsProvider(_tab));
     return SafeArea(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -52,7 +52,7 @@ class _TeacherSessionsState extends ConsumerState<TeacherSessions> {
               ),
               error: (e, _) => AppErrorView(
                 error: e,
-                onRetry: () => ref.invalidate(mySessionsProvider(_tab)),
+                onRetry: () => ref.invalidate(myTeacherSessionsProvider(_tab)),
               ),
               data: (list) => list.isEmpty
                   ? const Center(

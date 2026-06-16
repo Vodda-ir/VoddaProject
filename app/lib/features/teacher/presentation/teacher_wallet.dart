@@ -5,13 +5,24 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/fa.dart';
+import '../../../core/widgets/app_error.dart';
+import '../../auth/data/user_repository.dart';
+import '../../wallet/data/wallet_repository.dart';
 
-/// Teacher wallet screen.
 class TeacherWallet extends ConsumerWidget {
   const TeacherWallet({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final me = ref.watch(meProvider);
+    final txs = ref.watch(transactionsProvider);
+    final wallet = me.maybeWhen(data: (u) => u.wallet, orElse: () => 0);
+    final income = txs.maybeWhen(
+      data: (list) =>
+          list.where((t) => t.credit).fold<int>(0, (s, t) => s + t.amount),
+      orElse: () => 0,
+    );
+
     return SafeArea(
       child: ListView(
         padding: const EdgeInsets.only(bottom: 24),
@@ -23,7 +34,6 @@ class TeacherWallet extends ConsumerWidget {
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
             ),
           ),
-          // Balance card
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
             child: Container(
@@ -52,17 +62,17 @@ class TeacherWallet extends ConsumerWidget {
                   ),
                   const SizedBox(height: 7),
                   Row(
-                    children: const [
+                    children: [
                       Text(
-                        '۱,۸۴۰,۰۰۰',
-                        style: TextStyle(
+                        faNumber(wallet),
+                        style: const TextStyle(
                           fontSize: 30,
                           fontWeight: FontWeight.w800,
                           color: Colors.white,
                         ),
                       ),
-                      SizedBox(width: 6),
-                      Text(
+                      const SizedBox(width: 6),
+                      const Text(
                         'تومان',
                         style: TextStyle(
                           fontSize: 14,
@@ -89,20 +99,25 @@ class TeacherWallet extends ConsumerWidget {
               ),
             ),
           ),
-          // Stats row
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
             child: Row(
               children: [
-                _statBox('درآمد این ماه', '۳.۶ م', AppColors.olive700),
+                _statBox('درآمد کل', faNumber(income), AppColors.olive700),
                 const SizedBox(width: 10),
-                _statBox('جلسات این ماه', '۳۸', AppColors.ink),
+                _statBox(
+                  'تراکنش‌ها',
+                  txs.maybeWhen(
+                    data: (l) => faNumber(l.length),
+                    orElse: () => '—',
+                  ),
+                  AppColors.ink,
+                ),
                 const SizedBox(width: 10),
                 _statBox('کارمزد وُدّا', '۱۵٪', AppColors.ink),
               ],
             ),
           ),
-          // Transactions header
           const Padding(
             padding: EdgeInsets.fromLTRB(20, 0, 20, 12),
             child: Text(
@@ -110,71 +125,101 @@ class TeacherWallet extends ConsumerWidget {
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
             ),
           ),
-          // Transaction list (placeholder)
-          ..._sampleTx.map(
-            (x) => Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
-              child: Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(18),
-                  boxShadow: const [
-                    BoxShadow(color: Color(0x0A2E3622), blurRadius: 4),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 42,
-                      height: 42,
+          txs.when(
+            loading: () => const Center(
+              child: CircularProgressIndicator(color: AppColors.olive600),
+            ),
+            error: (e, _) => Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: AppErrorView(
+                error: e,
+                onRetry: () => ref.invalidate(transactionsProvider),
+              ),
+            ),
+            data: (list) {
+              if (list.isEmpty) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 20),
+                  child: Text(
+                    'تراکنشی نیست',
+                    style: TextStyle(color: AppColors.ink3),
+                  ),
+                );
+              }
+              return Column(
+                children: list.map((tx) {
+                  return Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+                    child: Container(
+                      padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: x.$2 ? AppColors.olive100 : AppColors.goldBg,
-                        borderRadius: BorderRadius.circular(12),
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(18),
+                        boxShadow: const [
+                          BoxShadow(color: Color(0x0A2E3622), blurRadius: 4),
+                        ],
                       ),
-                      child: Icon(
-                        x.$2 ? LucideIcons.coins : LucideIcons.download,
-                        size: 21,
-                        color: x.$2
-                            ? AppColors.olive700
-                            : const Color(0xFF9A7426),
-                      ),
-                    ),
-                    const SizedBox(width: 13),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      child: Row(
                         children: [
-                          Text(
-                            x.$1,
-                            style: const TextStyle(
-                              fontSize: 13.5,
-                              fontWeight: FontWeight.w700,
+                          Container(
+                            width: 42,
+                            height: 42,
+                            decoration: BoxDecoration(
+                              color: tx.credit
+                                  ? AppColors.olive100
+                                  : AppColors.goldBg,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(
+                              tx.credit
+                                  ? LucideIcons.coins
+                                  : LucideIcons.download,
+                              size: 21,
+                              color: tx.credit
+                                  ? AppColors.olive700
+                                  : const Color(0xFF9A7426),
                             ),
                           ),
-                          const SizedBox(height: 3),
+                          const SizedBox(width: 13),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  tx.title,
+                                  style: const TextStyle(
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  tx.date,
+                                  style: const TextStyle(
+                                    fontSize: 11.5,
+                                    color: AppColors.ink4,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                           Text(
-                            x.$4,
-                            style: const TextStyle(
-                              fontSize: 11.5,
-                              color: AppColors.ink4,
+                            '${tx.credit ? "+" : "\u2212"}${faNumber(tx.amount.abs())}',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                              color: tx.credit
+                                  ? AppColors.olive700
+                                  : AppColors.ink,
                             ),
                           ),
                         ],
                       ),
                     ),
-                    Text(
-                      '${x.$2 ? "+" : "−"}${faNumber(x.$3)}',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                        color: x.$2 ? AppColors.olive700 : AppColors.ink,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+                  );
+                }).toList(),
+              );
+            },
           ),
         ],
       ),
@@ -211,10 +256,3 @@ class TeacherWallet extends ConsumerWidget {
     );
   }
 }
-
-final _sampleTx = [
-  ('درآمد جلسه · علی موسوی', true, 68000, '۲۰ بهمن'),
-  ('درآمد جلسه · زهرا نوری', true, 68000, '۱۹ بهمن'),
-  ('برداشت به حساب بانکی', false, 1000000, '۱۵ بهمن'),
-  ('درآمد جلسه · محمد رستمی', true, 119000, '۱۴ بهمن'),
-];

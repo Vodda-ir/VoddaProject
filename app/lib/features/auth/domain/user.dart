@@ -13,6 +13,9 @@ class AppUser extends Equatable {
     this.avatarUrl,
     this.teacherTag,
     this.teacherAvailable = true,
+    this.teacherRating = 0,
+    this.teacherReviews = 0,
+    this.teacherSessions = 0,
   });
 
   final int id;
@@ -25,6 +28,9 @@ class AppUser extends Equatable {
   final String? avatarUrl;
   final String? teacherTag;
   final bool teacherAvailable;
+  final double teacherRating;
+  final int teacherReviews;
+  final int teacherSessions;
 
   bool get isTeacher => role == 'teacher' || role == 'admin';
 
@@ -41,9 +47,21 @@ class AppUser extends Equatable {
       avatarUrl: j['avatar_url'] as String?,
       teacherTag: teacher?['tag'] as String?,
       teacherAvailable: teacher?['available'] as bool? ?? true,
+      teacherRating: (teacher?['rating'] as num?)?.toDouble() ?? 0,
+      teacherReviews: teacher?['reviews'] as int? ?? 0,
+      teacherSessions: teacher?['sessions'] as int? ?? 0,
     );
   }
 
   @override
-  List<Object?> get props => [id, name, wallet, role, avatarUrl, teacherTag];
+  List<Object?> get props => [
+    id,
+    name,
+    wallet,
+    role,
+    avatarUrl,
+    teacherTag,
+    teacherRating,
+    teacherReviews,
+  ];
 }

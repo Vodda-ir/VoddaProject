@@ -235,17 +235,15 @@ class _SessionCard extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: OutlinedButton(
-                onPressed: onCancel,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.olive700,
-                  side: const BorderSide(color: AppColors.olive200),
+              child: ElevatedButton.icon(
+                onPressed: () {},
+                icon: const Icon(LucideIcons.phone, size: 18),
+                label: const Text('پیوستن به جلسه'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.olive600,
+                  foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(999),
-                  ),
                 ),
-                child: const Text('لغو جلسه'),
               ),
             ),
           ],

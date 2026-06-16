@@ -12,11 +12,12 @@ import (
 type TeacherUsecase struct {
 	teachers domain.TeacherRepository
 	reviews  domain.ReviewRepository
+	users    domain.UserRepository
 }
 
 // NewTeacherUsecase builds a TeacherUsecase.
-func NewTeacherUsecase(t domain.TeacherRepository, r domain.ReviewRepository) *TeacherUsecase {
-	return &TeacherUsecase{teachers: t, reviews: r}
+func NewTeacherUsecase(t domain.TeacherRepository, r domain.ReviewRepository, u domain.UserRepository) *TeacherUsecase {
+	return &TeacherUsecase{teachers: t, reviews: r, users: u}
 }
 
 // Search returns approved teachers matching the public filter.
@@ -36,7 +37,7 @@ func (uc *TeacherUsecase) Get(ctx context.Context, id uint) (*domain.Teacher, []
 }
 
 // Mine returns the teacher profile owned by the user.
-// Auto-creates a minimal teacher record if one doesn't exist yet.
+// Auto-creates a minimal approved teacher record if one doesn't exist yet.
 func (uc *TeacherUsecase) Mine(ctx context.Context, userID uint) (*domain.Teacher, error) {
 	t, err := uc.teachers.ByUserID(ctx, userID)
 	if err == nil {
@@ -45,8 +46,21 @@ func (uc *TeacherUsecase) Mine(ctx context.Context, userID uint) (*domain.Teache
 	if !errors.Is(err, domain.ErrNotFound) {
 		return nil, err
 	}
-	// Auto-create a minimal teacher profile
-	t = &domain.Teacher{UserID: userID}
+	// Auto-create a minimal approved teacher profile
+	u, _ := uc.users.ByID(ctx, userID)
+	t = &domain.Teacher{
+		UserID: userID,
+		Field:  "آموزش قرآن کریم",
+		Status: domain.TeacherApproved,
+	}
+	if u != nil {
+		if u.City != "" {
+			t.City = u.City
+		}
+		if u.Bio != "" {
+			t.Bio = u.Bio
+		}
+	}
 	if err := uc.teachers.Create(ctx, t); err != nil {
 		return nil, err
 	}
@@ -72,8 +86,21 @@ func (uc *TeacherUsecase) UpdateMine(ctx context.Context, userID uint, in Become
 		if !errors.Is(err, domain.ErrNotFound) {
 			return nil, err
 		}
-		// Auto-create if not exists
-		t = &domain.Teacher{UserID: userID}
+		// Auto-create if not exists (approved, so visible in search)
+		u, _ := uc.users.ByID(ctx, userID)
+		t = &domain.Teacher{
+			UserID: userID,
+			Field:  "آموزش قرآن کریم",
+			Status: domain.TeacherApproved,
+		}
+		if u != nil {
+			if u.City != "" {
+				t.City = u.City
+			}
+			if u.Bio != "" {
+				t.Bio = u.Bio
+			}
+		}
 		if err := uc.teachers.Create(ctx, t); err != nil {
 			return nil, err
 		}

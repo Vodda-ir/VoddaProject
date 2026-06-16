@@ -65,19 +65,25 @@ export function WebBtn({
   );
 }
 
-export function Avatar({ size = 48, ring = false, verified = false, emoji = '📖' }: { size?: number; ring?: boolean; verified?: boolean; emoji?: string }) {
+export function Avatar({ size = 48, ring = false, verified = false, emoji, imageUrl }: { size?: number; ring?: boolean; verified?: boolean; emoji?: string; imageUrl?: string }) {
   return (
     <div style={{ position: 'relative', flexShrink: 0 }}>
       <div
         style={{
           width: size, height: size, borderRadius: '50%',
-          background: 'linear-gradient(135deg,var(--olive-200),var(--olive-100))',
+          background: imageUrl ? 'transparent' : 'linear-gradient(135deg,var(--olive-200),var(--olive-100))',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: size * 0.42,
+          fontSize: size * 0.42, overflow: 'hidden',
           boxShadow: ring ? '0 0 0 3px var(--surface), 0 0 0 4.5px var(--olive-200)' : undefined,
         }}
       >
-        {emoji}
+        {imageUrl ? (
+          <img src={imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        ) : emoji ? (
+          emoji
+        ) : (
+          <Icon name="user" size={size * 0.55} stroke={1.6} style={{ color: 'var(--olive-500)' }} />
+        )}
       </div>
       {verified && (
         <span
