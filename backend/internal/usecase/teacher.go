@@ -240,3 +240,33 @@ func (uc *TeacherUsecase) SetWorkTimes(ctx context.Context, userID uint, wt []do
 func (uc *TeacherUsecase) WorkTimes(ctx context.Context, teacherID uint) ([]domain.WorkTime, error) {
 	return uc.teachers.WorkTimes(ctx, teacherID)
 }
+
+// AddWorkTime creates a single availability slot.
+func (uc *TeacherUsecase) AddWorkTime(ctx context.Context, userID uint, wt *domain.WorkTime) error {
+	t, err := uc.teachers.ByUserID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	wt.ID = 0
+	wt.TeacherID = t.ID
+	return uc.teachers.AddWorkTime(ctx, wt)
+}
+
+// UpdateWorkTime updates a single availability slot.
+func (uc *TeacherUsecase) UpdateWorkTime(ctx context.Context, userID uint, wt *domain.WorkTime) error {
+	t, err := uc.teachers.ByUserID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	wt.TeacherID = t.ID
+	return uc.teachers.UpdateWorkTime(ctx, wt)
+}
+
+// DeleteWorkTime deletes a single availability slot.
+func (uc *TeacherUsecase) DeleteWorkTime(ctx context.Context, userID uint, workTimeID uint) error {
+	t, err := uc.teachers.ByUserID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	return uc.teachers.DeleteWorkTime(ctx, t.ID, workTimeID)
+}

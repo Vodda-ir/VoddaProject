@@ -41,6 +41,12 @@ type TeacherRepository interface {
 
 	SetWorkTimes(ctx context.Context, teacherID uint, wt []WorkTime) error
 	WorkTimes(ctx context.Context, teacherID uint) ([]WorkTime, error)
+	AddWorkTime(ctx context.Context, wt *WorkTime) error
+	UpdateWorkTime(ctx context.Context, wt *WorkTime) error
+	DeleteWorkTime(ctx context.Context, teacherID, workTimeID uint) error
+
+	// ListPendingServices returns services with active=false, including teacher info.
+	ListPendingServices(ctx context.Context) ([]Service, error)
 }
 
 // SessionRepository persists bookings/sessions.

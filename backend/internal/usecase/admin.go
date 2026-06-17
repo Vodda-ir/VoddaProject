@@ -95,6 +95,33 @@ func (uc *AdminUsecase) ListWithdrawals(ctx context.Context, status domain.Withd
 	return uc.wallet.Withdrawals(ctx, status, limit, offset)
 }
 
+func (uc *AdminUsecase) ListPendingServices(ctx context.Context) ([]domain.Service, error) {
+	return uc.teachers.ListPendingServices(ctx)
+}
+
+func (uc *AdminUsecase) ApproveService(ctx context.Context, serviceID uint) error {
+	s, err := uc.teachers.ServiceByID(ctx, serviceID)
+	if err != nil {
+		return err
+	}
+	s.Active = true
+	if err := uc.teachers.UpdateService(ctx, s); err != nil {
+		return err
+	}
+	// notify the teacher
+	uc.notify(ctx, s.TeacherID, "خدمت تأیید شد", "خدمت «"+s.Title+"» توسط ادمین تأیید شد.")
+	return nil
+}
+
+func (uc *AdminUsecase) RejectService(ctx context.Context, serviceID uint) error {
+	s, err := uc.teachers.ServiceByID(ctx, serviceID)
+	if err != nil {
+		return err
+	}
+	uc.notify(ctx, s.TeacherID, "خدمت رد شد", "خدمت «"+s.Title+"» توسط ادمین رد شد.")
+	return uc.teachers.DeleteService(ctx, s.TeacherID, serviceID)
+}
+
 func (uc *AdminUsecase) notify(ctx context.Context, userID uint, title, body string) {
 	_ = uc.notif.Create(ctx, &domain.Notification{UserID: userID, Title: title, Body: body})
 }

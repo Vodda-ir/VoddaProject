@@ -116,13 +116,14 @@ func (t *Teacher) AfterFind(*gorm.DB) error {
 
 // Service is a bookable offering of a teacher.
 type Service struct {
-	ID        uint   `gorm:"primaryKey" json:"id"`
-	TeacherID uint   `gorm:"index" json:"teacher_id"`
-	Title     string `gorm:"size:160" json:"title"`
-	Duration  int    `json:"duration"` // minutes (30 / 60)
-	Price     int64  `json:"price"`
-	Icon      string `gorm:"size:30" json:"icon"`
-	Active    bool   `gorm:"default:false" json:"active"`
+	ID        uint     `gorm:"primaryKey" json:"id"`
+	TeacherID uint     `gorm:"index" json:"teacher_id"`
+	Title     string   `gorm:"size:160" json:"title"`
+	Duration  int      `json:"duration"` // minutes (30 / 60)
+	Price     int64    `json:"price"`
+	Icon      string   `gorm:"size:30" json:"icon"`
+	Active    bool     `gorm:"default:false" json:"active"`
+	Teacher   *Teacher `gorm:"foreignKey:TeacherID" json:"teacher,omitempty"`
 }
 
 // Sample is an audio work sample of a teacher.

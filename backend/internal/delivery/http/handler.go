@@ -350,6 +350,71 @@ func (h *Handler) MyWorkTimes(c *gin.Context) {
 	ok(c, wt)
 }
 
+func (h *Handler) AddWorkTime(c *gin.Context) {
+	var in struct {
+		Weekday int    `json:"weekday" binding:"required"`
+		From    string `json:"from" binding:"required"`
+		To      string `json:"to" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&in); err != nil {
+		fail(c, domain.ErrValidation)
+		return
+	}
+	wt := &domain.WorkTime{
+		Weekday:  in.Weekday,
+		FromTime: in.From,
+		ToTime:   in.To,
+		Active:   true,
+	}
+	if err := h.Teacher.AddWorkTime(c, userID(c), wt); err != nil {
+		fail(c, err)
+		return
+	}
+	ok(c, wt)
+}
+
+func (h *Handler) UpdateWorkTime(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil {
+		fail(c, domain.ErrValidation)
+		return
+	}
+	var in struct {
+		Weekday int    `json:"weekday" binding:"required"`
+		From    string `json:"from" binding:"required"`
+		To      string `json:"to" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&in); err != nil {
+		fail(c, domain.ErrValidation)
+		return
+	}
+	wt := &domain.WorkTime{
+		ID:       uint(id),
+		Weekday:  in.Weekday,
+		FromTime: in.From,
+		ToTime:   in.To,
+		Active:   true,
+	}
+	if err := h.Teacher.UpdateWorkTime(c, userID(c), wt); err != nil {
+		fail(c, err)
+		return
+	}
+	ok(c, wt)
+}
+
+func (h *Handler) DeleteWorkTime(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil {
+		fail(c, domain.ErrValidation)
+		return
+	}
+	if err := h.Teacher.DeleteWorkTime(c, userID(c), uint(id)); err != nil {
+		fail(c, err)
+		return
+	}
+	ok(c, gin.H{"deleted": true})
+}
+
 // ── sessions ──
 
 func (h *Handler) Book(c *gin.Context) {

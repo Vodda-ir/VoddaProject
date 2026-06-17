@@ -23,8 +23,6 @@ class _WorkTimesScreenState extends ConsumerState<WorkTimesScreen> {
     'جمعه',
   ];
   bool _saving = false;
-  int? _addingDay;
-  TimeOfDay? _from, _to;
   List<Map<String, dynamic>> _slots = [];
   List<Map<String, dynamic>>? _originalSlots;
 
@@ -138,7 +136,6 @@ class _WorkTimesScreenState extends ConsumerState<WorkTimesScreen> {
   Widget _dayCard(int weekday, List<Map<String, dynamic>> slots) {
     final daySlots = slots.where((s) => s['weekday'] == weekday).toList();
     final hasSlots = daySlots.isNotEmpty;
-    final adding = _addingDay == weekday;
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
@@ -161,16 +158,37 @@ class _WorkTimesScreenState extends ConsumerState<WorkTimesScreen> {
                   color: hasSlots ? AppColors.ink : AppColors.ink4,
                 ),
               ),
-              _Toggle(
-                on: hasSlots,
-                onChanged: (on) {
-                  if (on) {
-                    setState(() => _addingDay = weekday);
-                  } else {
-                    _slots.removeWhere((s) => s['weekday'] == weekday);
-                    setState(() {});
-                  }
-                },
+              GestureDetector(
+                onTap: () => _showAddRangeDialog(weekday),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 7,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.olive50,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        LucideIcons.plus,
+                        size: 14,
+                        color: AppColors.olive700,
+                      ),
+                      SizedBox(width: 4),
+                      Text(
+                        'افزودن بازه',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.olive700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
@@ -179,198 +197,184 @@ class _WorkTimesScreenState extends ConsumerState<WorkTimesScreen> {
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: [
-                ...daySlots.map((s) => _slotChip(s, weekday)),
-                if (adding)
-                  _addForm(weekday)
-                else
-                  GestureDetector(
-                    onTap: () => setState(() => _addingDay = weekday),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 7,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.sand100,
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            LucideIcons.plus,
-                            size: 14,
-                            color: AppColors.ink3,
-                          ),
-                          SizedBox(width: 4),
-                          Text(
-                            'بازه',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.ink3,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-              ],
+              children: daySlots.map((s) => _slotChip(s, weekday)).toList(),
             ),
           ],
-          if (adding && !hasSlots) ...[
-            const SizedBox(height: 12),
-            _addForm(weekday),
-          ],
+          if (!hasSlots)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                'تعطیل',
+                style: TextStyle(fontSize: 12.5, color: AppColors.ink4),
+              ),
+            ),
         ],
       ),
     );
   }
 
   Widget _slotChip(Map<String, dynamic> s, int weekday) {
-    return GestureDetector(
-      onTap: () {
-        _slots.removeWhere(
-          (x) =>
-              x['weekday'] == weekday &&
-              x['from'] == s['from'] &&
-              x['to'] == s['to'],
-        );
-        setState(() {});
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-        decoration: BoxDecoration(
-          color: AppColors.olive50,
-          borderRadius: BorderRadius.circular(999),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(LucideIcons.clock, size: 14, color: AppColors.olive700),
-            const SizedBox(width: 6),
-            Text(
-              '${s['from']} تا ${s['to']}',
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: AppColors.olive700,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _addForm(int weekday) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.olive500),
+        color: AppColors.olive50,
+        borderRadius: BorderRadius.circular(999),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
-            children: [
-              _timeBtn(
-                _from != null ? _from!.format(context) : 'از',
-                () => _pickTime(true),
-              ),
-              const SizedBox(width: 8),
-              _timeBtn(
-                _to != null ? _to!.format(context) : 'تا',
-                () => _pickTime(false),
-              ),
-              const Spacer(),
-              IconButton(
-                icon: const Icon(LucideIcons.check, color: AppColors.olive600),
-                onPressed: () => _saveSlot(weekday),
-              ),
-              IconButton(
-                icon: const Icon(LucideIcons.x, color: AppColors.ink3),
-                onPressed: () {
-                  _from = null;
-                  _to = null;
-                  setState(() => _addingDay = null);
-                },
-              ),
-            ],
-          ),
-          if (_from != null && _to != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Text(
-                '${_from!.format(context)} تا ${_to!.format(context)}',
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
+          GestureDetector(
+            onTap: () => _showEditRangeDialog(weekday, s),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  LucideIcons.clock,
+                  size: 14,
                   color: AppColors.olive700,
                 ),
-              ),
+                const SizedBox(width: 6),
+                Text(
+                  '${s['from']} تا ${s['to']}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.olive700,
+                  ),
+                ),
+              ],
             ),
+          ),
+          const SizedBox(width: 6),
+          GestureDetector(
+            onTap: () {
+              _slots.removeWhere(
+                (x) =>
+                    x['weekday'] == weekday &&
+                    x['from'] == s['from'] &&
+                    x['to'] == s['to'],
+              );
+              setState(() {});
+            },
+            child: const Icon(LucideIcons.x, size: 14, color: AppColors.ink3),
+          ),
         ],
       ),
     );
   }
 
-  Widget _timeBtn(String label, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(
-          color: AppColors.olive50,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          label,
-          style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: AppColors.olive700,
-          ),
-        ),
+  Future<void> _showAddRangeDialog(int weekday) async {
+    TimeOfDay from = const TimeOfDay(hour: 8, minute: 0);
+    TimeOfDay to = const TimeOfDay(hour: 20, minute: 0);
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => _TimeRangeDialog(
+        weekday: weekday,
+        dayName: _dayNames[weekday],
+        initialFrom: from,
+        initialTo: to,
+        existingSlots: _slots,
+        onSave: (f, t) {
+          from = f;
+          to = t;
+        },
       ),
     );
-  }
-
-  Future<void> _pickTime(bool isFrom) async {
-    final initial = isFrom
-        ? const TimeOfDay(hour: 8, minute: 0)
-        : const TimeOfDay(hour: 20, minute: 0);
-    final t = await showTimePicker(context: context, initialTime: initial);
-    if (t != null) setState(() => isFrom ? _from = t : _to = t);
-  }
-
-  void _saveSlot(int weekday) {
-    if (_from == null || _to == null) return;
-    final fMin = _from!.hour * 60 + _from!.minute;
-    final tMin = _to!.hour * 60 + _to!.minute;
-    if (tMin <= fMin) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('ساعت پایان باید بعد از شروع باشد')),
-      );
-      return;
-    }
-    for (final s in _slots.where((x) => x['weekday'] == weekday)) {
-      final sf = _parseMin((s['from'] ?? '').toString()),
-          st = _parseMin((s['to'] ?? '').toString());
-      if (sf < tMin && st > fMin) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('این بازه با بازهٔ دیگری تداخل دارد')),
-        );
+    if (result == true) {
+      final fMin = from.hour * 60 + from.minute;
+      final tMin = to.hour * 60 + to.minute;
+      if (tMin <= fMin) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('ساعت پایان باید بعد از شروع باشد')),
+          );
+        }
         return;
       }
+      for (final s in _slots.where((x) => x['weekday'] == weekday)) {
+        final sf = _parseMin((s['from'] ?? '').toString()),
+            st = _parseMin((s['to'] ?? '').toString());
+        if (sf < tMin && st > fMin) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('این بازه با بازهٔ دیگری تداخل دارد'),
+              ),
+            );
+          }
+          return;
+        }
+      }
+      setState(() {
+        _slots.add({'weekday': weekday, 'from': _fmt(from), 'to': _fmt(to)});
+      });
     }
-    _slots.add({'weekday': weekday, 'from': _fmt(_from!), 'to': _fmt(_to!)});
-    _from = null;
-    _to = null;
-    setState(() => _addingDay = null);
+  }
+
+  Future<void> _showEditRangeDialog(
+    int weekday,
+    Map<String, dynamic> slot,
+  ) async {
+    final initialFrom = _parseTime(slot['from'] ?? '08:00');
+    final initialTo = _parseTime(slot['to'] ?? '20:00');
+    TimeOfDay from = TimeOfDay(
+      hour: initialFrom ~/ 60,
+      minute: initialFrom % 60,
+    );
+    TimeOfDay to = TimeOfDay(hour: initialTo ~/ 60, minute: initialTo % 60);
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => _TimeRangeDialog(
+        weekday: weekday,
+        dayName: _dayNames[weekday],
+        initialFrom: from,
+        initialTo: to,
+        existingSlots: _slots,
+        editingSlot: slot,
+        onSave: (f, t) {
+          from = f;
+          to = t;
+        },
+      ),
+    );
+    if (result == true) {
+      final fMin = from.hour * 60 + from.minute;
+      final tMin = to.hour * 60 + to.minute;
+      if (tMin <= fMin) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('ساعت پایان باید بعد از شروع باشد')),
+          );
+        }
+        return;
+      }
+      for (final s in _slots.where((x) => x['weekday'] == weekday)) {
+        if (s == slot) continue;
+        final sf = _parseMin((s['from'] ?? '').toString()),
+            st = _parseMin((s['to'] ?? '').toString());
+        if (sf < tMin && st > fMin) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('این بازه با بازهٔ دیگری تداخل دارد'),
+              ),
+            );
+          }
+          return;
+        }
+      }
+      setState(() {
+        slot['from'] = _fmt(from);
+        slot['to'] = _fmt(to);
+      });
+    }
+  }
+
+  /// Parse "HH:MM" to total minutes.
+  int _parseTime(String s) {
+    final p = s.trim().split(':');
+    if (p.length < 2) return 0;
+    return (int.tryParse(p[0]) ?? 0) * 60 + (int.tryParse(p[1]) ?? 0);
   }
 
   String _fmt(TimeOfDay t) =>
@@ -430,52 +434,173 @@ class _WorkTimesScreenState extends ConsumerState<WorkTimesScreen> {
   }
 }
 
-class _Toggle extends StatefulWidget {
-  const _Toggle({required this.on, this.onChanged});
-  final bool on;
-  final ValueChanged<bool>? onChanged;
+class _TimeRangeDialog extends StatefulWidget {
+  const _TimeRangeDialog({
+    required this.weekday,
+    required this.dayName,
+    required this.initialFrom,
+    required this.initialTo,
+    required this.existingSlots,
+    this.editingSlot,
+    required this.onSave,
+  });
+
+  final int weekday;
+  final String dayName;
+  final TimeOfDay initialFrom;
+  final TimeOfDay initialTo;
+  final List<Map<String, dynamic>> existingSlots;
+  final Map<String, dynamic>? editingSlot;
+  final void Function(TimeOfDay from, TimeOfDay to) onSave;
+
   @override
-  State<_Toggle> createState() => _ToggleState();
+  State<_TimeRangeDialog> createState() => _TimeRangeDialogState();
 }
 
-class _ToggleState extends State<_Toggle> {
-  late bool _on;
+class _TimeRangeDialogState extends State<_TimeRangeDialog> {
+  late TimeOfDay _from;
+  late TimeOfDay _to;
+
   @override
   void initState() {
     super.initState();
-    _on = widget.on;
+    _from = widget.initialFrom;
+    _to = widget.initialTo;
   }
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        setState(() => _on = !_on);
-        widget.onChanged?.call(_on);
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: 46,
-        height: 28,
-        decoration: BoxDecoration(
-          color: _on ? AppColors.olive600 : AppColors.sand200,
-          borderRadius: BorderRadius.circular(999),
+    final isEdit = widget.editingSlot != null;
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          '${isEdit ? 'ویرایش' : 'افزودن'} بازه - ${widget.dayName}',
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
         ),
-        child: AnimatedAlign(
-          duration: const Duration(milliseconds: 200),
-          alignment: _on ? Alignment.centerRight : Alignment.centerLeft,
-          child: Container(
-            width: 22,
-            height: 22,
-            margin: const EdgeInsets.symmetric(horizontal: 3),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              boxShadow: [BoxShadow(color: Color(0x33000000), blurRadius: 2)],
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _timePickerButton(
+                  label: 'از',
+                  time: _from,
+                  onTap: () => _pickTime(true),
+                ),
+                const Text(
+                  'تا',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.ink3,
+                  ),
+                ),
+                _timePickerButton(
+                  label: 'تا',
+                  time: _to,
+                  onTap: () => _pickTime(false),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: AppColors.olive50,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                '${_from.format(context)} تا ${_to.format(context)}',
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.olive700,
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text(
+              'انصراف',
+              style: TextStyle(color: AppColors.ink3),
             ),
           ),
+          ElevatedButton(
+            onPressed: () {
+              widget.onSave(_from, _to);
+              Navigator.pop(context, true);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.olive600,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: Text(isEdit ? 'ذخیره' : 'افزودن'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _timePickerButton({
+    required String label,
+    required TimeOfDay time,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        decoration: BoxDecoration(
+          color: AppColors.olive50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.olive200),
+        ),
+        child: Column(
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: AppColors.ink3,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              time.format(context),
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: AppColors.olive700,
+              ),
+            ),
+          ],
         ),
       ),
     );
+  }
+
+  Future<void> _pickTime(bool isFrom) async {
+    final initial = isFrom ? _from : _to;
+    final t = await showTimePicker(context: context, initialTime: initial);
+    if (t != null) {
+      setState(() {
+        if (isFrom) {
+          _from = t;
+        } else {
+          _to = t;
+        }
+      });
+    }
   }
 }

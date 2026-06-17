@@ -55,12 +55,12 @@ class TeacherProfile extends ConsumerWidget {
       ),
       (
         LucideIcons.clock,
-        'زمان\u200Cهای کاری',
+        'زمان کاری',
         workDayCount,
         () => context.push('/t/worktimes'),
       ),
-      (LucideIcons.mic, 'نمونه\u200Cکارها', '—', null as void Function()?),
-      (LucideIcons.star, 'نظرات قرآن\u200Cآموزان', reviewCount, null),
+      (LucideIcons.mic, 'نمونه کارها', '—', null as void Function()?),
+      (LucideIcons.star, 'نظرات', reviewCount, null),
     ];
 
     return SafeArea(

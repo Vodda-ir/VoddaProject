@@ -574,7 +574,7 @@ class _QuickManage extends StatelessWidget {
       (LucideIcons.bookOpen, 'خدمات من', () => context.push('/t/services')),
       (LucideIcons.clock, 'زمان‌های کاری', () => context.push('/t/worktimes')),
       (LucideIcons.wallet, 'کیف پول', () => context.go('/t/wallet')),
-      (LucideIcons.star, 'نظرات قرآن‌آموزان', () {}),
+      (LucideIcons.star, 'نظرات', () {}),
     ];
 
     return Padding(

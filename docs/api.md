@@ -60,6 +60,10 @@
 | PUT | `/teacher/services/:id` | ویرایش خدمت |
 | DELETE | `/teacher/services/:id` | حذف خدمت |
 | PUT | `/teacher/work-times` | تنظیم زمان‌های کاری. بدنه: `{ slots: [{ weekday, from, to }] }` |
+| GET | `/teacher/work-times` | دریافت زمان‌های کاری من |
+| POST | `/teacher/work-times` | افزودن یک بازه. بدنه: `{ weekday, from, to }` |
+| PUT | `/teacher/work-times/:id` | ویرایش یک بازه. بدنه: `{ weekday, from, to }` |
+| DELETE | `/teacher/work-times/:id` | حذف یک بازه |
 | GET | `/teacher/sessions?when=...` | جلسات استاد |
 | POST | `/teacher/sessions/:id/accept` | پذیرش درخواست |
 | POST | `/teacher/sessions/:id/reject` | رد درخواست (بازگشت وجه). بدنه: `{ reason }` |

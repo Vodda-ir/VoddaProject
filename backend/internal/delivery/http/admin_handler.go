@@ -88,3 +88,28 @@ func (h *Handler) AdminProcessWithdrawal(c *gin.Context) {
 	}
 	ok(c, w)
 }
+
+func (h *Handler) AdminServices(c *gin.Context) {
+	services, err := h.Admin.ListPendingServices(c)
+	if err != nil {
+		fail(c, err)
+		return
+	}
+	okList(c, services, int64(len(services)))
+}
+
+func (h *Handler) AdminApproveService(c *gin.Context) {
+	if err := h.Admin.ApproveService(c, paramID(c)); err != nil {
+		fail(c, err)
+		return
+	}
+	ok(c, gin.H{"approved": true})
+}
+
+func (h *Handler) AdminRejectService(c *gin.Context) {
+	if err := h.Admin.RejectService(c, paramID(c)); err != nil {
+		fail(c, err)
+		return
+	}
+	ok(c, gin.H{"rejected": true})
+}

@@ -12,6 +12,7 @@ const NAV = [
   { id: 'users', icon: 'users' as const, label: 'کاربران', href: '/panel/admin/users' },
   { id: 'teachers', icon: 'award' as const, label: 'اساتید', href: '/panel/admin/teachers' },
   { id: 'sessions', icon: 'calendar' as const, label: 'جلسات', href: '/panel/admin/sessions' },
+  { id: 'services', icon: 'book' as const, label: 'خدمات', href: '/panel/admin/services' },
   { id: 'withdraws', icon: 'download' as const, label: 'برداشتها', href: '/panel/admin/withdrawals' },
 ];
 

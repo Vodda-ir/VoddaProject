@@ -148,3 +148,33 @@ func (r *teacherRepo) WorkTimes(ctx context.Context, teacherID uint) ([]domain.W
 		Order("weekday asc, from_time asc").Find(&wt).Error
 	return wt, err
 }
+
+func (r *teacherRepo) AddWorkTime(ctx context.Context, wt *domain.WorkTime) error {
+	return r.db.WithContext(ctx).Create(wt).Error
+}
+
+func (r *teacherRepo) UpdateWorkTime(ctx context.Context, wt *domain.WorkTime) error {
+	return r.db.WithContext(ctx).Model(&domain.WorkTime{}).
+		Where("id = ? AND teacher_id = ?", wt.ID, wt.TeacherID).
+		Updates(map[string]any{
+			"weekday":   wt.Weekday,
+			"from_time": wt.FromTime,
+			"to_time":   wt.ToTime,
+		}).Error
+}
+
+func (r *teacherRepo) ListPendingServices(ctx context.Context) ([]domain.Service, error) {
+	var services []domain.Service
+	err := r.db.WithContext(ctx).
+		Preload("Teacher.User").
+		Where("active = ?", false).
+		Order("id asc").
+		Find(&services).Error
+	return services, err
+}
+
+func (r *teacherRepo) DeleteWorkTime(ctx context.Context, teacherID, workTimeID uint) error {
+	return r.db.WithContext(ctx).
+		Where("id = ? AND teacher_id = ?", workTimeID, teacherID).
+		Delete(&domain.WorkTime{}).Error
+}
