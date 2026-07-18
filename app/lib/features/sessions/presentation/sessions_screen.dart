@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/services/snackbar_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/fa.dart';
 import '../../../core/widgets/app_error.dart';
@@ -257,7 +258,7 @@ class _SessionCard extends StatelessWidget {
           children: [
             Expanded(
               child: ElevatedButton.icon(
-                onPressed: () {},
+                onPressed: () => SnackBarService.show('قابلیت تماس به زودی اضافه می‌شود'),
                 icon: const Icon(LucideIcons.phone, size: 18),
                 label: const Text('پیوستن به جلسه'),
                 style: ElevatedButton.styleFrom(

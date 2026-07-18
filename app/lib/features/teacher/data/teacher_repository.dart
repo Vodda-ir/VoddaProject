@@ -108,6 +108,26 @@ class TeacherRepository {
       return false;
     }
   }
+
+  /// Request a withdrawal. Returns true on success.
+  Future<bool> requestWithdrawal(int amount) async {
+    try {
+      final dio = _ref.read(dioClientProvider).dio;
+      await dio.post('/teacher/withdrawals', data: {'amount': amount});
+      return true;
+    } catch (e) {
+      SnackBarService.showError(e);
+      return false;
+    }
+  }
+
+  /// Fetch withdrawal history.
+  Future<List<Map<String, dynamic>>> myWithdrawals() async {
+    final dio = _ref.read(dioClientProvider).dio;
+    final res = await dio.get('/teacher/withdrawals');
+    final data = (res.data['data'] as List?) ?? [];
+    return data.cast<Map<String, dynamic>>();
+  }
 }
 
 final teacherRepositoryProvider = Provider<TeacherRepository>(

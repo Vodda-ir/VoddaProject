@@ -18,6 +18,7 @@ const NAV = [
 export default function UserLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [userOpen, setUserOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [user, setUser] = useState({ name: '...', role: 'learner', avatarUrl: '' });
   const token = getToken();
 
@@ -42,7 +43,21 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--sand-50)' }}>
-      <aside style={{ width: 244, flexShrink: 0, background: 'var(--olive-900)', color: 'rgba(255,255,255,.82)', display: 'flex', flexDirection: 'column', padding: '22px 16px', position: 'sticky', top: 0, height: '100vh' }}>
+      {/* Mobile top bar */}
+      <div style={{ display: 'none', position: 'sticky', top: 0, zIndex: 50, background: 'var(--olive-900)', color: '#fff', padding: '12px 16px', alignItems: 'center', gap: 12, width: '100%' }} className="mobile-bar">
+        <button onClick={() => setSidebarOpen(true)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', padding: 4 }}>
+          <Icon name="list" size={24} />
+        </button>
+        <span style={{ fontWeight: 800, fontSize: 18 }}>وُدّا</span>
+      </div>
+
+      {/* Mobile overlay */}
+      {sidebarOpen && <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', zIndex: 90, display: 'none' }} className="mobile-overlay" onClick={() => setSidebarOpen(false)} />}
+
+      <aside className="panel-sidebar" data-open={sidebarOpen} style={{
+        width: 244, flexShrink: 0, background: 'var(--olive-900)', color: 'rgba(255,255,255,.82)',
+        display: 'flex', flexDirection: 'column', padding: '22px 16px', position: 'sticky', top: 0, height: '100vh',
+      }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 8px 4px' }}>
           <img src="/vodda-logo.svg" alt="" style={{ width: 32, height: 32, filter: 'brightness(0) invert(1)' }} />
           <span style={{ fontWeight: 800, fontSize: 24, color: '#fff' }}>وُدّا</span>
@@ -52,7 +67,7 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
           {NAV.map(it => {
             const on = it.id === activeId;
             return (
-              <Link key={it.id} href={it.href} style={{
+              <Link key={it.id} href={it.href} onClick={() => setSidebarOpen(false)} style={{
                 display: 'flex', alignItems: 'center', gap: 12, padding: '11px 12px', borderRadius: 12,
                 fontSize: 14, fontWeight: on ? 700 : 500, textDecoration: 'none',
                 color: on ? '#fff' : 'rgba(255,255,255,.7)',
@@ -97,6 +112,19 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         {children}
       </div>
+      <style>{`
+        @media (max-width: 768px) {
+          .mobile-bar { display: flex !important; }
+          .panel-sidebar {
+            position: fixed !important;
+            top: 0; right: 0; z-index: 100;
+            transform: translateX(100%);
+            transition: transform .25s;
+          }
+          .panel-sidebar[data-open="true"] { transform: translateX(0) !important; }
+          .mobile-overlay { display: block !important; }
+        }
+      `}</style>
     </div>
   );
 }

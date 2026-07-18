@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../../core/services/snackbar_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/fa.dart';
 import '../../../core/widgets/app_error.dart';
@@ -135,24 +136,27 @@ class _TeacherHeader extends ConsumerWidget {
                 BoxShadow(color: Color(0x0A2E3622), blurRadius: 4),
               ],
             ),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                const Icon(LucideIcons.bell, size: 21, color: AppColors.ink2),
-                Positioned(
-                  top: 11,
-                  right: 12,
-                  child: Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: AppColors.clay,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: AppColors.surface, width: 2),
+            child: GestureDetector(
+              onTap: () => SnackBarService.show('اعلان جدیدی نیست'),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  const Icon(LucideIcons.bell, size: 21, color: AppColors.ink2),
+                  Positioned(
+                    top: 11,
+                    right: 12,
+                    child: Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: AppColors.clay,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppColors.surface, width: 2),
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
@@ -530,14 +534,18 @@ class _NextSession extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 13),
-                SizedBox(
-                  height: 48,
-                  child: ElevatedButton.icon(
-                    onPressed: () {},
-                    icon: const Icon(LucideIcons.phone, size: 19),
-                    label: const Text('شروع جلسه'),
+                  SizedBox(
+                    height: 48,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('قابلیت تماس به زودی اضافه می‌شود')),
+                        );
+                      },
+                      icon: const Icon(LucideIcons.phone, size: 19),
+                      label: const Text('شروع جلسه'),
+                    ),
                   ),
-                ),
               ],
             ),
           ),
@@ -574,7 +582,7 @@ class _QuickManage extends StatelessWidget {
       (LucideIcons.bookOpen, 'خدمات من', () => context.push('/t/services')),
       (LucideIcons.clock, 'زمان‌های کاری', () => context.push('/t/worktimes')),
       (LucideIcons.wallet, 'کیف پول', () => context.go('/t/wallet')),
-      (LucideIcons.star, 'نظرات', () {}),
+      (LucideIcons.star, 'نظرات', () => SnackBarService.show('به زودی')),
     ];
 
     return Padding(

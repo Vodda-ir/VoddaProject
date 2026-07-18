@@ -40,6 +40,27 @@ abstract class SnackBarService {
     );
   }
 
+  /// Show an info message.
+  static void show(String message) {
+    final messenger = scaffoldMessengerKey.currentState;
+    if (messenger == null) return;
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: Colors.grey.shade800,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
   /// Show a success message.
   static void showSuccess(String message) {
     final messenger = scaffoldMessengerKey.currentState;

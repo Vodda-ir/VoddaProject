@@ -104,8 +104,8 @@ export function Nav() {
       .then(j => j?.data ? setUser({ name: j.data.name || 'کاربر', role: j.data.role || 'learner', avatar_url: j.data.avatar_url }) : null)
       .catch(() => {});
   }, []);
-  const links = ['خانه', 'اساتید قرآن', 'مداحی', 'چگونه کار میکند', 'استاد شوید'];
-  const hrefs = ['/', '/#teachers', '/#teachers', '/#how', '/panel/teacher'];
+  const links = ['خانه', 'اساتید', 'جستجو', 'چگونه کار میکند', 'استاد شوید'];
+  const hrefs = ['/', '/#teachers', '/search', '/#how', '/panel/teacher/register'];
   return (
     <header style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(250,248,242,.85)', backdropFilter: 'blur(14px)', borderBottom: '1px solid var(--sand-200)' }}>
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 28px', height: 72, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -157,7 +157,7 @@ export function Hero() {
               <Icon name="pin" size={19} style={{ color: 'var(--ink-3)' }} />
               <input placeholder="شهر" style={{ flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent', fontSize: 15, padding: '12px 0', fontFamily: 'var(--font)' }} />
             </div>
-            <WebBtn icon="search" href="/panel/user">جستجو</WebBtn>
+            <WebBtn icon="search" href="/search">جستجو</WebBtn>
           </div>
           <div style={{ display: 'flex', gap: 32 }}>
             {[['۸۰۰+', 'استاد تأییدشده'], ['۱۲٬۰۰۰+', 'جلسهٔ برگزارشده'], ['۴٫۹', 'میانگین رضایت']].map(([n, l]) => (
@@ -215,7 +215,7 @@ export function Categories() {
             <p style={{ fontSize: 14, lineHeight: 1.9, color: 'var(--ink-3)', marginBottom: 16 }}>{c.desc}</p>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <span style={{ fontSize: 12.5, fontWeight: 700, color: c.c, background: c.bg, padding: '5px 12px', borderRadius: 999 }}>{c.n}</span>
-              <a href="/panel/user" style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 13.5, fontWeight: 700, color: 'var(--ink-2s)' }}>مشاهده <Icon name="chevronL" size={17} /></a>
+              <a href="/search" style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 13.5, fontWeight: 700, color: 'var(--ink-2s)' }}>مشاهده <Icon name="chevronL" size={17} /></a>
             </div>
           </div>
         ))}
@@ -276,7 +276,7 @@ function WebTeacherCard({ t }: { t: Teacher }) {
           <span style={{ fontSize: 15, fontWeight: 800, color: 'var(--ink)' }}>{fa(Math.round(t.price30 / 1000))}</span>
           <span style={{ fontSize: 11, color: 'var(--ink-3)' }}> هزار ت</span>
         </div>
-        <WebBtn size="sm" href="/panel/user">رزرو جلسه</WebBtn>
+        <WebBtn size="sm" href={`/teachers/${t.id}`}>مشاهده و رزرو</WebBtn>
       </div>
     </div>
   );
@@ -287,7 +287,7 @@ export function FeaturedTeachers({ teachers }: { teachers: Teacher[] }) {
     <section id="teachers" style={{ maxWidth: 1200, margin: '0 auto', padding: '70px 28px' }}>
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 36, flexWrap: 'wrap', gap: 16 }}>
         <SectionTitle kicker="منتخب وُدّا" title="اساتید برتر این هفته" center={false} />
-        <WebBtn variant="ghost" icon="arrowL" href="/panel/user">مشاهدهٔ همهٔ اساتید</WebBtn>
+        <WebBtn variant="ghost" icon="arrowL" href="/search">مشاهدهٔ همهٔ اساتید</WebBtn>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 22 }} className="cat-grid">
         {teachers.slice(0, 6).map((t) => <WebTeacherCard key={t.id} t={t} />)}
@@ -363,7 +363,7 @@ export function BecomeTeacher() {
           <h2 style={{ fontSize: 34, fontWeight: 800, lineHeight: 1.4, letterSpacing: '-.5px', marginBottom: 16 }}>دانش قرآنیات را<br />به درآمد تبدیل کن</h2>
           <p style={{ fontSize: 16, lineHeight: 1.95, opacity: 0.88, maxWidth: 420, marginBottom: 28 }}>پروفایل حرفهای بساز، خدماتت را تعریف کن و از هر جلسه درآمد کسب کن. تسویهحساب شفاف و منظم.</p>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            <WebBtn variant="white" size="lg" icon="arrowL" href="/panel/teacher">ثبتنام بهعنوان استاد</WebBtn>
+            <WebBtn variant="white" size="lg" icon="arrowL" href="/panel/teacher/register">ثبتنام بهعنوان استاد</WebBtn>
             <WebBtn size="lg" href="/#how" style={{ background: 'rgba(255,255,255,.14)', boxShadow: 'none', color: '#fff' }}>اطلاعات بیشتر</WebBtn>
           </div>
         </div>
@@ -402,9 +402,33 @@ export function DownloadApp() {
 
 export function Footer() {
   const cols = [
-    { h: 'وُدّا', links: ['دربارهٔ ما', 'تماس با ما', 'وبلاگ', 'فرصتهای شغلی'] },
-    { h: 'خدمات', links: ['آموزش قرآن', 'مداحی', 'مشاورهٔ صوتی', 'اساتید بانو'] },
-    { h: 'راهنما', links: ['چگونه کار میکند', 'سؤالات متداول', 'قوانین و مقررات', 'حریم خصوصی'] },
+    {
+      h: 'وُدّا',
+      links: [
+        { label: 'دربارهٔ ما', href: '/about' },
+        { label: 'تماس با ما', href: '/contact' },
+        { label: 'وبلاگ', href: '/blog' },
+        { label: 'فرصتهای شغلی', href: '/contact' },
+      ],
+    },
+    {
+      h: 'خدمات',
+      links: [
+        { label: 'آموزش قرآن', href: '/search?field=quran' },
+        { label: 'مداحی', href: '/search?field=maddahi' },
+        { label: 'مشاورهٔ صوتی', href: '/search?field=consult' },
+        { label: 'اساتید بانو', href: '/search?female=true' },
+      ],
+    },
+    {
+      h: 'راهنما',
+      links: [
+        { label: 'چگونه کار میکند', href: '/about' },
+        { label: 'سؤالات متداول', href: '/faq' },
+        { label: 'قوانین و مقررات', href: '/terms' },
+        { label: 'حریم خصوصی', href: '/privacy' },
+      ],
+    },
   ];
   return (
     <footer style={{ background: 'var(--olive-900)', color: 'rgba(255,255,255,.75)', paddingTop: 56 }}>
@@ -418,7 +442,7 @@ export function Footer() {
             <div key={c.h}>
               <h4 style={{ fontSize: 15, fontWeight: 800, color: '#fff', marginBottom: 16 }}>{c.h}</h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
-                {c.links.map((l) => <a key={l} href="#" style={{ fontSize: 13.5, color: 'rgba(255,255,255,.7)' }}>{l}</a>)}
+                {c.links.map((l) => <a key={l.label} href={l.href} style={{ fontSize: 13.5, color: 'rgba(255,255,255,.7)', textDecoration: 'none' }}>{l.label}</a>)}
               </div>
             </div>
           ))}

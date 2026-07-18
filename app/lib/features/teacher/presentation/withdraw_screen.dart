@@ -1,24 +1,34 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/fa.dart';
+import '../../../core/services/snackbar_service.dart';
+import '../../auth/data/user_repository.dart';
+import '../data/teacher_repository.dart';
 
-/// Teacher withdraw request screen — matches design's WithdrawScreen.
-class WithdrawScreen extends StatefulWidget {
+class WithdrawScreen extends ConsumerStatefulWidget {
   const WithdrawScreen({super.key});
 
   @override
-  State<WithdrawScreen> createState() => _WithdrawScreenState();
+  ConsumerState<WithdrawScreen> createState() => _WithdrawScreenState();
 }
 
-class _WithdrawScreenState extends State<WithdrawScreen> {
+class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
   final _amount = TextEditingController();
+  bool _loading = false;
   bool _done = false;
 
   @override
   Widget build(BuildContext context) {
+    final me = ref.watch(meProvider);
+    final balance = me.maybeWhen(
+      data: (u) => u.wallet,
+      orElse: () => 0,
+    );
+
     if (_done) {
       return Scaffold(
         body: Center(
@@ -72,7 +82,7 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
       );
     }
 
-    final qAmounts = [500000, 1000000, 1840000];
+    final qAmounts = [500000, 1000000, 2000000];
 
     return Scaffold(
       appBar: AppBar(title: const Text('برداشت وجه')),
@@ -88,16 +98,16 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
                     color: AppColors.olive50,
                     borderRadius: BorderRadius.circular(18),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
+                      const Text(
                         'موجودی قابل برداشت',
                         style: TextStyle(fontSize: 13, color: AppColors.ink2),
                       ),
                       Text(
-                        '۱,۸۴۰,۰۰۰ تومان',
-                        style: TextStyle(
+                        '${faNumber(balance)} تومان',
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w800,
                           color: AppColors.olive700,
@@ -215,28 +225,16 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
                       BoxShadow(color: Color(0x0A2E3622), blurRadius: 4),
                     ],
                   ),
-                  child: Row(
+                  child: const Row(
                     children: [
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: AppColors.olive100,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(
-                          LucideIcons.creditCard,
-                          size: 22,
-                          color: AppColors.olive700,
-                        ),
-                      ),
-                      const SizedBox(width: 13),
-                      const Expanded(
+                      Icon(LucideIcons.creditCard, size: 22, color: AppColors.olive700),
+                      SizedBox(width: 13),
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'کارت بانک ملت',
+                              'واریز به حساب بانکی',
                               style: TextStyle(
                                 fontSize: 13.5,
                                 fontWeight: FontWeight.w700,
@@ -244,7 +242,7 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
                             ),
                             SizedBox(height: 3),
                             Text(
-                              '۶۰۳۷ - ۹۹۱۴ - •••• - ••••',
+                              'پس از تأیید، به حساب شما واریز می‌شود',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: AppColors.ink3,
@@ -253,7 +251,7 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
                           ],
                         ),
                       ),
-                      const Icon(
+                      Icon(
                         LucideIcons.check,
                         size: 18,
                         color: AppColors.olive600,
@@ -270,10 +268,19 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
               width: double.infinity,
               height: 52,
               child: ElevatedButton.icon(
-                onPressed: _amount.text.isNotEmpty
-                    ? () => setState(() => _done = true)
-                    : null,
-                icon: const Icon(LucideIcons.check, size: 19),
+                onPressed: (_loading || _amount.text.isEmpty)
+                    ? null
+                    : _submitWithdrawal,
+                icon: _loading
+                    ? const SizedBox(
+                        width: 19,
+                        height: 19,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(LucideIcons.check, size: 19),
                 label: const Text('ثبت درخواست برداشت'),
               ),
             ),
@@ -281,6 +288,24 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _submitWithdrawal() async {
+    final amount = int.tryParse(_amount.text);
+    if (amount == null || amount <= 0) {
+      SnackBarService.show('مبلغ معتبر وارد کنید');
+      return;
+    }
+
+    setState(() => _loading = true);
+    final ok = await ref.read(teacherRepositoryProvider).requestWithdrawal(amount);
+    if (mounted) {
+      setState(() => _loading = false);
+      if (ok) {
+        ref.invalidate(meProvider);
+        setState(() => _done = true);
+      }
+    }
   }
 
   @override

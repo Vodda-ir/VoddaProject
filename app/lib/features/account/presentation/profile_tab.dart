@@ -7,6 +7,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/vodda_avatar.dart';
 import '../../auth/data/auth_repository.dart';
 import '../../auth/data/user_repository.dart';
+import '../../../core/services/snackbar_service.dart';
 
 class ProfileTab extends ConsumerWidget {
   const ProfileTab({super.key});
@@ -21,9 +22,9 @@ class ProfileTab extends ConsumerWidget {
         'کیف پول و تراکنش\u200Cها',
         () => context.go('/wallet'),
       ),
-      (LucideIcons.bell, 'اعلان‌ها', null),
-      (LucideIcons.shield, 'حریم خصوصی و امنیت', null),
-      (LucideIcons.helpCircle, 'پشتیبانی و قوانین', null),
+      (LucideIcons.bell, 'اعلان‌ها', () => SnackBarService.show('به زودی')),
+      (LucideIcons.shield, 'حریم خصوصی و امنیت', () => SnackBarService.show('به زودی')),
+      (LucideIcons.helpCircle, 'پشتیبانی و قوانین', () => SnackBarService.show('به زودی')),
     ];
 
     Future<void> logout() async {

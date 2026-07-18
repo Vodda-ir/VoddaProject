@@ -26,6 +26,21 @@ export type Teacher = {
   services?: { id: number; title: string; duration: number; price: number; icon: string }[];
 };
 
+export type Review = {
+  id: number;
+  rating: number;
+  text: string;
+  learner_name: string;
+  created_at: string;
+};
+
+export type WorkTime = {
+  id: number;
+  weekday: number;
+  start: string;
+  end: string;
+};
+
 export type ListResponse<T> = { data: T[]; total: number };
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -43,10 +58,17 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const api = {
   // ── public ──
-  teachers: (q = '') =>
-    request<ListResponse<Teacher>>(`/teachers${q ? `?q=${encodeURIComponent(q)}` : ''}`),
+  teachers: (q = '', params?: Record<string, string>) => {
+    const sp = new URLSearchParams();
+    if (q) sp.set('q', q);
+    if (params) for (const [k, v] of Object.entries(params)) if (v) sp.set(k, v);
+    const qs = sp.toString();
+    return request<ListResponse<Teacher>>(`/teachers${qs ? `?${qs}` : ''}`);
+  },
   teacher: (id: number) =>
-    request<{ data: { teacher: Teacher; reviews: unknown[] } }>(`/teachers/${id}`),
+    request<{ data: { teacher: Teacher; reviews: Review[] } }>(`/teachers/${id}`),
+  teacherWorkTimes: (id: number) =>
+    request<{ data: WorkTime[] }>(`/teachers/${id}/work-times`),
 
   // ── authenticated (pass token) ──
   me: (token: string) =>
@@ -80,10 +102,36 @@ export const api = {
     request<{ data: unknown[] }>(`/sessions?when=${when}`, {
       headers: { Authorization: `Bearer ${token}` },
     }),
+  bookSession: (token: string, body: { teacher_id: number; service_id: number; scheduled_at: string; note?: string }) =>
+    request<{ data: unknown }>('/sessions', {
+      method: 'POST',
+      body: JSON.stringify(body),
+      headers: { Authorization: `Bearer ${token}` },
+    }),
 
   // wallet
   transactions: (token: string) =>
     request<{ data: unknown[] }>('/wallet/transactions', {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+
+  // follow
+  follow: (token: string, teacherId: number) =>
+    request<{ data: unknown }>(`/teachers/${teacherId}/follow`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+  unfollow: (token: string, teacherId: number) =>
+    request<{ data: unknown }>(`/teachers/${teacherId}/follow`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+
+  // become teacher
+  becomeTeacher: (token: string, body: { tag: string; field: string; bio?: string }) =>
+    request<{ data: unknown }>('/me/become-teacher', {
+      method: 'POST',
+      body: JSON.stringify(body),
       headers: { Authorization: `Bearer ${token}` },
     }),
 };

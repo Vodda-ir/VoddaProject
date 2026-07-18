@@ -3,6 +3,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/services/snackbar_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_error.dart';
 import '../../../core/widgets/ui.dart';
@@ -258,24 +259,27 @@ class _Header extends ConsumerWidget {
                 BoxShadow(color: Color(0x0A2E3622), blurRadius: 4),
               ],
             ),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                const Icon(LucideIcons.bell, size: 21, color: AppColors.ink2),
-                Positioned(
-                  top: 11,
-                  right: 12,
-                  child: Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: AppColors.clay,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: AppColors.surface, width: 2),
+            child: GestureDetector(
+              onTap: () => SnackBarService.show('اعلان جدیدی نیست'),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  const Icon(LucideIcons.bell, size: 21, color: AppColors.ink2),
+                  Positioned(
+                    top: 11,
+                    right: 12,
+                    child: Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: AppColors.clay,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppColors.surface, width: 2),
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
@@ -474,17 +478,25 @@ class _QuickCats extends StatelessWidget {
   }
 }
 
-class _FeaturedTeacher extends StatelessWidget {
+class _FeaturedTeacher extends ConsumerStatefulWidget {
   const _FeaturedTeacher({required this.teacher, required this.onTap});
   final Teacher teacher;
   final VoidCallback onTap;
+
+  @override
+  ConsumerState<_FeaturedTeacher> createState() => _FeaturedTeacherState();
+}
+
+class _FeaturedTeacherState extends ConsumerState<_FeaturedTeacher> {
+  bool _following = false;
+  bool _loading = false;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: GestureDetector(
-        onTap: onTap,
+        onTap: widget.onTap,
         child: Container(
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
@@ -514,7 +526,7 @@ class _FeaturedTeacher extends StatelessWidget {
                 ),
                 child: Center(
                   child: Text(
-                    teacher.field.contains('مداحی') ? '🎤' : '📖',
+                    widget.teacher.field.contains('مداحی') ? '🎤' : '📖',
                     style: const TextStyle(fontSize: 36),
                   ),
                 ),
@@ -544,7 +556,7 @@ class _FeaturedTeacher extends StatelessWidget {
                     ),
                     const SizedBox(height: 7),
                     Text(
-                      teacher.name,
+                      widget.teacher.name,
                       style: const TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w800,
@@ -553,36 +565,43 @@ class _FeaturedTeacher extends StatelessWidget {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      '${teacher.tag} · ${teacher.city}',
+                      '${widget.teacher.tag} · ${widget.teacher.city}',
                       style: const TextStyle(
                         fontSize: 12.5,
                         color: Colors.white70,
                       ),
                     ),
                     const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 7,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white24,
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(LucideIcons.plus, size: 15, color: Colors.white),
-                          SizedBox(width: 6),
-                          Text(
-                            'دنبال کردن',
-                            style: TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w700,
+                    GestureDetector(
+                      onTap: _toggleFollow,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 7,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _following ? Colors.white12 : Colors.white24,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              _following ? LucideIcons.check : LucideIcons.plus,
+                              size: 15,
                               color: Colors.white,
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 6),
+                            Text(
+                              _following ? 'دنبال‌شده' : 'دنبال کردن',
+                              style: const TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],
@@ -593,5 +612,22 @@ class _FeaturedTeacher extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _toggleFollow() async {
+    if (_loading) return;
+    setState(() => _loading = true);
+    final repo = ref.read(teacherRepositoryProvider);
+    if (_following) {
+      await repo.unfollow(widget.teacher.id);
+    } else {
+      await repo.follow(widget.teacher.id);
+    }
+    if (mounted) {
+      setState(() {
+        _following = !_following;
+        _loading = false;
+      });
+    }
   }
 }

@@ -32,6 +32,10 @@ class DioClient {
           if (_isConnectivityError(error)) {
             SnackBarService.showError(error);
           }
+          // On 401, clear token and redirect to login
+          if (error.response?.statusCode == 401 && _prefs.getString(_tokenKey) != null) {
+            _prefs.remove(_tokenKey);
+          }
           handler.next(error);
         },
       ),

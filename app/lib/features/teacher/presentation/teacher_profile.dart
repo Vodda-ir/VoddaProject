@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../../core/services/snackbar_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/fa.dart';
 import '../../../core/widgets/vodda_avatar.dart';
@@ -41,6 +42,10 @@ class TeacherProfile extends ConsumerWidget {
       orElse: () => '— روز',
     );
 
+    final teacherRating = me.maybeWhen(
+      data: (u) => u.teacherRating,
+      orElse: () => null,
+    );
     final reviewCount = me.maybeWhen(
       data: (u) => '${faNumber(u.teacherReviews)} نظر',
       orElse: () => '— نظر',
@@ -59,8 +64,8 @@ class TeacherProfile extends ConsumerWidget {
         workDayCount,
         () => context.push('/t/worktimes'),
       ),
-      (LucideIcons.mic, 'نمونه کارها', '—', null as void Function()?),
-      (LucideIcons.star, 'نظرات', reviewCount, null),
+      (LucideIcons.mic, 'نمونه کارها', '—', () => SnackBarService.show('به زودی')),
+      (LucideIcons.star, 'نظرات', reviewCount, () => SnackBarService.show('به زودی')),
     ];
 
     return SafeArea(
@@ -134,17 +139,17 @@ class TeacherProfile extends ConsumerWidget {
                                     color: AppColors.gold,
                                   ),
                                   const SizedBox(width: 3),
-                                  const Text(
-                                    '۴.۸',
-                                    style: TextStyle(
+                                  Text(
+                                    teacherRating != null ? teacherRating.toStringAsFixed(1) : '—',
+                                    style: const TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w800,
                                       color: AppColors.gold,
                                     ),
                                   ),
-                                  const Text(
-                                    ' (۶۴ نظر)',
-                                    style: TextStyle(
+                                  Text(
+                                    ' ($reviewCount)',
+                                    style: const TextStyle(
                                       fontSize: 12,
                                       color: AppColors.ink4,
                                     ),
