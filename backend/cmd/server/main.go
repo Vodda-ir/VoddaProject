@@ -23,6 +23,9 @@ import (
 
 func main() {
 	cfg := config.Load()
+	if err := cfg.Validate(); err != nil {
+		log.Fatalf("configuration: %v", err)
+	}
 
 	db, err := database.Connect(cfg)
 	if err != nil {
@@ -56,7 +59,7 @@ func main() {
 		User:    usecase.NewUserUsecase(userRepo, teacherRepo),
 		Teacher: usecase.NewTeacherUsecase(teacherRepo, reviewRepo, userRepo),
 		Session: usecase.NewSessionUsecase(sessionRepo, teacherRepo, userRepo, walletRepo, notifRepo, cfg),
-		Wallet:  usecase.NewWalletUsecase(walletRepo, userRepo, teacherRepo, notifRepo),
+		Wallet:  usecase.NewWalletUsecase(walletRepo, userRepo, teacherRepo, notifRepo, cfg.DevWalletChargeEnabled && !cfg.IsProduction()),
 		Review:  usecase.NewReviewUsecase(reviewRepo, sessionRepo, teacherRepo),
 		Admin:   usecase.NewAdminUsecase(userRepo, teacherRepo, sessionRepo, walletRepo, notifRepo),
 		Notif:   notifRepo,
@@ -65,10 +68,12 @@ func main() {
 	router := delivery.NewRouter(cfg, h, tm)
 
 	srv := &http.Server{
-		Addr:         cfg.ServerHost + ":" + cfg.ServerPort,
-		Handler:      router,
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 30 * time.Second,
+		Addr:              cfg.ServerHost + ":" + cfg.ServerPort,
+		Handler:           router,
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       60 * time.Second,
 	}
 
 	go func() {
