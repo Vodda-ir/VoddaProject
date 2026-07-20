@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { isSameOriginMutation } from '@/lib/server/same-origin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -27,6 +28,9 @@ async function proxy(request: NextRequest, context: RouteContext): Promise<Respo
   const { path } = await context.params;
   if (!path.length) {
     return NextResponse.json({ error: 'not found' }, { status: 404 });
+  }
+  if (!isSameOriginMutation(request)) {
+    return NextResponse.json({ error: 'درخواست بین‌دامنه‌ای مجاز نیست' }, { status: 403 });
   }
 
   const token = request.cookies.get('vodda_token')?.value;
