@@ -45,16 +45,17 @@ func (uc *AuthUsecase) RequestOTP(ctx context.Context, mobile string) error {
 		return domain.ErrValidation
 	}
 
-	// enforce resend cooldown — if within cooldown, don't resend; tell client the
-	// previous code is still valid rather than returning an error.
+	// Enforce resend cooldown. The previous unconsumed code remains valid.
 	if last, err := uc.otps.Latest(ctx, mobile); err == nil && last != nil {
 		if time.Since(last.CreatedAt) < uc.cfg.OTPResendCooldown {
-			// Previous code is still valid — don't create a new one.
 			return nil
 		}
 	}
 
-	code := uc.generateCode(mobile)
+	code, err := uc.generateCode(mobile)
+	if err != nil {
+		return err
+	}
 	now := time.Now()
 	otp := &domain.OTPCode{
 		Mobile:    mobile,
@@ -66,16 +67,18 @@ func (uc *AuthUsecase) RequestOTP(ctx context.Context, mobile string) error {
 		return err
 	}
 
-	// Dev mode: skip real SMS, just log the code.
+	// Development bypass is explicit and rejected by config validation in production.
 	if uc.cfg.OTPTestBypassEnabled {
-		log.Printf("📲 [dev] OTP for %s = %s", mobile, code)
+		log.Printf("[dev] OTP generated for %s", maskMobile(mobile))
 		return nil
 	}
 
-	// Production: send real SMS. Failure is logged but not fatal —
-	// the code is already in the database.
+	// Do not report success when the provider failed. Consume the newly-created code so
+	// a retry is not blocked by the resend cooldown with a code the user never received.
 	if err := uc.sender.SendOTP(ctx, mobile, code); err != nil {
-		log.Printf("⚠️  sms.ir send failed for %s: %v", mobile, err)
+		_ = uc.otps.Consume(ctx, otp.ID)
+		log.Printf("sms provider failed for %s: %v", maskMobile(mobile), err)
+		return err
 	}
 	return nil
 }
@@ -95,7 +98,9 @@ func (uc *AuthUsecase) VerifyOTP(ctx context.Context, mobile, code string) (*Aut
 		if otp.Code != code || time.Now().After(otp.ExpiresAt) {
 			return nil, domain.ErrOTPInvalid
 		}
-		_ = uc.otps.Consume(ctx, otp.ID)
+		if err := uc.otps.Consume(ctx, otp.ID); err != nil {
+			return nil, err
+		}
 	}
 
 	user, err := uc.users.ByMobile(ctx, mobile)
@@ -112,6 +117,10 @@ func (uc *AuthUsecase) VerifyOTP(ctx context.Context, mobile, code string) (*Aut
 		needProfile = true
 	}
 
+	if !user.Active {
+		return nil, domain.ErrForbidden
+	}
+
 	tkn, err := uc.tokens.Generate(user.ID, user.Role)
 	if err != nil {
 		return nil, err
@@ -119,15 +128,15 @@ func (uc *AuthUsecase) VerifyOTP(ctx context.Context, mobile, code string) (*Aut
 	return &AuthResult{Token: tkn, User: user, NeedProfile: needProfile}, nil
 }
 
-func (uc *AuthUsecase) generateCode(mobile string) string {
+func (uc *AuthUsecase) generateCode(mobile string) (string, error) {
 	if uc.cfg.OTPTestBypassEnabled && (uc.cfg.OTPTestMobile == "" || uc.cfg.OTPTestMobile == mobile) {
-		return uc.cfg.OTPTestCode
+		return uc.cfg.OTPTestCode, nil
 	}
 	n, err := rand.Int(rand.Reader, big.NewInt(90000))
 	if err != nil {
-		return "12345"
+		return "", err
 	}
-	return big.NewInt(10000 + n.Int64()).String()
+	return big.NewInt(10000 + n.Int64()).String(), nil
 }
 
 func normalizeMobile(m string) string {
@@ -141,6 +150,13 @@ func normalizeMobile(m string) string {
 		m = "0" + m[2:]
 	}
 	return m
+}
+
+func maskMobile(m string) string {
+	if len(m) < 7 {
+		return "***"
+	}
+	return m[:4] + "***" + m[len(m)-4:]
 }
 
 func faToEnDigits(s string) string {
