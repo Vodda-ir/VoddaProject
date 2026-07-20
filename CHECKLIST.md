@@ -1,95 +1,118 @@
-# چک‌لیست ساخت پروژه وُدّا (Vodda)
+# چک‌لیست پروژه وُدّا
 
-> این فایل وضعیت پیشرفت پروژه را نشان می‌دهد. هر کاری که انجام می‌شود اینجا ثبت می‌گردد.
-> علامت‌ها: ✅ انجام شد · 🚧 در حال انجام · ⬜ باقی‌مانده
+> وضعیت بازبینی‌شده در ۲۰۲۶-۰۷-۲۰. علامت‌ها: ✅ انجام‌شده · 🚧 ناقص/نیازمند تکمیل · ⬜ شروع‌نشده
 
-**معماری:** Flutter (clean + Riverpod + go_router) · Go (clean + Gin + GORM + MySQL) · Next.js + TypeScript
-**پورت‌ها:** backend `3420` · frontend `3421` · mysql `3422`
+## زیرساخت و معماری
 
----
+- ✅ Monorepo شامل Go backend، Next.js frontend و Flutter app
+- ✅ Dockerfile و composeهای development/deploy
+- ✅ تنظیمات نمونه و تفکیک environment
+- ✅ health check و graceful shutdown
+- ✅ CI برای Go، Next.js و Flutter
+- ✅ اعتبارسنجی تنظیمات production و CORS allow-list
+- 🚧 monitoring، metrics، request ID و error tracking
+- 🚧 backup/restore و runbook بازیابی
 
-## فاز ۰ — راه‌اندازی اولیه
-- ✅ بررسی طراحی‌ها (اپ کاربر، وبسایت، پنل‌ها) و استخراج design system
-- ✅ ذخیره‌ی طراحی‌ها در `docs/design/`
-- ✅ ساختار ریشه، فایل‌های env (`.env.example/.local/.production`)، gitignore
-- ✅ مستندسازی design tokens در `docs/design-system.md`
+## احراز هویت و امنیت
 
-## فاز ۱ — اسکلت سه اپ
-- ✅ اسکلت backend (Go modules + ساختار clean architecture)
-- ✅ اسکلت frontend (Next.js + TypeScript + Tailwind + توکن‌های Vodda)
-- ✅ اسکلت اپ Flutter (clean architecture + Riverpod + go_router + تم)
+- ✅ OTP، JWT و RBAC سرور
+- ✅ اتصال sms.ir با timeout و برگشت خطای واقعی
+- ✅ OTP bypass فقط برای development و ممنوع در production
+- ✅ جلوگیری از ورود کاربر غیرفعال
+- ✅ حذف secret پیامک از مقدار پیش‌فرض کد
+- 🚧 rotate کردن کلید پیامکی که قبلاً در تاریخچهٔ Git قرار گرفته است
+- 🚧 انتقال session وب از localStorage/cookie قابل‌خواندن با JS به HttpOnly/BFF
+- 🚧 rate limit توزیع‌شده برای OTP و endpointهای حساس
+- 🚧 secret scanning و dependency/security scanning
 
-## فاز ۲ — زیرساخت Docker و دیپلوی
-- ✅ `backend/Dockerfile` + `Dockerfile.dev` (+ `.air.toml`)
-- ✅ `frontend/Dockerfile` (standalone) + `Dockerfile.dev`
-- ✅ `docker-compose.yml` / `docker-compose.debug.yml` / `docker-compose.deploy.yml`
-- ✅ `docker-debug.sh` (تست محلی)
-- ✅ `docker-deploy.sh` (دیپلوی روی سرور)
-- ✅ `deploy.example.json`
+## کاربران و اساتید
 
-## فاز ۳ — بک‌اند Go (✅ کامل و تست‌شدهٔ end-to-end)
-- ✅ config، اتصال DB (retry)، AutoMigrate، seed
-- ✅ مدل‌ها: User, Teacher, Service, Sample, WorkTime, Session, Review, Transaction, Withdrawal, OTP, Notification
-- ✅ احراز هویت: OTP پیامکی (sms.ir + stub) + JWT + bypass دیباگ
-- ✅ تنظیم سرویس پیامک sms.ir: قالب ۲۴۶۲۵۶ / پارامتر VERIFICATIONCODE / ادمین seed با شمارهٔ 09136336002 / کد پیشفرض لوکال 33365
-- ✅ API کاربران و پروفایل + become-teacher
-- ✅ API اساتید (لیست، جستجو، پروفایل)
-- ✅ API خدمات و زمان‌های کاری استاد
-- ✅ API رزرو و چرخهٔ جلسه (درخواست/پذیرش/رد/لغو/اتمام)
-- ✅ API کیف پول و تراکنش‌ها (شارژ، escrow، کارمزد ۱۵٪)
-- ✅ API برداشت وجه استاد + پردازش ادمین
-- ✅ API نظرات و امتیازدهی (+ به‌روزرسانی میانگین)
-- ✅ API ادمین (داشبورد، کاربران، اساتید، جلسات، تراکنش‌ها، برداشت‌ها)
-- ✅ middleware (auth, role/RBAC, CORS, logging) + تست دستی end-to-end
-- ⬜ تست‌های واحد Go (در فاز بعد)
-- ⬜ اتصال واقعی درگاه پرداخت زرین‌پال (اسکلت آماده)
+- ✅ پروفایل کاربر و ویرایش اطلاعات
+- ✅ ثبت درخواست استاد با داده‌های کامل موردنیاز backend
+- ✅ تأیید/رد استاد توسط مدیر
+- ✅ خدمات استاد و moderation خدمت
+- ✅ CRUD زمان‌های کاری
+- ✅ اصلاح مقصد اعلان تأیید/رد خدمت
+- 🚧 اعتبارسنجی و ذخیره‌سازی امن avatar/audio در object storage
+- ⬜ follow/favorite کامل در database، backend، web و Flutter
 
-## فاز ۴ — فرانت‌اند Next.js (✅ مطابق طرح بازنویسی شد)
-- ✅ design system کامل: توکن‌های styles.css + کامپوننت‌های Icon/Avatar/Stars/GeoPattern/WebBtn، responsive RTL
-- ✅ کلاینت API (`lib/api.ts`) + پراکسی `/api/v1` + خروجی skills از بک‌اند
-- ✅ وبسایت عمومی **عیناً مطابق طرح**: Nav, Hero (سرچ+کارت‌های شناور), Categories, HowItWorks, FeaturedTeachers, WhyVodda, Testimonials, BecomeTeacher, DownloadApp, Footer
-- ✅ پنل‌ها **مطابق طرح** (سایدبار تیره، topbar، StatCard، MiniBars، Panel، StatusTag): کاربر، استاد، ادمین با داشبورد کامل
-- ✅ **Login web panel**: صفحهٔ لاگین با OTP + `lib/auth.ts` + `middleware.ts` محافظت مسیرها + دکمهٔ logout در سایدبار
-- ✅ **اتصال پنل‌ها به API واقعی**: User dashboard (me, sessions, teachers), Teacher dashboard (me, pending/upcoming sessions, wallet, rating), Admin dashboard (users, teachers, sessions, commission, pending teachers with approve button)
-- ✅ **حذف تمام داده‌های استاتیک/mock**: همهٔ اعداد از API میان (موجودی، جلسات، درخواست‌ها، اساتید، آمار ادمین)
-- ✅ **AppUser model**: teacherRating, teacherReviews, teacherSessions اضافه شدن
-- ✅ **Teacher dashboard Flutter**: امتیاز واقعی از meProvider
-- ✅ **Teacher profile Flutter**: تعداد واقعی سرویس‌ها، روزهای کاری، نظرات
+## رزرو و جلسه
 
-## فاز ۵ — اپ Flutter (✅ حلقهٔ کامل قرآن‌آموز)
-- ✅ تم و توکن‌ها، RTL، فارسی‌سازی اعداد، localization فارسی
-- ✅ شبکه (Dio + interceptor توکن)، ذخیرهٔ توکن، providerها، meProvider
-- ✅ مسیریابی go_router با redirect احراز هویت
-- ✅ ورود/OTP
-- ✅ خانه، جستجو، پروفایل استاد (متصل به API)
-- ✅ **جلسات من** (تب پیش‌رو/برگزارشده، کارت با StatusPill، لغو) — متصل به API
-- ✅ **کیف پول** (کارت موجودی، شارژ سریع، تراکنش‌ها) — متصل به API
-- ✅ **پروفایل** (کارت کاربر، سوییچ به حساب استاد، منو، خروج) — متصل به API
-- ✅ **رزرو جلسه ۴ مرحله‌ای** (خدمت → تاریخ/ساعت → تأیید → موفق) — متصل به API + رفع اسلات‌های استاتیک (حالا از WorkTimes واقعی میاد) + فقط سرویس‌های active نمایش داده میشن
-- ✅ **امتیازدهی** (bottom sheet ستاره‌ای) — متصل به API
-- ✅ **اصلاح آواتار پیشفرض** — جایگزینی CircleAvatar با VoddaAvatar با پترن هندسی زیتونی (بدون رنگ آبی)
-- ✅ **بازطراحی صفحه لاگین** — فیلد موبایل بهبودیافته + Pinput برای کد OTP با تم Vodda + انیمیشن collapse + غیرفعال شدن شماره
-- ✅ **اصلاح دکمه بک رزرو** — تغییر جهت فلش (Icons.arrow_back به‌جای Icons.arrow_forward) برای RTL
-- ✅ **دکمه بک پروفایل استاد** — اضافه شدن leading back button
-- ✅ **پنل استاد کامل**: TeacherShell + داشبورد (MiniBars, StatCard) + درخواست‌ها (پذیرش/رد با اسنک‌بار + endpoint teacher/sessions) + جلسات استاد (تب فعال/گذشته، StatusPill + endpoint teacher/sessions) + کیف پول استاد + خدمات (افزودن/ویرایش/حذف/تغییر وضعیت فعال و pending + رفع باگ pending) + زمان‌های کاری (time picker + جلوگیری از تداخل + هشدار تغییرات ذخیره‌نشده + پیام موفقیت) + برداشت (مبلغ/شبا) + پروفایل استاد (ویرایش tag، آواتار، city، bio) + RoleSheet سوییچ نقش
+- ✅ انتخاب استاد و خدمت فعال
+- ✅ رزرو با زمان آینده
+- ✅ کنترل timezone و ساعات کاری استاد
+- ✅ جلوگیری از تداخل جلسهٔ استاد و قرآن‌آموز
+- ✅ پذیرش، رد، لغو و اتمام جلسه
+- ✅ جلوگیری از پذیرش درخواست منقضی و اتمام زودهنگام
+- ✅ refund و settlement با مسیرهای جبران خطا
+- 🚧 transaction اتمیک دیتابیس برای رزرو/refund/settlement
+- 🚧 idempotency برای retry و callback
+- ⬜ تماس صوتی واقعی، token، reconnect و گزارش مدت جلسه
 
-## فاز ۶ — نهایی‌سازی
-- ✅ README کامل
-- ✅ مستندات `docs/` (architecture، api، deployment، design-system)
-- ✅ **مدیریت خطاهای شبکه با SnackBar**: ایجاد `SnackBarService` با global `scaffoldMessengerKey`، اینترسپتور خطای اتصال در DioClient، try-catch در تمام mutation methodهای ریپازیتوری (بدون rethrow تا کرش نکند)، بروزرسانی تمام screenها برای بررسی مقدار بازگشتی
-- ✅ **Pull-to-refresh در تمام صفحه‌ها**: اضافه شدن RefreshIndicator به همه صفحه‌های داده‌محور (HomeScreen, SearchScreen, SessionsScreen, WalletScreen, ProfileTab, TeacherProfileScreen, TeacherDashboard, RequestsScreen, TeacherSessions, TeacherWallet, TeacherProfile, ServicesScreen, WorkTimesScreen) + بهبود حالت‌های loading/error در TeacherDashboard و ServicesScreen و WorkTimesScreen
-- ⬜ تست‌های خودکار (Go unit + Flutter widget + e2e)
+## کیف پول و پرداخت
 
----
+- ✅ ledger تراکنش‌ها و موجودی
+- ✅ escrow رزرو، درآمد استاد و کارمزد
+- ✅ درخواست برداشت و پردازش مدیر
+- ✅ شارژ مستقیم فقط در development و مسدود در production
+- 🚧 transaction اتمیک برای balance و ledger
+- ⬜ request/callback/verify واقعی زرین‌پال
+- ⬜ مدیریت callback تکراری، failed payment و reconciliation
 
-## فاز ۷ — بهبود مدیریت زمان‌های کاری (CRUD کامل)
-- ✅ **بک‌اند**: افزودن APIهای تکی برای زمان‌های کاری (`POST /teacher/work-times`, `PUT /teacher/work-times/:id`, `DELETE /teacher/work-times/:id`) با اعتبارسنجی مالکیت
-- ✅ **فرانت‌اند (Next.js)**: بازنویسی کامل صفحه `worktimes` از حالت فقط‌خواندنی به CRUD کامل — افزودن/ویرایش/حذف بازه با مودال دیالوگ و time input
-- ✅ **اپ Flutter**: حذف toggle switchهای روزهای هفته — جایگزینی با دکمه «افزودن بازه» که دیالوگ با دو time picker باز می‌کند — افزودن قابلیت ویرایش بازه (تپ روی بازه) + دکمه حذف (X) روی هر بازه
-- ✅ مستندات API به‌روز شد (`docs/api.md`)
+## وب Next.js
 
-## وضعیت اعتبارسنجی (آخرین اجرا)
-- ✅ `backend`: `go build ./...` و `go vet ./...` بدون خطا
-- ✅ `backend`: اجرای واقعی روی MySQL — health، اساتید (seed)، OTP، چرخهٔ کامل رزرو→پذیرش→اتمام→امتیاز، کیف پول و کارمزد، RBAC ادمین
-- ✅ `frontend`: `npm run build` موفق (لندینگ + ۳ پنل)
-- ✅ `app`: `flutter analyze` بدون مشکل + تست‌ها سبز
+- ✅ لندینگ، جستجوی استاد و صفحات عمومی
+- ✅ پنل کاربر، استاد و مدیر
+- ✅ ورود OTP و خروج
+- ✅ رزرو با قرارداد صحیح `from/to` و محاسبهٔ درست روز هفته
+- ✅ ثبت‌نام استاد با validation و payload کامل
+- ✅ layout موبایل اصلاح‌شده برای هر سه پنل
+- ✅ نمایش پنل‌های قابل دسترس بر اساس role
+- ✅ فرم تماس بدون موفقیت یا اطلاعات ساختگی
+- 🚧 session امن HttpOnly و کنترل role در لایهٔ وب
+- 🚧 backend واقعی تماس/تیکت به‌جای mailto
+- 🚧 test runner و تست component/integration رسمی
+- 🚧 accessibility و تست دستگاه واقعی
+
+## اپ Flutter
+
+- ✅ Riverpod و go_router
+- ✅ ورود OTP، خانه، جستجو و پروفایل استاد
+- ✅ رزرو، جلسات، کیف پول و امتیازدهی
+- ✅ پنل استاد، خدمات، زمان کاری و برداشت
+- ✅ مدیریت خطا و pull-to-refresh در صفحات اصلی
+- 🚧 حذف/غیرفعال‌سازی UIهایی که backend واقعی ندارند، از جمله follow و تماس صوتی
+- 🚧 widget test و integration/e2e گسترده
+- 🚧 تست background/reconnect برای جلسهٔ واقعی پس از انتخاب provider
+
+## مدیریت و گزارش
+
+- ✅ آمار کاربران، اساتید، جلسات و کارمزد
+- ✅ moderation استاد و خدمت
+- ✅ پردازش برداشت
+- ✅ جلوگیری از آمار صفر جعلی هنگام خطای repository
+- 🚧 audit log عملیات مدیر
+- 🚧 export/reporting و reconciliation مالی
+
+## کنترل کیفیت
+
+- ✅ Workflow پایه در `.github/workflows/ci.yml`
+- ✅ Go: format، vet، test و build در CI
+- ✅ Next.js: build در CI
+- ✅ Flutter: analyze و test در CI
+- 🚧 افزایش پوشش Go unit و integration با MySQL
+- 🚧 افزودن frontend tests اجراشدنی
+- 🚧 Flutter widget و end-to-end tests
+- 🚧 smoke test خودکار روی staging
+
+## موانع انتشار عمومی
+
+1. ⬜ درگاه زرین‌پال واقعی و idempotent
+2. ⬜ transactionهای اتمیک مالی
+3. ⬜ تماس صوتی واقعی
+4. ⬜ rotate کردن secret لو‌رفته در تاریخچه
+5. ⬜ session امن وب و rate limiting
+6. ⬜ پوشش تست و staging smoke test
+7. ⬜ backup/restore و observability
+
+جزئیات و اولویت‌ها: [`docs/audit-2026-07-20.md`](docs/audit-2026-07-20.md)
