@@ -68,7 +68,7 @@ services:
     volumes:
       - ./data/uploads:/app/uploads
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:3420/ready"]
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:$${SERVER_PORT}/ready"]
       interval: 15s
       timeout: 5s
       retries: 10
@@ -90,16 +90,13 @@ services:
       PORT: ${FRONTEND_INTERNAL_PORT:-3421}
       HOSTNAME: 0.0.0.0
       NODE_ENV: production
-      NEXT_PUBLIC_API_BASE_URL: /api/backend
       SERVER_API_URL: ${SERVER_API_URL:-http://backend:3420/api/v1}
     ports:
       - "127.0.0.1:${FRONTEND_PORT:-3421}:${FRONTEND_INTERNAL_PORT:-3421}"
     healthcheck:
       test:
-        - CMD
-        - node
-        - -e
-        - "fetch('http://127.0.0.1:3421').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
+        - CMD-SHELL
+        - "node -e \"fetch('http://127.0.0.1:' + process.env.PORT).then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))\""
       interval: 15s
       timeout: 5s
       retries: 10
