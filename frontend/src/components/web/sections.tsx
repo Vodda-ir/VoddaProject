@@ -1,7 +1,9 @@
 'use client';
 
+import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import type { Teacher } from '@/lib/api';
+import { clearToken } from '@/lib/auth';
 import { Icon } from '../Icon';
 import { Avatar, GeoPattern, SectionTitle, Stars, WebBtn } from './ui';
 
@@ -45,28 +47,32 @@ function UserMenu({ name, role, avatar }: { name: string; role: string; avatar?:
               </div>
             </div>
 
-            {/* Panel links — always show all three */}
+            {/* Show only panels allowed by the authenticated role. */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <a href="/panel/admin" style={panelLinkStyle}>
-                <span style={panelIconStyle('var(--olive-700)', 'var(--olive-100)')}><Icon name="shield" size={18} /></span>
-                <span style={{ flex: 1 }}>پنل مدیریت</span>
-                <Icon name="chevronL" size={14} style={{ color: 'var(--ink-4)' }} />
-              </a>
-              <a href="/panel/teacher" style={panelLinkStyle}>
-                <span style={panelIconStyle('var(--olive-600)', 'var(--olive-50)')}><Icon name="award" size={18} /></span>
-                <span style={{ flex: 1 }}>پنل مربی</span>
-                <Icon name="chevronL" size={14} style={{ color: 'var(--ink-4)' }} />
-              </a>
-              <a href="/panel/user" style={panelLinkStyle}>
+              {role === 'admin' && (
+                <Link href="/panel/admin" style={panelLinkStyle}>
+                  <span style={panelIconStyle('var(--olive-700)', 'var(--olive-100)')}><Icon name="shield" size={18} /></span>
+                  <span style={{ flex: 1 }}>پنل مدیریت</span>
+                  <Icon name="chevronL" size={14} style={{ color: 'var(--ink-4)' }} />
+                </Link>
+              )}
+              {(role === 'teacher' || role === 'admin') && (
+                <Link href="/panel/teacher" style={panelLinkStyle}>
+                  <span style={panelIconStyle('var(--olive-600)', 'var(--olive-50)')}><Icon name="award" size={18} /></span>
+                  <span style={{ flex: 1 }}>پنل مربی</span>
+                  <Icon name="chevronL" size={14} style={{ color: 'var(--ink-4)' }} />
+                </Link>
+              )}
+              <Link href="/panel/user" style={panelLinkStyle}>
                 <span style={panelIconStyle('var(--ink-2s)', 'var(--sand-100)')}><Icon name="user" size={18} /></span>
                 <span style={{ flex: 1 }}>پنل کاربری</span>
                 <Icon name="chevronL" size={14} style={{ color: 'var(--ink-4)' }} />
-              </a>
+              </Link>
             </div>
 
             {/* Logout */}
             <div style={{ borderTop: '1px solid var(--sand-100)', marginTop: 8, paddingTop: 8 }}>
-              <button onClick={() => { document.cookie = 'vodda_token=; path=/; max-age=0'; localStorage.removeItem('vodda_token'); window.location.reload(); }}
+              <button onClick={() => { clearToken(); window.location.assign('/'); }}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '10px 10px',
                   borderRadius: 12, border: 'none', background: 'transparent', cursor: 'pointer',
@@ -97,9 +103,7 @@ const panelIconStyle = (color: string, bg: string): React.CSSProperties => ({
 export function Nav() {
   const [user, setUser] = useState<{ name: string; role: string; avatar_url?: string } | null>(null);
   useEffect(() => {
-    const token = localStorage.getItem('vodda_token');
-    if (!token) return;
-    fetch('/api/v1/me', { headers: { Authorization: `Bearer ${token}` } })
+    fetch('/api/backend/me', { cache: 'no-store', credentials: 'same-origin' })
       .then(r => r.ok ? r.json() : null)
       .then(j => j?.data ? setUser({ name: j.data.name || 'کاربر', role: j.data.role || 'learner', avatar_url: j.data.avatar_url }) : null)
       .catch(() => {});
@@ -110,13 +114,13 @@ export function Nav() {
     <header style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(250,248,242,.85)', backdropFilter: 'blur(14px)', borderBottom: '1px solid var(--sand-200)' }}>
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 28px', height: 72, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 40 }}>
-          <a href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 10, fontWeight: 800, fontSize: 26, color: 'var(--olive-700)', letterSpacing: '-.5px' }}>
+          <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 10, fontWeight: 800, fontSize: 26, color: 'var(--olive-700)', letterSpacing: '-.5px' }}>
             <img src="/vodda-logo.svg" alt="وُدّا" style={{ width: 36, height: 36 }} />
             وُدّا
-          </a>
+          </Link>
           <nav style={{ display: 'flex', gap: 26 }} className="nav-links">
             {links.map((l, i) => (
-              <a key={l} href={hrefs[i]} style={{ fontSize: 14.5, fontWeight: i === 0 ? 700 : 500, color: i === 0 ? 'var(--ink)' : 'var(--ink-2s)' }}>{l}</a>
+              <Link key={l} href={hrefs[i]} style={{ fontSize: 14.5, fontWeight: i === 0 ? 700 : 500, color: i === 0 ? 'var(--ink)' : 'var(--ink-2s)' }}>{l}</Link>
             ))}
           </nav>
         </div>
