@@ -1,17 +1,38 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone',
   reactStrictMode: true,
-  // Allow overriding the build dir (host .next can be root-owned by the dev container).
-  distDir: process.env.NEXT_DIST_DIR || '.next',
+  output: 'standalone',
+  poweredByHeader: false,
+  compress: true,
+
   async rewrites() {
-    // Proxy API & uploads to the backend so the browser uses same-origin.
-    const apiTarget = process.env.SERVER_API_URL || 'http://backend:3420/api/v1';
-    const uploadsTarget = (process.env.SERVER_API_URL || 'http://backend:3420/api/v1').replace('/api/v1', '');
+    // Only public media is proxied directly. API traffic must go through the
+    // /api/auth and /api/backend BFF route handlers so JWTs remain HttpOnly.
+    const backend = process.env.SERVER_API_URL || 'http://backend:3420/api/v1';
+    const origin = backend.replace(/\/api\/v1\/?$/, '');
     return [
-      { source: '/api/v1/:path*', destination: `${apiTarget}/:path*` },
-      { source: '/uploads/:path*', destination: `${uploadsTarget}/uploads/:path*` },
+      { source: '/uploads/:path*', destination: `${origin}/uploads/:path*` },
     ];
+  },
+
+  async headers() {
+    const headers = [
+      { key: 'X-Content-Type-Options', value: 'nosniff' },
+      { key: 'X-Frame-Options', value: 'DENY' },
+      { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+      { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+      {
+        key: 'Content-Security-Policy',
+        value: "base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'",
+      },
+    ];
+    if (process.env.NODE_ENV === 'production') {
+      headers.push({
+        key: 'Strict-Transport-Security',
+        value: 'max-age=31536000; includeSubDomains',
+      });
+    }
+    return [{ source: '/(.*)', headers }];
   },
 };
 
