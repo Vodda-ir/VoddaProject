@@ -19,9 +19,15 @@ func NewRouter(cfg *config.Config, h *Handler, tm *token.Manager) *gin.Engine {
 	}
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery())
+	// Keep multipart uploads in memory only up to 5 MiB before Gin spills to disk.
+	r.MaxMultipartMemory = 5 << 20
 
 	corsCfg := cors.DefaultConfig()
-	corsCfg.AllowAllOrigins = true
+	if cfg.IsProduction() {
+		corsCfg.AllowOrigins = cfg.CORSAllowedOrigins
+	} else {
+		corsCfg.AllowAllOrigins = true
+	}
 	corsCfg.AllowHeaders = []string{"Origin", "Content-Type", "Authorization"}
 	corsCfg.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
 	corsCfg.MaxAge = 12 * time.Hour
@@ -63,7 +69,8 @@ func NewRouter(cfg *config.Config, h *Handler, tm *token.Manager) *gin.Engine {
 		authed.POST("/sessions/:id/cancel", h.CancelSession)
 		authed.POST("/reviews", h.Rate)
 
-		// wallet
+		// wallet. Direct charging is permitted only when explicitly enabled in development;
+		// the usecase rejects it in production until a verified gateway callback exists.
 		authed.GET("/wallet/transactions", h.Transactions)
 		authed.POST("/wallet/charge", h.Charge)
 	}
