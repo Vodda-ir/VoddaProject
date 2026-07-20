@@ -50,6 +50,9 @@ func (r *teacherRepo) List(ctx context.Context, f domain.TeacherFilter) ([]domai
 
 	if f.Status != "" {
 		q = q.Where("teachers.status = ?", f.Status)
+		if f.Status == domain.TeacherApproved {
+			q = q.Where("teachers.verified = ? AND teachers.available = ? AND users.active = ?", true, true, true)
+		}
 	}
 	if f.Field != "" {
 		q = q.Where("teachers.field = ?", f.Field)
@@ -66,15 +69,23 @@ func (r *teacherRepo) List(ctx context.Context, f domain.TeacherFilter) ([]domai
 	}
 
 	var total int64
-	q.Count(&total)
+	if err := q.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
 
 	limit := f.Limit
 	if limit <= 0 {
 		limit = 20
 	}
+	if limit > 100 {
+		limit = 100
+	}
+	if f.Offset < 0 {
+		f.Offset = 0
+	}
 	var teachers []domain.Teacher
-	err := q.Preload("User").Preload("Services").Preload("Samples").
-		Order("teachers.rating desc, teachers.followers desc").
+	err := q.Preload("User").Preload("Services", "active = ?", true).Preload("Samples").
+		Order("teachers.rating desc, teachers.sessions desc").
 		Limit(limit).Offset(f.Offset).Find(&teachers).Error
 	return teachers, total, err
 }
@@ -154,13 +165,21 @@ func (r *teacherRepo) AddWorkTime(ctx context.Context, wt *domain.WorkTime) erro
 }
 
 func (r *teacherRepo) UpdateWorkTime(ctx context.Context, wt *domain.WorkTime) error {
-	return r.db.WithContext(ctx).Model(&domain.WorkTime{}).
+	result := r.db.WithContext(ctx).Model(&domain.WorkTime{}).
 		Where("id = ? AND teacher_id = ?", wt.ID, wt.TeacherID).
 		Updates(map[string]any{
 			"weekday":   wt.Weekday,
 			"from_time": wt.FromTime,
 			"to_time":   wt.ToTime,
-		}).Error
+			"active":    wt.Active,
+		})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return domain.ErrNotFound
+	}
+	return nil
 }
 
 func (r *teacherRepo) ListPendingServices(ctx context.Context) ([]domain.Service, error) {
@@ -169,12 +188,20 @@ func (r *teacherRepo) ListPendingServices(ctx context.Context) ([]domain.Service
 		Preload("Teacher.User").
 		Where("active = ?", false).
 		Order("id asc").
+		Limit(500).
 		Find(&services).Error
 	return services, err
 }
 
 func (r *teacherRepo) DeleteWorkTime(ctx context.Context, teacherID, workTimeID uint) error {
-	return r.db.WithContext(ctx).
+	result := r.db.WithContext(ctx).
 		Where("id = ? AND teacher_id = ?", workTimeID, teacherID).
-		Delete(&domain.WorkTime{}).Error
+		Delete(&domain.WorkTime{})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return domain.ErrNotFound
+	}
+	return nil
 }
