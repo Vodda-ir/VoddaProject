@@ -177,7 +177,9 @@ func (uc *SessionUsecase) Cancel(ctx context.Context, learnerID, sessionID uint)
 		_ = uc.sessions.Update(ctx, s)
 		return nil, err
 	}
-	uc.notify(ctx, s.Teacher.UserID, "جلسه لغو شد", "قرآن‌آموز جلسه را لغو کرد.")
+	if teacher, err := uc.teachers.ByID(ctx, s.TeacherID); err == nil {
+		uc.notify(ctx, teacher.UserID, "جلسه لغو شد", "قرآن‌آموز جلسه را لغو کرد.")
+	}
 	return s, nil
 }
 
