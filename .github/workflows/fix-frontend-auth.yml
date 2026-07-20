@@ -1,0 +1,139 @@
+name: Fix frontend auth references
+
+on:
+  push:
+    branches: [agent/production-readiness]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/production-readiness
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Replace stale browser token access
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          path = Path('frontend/src/components/web/sections.tsx')
+          text = path.read_text()
+
+          text = text.replace(
+              "import { useState, useEffect } from 'react';\n",
+              "import Link from 'next/link';\nimport { useState, useEffect } from 'react';\n",
+          )
+          text = text.replace(
+              "import type { Teacher } from '@/lib/api';\n",
+              "import type { Teacher } from '@/lib/api';\nimport { clearToken } from '@/lib/auth';\n",
+          )
+
+          old_panel = '''            {/* Panel links — always show all three */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <a href="/panel/admin" style={panelLinkStyle}>
+                <span style={panelIconStyle('var(--olive-700)', 'var(--olive-100)')}><Icon name="shield" size={18} /></span>
+                <span style={{ flex: 1 }}>پنل مدیریت</span>
+                <Icon name="chevronL" size={14} style={{ color: 'var(--ink-4)' }} />
+              </a>
+              <a href="/panel/teacher" style={panelLinkStyle}>
+                <span style={panelIconStyle('var(--olive-600)', 'var(--olive-50)')}><Icon name="award" size={18} /></span>
+                <span style={{ flex: 1 }}>پنل مربی</span>
+                <Icon name="chevronL" size={14} style={{ color: 'var(--ink-4)' }} />
+              </a>
+              <a href="/panel/user" style={panelLinkStyle}>
+                <span style={panelIconStyle('var(--ink-2s)', 'var(--sand-100)')}><Icon name="user" size={18} /></span>
+                <span style={{ flex: 1 }}>پنل کاربری</span>
+                <Icon name="chevronL" size={14} style={{ color: 'var(--ink-4)' }} />
+              </a>
+            </div>'''
+          new_panel = '''            {/* Show only panels allowed by the authenticated role. */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {role === 'admin' && (
+                <Link href="/panel/admin" style={panelLinkStyle}>
+                  <span style={panelIconStyle('var(--olive-700)', 'var(--olive-100)')}><Icon name="shield" size={18} /></span>
+                  <span style={{ flex: 1 }}>پنل مدیریت</span>
+                  <Icon name="chevronL" size={14} style={{ color: 'var(--ink-4)' }} />
+                </Link>
+              )}
+              {(role === 'teacher' || role === 'admin') && (
+                <Link href="/panel/teacher" style={panelLinkStyle}>
+                  <span style={panelIconStyle('var(--olive-600)', 'var(--olive-50)')}><Icon name="award" size={18} /></span>
+                  <span style={{ flex: 1 }}>پنل مربی</span>
+                  <Icon name="chevronL" size={14} style={{ color: 'var(--ink-4)' }} />
+                </Link>
+              )}
+              <Link href="/panel/user" style={panelLinkStyle}>
+                <span style={panelIconStyle('var(--ink-2s)', 'var(--sand-100)')}><Icon name="user" size={18} /></span>
+                <span style={{ flex: 1 }}>پنل کاربری</span>
+                <Icon name="chevronL" size={14} style={{ color: 'var(--ink-4)' }} />
+              </Link>
+            </div>'''
+          if old_panel not in text:
+              raise SystemExit('panel navigation block not found')
+          text = text.replace(old_panel, new_panel)
+
+          old_logout = "onClick={() => { document.cookie = 'vodda_token=; path=/; max-age=0'; localStorage.removeItem('vodda_token'); window.location.reload(); }}"
+          new_logout = "onClick={() => { clearToken(); window.location.assign('/'); }}"
+          if old_logout not in text:
+              raise SystemExit('logout handler not found')
+          text = text.replace(old_logout, new_logout)
+
+          old_effect = '''  useEffect(() => {
+    const token = localStorage.getItem('vodda_token');
+    if (!token) return;
+    fetch('/api/v1/me', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.ok ? r.json() : null)
+      .then(j => j?.data ? setUser({ name: j.data.name || 'کاربر', role: j.data.role || 'learner', avatar_url: j.data.avatar_url }) : null)
+      .catch(() => {});
+  }, []);'''
+          new_effect = '''  useEffect(() => {
+    fetch('/api/backend/me', { cache: 'no-store', credentials: 'same-origin' })
+      .then(r => r.ok ? r.json() : null)
+      .then(j => j?.data ? setUser({ name: j.data.name || 'کاربر', role: j.data.role || 'learner', avatar_url: j.data.avatar_url }) : null)
+      .catch(() => {});
+  }, []);'''
+          if old_effect not in text:
+              raise SystemExit('navigation auth effect not found')
+          text = text.replace(old_effect, new_effect)
+
+          old_logo = '''          <a href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 10, fontWeight: 800, fontSize: 26, color: 'var(--olive-700)', letterSpacing: '-.5px' }}>
+            <img src="/vodda-logo.svg" alt="وُدّا" style={{ width: 36, height: 36 }} />
+            وُدّا
+          </a>'''
+          new_logo = '''          <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 10, fontWeight: 800, fontSize: 26, color: 'var(--olive-700)', letterSpacing: '-.5px' }}>
+            <img src="/vodda-logo.svg" alt="وُدّا" style={{ width: 36, height: 36 }} />
+            وُدّا
+          </Link>'''
+          if old_logo not in text:
+              raise SystemExit('logo link not found')
+          text = text.replace(old_logo, new_logo)
+
+          old_nav = '''              <a key={l} href={hrefs[i]} style={{ fontSize: 14.5, fontWeight: i === 0 ? 700 : 500, color: i === 0 ? 'var(--ink)' : 'var(--ink-2s)' }}>{l}</a>'''
+          new_nav = '''              <Link key={l} href={hrefs[i]} style={{ fontSize: 14.5, fontWeight: i === 0 ? 700 : 500, color: i === 0 ? 'var(--ink)' : 'var(--ink-2s)' }}>{l}</Link>'''
+          if old_nav not in text:
+              raise SystemExit('navigation links not found')
+          text = text.replace(old_nav, new_nav)
+
+          path.write_text(text)
+          PY
+      - name: Validate frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+      - name: Commit migration
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add frontend/src/components/web/sections.tsx
+          git commit -m "fix(frontend): finish HttpOnly session migration"
+          git push origin HEAD:agent/production-readiness
