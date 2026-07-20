@@ -11,6 +11,7 @@ type WalletUsecase struct {
 	wallet            domain.WalletRepository
 	users             domain.UserRepository
 	teachers          domain.TeacherRepository
+	financial         domain.FinancialRepository
 	notif             domain.NotificationRepository
 	allowDirectCharge bool
 }
@@ -24,6 +25,15 @@ func NewWalletUsecase(w domain.WalletRepository, u domain.UserRepository, t doma
 		allow = allowDirectCharge[0]
 	}
 	return &WalletUsecase{wallet: w, users: u, teachers: t, notif: n, allowDirectCharge: allow}
+}
+
+// NewWalletUsecaseWithFinancial is the production constructor. It injects a
+// transaction boundary for every operation that changes money.
+func NewWalletUsecaseWithFinancial(w domain.WalletRepository, u domain.UserRepository, t domain.TeacherRepository, n domain.NotificationRepository, financial domain.FinancialRepository, allowDirectCharge bool) *WalletUsecase {
+	return &WalletUsecase{
+		wallet: w, users: u, teachers: t, financial: financial,
+		notif: n, allowDirectCharge: allowDirectCharge,
+	}
 }
 
 // Transactions returns the user's ledger.
@@ -41,13 +51,19 @@ func (uc *WalletUsecase) Charge(ctx context.Context, userID uint, amount int64) 
 	if amount <= 0 {
 		return nil, domain.ErrValidation
 	}
+	if uc.financial != nil {
+		if err := uc.financial.ChargeWallet(ctx, userID, amount, "شارژ آزمایشی کیف پول"); err != nil {
+			return nil, err
+		}
+		return uc.users.ByID(ctx, userID)
+	}
+
 	if err := uc.users.AddWallet(ctx, userID, amount); err != nil {
 		return nil, err
 	}
 	if err := uc.wallet.AddTx(ctx, &domain.Transaction{
 		UserID: userID, Type: domain.TxCharge, Title: "شارژ آزمایشی کیف پول", Amount: amount,
 	}); err != nil {
-		// Best-effort compensation keeps the balance and ledger aligned.
 		_ = uc.users.AddWallet(ctx, userID, -amount)
 		return nil, err
 	}
@@ -82,11 +98,16 @@ func (uc *WalletUsecase) RequestWithdrawal(ctx context.Context, userID uint, in 
 		TeacherID: t.ID, UserID: userID, Amount: in.Amount,
 		Card: in.Card, Sheba: in.Sheba, Status: domain.WithdrawalPending,
 	}
+	if uc.financial != nil {
+		if err := uc.financial.CreateFundedWithdrawal(ctx, w); err != nil {
+			return nil, err
+		}
+		return w, nil
+	}
+
 	if err := uc.wallet.CreateWithdrawal(ctx, w); err != nil {
 		return nil, err
 	}
-	// Reserve the funds immediately. If reservation fails, mark the request rejected
-	// so an unpaid pending request is not left behind.
 	if err := uc.users.AddWallet(ctx, userID, -in.Amount); err != nil {
 		w.Status = domain.WithdrawalRejected
 		_ = uc.wallet.UpdateWithdrawal(ctx, w)
@@ -121,6 +142,19 @@ func (uc *WalletUsecase) ProcessWithdrawal(ctx context.Context, id uint, paid bo
 	if w.Status != domain.WithdrawalPending {
 		return nil, domain.ErrConflict
 	}
+
+	if uc.financial != nil {
+		if err := uc.financial.ProcessWithdrawal(ctx, w, paid); err != nil {
+			return nil, err
+		}
+		if paid {
+			uc.notify(ctx, w.UserID, "برداشت وجه انجام شد", "درخواست برداشت شما پرداخت شد.")
+		} else {
+			uc.notify(ctx, w.UserID, "برداشت وجه رد شد", "درخواست برداشت شما رد و مبلغ بازگردانده شد.")
+		}
+		return w, nil
+	}
+
 	if paid {
 		w.Status = domain.WithdrawalPaid
 		if err := uc.wallet.UpdateWithdrawal(ctx, w); err != nil {
@@ -130,8 +164,6 @@ func (uc *WalletUsecase) ProcessWithdrawal(ctx context.Context, id uint, paid bo
 		return w, nil
 	}
 
-	// On rejection, restore the balance first. If the request status update fails,
-	// compensate the balance so the operation can safely be retried.
 	if err := uc.users.AddWallet(ctx, w.UserID, w.Amount); err != nil {
 		return nil, err
 	}
