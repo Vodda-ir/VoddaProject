@@ -1,0 +1,32 @@
+name: Format production branch
+
+on:
+  push:
+    branches: [agent/production-readiness]
+
+permissions:
+  contents: write
+
+jobs:
+  gofmt:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/production-readiness
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+      - name: Format Go sources
+        run: gofmt -w backend
+      - name: Commit formatting
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add backend
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "style(backend): apply gofmt"
+          git push origin HEAD:agent/production-readiness
