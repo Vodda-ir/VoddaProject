@@ -2,8 +2,12 @@
 package config
 
 import (
+	"errors"
+	"fmt"
+	"net/url"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -14,7 +18,8 @@ type Config struct {
 	ServerHost string
 	ServerPort string
 
-	FrontendBaseURL string
+	FrontendBaseURL  string
+	CORSAllowedOrigins []string
 
 	DB DBConfig
 
@@ -30,7 +35,8 @@ type Config struct {
 	OTPTestCode          string
 	OTPTestMobile        string
 
-	AutoSeed bool
+	AutoSeed              bool
+	DevWalletChargeEnabled bool
 
 	Zarinpal ZarinpalConfig
 
@@ -60,13 +66,17 @@ type ZarinpalConfig struct {
 	Sandbox    bool
 }
 
-// Load reads configuration from the environment, applying sane defaults.
+// Load reads configuration from the environment, applying development-safe defaults.
+// Potentially dangerous development features are disabled unless explicitly enabled.
 func Load() *Config {
+	frontendBaseURL := getEnv("FRONTEND_BASE_URL", "http://localhost:3421")
+
 	return &Config{
 		AppEnv:          getEnv("APP_ENV", "development"),
 		ServerHost:      getEnv("SERVER_HOST", "0.0.0.0"),
 		ServerPort:      getEnv("SERVER_PORT", getEnv("BACKEND_INTERNAL_PORT", "3420")),
-		FrontendBaseURL: getEnv("FRONTEND_BASE_URL", "http://localhost:3421"),
+		FrontendBaseURL: frontendBaseURL,
+		CORSAllowedOrigins: getCSV("CORS_ALLOWED_ORIGINS", frontendBaseURL),
 		DB: DBConfig{
 			Host:     getEnv("DB_HOST", "127.0.0.1"),
 			Port:     getEnv("DB_PORT", "3306"),
@@ -80,14 +90,15 @@ func Load() *Config {
 		OTPResendCooldown: getDuration("OTP_RESEND_COOLDOWN", 2*time.Minute),
 		SMS: SMSConfig{
 			APIURL:         getEnv("SMS_API_URL", "https://api.sms.ir/v1/send/verify"),
-			APIKey:         getEnv("SMS_API_KEY", "gqgjNgGVa2EqRPIsMbL0tGdI8XIUhhcu4DvGP3cd8tJBlXa3VsR5j1W9hNzNaCAe"),
-			BodyID:         getInt("SMS_BODY_ID", 246256),
+			APIKey:         getEnv("SMS_API_KEY", ""),
+			BodyID:         getInt("SMS_BODY_ID", 0),
 			RequestTimeout: getDuration("SMS_REQUEST_TIMEOUT", 20*time.Second),
 		},
-		OTPTestBypassEnabled: getBool("OTP_TEST_BYPASS_ENABLED", true),
+		OTPTestBypassEnabled: getBool("OTP_TEST_BYPASS_ENABLED", false),
 		OTPTestCode:          getEnv("OTP_TEST_CODE", "33365"),
-		OTPTestMobile:        getEnv("OTP_TEST_MOBILE", "09136336002"),
-		AutoSeed:             getBool("AUTO_SEED", true),
+		OTPTestMobile:        getEnv("OTP_TEST_MOBILE", "09120000000"),
+		AutoSeed:              getBool("AUTO_SEED", false),
+		DevWalletChargeEnabled: getBool("DEV_WALLET_CHARGE_ENABLED", false),
 		Zarinpal: ZarinpalConfig{
 			MerchantID: getEnv("ZARINPAL_MERCHANT_ID", ""),
 			Sandbox:    getBool("ZARINPAL_SANDBOX", true),
@@ -96,8 +107,55 @@ func Load() *Config {
 	}
 }
 
+// Validate rejects unsafe or malformed runtime configuration before the server starts.
+func (c *Config) Validate() error {
+	var errs []error
+
+	if c.TokenExpiration <= 0 {
+		errs = append(errs, errors.New("TOKEN_EXPIRATION must be positive"))
+	}
+	if c.OTPExpiration <= 0 {
+		errs = append(errs, errors.New("OTP_EXPIRATION must be positive"))
+	}
+	if c.OTPResendCooldown < 0 {
+		errs = append(errs, errors.New("OTP_RESEND_COOLDOWN cannot be negative"))
+	}
+	if c.PlatformCommissionPercent < 0 || c.PlatformCommissionPercent > 100 {
+		errs = append(errs, errors.New("PLATFORM_COMMISSION_PERCENT must be between 0 and 100"))
+	}
+	if len(c.CORSAllowedOrigins) == 0 {
+		errs = append(errs, errors.New("at least one CORS origin is required"))
+	}
+	for _, origin := range c.CORSAllowedOrigins {
+		u, err := url.Parse(origin)
+		if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+			errs = append(errs, fmt.Errorf("invalid CORS origin %q", origin))
+		}
+	}
+
+	if c.IsProduction() {
+		if len(strings.TrimSpace(c.JWTSecret)) < 32 || c.JWTSecret == "dev-insecure-secret-change-me" {
+			errs = append(errs, errors.New("JWT_SECRET must be a unique secret of at least 32 characters in production"))
+		}
+		if c.OTPTestBypassEnabled {
+			errs = append(errs, errors.New("OTP_TEST_BYPASS_ENABLED must be false in production"))
+		}
+		if c.AutoSeed {
+			errs = append(errs, errors.New("AUTO_SEED must be false in production"))
+		}
+		if c.DevWalletChargeEnabled {
+			errs = append(errs, errors.New("DEV_WALLET_CHARGE_ENABLED must be false in production"))
+		}
+		if strings.TrimSpace(c.SMS.APIKey) == "" || c.SMS.BodyID <= 0 {
+			errs = append(errs, errors.New("SMS_API_KEY and a positive SMS_BODY_ID are required in production"))
+		}
+	}
+
+	return errors.Join(errs...)
+}
+
 // IsProduction reports whether the app runs in production mode.
-func (c *Config) IsProduction() bool { return c.AppEnv == "production" }
+func (c *Config) IsProduction() bool { return strings.EqualFold(c.AppEnv, "production") }
 
 func getEnv(key, fallback string) string {
 	if v, ok := os.LookupEnv(key); ok && v != "" {
@@ -131,4 +189,17 @@ func getDuration(key string, fallback time.Duration) time.Duration {
 		}
 	}
 	return fallback
+}
+
+func getCSV(key, fallback string) []string {
+	raw := getEnv(key, fallback)
+	parts := strings.Split(raw, ",")
+	out := make([]string, 0, len(parts))
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part != "" {
+			out = append(out, strings.TrimRight(part, "/"))
+		}
+	}
+	return out
 }
