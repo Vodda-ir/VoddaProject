@@ -2,98 +2,127 @@
 
 # وُدّا (Vodda)
 
-**همراهِ یادگیری قرآن و مداحی** — بستری برای اتصال آسان و مطمئن قرآن‌آموزان به اساتید مجرب برای جلسات آنلاین آموزش قرآن و مداحی (مدل اسنپ‌مانند: جستجو، رزرو، پرداخت، برگزاری و امتیازدهی).
+**همراه یادگیری قرآن و مداحی** — پلتفرمی برای یافتن استاد، رزرو جلسه، مدیریت کیف پول و پیگیری چرخهٔ جلسه میان قرآن‌آموز و استاد.
 
-این مخزن شامل سه اپلیکیشن است:
+این مخزن یک monorepo با سه بخش اصلی است:
 
-| پوشه | توضیح | استک |
-|------|-------|------|
-| [`app/`](app/) | اپ موبایل کاربر (قرآن‌آموز + استاد) | Flutter · Clean Architecture · Riverpod · go_router |
-| [`backend/`](backend/) | API مدیریت کل سیستم | Go · Gin · GORM · MySQL · Clean Architecture |
-| [`frontend/`](frontend/) | وبسایت عمومی + پنل کاربر/استاد/ادمین | Next.js · TypeScript · Tailwind |
+| پوشه | کاربرد | استک |
+|---|---|---|
+| [`app/`](app/) | اپ موبایل قرآن‌آموز و استاد | Flutter · Riverpod · go_router |
+| [`backend/`](backend/) | API و منطق کسب‌وکار | Go · Gin · GORM · MySQL |
+| [`frontend/`](frontend/) | وب‌سایت و پنل‌های کاربر، استاد و مدیر | Next.js · TypeScript |
+
+> **وضعیت محصول:** جریان‌های اصلی نمونه پیاده‌سازی شده‌اند، اما محصول هنوز آمادهٔ انتشار عمومی نیست. پرداخت واقعی زرین‌پال، تماس صوتی واقعی، تست‌های جامع و تراکنش‌های دیتابیسی مالی جزو موانع انتشار هستند. گزارش کامل در [`docs/audit-2026-07-20.md`](docs/audit-2026-07-20.md) ثبت شده است.
 
 ---
 
 ## پورت‌ها
 
-| سرویس | پورت |
-|-------|------|
+| سرویس | پورت میزبان |
+|---|---:|
 | Backend | `3420` |
 | Frontend | `3421` |
 | MySQL | `3422` |
 
----
-
-## شروع سریع (محلی با Docker)
+## شروع سریع با Docker
 
 ```bash
-cp .env.example .env.local      # در صورت نیاز مقادیر را ویرایش کنید
-./docker-debug.sh up-d          # بالا آوردن backend + frontend + mysql
-./docker-debug.sh logs          # مشاهده لاگ‌ها
-./docker-debug.sh down          # توقف
+cp .env.example .env.local
+./docker-debug.sh up-d
+./docker-debug.sh logs
 ```
 
 پس از اجرا:
 
-- وبسایت و پنل‌ها: <http://localhost:3421>
-- API: <http://localhost:3420/api/v1> (سلامت: <http://localhost:3420/health>)
+- وب و پنل‌ها: <http://localhost:3421>
+- API: <http://localhost:3420/api/v1>
+- Health check: <http://localhost:3420/health>
 - MySQL: `localhost:3422`
 
-> در حالت دیباگ، `AUTO_SEED=true` است و دیتای نمونه (۶ استاد، یک قرآن‌آموز، یک ادمین) ساخته می‌شود.
-> ورود با OTP در حالت دیباگ با کد ثابت **۳۳۳۶۵** برای همهٔ شماره‌ها کار می‌کند.
+تنظیمات نمونه فقط برای توسعه هستند:
 
-### حساب‌های نمونه (Seed)
+- `AUTO_SEED=true` دادهٔ آزمایشی ایجاد می‌کند.
+- `OTP_TEST_BYPASS_ENABLED=true` کد ثابت `33365` را فعال می‌کند.
+- خالی‌بودن `OTP_TEST_MOBILE` یعنی کد توسعه برای همهٔ شماره‌های seed معتبر است.
+- `DEV_WALLET_CHARGE_ENABLED=true` شارژ مستقیم کیف پول را فقط در محیط غیر production فعال می‌کند.
 
-| نقش | موبایل | کد ورود |
-|-----|--------|---------|
-| مدیر (ادمین) | `09000000000` | `33365` |
+### حساب‌های seed
+
+| نقش | موبایل | کد توسعه |
+|---|---|---|
+| مدیر | `09136336002` | `33365` |
 | قرآن‌آموز | `09120000000` | `33365` |
-| استاد (عباس ملک‌محمدی) | `09120000001` | `33365` |
+| استاد نمونه | `09120000001` | `33365` |
+
+> اجرای production در صورت فعال‌بودن OTP bypass، seed یا شارژ مستقیم کیف پول متوقف می‌شود.
 
 ---
 
-## اجرای هر بخش به‌صورت جداگانه (بدون Docker)
+## اجرای جداگانه
 
-<details><summary><b>backend</b></summary>
+### Backend
 
 ```bash
 cd backend
-# نیازمند یک MySQL در دسترس (مثلاً روی 3422)
-DB_HOST=127.0.0.1 DB_PORT=3422 DB_USER=root DB_PASSWORD=vodda_secret DB_NAME=vodda \
-  JWT_SECRET=dev AUTO_SEED=true go run ./cmd/server
+DB_HOST=127.0.0.1 \
+DB_PORT=3422 \
+DB_USER=root \
+DB_PASSWORD=vodda_secret \
+DB_NAME=vodda \
+JWT_SECRET=dev-insecure-secret-change-me \
+AUTO_SEED=true \
+OTP_TEST_BYPASS_ENABLED=true \
+DEV_WALLET_CHARGE_ENABLED=true \
+go run ./cmd/server
 ```
-</details>
 
-<details><summary><b>frontend</b></summary>
+### Frontend
 
 ```bash
 cd frontend
-npm install
-npm run dev        # روی 3421 با پراکسی /api/v1 به بک‌اند
+npm ci
+npm run dev
 ```
-</details>
 
-<details><summary><b>app (Flutter)</b></summary>
+### Flutter
 
 ```bash
 cd app
 flutter pub get
-# آدرس API را با dart-define تنظیم کنید (پیش‌فرض برای امولاتور اندروید: 10.0.2.2:3420)
 flutter run --dart-define=API_BASE_URL=http://10.0.2.2:3420/api/v1
 ```
-</details>
 
 ---
 
-## دیپلوی روی سرور
+## کنترل کیفیت
+
+Workflow فایل [`.github/workflows/ci.yml`](.github/workflows/ci.yml) روی push و pull request به `main` این کنترل‌ها را اجرا می‌کند:
+
+- Backend: `gofmt`، `go vet`، `go test` و `go build`
+- Frontend: نصب lockfile و `npm run build`
+- Flutter: `flutter analyze` و `flutter test`
+
+اجرای محلی معادل:
 
 ```bash
-cp deploy.example.json deploy.json   # اطلاعات سرور (ip/username/password/path)
-cp .env.example .env.production      # مقادیر تولید را پر کنید (JWT_SECRET، DB_PASSWORD، SMS، Zarinpal)
-./docker-deploy.sh deploy            # build محلی + انتقال bundle + اجرا روی سرور
+(cd backend && test -z "$(gofmt -l .)" && go vet ./... && go test ./... && go build ./...)
+(cd frontend && npm ci && npm run build)
+(cd app && flutter pub get && flutter analyze && flutter test)
 ```
 
-جزئیات بیشتر در [`docs/deployment.md`](docs/deployment.md).
+---
+
+## نکات امنیت و production
+
+پیش از استقرار عمومی حداقل این موارد الزامی‌اند:
+
+1. `APP_ENV=production` و یک `JWT_SECRET` تصادفی حداقل ۳۲ کاراکتری.
+2. تنظیم دقیق `CORS_ALLOWED_ORIGINS` و `APP_TIMEZONE`.
+3. مقدار واقعی `SMS_API_KEY` و `SMS_BODY_ID`.
+4. خاموش‌بودن `AUTO_SEED`، `OTP_TEST_BYPASS_ENABLED` و `DEV_WALLET_CHARGE_ENABLED`.
+5. پیاده‌سازی request/callback/verify واقعی درگاه پرداخت؛ endpoint توسعهٔ `/wallet/charge` جایگزین درگاه نیست.
+6. انتقال آپلودها به storage پایدار و اعتبارسنجی MIME/حجم فایل.
+7. افزودن backup، monitoring، rate limit و تست بازیابی.
 
 ---
 
@@ -102,13 +131,19 @@ cp .env.example .env.production      # مقادیر تولید را پر کنی�
 - [معماری](docs/architecture.md)
 - [مرجع API](docs/api.md)
 - [دیپلوی](docs/deployment.md)
-- [طراحی و design tokens](docs/design-system.md)
+- [Design system](docs/design-system.md)
+- [گزارش ممیزی ۲۰۲۶-۰۷-۲۰](docs/audit-2026-07-20.md)
 - [چک‌لیست پیشرفت](CHECKLIST.md)
 
-## وضعیت
+## وضعیت فعلی
 
-- ✅ بک‌اند: کامل و تست‌شده (احراز هویت OTP، اساتید، رزرو و چرخهٔ جلسه، کیف پول و کارمزد، نظرات، برداشت، پنل ادمین)
-- ✅ فرانت‌اند: وبسایت لندینگ + اسکلت سه پنل (در حال اتصال کامل به API)
-- ✅ اپ Flutter: تم، مسیریابی، ورود OTP، خانه/جستجو/پروفایل استاد (سایر صفحات در حال تکمیل)
+- ✅ احراز هویت OTP/JWT، RBAC، پروفایل‌ها و مدیریت استاد
+- ✅ رزرو با کنترل زمان گذشته، ساعات کاری و تداخل جلسه
+- ✅ چرخهٔ درخواست/پذیرش/رد/لغو/اتمام و امتیازدهی
+- ✅ کیف پول آزمایشی، escrow، درآمد و درخواست برداشت
+- ✅ پنل‌های وب و اپ Flutter برای جریان‌های اصلی
+- ✅ CI پایه و سخت‌سازی تنظیمات production
+- 🚧 پرداخت زرین‌پال واقعی، تماس صوتی واقعی و atomic transactionهای مالی
+- 🚧 پوشش تست واحد، integration، widget و end-to-end
 
 </div>
