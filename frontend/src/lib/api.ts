@@ -7,6 +7,15 @@ const BASE =
     ? process.env.SERVER_API_URL || 'http://backend:3420/api/v1'
     : process.env.NEXT_PUBLIC_API_BASE_URL || '/api/v1';
 
+export type TeacherService = {
+  id: number;
+  title: string;
+  duration: number;
+  price: number;
+  icon: string;
+  active?: boolean;
+};
+
 export type Teacher = {
   id: number;
   field: string;
@@ -18,12 +27,13 @@ export type Teacher = {
   price60: number;
   female: boolean;
   verified: boolean;
+  available?: boolean;
   rating: number;
   reviews: number;
   sessions: number;
   followers: number;
   user?: { id: number; name: string; avatar_url: string };
-  services?: { id: number; title: string; duration: number; price: number; icon: string }[];
+  services?: TeacherService[];
 };
 
 export type Review = {
@@ -34,11 +44,25 @@ export type Review = {
   created_at: string;
 };
 
+// Mirrors backend/internal/domain.WorkTime exactly.
 export type WorkTime = {
   id: number;
   weekday: number;
-  start: string;
-  end: string;
+  from: string;
+  to: string;
+  active?: boolean;
+};
+
+export type BecomeTeacherInput = {
+  field: string;
+  tag: string;
+  bio: string;
+  price30: number;
+  price60?: number;
+  city?: string;
+  level?: string;
+  skills?: string[];
+  female?: boolean;
 };
 
 export type ListResponse<T> = { data: T[]; total: number };
@@ -83,7 +107,7 @@ export const api = {
       { headers: { Authorization: `Bearer ${token}` } },
     ),
   teacherSessions: (token: string, when: string) =>
-    request<{ data: unknown[] }>(`/teacher/sessions?when=${when}`, {
+    request<{ data: unknown[] }>(`/teacher/sessions?when=${encodeURIComponent(when)}`, {
       headers: { Authorization: `Bearer ${token}` },
     }),
 
@@ -99,10 +123,13 @@ export const api = {
 
   // sessions (learner)
   mySessions: (token: string, when: string) =>
-    request<{ data: unknown[] }>(`/sessions?when=${when}`, {
+    request<{ data: unknown[] }>(`/sessions?when=${encodeURIComponent(when)}`, {
       headers: { Authorization: `Bearer ${token}` },
     }),
-  bookSession: (token: string, body: { teacher_id: number; service_id: number; scheduled_at: string; note?: string }) =>
+  bookSession: (
+    token: string,
+    body: { teacher_id: number; service_id: number; scheduled_at: string; note?: string },
+  ) =>
     request<{ data: unknown }>('/sessions', {
       method: 'POST',
       body: JSON.stringify(body),
@@ -115,20 +142,8 @@ export const api = {
       headers: { Authorization: `Bearer ${token}` },
     }),
 
-  // follow
-  follow: (token: string, teacherId: number) =>
-    request<{ data: unknown }>(`/teachers/${teacherId}/follow`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-    }),
-  unfollow: (token: string, teacherId: number) =>
-    request<{ data: unknown }>(`/teachers/${teacherId}/follow`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
-    }),
-
-  // become teacher
-  becomeTeacher: (token: string, body: { tag: string; field: string; bio?: string }) =>
+  // teacher registration
+  becomeTeacher: (token: string, body: BecomeTeacherInput) =>
     request<{ data: unknown }>('/me/become-teacher', {
       method: 'POST',
       body: JSON.stringify(body),
