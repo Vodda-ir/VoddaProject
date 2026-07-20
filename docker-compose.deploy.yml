@@ -3,67 +3,112 @@ services:
     platform: ${DOCKER_PLATFORM:-linux/amd64}
     image: mysql:8.0
     pull_policy: never
-    command: ["--max_allowed_packet=512M", "--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
+    command:
+      - --max_allowed_packet=512M
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --sql-mode=STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION
     environment:
-      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD:?DB_PASSWORD is required}
-      - MYSQL_DATABASE=${DB_NAME:-vodda}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD is required}
+      MYSQL_DATABASE: ${DB_NAME:-vodda}
+      MYSQL_USER: ${DB_USER:-vodda}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
     ports:
-      - "${MYSQL_PORT:-3422}:3306"
+      - "127.0.0.1:${MYSQL_PORT:-3422}:3306"
     volumes:
       - ./data/mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
     networks:
       - vodda-network
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
 
   backend:
     platform: ${DOCKER_PLATFORM:-linux/amd64}
     image: vodda-backend:prod
     pull_policy: never
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
     environment:
-      - SERVER_HOST=0.0.0.0
-      - SERVER_PORT=${BACKEND_INTERNAL_PORT:-3420}
-      - APP_ENV=production
-      - FRONTEND_BASE_URL=${FRONTEND_BASE_URL:-https://vodda.ir}
-      - DB_HOST=${DB_HOST:-mysql}
-      - DB_PORT=${DB_PORT:-3306}
-      - DB_USER=${DB_USER:-root}
-      - DB_PASSWORD=${DB_PASSWORD:?DB_PASSWORD is required}
-      - DB_NAME=${DB_NAME:-vodda}
-      - JWT_SECRET=${JWT_SECRET:?JWT_SECRET is required}
-      - TOKEN_EXPIRATION=${TOKEN_EXPIRATION:-720h}
-      - SMS_API_URL=${SMS_API_URL:-https://api.sms.ir/v1/send/verify}
-      - SMS_API_KEY=${SMS_API_KEY:?SMS_API_KEY is required}
-      - SMS_BODY_ID=${SMS_BODY_ID:?SMS_BODY_ID is required}
-      - OTP_TEST_BYPASS_ENABLED=${OTP_TEST_BYPASS_ENABLED:-false}
-      - AUTO_SEED=${AUTO_SEED:-false}
-      - ZARINPAL_MERCHANT_ID=${ZARINPAL_MERCHANT_ID:?ZARINPAL_MERCHANT_ID is required}
-      - ZARINPAL_SANDBOX=${ZARINPAL_SANDBOX:-false}
-      - PLATFORM_COMMISSION_PERCENT=${PLATFORM_COMMISSION_PERCENT:-15}
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: ${BACKEND_INTERNAL_PORT:-3420}
+      APP_ENV: production
+      APP_TIMEZONE: ${APP_TIMEZONE:-Asia/Tehran}
+      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-https://vodda.ir}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://vodda.ir}
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-127.0.0.1,::1,172.16.0.0/12}
+      DB_HOST: ${DB_HOST:-mysql}
+      DB_PORT: ${DB_PORT:-3306}
+      DB_USER: ${DB_USER:-vodda}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      DB_NAME: ${DB_NAME:-vodda}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      TOKEN_EXPIRATION: ${TOKEN_EXPIRATION:-720h}
+      OTP_EXPIRATION: ${OTP_EXPIRATION:-2m}
+      OTP_RESEND_COOLDOWN: ${OTP_RESEND_COOLDOWN:-2m}
+      SMS_API_URL: ${SMS_API_URL:-https://api.sms.ir/v1/send/verify}
+      SMS_API_KEY: ${SMS_API_KEY:?SMS_API_KEY is required}
+      SMS_BODY_ID: ${SMS_BODY_ID:?SMS_BODY_ID is required}
+      SMS_REQUEST_TIMEOUT: ${SMS_REQUEST_TIMEOUT:-20s}
+      OTP_TEST_BYPASS_ENABLED: "false"
+      AUTO_SEED: "false"
+      DEV_WALLET_CHARGE_ENABLED: "false"
+      ZARINPAL_MERCHANT_ID: ${ZARINPAL_MERCHANT_ID:-}
+      ZARINPAL_SANDBOX: ${ZARINPAL_SANDBOX:-false}
+      PLATFORM_COMMISSION_PERCENT: ${PLATFORM_COMMISSION_PERCENT:-15}
     ports:
-      - "${BACKEND_PORT:-3420}:${BACKEND_INTERNAL_PORT:-3420}"
+      - "127.0.0.1:${BACKEND_PORT:-3420}:${BACKEND_INTERNAL_PORT:-3420}"
+    volumes:
+      - ./data/uploads:/app/uploads
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:3420/ready"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
     networks:
       - vodda-network
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
 
   frontend:
     platform: ${DOCKER_PLATFORM:-linux/amd64}
     image: vodda-frontend:prod
     pull_policy: never
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     environment:
-      - PORT=${FRONTEND_INTERNAL_PORT:-3421}
-      - HOSTNAME=0.0.0.0
-      - NODE_ENV=production
-      - NEXT_PUBLIC_API_BASE_URL=/api/v1
-      - SERVER_API_URL=${SERVER_API_URL:-http://backend:3420/api/v1}
+      PORT: ${FRONTEND_INTERNAL_PORT:-3421}
+      HOSTNAME: 0.0.0.0
+      NODE_ENV: production
+      NEXT_PUBLIC_API_BASE_URL: /api/backend
+      SERVER_API_URL: ${SERVER_API_URL:-http://backend:3420/api/v1}
     ports:
-      - "${FRONTEND_PORT:-3421}:${FRONTEND_INTERNAL_PORT:-3421}"
+      - "127.0.0.1:${FRONTEND_PORT:-3421}:${FRONTEND_INTERNAL_PORT:-3421}"
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3421').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
     networks:
       - vodda-network
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
 
 networks:
   vodda-network:
