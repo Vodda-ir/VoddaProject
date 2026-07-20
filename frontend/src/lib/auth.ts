@@ -1,15 +1,10 @@
-// Auth API + token management for the Vodda web panels.
-
-const API_BASE =
-  typeof window === 'undefined'
-    ? process.env.SERVER_API_URL || 'http://backend:3420/api/v1'
-    : process.env.NEXT_PUBLIC_API_BASE_URL || '/api/v1';
+// Auth API + session helpers for the Vodda web panels.
+// The JWT is stored only in an HttpOnly cookie by Next.js route handlers.
 
 /** Convert a relative avatar path to a full URL. With the Next.js proxy for /uploads, relative paths work as-is. */
 export function fullUrl(path: string | null | undefined): string | undefined {
   if (!path) return undefined;
   if (path.startsWith('http://') || path.startsWith('https://')) return path;
-  // Already absolute from origin (e.g. /uploads/...)
   return path;
 }
 
@@ -25,10 +20,11 @@ export type AuthUser = {
 };
 
 async function authFetch(path: string, body: unknown) {
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await fetch(`/api/auth${path}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
+    cache: 'no-store',
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
@@ -38,34 +34,36 @@ async function authFetch(path: string, body: unknown) {
 }
 
 export const authApi = {
-  requestOTP: (mobile: string) => authFetch('/auth/request-otp', { mobile }),
-  verifyOTP: (mobile: string, code: string) =>
-    authFetch('/auth/verify-otp', { mobile, code }),
-  me: async (token: string): Promise<AuthUser> => {
-    const res = await fetch(`${API_BASE}/me`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+  requestOTP: (mobile: string) => authFetch('/request-otp', { mobile }),
+  verifyOTP: (mobile: string, code: string) => authFetch('/verify-otp', { mobile, code }),
+  me: async (_sessionMarker?: string): Promise<AuthUser> => {
+    const res = await fetch('/api/backend/me', { cache: 'no-store' });
     if (!res.ok) throw new Error('unauthorized');
     const j = await res.json();
     return j.data as AuthUser;
   },
 };
 
-const TOKEN_KEY = 'vodda_token';
-
+/**
+ * Existing UI passes this value into API functions. It is deliberately only a
+ * non-secret session marker; the BFF reads the real HttpOnly cookie server-side.
+ */
 export function getToken(): string | null {
-  if (typeof window === 'undefined') return null;
-  return localStorage.getItem(TOKEN_KEY);
+  if (typeof document === 'undefined') return null;
+  return document.cookie.split('; ').some(item => item === 'vodda_session=1') ? 'session' : null;
 }
 
-export function setToken(token: string) {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem(TOKEN_KEY, token);
-  document.cookie = `vodda_token=${token}; path=/; max-age=2592000; SameSite=Lax`;
+// Kept for source compatibility. The verify route already creates the marker.
+export function setToken(_unused?: string) {
+  // Intentionally empty: JWTs must never be written by browser JavaScript.
 }
 
 export function clearToken() {
   if (typeof window === 'undefined') return;
-  localStorage.removeItem(TOKEN_KEY);
-  document.cookie = 'vodda_token=; path=/; max-age=0';
+  document.cookie = 'vodda_session=; path=/; max-age=0; SameSite=Lax';
+  void fetch('/api/auth/logout', {
+    method: 'POST',
+    cache: 'no-store',
+    keepalive: true,
+  });
 }
