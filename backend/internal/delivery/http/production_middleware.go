@@ -46,14 +46,14 @@ func AccessLogger() gin.HandlerFunc {
 		c.Next()
 
 		entry := map[string]any{
-			"type":        "http_access",
+			"type":       "http_access",
 			"request_id": c.GetString("request_id"),
-			"method":      c.Request.Method,
-			"path":        c.FullPath(),
-			"status":      c.Writer.Status(),
-			"latency_ms":  time.Since(started).Milliseconds(),
-			"client_ip":   c.ClientIP(),
-			"bytes":       c.Writer.Size(),
+			"method":     c.Request.Method,
+			"path":       c.FullPath(),
+			"status":     c.Writer.Status(),
+			"latency_ms": time.Since(started).Milliseconds(),
+			"client_ip":  c.ClientIP(),
+			"bytes":      c.Writer.Size(),
 		}
 		if entry["path"] == "" {
 			entry["path"] = c.Request.URL.Path
