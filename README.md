@@ -12,19 +12,19 @@
 | [`backend/`](backend/) | API و منطق کسب‌وکار | Go · Gin · GORM · MySQL |
 | [`frontend/`](frontend/) | وب‌سایت و پنل‌های کاربر، استاد و مدیر | Next.js · TypeScript |
 
-> **وضعیت محصول:** جریان‌های اصلی نمونه پیاده‌سازی شده‌اند، اما محصول هنوز آمادهٔ انتشار عمومی نیست. پرداخت واقعی زرین‌پال، تماس صوتی واقعی، تست‌های جامع و تراکنش‌های دیتابیسی مالی جزو موانع انتشار هستند. گزارش کامل در [`docs/audit-2026-07-20.md`](docs/audit-2026-07-20.md) ثبت شده است.
+> **وضعیت محصول:** هستهٔ نرم‌افزار، زیرساخت استقرار، امنیت نشست وب، عملیات مالی داخلی، backup/restore و CI برای استقرار production آماده شده‌اند. عرضهٔ تجاری عمومی همچنان به اتصال و تست واقعی درگاه پرداخت، انتخاب provider تماس صوتی، چرخاندن secret قدیمی پیامک و smoke test روی سرور مقصد وابسته است. جزئیات در [`docs/audit-2026-07-20.md`](docs/audit-2026-07-20.md) و [`docs/production-runbook.md`](docs/production-runbook.md) آمده است.
 
 ---
 
 ## پورت‌ها
 
-| سرویس | پورت میزبان |
-|---|---:|
-| Backend | `3420` |
-| Frontend | `3421` |
-| MySQL | `3422` |
+| سرویس | پورت میزبان | دسترسی production |
+|---|---:|---|
+| Backend | `3420` | فقط localhost/reverse proxy |
+| Frontend | `3421` | فقط localhost/reverse proxy |
+| MySQL | `3422` | فقط localhost |
 
-## شروع سریع با Docker
+## شروع سریع توسعه
 
 ```bash
 cp .env.example .env.local
@@ -36,14 +36,14 @@ cp .env.example .env.local
 
 - وب و پنل‌ها: <http://localhost:3421>
 - API: <http://localhost:3420/api/v1>
-- Health check: <http://localhost:3420/health>
+- Liveness: <http://localhost:3420/live>
+- Readiness دیتابیس: <http://localhost:3420/ready>
 - MySQL: `localhost:3422`
 
 تنظیمات نمونه فقط برای توسعه هستند:
 
 - `AUTO_SEED=true` دادهٔ آزمایشی ایجاد می‌کند.
 - `OTP_TEST_BYPASS_ENABLED=true` کد ثابت `33365` را فعال می‌کند.
-- خالی‌بودن `OTP_TEST_MOBILE` یعنی کد توسعه برای همهٔ شماره‌های seed معتبر است.
 - `DEV_WALLET_CHARGE_ENABLED=true` شارژ مستقیم کیف پول را فقط در محیط غیر production فعال می‌کند.
 
 ### حساب‌های seed
@@ -54,7 +54,7 @@ cp .env.example .env.local
 | قرآن‌آموز | `09120000000` | `33365` |
 | استاد نمونه | `09120000001` | `33365` |
 
-> اجرای production در صورت فعال‌بودن OTP bypass، seed یا شارژ مستقیم کیف پول متوقف می‌شود.
+> Backend در production با seed، OTP bypass، شارژ مستقیم کیف پول، JWT ضعیف یا تنظیم ناقص پیامک اجرا نمی‌شود.
 
 ---
 
@@ -96,33 +96,84 @@ flutter run --dart-define=API_BASE_URL=http://10.0.2.2:3420/api/v1
 
 ## کنترل کیفیت
 
-Workflow فایل [`.github/workflows/ci.yml`](.github/workflows/ci.yml) روی push و pull request به `main` این کنترل‌ها را اجرا می‌کند:
+Workflow فایل [`.github/workflows/ci.yml`](.github/workflows/ci.yml) روی pull request و push به `main` اجرا می‌شود:
 
-- Backend: `gofmt`، `go vet`، `go test` و `go build`
-- Frontend: نصب lockfile و `npm run build`
+- Backend: `gofmt`، `go vet`، integration test واقعی MySQL با race detector و `go build`
+- Frontend: نصب lockfile و type-check/build کامل Next.js
 - Flutter: `flutter analyze` و `flutter test`
+- Deployment: اعتبارسنجی shell scriptها و `docker compose config`
 
 اجرای محلی معادل:
 
 ```bash
-(cd backend && test -z "$(gofmt -l .)" && go vet ./... && go test ./... && go build ./...)
+(cd backend && test -z "$(gofmt -l .)" && go vet ./... && go test -race ./... && go build ./...)
 (cd frontend && npm ci && npm run build)
 (cd app && flutter pub get && flutter analyze && flutter test)
 ```
 
+Integration test مالی با MySQL:
+
+```bash
+TEST_MYSQL_DSN='root:password@tcp(127.0.0.1:3306)/vodda_test?charset=utf8mb4&parseTime=True&loc=UTC' \
+  go test -race ./internal/repository/...
+```
+
 ---
 
-## نکات امنیت و production
+## امنیت و قابلیت اتکا
 
-پیش از استقرار عمومی حداقل این موارد الزامی‌اند:
+موارد پیاده‌سازی‌شده:
 
-1. `APP_ENV=production` و یک `JWT_SECRET` تصادفی حداقل ۳۲ کاراکتری.
-2. تنظیم دقیق `CORS_ALLOWED_ORIGINS` و `APP_TIMEZONE`.
-3. مقدار واقعی `SMS_API_KEY` و `SMS_BODY_ID`.
-4. خاموش‌بودن `AUTO_SEED`، `OTP_TEST_BYPASS_ENABLED` و `DEV_WALLET_CHARGE_ENABLED`.
-5. پیاده‌سازی request/callback/verify واقعی درگاه پرداخت؛ endpoint توسعهٔ `/wallet/charge` جایگزین درگاه نیست.
-6. انتقال آپلودها به storage پایدار و اعتبارسنجی MIME/حجم فایل.
-7. افزودن backup، monitoring، rate limit و تست بازیابی.
+- نشست وب با cookie امن `HttpOnly` و BFF در Next.js؛ JWT در `localStorage` قرار نمی‌گیرد.
+- بررسی نقش پنل‌ها در middleware و جلوگیری از نمایش عمومی استاد pending/غیرفعال.
+- عملیات اتمیک MySQL برای رزرو، escrow، refund، settlement، شارژ توسعه‌ای و برداشت.
+- debit شرطی و row locking برای جلوگیری از موجودی منفی و اجرای تکراری عملیات مالی.
+- reconciliation دفتر تراکنش با موجودی، همراه با integration test و تست هم‌زمانی.
+- rate limit برای OTP، جستجو، mutationها، عملیات مالی و پنل مدیر.
+- request ID، لاگ JSON، security header، محدودیت body و readiness check دیتابیس.
+- اعتبارسنجی واقعی MIME، پسوند و حجم آواتار و storage پایدار Docker.
+- backup فشرده MySQL با checksum و restore محافظت‌شده همراه با safety backup.
+- پورت‌های production فقط روی localhost و dependency readiness در Docker Compose.
+
+برای چند replica باید limiter مشترک Redis/reverse proxy و object storage مشترک استفاده شود؛ limiter و volume فعلی برای استقرار تک-instance مناسب‌اند.
+
+---
+
+## استقرار production
+
+```bash
+chmod +x docker-deploy.sh ops/*.sh
+docker compose -f docker-compose.deploy.yml config
+./docker-deploy.sh
+```
+
+متغیرهای secret باید خارج از Git نگهداری شوند. حداقل این موارد الزامی‌اند:
+
+```bash
+MYSQL_ROOT_PASSWORD=...
+DB_USER=vodda
+DB_PASSWORD=...
+DB_NAME=vodda
+JWT_SECRET=<random-at-least-32-characters>
+SMS_API_KEY=...
+SMS_BODY_ID=...
+FRONTEND_BASE_URL=https://vodda.ir
+CORS_ALLOWED_ORIGINS=https://vodda.ir
+```
+
+راهنمای backup، restore، مانیتورینگ و رخداد مالی: [`docs/production-runbook.md`](docs/production-runbook.md)
+
+---
+
+## موانع باقی‌مانده برای عرضهٔ تجاری
+
+1. اتصال واقعی زرین‌پال شامل request، redirect، callback، verify، idempotency و تست sandbox/production.
+2. انتخاب و اتصال provider تماس صوتی، صدور token سمت سرور و مدیریت reconnect/failure.
+3. rotate کردن API key قدیمی پیامک در پنل سرویس‌دهنده؛ حذف آن از HEAD تاریخچهٔ Git را باطل نمی‌کند.
+4. اجرای smoke test و یک restore آزمایشی روی staging/سرور مقصد.
+5. برای scale چند-instance: Redis rate limiter و object storage مشترک.
+
+شارژ مستقیم `/wallet/charge` در production عمداً غیرفعال است و جایگزین درگاه پرداخت نیست.
 
 ---
 
@@ -131,19 +182,21 @@ Workflow فایل [`.github/workflows/ci.yml`](.github/workflows/ci.yml) روی 
 - [معماری](docs/architecture.md)
 - [مرجع API](docs/api.md)
 - [دیپلوی](docs/deployment.md)
+- [راهنمای عملیات production](docs/production-runbook.md)
 - [Design system](docs/design-system.md)
 - [گزارش ممیزی ۲۰۲۶-۰۷-۲۰](docs/audit-2026-07-20.md)
 - [چک‌لیست پیشرفت](CHECKLIST.md)
 
 ## وضعیت فعلی
 
-- ✅ احراز هویت OTP/JWT، RBAC، پروفایل‌ها و مدیریت استاد
-- ✅ رزرو با کنترل زمان گذشته، ساعات کاری و تداخل جلسه
-- ✅ چرخهٔ درخواست/پذیرش/رد/لغو/اتمام و امتیازدهی
-- ✅ کیف پول آزمایشی، escrow، درآمد و درخواست برداشت
+- ✅ احراز هویت OTP/JWT، RBAC و نشست امن وب
+- ✅ رزرو با ساعات کاری، کنترل تداخل و عملیات مالی اتمیک
+- ✅ refund، settlement و withdrawal با تست MySQL و concurrency
 - ✅ پنل‌های وب و اپ Flutter برای جریان‌های اصلی
-- ✅ CI پایه و سخت‌سازی تنظیمات production
-- 🚧 پرداخت زرین‌پال واقعی، تماس صوتی واقعی و atomic transactionهای مالی
-- 🚧 پوشش تست واحد، integration، widget و end-to-end
+- ✅ rate limiting، observability، upload validation و readiness
+- ✅ استقرار Docker سخت‌سازی‌شده و backup/restore
+- ✅ CI چهارمرحله‌ای Backend، Frontend، Flutter و Deployment
+- 🚧 پرداخت واقعی زرین‌پال و تماس صوتی واقعی
+- 🚧 staging smoke test، external secret rotation و زیرساخت چند-instance
 
 </div>
