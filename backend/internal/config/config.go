@@ -97,10 +97,10 @@ func Load() *Config {
 			BodyID:         getInt("SMS_BODY_ID", 0),
 			RequestTimeout: getDuration("SMS_REQUEST_TIMEOUT", 20*time.Second),
 		},
-		OTPTestBypassEnabled:  getBool("OTP_TEST_BYPASS_ENABLED", false),
-		OTPTestCode:           getEnv("OTP_TEST_CODE", "33365"),
+		OTPTestBypassEnabled: getBool("OTP_TEST_BYPASS_ENABLED", false),
+		OTPTestCode:          getEnv("OTP_TEST_CODE", "33365"),
 		// Empty means every mobile may use the fixed development code.
-		OTPTestMobile:         getOptionalEnv("OTP_TEST_MOBILE"),
+		OTPTestMobile:          getOptionalEnv("OTP_TEST_MOBILE"),
 		AutoSeed:               getBool("AUTO_SEED", false),
 		DevWalletChargeEnabled: getBool("DEV_WALLET_CHARGE_ENABLED", false),
 		Zarinpal: ZarinpalConfig{
