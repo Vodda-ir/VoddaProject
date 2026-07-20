@@ -245,7 +245,7 @@ func (uc *SessionUsecase) Complete(ctx context.Context, userID, sessionID uint) 
 		}
 		if err := uc.wallet.AddTx(ctx, &domain.Transaction{
 			UserID: teacher.UserID, Type: domain.TxEarning,
-			Title: "درآمد خالص جلسه: " + s.Title, Amount: earning, RefID: s.ID,
+			Title: "درآمد ناخالص جلسه: " + s.Title, Amount: s.Price, RefID: s.ID,
 		}); err != nil {
 			_ = uc.users.AddWallet(ctx, teacher.UserID, -earning)
 			s.Status = domain.SessionConfirmed

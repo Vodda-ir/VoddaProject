@@ -171,8 +171,8 @@ func (r *financialRepo) CompleteAndSettleSession(ctx context.Context, session *d
 		if err := tx.Create(&domain.Transaction{
 			UserID: teacherUserID,
 			Type:   domain.TxEarning,
-			Title:  "درآمد خالص جلسه: " + locked.Title,
-			Amount: earning,
+			Title:  "درآمد ناخالص جلسه: " + locked.Title,
+			Amount: locked.Price,
 			RefID:  locked.ID,
 		}).Error; err != nil {
 			return err
