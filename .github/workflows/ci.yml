@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -72,40 +72,12 @@ jobs:
         working-directory: app
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref || github.ref_name }}
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
       - name: Install dependencies
         run: flutter pub get
-      - name: Apply booking lint fix
-        working-directory: .
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          path = Path('app/lib/features/sessions/presentation/booking_screen.dart')
-          text = path.read_text()
-          old = """      if ((wd is int ? wd : int.tryParse(wd.toString())) != persianWeekday)\n        continue;"""
-          new = """      if ((wd is int ? wd : int.tryParse(wd.toString())) != persianWeekday) {\n        continue;\n      }"""
-          if old not in text:
-              raise SystemExit('expected booking lint pattern not found')
-          path.write_text(text.replace(old, new, 1))
-          PY
-          dart format app/lib/features/sessions/presentation/booking_screen.dart
-      - name: Commit one-time Flutter fix
-        working-directory: .
-        run: |
-          if git diff --quiet; then
-            echo "Flutter source is already fixed."
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add app/lib/features/sessions/presentation/booking_screen.dart
-          git commit -m "fix(app): satisfy booking flow lint"
-          git push origin "HEAD:${{ github.head_ref }}"
       - name: Analyze
         run: flutter analyze
       - name: Test
