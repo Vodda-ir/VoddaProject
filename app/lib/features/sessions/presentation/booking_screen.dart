@@ -65,8 +65,9 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
       // Compare weekday as int, tolerating String-encoded numbers from JSON.
       final wd = w['weekday'];
       if (wd == null) continue;
-      if ((wd is int ? wd : int.tryParse(wd.toString())) != persianWeekday)
+      if ((wd is int ? wd : int.tryParse(wd.toString())) != persianWeekday) {
         continue;
+      }
 
       final fromRaw = w['from'];
       final toRaw = w['to'];
