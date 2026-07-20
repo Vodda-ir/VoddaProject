@@ -2,6 +2,8 @@ package usecase
 
 import (
 	"context"
+	"strings"
+	"unicode"
 
 	"vodda/backend/internal/domain"
 )
@@ -79,16 +81,27 @@ type WithdrawInput struct {
 
 // RequestWithdrawal files a payout request, debiting the teacher's wallet.
 func (uc *WalletUsecase) RequestWithdrawal(ctx context.Context, userID uint, in WithdrawInput) (*domain.Withdrawal, error) {
-	if in.Amount <= 0 || (in.Card == "" && in.Sheba == "") {
+	card := onlyASCIIAlphaNumeric(in.Card)
+	sheba := strings.ToUpper(onlyASCIIAlphaNumeric(in.Sheba))
+	if in.Amount <= 0 || (card == "" && sheba == "") ||
+		(card != "" && (len(card) != 16 || !allASCIIDigits(card))) ||
+		(sheba != "" && (len(sheba) != 26 || !strings.HasPrefix(sheba, "IR") || !allASCIIDigits(sheba[2:]))) {
 		return nil, domain.ErrValidation
 	}
+
 	t, err := uc.teachers.ByUserID(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
+	if t.Status != domain.TeacherApproved || !t.Verified {
+		return nil, domain.ErrForbidden
+	}
 	user, err := uc.users.ByID(ctx, userID)
 	if err != nil {
 		return nil, err
+	}
+	if !user.Active {
+		return nil, domain.ErrForbidden
 	}
 	if user.Wallet < in.Amount {
 		return nil, domain.ErrInsufficient
@@ -96,7 +109,7 @@ func (uc *WalletUsecase) RequestWithdrawal(ctx context.Context, userID uint, in 
 
 	w := &domain.Withdrawal{
 		TeacherID: t.ID, UserID: userID, Amount: in.Amount,
-		Card: in.Card, Sheba: in.Sheba, Status: domain.WithdrawalPending,
+		Card: card, Sheba: sheba, Status: domain.WithdrawalPending,
 	}
 	if uc.financial != nil {
 		if err := uc.financial.CreateFundedWithdrawal(ctx, w); err != nil {
@@ -184,4 +197,26 @@ func (uc *WalletUsecase) ProcessWithdrawal(ctx context.Context, id uint, paid bo
 
 func (uc *WalletUsecase) notify(ctx context.Context, userID uint, title, body string) {
 	_ = uc.notif.Create(ctx, &domain.Notification{UserID: userID, Title: title, Body: body})
+}
+
+func onlyASCIIAlphaNumeric(value string) string {
+	var builder strings.Builder
+	for _, r := range strings.TrimSpace(value) {
+		if r <= unicode.MaxASCII && ((r >= '0' && r <= '9') || (r >= 'A' && r <= 'Z') || (r >= 'a' && r <= 'z')) {
+			builder.WriteRune(r)
+		}
+	}
+	return builder.String()
+}
+
+func allASCIIDigits(value string) bool {
+	if value == "" {
+		return false
+	}
+	for _, r := range value {
+		if r < '0' || r > '9' {
+			return false
+		}
+	}
+	return true
 }
