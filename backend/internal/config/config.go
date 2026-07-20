@@ -13,12 +13,13 @@ import (
 
 // Config holds all runtime configuration for the Vodda backend.
 type Config struct {
-	AppEnv string
+	AppEnv      string
+	AppTimezone string
 
 	ServerHost string
 	ServerPort string
 
-	FrontendBaseURL  string
+	FrontendBaseURL    string
 	CORSAllowedOrigins []string
 
 	DB DBConfig
@@ -35,7 +36,7 @@ type Config struct {
 	OTPTestCode          string
 	OTPTestMobile        string
 
-	AutoSeed              bool
+	AutoSeed               bool
 	DevWalletChargeEnabled bool
 
 	Zarinpal ZarinpalConfig
@@ -72,11 +73,12 @@ func Load() *Config {
 	frontendBaseURL := getEnv("FRONTEND_BASE_URL", "http://localhost:3421")
 
 	return &Config{
-		AppEnv:          getEnv("APP_ENV", "development"),
-		ServerHost:      getEnv("SERVER_HOST", "0.0.0.0"),
-		ServerPort:      getEnv("SERVER_PORT", getEnv("BACKEND_INTERNAL_PORT", "3420")),
-		FrontendBaseURL: frontendBaseURL,
-		CORSAllowedOrigins: getCSV("CORS_ALLOWED_ORIGINS", frontendBaseURL),
+		AppEnv:               getEnv("APP_ENV", "development"),
+		AppTimezone:          getEnv("APP_TIMEZONE", "Asia/Tehran"),
+		ServerHost:           getEnv("SERVER_HOST", "0.0.0.0"),
+		ServerPort:           getEnv("SERVER_PORT", getEnv("BACKEND_INTERNAL_PORT", "3420")),
+		FrontendBaseURL:      frontendBaseURL,
+		CORSAllowedOrigins:   getCSV("CORS_ALLOWED_ORIGINS", frontendBaseURL),
 		DB: DBConfig{
 			Host:     getEnv("DB_HOST", "127.0.0.1"),
 			Port:     getEnv("DB_PORT", "3306"),
@@ -94,10 +96,10 @@ func Load() *Config {
 			BodyID:         getInt("SMS_BODY_ID", 0),
 			RequestTimeout: getDuration("SMS_REQUEST_TIMEOUT", 20*time.Second),
 		},
-		OTPTestBypassEnabled: getBool("OTP_TEST_BYPASS_ENABLED", false),
-		OTPTestCode:          getEnv("OTP_TEST_CODE", "33365"),
-		OTPTestMobile:        getEnv("OTP_TEST_MOBILE", "09120000000"),
-		AutoSeed:              getBool("AUTO_SEED", false),
+		OTPTestBypassEnabled:  getBool("OTP_TEST_BYPASS_ENABLED", false),
+		OTPTestCode:           getEnv("OTP_TEST_CODE", "33365"),
+		OTPTestMobile:         getEnv("OTP_TEST_MOBILE", "09120000000"),
+		AutoSeed:               getBool("AUTO_SEED", false),
 		DevWalletChargeEnabled: getBool("DEV_WALLET_CHARGE_ENABLED", false),
 		Zarinpal: ZarinpalConfig{
 			MerchantID: getEnv("ZARINPAL_MERCHANT_ID", ""),
@@ -111,6 +113,9 @@ func Load() *Config {
 func (c *Config) Validate() error {
 	var errs []error
 
+	if _, err := time.LoadLocation(c.AppTimezone); err != nil {
+		errs = append(errs, fmt.Errorf("invalid APP_TIMEZONE %q: %w", c.AppTimezone, err))
+	}
 	if c.TokenExpiration <= 0 {
 		errs = append(errs, errors.New("TOKEN_EXPIRATION must be positive"))
 	}
