@@ -38,17 +38,38 @@ func (uc *SessionUsecase) Book(ctx context.Context, learnerID uint, in BookInput
 	if err != nil {
 		return nil, err
 	}
-	if teacher.Status != domain.TeacherApproved {
+	if teacher.Status != domain.TeacherApproved || !teacher.Verified || !teacher.Available {
 		return nil, domain.ErrTeacherNotReady
 	}
+	if teacher.UserID == learnerID {
+		return nil, domain.ErrForbidden
+	}
+
 	svc, err := uc.teachers.ServiceByID(ctx, in.ServiceID)
-	if err != nil || svc.TeacherID != teacher.ID {
+	if err != nil || svc.TeacherID != teacher.ID || !svc.Active || svc.Price <= 0 || svc.Duration <= 0 || svc.Duration > 240 {
 		return nil, domain.ErrValidation
+	}
+	if len(in.Note) > 500 {
+		return nil, domain.ErrValidation
+	}
+
+	now := time.Now()
+	if in.ScheduledAt.Before(now.Add(5*time.Minute)) || in.ScheduledAt.After(now.AddDate(0, 6, 0)) {
+		return nil, domain.ErrValidation
+	}
+	if err := uc.ensureWithinWorkTime(ctx, teacher.ID, in.ScheduledAt, svc.Duration); err != nil {
+		return nil, err
+	}
+	if err := uc.ensureNoOverlap(ctx, learnerID, teacher.ID, in.ScheduledAt, svc.Duration); err != nil {
+		return nil, err
 	}
 
 	learner, err := uc.users.ByID(ctx, learnerID)
 	if err != nil {
 		return nil, err
+	}
+	if !learner.Active {
+		return nil, domain.ErrForbidden
 	}
 	if learner.Wallet < svc.Price {
 		return nil, domain.ErrInsufficient
@@ -59,7 +80,7 @@ func (uc *SessionUsecase) Book(ctx context.Context, learnerID uint, in BookInput
 		TeacherID:   teacher.ID,
 		ServiceID:   svc.ID,
 		Title:       svc.Title,
-		ScheduledAt: in.ScheduledAt,
+		ScheduledAt: in.ScheduledAt.UTC(),
 		Duration:    svc.Duration,
 		Price:       svc.Price,
 		Status:      domain.SessionPending,
@@ -69,25 +90,32 @@ func (uc *SessionUsecase) Book(ctx context.Context, learnerID uint, in BookInput
 		return nil, err
 	}
 
-	// hold the fee: debit learner wallet and ledger it
+	// Hold the fee. Until repository-level DB transactions are introduced, every
+	// failure path compensates the preceding write and leaves the session canceled.
 	if err := uc.users.AddWallet(ctx, learnerID, -svc.Price); err != nil {
+		uc.cancelUnfundedSession(ctx, s)
 		return nil, err
 	}
-	_ = uc.wallet.AddTx(ctx, &domain.Transaction{
+	if err := uc.wallet.AddTx(ctx, &domain.Transaction{
 		UserID: learnerID, Type: domain.TxSession,
 		Title: "رزرو جلسه: " + svc.Title, Amount: -svc.Price, RefID: s.ID,
-	})
+	}); err != nil {
+		_ = uc.users.AddWallet(ctx, learnerID, svc.Price)
+		uc.cancelUnfundedSession(ctx, s)
+		return nil, err
+	}
+
 	uc.notify(ctx, teacher.UserID, "درخواست جلسه‌ی جدید", "یک درخواست جلسه‌ی جدید دریافت کردید.")
 	return s, nil
 }
 
 // Accept confirms a pending session (teacher action).
 func (uc *SessionUsecase) Accept(ctx context.Context, userID, sessionID uint) (*domain.Session, error) {
-	s, t, err := uc.ownTeacherSession(ctx, userID, sessionID)
+	s, _, err := uc.ownTeacherSession(ctx, userID, sessionID)
 	if err != nil {
 		return nil, err
 	}
-	if s.Status != domain.SessionPending {
+	if s.Status != domain.SessionPending || time.Now().After(s.ScheduledAt) {
 		return nil, domain.ErrConflict
 	}
 	s.Status = domain.SessionConfirmed
@@ -95,7 +123,6 @@ func (uc *SessionUsecase) Accept(ctx context.Context, userID, sessionID uint) (*
 		return nil, err
 	}
 	uc.notify(ctx, s.LearnerID, "جلسه تأیید شد", "استاد درخواست جلسه‌ی شما را تأیید کرد.")
-	_ = t
 	return s, nil
 }
 
@@ -108,12 +135,21 @@ func (uc *SessionUsecase) Reject(ctx context.Context, userID, sessionID uint, re
 	if s.Status != domain.SessionPending {
 		return nil, domain.ErrConflict
 	}
+	if len(reason) > 255 {
+		return nil, domain.ErrValidation
+	}
+
+	previousStatus, previousReason := s.Status, s.RejectNote
 	s.Status = domain.SessionCanceled
 	s.RejectNote = reason
 	if err := uc.sessions.Update(ctx, s); err != nil {
 		return nil, err
 	}
-	uc.refund(ctx, s)
+	if err := uc.refund(ctx, s); err != nil {
+		s.Status, s.RejectNote = previousStatus, previousReason
+		_ = uc.sessions.Update(ctx, s)
+		return nil, err
+	}
 	uc.notify(ctx, s.LearnerID, "جلسه لغو شد", "استاد درخواست جلسه را رد کرد و مبلغ بازگشت داده شد.")
 	return s, nil
 }
@@ -127,47 +163,72 @@ func (uc *SessionUsecase) Cancel(ctx context.Context, learnerID, sessionID uint)
 	if s.LearnerID != learnerID {
 		return nil, domain.ErrForbidden
 	}
-	if s.Status == domain.SessionDone || s.Status == domain.SessionCanceled {
+	if s.Status != domain.SessionPending && s.Status != domain.SessionConfirmed {
 		return nil, domain.ErrConflict
 	}
+
+	previousStatus := s.Status
 	s.Status = domain.SessionCanceled
 	if err := uc.sessions.Update(ctx, s); err != nil {
 		return nil, err
 	}
-	uc.refund(ctx, s)
+	if err := uc.refund(ctx, s); err != nil {
+		s.Status = previousStatus
+		_ = uc.sessions.Update(ctx, s)
+		return nil, err
+	}
+	uc.notify(ctx, s.Teacher.UserID, "جلسه لغو شد", "قرآن‌آموز جلسه را لغو کرد.")
 	return s, nil
 }
 
 // Complete marks a confirmed session done and settles the teacher's earnings,
 // deducting the platform commission.
 func (uc *SessionUsecase) Complete(ctx context.Context, userID, sessionID uint) (*domain.Session, error) {
-	s, t, err := uc.ownTeacherSession(ctx, userID, sessionID)
+	s, teacher, err := uc.ownTeacherSession(ctx, userID, sessionID)
 	if err != nil {
 		return nil, err
 	}
 	if s.Status != domain.SessionConfirmed {
 		return nil, domain.ErrConflict
 	}
-	s.Status = domain.SessionDone
-	if err := uc.sessions.Update(ctx, s); err != nil {
-		return nil, err
+	if time.Now().Before(s.ScheduledAt.Add(time.Duration(s.Duration) * time.Minute)) {
+		return nil, domain.ErrConflict
 	}
 
 	commission := s.Price * int64(uc.cfg.PlatformCommissionPercent) / 100
 	earning := s.Price - commission
+	if earning < 0 {
+		return nil, domain.ErrInternal
+	}
 
-	_ = uc.users.AddWallet(ctx, t.UserID, earning)
+	// Mark first and compensate back to confirmed when the critical payout fails.
+	s.Status = domain.SessionDone
+	if err := uc.sessions.Update(ctx, s); err != nil {
+		return nil, err
+	}
+	if err := uc.users.AddWallet(ctx, teacher.UserID, earning); err != nil {
+		s.Status = domain.SessionConfirmed
+		_ = uc.sessions.Update(ctx, s)
+		return nil, err
+	}
+	if err := uc.wallet.AddTx(ctx, &domain.Transaction{
+		UserID: teacher.UserID, Type: domain.TxEarning,
+		Title: "درآمد خالص جلسه: " + s.Title, Amount: earning, RefID: s.ID,
+	}); err != nil {
+		_ = uc.users.AddWallet(ctx, teacher.UserID, -earning)
+		s.Status = domain.SessionConfirmed
+		_ = uc.sessions.Update(ctx, s)
+		return nil, err
+	}
+	// This informational negative entry is used by the admin dashboard to report
+	// commission and does not alter the wallet a second time.
 	_ = uc.wallet.AddTx(ctx, &domain.Transaction{
-		UserID: t.UserID, Type: domain.TxEarning,
-		Title: "درآمد جلسه: " + s.Title, Amount: earning, RefID: s.ID,
-	})
-	_ = uc.wallet.AddTx(ctx, &domain.Transaction{
-		UserID: t.UserID, Type: domain.TxCommission,
+		UserID: teacher.UserID, Type: domain.TxCommission,
 		Title: "کارمزد پلتفرم", Amount: -commission, RefID: s.ID,
 	})
 
-	t.Sessions++
-	_ = uc.teachers.Update(ctx, t)
+	teacher.Sessions++
+	_ = uc.teachers.Update(ctx, teacher)
 	uc.notify(ctx, s.LearnerID, "جلسه برگزار شد", "جلسه‌ی شما به پایان رسید. لطفاً امتیاز دهید.")
 	return s, nil
 }
@@ -179,15 +240,15 @@ func (uc *SessionUsecase) LearnerSessions(ctx context.Context, learnerID uint, w
 
 // TeacherSessions lists a teacher's sessions by status set.
 func (uc *SessionUsecase) TeacherSessions(ctx context.Context, userID uint, statuses []domain.SessionStatus) ([]domain.Session, error) {
-	t, err := uc.teachers.ByUserID(ctx, userID)
+	teacher, err := uc.teachers.ByUserID(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
-	return uc.sessions.ForTeacher(ctx, t.ID, statuses)
+	return uc.sessions.ForTeacher(ctx, teacher.ID, statuses)
 }
 
 func (uc *SessionUsecase) ownTeacherSession(ctx context.Context, userID, sessionID uint) (*domain.Session, *domain.Teacher, error) {
-	t, err := uc.teachers.ByUserID(ctx, userID)
+	teacher, err := uc.teachers.ByUserID(ctx, userID)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -195,20 +256,102 @@ func (uc *SessionUsecase) ownTeacherSession(ctx context.Context, userID, session
 	if err != nil {
 		return nil, nil, err
 	}
-	if s.TeacherID != t.ID {
+	if s.TeacherID != teacher.ID {
 		return nil, nil, domain.ErrForbidden
 	}
-	return s, t, nil
+	return s, teacher, nil
 }
 
-func (uc *SessionUsecase) refund(ctx context.Context, s *domain.Session) {
-	_ = uc.users.AddWallet(ctx, s.LearnerID, s.Price)
-	_ = uc.wallet.AddTx(ctx, &domain.Transaction{
+func (uc *SessionUsecase) ensureWithinWorkTime(ctx context.Context, teacherID uint, scheduledAt time.Time, duration int) error {
+	location, err := time.LoadLocation(uc.cfg.AppTimezone)
+	if err != nil {
+		return err
+	}
+	local := scheduledAt.In(location)
+	weekday := (int(local.Weekday()) + 1) % 7 // Go Sunday=0; Vodda Saturday=0.
+	startMinute := local.Hour()*60 + local.Minute()
+	endMinute := startMinute + duration
+
+	workTimes, err := uc.teachers.WorkTimes(ctx, teacherID)
+	if err != nil {
+		return err
+	}
+	for _, slot := range workTimes {
+		if !slot.Active || slot.Weekday != weekday {
+			continue
+		}
+		from, okFrom := parseClock(slot.FromTime)
+		to, okTo := parseClock(slot.ToTime)
+		if okFrom && okTo && startMinute >= from && endMinute <= to {
+			return nil
+		}
+	}
+	return domain.ErrValidation
+}
+
+func (uc *SessionUsecase) ensureNoOverlap(ctx context.Context, learnerID, teacherID uint, start time.Time, duration int) error {
+	end := start.Add(time.Duration(duration) * time.Minute)
+	statuses := []domain.SessionStatus{domain.SessionPending, domain.SessionConfirmed}
+	teacherSessions, err := uc.sessions.ForTeacher(ctx, teacherID, statuses)
+	if err != nil {
+		return err
+	}
+	for _, existing := range teacherSessions {
+		if overlaps(start, end, existing.ScheduledAt, existing.ScheduledAt.Add(time.Duration(existing.Duration)*time.Minute)) {
+			return domain.ErrConflict
+		}
+	}
+
+	learnerSessions, err := uc.sessions.ForLearner(ctx, learnerID, "upcoming")
+	if err != nil {
+		return err
+	}
+	for _, existing := range learnerSessions {
+		if existing.Status != domain.SessionPending && existing.Status != domain.SessionConfirmed {
+			continue
+		}
+		if overlaps(start, end, existing.ScheduledAt, existing.ScheduledAt.Add(time.Duration(existing.Duration)*time.Minute)) {
+			return domain.ErrConflict
+		}
+	}
+	return nil
+}
+
+func (uc *SessionUsecase) refund(ctx context.Context, s *domain.Session) error {
+	if err := uc.users.AddWallet(ctx, s.LearnerID, s.Price); err != nil {
+		return err
+	}
+	if err := uc.wallet.AddTx(ctx, &domain.Transaction{
 		UserID: s.LearnerID, Type: domain.TxCharge,
 		Title: "بازگشت وجه جلسه: " + s.Title, Amount: s.Price, RefID: s.ID,
-	})
+	}); err != nil {
+		_ = uc.users.AddWallet(ctx, s.LearnerID, -s.Price)
+		return err
+	}
+	return nil
+}
+
+func (uc *SessionUsecase) cancelUnfundedSession(ctx context.Context, s *domain.Session) {
+	s.Status = domain.SessionCanceled
+	s.RejectNote = "خطا در رزرو وجه"
+	_ = uc.sessions.Update(ctx, s)
 }
 
 func (uc *SessionUsecase) notify(ctx context.Context, userID uint, title, body string) {
+	if userID == 0 {
+		return
+	}
 	_ = uc.notif.Create(ctx, &domain.Notification{UserID: userID, Title: title, Body: body})
+}
+
+func parseClock(value string) (int, bool) {
+	parsed, err := time.Parse("15:04", value)
+	if err != nil {
+		return 0, false
+	}
+	return parsed.Hour()*60 + parsed.Minute(), true
+}
+
+func overlaps(aStart, aEnd, bStart, bEnd time.Time) bool {
+	return aStart.Before(bEnd) && aEnd.After(bStart)
 }
