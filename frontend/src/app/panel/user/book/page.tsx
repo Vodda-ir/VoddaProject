@@ -1,23 +1,52 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { api, type Teacher, type WorkTime } from '@/lib/api';
 import { Icon } from '@/components/Icon';
 import { Avatar } from '@/components/web/ui';
-import { getToken } from '@/lib/auth';
-import { fullUrl } from '@/lib/auth';
+import { fullUrl, getToken } from '@/lib/auth';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
 const fa = (n: number | string) => String(n).replace(/[0-9]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[+d]);
-const toman = (n: number) => fa(new Intl.NumberFormat('fa-IR').format(n));
+const toman = (n: number) => new Intl.NumberFormat('fa-IR').format(n);
 
+// Backend convention: 0=Saturday ... 6=Friday.
 const weekdays = ['شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنجشنبه', 'جمعه'];
+
+function scheduledDateFor(weekday: number, time: string): Date | null {
+  if (weekday < 0 || weekday > 6 || !/^\d{2}:\d{2}$/.test(time)) return null;
+
+  const now = new Date();
+  const currentVoddaWeekday = (now.getDay() + 1) % 7;
+  const daysAhead = (weekday - currentVoddaWeekday + 7) % 7;
+  const date = new Date(now);
+  date.setDate(now.getDate() + daysAhead);
+
+  const [hour, minute] = time.split(':').map(Number);
+  date.setHours(hour, minute, 0, 0);
+
+  // A slot for today that has already passed means the next week's occurrence.
+  if (date.getTime() <= now.getTime()) date.setDate(date.getDate() + 7);
+  return date;
+}
+
+function formatDate(date: Date | null): string {
+  if (!date) return '—';
+  return new Intl.DateTimeFormat('fa-IR', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
+}
 
 export default function BookingPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const teacherId = parseInt(searchParams.get('teacher') || '0', 10);
+  const teacherId = Number.parseInt(searchParams.get('teacher') || '0', 10);
 
   const [teacher, setTeacher] = useState<Teacher | null>(null);
   const [workTimes, setWorkTimes] = useState<WorkTime[]>([]);
@@ -32,51 +61,88 @@ export default function BookingPage() {
   const [done, setDone] = useState(false);
 
   useEffect(() => {
-    if (!teacherId) {
+    if (!Number.isInteger(teacherId) || teacherId <= 0) {
       setError('استاد مشخص نشده است');
       setLoading(false);
       return;
     }
+
+    let active = true;
     (async () => {
       try {
-        const [tRes, wRes] = await Promise.all([
+        const [teacherResponse, workTimeResponse] = await Promise.all([
           api.teacher(teacherId),
-          api.teacherWorkTimes(teacherId).catch(() => ({ data: [] })),
+          api.teacherWorkTimes(teacherId),
         ]);
-        setTeacher(tRes.data.teacher);
-        setWorkTimes(wRes.data || []);
+        if (!active) return;
+        setTeacher(teacherResponse.data.teacher);
+        setWorkTimes((workTimeResponse.data || []).filter((slot) => slot.active !== false));
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'خطا در بارگذاری');
+        if (active) setError(e instanceof Error ? e.message : 'خطا در بارگذاری اطلاعات رزرو');
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     })();
+
+    return () => {
+      active = false;
+    };
   }, [teacherId]);
+
+  const services = useMemo(
+    () => (teacher?.services || []).filter((service) => service.active !== false),
+    [teacher],
+  );
+
+  const availableDays = useMemo(
+    () => [...new Set(workTimes.map((slot) => slot.weekday))].sort((a, b) => a - b),
+    [workTimes],
+  );
+
+  const daySlots = useMemo(
+    () => workTimes.filter((slot) => slot.weekday === selectedDay),
+    [selectedDay, workTimes],
+  );
+
+  const scheduledDate = useMemo(
+    () => scheduledDateFor(selectedDay, selectedSlot),
+    [selectedDay, selectedSlot],
+  );
+
+  function selectService(id: number) {
+    setServiceId(id);
+    setSelectedDay(-1);
+    setSelectedSlot('');
+    setError('');
+    setStep(2);
+  }
+
+  function selectDay(day: number) {
+    setSelectedDay(day);
+    setSelectedSlot('');
+    setError('');
+  }
 
   async function submitBooking() {
     const token = getToken();
     if (!token) {
-      router.push('/panel/login?redirect=/panel/user/book');
+      const redirect = encodeURIComponent(`/panel/user/book?teacher=${teacherId}`);
+      router.push(`/panel/login?redirect=${redirect}`);
       return;
     }
-    if (!serviceId || !selectedSlot) return;
+    if (!serviceId || !scheduledDate) {
+      setError('خدمت و زمان معتبر را انتخاب کنید.');
+      return;
+    }
 
     setSubmitting(true);
     setError('');
     try {
-      const now = new Date();
-      const targetDay = selectedDay;
-      const diff = (targetDay - now.getDay() + 7) % 7;
-      const date = new Date(now);
-      date.setDate(now.getDate() + diff);
-      const [h, m] = selectedSlot.split(':');
-      date.setHours(parseInt(h), parseInt(m), 0, 0);
-
       await api.bookSession(token, {
         teacher_id: teacherId,
         service_id: serviceId,
-        scheduled_at: date.toISOString(),
-        note,
+        scheduled_at: scheduledDate.toISOString(),
+        note: note.trim() || undefined,
       });
       setDone(true);
     } catch (e) {
@@ -98,16 +164,12 @@ export default function BookingPage() {
         </div>
         <h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 10 }}>جلسه با موفقیت رزرو شد</h2>
         <p style={{ fontSize: 14, color: 'var(--ink-3)', lineHeight: 2, marginBottom: 24 }}>
-          درخواست شما برای استاد ارسال شد. پس از تأیید، جلسه در زمان انتخابی برگزار می‌شود.
+          درخواست برای استاد ارسال شد. پس از تأیید، وضعیت آن در بخش جلسات نمایش داده می‌شود.
         </p>
-        <Link href="/panel/user/sessions" style={btnStyle}>
-          مشاهده جلسات من
-        </Link>
+        <Link href="/panel/user/sessions" style={btnStyle}>مشاهده جلسات من</Link>
       </CenterBox>
     );
   }
-
-  const services = teacher.services || [];
 
   return (
     <div style={{ background: 'var(--sand-50)', minHeight: '100vh' }}>
@@ -119,7 +181,7 @@ export default function BookingPage() {
         <div style={{ background: '#fff', borderRadius: 20, padding: 16, display: 'flex', gap: 14, alignItems: 'center', marginBottom: 24, boxShadow: 'var(--sh-sm)' }}>
           <Avatar size={56} ring verified={teacher.verified} imageUrl={fullUrl(teacher.user?.avatar_url)} />
           <div>
-            <div style={{ fontSize: 16, fontWeight: 800 }}>{teacher.user?.name}</div>
+            <div style={{ fontSize: 16, fontWeight: 800 }}>{teacher.user?.name || 'استاد وُدّا'}</div>
             <div style={{ fontSize: 13, color: 'var(--olive-600)', fontWeight: 600 }}>{teacher.tag}</div>
           </div>
         </div>
@@ -129,23 +191,19 @@ export default function BookingPage() {
         {step === 1 && (
           <Card title="انتخاب خدمت">
             {services.length === 0 ? (
-              <p style={{ fontSize: 14, color: 'var(--ink-4)' }}>خدماتی موجود نیست.</p>
+              <p style={{ fontSize: 14, color: 'var(--ink-4)' }}>در حال حاضر خدمت فعالی برای رزرو وجود ندارد.</p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {services.map((s) => (
-                  <button
-                    key={s.id}
-                    onClick={() => { setServiceId(s.id); setStep(2); }}
-                    style={serviceBtnStyle(serviceId === s.id)}
-                  >
+                {services.map((service) => (
+                  <button key={service.id} type="button" onClick={() => selectService(service.id)} style={serviceBtnStyle(serviceId === service.id)}>
                     <div style={{ width: 44, height: 44, borderRadius: 12, background: 'var(--olive-100)', color: 'var(--olive-600)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <Icon name="book" size={22} />
                     </div>
                     <div style={{ flex: 1, textAlign: 'right' }}>
-                      <div style={{ fontSize: 14.5, fontWeight: 700 }}>{s.title}</div>
-                      <div style={{ fontSize: 12, color: 'var(--ink-3)' }}>{fa(s.duration)} دقیقه</div>
+                      <div style={{ fontSize: 14.5, fontWeight: 700 }}>{service.title}</div>
+                      <div style={{ fontSize: 12, color: 'var(--ink-3)' }}>{fa(service.duration)} دقیقه</div>
                     </div>
-                    <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--olive-700)' }}>{toman(s.price)} ت</div>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--olive-700)' }}>{toman(service.price)} تومان</div>
                   </button>
                 ))}
               </div>
@@ -156,32 +214,30 @@ export default function BookingPage() {
         {step === 2 && (
           <Card title="انتخاب زمان">
             {workTimes.length === 0 ? (
-              <p style={{ fontSize: 14, color: 'var(--ink-4)' }}>زمان آزادی ثبت نشده است.</p>
+              <p style={{ fontSize: 14, color: 'var(--ink-4)' }}>استاد هنوز زمان آزادی ثبت نکرده است.</p>
             ) : (
               <>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
-                  {workTimes.map((w, i) => (
-                    <button key={i} onClick={() => setSelectedDay(w.weekday)} style={dayBtnStyle(selectedDay === w.weekday)}>
-                      {weekdays[w.weekday]}
+                  {availableDays.map((day) => (
+                    <button key={day} type="button" onClick={() => selectDay(day)} style={dayBtnStyle(selectedDay === day)}>
+                      {weekdays[day]}
                     </button>
                   ))}
                 </div>
+
                 {selectedDay >= 0 && (
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    {workTimes.filter((w) => w.weekday === selectedDay).map((w, i) => (
-                      <button key={i} onClick={() => setSelectedSlot(w.start)} style={slotBtnStyle(selectedSlot === w.start)}>
-                        {fa(w.start)} - {fa(w.end)}
+                    {daySlots.map((slot) => (
+                      <button key={slot.id} type="button" onClick={() => setSelectedSlot(slot.from)} style={slotBtnStyle(selectedSlot === slot.from)}>
+                        {fa(slot.from)} تا {fa(slot.to)}
                       </button>
                     ))}
                   </div>
                 )}
+
                 <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
-                  <button onClick={() => setStep(1)} style={{ ...btnGhostStyle, flex: 1 }}>مرحله قبل</button>
-                  <button
-                    onClick={() => setStep(3)}
-                    disabled={!selectedSlot}
-                    style={{ ...btnStyle, flex: 1, opacity: selectedSlot ? 1 : 0.5 }}
-                  >
+                  <button type="button" onClick={() => setStep(1)} style={{ ...btnGhostStyle, flex: 1 }}>مرحله قبل</button>
+                  <button type="button" onClick={() => setStep(3)} disabled={!scheduledDate} style={{ ...btnStyle, flex: 1, opacity: scheduledDate ? 1 : 0.5 }}>
                     ادامه
                   </button>
                 </div>
@@ -193,20 +249,15 @@ export default function BookingPage() {
         {step === 3 && (
           <Card title="تأیید و ثبت">
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}>
-              <Row label="خدمت" value={services.find((s) => s.id === serviceId)?.title || '—'} />
-              <Row label="روز" value={selectedDay >= 0 ? weekdays[selectedDay] : '—'} />
-              <Row label="ساعت" value={selectedSlot ? fa(selectedSlot) : '—'} />
+              <Row label="خدمت" value={services.find((service) => service.id === serviceId)?.title || '—'} />
+              <Row label="زمان جلسه" value={formatDate(scheduledDate)} />
+              <Row label="مبلغ" value={`${toman(services.find((service) => service.id === serviceId)?.price || 0)} تومان`} />
             </div>
-            <textarea
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="یادداشت برای استاد (اختیاری)…"
-              style={{ width: '100%', minHeight: 80, padding: 14, borderRadius: 14, border: '1px solid var(--sand-200)', fontFamily: 'inherit', fontSize: 14, resize: 'vertical', marginBottom: 20 }}
-            />
-            {error && <div style={{ fontSize: 13, color: 'var(--rose)', marginBottom: 14 }}>{error}</div>}
+            <textarea value={note} maxLength={500} onChange={(event) => setNote(event.target.value)} placeholder="یادداشت برای استاد (اختیاری)…" style={{ width: '100%', minHeight: 80, padding: 14, borderRadius: 14, border: '1px solid var(--sand-200)', fontFamily: 'inherit', fontSize: 14, resize: 'vertical', marginBottom: 20 }} />
+            {error && <div role="alert" style={{ fontSize: 13, color: 'var(--rose)', marginBottom: 14 }}>{error}</div>}
             <div style={{ display: 'flex', gap: 10 }}>
-              <button onClick={() => setStep(2)} style={{ ...btnGhostStyle, flex: 1 }}>مرحله قبل</button>
-              <button onClick={submitBooking} disabled={submitting} style={{ ...btnStyle, flex: 1, opacity: submitting ? 0.6 : 1 }}>
+              <button type="button" onClick={() => setStep(2)} style={{ ...btnGhostStyle, flex: 1 }}>مرحله قبل</button>
+              <button type="button" onClick={submitBooking} disabled={submitting || !scheduledDate} style={{ ...btnStyle, flex: 1, opacity: submitting || !scheduledDate ? 0.6 : 1 }}>
                 {submitting ? 'در حال ثبت…' : 'ثبت رزرو'}
               </button>
             </div>
@@ -221,18 +272,13 @@ function Steps({ step }: { step: number }) {
   const labels = ['خدمت', 'زمان', 'تأیید'];
   return (
     <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
-      {labels.map((l, i) => (
-        <div key={i} style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{
-            width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 13, fontWeight: 800,
-            background: step > i + 1 ? 'var(--olive-600)' : step === i + 1 ? 'var(--olive-600)' : 'var(--sand-200)',
-            color: step >= i + 1 ? '#fff' : 'var(--ink-3)',
-          }}>
-            {step > i + 1 ? <Icon name="check" size={16} /> : fa(i + 1)}
+      {labels.map((label, index) => (
+        <div key={label} style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, background: step >= index + 1 ? 'var(--olive-600)' : 'var(--sand-200)', color: step >= index + 1 ? '#fff' : 'var(--ink-3)' }}>
+            {step > index + 1 ? <Icon name="check" size={16} /> : fa(index + 1)}
           </div>
-          <span style={{ fontSize: 13, fontWeight: 700, color: step >= i + 1 ? 'var(--ink)' : 'var(--ink-3)' }}>{l}</span>
-          {i < labels.length - 1 && <div style={{ flex: 1, height: 2, background: step > i + 1 ? 'var(--olive-300)' : 'var(--sand-200)' }} />}
+          <span style={{ fontSize: 13, fontWeight: 700, color: step >= index + 1 ? 'var(--ink)' : 'var(--ink-3)' }}>{label}</span>
+          {index < labels.length - 1 && <div style={{ flex: 1, height: 2, background: step > index + 1 ? 'var(--olive-300)' : 'var(--sand-200)' }} />}
         </div>
       ))}
     </div>
@@ -250,9 +296,9 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px', borderRadius: 14, background: 'var(--sand-50)' }}>
-      <span style={{ fontSize: 13, color: 'var(--ink-3)' }}>{label}</span>
-      <span style={{ fontSize: 14, fontWeight: 700 }}>{value}</span>
+    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, padding: '12px 16px', borderRadius: 14, background: 'var(--sand-50)' }}>
+      <span style={{ fontSize: 13, color: 'var(--ink-3)', flexShrink: 0 }}>{label}</span>
+      <span style={{ fontSize: 14, fontWeight: 700, textAlign: 'left' }}>{value}</span>
     </div>
   );
 }
