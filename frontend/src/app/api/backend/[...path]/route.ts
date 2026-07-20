@@ -19,13 +19,21 @@ const FORWARDED_RESPONSE_HEADERS = [
 
 type RouteContext = { params: Promise<{ path: string[] }> };
 
+function isPublicRequest(method: string, path: string[]): boolean {
+  return method === 'GET' && path[0] === 'teachers';
+}
+
 async function proxy(request: NextRequest, context: RouteContext): Promise<Response> {
+  const { path } = await context.params;
+  if (!path.length) {
+    return NextResponse.json({ error: 'not found' }, { status: 404 });
+  }
+
   const token = request.cookies.get('vodda_token')?.value;
-  if (!token) {
+  if (!token && !isPublicRequest(request.method, path)) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
 
-  const { path } = await context.params;
   const target = new URL(`${API_BASE}/${path.map(encodeURIComponent).join('/')}`);
   target.search = request.nextUrl.search;
 
@@ -34,7 +42,7 @@ async function proxy(request: NextRequest, context: RouteContext): Promise<Respo
     const value = request.headers.get(name);
     if (value) headers.set(name, value);
   }
-  headers.set('authorization', `Bearer ${token}`);
+  if (token) headers.set('authorization', `Bearer ${token}`);
 
   let body: ArrayBuffer | undefined;
   if (request.method !== 'GET' && request.method !== 'HEAD') {
