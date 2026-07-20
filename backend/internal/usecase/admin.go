@@ -31,16 +31,37 @@ type Dashboard struct {
 	Commission      int64 `json:"commission"`
 }
 
-// Dashboard computes the admin dashboard metrics.
+// Dashboard computes the admin dashboard metrics. Reporting errors are returned
+// instead of silently publishing partially-zero statistics.
 func (uc *AdminUsecase) Dashboard(ctx context.Context) (*Dashboard, error) {
 	d := &Dashboard{}
-	d.Learners, _ = uc.users.Count(ctx, domain.RoleLearner)
-	d.Teachers, _ = uc.teachers.Count(ctx, "")
-	d.PendingTeachers, _ = uc.teachers.Count(ctx, domain.TeacherPending)
-	d.Sessions, _ = uc.sessions.Count(ctx, "")
-	d.DoneSessions, _ = uc.sessions.Count(ctx, domain.SessionDone)
-	d.ChargeVolume, _ = uc.wallet.SumByType(ctx, domain.TxCharge)
-	d.Commission, _ = uc.wallet.SumByType(ctx, domain.TxCommission)
+	var err error
+
+	if d.Learners, err = uc.users.Count(ctx, domain.RoleLearner); err != nil {
+		return nil, err
+	}
+	if d.Teachers, err = uc.teachers.Count(ctx, ""); err != nil {
+		return nil, err
+	}
+	if d.PendingTeachers, err = uc.teachers.Count(ctx, domain.TeacherPending); err != nil {
+		return nil, err
+	}
+	if d.Sessions, err = uc.sessions.Count(ctx, ""); err != nil {
+		return nil, err
+	}
+	if d.DoneSessions, err = uc.sessions.Count(ctx, domain.SessionDone); err != nil {
+		return nil, err
+	}
+	if d.ChargeVolume, err = uc.wallet.SumByType(ctx, domain.TxCharge); err != nil {
+		return nil, err
+	}
+	if d.Commission, err = uc.wallet.SumByType(ctx, domain.TxCommission); err != nil {
+		return nil, err
+	}
+	// Commission ledger entries are stored as negative deductions from the teacher.
+	if d.Commission < 0 {
+		d.Commission = -d.Commission
+	}
 	return d, nil
 }
 
@@ -70,17 +91,23 @@ func (uc *AdminUsecase) ReviewTeacher(ctx context.Context, id uint, approve bool
 	if err != nil {
 		return nil, err
 	}
+	if t.Status != domain.TeacherPending {
+		return nil, domain.ErrConflict
+	}
 	if approve {
 		t.Status = domain.TeacherApproved
 		t.Verified = true
-		uc.notify(ctx, t.UserID, "پروفایل تأیید شد", "پروفایل استادی شما تأیید و منتشر شد.")
 	} else {
 		t.Status = domain.TeacherRejected
 		t.Verified = false
-		uc.notify(ctx, t.UserID, "پروفایل رد شد", "پروفایل استادی شما تأیید نشد.")
 	}
 	if err := uc.teachers.Update(ctx, t); err != nil {
 		return nil, err
+	}
+	if approve {
+		uc.notify(ctx, t.UserID, "پروفایل تأیید شد", "پروفایل استادی شما تأیید و منتشر شد.")
+	} else {
+		uc.notify(ctx, t.UserID, "پروفایل رد شد", "پروفایل استادی شما تأیید نشد.")
 	}
 	return t, nil
 }
@@ -104,12 +131,14 @@ func (uc *AdminUsecase) ApproveService(ctx context.Context, serviceID uint) erro
 	if err != nil {
 		return err
 	}
+	if s.Active {
+		return domain.ErrConflict
+	}
 	s.Active = true
 	if err := uc.teachers.UpdateService(ctx, s); err != nil {
 		return err
 	}
-	// notify the teacher
-	uc.notify(ctx, s.TeacherID, "خدمت تأیید شد", "خدمت «"+s.Title+"» توسط ادمین تأیید شد.")
+	uc.notifyTeacher(ctx, s.TeacherID, "خدمت تأیید شد", "خدمت «"+s.Title+"» توسط ادمین تأیید شد.")
 	return nil
 }
 
@@ -118,10 +147,27 @@ func (uc *AdminUsecase) RejectService(ctx context.Context, serviceID uint) error
 	if err != nil {
 		return err
 	}
-	uc.notify(ctx, s.TeacherID, "خدمت رد شد", "خدمت «"+s.Title+"» توسط ادمین رد شد.")
-	return uc.teachers.DeleteService(ctx, s.TeacherID, serviceID)
+	if s.Active {
+		return domain.ErrConflict
+	}
+	if err := uc.teachers.DeleteService(ctx, s.TeacherID, serviceID); err != nil {
+		return err
+	}
+	uc.notifyTeacher(ctx, s.TeacherID, "خدمت رد شد", "خدمت «"+s.Title+"» توسط ادمین رد شد.")
+	return nil
+}
+
+func (uc *AdminUsecase) notifyTeacher(ctx context.Context, teacherID uint, title, body string) {
+	teacher, err := uc.teachers.ByID(ctx, teacherID)
+	if err != nil {
+		return
+	}
+	uc.notify(ctx, teacher.UserID, title, body)
 }
 
 func (uc *AdminUsecase) notify(ctx context.Context, userID uint, title, body string) {
+	if userID == 0 {
+		return
+	}
 	_ = uc.notif.Create(ctx, &domain.Notification{UserID: userID, Title: title, Body: body})
 }
