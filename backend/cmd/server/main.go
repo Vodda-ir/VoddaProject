@@ -56,6 +56,7 @@ func main() {
 	sessionRepo := repository.NewSessionRepository(db)
 	reviewRepo := repository.NewReviewRepository(db)
 	walletRepo := repository.NewWalletRepository(db)
+	financialRepo := repository.NewFinancialRepository(db)
 	otpRepo := repository.NewOTPRepository(db)
 	notifRepo := repository.NewNotificationRepository(db)
 
@@ -68,11 +69,18 @@ func main() {
 		Auth:    usecase.NewAuthUsecase(userRepo, otpRepo, sender, tm, cfg),
 		User:    usecase.NewUserUsecase(userRepo, teacherRepo),
 		Teacher: usecase.NewTeacherUsecase(teacherRepo, reviewRepo, userRepo),
-		Session: usecase.NewSessionUsecase(sessionRepo, teacherRepo, userRepo, walletRepo, notifRepo, cfg),
-		Wallet:  usecase.NewWalletUsecase(walletRepo, userRepo, teacherRepo, notifRepo, cfg.DevWalletChargeEnabled && !cfg.IsProduction()),
-		Review:  usecase.NewReviewUsecase(reviewRepo, sessionRepo, teacherRepo),
-		Admin:   usecase.NewAdminUsecase(userRepo, teacherRepo, sessionRepo, walletRepo, notifRepo),
-		Notif:   notifRepo,
+		Session: usecase.NewSessionUsecase(sessionRepo, teacherRepo, userRepo, walletRepo, notifRepo, cfg, financialRepo),
+		Wallet: usecase.NewWalletUsecaseWithFinancial(
+			walletRepo,
+			userRepo,
+			teacherRepo,
+			notifRepo,
+			financialRepo,
+			cfg.DevWalletChargeEnabled && !cfg.IsProduction(),
+		),
+		Review: usecase.NewReviewUsecase(reviewRepo, sessionRepo, teacherRepo),
+		Admin:  usecase.NewAdminUsecase(userRepo, teacherRepo, sessionRepo, walletRepo, notifRepo),
+		Notif:  notifRepo,
 	}
 
 	readiness := func(ctx context.Context) error {
