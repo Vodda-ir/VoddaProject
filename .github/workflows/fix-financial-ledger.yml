@@ -1,0 +1,75 @@
+name: Fix settlement ledger
+
+on:
+  push:
+    branches: [agent/production-readiness]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: test_root_password
+          MYSQL_DATABASE: vodda_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -u root -ptest_root_password --silent"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    env:
+      TEST_MYSQL_DSN: 'root:test_root_password@tcp(127.0.0.1:3306)/vodda_test?charset=utf8mb4&parseTime=True&loc=UTC'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/production-readiness
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+      - name: Reconcile gross earning and commission ledger
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          replacements = {
+              Path('backend/internal/repository/financial_repo.go'): (
+                  'Title:  "درآمد خالص جلسه: " + locked.Title,\n\t\t\tAmount: earning,',
+                  'Title:  "درآمد ناخالص جلسه: " + locked.Title,\n\t\t\tAmount: locked.Price,',
+              ),
+              Path('backend/internal/usecase/session.go'): (
+                  'Title: "درآمد خالص جلسه: " + s.Title, Amount: earning, RefID: s.ID,',
+                  'Title: "درآمد ناخالص جلسه: " + s.Title, Amount: s.Price, RefID: s.ID,',
+              ),
+          }
+          changed = False
+          for path, (old, new) in replacements.items():
+              text = path.read_text()
+              if old in text:
+                  path.write_text(text.replace(old, new, 1))
+                  changed = True
+              elif new not in text:
+                  raise SystemExit(f'expected settlement ledger block not found in {path}')
+          if not changed:
+              print('ledger already reconciled')
+          PY
+          gofmt -w backend/internal/repository/financial_repo.go backend/internal/usecase/session.go
+      - name: Validate financial flows
+        working-directory: backend
+        run: go test -race ./...
+      - name: Commit reconciliation
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add backend/internal/repository/financial_repo.go backend/internal/usecase/session.go
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "fix(backend): reconcile settlement ledger entries"
+          git push origin HEAD:agent/production-readiness
