@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { isSameOriginMutation } from '@/lib/server/same-origin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -18,6 +19,9 @@ type VerifyPayload = {
 };
 
 export async function POST(request: NextRequest): Promise<Response> {
+  if (!isSameOriginMutation(request)) {
+    return NextResponse.json({ error: 'درخواست بین‌دامنه‌ای مجاز نیست' }, { status: 403 });
+  }
   try {
     const body = await request.text();
     const upstream = await fetch(`${API_BASE}/auth/verify-otp`, {
@@ -49,7 +53,6 @@ export async function POST(request: NextRequest): Promise<Response> {
       path: '/',
       maxAge: SESSION_MAX_AGE,
     });
-    // Non-sensitive marker used only to preserve compatibility with existing client UI.
     response.cookies.set('vodda_session', '1', {
       httpOnly: false,
       secure: process.env.NODE_ENV === 'production',
