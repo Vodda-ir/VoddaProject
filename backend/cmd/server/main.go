@@ -31,6 +31,16 @@ func main() {
 	if err != nil {
 		log.Fatalf("database: %v", err)
 	}
+	sqlDB, err := db.DB()
+	if err != nil {
+		log.Fatalf("database handle: %v", err)
+	}
+	defer func() {
+		if err := sqlDB.Close(); err != nil {
+			log.Printf("database close: %v", err)
+		}
+	}()
+
 	if err := database.Migrate(db); err != nil {
 		log.Fatalf("migrate: %v", err)
 	}
@@ -65,7 +75,10 @@ func main() {
 		Notif:   notifRepo,
 	}
 
-	router := delivery.NewRouter(cfg, h, tm)
+	readiness := func(ctx context.Context) error {
+		return sqlDB.PingContext(ctx)
+	}
+	router := delivery.NewRouter(cfg, h, tm, readiness)
 
 	srv := &http.Server{
 		Addr:              cfg.ServerHost + ":" + cfg.ServerPort,
@@ -90,5 +103,7 @@ func main() {
 	log.Println("shutting down…")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	_ = srv.Shutdown(ctx)
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Printf("server shutdown: %v", err)
+	}
 }
