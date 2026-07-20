@@ -22,10 +22,10 @@ func (r *reviewRepo) Create(ctx context.Context, rv *domain.Review) error {
 }
 
 func (r *reviewRepo) ForTeacher(ctx context.Context, teacherID uint) ([]domain.Review, error) {
-	var rv []domain.Review
+	var reviews []domain.Review
 	err := r.db.WithContext(ctx).Preload("Learner").
-		Where("teacher_id = ?", teacherID).Order("created_at desc").Find(&rv).Error
-	return rv, err
+		Where("teacher_id = ?", teacherID).Order("created_at desc").Limit(100).Find(&reviews).Error
+	return reviews, err
 }
 
 func (r *reviewRepo) Stats(ctx context.Context, teacherID uint) (float64, int, error) {
@@ -54,10 +54,16 @@ func (r *walletRepo) Transactions(ctx context.Context, userID uint, limit, offse
 	if limit <= 0 {
 		limit = 30
 	}
-	var tx []domain.Transaction
+	if limit > 100 {
+		limit = 100
+	}
+	if offset < 0 {
+		offset = 0
+	}
+	var transactions []domain.Transaction
 	err := r.db.WithContext(ctx).Where("user_id = ?", userID).
-		Order("created_at desc").Limit(limit).Offset(offset).Find(&tx).Error
-	return tx, err
+		Order("created_at desc").Limit(limit).Offset(offset).Find(&transactions).Error
+	return transactions, err
 }
 
 func (r *walletRepo) CreateWithdrawal(ctx context.Context, w *domain.Withdrawal) error {
@@ -69,12 +75,12 @@ func (r *walletRepo) UpdateWithdrawal(ctx context.Context, w *domain.Withdrawal)
 }
 
 func (r *walletRepo) WithdrawalByID(ctx context.Context, id uint) (*domain.Withdrawal, error) {
-	var w domain.Withdrawal
-	err := r.db.WithContext(ctx).Preload("User").First(&w, id).Error
+	var withdrawal domain.Withdrawal
+	err := r.db.WithContext(ctx).Preload("User").First(&withdrawal, id).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, domain.ErrNotFound
 	}
-	return &w, err
+	return &withdrawal, err
 }
 
 func (r *walletRepo) Withdrawals(ctx context.Context, status domain.WithdrawalStatus, limit, offset int) ([]domain.Withdrawal, int64, error) {
@@ -83,20 +89,28 @@ func (r *walletRepo) Withdrawals(ctx context.Context, status domain.WithdrawalSt
 		q = q.Where("status = ?", status)
 	}
 	var total int64
-	q.Count(&total)
+	if err := q.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
 	if limit <= 0 {
 		limit = 30
 	}
-	var w []domain.Withdrawal
-	err := q.Preload("User").Order("created_at desc").Limit(limit).Offset(offset).Find(&w).Error
-	return w, total, err
+	if limit > 100 {
+		limit = 100
+	}
+	if offset < 0 {
+		offset = 0
+	}
+	var withdrawals []domain.Withdrawal
+	err := q.Preload("User").Order("created_at desc").Limit(limit).Offset(offset).Find(&withdrawals).Error
+	return withdrawals, total, err
 }
 
 func (r *walletRepo) WithdrawalsForUser(ctx context.Context, userID uint) ([]domain.Withdrawal, error) {
-	var w []domain.Withdrawal
+	var withdrawals []domain.Withdrawal
 	err := r.db.WithContext(ctx).Where("user_id = ?", userID).
-		Order("created_at desc").Find(&w).Error
-	return w, err
+		Order("created_at desc").Limit(100).Find(&withdrawals).Error
+	return withdrawals, err
 }
 
 func (r *walletRepo) SumByType(ctx context.Context, t domain.TxType) (int64, error) {
@@ -119,18 +133,25 @@ func (r *otpRepo) Create(ctx context.Context, c *domain.OTPCode) error {
 }
 
 func (r *otpRepo) Latest(ctx context.Context, mobile string) (*domain.OTPCode, error) {
-	var c domain.OTPCode
+	var code domain.OTPCode
 	err := r.db.WithContext(ctx).Where("mobile = ? AND consumed = ?", mobile, false).
-		Order("created_at desc").First(&c).Error
+		Order("created_at desc").First(&code).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, domain.ErrNotFound
 	}
-	return &c, err
+	return &code, err
 }
 
 func (r *otpRepo) Consume(ctx context.Context, id uint) error {
-	return r.db.WithContext(ctx).Model(&domain.OTPCode{}).
-		Where("id = ?", id).Update("consumed", true).Error
+	result := r.db.WithContext(ctx).Model(&domain.OTPCode{}).
+		Where("id = ? AND consumed = ?", id, false).Update("consumed", true)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return domain.ErrOTPInvalid
+	}
+	return nil
 }
 
 // ── Notification ──
@@ -149,13 +170,23 @@ func (r *notifRepo) ForUser(ctx context.Context, userID uint, limit int) ([]doma
 	if limit <= 0 {
 		limit = 30
 	}
-	var n []domain.Notification
+	if limit > 100 {
+		limit = 100
+	}
+	var notifications []domain.Notification
 	err := r.db.WithContext(ctx).Where("user_id = ?", userID).
-		Order("created_at desc").Limit(limit).Find(&n).Error
-	return n, err
+		Order("created_at desc").Limit(limit).Find(&notifications).Error
+	return notifications, err
 }
 
 func (r *notifRepo) MarkRead(ctx context.Context, userID, id uint) error {
-	return r.db.WithContext(ctx).Model(&domain.Notification{}).
-		Where("id = ? AND user_id = ?", id, userID).Update("read", true).Error
+	result := r.db.WithContext(ctx).Model(&domain.Notification{}).
+		Where("id = ? AND user_id = ?", id, userID).Update("read", true)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return domain.ErrNotFound
+	}
+	return nil
 }
