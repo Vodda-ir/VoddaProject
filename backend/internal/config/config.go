@@ -74,12 +74,12 @@ func Load() *Config {
 	frontendBaseURL := getEnv("FRONTEND_BASE_URL", "http://localhost:3421")
 
 	return &Config{
-		AppEnv:               getEnv("APP_ENV", "development"),
-		AppTimezone:          getEnv("APP_TIMEZONE", "Asia/Tehran"),
-		ServerHost:           getEnv("SERVER_HOST", "0.0.0.0"),
-		ServerPort:           getEnv("SERVER_PORT", getEnv("BACKEND_INTERNAL_PORT", "3420")),
-		FrontendBaseURL:      frontendBaseURL,
-		CORSAllowedOrigins:   getCSV("CORS_ALLOWED_ORIGINS", frontendBaseURL),
+		AppEnv:             getEnv("APP_ENV", "development"),
+		AppTimezone:        getEnv("APP_TIMEZONE", "Asia/Tehran"),
+		ServerHost:         getEnv("SERVER_HOST", "0.0.0.0"),
+		ServerPort:         getEnv("SERVER_PORT", getEnv("BACKEND_INTERNAL_PORT", "3420")),
+		FrontendBaseURL:    frontendBaseURL,
+		CORSAllowedOrigins: getCSV("CORS_ALLOWED_ORIGINS", frontendBaseURL),
 		DB: DBConfig{
 			Host:     getEnv("DB_HOST", "127.0.0.1"),
 			Port:     getEnv("DB_PORT", "3306"),
@@ -99,7 +99,8 @@ func Load() *Config {
 		},
 		OTPTestBypassEnabled:  getBool("OTP_TEST_BYPASS_ENABLED", false),
 		OTPTestCode:           getEnv("OTP_TEST_CODE", "33365"),
-		OTPTestMobile:         getEnv("OTP_TEST_MOBILE", "09120000000"),
+		// Empty means every mobile may use the fixed development code.
+		OTPTestMobile:         getOptionalEnv("OTP_TEST_MOBILE"),
 		AutoSeed:               getBool("AUTO_SEED", false),
 		DevWalletChargeEnabled: getBool("DEV_WALLET_CHARGE_ENABLED", false),
 		Zarinpal: ZarinpalConfig{
@@ -168,6 +169,10 @@ func getEnv(key, fallback string) string {
 		return v
 	}
 	return fallback
+}
+
+func getOptionalEnv(key string) string {
+	return strings.TrimSpace(os.Getenv(key))
 }
 
 func getInt(key string, fallback int) int {
