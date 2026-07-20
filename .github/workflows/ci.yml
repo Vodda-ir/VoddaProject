@@ -34,7 +34,7 @@ jobs:
       run:
         working-directory: backend
     env:
-      TEST_MYSQL_DSN: root:test_root_password@tcp(127.0.0.1:3306)/vodda_test?charset=utf8mb4&parseTime=True&loc=UTC
+      TEST_MYSQL_DSN: 'root:test_root_password@tcp(127.0.0.1:3306)/vodda_test?charset=utf8mb4&parseTime=True&loc=UTC'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -74,10 +74,20 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Type-check and build
-        run: npm run build
+        run: |
+          set -o pipefail
+          npm run build 2>&1 | tee next-build.log
         env:
           NEXT_TELEMETRY_DISABLED: '1'
           SERVER_API_URL: http://127.0.0.1:3420/api/v1
+      - name: Upload build diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: next-build-log
+          path: frontend/next-build.log
+          if-no-files-found: ignore
+          retention-days: 3
 
   flutter:
     name: App · Flutter
