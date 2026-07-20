@@ -7,12 +7,14 @@ RUN go mod download
 
 COPY . .
 ARG SERVER_PORT=3420
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /out/vodda-backend ./cmd/server
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/vodda-backend ./cmd/server
 
 # ── runtime stage ──
 FROM alpine:3.21
 RUN apk add --no-cache ca-certificates tzdata && \
-    adduser -D -u 10001 vodda
+    adduser -D -u 10001 vodda && \
+    mkdir -p /app/uploads && \
+    chown -R vodda:vodda /app
 WORKDIR /app
 COPY --from=build /out/vodda-backend /app/vodda-backend
 

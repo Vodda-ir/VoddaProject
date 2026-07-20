@@ -11,17 +11,24 @@ import (
 // SessionUsecase orchestrates bookings, the session lifecycle, and the
 // associated wallet movements (escrow on booking, payout on completion).
 type SessionUsecase struct {
-	sessions domain.SessionRepository
-	teachers domain.TeacherRepository
-	users    domain.UserRepository
-	wallet   domain.WalletRepository
-	notif    domain.NotificationRepository
-	cfg      *config.Config
+	sessions  domain.SessionRepository
+	teachers  domain.TeacherRepository
+	users     domain.UserRepository
+	wallet    domain.WalletRepository
+	financial domain.FinancialRepository
+	notif     domain.NotificationRepository
+	cfg       *config.Config
 }
 
-// NewSessionUsecase builds a SessionUsecase.
-func NewSessionUsecase(s domain.SessionRepository, t domain.TeacherRepository, u domain.UserRepository, w domain.WalletRepository, n domain.NotificationRepository, cfg *config.Config) *SessionUsecase {
-	return &SessionUsecase{sessions: s, teachers: t, users: u, wallet: w, notif: n, cfg: cfg}
+// NewSessionUsecase builds a SessionUsecase. The optional FinancialRepository
+// preserves compatibility with existing tests while production injects an atomic
+// transaction boundary.
+func NewSessionUsecase(s domain.SessionRepository, t domain.TeacherRepository, u domain.UserRepository, w domain.WalletRepository, n domain.NotificationRepository, cfg *config.Config, financial ...domain.FinancialRepository) *SessionUsecase {
+	var f domain.FinancialRepository
+	if len(financial) > 0 {
+		f = financial[0]
+	}
+	return &SessionUsecase{sessions: s, teachers: t, users: u, wallet: w, financial: f, notif: n, cfg: cfg}
 }
 
 // BookInput is the learner's booking request.
@@ -86,23 +93,29 @@ func (uc *SessionUsecase) Book(ctx context.Context, learnerID uint, in BookInput
 		Status:      domain.SessionPending,
 		Note:        in.Note,
 	}
-	if err := uc.sessions.Create(ctx, s); err != nil {
-		return nil, err
-	}
 
-	// Hold the fee. Until repository-level DB transactions are introduced, every
-	// failure path compensates the preceding write and leaves the session canceled.
-	if err := uc.users.AddWallet(ctx, learnerID, -svc.Price); err != nil {
-		uc.cancelUnfundedSession(ctx, s)
-		return nil, err
-	}
-	if err := uc.wallet.AddTx(ctx, &domain.Transaction{
-		UserID: learnerID, Type: domain.TxSession,
-		Title: "رزرو جلسه: " + svc.Title, Amount: -svc.Price, RefID: s.ID,
-	}); err != nil {
-		_ = uc.users.AddWallet(ctx, learnerID, svc.Price)
-		uc.cancelUnfundedSession(ctx, s)
-		return nil, err
+	if uc.financial != nil {
+		if err := uc.financial.CreateFundedSession(ctx, s); err != nil {
+			return nil, err
+		}
+	} else {
+		// Compatibility fallback for isolated tests; production always injects the
+		// atomic financial repository.
+		if err := uc.sessions.Create(ctx, s); err != nil {
+			return nil, err
+		}
+		if err := uc.users.AddWallet(ctx, learnerID, -svc.Price); err != nil {
+			uc.cancelUnfundedSession(ctx, s)
+			return nil, err
+		}
+		if err := uc.wallet.AddTx(ctx, &domain.Transaction{
+			UserID: learnerID, Type: domain.TxSession,
+			Title: "رزرو جلسه: " + svc.Title, Amount: -svc.Price, RefID: s.ID,
+		}); err != nil {
+			_ = uc.users.AddWallet(ctx, learnerID, svc.Price)
+			uc.cancelUnfundedSession(ctx, s)
+			return nil, err
+		}
 	}
 
 	uc.notify(ctx, teacher.UserID, "درخواست جلسه‌ی جدید", "یک درخواست جلسه‌ی جدید دریافت کردید.")
@@ -139,16 +152,22 @@ func (uc *SessionUsecase) Reject(ctx context.Context, userID, sessionID uint, re
 		return nil, domain.ErrValidation
 	}
 
-	previousStatus, previousReason := s.Status, s.RejectNote
-	s.Status = domain.SessionCanceled
-	s.RejectNote = reason
-	if err := uc.sessions.Update(ctx, s); err != nil {
-		return nil, err
-	}
-	if err := uc.refund(ctx, s); err != nil {
-		s.Status, s.RejectNote = previousStatus, previousReason
-		_ = uc.sessions.Update(ctx, s)
-		return nil, err
+	if uc.financial != nil {
+		if err := uc.financial.CancelAndRefundSession(ctx, s, []domain.SessionStatus{domain.SessionPending}, reason); err != nil {
+			return nil, err
+		}
+	} else {
+		previousStatus, previousReason := s.Status, s.RejectNote
+		s.Status = domain.SessionCanceled
+		s.RejectNote = reason
+		if err := uc.sessions.Update(ctx, s); err != nil {
+			return nil, err
+		}
+		if err := uc.refund(ctx, s); err != nil {
+			s.Status, s.RejectNote = previousStatus, previousReason
+			_ = uc.sessions.Update(ctx, s)
+			return nil, err
+		}
 	}
 	uc.notify(ctx, s.LearnerID, "جلسه لغو شد", "استاد درخواست جلسه را رد کرد و مبلغ بازگشت داده شد.")
 	return s, nil
@@ -167,15 +186,21 @@ func (uc *SessionUsecase) Cancel(ctx context.Context, learnerID, sessionID uint)
 		return nil, domain.ErrConflict
 	}
 
-	previousStatus := s.Status
-	s.Status = domain.SessionCanceled
-	if err := uc.sessions.Update(ctx, s); err != nil {
-		return nil, err
-	}
-	if err := uc.refund(ctx, s); err != nil {
-		s.Status = previousStatus
-		_ = uc.sessions.Update(ctx, s)
-		return nil, err
+	if uc.financial != nil {
+		if err := uc.financial.CancelAndRefundSession(ctx, s, []domain.SessionStatus{domain.SessionPending, domain.SessionConfirmed}, "لغو توسط قرآن‌آموز"); err != nil {
+			return nil, err
+		}
+	} else {
+		previousStatus := s.Status
+		s.Status = domain.SessionCanceled
+		if err := uc.sessions.Update(ctx, s); err != nil {
+			return nil, err
+		}
+		if err := uc.refund(ctx, s); err != nil {
+			s.Status = previousStatus
+			_ = uc.sessions.Update(ctx, s)
+			return nil, err
+		}
 	}
 	if teacher, err := uc.teachers.ByID(ctx, s.TeacherID); err == nil {
 		uc.notify(ctx, teacher.UserID, "جلسه لغو شد", "قرآن‌آموز جلسه را لغو کرد.")
@@ -203,34 +228,37 @@ func (uc *SessionUsecase) Complete(ctx context.Context, userID, sessionID uint) 
 		return nil, domain.ErrInternal
 	}
 
-	// Mark first and compensate back to confirmed when the critical payout fails.
-	s.Status = domain.SessionDone
-	if err := uc.sessions.Update(ctx, s); err != nil {
-		return nil, err
+	if uc.financial != nil {
+		if err := uc.financial.CompleteAndSettleSession(ctx, s, teacher.UserID, earning, commission); err != nil {
+			return nil, err
+		}
+	} else {
+		// Compatibility fallback for isolated tests.
+		s.Status = domain.SessionDone
+		if err := uc.sessions.Update(ctx, s); err != nil {
+			return nil, err
+		}
+		if err := uc.users.AddWallet(ctx, teacher.UserID, earning); err != nil {
+			s.Status = domain.SessionConfirmed
+			_ = uc.sessions.Update(ctx, s)
+			return nil, err
+		}
+		if err := uc.wallet.AddTx(ctx, &domain.Transaction{
+			UserID: teacher.UserID, Type: domain.TxEarning,
+			Title: "درآمد ناخالص جلسه: " + s.Title, Amount: s.Price, RefID: s.ID,
+		}); err != nil {
+			_ = uc.users.AddWallet(ctx, teacher.UserID, -earning)
+			s.Status = domain.SessionConfirmed
+			_ = uc.sessions.Update(ctx, s)
+			return nil, err
+		}
+		_ = uc.wallet.AddTx(ctx, &domain.Transaction{
+			UserID: teacher.UserID, Type: domain.TxCommission,
+			Title: "کارمزد پلتفرم", Amount: -commission, RefID: s.ID,
+		})
+		teacher.Sessions++
+		_ = uc.teachers.Update(ctx, teacher)
 	}
-	if err := uc.users.AddWallet(ctx, teacher.UserID, earning); err != nil {
-		s.Status = domain.SessionConfirmed
-		_ = uc.sessions.Update(ctx, s)
-		return nil, err
-	}
-	if err := uc.wallet.AddTx(ctx, &domain.Transaction{
-		UserID: teacher.UserID, Type: domain.TxEarning,
-		Title: "درآمد خالص جلسه: " + s.Title, Amount: earning, RefID: s.ID,
-	}); err != nil {
-		_ = uc.users.AddWallet(ctx, teacher.UserID, -earning)
-		s.Status = domain.SessionConfirmed
-		_ = uc.sessions.Update(ctx, s)
-		return nil, err
-	}
-	// This informational negative entry is used by the admin dashboard to report
-	// commission and does not alter the wallet a second time.
-	_ = uc.wallet.AddTx(ctx, &domain.Transaction{
-		UserID: teacher.UserID, Type: domain.TxCommission,
-		Title: "کارمزد پلتفرم", Amount: -commission, RefID: s.ID,
-	})
-
-	teacher.Sessions++
-	_ = uc.teachers.Update(ctx, teacher)
 	uc.notify(ctx, s.LearnerID, "جلسه برگزار شد", "جلسه‌ی شما به پایان رسید. لطفاً امتیاز دهید.")
 	return s, nil
 }

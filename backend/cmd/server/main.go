@@ -31,6 +31,16 @@ func main() {
 	if err != nil {
 		log.Fatalf("database: %v", err)
 	}
+	sqlDB, err := db.DB()
+	if err != nil {
+		log.Fatalf("database handle: %v", err)
+	}
+	defer func() {
+		if err := sqlDB.Close(); err != nil {
+			log.Printf("database close: %v", err)
+		}
+	}()
+
 	if err := database.Migrate(db); err != nil {
 		log.Fatalf("migrate: %v", err)
 	}
@@ -46,6 +56,7 @@ func main() {
 	sessionRepo := repository.NewSessionRepository(db)
 	reviewRepo := repository.NewReviewRepository(db)
 	walletRepo := repository.NewWalletRepository(db)
+	financialRepo := repository.NewFinancialRepository(db)
 	otpRepo := repository.NewOTPRepository(db)
 	notifRepo := repository.NewNotificationRepository(db)
 
@@ -58,14 +69,24 @@ func main() {
 		Auth:    usecase.NewAuthUsecase(userRepo, otpRepo, sender, tm, cfg),
 		User:    usecase.NewUserUsecase(userRepo, teacherRepo),
 		Teacher: usecase.NewTeacherUsecase(teacherRepo, reviewRepo, userRepo),
-		Session: usecase.NewSessionUsecase(sessionRepo, teacherRepo, userRepo, walletRepo, notifRepo, cfg),
-		Wallet:  usecase.NewWalletUsecase(walletRepo, userRepo, teacherRepo, notifRepo, cfg.DevWalletChargeEnabled && !cfg.IsProduction()),
-		Review:  usecase.NewReviewUsecase(reviewRepo, sessionRepo, teacherRepo),
-		Admin:   usecase.NewAdminUsecase(userRepo, teacherRepo, sessionRepo, walletRepo, notifRepo),
-		Notif:   notifRepo,
+		Session: usecase.NewSessionUsecase(sessionRepo, teacherRepo, userRepo, walletRepo, notifRepo, cfg, financialRepo),
+		Wallet: usecase.NewWalletUsecaseWithFinancial(
+			walletRepo,
+			userRepo,
+			teacherRepo,
+			notifRepo,
+			financialRepo,
+			cfg.DevWalletChargeEnabled && !cfg.IsProduction(),
+		),
+		Review: usecase.NewReviewUsecase(reviewRepo, sessionRepo, teacherRepo),
+		Admin:  usecase.NewAdminUsecase(userRepo, teacherRepo, sessionRepo, walletRepo, notifRepo),
+		Notif:  notifRepo,
 	}
 
-	router := delivery.NewRouter(cfg, h, tm)
+	readiness := func(ctx context.Context) error {
+		return sqlDB.PingContext(ctx)
+	}
+	router := delivery.NewRouter(cfg, h, tm, readiness)
 
 	srv := &http.Server{
 		Addr:              cfg.ServerHost + ":" + cfg.ServerPort,
@@ -90,5 +111,7 @@ func main() {
 	log.Println("shutting down…")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	_ = srv.Shutdown(ctx)
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Printf("server shutdown: %v", err)
+	}
 }

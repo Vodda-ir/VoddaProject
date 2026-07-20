@@ -1,11 +1,11 @@
 // Lightweight typed client for the Vodda backend API.
-// In the browser, requests go to same-origin /api/v1 (proxied by next.config.js).
+// In the browser, requests pass through the Next.js BFF so the JWT remains HttpOnly.
 // On the server, requests go directly to the backend service.
 
 const BASE =
   typeof window === 'undefined'
     ? process.env.SERVER_API_URL || 'http://backend:3420/api/v1'
-    : process.env.NEXT_PUBLIC_API_BASE_URL || '/api/v1';
+    : '/api/backend';
 
 export type TeacherService = {
   id: number;
@@ -94,7 +94,7 @@ export const api = {
   teacherWorkTimes: (id: number) =>
     request<{ data: WorkTime[] }>(`/teachers/${id}/work-times`),
 
-  // ── authenticated (pass token) ──
+  // ── authenticated (the token argument is a compatibility-only session marker in browsers) ──
   me: (token: string) =>
     request<{ data: import('./auth').AuthUser }>('/me', {
       headers: { Authorization: `Bearer ${token}` },

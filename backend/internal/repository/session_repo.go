@@ -43,9 +43,9 @@ func (r *sessionRepo) ForLearner(ctx context.Context, learnerID uint, when strin
 	case "past":
 		q = q.Where("status IN ?", []domain.SessionStatus{domain.SessionDone, domain.SessionCanceled})
 	}
-	var s []domain.Session
-	err := q.Order("scheduled_at desc").Find(&s).Error
-	return s, err
+	var sessions []domain.Session
+	err := q.Order("scheduled_at desc").Limit(200).Find(&sessions).Error
+	return sessions, err
 }
 
 func (r *sessionRepo) ForTeacher(ctx context.Context, teacherID uint, statuses []domain.SessionStatus) ([]domain.Session, error) {
@@ -55,9 +55,9 @@ func (r *sessionRepo) ForTeacher(ctx context.Context, teacherID uint, statuses [
 	if len(statuses) > 0 {
 		q = q.Where("status IN ?", statuses)
 	}
-	var s []domain.Session
-	err := q.Order("scheduled_at desc").Find(&s).Error
-	return s, err
+	var sessions []domain.Session
+	err := q.Order("scheduled_at desc").Limit(200).Find(&sessions).Error
+	return sessions, err
 }
 
 func (r *sessionRepo) List(ctx context.Context, status domain.SessionStatus, limit, offset int) ([]domain.Session, int64, error) {
@@ -66,14 +66,22 @@ func (r *sessionRepo) List(ctx context.Context, status domain.SessionStatus, lim
 		q = q.Where("status = ?", status)
 	}
 	var total int64
-	q.Count(&total)
+	if err := q.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
 	if limit <= 0 {
 		limit = 30
 	}
-	var s []domain.Session
+	if limit > 100 {
+		limit = 100
+	}
+	if offset < 0 {
+		offset = 0
+	}
+	var sessions []domain.Session
 	err := q.Preload("Learner").Preload("Teacher").Preload("Teacher.User").
-		Order("created_at desc").Limit(limit).Offset(offset).Find(&s).Error
-	return s, total, err
+		Order("created_at desc").Limit(limit).Offset(offset).Find(&sessions).Error
+	return sessions, total, err
 }
 
 func (r *sessionRepo) Count(ctx context.Context, status domain.SessionStatus) (int64, error) {
