@@ -18,6 +18,7 @@ import (
 // RouterOperations contains optional operational dependencies. Keeping it
 // variadic preserves compatibility for focused router tests.
 type RouterOperations struct {
+	Users   domain.UserRepository
 	Support *usecase.SupportUsecase
 	Audit   domain.AdminAuditRepository
 }
@@ -94,7 +95,7 @@ func NewRouter(cfg *config.Config, h *Handler, tm *token.Manager, readiness func
 	}
 
 	authed := api.Group("")
-	authed.Use(AuthRequired(tm), authedLimiter.Middleware("authenticated"))
+	authed.Use(AuthRequired(tm, operations.Users), authedLimiter.Middleware("authenticated"))
 	{
 		authed.GET("/me", h.Me)
 		authed.PUT("/me", mutationLimiter.Middleware("profile-update"), ValidateAvatarUpload(5<<20), h.UpdateMe)
@@ -110,7 +111,7 @@ func NewRouter(cfg *config.Config, h *Handler, tm *token.Manager, readiness func
 	}
 
 	teacher := api.Group("/teacher")
-	teacher.Use(AuthRequired(tm), RequireRole(domain.RoleTeacher, domain.RoleAdmin), authedLimiter.Middleware("teacher"))
+	teacher.Use(AuthRequired(tm, operations.Users), RequireRole(domain.RoleTeacher, domain.RoleAdmin), authedLimiter.Middleware("teacher"))
 	{
 		teacher.GET("/me", h.MyTeacher)
 		teacher.PUT("/me", mutationLimiter.Middleware("teacher-profile"), h.UpdateMyTeacher)
@@ -131,7 +132,7 @@ func NewRouter(cfg *config.Config, h *Handler, tm *token.Manager, readiness func
 	}
 
 	admin := api.Group("/admin")
-	admin.Use(AuthRequired(tm), RequireRole(domain.RoleAdmin), adminLimiter.Middleware("admin"))
+	admin.Use(AuthRequired(tm, operations.Users), RequireRole(domain.RoleAdmin), adminLimiter.Middleware("admin"))
 	if operations.Audit != nil {
 		admin.Use(AuditAdminMutations(operations.Audit))
 	}
