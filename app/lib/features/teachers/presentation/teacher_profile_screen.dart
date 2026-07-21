@@ -34,11 +34,11 @@ class TeacherProfileScreen extends ConsumerWidget {
         loading: () => const Center(
           child: CircularProgressIndicator(color: AppColors.olive600),
         ),
-        error: (e, _) => AppErrorView(
-          error: e,
+        error: (error, _) => AppErrorView(
+          error: error,
           onRetry: () => ref.invalidate(_teacherByIdProvider(id)),
         ),
-        data: (t) => RefreshIndicator(
+        data: (value) => RefreshIndicator(
           color: AppColors.olive600,
           onRefresh: () async {
             ref.invalidate(_teacherByIdProvider(id));
@@ -50,10 +50,10 @@ class TeacherProfileScreen extends ConsumerWidget {
               Center(
                 child: Column(
                   children: [
-                    VoddaAvatar(size: 88, ring: true, verified: t.verified),
+                    VoddaAvatar(size: 88, ring: true, verified: value.verified),
                     const SizedBox(height: 12),
                     Text(
-                      t.name,
+                      value.name,
                       style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
@@ -62,7 +62,7 @@ class TeacherProfileScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      t.tag,
+                      value.tag,
                       style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
@@ -77,24 +77,26 @@ class TeacherProfileScreen extends ConsumerWidget {
                 children: [
                   _stat(
                     LucideIcons.star,
-                    faDigits(t.rating.toStringAsFixed(1)),
+                    value.reviews > 0
+                        ? faDigits(value.rating.toStringAsFixed(1))
+                        : '—',
                     'امتیاز',
                   ),
                   _stat(
-                    LucideIcons.calendarCheck,
-                    faNumber(t.sessions),
-                    'جلسه',
+                    LucideIcons.messageCircle,
+                    faNumber(value.reviews),
+                    'نظر',
                   ),
                   _stat(
-                    LucideIcons.users,
-                    faNumber(t.followers),
-                    'دنبال‌کننده',
+                    LucideIcons.calendarCheck,
+                    faNumber(value.sessions),
+                    'جلسه',
                   ),
                 ],
               ),
               const SizedBox(height: 20),
               const Text(
-                'درباره استاد',
+                'دربارهٔ استاد',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
@@ -103,7 +105,7 @@ class TeacherProfileScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                t.bio,
+                value.bio.isEmpty ? 'اطلاعاتی ثبت نشده است.' : value.bio,
                 style: const TextStyle(
                   fontSize: 14,
                   height: 1.7,
@@ -112,7 +114,7 @@ class TeacherProfileScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 20),
               const Text(
-                'خدمات',
+                'خدمات تأییدشده',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
@@ -120,51 +122,68 @@ class TeacherProfileScreen extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              ...t.services.map(
-                (s) => Card(
-                  margin: const EdgeInsets.only(bottom: 10),
-                  child: ListTile(
-                    leading: Container(
-                      width: 44,
-                      height: 44,
-                      decoration: const BoxDecoration(
-                        color: AppColors.olive100,
-                        borderRadius: BorderRadius.all(Radius.circular(12)),
+              if (value.services.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 20),
+                  child: Text(
+                    'این استاد فعلاً خدمت قابل رزروی ندارد.',
+                    style: TextStyle(color: AppColors.ink3),
+                  ),
+                )
+              else
+                ...value.services.map(
+                  (service) => Card(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    child: ListTile(
+                      leading: Container(
+                        width: 44,
+                        height: 44,
+                        decoration: const BoxDecoration(
+                          color: AppColors.olive100,
+                          borderRadius: BorderRadius.all(Radius.circular(12)),
+                        ),
+                        child: const Icon(
+                          LucideIcons.bookOpen,
+                          color: AppColors.olive600,
+                        ),
                       ),
-                      child: const Icon(
-                        LucideIcons.bookOpen,
-                        color: AppColors.olive600,
+                      title: Text(
+                        service.title,
+                        style: const TextStyle(fontWeight: FontWeight.w700),
                       ),
-                    ),
-                    title: Text(
-                      s.title,
-                      style: const TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                    subtitle: Text('${faNumber(s.duration)} دقیقه'),
-                    trailing: Text(
-                      toman(s.price),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.olive700,
+                      subtitle: Text('${faNumber(service.duration)} دقیقه'),
+                      trailing: Text(
+                        toman(service.price),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.olive700,
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
             ],
           ),
         ),
       ),
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.all(16),
-        child: SizedBox(
-          height: 52,
-          child: ElevatedButton(
-            onPressed: () => context.push('/book/$id'),
-            child: const Text('رزرو جلسه'),
-          ),
-        ),
-      ),
+      bottomNavigationBar: teacher.valueOrNull == null
+          ? null
+          : Padding(
+              padding: const EdgeInsets.all(16),
+              child: SizedBox(
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: teacher.valueOrNull!.services.isEmpty
+                      ? null
+                      : () => context.push('/book/$id'),
+                  child: Text(
+                    teacher.valueOrNull!.services.isEmpty
+                        ? 'خدمت قابل رزرو وجود ندارد'
+                        : 'رزرو جلسه',
+                  ),
+                ),
+              ),
+            ),
     );
   }
 
@@ -188,10 +207,7 @@ class TeacherProfileScreen extends ConsumerWidget {
               color: AppColors.ink,
             ),
           ),
-          Text(
-            label,
-            style: const TextStyle(fontSize: 12, color: AppColors.ink3),
-          ),
+          Text(label, style: const TextStyle(fontSize: 12, color: AppColors.ink3)),
         ],
       ),
     ),
