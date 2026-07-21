@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"gorm.io/gorm"
@@ -90,5 +89,3 @@ func normalizedPage(limit, offset, defaultLimit, maxLimit int) (int, int) {
 	}
 	return limit, offset
 }
-
-var _ = errors.Is
