@@ -41,7 +41,9 @@ func createSupportMessageHandler(support *usecase.SupportUsecase) gin.HandlerFun
 			fail(c, domain.ErrValidation)
 			return
 		}
-		message, err := support.Create(c, usecase.CreateSupportMessageInput(in))
+		message, err := support.Create(c, usecase.CreateSupportMessageInput{
+			Name: in.Name, Contact: in.Contact, Message: in.Message,
+		})
 		if err != nil {
 			fail(c, err)
 			return
