@@ -1,6 +1,7 @@
 package http
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -40,8 +41,6 @@ func queryInt(c *gin.Context, key string, def int) int {
 	return def
 }
 
-// ── auth ──
-
 func (h *Handler) RequestOTP(c *gin.Context) {
 	var in struct {
 		Mobile string `json:"mobile" binding:"required"`
@@ -74,8 +73,6 @@ func (h *Handler) VerifyOTP(c *gin.Context) {
 	ok(c, res)
 }
 
-// ── current user ──
-
 func (h *Handler) Me(c *gin.Context) {
 	u, err := h.User.Me(c, userID(c))
 	if err != nil {
@@ -88,11 +85,9 @@ func (h *Handler) Me(c *gin.Context) {
 func (h *Handler) UpdateMe(c *gin.Context) {
 	uid := userID(c)
 	in := usecase.UpdateProfileInput{}
+	var savedAvatar string
 
-	// Check content type: multipart (with possible avatar file) vs plain JSON
-	contentType := c.ContentType() // case-insensitive, returns just the media type
-	if len(contentType) >= 9 && contentType[:9] == "multipart" {
-		// Multipart form: fields + optional avatar file
+	if c.ContentType() == "multipart/form-data" {
 		in.Name = c.PostForm("name")
 		in.City = c.PostForm("city")
 		in.Bio = c.PostForm("bio")
@@ -100,45 +95,49 @@ func (h *Handler) UpdateMe(c *gin.Context) {
 		file, header, err := c.Request.FormFile("avatar")
 		if err == nil {
 			defer file.Close()
-
-			// Create uploads dir if not exists
 			uploadDir := "uploads/avatars"
-			if err := os.MkdirAll(uploadDir, 0755); err != nil {
+			if err := os.MkdirAll(uploadDir, 0o755); err != nil {
 				fail(c, domain.ErrInternal)
 				return
 			}
-
-			// Generate unique filename: {userID}_{timestamp}.{ext}
 			ext := filepath.Ext(header.Filename)
 			if ext == "" {
 				ext = ".jpg"
 			}
 			filename := fmt.Sprintf("%d_%d%s", uid, time.Now().UnixNano(), ext)
 			savePath := filepath.Join(uploadDir, filename)
-
-			dst, err := os.Create(savePath)
+			dst, err := os.OpenFile(savePath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
 			if err != nil {
 				fail(c, domain.ErrInternal)
 				return
 			}
-			defer dst.Close()
-
-			if _, err := io.Copy(dst, file); err != nil {
+			_, copyErr := io.Copy(dst, file)
+			closeErr := dst.Close()
+			if copyErr != nil || closeErr != nil {
+				_ = os.Remove(savePath)
 				fail(c, domain.ErrInternal)
 				return
 			}
-
-			in.AvatarURL = "/" + savePath
+			savedAvatar = savePath
+			in.AvatarURL = "/" + filepath.ToSlash(savePath)
+		} else if !errors.Is(err, os.ErrNotExist) && !errors.Is(err, io.EOF) {
+			// Missing avatar is valid; malformed multipart is not.
+			if err != nil && err.Error() != "http: no such file" {
+				fail(c, domain.ErrValidation)
+				return
+			}
 		}
 	} else {
-		// Plain JSON body (backward compatible)
 		var jsonIn struct {
 			Name      string `json:"name"`
 			City      string `json:"city"`
 			Bio       string `json:"bio"`
 			AvatarURL string `json:"avatar_url"`
 		}
-		_ = c.ShouldBindJSON(&jsonIn)
+		if err := c.ShouldBindJSON(&jsonIn); err != nil {
+			fail(c, domain.ErrValidation)
+			return
+		}
 		in.Name = jsonIn.Name
 		in.City = jsonIn.City
 		in.Bio = jsonIn.Bio
@@ -147,6 +146,9 @@ func (h *Handler) UpdateMe(c *gin.Context) {
 
 	u, err := h.User.UpdateProfile(c, uid, in)
 	if err != nil {
+		if savedAvatar != "" {
+			_ = os.Remove(savedAvatar)
+		}
 		fail(c, err)
 		return
 	}
@@ -181,19 +183,18 @@ func (h *Handler) BecomeTeacher(c *gin.Context) {
 	created(c, t)
 }
 
-// ── teachers (public) ──
-
 func (h *Handler) SearchTeachers(c *gin.Context) {
 	f := domain.TeacherFilter{
-		Query:  c.Query("q"),
-		Field:  c.Query("field"),
-		City:   c.Query("city"),
-		Limit:  queryInt(c, "limit", 20),
-		Offset: queryInt(c, "offset", 0),
+		Query: c.Query("q"), Field: c.Query("field"), City: c.Query("city"),
+		Limit: queryInt(c, "limit", 20), Offset: queryInt(c, "offset", 0),
 	}
 	if g := c.Query("female"); g != "" {
-		b := g == "true" || g == "1"
-		f.Female = &b
+		if g != "true" && g != "false" && g != "1" && g != "0" {
+			fail(c, domain.ErrValidation)
+			return
+		}
+		value := g == "true" || g == "1"
+		f.Female = &value
 	}
 	teachers, total, err := h.Teacher.Search(c, f)
 	if err != nil {
@@ -213,15 +214,13 @@ func (h *Handler) GetTeacher(c *gin.Context) {
 }
 
 func (h *Handler) TeacherWorkTimes(c *gin.Context) {
-	wt, err := h.Teacher.WorkTimes(c, paramID(c))
+	workTimes, err := h.Teacher.WorkTimes(c, paramID(c))
 	if err != nil {
 		fail(c, err)
 		return
 	}
-	ok(c, wt)
+	ok(c, workTimes)
 }
-
-// ── teacher (self) ──
 
 func (h *Handler) MyTeacher(c *gin.Context) {
 	t, err := h.Teacher.Mine(c, userID(c))
@@ -244,7 +243,10 @@ func (h *Handler) UpdateMyTeacher(c *gin.Context) {
 		Price60   int64    `json:"price60"`
 		Available *bool    `json:"available"`
 	}
-	_ = c.ShouldBindJSON(&in)
+	if err := c.ShouldBindJSON(&in); err != nil {
+		fail(c, domain.ErrValidation)
+		return
+	}
 	t, err := h.Teacher.UpdateMine(c, userID(c), usecase.BecomeTeacherInput{
 		Field: in.Field, Tag: in.Tag, Level: in.Level, City: in.City,
 		Bio: in.Bio, Skills: in.Skills, Price30: in.Price30, Price60: in.Price60,
@@ -268,8 +270,8 @@ func (h *Handler) AddService(c *gin.Context) {
 		fail(c, domain.ErrValidation)
 		return
 	}
-	s := &domain.Service{Title: in.Title, Duration: in.Duration, Price: in.Price, Icon: in.Icon, Active: false}
-	out, err := h.Teacher.AddService(c, userID(c), s)
+	service := &domain.Service{Title: in.Title, Duration: in.Duration, Price: in.Price, Icon: in.Icon}
+	out, err := h.Teacher.AddService(c, userID(c), service)
 	if err != nil {
 		fail(c, err)
 		return
@@ -285,30 +287,40 @@ func (h *Handler) UpdateService(c *gin.Context) {
 		Icon     *string `json:"icon"`
 		Active   *bool   `json:"active"`
 	}
-	_ = c.ShouldBindJSON(&in)
-	s := &domain.Service{ID: paramID(c)}
+	if err := c.ShouldBindJSON(&in); err != nil {
+		fail(c, domain.ErrValidation)
+		return
+	}
+	if in.Title == nil && in.Duration == nil && in.Price == nil && in.Icon == nil {
+		if in.Active == nil {
+			fail(c, domain.ErrValidation)
+			return
+		}
+		if err := h.Teacher.ToggleServiceActive(c, userID(c), paramID(c), *in.Active); err != nil {
+			fail(c, err)
+			return
+		}
+		ok(c, gin.H{"active": *in.Active})
+		return
+	}
+	service := &domain.Service{ID: paramID(c), Active: true}
 	if in.Title != nil {
-		s.Title = *in.Title
+		service.Title = *in.Title
 	}
 	if in.Duration != nil {
-		s.Duration = *in.Duration
+		service.Duration = *in.Duration
 	}
 	if in.Price != nil {
-		s.Price = *in.Price
+		service.Price = *in.Price
 	}
 	if in.Icon != nil {
-		s.Icon = *in.Icon
+		service.Icon = *in.Icon
 	}
-	if in.Active != nil {
-		s.Active = *in.Active
-	}
-	// attach teacher ID and update
-	s.TeacherID = userID(c)
-	if err := h.Teacher.UpdateService(c, userID(c), s); err != nil {
+	if err := h.Teacher.UpdateService(c, userID(c), service); err != nil {
 		fail(c, err)
 		return
 	}
-	ok(c, s)
+	ok(c, gin.H{"updated": true, "pending_review": true})
 }
 
 func (h *Handler) DeleteService(c *gin.Context) {
@@ -323,36 +335,37 @@ func (h *Handler) SetWorkTimes(c *gin.Context) {
 	var in struct {
 		Slots []struct {
 			Weekday int    `json:"weekday"`
-			From    string `json:"from"`
-			To      string `json:"to"`
+			From    string `json:"from" binding:"required"`
+			To      string `json:"to" binding:"required"`
 		} `json:"slots"`
 	}
-	_ = c.ShouldBindJSON(&in)
-	wt := make([]domain.WorkTime, 0, len(in.Slots))
-	for _, s := range in.Slots {
-		wt = append(wt, domain.WorkTime{Weekday: s.Weekday, FromTime: s.From, ToTime: s.To, Active: true})
+	if err := c.ShouldBindJSON(&in); err != nil {
+		fail(c, domain.ErrValidation)
+		return
 	}
-	if err := h.Teacher.SetWorkTimes(c, userID(c), wt); err != nil {
+	workTimes := make([]domain.WorkTime, 0, len(in.Slots))
+	for _, slot := range in.Slots {
+		workTimes = append(workTimes, domain.WorkTime{Weekday: slot.Weekday, FromTime: slot.From, ToTime: slot.To, Active: true})
+	}
+	if err := h.Teacher.SetWorkTimes(c, userID(c), workTimes); err != nil {
 		fail(c, err)
 		return
 	}
-	ok(c, gin.H{"saved": len(wt)})
+	ok(c, gin.H{"saved": len(workTimes)})
 }
 
-// ── work times ──
-
 func (h *Handler) MyWorkTimes(c *gin.Context) {
-	wt, err := h.Teacher.MyWorkTimes(c, userID(c))
+	workTimes, err := h.Teacher.MyWorkTimes(c, userID(c))
 	if err != nil {
 		fail(c, err)
 		return
 	}
-	ok(c, wt)
+	ok(c, workTimes)
 }
 
 func (h *Handler) AddWorkTime(c *gin.Context) {
 	var in struct {
-		Weekday int    `json:"weekday" binding:"required"`
+		Weekday int    `json:"weekday"`
 		From    string `json:"from" binding:"required"`
 		To      string `json:"to" binding:"required"`
 	}
@@ -360,27 +373,17 @@ func (h *Handler) AddWorkTime(c *gin.Context) {
 		fail(c, domain.ErrValidation)
 		return
 	}
-	wt := &domain.WorkTime{
-		Weekday:  in.Weekday,
-		FromTime: in.From,
-		ToTime:   in.To,
-		Active:   true,
-	}
-	if err := h.Teacher.AddWorkTime(c, userID(c), wt); err != nil {
+	workTime := &domain.WorkTime{Weekday: in.Weekday, FromTime: in.From, ToTime: in.To, Active: true}
+	if err := h.Teacher.AddWorkTime(c, userID(c), workTime); err != nil {
 		fail(c, err)
 		return
 	}
-	ok(c, wt)
+	created(c, workTime)
 }
 
 func (h *Handler) UpdateWorkTime(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
-		fail(c, domain.ErrValidation)
-		return
-	}
 	var in struct {
-		Weekday int    `json:"weekday" binding:"required"`
+		Weekday int    `json:"weekday"`
 		From    string `json:"from" binding:"required"`
 		To      string `json:"to" binding:"required"`
 	}
@@ -388,34 +391,21 @@ func (h *Handler) UpdateWorkTime(c *gin.Context) {
 		fail(c, domain.ErrValidation)
 		return
 	}
-	wt := &domain.WorkTime{
-		ID:       uint(id),
-		Weekday:  in.Weekday,
-		FromTime: in.From,
-		ToTime:   in.To,
-		Active:   true,
-	}
-	if err := h.Teacher.UpdateWorkTime(c, userID(c), wt); err != nil {
+	workTime := &domain.WorkTime{ID: paramID(c), Weekday: in.Weekday, FromTime: in.From, ToTime: in.To, Active: true}
+	if err := h.Teacher.UpdateWorkTime(c, userID(c), workTime); err != nil {
 		fail(c, err)
 		return
 	}
-	ok(c, wt)
+	ok(c, workTime)
 }
 
 func (h *Handler) DeleteWorkTime(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
-		fail(c, domain.ErrValidation)
-		return
-	}
-	if err := h.Teacher.DeleteWorkTime(c, userID(c), uint(id)); err != nil {
+	if err := h.Teacher.DeleteWorkTime(c, userID(c), paramID(c)); err != nil {
 		fail(c, err)
 		return
 	}
 	ok(c, gin.H{"deleted": true})
 }
-
-// ── sessions ──
 
 func (h *Handler) Book(c *gin.Context) {
 	var in struct {
@@ -433,32 +423,30 @@ func (h *Handler) Book(c *gin.Context) {
 		fail(c, domain.ErrValidation)
 		return
 	}
-	s, err := h.Session.Book(c, userID(c), usecase.BookInput{
-		TeacherID: in.TeacherID, ServiceID: in.ServiceID, ScheduledAt: at, Note: in.Note,
-	})
+	session, err := h.Session.Book(c, userID(c), usecase.BookInput{TeacherID: in.TeacherID, ServiceID: in.ServiceID, ScheduledAt: at, Note: in.Note})
 	if err != nil {
 		fail(c, err)
 		return
 	}
-	created(c, s)
+	created(c, session)
 }
 
 func (h *Handler) MySessions(c *gin.Context) {
-	s, err := h.Session.LearnerSessions(c, userID(c), c.Query("when"))
+	sessions, err := h.Session.LearnerSessions(c, userID(c), c.Query("when"))
 	if err != nil {
 		fail(c, err)
 		return
 	}
-	ok(c, s)
+	ok(c, sessions)
 }
 
 func (h *Handler) CancelSession(c *gin.Context) {
-	s, err := h.Session.Cancel(c, userID(c), paramID(c))
+	session, err := h.Session.Cancel(c, userID(c), paramID(c))
 	if err != nil {
 		fail(c, err)
 		return
 	}
-	ok(c, s)
+	ok(c, session)
 }
 
 func (h *Handler) TeacherSessions(c *gin.Context) {
@@ -471,46 +459,47 @@ func (h *Handler) TeacherSessions(c *gin.Context) {
 	case "past":
 		statuses = []domain.SessionStatus{domain.SessionDone, domain.SessionCanceled}
 	}
-	s, err := h.Session.TeacherSessions(c, userID(c), statuses)
+	sessions, err := h.Session.TeacherSessions(c, userID(c), statuses)
 	if err != nil {
 		fail(c, err)
 		return
 	}
-	ok(c, s)
+	ok(c, sessions)
 }
 
 func (h *Handler) AcceptSession(c *gin.Context) {
-	s, err := h.Session.Accept(c, userID(c), paramID(c))
+	session, err := h.Session.Accept(c, userID(c), paramID(c))
 	if err != nil {
 		fail(c, err)
 		return
 	}
-	ok(c, s)
+	ok(c, session)
 }
 
 func (h *Handler) RejectSession(c *gin.Context) {
 	var in struct {
 		Reason string `json:"reason"`
 	}
-	_ = c.ShouldBindJSON(&in)
-	s, err := h.Session.Reject(c, userID(c), paramID(c), in.Reason)
+	if err := c.ShouldBindJSON(&in); err != nil && !errors.Is(err, io.EOF) {
+		fail(c, domain.ErrValidation)
+		return
+	}
+	session, err := h.Session.Reject(c, userID(c), paramID(c), in.Reason)
 	if err != nil {
 		fail(c, err)
 		return
 	}
-	ok(c, s)
+	ok(c, session)
 }
 
 func (h *Handler) CompleteSession(c *gin.Context) {
-	s, err := h.Session.Complete(c, userID(c), paramID(c))
+	session, err := h.Session.Complete(c, userID(c), paramID(c))
 	if err != nil {
 		fail(c, err)
 		return
 	}
-	ok(c, s)
+	ok(c, session)
 }
-
-// ── reviews ──
 
 func (h *Handler) Rate(c *gin.Context) {
 	var in struct {
@@ -522,23 +511,21 @@ func (h *Handler) Rate(c *gin.Context) {
 		fail(c, domain.ErrValidation)
 		return
 	}
-	rv, err := h.Review.Rate(c, userID(c), usecase.RateInput(in))
+	review, err := h.Review.Rate(c, userID(c), usecase.RateInput{SessionID: in.SessionID, Rating: in.Rating, Text: in.Text})
 	if err != nil {
 		fail(c, err)
 		return
 	}
-	created(c, rv)
+	created(c, review)
 }
 
-// ── wallet ──
-
 func (h *Handler) Transactions(c *gin.Context) {
-	tx, err := h.Wallet.Transactions(c, userID(c), queryInt(c, "limit", 30), queryInt(c, "offset", 0))
+	transactions, err := h.Wallet.Transactions(c, userID(c), queryInt(c, "limit", 30), queryInt(c, "offset", 0))
 	if err != nil {
 		fail(c, err)
 		return
 	}
-	ok(c, tx)
+	ok(c, transactions)
 }
 
 func (h *Handler) Charge(c *gin.Context) {
@@ -549,12 +536,12 @@ func (h *Handler) Charge(c *gin.Context) {
 		fail(c, domain.ErrValidation)
 		return
 	}
-	u, err := h.Wallet.Charge(c, userID(c), in.Amount)
+	user, err := h.Wallet.Charge(c, userID(c), in.Amount)
 	if err != nil {
 		fail(c, err)
 		return
 	}
-	ok(c, u)
+	ok(c, user)
 }
 
 func (h *Handler) RequestWithdrawal(c *gin.Context) {
@@ -567,32 +554,30 @@ func (h *Handler) RequestWithdrawal(c *gin.Context) {
 		fail(c, domain.ErrValidation)
 		return
 	}
-	w, err := h.Wallet.RequestWithdrawal(c, userID(c), usecase.WithdrawInput(in))
+	withdrawal, err := h.Wallet.RequestWithdrawal(c, userID(c), usecase.WithdrawInput{Amount: in.Amount, Card: in.Card, Sheba: in.Sheba})
 	if err != nil {
 		fail(c, err)
 		return
 	}
-	created(c, w)
+	created(c, withdrawal)
 }
 
 func (h *Handler) MyWithdrawals(c *gin.Context) {
-	w, err := h.Wallet.MyWithdrawals(c, userID(c))
+	withdrawals, err := h.Wallet.MyWithdrawals(c, userID(c))
 	if err != nil {
 		fail(c, err)
 		return
 	}
-	ok(c, w)
+	ok(c, withdrawals)
 }
 
-// ── notifications ──
-
 func (h *Handler) Notifications(c *gin.Context) {
-	n, err := h.Notif.ForUser(c, userID(c), queryInt(c, "limit", 30))
+	notifications, err := h.Notif.ForUser(c, userID(c), queryInt(c, "limit", 30))
 	if err != nil {
 		fail(c, err)
 		return
 	}
-	ok(c, n)
+	ok(c, notifications)
 }
 
 func (h *Handler) ReadNotification(c *gin.Context) {
