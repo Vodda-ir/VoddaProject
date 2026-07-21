@@ -11,107 +11,65 @@ const toman = (n: number) => fa(new Intl.NumberFormat('fa-IR').format(n));
 
 export default async function TeacherDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const numId = parseInt(id, 10);
-  if (isNaN(numId)) notFound();
+  const numId = Number.parseInt(id, 10);
+  if (!Number.isInteger(numId) || numId <= 0) notFound();
 
   let teacher, reviews;
   try {
-    const res = await api.teacher(numId);
-    teacher = res.data.teacher;
-    reviews = res.data.reviews || [];
+    const response = await api.teacher(numId);
+    teacher = response.data.teacher;
+    reviews = response.data.reviews || [];
   } catch {
     notFound();
   }
-
-  const avatar = fullUrl(teacher.user?.avatar_url);
 
   return (
     <div style={{ background: 'var(--sand-50)', minHeight: '100vh' }}>
       <Nav />
       <div style={{ maxWidth: 960, margin: '0 auto', padding: '32px 20px 60px' }}>
-        <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 14, fontWeight: 600, color: 'var(--ink-3)', marginBottom: 24, textDecoration: 'none' }}>
-          <Icon name="arrowL" size={18} /> بازگشت به خانه
+        <Link href="/search" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 14, fontWeight: 600, color: 'var(--ink-3)', marginBottom: 24, textDecoration: 'none' }}>
+          <Icon name="arrowL" size={18} /> بازگشت به جستجو
         </Link>
 
         <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', marginBottom: 32 }}>
           <div style={{ background: '#fff', borderRadius: 24, padding: 32, flex: '1 1 320px', boxShadow: 'var(--sh-md)' }}>
             <div style={{ display: 'flex', gap: 18, alignItems: 'center', marginBottom: 20 }}>
-              <Avatar size={88} ring verified={teacher.verified} imageUrl={avatar} />
+              <Avatar size={88} ring verified={teacher.verified} imageUrl={fullUrl(teacher.user?.avatar_url)} />
               <div>
                 <h1 style={{ fontSize: 24, fontWeight: 800, marginBottom: 4 }}>{teacher.user?.name || 'استاد'}</h1>
                 <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--olive-600)', marginBottom: 6 }}>{teacher.tag}</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--ink-3)' }}>
-                  <Icon name="pin" size={15} /> {teacher.city || '—'}
-                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--ink-3)' }}><Icon name="pin" size={15} /> {teacher.city || 'شهر ثبت نشده'}</div>
               </div>
             </div>
 
             <div style={{ display: 'flex', gap: 16, justifyContent: 'space-around', paddingTop: 20, borderTop: '1px solid var(--sand-100)' }}>
-              <Stat icon="star" value={teacher.rating ? fa(teacher.rating.toFixed(1)) : '—'} label="امتیاز" />
-              <Stat icon="calendar" value={fa(teacher.sessions)} label="جلسه" />
-              <Stat icon="users" value={fa(teacher.followers)} label="دنبال‌کننده" />
+              <Stat icon="star" value={teacher.reviews > 0 ? fa(teacher.rating.toFixed(1)) : '—'} label="امتیاز" />
+              <Stat icon="message" value={fa(teacher.reviews)} label="نظر ثبت‌شده" />
+              <Stat icon="calendar" value={fa(teacher.sessions)} label="جلسهٔ تکمیل‌شده" />
             </div>
 
-            <Link
-              href={`/panel/user/book?teacher=${teacher.id}`}
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                marginTop: 24, padding: '14px 24px', borderRadius: 999,
-                background: 'var(--olive-600)', color: '#fff',
-                fontSize: 16, fontWeight: 700, textDecoration: 'none',
-                boxShadow: 'var(--sh-olive)',
-              }}
-            >
-              <Icon name="calendar" size={20} /> رزرو جلسه
-            </Link>
+            {teacher.services?.length ? (
+              <Link href={`/panel/user/book?teacher=${teacher.id}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 24, padding: '14px 24px', borderRadius: 999, background: 'var(--olive-600)', color: '#fff', fontSize: 16, fontWeight: 700, textDecoration: 'none', boxShadow: 'var(--sh-olive)' }}>
+                <Icon name="calendar" size={20} /> رزرو جلسه
+              </Link>
+            ) : (
+              <div style={{ marginTop: 24, padding: 14, borderRadius: 14, background: 'var(--sand-100)', color: 'var(--ink-3)', textAlign: 'center', fontSize: 14 }}>این استاد فعلاً خدمت قابل رزروی ندارد.</div>
+            )}
           </div>
 
           <div style={{ flex: '1 1 320px', display: 'flex', flexDirection: 'column', gap: 20 }}>
             <div style={{ background: '#fff', borderRadius: 24, padding: 24, boxShadow: 'var(--sh-md)' }}>
-              <h2 style={{ fontSize: 17, fontWeight: 800, marginBottom: 12 }}>درباره استاد</h2>
+              <h2 style={{ fontSize: 17, fontWeight: 800, marginBottom: 12 }}>دربارهٔ استاد</h2>
               <p style={{ fontSize: 14.5, lineHeight: 2, color: 'var(--ink-3)' }}>{teacher.bio || 'اطلاعاتی ثبت نشده است.'}</p>
             </div>
-
             <div style={{ background: '#fff', borderRadius: 24, padding: 24, boxShadow: 'var(--sh-md)' }}>
-              <h2 style={{ fontSize: 17, fontWeight: 800, marginBottom: 16 }}>خدمات</h2>
-              {teacher.services && teacher.services.length > 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  {teacher.services.map((s) => (
-                    <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: 14, borderRadius: 16, background: 'var(--sand-50)' }}>
-                      <div style={{ width: 44, height: 44, borderRadius: 12, background: 'var(--olive-100)', color: 'var(--olive-600)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <Icon name="book" size={22} />
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 14.5, fontWeight: 700 }}>{s.title}</div>
-                        <div style={{ fontSize: 12.5, color: 'var(--ink-3)', marginTop: 2 }}>{fa(s.duration)} دقیقه</div>
-                      </div>
-                      <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--olive-700)' }}>{toman(s.price)} <span style={{ fontSize: 12, fontWeight: 600 }}>تومان</span></div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p style={{ fontSize: 14, color: 'var(--ink-4)' }}>خدماتی ثبت نشده است.</p>
-              )}
+              <h2 style={{ fontSize: 17, fontWeight: 800, marginBottom: 16 }}>خدمات تأییدشده</h2>
+              {teacher.services?.length ? <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>{teacher.services.map((service) => <div key={service.id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: 14, borderRadius: 16, background: 'var(--sand-50)' }}><Icon name="book" size={22} style={{ color: 'var(--olive-600)' }} /><div style={{ flex: 1 }}><div style={{ fontSize: 14.5, fontWeight: 700 }}>{service.title}</div><div style={{ fontSize: 12.5, color: 'var(--ink-3)', marginTop: 2 }}>{fa(service.duration)} دقیقه</div></div><div style={{ fontSize: 15, fontWeight: 800, color: 'var(--olive-700)' }}>{toman(service.price)} <span style={{ fontSize: 12 }}>تومان</span></div></div>)}</div> : <p style={{ fontSize: 14, color: 'var(--ink-4)' }}>خدمت تأییدشده‌ای ثبت نشده است.</p>}
             </div>
           </div>
         </div>
 
-        {reviews.length > 0 && (
-          <div style={{ background: '#fff', borderRadius: 24, padding: 28, boxShadow: 'var(--sh-md)' }}>
-            <h2 style={{ fontSize: 17, fontWeight: 800, marginBottom: 20 }}>نظرات کاربران</h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-              {reviews.map((r) => (
-                <div key={r.id} style={{ paddingBottom: 18, borderBottom: '1px solid var(--sand-100)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                    <span style={{ fontSize: 14, fontWeight: 700 }}>{r.learner_name}</span>
-                    <Stars value={r.rating} size={14} />
-                  </div>
-                  <p style={{ fontSize: 14, lineHeight: 1.9, color: 'var(--ink-3)' }}>{r.text}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        {reviews.length > 0 && <div style={{ background: '#fff', borderRadius: 24, padding: 28, boxShadow: 'var(--sh-md)' }}><h2 style={{ fontSize: 17, fontWeight: 800, marginBottom: 20 }}>نظرهای پس از جلسه</h2><div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>{reviews.map((review) => <div key={review.id} style={{ paddingBottom: 18, borderBottom: '1px solid var(--sand-100)' }}><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}><span style={{ fontSize: 14, fontWeight: 700 }}>{review.learner?.name || 'قرآن‌آموز وُدّا'}</span><Stars value={review.rating} size={14} /></div>{review.text && <p style={{ fontSize: 14, lineHeight: 1.9, color: 'var(--ink-3)' }}>{review.text}</p>}</div>)}</div></div>}
       </div>
       <Footer />
     </div>
@@ -119,11 +77,5 @@ export default async function TeacherDetailPage({ params }: { params: Promise<{ 
 }
 
 function Stat({ icon, value, label }: { icon: Parameters<typeof Icon>[0]['name']; value: string; label: string }) {
-  return (
-    <div style={{ textAlign: 'center' }}>
-      <Icon name={icon} size={22} style={{ color: 'var(--olive-500)' }} />
-      <div style={{ fontSize: 20, fontWeight: 800, marginTop: 6 }}>{value}</div>
-      <div style={{ fontSize: 12, color: 'var(--ink-3)' }}>{label}</div>
-    </div>
-  );
+  return <div style={{ textAlign: 'center' }}><Icon name={icon} size={22} style={{ color: 'var(--olive-500)' }} /><div style={{ fontSize: 20, fontWeight: 800, marginTop: 6 }}>{value}</div><div style={{ fontSize: 12, color: 'var(--ink-3)' }}>{label}</div></div>;
 }
