@@ -24,54 +24,54 @@ func (r *userRepo) Update(ctx context.Context, u *domain.User) error {
 }
 
 func (r *userRepo) ByID(ctx context.Context, id uint) (*domain.User, error) {
-	var u domain.User
-	err := r.db.WithContext(ctx).Preload("Teacher").First(&u, id).Error
+	var user domain.User
+	err := r.db.WithContext(ctx).Preload("Teacher").First(&user, id).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, domain.ErrNotFound
 	}
-	return &u, err
+	if err != nil {
+		return nil, err
+	}
+	normalizeUserTeacher(&user)
+	return &user, nil
 }
 
 func (r *userRepo) ByMobile(ctx context.Context, mobile string) (*domain.User, error) {
-	var u domain.User
-	err := r.db.WithContext(ctx).Preload("Teacher").Where("mobile = ?", mobile).First(&u).Error
+	var user domain.User
+	err := r.db.WithContext(ctx).Preload("Teacher").Where("mobile = ?", mobile).First(&user).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, domain.ErrNotFound
 	}
-	return &u, err
+	if err != nil {
+		return nil, err
+	}
+	normalizeUserTeacher(&user)
+	return &user, nil
 }
 
 func (r *userRepo) List(ctx context.Context, role domain.Role, limit, offset int) ([]domain.User, int64, error) {
-	q := r.db.WithContext(ctx).Model(&domain.User{})
+	query := r.db.WithContext(ctx).Model(&domain.User{})
 	if role != "" {
-		q = q.Where("role = ?", role)
+		query = query.Where("role = ?", role)
 	}
 	var total int64
-	if err := q.Count(&total).Error; err != nil {
+	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
-	if limit <= 0 {
-		limit = 30
-	}
-	if limit > 100 {
-		limit = 100
-	}
-	if offset < 0 {
-		offset = 0
-	}
+	limit, offset = normalizedPage(limit, offset, 30, 100)
 	var users []domain.User
-	err := q.Order("created_at desc").Limit(limit).Offset(offset).Find(&users).Error
+	err := query.Order("created_at desc").Limit(limit).Offset(offset).Find(&users).Error
 	return users, total, err
 }
 
 // AddWallet performs a single conditional SQL update. Debits can never move the
 // wallet below zero, even when concurrent booking or withdrawal requests race.
 func (r *userRepo) AddWallet(ctx context.Context, userID uint, delta int64) error {
-	q := r.db.WithContext(ctx).Model(&domain.User{}).Where("id = ?", userID)
+	query := r.db.WithContext(ctx).Model(&domain.User{}).Where("id = ?", userID)
 	if delta < 0 {
-		q = q.Where("wallet >= ?", -delta)
+		query = query.Where("wallet >= ?", -delta)
 	}
-	result := q.UpdateColumn("wallet", gorm.Expr("wallet + ?", delta))
+	result := query.UpdateColumn("wallet", gorm.Expr("wallet + ?", delta))
 	if result.Error != nil {
 		return result.Error
 	}
@@ -85,10 +85,16 @@ func (r *userRepo) AddWallet(ctx context.Context, userID uint, delta int64) erro
 }
 
 func (r *userRepo) Count(ctx context.Context, role domain.Role) (int64, error) {
-	q := r.db.WithContext(ctx).Model(&domain.User{})
+	query := r.db.WithContext(ctx).Model(&domain.User{})
 	if role != "" {
-		q = q.Where("role = ?", role)
+		query = query.Where("role = ?", role)
 	}
-	var n int64
-	return n, q.Count(&n).Error
+	var count int64
+	return count, query.Count(&count).Error
+}
+
+func normalizeUserTeacher(user *domain.User) {
+	if user != nil && user.Teacher != nil {
+		user.Teacher.Normalize()
+	}
 }
