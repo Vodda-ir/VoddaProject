@@ -24,6 +24,12 @@ type UserRepository interface {
 	Count(ctx context.Context, role Role) (int64, error)
 }
 
+// TeacherOnboardingRepository performs profile creation and role promotion in a
+// single database transaction.
+type TeacherOnboardingRepository interface {
+	CreateTeacherProfile(ctx context.Context, userID uint, teacher *Teacher) error
+}
+
 // TeacherRepository persists teacher profiles and their sub-resources.
 type TeacherRepository interface {
 	Create(ctx context.Context, t *Teacher) error
@@ -45,7 +51,6 @@ type TeacherRepository interface {
 	UpdateWorkTime(ctx context.Context, wt *WorkTime) error
 	DeleteWorkTime(ctx context.Context, teacherID, workTimeID uint) error
 
-	// ListPendingServices returns services with active=false, including teacher info.
 	ListPendingServices(ctx context.Context) ([]Service, error)
 }
 
@@ -67,6 +72,12 @@ type ReviewRepository interface {
 	Stats(ctx context.Context, teacherID uint) (avg float64, count int, err error)
 }
 
+// ReviewTransactionRepository atomically creates a review, marks its session
+// rated, and refreshes the teacher aggregate.
+type ReviewTransactionRepository interface {
+	RateCompletedSession(ctx context.Context, learnerID uint, review *Review) error
+}
+
 // WalletRepository persists transactions and withdrawals.
 type WalletRepository interface {
 	AddTx(ctx context.Context, t *Transaction) error
@@ -79,7 +90,7 @@ type WalletRepository interface {
 	SumByType(ctx context.Context, t TxType) (int64, error)
 }
 
-// OTPRepository persists one-time codes.
+// OTPRepository persists one-time code digests.
 type OTPRepository interface {
 	Create(ctx context.Context, c *OTPCode) error
 	Latest(ctx context.Context, mobile string) (*OTPCode, error)
@@ -91,4 +102,17 @@ type NotificationRepository interface {
 	Create(ctx context.Context, n *Notification) error
 	ForUser(ctx context.Context, userID uint, limit int) ([]Notification, error)
 	MarkRead(ctx context.Context, userID, id uint) error
+}
+
+// SupportMessageRepository persists public contact requests.
+type SupportMessageRepository interface {
+	Create(ctx context.Context, message *SupportMessage) error
+	List(ctx context.Context, status SupportMessageStatus, limit, offset int) ([]SupportMessage, int64, error)
+	Resolve(ctx context.Context, id uint) error
+}
+
+// AdminAuditRepository persists privileged action logs.
+type AdminAuditRepository interface {
+	Create(ctx context.Context, entry *AdminAuditLog) error
+	List(ctx context.Context, limit, offset int) ([]AdminAuditLog, int64, error)
 }
