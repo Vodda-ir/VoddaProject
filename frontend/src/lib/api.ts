@@ -32,6 +32,7 @@ export type Teacher = {
   reviews: number;
   sessions: number;
   followers: number;
+  skills?: string[];
   user?: { id: number; name: string; avatar_url: string };
   services?: TeacherService[];
 };
@@ -40,11 +41,10 @@ export type Review = {
   id: number;
   rating: number;
   text: string;
-  learner_name: string;
+  learner?: { id: number; name: string; avatar_url?: string };
   created_at: string;
 };
 
-// Mirrors backend/internal/domain.WorkTime exactly.
 export type WorkTime = {
   id: number;
   weekday: number;
@@ -81,11 +81,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  // ── public ──
   teachers: (q = '', params?: Record<string, string>) => {
     const sp = new URLSearchParams();
     if (q) sp.set('q', q);
-    if (params) for (const [k, v] of Object.entries(params)) if (v) sp.set(k, v);
+    if (params) for (const [key, value] of Object.entries(params)) if (value) sp.set(key, value);
     const qs = sp.toString();
     return request<ListResponse<Teacher>>(`/teachers${qs ? `?${qs}` : ''}`);
   },
@@ -93,16 +92,18 @@ export const api = {
     request<{ data: { teacher: Teacher; reviews: Review[] } }>(`/teachers/${id}`),
   teacherWorkTimes: (id: number) =>
     request<{ data: WorkTime[] }>(`/teachers/${id}/work-times`),
+  sendSupportMessage: (body: { name: string; contact: string; message: string }) =>
+    request<{ data: { id: number; received: boolean } }>('/support/messages', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
 
-  // ── authenticated (the token argument is a compatibility-only session marker in browsers) ──
   me: (token: string) =>
     request<{ data: import('./auth').AuthUser }>('/me', {
       headers: { Authorization: `Bearer ${token}` },
     }),
-
-  // teacher
   teacherMe: (token: string) =>
-    request<{ data: { services?: unknown[]; sessions?: unknown[]; [k: string]: unknown } }>(
+    request<{ data: { services?: unknown[]; sessions?: unknown[]; [key: string]: unknown } }>(
       '/teacher/me',
       { headers: { Authorization: `Bearer ${token}` } },
     ),
@@ -110,8 +111,6 @@ export const api = {
     request<{ data: unknown[] }>(`/teacher/sessions?when=${encodeURIComponent(when)}`, {
       headers: { Authorization: `Bearer ${token}` },
     }),
-
-  // admin
   adminDashboard: (token: string) =>
     request<{ data: Record<string, unknown> }>('/admin/dashboard', {
       headers: { Authorization: `Bearer ${token}` },
@@ -120,8 +119,6 @@ export const api = {
     request<ListResponse<Teacher>>('/admin/teachers?status=pending', {
       headers: { Authorization: `Bearer ${token}` },
     }),
-
-  // sessions (learner)
   mySessions: (token: string, when: string) =>
     request<{ data: unknown[] }>(`/sessions?when=${encodeURIComponent(when)}`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -135,14 +132,10 @@ export const api = {
       body: JSON.stringify(body),
       headers: { Authorization: `Bearer ${token}` },
     }),
-
-  // wallet
   transactions: (token: string) =>
     request<{ data: unknown[] }>('/wallet/transactions', {
       headers: { Authorization: `Bearer ${token}` },
     }),
-
-  // teacher registration
   becomeTeacher: (token: string, body: BecomeTeacherInput) =>
     request<{ data: unknown }>('/me/become-teacher', {
       method: 'POST',
