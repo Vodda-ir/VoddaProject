@@ -1,0 +1,22 @@
+name: Source Snapshot
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create source snapshot
+        run: tar --exclude=.git -czf "$RUNNER_TEMP/vodda-source.tar.gz" .
+      - name: Upload source snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: vodda-source
+          path: ${{ runner.temp }}/vodda-source.tar.gz
+          retention-days: 1
