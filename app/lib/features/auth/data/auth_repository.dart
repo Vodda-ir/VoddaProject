@@ -8,37 +8,38 @@ class AuthRepository {
   AuthRepository(this._ref);
   final Ref _ref;
 
-  /// Returns true if OTP was sent, false on error.
   Future<bool> requestOtp(String mobile) async {
     try {
       final dio = _ref.read(dioClientProvider).dio;
       await dio.post('/auth/request-otp', data: {'mobile': mobile});
       return true;
-    } catch (e) {
-      SnackBarService.showError(e);
+    } catch (error) {
+      SnackBarService.showError(error);
       return false;
     }
   }
 
-  /// Verifies the code, stores the token, and returns whether the profile
-  /// still needs completing. Returns null on error.
+  /// Verifies the code, stores the encrypted session, and returns whether the
+  /// profile still needs completing. Returns null on error.
   Future<bool?> verifyOtp(String mobile, String code) async {
     try {
       final client = _ref.read(dioClientProvider);
-      final res = await client.dio.post(
+      final response = await client.dio.post(
         '/auth/verify-otp',
         data: {'mobile': mobile, 'code': code},
       );
-      final data = res.data['data'] as Map<String, dynamic>;
-      await client.saveToken(data['token'] as String);
+      final data = response.data['data'] as Map<String, dynamic>;
+      final user = data['user'] as Map<String, dynamic>? ?? const {};
+      final role = user['role'] as String? ?? 'learner';
+      await client.saveSession(data['token'] as String, role);
       return data['need_profile'] == true;
-    } catch (e) {
-      SnackBarService.showError(e);
+    } catch (error) {
+      SnackBarService.showError(error);
       return null;
     }
   }
 
-  Future<void> logout() => _ref.read(dioClientProvider).clearToken();
+  Future<void> logout() => _ref.read(dioClientProvider).clearSession();
 }
 
 final authRepositoryProvider = Provider<AuthRepository>(
