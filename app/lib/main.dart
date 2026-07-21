@@ -2,6 +2,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/providers.dart';
@@ -13,10 +14,16 @@ import 'core/theme/app_theme.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final prefs = await SharedPreferences.getInstance();
+  const secureStorage = FlutterSecureStorage();
+  final initialToken = await secureStorage.read(key: 'vodda_token');
 
   runApp(
     ProviderScope(
-      overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+        secureStorageProvider.overrideWithValue(secureStorage),
+        initialTokenProvider.overrideWithValue(initialToken),
+      ],
       child: const VoddaApp(),
     ),
   );
@@ -50,9 +57,8 @@ class VoddaApp extends ConsumerWidget {
         if (locale != null && locale.languageCode == 'en') {
           return const Locale('en');
         }
-        return const Locale('fa'); // default to Persian
+        return const Locale('fa');
       },
-      // Force RTL + responsive mobile frame for the whole app.
       builder: (context, child) => Directionality(
         textDirection: TextDirection.rtl,
         child: Container(
@@ -69,7 +75,6 @@ class VoddaApp extends ConsumerWidget {
   }
 }
 
-/// Enables mouse-drag scrolling across the app (desktop/web).
 class AppScrollBehavior extends MaterialScrollBehavior {
   const AppScrollBehavior();
 
