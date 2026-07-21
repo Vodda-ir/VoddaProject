@@ -50,43 +50,42 @@ func main() {
 		}
 	}
 
-	// repositories
 	userRepo := repository.NewUserRepository(db)
 	teacherRepo := repository.NewTeacherRepository(db)
 	sessionRepo := repository.NewSessionRepository(db)
 	reviewRepo := repository.NewReviewRepository(db)
 	walletRepo := repository.NewWalletRepository(db)
 	financialRepo := repository.NewFinancialRepository(db)
+	onboardingRepo := repository.NewTeacherOnboardingRepository(db)
+	reviewTransactionRepo := repository.NewReviewTransactionRepository(db)
 	otpRepo := repository.NewOTPRepository(db)
 	notifRepo := repository.NewNotificationRepository(db)
+	supportRepo := repository.NewSupportMessageRepository(db)
+	auditRepo := repository.NewAdminAuditRepository(db)
 
-	// platform services
 	tm := token.NewManager(cfg.JWTSecret, cfg.TokenExpiration)
 	sender := sms.New(cfg.SMS)
+	supportUsecase := usecase.NewSupportUsecase(supportRepo)
 
-	// usecases
 	h := &delivery.Handler{
 		Auth:    usecase.NewAuthUsecase(userRepo, otpRepo, sender, tm, cfg),
-		User:    usecase.NewUserUsecase(userRepo, teacherRepo),
+		User:    usecase.NewUserUsecase(userRepo, teacherRepo, onboardingRepo),
 		Teacher: usecase.NewTeacherUsecase(teacherRepo, reviewRepo, userRepo),
 		Session: usecase.NewSessionUsecase(sessionRepo, teacherRepo, userRepo, walletRepo, notifRepo, cfg, financialRepo),
 		Wallet: usecase.NewWalletUsecaseWithFinancial(
-			walletRepo,
-			userRepo,
-			teacherRepo,
-			notifRepo,
-			financialRepo,
+			walletRepo, userRepo, teacherRepo, notifRepo, financialRepo,
 			cfg.DevWalletChargeEnabled && !cfg.IsProduction(),
 		),
-		Review: usecase.NewReviewUsecase(reviewRepo, sessionRepo, teacherRepo),
+		Review: usecase.NewReviewUsecase(reviewRepo, sessionRepo, teacherRepo, reviewTransactionRepo),
 		Admin:  usecase.NewAdminUsecase(userRepo, teacherRepo, sessionRepo, walletRepo, notifRepo),
 		Notif:  notifRepo,
 	}
 
-	readiness := func(ctx context.Context) error {
-		return sqlDB.PingContext(ctx)
-	}
-	router := delivery.NewRouter(cfg, h, tm, readiness)
+	readiness := func(ctx context.Context) error { return sqlDB.PingContext(ctx) }
+	router := delivery.NewRouter(cfg, h, tm, readiness, delivery.RouterOperations{
+		Support: supportUsecase,
+		Audit:   auditRepo,
+	})
 
 	srv := &http.Server{
 		Addr:              cfg.ServerHost + ":" + cfg.ServerPort,
@@ -98,17 +97,16 @@ func main() {
 	}
 
 	go func() {
-		log.Printf("🚀 vodda-backend listening on %s (env=%s)", srv.Addr, cfg.AppEnv)
+		log.Printf("vodda-backend listening on %s (env=%s)", srv.Addr, cfg.AppEnv)
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatalf("listen: %v", err)
 		}
 	}()
 
-	// graceful shutdown
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
-	log.Println("shutting down…")
+	log.Println("shutting down")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil {
