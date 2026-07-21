@@ -83,6 +83,7 @@ func main() {
 
 	readiness := func(ctx context.Context) error { return sqlDB.PingContext(ctx) }
 	router := delivery.NewRouter(cfg, h, tm, readiness, delivery.RouterOperations{
+		Users:   userRepo,
 		Support: supportUsecase,
 		Audit:   auditRepo,
 	})
