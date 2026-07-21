@@ -60,6 +60,10 @@ class DioClient {
     _token = token;
     await _secureStorage.write(key: _tokenKey, value: token);
     await _prefs.setString(_roleKey, role);
+    await _prefs.setString(
+      'last_role',
+      role == 'teacher' || role == 'admin' ? 'teacher' : 'learner',
+    );
   }
 
   Future<void> saveToken(String token) => saveSession(token, role);
