@@ -21,7 +21,8 @@ const FORWARDED_RESPONSE_HEADERS = [
 type RouteContext = { params: Promise<{ path: string[] }> };
 
 function isPublicRequest(method: string, path: string[]): boolean {
-  return method === 'GET' && path[0] === 'teachers';
+  if (method === 'GET' && path[0] === 'teachers') return true;
+  return method === 'POST' && path[0] === 'support' && path[1] === 'messages' && path.length === 2;
 }
 
 async function proxy(request: NextRequest, context: RouteContext): Promise<Response> {
