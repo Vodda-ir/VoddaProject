@@ -5,8 +5,6 @@ package domain
 import (
 	"strings"
 	"time"
-
-	"gorm.io/gorm"
 )
 
 // Role enumerates account roles.
@@ -31,21 +29,21 @@ const (
 type SessionStatus string
 
 const (
-	SessionPending   SessionStatus = "pending"   // awaiting teacher acceptance
-	SessionConfirmed SessionStatus = "confirmed" // accepted, upcoming
-	SessionDone      SessionStatus = "done"      // finished
-	SessionCanceled  SessionStatus = "canceled"  // rejected or canceled
+	SessionPending   SessionStatus = "pending"
+	SessionConfirmed SessionStatus = "confirmed"
+	SessionDone      SessionStatus = "done"
+	SessionCanceled  SessionStatus = "canceled"
 )
 
 // TxType enumerates wallet transaction kinds.
 type TxType string
 
 const (
-	TxCharge     TxType = "charge"     // wallet top-up (learner)
-	TxSession    TxType = "session"    // session fee paid (learner)
-	TxEarning    TxType = "earning"    // session income (teacher)
-	TxWithdrawal TxType = "withdrawal" // teacher payout
-	TxCommission TxType = "commission" // platform fee
+	TxCharge     TxType = "charge"
+	TxSession    TxType = "session"
+	TxEarning    TxType = "earning"
+	TxWithdrawal TxType = "withdrawal"
+	TxCommission TxType = "commission"
 )
 
 // WithdrawalStatus enumerates payout request states.
@@ -67,7 +65,7 @@ type User struct {
 	AvatarURL string    `gorm:"size:255" json:"avatar_url"`
 	Bio       string    `gorm:"size:500" json:"bio"`
 	Active    bool      `gorm:"default:true" json:"active"`
-	Wallet    int64     `gorm:"default:0" json:"wallet"` // balance in Toman
+	Wallet    int64     `gorm:"default:0" json:"wallet"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 
@@ -78,13 +76,13 @@ type User struct {
 type Teacher struct {
 	ID        uint          `gorm:"primaryKey" json:"id"`
 	UserID    uint          `gorm:"uniqueIndex" json:"user_id"`
-	Field     string        `gorm:"size:60" json:"field"` // "آموزش قرآن کریم" | "مداحی اهل‌بیت"
+	Field     string        `gorm:"size:60" json:"field"`
 	Tag       string        `gorm:"size:60" json:"tag"`
 	Level     string        `gorm:"size:30" json:"level"`
 	City      string        `gorm:"size:80;index" json:"city"`
 	Bio       string        `gorm:"size:1000" json:"bio"`
-	Skills    string        `gorm:"size:500" json:"-"` // comma-separated storage
-	SkillList []string      `gorm:"-" json:"skills"`   // populated from Skills on read
+	Skills    string        `gorm:"size:500" json:"-"`
+	SkillList []string      `gorm:"-" json:"skills"`
 	Price30   int64         `json:"price30"`
 	Price60   int64         `json:"price60"`
 	Female    bool          `json:"female"`
@@ -103,15 +101,18 @@ type Teacher struct {
 	Samples  []Sample  `gorm:"foreignKey:TeacherID" json:"samples,omitempty"`
 }
 
-// AfterFind splits the stored comma-separated Skills into SkillList for output.
-func (t *Teacher) AfterFind(*gorm.DB) error {
+// Normalize prepares persistence-backed fields for API/domain use without
+// coupling the domain package to a specific ORM lifecycle hook.
+func (t *Teacher) Normalize() {
+	if t == nil {
+		return
+	}
 	t.SkillList = nil
-	for _, s := range strings.Split(t.Skills, ",") {
-		if s = strings.TrimSpace(s); s != "" {
-			t.SkillList = append(t.SkillList, s)
+	for _, skill := range strings.Split(t.Skills, ",") {
+		if skill = strings.TrimSpace(skill); skill != "" {
+			t.SkillList = append(t.SkillList, skill)
 		}
 	}
-	return nil
 }
 
 // Service is a bookable offering of a teacher.
@@ -119,7 +120,7 @@ type Service struct {
 	ID        uint     `gorm:"primaryKey" json:"id"`
 	TeacherID uint     `gorm:"index" json:"teacher_id"`
 	Title     string   `gorm:"size:160" json:"title"`
-	Duration  int      `json:"duration"` // minutes (30 / 60)
+	Duration  int      `json:"duration"`
 	Price     int64    `json:"price"`
 	Icon      string   `gorm:"size:30" json:"icon"`
 	Active    bool     `gorm:"default:false" json:"active"`
@@ -139,7 +140,7 @@ type Sample struct {
 type WorkTime struct {
 	ID        uint   `gorm:"primaryKey" json:"id"`
 	TeacherID uint   `gorm:"index" json:"teacher_id"`
-	Weekday   int    `json:"weekday"` // 0=Saturday .. 6=Friday
+	Weekday   int    `json:"weekday"`
 	FromTime  string `gorm:"size:5" json:"from"`
 	ToTime    string `gorm:"size:5" json:"to"`
 	Active    bool   `gorm:"default:true" json:"active"`
@@ -150,9 +151,9 @@ type Session struct {
 	ID          uint          `gorm:"primaryKey" json:"id"`
 	LearnerID   uint          `gorm:"index" json:"learner_id"`
 	TeacherID   uint          `gorm:"index" json:"teacher_id"`
-	ServiceID   uint          `json:"service_id"`
+	ServiceID   uint          `gorm:"index" json:"service_id"`
 	Title       string        `gorm:"size:160" json:"service"`
-	ScheduledAt time.Time     `gorm:"column:scheduled_at" json:"scheduled_at"`
+	ScheduledAt time.Time     `gorm:"column:scheduled_at;index" json:"scheduled_at"`
 	Duration    int           `json:"duration"`
 	Price       int64         `json:"price"`
 	Status      SessionStatus `gorm:"size:16;default:pending;index" json:"status"`
@@ -183,11 +184,11 @@ type Review struct {
 type Transaction struct {
 	ID        uint      `gorm:"primaryKey" json:"id"`
 	UserID    uint      `gorm:"index" json:"user_id"`
-	Type      TxType    `gorm:"size:16" json:"type"`
+	Type      TxType    `gorm:"size:16;index" json:"type"`
 	Title     string    `gorm:"size:160" json:"title"`
-	Amount    int64     `json:"amount"` // signed: + credit, - debit
-	RefID     uint      `json:"ref_id"`
-	CreatedAt time.Time `json:"created_at"`
+	Amount    int64     `json:"amount"`
+	RefID     uint      `gorm:"index" json:"ref_id"`
+	CreatedAt time.Time `gorm:"index" json:"created_at"`
 }
 
 // Withdrawal is a teacher payout request.
@@ -205,14 +206,15 @@ type Withdrawal struct {
 	User *User `gorm:"foreignKey:UserID" json:"user,omitempty"`
 }
 
-// OTPCode is a one-time password issued for mobile verification.
+// OTPCode is a one-time password issued for mobile verification. Code stores a
+// keyed digest rather than the user-visible OTP in production code paths.
 type OTPCode struct {
 	ID        uint      `gorm:"primaryKey" json:"-"`
 	Mobile    string    `gorm:"size:15;index" json:"-"`
-	Code      string    `gorm:"size:8" json:"-"`
-	ExpiresAt time.Time `json:"-"`
-	Consumed  bool      `gorm:"default:false" json:"-"`
-	CreatedAt time.Time `json:"-"`
+	Code      string    `gorm:"size:64" json:"-"`
+	ExpiresAt time.Time `gorm:"index" json:"-"`
+	Consumed  bool      `gorm:"default:false;index" json:"-"`
+	CreatedAt time.Time `gorm:"index" json:"-"`
 }
 
 // Notification is an in-app notification.
@@ -221,6 +223,6 @@ type Notification struct {
 	UserID    uint      `gorm:"index" json:"user_id"`
 	Title     string    `gorm:"size:160" json:"title"`
 	Body      string    `gorm:"size:500" json:"body"`
-	Read      bool      `gorm:"default:false" json:"read"`
-	CreatedAt time.Time `json:"created_at"`
+	Read      bool      `gorm:"default:false;index" json:"read"`
+	CreatedAt time.Time `gorm:"index" json:"created_at"`
 }
