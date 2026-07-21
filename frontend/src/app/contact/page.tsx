@@ -1,6 +1,7 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
+import { useState } from 'react';
+import type { CSSProperties, FormEvent } from 'react';
 import { Nav, Footer } from '@/components/web/sections';
 import { Icon } from '@/components/Icon';
 import { SectionTitle } from '@/components/web/ui';
@@ -92,7 +93,7 @@ export default function ContactPage() {
   );
 }
 
-const inputStyle: React.CSSProperties = {
+const inputStyle: CSSProperties = {
   padding: '12px 16px', borderRadius: 14, border: '1px solid var(--sand-200)',
   fontFamily: 'inherit', fontSize: 14, outline: 'none', width: '100%',
 };
