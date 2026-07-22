@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import type { CSSProperties, ReactNode } from 'react';
 import { Icon } from '../Icon';
 
@@ -5,16 +6,7 @@ export function GeoPattern({ color = '#fff', opacity = 0.08 }: { color?: string;
   const id = 'wgeo' + color.replace(/[^a-z0-9]/gi, '');
   return (
     <svg width="100%" height="100%" style={{ position: 'absolute', inset: 0, opacity }} aria-hidden="true">
-      <defs>
-        <pattern id={id} width="46" height="46" patternUnits="userSpaceOnUse">
-          <path
-            d="M23 6l4 8 8-4-4 8 8 4-8 4 4 8-8-4-4 8-4-8-8 4 4-8-8-4 8-4-4-8 8 4 4-8z"
-            fill="none"
-            stroke={color}
-            strokeWidth="1"
-          />
-        </pattern>
-      </defs>
+      <defs><pattern id={id} width="46" height="46" patternUnits="userSpaceOnUse"><path d="M23 6l4 8 8-4-4 8 8 4-8 4 4 8-8-4-4 8-4-8-8 4 4-8-8-4 8-4-4-8 8 4 4-8z" fill="none" stroke={color} strokeWidth="1" /></pattern></defs>
       <rect width="100%" height="100%" fill={`url(#${id})`} />
     </svg>
   );
@@ -23,14 +15,7 @@ export function GeoPattern({ color = '#fff', opacity = 0.08 }: { color?: string;
 type BtnVariant = 'primary' | 'dark' | 'ghost' | 'white' | 'soft';
 type BtnSize = 'sm' | 'md' | 'lg';
 
-export function WebBtn({
-  children,
-  variant = 'primary',
-  size = 'md',
-  icon,
-  href = '#',
-  style = {},
-}: {
+export function WebBtn({ children, variant = 'primary', size = 'md', icon, href = '/', style = {} }: {
   children: ReactNode;
   variant?: BtnVariant;
   size?: BtnSize;
@@ -50,84 +35,30 @@ export function WebBtn({
     white: { background: '#fff', color: 'var(--olive-700)', boxShadow: 'var(--sh-sm)' },
     soft: { background: 'var(--olive-100)', color: 'var(--olive-700)' },
   };
-  return (
-    <a
-      href={href}
-      style={{
-        display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-        fontWeight: 700, borderRadius: 999, whiteSpace: 'nowrap', transition: 'transform .12s',
-        ...sizes[size], ...variants[variant], ...style,
-      }}
-    >
-      {icon && <Icon name={icon} size={size === 'lg' ? 20 : 18} stroke={2} />}
-      {children}
-    </a>
-  );
+  const buttonStyle: CSSProperties = {
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+    fontWeight: 700, borderRadius: 999, whiteSpace: 'nowrap', transition: 'transform .12s',
+    ...sizes[size], ...variants[variant], ...style,
+  };
+  const content = <>{icon && <Icon name={icon} size={size === 'lg' ? 20 : 18} stroke={2} />}{children}</>;
+  return href.startsWith('/') ? <Link href={href} style={buttonStyle}>{content}</Link> : <a href={href} style={buttonStyle} rel="noreferrer">{content}</a>;
 }
 
 export function Avatar({ size = 48, ring = false, verified = false, emoji, imageUrl }: { size?: number; ring?: boolean; verified?: boolean; emoji?: string; imageUrl?: string }) {
   return (
     <div style={{ position: 'relative', flexShrink: 0 }}>
-      <div
-        style={{
-          width: size, height: size, borderRadius: '50%',
-          background: imageUrl ? 'transparent' : 'linear-gradient(135deg,var(--olive-200),var(--olive-100))',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: size * 0.42, overflow: 'hidden',
-          boxShadow: ring ? '0 0 0 3px var(--surface), 0 0 0 4.5px var(--olive-200)' : undefined,
-        }}
-      >
-        {imageUrl ? (
-          <img src={imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-        ) : emoji ? (
-          emoji
-        ) : (
-          <Icon name="user" size={size * 0.55} stroke={1.6} style={{ color: 'var(--olive-500)' }} />
-        )}
+      <div style={{ width: size, height: size, borderRadius: '50%', background: imageUrl ? 'transparent' : 'linear-gradient(135deg,var(--olive-200),var(--olive-100))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: size * 0.42, overflow: 'hidden', boxShadow: ring ? '0 0 0 3px var(--surface), 0 0 0 4.5px var(--olive-200)' : undefined }}>
+        {imageUrl ? <img src={imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : emoji ? emoji : <Icon name="user" size={size * 0.55} stroke={1.6} style={{ color: 'var(--olive-500)' }} />}
       </div>
-      {verified && (
-        <span
-          style={{
-            position: 'absolute', bottom: -2, insetInlineEnd: -2,
-            width: size * 0.4, height: size * 0.4, borderRadius: '50%',
-            background: 'var(--olive-600)', color: '#fff',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            border: '2px solid var(--surface)',
-          }}
-        >
-          <Icon name="check" size={size * 0.24} stroke={3} />
-        </span>
-      )}
+      {verified && <span style={{ position: 'absolute', bottom: -2, insetInlineEnd: -2, width: size * 0.4, height: size * 0.4, borderRadius: '50%', background: 'var(--olive-600)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid var(--surface)' }}><Icon name="check" size={size * 0.24} stroke={3} /></span>}
     </div>
   );
 }
 
 export function Stars({ value = 5, size = 16 }: { value?: number; size?: number }) {
-  return (
-    <span style={{ display: 'inline-flex', gap: 2, color: 'var(--gold)' }}>
-      {Array.from({ length: 5 }).map((_, i) => (
-        <Icon key={i} name="star" size={size} fill={i < value} />
-      ))}
-    </span>
-  );
+  return <span style={{ display: 'inline-flex', gap: 2, color: 'var(--gold)' }}>{Array.from({ length: 5 }).map((_, index) => <Icon key={index} name="star" size={size} fill={index < value} />)}</span>;
 }
 
-export function SectionTitle({
-  kicker,
-  title,
-  sub,
-  center = true,
-}: {
-  kicker?: string;
-  title: string;
-  sub?: string;
-  center?: boolean;
-}) {
-  return (
-    <div style={{ textAlign: center ? 'center' : 'start', maxWidth: center ? 600 : undefined, margin: center ? '0 auto' : 0 }}>
-      {kicker && <div style={{ fontSize: 13.5, fontWeight: 800, color: 'var(--olive-600)', marginBottom: 12, letterSpacing: 0.3 }}>{kicker}</div>}
-      <h2 style={{ fontSize: 34, fontWeight: 800, letterSpacing: '-.5px', marginBottom: sub ? 14 : 0 }}>{title}</h2>
-      {sub && <p style={{ fontSize: 16, lineHeight: 1.9, color: 'var(--ink-3)' }}>{sub}</p>}
-    </div>
-  );
+export function SectionTitle({ kicker, title, sub, center = true }: { kicker?: string; title: string; sub?: string; center?: boolean }) {
+  return <div style={{ textAlign: center ? 'center' : 'start', maxWidth: center ? 600 : undefined, margin: center ? '0 auto' : 0 }}>{kicker && <div style={{ fontSize: 13.5, fontWeight: 800, color: 'var(--olive-600)', marginBottom: 12, letterSpacing: 0.3 }}>{kicker}</div>}<h2 style={{ fontSize: 34, fontWeight: 800, letterSpacing: '-.5px', marginBottom: sub ? 14 : 0 }}>{title}</h2>{sub && <p style={{ fontSize: 16, lineHeight: 1.9, color: 'var(--ink-3)' }}>{sub}</p>}</div>;
 }

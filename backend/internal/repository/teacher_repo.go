@@ -30,7 +30,11 @@ func (r *teacherRepo) ByID(ctx context.Context, id uint) (*domain.Teacher, error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, domain.ErrNotFound
 	}
-	return &t, err
+	if err != nil {
+		return nil, err
+	}
+	t.Normalize()
+	return &t, nil
 }
 
 func (r *teacherRepo) ByUserID(ctx context.Context, userID uint) (*domain.Teacher, error) {
@@ -41,7 +45,11 @@ func (r *teacherRepo) ByUserID(ctx context.Context, userID uint) (*domain.Teache
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, domain.ErrNotFound
 	}
-	return &t, err
+	if err != nil {
+		return nil, err
+	}
+	t.Normalize()
+	return &t, nil
 }
 
 func (r *teacherRepo) List(ctx context.Context, f domain.TeacherFilter) ([]domain.Teacher, int64, error) {
@@ -65,7 +73,7 @@ func (r *teacherRepo) List(ctx context.Context, f domain.TeacherFilter) ([]domai
 	}
 	if f.Query != "" {
 		like := "%" + f.Query + "%"
-		q = q.Where("users.name LIKE ? OR teachers.tag LIKE ? OR teachers.field LIKE ?", like, like, like)
+		q = q.Where("users.name LIKE ? OR teachers.tag LIKE ? OR teachers.field LIKE ? OR teachers.city LIKE ?", like, like, like, like)
 	}
 
 	var total int64
@@ -73,21 +81,18 @@ func (r *teacherRepo) List(ctx context.Context, f domain.TeacherFilter) ([]domai
 		return nil, 0, err
 	}
 
-	limit := f.Limit
-	if limit <= 0 {
-		limit = 20
-	}
-	if limit > 100 {
-		limit = 100
-	}
-	if f.Offset < 0 {
-		f.Offset = 0
-	}
+	limit, offset := normalizedPage(f.Limit, f.Offset, 20, 100)
 	var teachers []domain.Teacher
 	err := q.Preload("User").Preload("Services", "active = ?", true).Preload("Samples").
 		Order("teachers.rating desc, teachers.sessions desc").
-		Limit(limit).Offset(f.Offset).Find(&teachers).Error
-	return teachers, total, err
+		Limit(limit).Offset(offset).Find(&teachers).Error
+	if err != nil {
+		return nil, 0, err
+	}
+	for i := range teachers {
+		teachers[i].Normalize()
+	}
+	return teachers, total, nil
 }
 
 func (r *teacherRepo) RecomputeRating(ctx context.Context, teacherID uint) error {
@@ -123,9 +128,16 @@ func (r *teacherRepo) UpdateService(ctx context.Context, s *domain.Service) erro
 }
 
 func (r *teacherRepo) DeleteService(ctx context.Context, teacherID, serviceID uint) error {
-	return r.db.WithContext(ctx).
+	result := r.db.WithContext(ctx).
 		Where("id = ? AND teacher_id = ?", serviceID, teacherID).
-		Delete(&domain.Service{}).Error
+		Delete(&domain.Service{})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return domain.ErrNotFound
+	}
+	return nil
 }
 
 func (r *teacherRepo) ServiceByID(ctx context.Context, id uint) (*domain.Service, error) {

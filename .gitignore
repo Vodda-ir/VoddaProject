@@ -3,8 +3,9 @@ deploy.json
 *.tar.gz
 vodda-docker-bundle.tar.gz*
 
-# env
-
+# environment files
+.env
+.env.*
 !.env.example
 
 # data (only root-level Docker volumes)
@@ -32,6 +33,11 @@ app/.flutter-plugins-dependencies
 app/ios/Pods/
 app/android/.gradle/
 app/**/GeneratedPluginRegistrant.*
+
+# Android release signing
+app/android/key.properties
+*.jks
+*.keystore
 
 # misc
 .DS_Store

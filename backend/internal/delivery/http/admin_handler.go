@@ -7,12 +7,12 @@ import (
 )
 
 func (h *Handler) AdminDashboard(c *gin.Context) {
-	d, err := h.Admin.Dashboard(c)
+	dashboard, err := h.Admin.Dashboard(c)
 	if err != nil {
 		fail(c, err)
 		return
 	}
-	ok(c, d)
+	ok(c, dashboard)
 }
 
 func (h *Handler) AdminUsers(c *gin.Context) {
@@ -26,14 +26,21 @@ func (h *Handler) AdminUsers(c *gin.Context) {
 
 func (h *Handler) AdminSetUserActive(c *gin.Context) {
 	var in struct {
-		Active bool `json:"active"`
+		Active *bool `json:"active" binding:"required"`
 	}
-	_ = c.ShouldBindJSON(&in)
-	if err := h.Admin.SetUserActive(c, paramID(c), in.Active); err != nil {
+	if err := c.ShouldBindJSON(&in); err != nil || in.Active == nil {
+		fail(c, domain.ErrValidation)
+		return
+	}
+	if paramID(c) == userID(c) && !*in.Active {
+		fail(c, domain.ErrConflict)
+		return
+	}
+	if err := h.Admin.SetUserActive(c, paramID(c), *in.Active); err != nil {
 		fail(c, err)
 		return
 	}
-	ok(c, gin.H{"active": in.Active})
+	ok(c, gin.H{"active": *in.Active})
 }
 
 func (h *Handler) AdminTeachers(c *gin.Context) {
@@ -47,46 +54,52 @@ func (h *Handler) AdminTeachers(c *gin.Context) {
 
 func (h *Handler) AdminReviewTeacher(c *gin.Context) {
 	var in struct {
-		Approve bool `json:"approve"`
+		Approve *bool `json:"approve" binding:"required"`
 	}
-	_ = c.ShouldBindJSON(&in)
-	t, err := h.Admin.ReviewTeacher(c, paramID(c), in.Approve)
+	if err := c.ShouldBindJSON(&in); err != nil || in.Approve == nil {
+		fail(c, domain.ErrValidation)
+		return
+	}
+	teacher, err := h.Admin.ReviewTeacher(c, paramID(c), *in.Approve)
 	if err != nil {
 		fail(c, err)
 		return
 	}
-	ok(c, t)
+	ok(c, teacher)
 }
 
 func (h *Handler) AdminSessions(c *gin.Context) {
-	s, total, err := h.Admin.ListSessions(c, domain.SessionStatus(c.Query("status")), queryInt(c, "limit", 30), queryInt(c, "offset", 0))
+	sessions, total, err := h.Admin.ListSessions(c, domain.SessionStatus(c.Query("status")), queryInt(c, "limit", 30), queryInt(c, "offset", 0))
 	if err != nil {
 		fail(c, err)
 		return
 	}
-	okList(c, s, total)
+	okList(c, sessions, total)
 }
 
 func (h *Handler) AdminWithdrawals(c *gin.Context) {
-	w, total, err := h.Admin.ListWithdrawals(c, domain.WithdrawalStatus(c.Query("status")), queryInt(c, "limit", 30), queryInt(c, "offset", 0))
+	withdrawals, total, err := h.Admin.ListWithdrawals(c, domain.WithdrawalStatus(c.Query("status")), queryInt(c, "limit", 30), queryInt(c, "offset", 0))
 	if err != nil {
 		fail(c, err)
 		return
 	}
-	okList(c, w, total)
+	okList(c, withdrawals, total)
 }
 
 func (h *Handler) AdminProcessWithdrawal(c *gin.Context) {
 	var in struct {
-		Paid bool `json:"paid"`
+		Paid *bool `json:"paid" binding:"required"`
 	}
-	_ = c.ShouldBindJSON(&in)
-	w, err := h.Wallet.ProcessWithdrawal(c, paramID(c), in.Paid)
+	if err := c.ShouldBindJSON(&in); err != nil || in.Paid == nil {
+		fail(c, domain.ErrValidation)
+		return
+	}
+	withdrawal, err := h.Wallet.ProcessWithdrawal(c, paramID(c), *in.Paid)
 	if err != nil {
 		fail(c, err)
 		return
 	}
-	ok(c, w)
+	ok(c, withdrawal)
 }
 
 func (h *Handler) AdminServices(c *gin.Context) {

@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-import '../../../core/services/snackbar_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/fa.dart';
 import '../../../core/widgets/app_error.dart';
@@ -40,9 +39,9 @@ class _SessionsScreenState extends ConsumerState<SessionsScreen> {
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 18),
             child: Row(
               children: [
-                _tabBtn('upcoming', 'پیش‌رو'),
+                _tabButton('upcoming', 'پیش‌رو'),
                 const SizedBox(width: 8),
-                _tabBtn('past', 'برگزارشده'),
+                _tabButton('past', 'برگزارشده'),
               ],
             ),
           ),
@@ -64,13 +63,14 @@ class _SessionsScreenState extends ConsumerState<SessionsScreen> {
                     ),
                   ],
                 ),
-                error: (e, _) => ListView(
+                error: (error, _) => ListView(
                   children: [
                     SizedBox(
                       height: 200,
                       child: AppErrorView(
-                        error: e,
-                        onRetry: () => ref.invalidate(mySessionsProvider(_tab)),
+                        error: error,
+                        onRetry: () =>
+                            ref.invalidate(mySessionsProvider(_tab)),
                       ),
                     ),
                   ],
@@ -85,10 +85,10 @@ class _SessionsScreenState extends ConsumerState<SessionsScreen> {
                         padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
                         itemCount: list.length,
                         separatorBuilder: (_, _) => const SizedBox(height: 14),
-                        itemBuilder: (_, i) => _SessionCard(
-                          session: list[i],
-                          onRate: () => _openRating(list[i]),
-                          onCancel: () => _cancel(list[i]),
+                        itemBuilder: (_, index) => _SessionCard(
+                          session: list[index],
+                          onRate: () => _openRating(list[index]),
+                          onCancel: () => _cancel(list[index]),
                         ),
                       ),
               ),
@@ -99,15 +99,16 @@ class _SessionsScreenState extends ConsumerState<SessionsScreen> {
     );
   }
 
-  Widget _tabBtn(String id, String label) {
-    final on = _tab == id;
+  Widget _tabButton(String id, String label) {
+    final selected = _tab == id;
     return Expanded(
-      child: GestureDetector(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
         onTap: () => setState(() => _tab = id),
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 11),
           decoration: BoxDecoration(
-            color: on ? AppColors.olive600 : AppColors.surface,
+            color: selected ? AppColors.olive600 : AppColors.surface,
             borderRadius: BorderRadius.circular(14),
             boxShadow: const [
               BoxShadow(color: Color(0x0A2E3622), blurRadius: 6),
@@ -119,7 +120,7 @@ class _SessionsScreenState extends ConsumerState<SessionsScreen> {
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w700,
-              color: on ? Colors.white : AppColors.ink3,
+              color: selected ? Colors.white : AppColors.ink3,
             ),
           ),
         ),
@@ -127,19 +128,43 @@ class _SessionsScreenState extends ConsumerState<SessionsScreen> {
     );
   }
 
-  Future<void> _openRating(Session s) async {
-    final ok = await showModalBottomSheet<bool>(
+  Future<void> _openRating(Session session) async {
+    final saved = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => RatingSheet(session: s),
+      builder: (_) => RatingSheet(session: session),
     );
-    if (ok == true) ref.invalidate(mySessionsProvider(_tab));
+    if (saved == true) ref.invalidate(mySessionsProvider(_tab));
   }
 
-  Future<void> _cancel(Session s) async {
-    await ref.read(sessionRepositoryProvider).cancel(s.id);
-    ref.invalidate(mySessionsProvider(_tab));
+  Future<void> _cancel(Session session) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('لغو جلسه'),
+        content: const Text(
+          'در صورت تأیید لغو، مبلغ رزرو طبق وضعیت جلسه به کیف پول بازمی‌گردد. ادامه می‌دهید؟',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('انصراف'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('لغو جلسه'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    final canceled = await ref
+        .read(sessionRepositoryProvider)
+        .cancel(session.id);
+    if (canceled) {
+      ref.invalidate(mySessionsProvider(_tab));
+    }
   }
 }
 
@@ -149,13 +174,13 @@ class _SessionCard extends StatelessWidget {
     required this.onRate,
     required this.onCancel,
   });
+
   final Session session;
   final VoidCallback onRate;
   final VoidCallback onCancel;
 
   @override
   Widget build(BuildContext context) {
-    final s = session;
     return Container(
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
@@ -169,9 +194,9 @@ class _SessionCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              StatusPill(status: s.status),
+              StatusPill(status: session.status),
               Text(
-                '${faNumber(s.duration)} دقیقه',
+                '${faNumber(session.duration)} دقیقه',
                 style: const TextStyle(
                   fontSize: 12,
                   color: AppColors.ink3,
@@ -190,7 +215,7 @@ class _SessionCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      s.teacherName,
+                      session.teacherName,
                       style: const TextStyle(
                         fontSize: 14.5,
                         fontWeight: FontWeight.w800,
@@ -198,7 +223,7 @@ class _SessionCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      s.service,
+                      session.service,
                       style: const TextStyle(
                         fontSize: 12.5,
                         color: AppColors.ink2,
@@ -225,8 +250,11 @@ class _SessionCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 5),
                 Text(
-                  _faDate(s.scheduledAt),
-                  style: const TextStyle(fontSize: 12.5, color: AppColors.ink2),
+                  _faDate(session.scheduledAt),
+                  style: const TextStyle(
+                    fontSize: 12.5,
+                    color: AppColors.ink2,
+                  ),
                 ),
                 const SizedBox(width: 14),
                 const Icon(
@@ -237,9 +265,12 @@ class _SessionCard extends StatelessWidget {
                 const SizedBox(width: 5),
                 Text(
                   faDigits(
-                    '${s.scheduledAt.hour.toString().padLeft(2, '0')}:${s.scheduledAt.minute.toString().padLeft(2, '0')}',
+                    '${session.scheduledAt.hour.toString().padLeft(2, '0')}:${session.scheduledAt.minute.toString().padLeft(2, '0')}',
                   ),
-                  style: const TextStyle(fontSize: 12.5, color: AppColors.ink2),
+                  style: const TextStyle(
+                    fontSize: 12.5,
+                    color: AppColors.ink2,
+                  ),
                 ),
               ],
             ),
@@ -251,63 +282,57 @@ class _SessionCard extends StatelessWidget {
   }
 
   List<Widget> _actions() {
-    if (session.status == 'confirmed') {
-      return [
-        const SizedBox(height: 13),
-        Row(
-          children: [
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: () => SnackBarService.show('قابلیت تماس به زودی اضافه می‌شود'),
-                icon: const Icon(LucideIcons.phone, size: 18),
-                label: const Text('پیوستن به جلسه'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.olive600,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ];
-    }
-    if (session.status == 'pending') {
+    if (session.status == 'pending' || session.status == 'confirmed') {
+      final confirmed = session.status == 'confirmed';
       return [
         const SizedBox(height: 13),
         Container(
-          padding: const EdgeInsets.symmetric(vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
-            color: AppColors.goldBg,
+            color: confirmed ? AppColors.olive100 : AppColors.goldBg,
             borderRadius: BorderRadius.circular(13),
           ),
-          child: const Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          child: Row(
             children: [
-              Icon(LucideIcons.clock, size: 16, color: AppColors.gold),
-              SizedBox(width: 7),
-              Text(
-                'در انتظار تأیید استاد',
-                style: TextStyle(fontSize: 12, color: AppColors.ink3),
+              Icon(
+                confirmed ? LucideIcons.checkCircle : LucideIcons.clock,
+                size: 17,
+                color: confirmed ? AppColors.olive700 : AppColors.gold,
+              ),
+              const SizedBox(width: 7),
+              Expanded(
+                child: Text(
+                  confirmed
+                      ? 'جلسه تأیید شده است. جزئیات برگزاری را با استاد هماهنگ کنید.'
+                      : 'در انتظار تأیید استاد',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.ink2,
+                    height: 1.6,
+                  ),
+                ),
               ),
             ],
           ),
+        ),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          onPressed: onCancel,
+          icon: const Icon(LucideIcons.x, size: 17),
+          label: const Text('لغو جلسه'),
         ),
       ];
     }
     if (session.status == 'done' && !session.rated) {
       return [
         const SizedBox(height: 13),
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: onRate,
-            icon: const Icon(LucideIcons.star, size: 18),
-            label: const Text('ثبت امتیاز و نظر'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.gold,
-              foregroundColor: Colors.white,
-            ),
+        FilledButton.icon(
+          onPressed: onRate,
+          icon: const Icon(LucideIcons.star, size: 18),
+          label: const Text('ثبت امتیاز و نظر'),
+          style: FilledButton.styleFrom(
+            backgroundColor: AppColors.gold,
+            foregroundColor: Colors.white,
           ),
         ),
       ];
@@ -315,6 +340,6 @@ class _SessionCard extends StatelessWidget {
     return const [];
   }
 
-  static String _faDate(DateTime d) =>
-      faDigits('${d.year}/${d.month}/${d.day}');
+  static String _faDate(DateTime date) =>
+      faDigits('${date.year}/${date.month}/${date.day}');
 }

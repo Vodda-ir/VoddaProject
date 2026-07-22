@@ -16,8 +16,10 @@ import (
 
 // Connect opens a MySQL connection, retrying until the server is ready.
 func Connect(cfg *config.Config) (*gorm.DB, error) {
+	// Persist and read timestamps consistently regardless of the container host timezone.
+	// Multi-statements are intentionally disabled to reduce SQL injection blast radius.
 	dsn := fmt.Sprintf(
-		"%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local&multiStatements=true",
+		"%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=UTC",
 		cfg.DB.User, cfg.DB.Password, cfg.DB.Host, cfg.DB.Port, cfg.DB.Name,
 	)
 
@@ -50,6 +52,7 @@ func Connect(cfg *config.Config) (*gorm.DB, error) {
 	sqlDB.SetMaxOpenConns(25)
 	sqlDB.SetMaxIdleConns(10)
 	sqlDB.SetConnMaxLifetime(time.Hour)
+	sqlDB.SetConnMaxIdleTime(15 * time.Minute)
 
 	return db, nil
 }
@@ -68,5 +71,7 @@ func Migrate(db *gorm.DB) error {
 		&domain.Withdrawal{},
 		&domain.OTPCode{},
 		&domain.Notification{},
+		&domain.SupportMessage{},
+		&domain.AdminAuditLog{},
 	)
 }
