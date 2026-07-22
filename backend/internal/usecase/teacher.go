@@ -173,6 +173,7 @@ func (uc *TeacherUsecase) UpdateService(ctx context.Context, userID uint, s *dom
 	}
 	if value := strings.TrimSpace(s.Icon); value != "" {
 		existing.Icon = value
+		contentChanged = true
 	}
 	if contentChanged || !s.Active {
 		existing.Active = false
