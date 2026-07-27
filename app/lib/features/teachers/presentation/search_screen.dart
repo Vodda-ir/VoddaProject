@@ -50,6 +50,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 
   void _onQueryChanged(String value) {
+    setState(() {});
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 350), () {
       if (!mounted) return;
@@ -103,8 +104,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                               LucideIcons.search,
                               color: AppColors.ink3,
                             ),
-                            suffixIcon: _query.isEmpty &&
-                                    _searchController.text.isEmpty
+                            suffixIcon: _searchController.text.isEmpty
                                 ? null
                                 : IconButton(
                                     tooltip: 'پاک کردن جستجو',
@@ -141,7 +141,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                             borderRadius: BorderRadius.circular(16),
                           ),
                         ),
-                        icon: const Icon(LucideIcons.slidersHorizontal),
+                        icon: const Icon(Icons.tune),
                       ),
                     ),
                   ],
@@ -265,15 +265,29 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 style: TextStyle(fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 8),
-              SegmentedButton<bool?>(
-                segments: const [
-                  ButtonSegment(value: null, label: Text('فرقی ندارد')),
-                  ButtonSegment(value: false, label: Text('آقا')),
-                  ButtonSegment(value: true, label: Text('خانم')),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  ChoiceChip(
+                    label: const Text('فرقی ندارد'),
+                    selected: selectedFemale == null,
+                    onSelected: (_) =>
+                        setSheetState(() => selectedFemale = null),
+                  ),
+                  ChoiceChip(
+                    label: const Text('آقا'),
+                    selected: selectedFemale == false,
+                    onSelected: (_) =>
+                        setSheetState(() => selectedFemale = false),
+                  ),
+                  ChoiceChip(
+                    label: const Text('خانم'),
+                    selected: selectedFemale == true,
+                    onSelected: (_) =>
+                        setSheetState(() => selectedFemale = true),
+                  ),
                 ],
-                selected: {selectedFemale},
-                onSelectionChanged: (values) =>
-                    setSheetState(() => selectedFemale = values.first),
               ),
               const SizedBox(height: 22),
               FilledButton(
