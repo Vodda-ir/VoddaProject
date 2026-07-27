@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { faDigits } from '@/components/PanelShell';
 import { Icon } from '@/components/Icon';
 import { api } from '@/lib/api';
@@ -13,7 +13,7 @@ export default function UserWalletPage() {
   const [error, setError] = useState('');
   const token = getToken();
 
-  function fetchData() {
+  const fetchData = useCallback(() => {
     if (!token) return;
     setLoading(true);
     setError('');
@@ -26,9 +26,9 @@ export default function UserWalletPage() {
         setError(cause instanceof Error ? cause.message : 'اطلاعات کیف پول دریافت نشد.');
       })
       .finally(() => setLoading(false));
-  }
+  }, [token]);
 
-  useEffect(() => { fetchData(); }, [token]);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const wallet = (me.wallet as number) || 0;
   const txList = txs as Array<Record<string, unknown>>;
