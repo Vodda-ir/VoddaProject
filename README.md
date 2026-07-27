@@ -10,12 +10,13 @@
 
 - ورود OTP، JWT و کنترل نقش جاری از دیتابیس
 - پروفایل و تأیید استاد، خدمات و ساعات کاری
-- جستجوی عمومی استادان تأییدشده
-- رزرو، پذیرش، رد، لغو، تکمیل و امتیازدهی جلسه
+- جستجوی عمومی استادان تأییدشده با فیلتر و صفحه‌بندی
+- تولید زمان‌های واقعی رزرو بر اساس برنامهٔ کاری و مدت خدمت در وب و Flutter
+- رزرو، پذیرش، رد، لغو پیش از شروع، تکمیل و امتیازدهی جلسه
 - کیف پول، دفتر تراکنش، refund، settlement و برداشت اتمیک
-- فرم پشتیبانی ذخیره‌شونده و audit log عملیات ادمین
-- وب Next.js با نشست HttpOnly/BFF
-- اپ Flutter با secure storage و release signing اجباری
+- فرم پشتیبانی ذخیره‌شونده، صندوق پیام و audit log عملیات ادمین
+- وب Next.js با نشست HttpOnly/BFF و سازگاری مسیرهای legacy پنل
+- اپ Flutter با secure storage، جستجوی server-side و release signing اجباری
 - Docker، readiness، backup/restore و CI چندلایه
 
 قابلیت‌های بیرونی **درگاه واقعی زرین‌پال** و **تماس صوتی واقعی** هنوز تکمیل نشده‌اند و در UI production به‌عنوان قابلیت فعال نمایش داده نمی‌شوند.
@@ -112,19 +113,34 @@ flutter analyze
 flutter test
 ```
 
-CI همین بررسی‌ها را به‌همراه MySQL واقعی و اعتبارسنجی Docker Compose اجرا می‌کند. در تاریخ ۲۰۲۶-۰۷-۲۱، GitHub Actions مخزن jobها را پیش از اولین step متوقف می‌کرد؛ این مانع عملیاتی در گزارش ممیزی ثبت شده است و نباید با failure تست کد اشتباه گرفته شود.
+تست‌های فعلی علاوه بر جریان‌های مالی، onboarding و review، تولید slot رزرو در وب و Flutter و policy لغو پیش از شروع را پوشش می‌دهند.
+
+CI همین بررسی‌ها را به‌همراه MySQL واقعی و اعتبارسنجی Docker Compose اجرا می‌کند. در اجرای قبلی، GitHub Actions مخزن jobها را پیش از اولین step متوقف می‌کرد؛ این مانع عملیاتی در گزارش ممیزی ثبت شده است و نباید با failure تست کد اشتباه گرفته شود.
 
 ## امنیت و یکپارچگی
 
 - JWT وب فقط در cookie امن `HttpOnly` نگهداری می‌شود.
+- همهٔ درخواست‌های پنل از BFF عبور می‌کنند؛ مسیرهای legacy نیز به BFF rewrite می‌شوند.
 - JWT اپ در platform secure storage است و در `SharedPreferences` ذخیره نمی‌شود.
 - نقش و فعال‌بودن حساب در هر درخواست محافظت‌شده از دیتابیس بررسی می‌شود.
 - OTP جدید به‌صورت HMAC digest ذخیره می‌شود.
 - رزرو، refund، settlement، برداشت، onboarding استاد و امتیازدهی مرز تراکنش دارند.
+- لغو learner فقط پیش از زمان شروع جلسه مجاز است.
 - ورودی JSON ناشناخته یا ناقص رد می‌شود و booleanهای مدیریتی باید صریح باشند.
 - آپلود آواتار محدودیت حجم، MIME، پسوند و cleanup فایل ناقص دارد.
-- mutationهای موفق ادمین audit می‌شوند.
+- mutationهای موفق ادمین audit می‌شوند و در پنل قابل مشاهده‌اند.
 - Android release بدون keystore production عمداً fail می‌شود.
+
+## وضعیت UI/UX
+
+- ناوبری عمومی موبایل، focus-visible و reduced-motion پیاده شده‌اند.
+- loading، empty، error و retry در مسیرهای اصلی از یکدیگر تفکیک شده‌اند.
+- نمودار، آمار، تماس صوتی، شارژ و CTAهای ساختگی حذف شده‌اند.
+- جستجوی وب درخواست قبلی را abort می‌کند و pagination واقعی دارد.
+- جستجوی Flutter فیلترهای نام، حوزه، شهر و جنسیت را به Backend می‌فرستد.
+- رزرو وب و Flutter زمان‌های واقعی را بر اساس مدت خدمت تولید می‌کند.
+- پنل مدیر UI کامل کاربران، استادان، خدمات، جلسات، برداشت، پشتیبانی و audit را دارد.
+- FAQ، قوانین و حریم خصوصی با قابلیت‌های فعال نسخهٔ فعلی هماهنگ‌اند.
 
 ## استقرار production
 
@@ -151,9 +167,10 @@ docker compose -f docker-compose.deploy.yml up -d --build
 - migrationهای نسخه‌دار و بررسی foreign keyها به‌جای اتکای نهایی به AutoMigrate
 - Redis و object storage برای چند replica
 - observability مرکزی و E2E روی staging
+- accessibility audit کامل با screen reader
 - بررسی archive/signing واقعی iOS و انتشار رسمی اپ
 
-جزئیات کامل: [`CHECKLIST.md`](CHECKLIST.md) و [`docs/audit-2026-07-21.md`](docs/audit-2026-07-21.md)
+جزئیات کامل: [`CHECKLIST.md`](CHECKLIST.md) و [`docs/audit-2026-07-27.md`](docs/audit-2026-07-27.md)
 
 ## مستندات
 
@@ -162,6 +179,7 @@ docker compose -f docker-compose.deploy.yml up -d --build
 - [راهنمای توسعه](docs/development.md)
 - [راهنمای استقرار](docs/deployment.md)
 - [Runbook تولید](docs/production-runbook.md)
-- [ممیزی ۲۰۲۶-۰۷-۲۱](docs/audit-2026-07-21.md)
+- [ممیزی فنی و UI/UX ـ ۲۰۲۶-۰۷-۲۷](docs/audit-2026-07-27.md)
+- [ممیزی production ـ ۲۰۲۶-۰۷-۲۱](docs/audit-2026-07-21.md)
 
 </div>
