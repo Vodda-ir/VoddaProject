@@ -38,7 +38,7 @@ List<DateTime> nextBookingDates({
   DateTime? now,
 }) {
   final current = now ?? DateTime.now();
-  final safeCount = count.clamp(1, 60);
+  final safeCount = count.clamp(1, 60).toInt();
   return List.generate(safeCount, (index) {
     final date = DateTime(current.year, current.month, current.day);
     return date.add(Duration(days: index));
