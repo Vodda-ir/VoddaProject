@@ -90,6 +90,7 @@ func NewRouter(cfg *config.Config, h *Handler, tm *token.Manager, readiness func
 	api.GET("/teachers", publicLimiter.Middleware("teacher-search"), h.SearchTeachers)
 	api.GET("/teachers/:id", publicLimiter.Middleware("teacher-detail"), h.GetTeacher)
 	api.GET("/teachers/:id/work-times", publicLimiter.Middleware("teacher-work-times"), h.TeacherWorkTimes)
+	api.GET("/teachers/:id/availability", publicLimiter.Middleware("teacher-availability"), teacherAvailabilityHandler(h.Session))
 	if operations.Support != nil {
 		api.POST("/support/messages", supportLimiter.Middleware("support-message"), createSupportMessageHandler(operations.Support))
 	}
