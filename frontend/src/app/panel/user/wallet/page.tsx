@@ -43,7 +43,7 @@ export default function UserWalletPage() {
       </section>
 
       <div role="note" style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: 14, borderRadius: 16, background: 'var(--gold-bg)', color: '#765918', fontSize: 13, lineHeight: 1.9, marginBottom: 24 }}>
-        <Icon name="info" size={19} style={{ flexShrink: 0, marginTop: 2 }} />
+        <Icon name="shield" size={19} style={{ flexShrink: 0, marginTop: 2 }} />
         <span>درگاه پرداخت عمومی هنوز فعال نشده است. شارژ مستقیم فقط ابزار توسعه است و در پنل production نمایش داده نمی‌شود.</span>
       </div>
 
