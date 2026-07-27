@@ -76,7 +76,6 @@ export default function AdminDashboard() {
       setDashboard((previous) => ({
         ...previous,
         pending_teachers: Math.max(0, Number(previous.pending_teachers || 0) - 1),
-        teachers: approve ? Number(previous.teachers || 0) + 1 : previous.teachers,
       }));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : `${action} استاد انجام نشد.`);
