@@ -69,7 +69,7 @@ export default function BookingPage() {
       .filter((item) => item.slots.length > 0);
   }, [dates, selectedService, workTimes]);
   const selectedDate = useMemo(() => datesWithSlots.find((item) => dateKey(item.date) === selectedDateKey) || null, [datesWithSlots, selectedDateKey]);
-  const selectedSlot = useMemo(() => selectedDate?.slots.find((slot) => slot.key === selectedSlotKey) || null, [selectedDate, selectedSlotKey]);
+  const selectedSlot: BookingSlot | null = useMemo(() => selectedDate?.slots.find((slot) => slot.key === selectedSlotKey) || null, [selectedDate, selectedSlotKey]);
 
   function chooseService(service: TeacherService) {
     setServiceId(service.id);
