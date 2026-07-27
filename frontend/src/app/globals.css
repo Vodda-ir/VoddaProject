@@ -144,7 +144,8 @@ textarea::placeholder {
     display: none !important;
   }
   .cat-grid,
-  .why-grid {
+  .why-grid,
+  .search-grid {
     grid-template-columns: 1fr !important;
   }
   .hero-grid {
@@ -158,6 +159,9 @@ textarea::placeholder {
   }
   .panel-content {
     overflow-x: hidden;
+  }
+  .panel-content > main {
+    padding-inline: 16px !important;
   }
 }
 
