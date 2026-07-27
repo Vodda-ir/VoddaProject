@@ -57,10 +57,10 @@ export default function AdminWithdrawals() {
         body: JSON.stringify({ action }),
       });
       const body = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(body.error || 'پردازش برداشت انجام نشد.');
+      if (!response.ok) throw new Error(body.error || `ثبت وضعیت ${label} انجام نشد.`);
       setWithdrawals((previous) => previous.map((item) => item.id === withdrawal.id ? { ...item, status: action } : item));
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'پردازش برداشت انجام نشد.');
+      setError(cause instanceof Error ? cause.message : `ثبت وضعیت ${label} انجام نشد.`);
     } finally {
       setBusyId(null);
     }
