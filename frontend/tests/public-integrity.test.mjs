@@ -35,3 +35,43 @@ test('public search uses backend field values and URL state', async () => {
   assert.match(search, /مداحی اهل‌بیت/);
   assert.match(search, /window\.history\.replaceState/);
 });
+
+test('legacy panel API paths are routed through the HttpOnly BFF', async () => {
+  const [config, bff] = await Promise.all([
+    read('next.config.js'),
+    read('src/app/api/backend/[...path]/route.ts'),
+  ]);
+  assert.match(config, /source:\s*['"]\/api\/v1\/:path\*['"]/);
+  assert.match(config, /destination:\s*['"]\/api\/backend\/:path\*['"]/);
+  assert.match(bff, /cookieToken/);
+  assert.match(bff, /headers\.set\('Authorization'/);
+});
+
+test('production wallet and session UI do not advertise inactive capabilities', async () => {
+  const [wallet, dashboard, faq] = await Promise.all([
+    read('src/app/panel/user/wallet/page.tsx'),
+    read('src/app/panel/user/page.tsx'),
+    read('src/app/faq/page.tsx'),
+  ]);
+  assert.doesNotMatch(wallet, /QUICK_CHARGE|\/wallet\/charge/);
+  assert.doesNotMatch(dashboard, /پیوستن/);
+  assert.match(faq, /تماس صوتی داخل سامانه هنوز فعال نشده/);
+  assert.match(faq, /درگاه پرداخت عمومی هنوز فعال نشده/);
+});
+
+test('admin dashboard contains no fabricated time-series chart', async () => {
+  const dashboard = await read('src/app/panel/admin/page.tsx');
+  assert.doesNotMatch(dashboard, /MiniBars|\[3\.1,\s*3\.9/);
+  assert.match(dashboard, /pending_teachers/);
+  assert.match(dashboard, /نمودار تاریخی/);
+});
+
+test('legal copy matches the cancellation policy implemented by backend', async () => {
+  const [terms, cancellation] = await Promise.all([
+    read('src/app/terms/page.tsx'),
+    read('../backend/internal/usecase/session_cancel_policy.go'),
+  ]);
+  assert.doesNotMatch(terms, /دو ساعت/);
+  assert.match(terms, /پیش از زمان شروع جلسه/);
+  assert.match(cancellation, /time\.Now\(\)\.Before\(s\.ScheduledAt\)/);
+});
