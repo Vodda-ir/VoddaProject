@@ -14,7 +14,7 @@ function formatMinutes(value) {
 }
 
 /** Backend convention: Saturday=0 … Friday=6. */
-export function voddaWeekday(date) {
+function voddaWeekday(date) {
   return (date.getDay() + 1) % 7;
 }
 
@@ -23,7 +23,7 @@ export function voddaWeekday(date) {
  * Slots use the selected service duration and exclude starts less than the
  * configured lead time from now.
  */
-export function generateBookingSlots(workTimes, duration, date, now = new Date(), leadMinutes = 5) {
+function generateBookingSlots(workTimes, duration, date, now = new Date(), leadMinutes = 5) {
   if (!(date instanceof Date) || Number.isNaN(date.getTime())) return [];
   if (!Number.isInteger(duration) || duration <= 0 || duration > 240) return [];
 
@@ -57,7 +57,7 @@ export function generateBookingSlots(workTimes, duration, date, now = new Date()
   return result.sort((left, right) => left.start.getTime() - right.start.getTime());
 }
 
-export function nextCalendarDates(count = 14, now = new Date()) {
+function nextCalendarDates(count = 14, now = new Date()) {
   const safeCount = Math.max(1, Math.min(60, Math.trunc(count) || 14));
   return Array.from({ length: safeCount }, (_, index) => {
     const date = new Date(now);
@@ -66,3 +66,9 @@ export function nextCalendarDates(count = 14, now = new Date()) {
     return date;
   });
 }
+
+module.exports = {
+  generateBookingSlots,
+  nextCalendarDates,
+  voddaWeekday,
+};
