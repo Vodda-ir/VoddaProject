@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { StatCard, Panel, faDigits } from '@/components/PanelShell';
 import { Avatar } from '@/components/web/ui';
 import { Icon } from '@/components/Icon';
@@ -17,7 +17,7 @@ export default function UserDashboard() {
   const [error, setError] = useState('');
   const token = getToken();
 
-  function load() {
+  const load = useCallback(() => {
     if (!token) return;
     setLoading(true);
     setError('');
@@ -35,9 +35,9 @@ export default function UserDashboard() {
       })
       .catch((cause) => setError(cause instanceof Error ? cause.message : 'اطلاعات داشبورد دریافت نشد.'))
       .finally(() => setLoading(false));
-  }
+  }, [token]);
 
-  useEffect(() => { load(); }, [token]);
+  useEffect(() => { load(); }, [load]);
 
   const wallet = Number(me.wallet) || 0;
   const name = (me.name as string) || 'قرآن‌آموز';
