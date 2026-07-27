@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { generateBookingSlots, nextCalendarDates, voddaWeekday } from '../src/lib/booking-slots.js';
+import bookingSlots from '../src/lib/booking-slots.js';
+
+const { generateBookingSlots, nextCalendarDates, voddaWeekday } = bookingSlots;
 
 function localDate(year, month, day, hour = 0, minute = 0) {
   return new Date(year, month - 1, day, hour, minute, 0, 0);
