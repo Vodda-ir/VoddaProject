@@ -16,172 +16,132 @@
 | POST | `/auth/request-otp` | بدنه: `{ "mobile": "09..." }` |
 | POST | `/auth/verify-otp` | بدنه: `{ "mobile", "code" }`؛ خروجی token، user و `need_profile` |
 
-در development می‌توان `OTP_TEST_BYPASS_ENABLED=true` و `OTP_TEST_CODE=33365` را فعال کرد. این قابلیت در production توسط validation تنظیمات ممنوع است. اگر `OTP_TEST_MOBILE` خالی باشد، کد development برای همهٔ شماره‌ها معتبر است.
+در development می‌توان `OTP_TEST_BYPASS_ENABLED=true` و `OTP_TEST_CODE=33365` را فعال کرد. این قابلیت در production توسط validation تنظیمات ممنوع است.
 
-## اساتید عمومی
-
-| متد | مسیر | توضیح |
-|---|---|---|
-| GET | `/teachers` | فیلترها: `q, field, city, female, limit, offset` |
-| GET | `/teachers/:id` | پروفایل، خدمات و نظرات |
-| GET | `/teachers/:id/work-times` | زمان‌های کاری با قرارداد `{ id, weekday, from, to, active }` |
-
-قرارداد روز هفته: `0=شنبه` تا `6=جمعه`.
-
-## کاربر احراز هویت‌شده
+## استادان عمومی
 
 | متد | مسیر | توضیح |
 |---|---|---|
-| GET | `/me` | پروفایل جاری |
-| PUT | `/me` | ویرایش پروفایل |
-| POST | `/me/become-teacher` | ثبت درخواست استاد |
-| GET | `/notifications` | اعلان‌ها |
-| POST | `/notifications/:id/read` | خوانده‌شدن اعلان |
+| GET | `/teachers` | جستجوی استادان فعال و تأییدشده؛ پارامترهای `q`، `field`، `city`، `female`، `limit` و `offset` |
+| GET | `/teachers/:id` | پروفایل عمومی، خدمات فعال و نظرها |
+| GET | `/teachers/:id/work-times` | بازه‌های کاری عمومی استاد؛ برای نمایش برنامه، نه تولید مستقل slot در کلاینت |
+| GET | `/teachers/:id/availability` | زمان‌های قابل رزرو authoritative با `service_id` اجباری و `days` اختیاری ۱ تا ۶۰ |
 
-نمونهٔ ثبت درخواست استاد:
+### قرارداد availability
+
+نمونه:
 
 ```json
 {
-  "field": "quran",
-  "tag": "مدرس تجوید",
-  "bio": "توضیحات سوابق و تخصص",
-  "city": "کرمان",
-  "price30": 150000,
-  "price60": 300000,
-  "female": false,
-  "skills": ["تجوید", "روان‌خوانی"]
+  "data": [
+    {
+      "start_at": "2026-07-27T05:30:00Z",
+      "end_at": "2026-07-27T06:00:00Z",
+      "local_date": "2026-07-27",
+      "local_start": "09:00",
+      "local_end": "09:30",
+      "weekday": 2
+    }
+  ]
 }
 ```
+
+قواعد:
+
+- `start_at` و `end_at` UTC و مقدار معتبر برای `scheduled_at` رزرو هستند.
+- `local_*` بر اساس `APP_TIMEZONE` ساخته می‌شوند تا دستگاهی با timezone دیگر همان ساعت رسمی سامانه را نمایش دهد.
+- Backend بازهٔ کاری را بر اساس مدت خدمت تقسیم می‌کند.
+- زمان گذشته، slot ناقص و تداخل با جلسهٔ pending/confirmed حذف می‌شوند.
+- availability رزرو قطعی نیست؛ درخواست همزمان دیگر ممکن است قبل از submit همان زمان را بگیرد و endpoint رزرو در این حالت conflict برمی‌گرداند.
+- وب و Flutter نباید از `/work-times` الگوریتم مستقل slot generation بسازند.
+
+## حساب و پروفایل
+
+همهٔ مسیرهای این بخش نیازمند JWT هستند.
+
+| متد | مسیر | توضیح |
+|---|---|---|
+| GET | `/me` | پروفایل و نقش جاری از دیتابیس |
+| PUT | `/me` | ویرایش پروفایل؛ `multipart/form-data` برای avatar پشتیبانی می‌شود |
+| POST | `/me/become-teacher` | ایجاد اتمیک پروفایل استاد و تغییر نقش |
+| GET | `/notifications` | اعلان‌های کاربر |
+| POST | `/notifications/:id/read` | خوانده‌شدن اعلان متعلق به کاربر |
 
 ## جلسات قرآن‌آموز
 
 | متد | مسیر | توضیح |
 |---|---|---|
-| POST | `/sessions` | رزرو جلسه |
-| GET | `/sessions?when=upcoming\|past` | جلسات من |
-| POST | `/sessions/:id/cancel` | لغو و refund |
-| POST | `/reviews` | امتیازدهی پس از اتمام |
+| POST | `/sessions` | رزرو با `{ teacher_id, service_id, scheduled_at, note? }`؛ `scheduled_at` باید `start_at` availability باشد |
+| GET | `/sessions?when=upcoming|past` | جلسات کاربر |
+| POST | `/sessions/:id/cancel` | لغو فقط توسط مالک، در وضعیت pending/confirmed و پیش از زمان شروع؛ refund اتمیک |
+| POST | `/reviews` | امتیاز یک‌باره پس از جلسهٔ تکمیل‌شده |
 
-بدنهٔ رزرو:
-
-```json
-{
-  "teacher_id": 1,
-  "service_id": 2,
-  "scheduled_at": "2026-07-25T14:30:00Z",
-  "note": "یادداشت اختیاری"
-}
-```
-
-سرور این موارد را کنترل می‌کند:
-
-- استاد approved، verified و available باشد.
-- خدمت متعلق به استاد و active باشد.
-- زمان حداقل پنج دقیقه در آینده و حداکثر شش ماه بعد باشد.
-- جلسه داخل ساعات کاری استاد در `APP_TIMEZONE` قرار بگیرد.
-- با جلسهٔ pending/confirmed استاد یا قرآن‌آموز تداخل نداشته باشد.
-- موجودی قرآن‌آموز کافی باشد.
+رزرو همچنان همهٔ قواعد availability را دوباره داخل transaction بررسی می‌کند؛ نتیجهٔ availability جایگزین validation زمان submit نیست.
 
 ## کیف پول
 
 | متد | مسیر | توضیح |
 |---|---|---|
-| GET | `/wallet/transactions` | دفتر کل کاربر |
-| POST | `/wallet/charge` | شارژ مستقیم **فقط برای development** |
+| GET | `/wallet/transactions` | دفتر تراکنش کاربر |
+| POST | `/wallet/charge` | شارژ مستقیم فقط در development و در production غیرفعال |
 
-`POST /wallet/charge` فقط وقتی اجرا می‌شود که محیط production نباشد و `DEV_WALLET_CHARGE_ENABLED=true` باشد. production باید از callback تأییدشدهٔ درگاه پرداخت استفاده کند؛ درگاه واقعی هنوز جزو کارهای باقی‌مانده است.
+درگاه واقعی زرین‌پال هنوز endpoint عمومی production ندارد.
 
-نمونهٔ development:
+## پنل استاد
 
-```json
-{ "amount": 200000 }
-```
-
-## استاد
-
-تمام مسیرهای زیر نقش `teacher` یا `admin` می‌خواهند.
+نیازمند نقش `teacher` یا `admin`:
 
 | متد | مسیر | توضیح |
 |---|---|---|
-| GET | `/teacher/me` | پروفایل استاد جاری |
-| PUT | `/teacher/me` | ویرایش پروفایل |
-| POST | `/teacher/services` | افزودن خدمت pending |
-| PUT | `/teacher/services/:id` | ویرایش خدمت |
-| DELETE | `/teacher/services/:id` | حذف خدمت |
-| GET | `/teacher/work-times` | زمان‌های کاری |
-| PUT | `/teacher/work-times` | جایگزینی مجموعهٔ زمان‌ها؛ `{ slots: [...] }` |
+| GET/PUT | `/teacher/me` | مشاهده/ویرایش پروفایل استاد |
+| POST | `/teacher/services` | خدمت جدید؛ غیرفعال تا moderation |
+| PUT/DELETE | `/teacher/services/:id` | ویرایش یا حذف خدمت متعلق به استاد |
+| GET/PUT | `/teacher/work-times` | مشاهده یا جایگزینی کامل برنامهٔ کاری |
 | POST | `/teacher/work-times` | افزودن بازه |
-| PUT | `/teacher/work-times/:id` | ویرایش بازه |
-| DELETE | `/teacher/work-times/:id` | حذف بازه |
+| PUT/DELETE | `/teacher/work-times/:id` | ویرایش یا حذف بازهٔ متعلق به استاد |
 | GET | `/teacher/sessions?when=...` | جلسات استاد |
-| POST | `/teacher/sessions/:id/accept` | پذیرش درخواست معتبر |
-| POST | `/teacher/sessions/:id/reject` | رد و refund؛ `{ "reason": "..." }` |
-| POST | `/teacher/sessions/:id/complete` | اتمام پس از پایان زمان جلسه |
-| POST | `/teacher/withdrawals` | درخواست برداشت |
-| GET | `/teacher/withdrawals` | برداشت‌های من |
+| POST | `/teacher/sessions/:id/accept` | تأیید جلسهٔ pending معتبر |
+| POST | `/teacher/sessions/:id/reject` | رد و refund اتمیک |
+| POST | `/teacher/sessions/:id/complete` | تکمیل بعد از پایان زمان و settlement اتمیک |
+| GET/POST | `/teacher/withdrawals` | مشاهده و ثبت درخواست برداشت |
 
-نمونهٔ بازهٔ کاری:
+## مدیریت
 
-```json
-{ "weekday": 0, "from": "09:00", "to": "13:00" }
-```
-
-نمونهٔ برداشت:
-
-```json
-{
-  "amount": 500000,
-  "card": "",
-  "sheba": "IR000000000000000000000000"
-}
-```
-
-حداقل یکی از `card` یا `sheba` الزامی است.
-
-## مدیر
+نیازمند نقش جاری `admin`:
 
 | متد | مسیر | توضیح |
 |---|---|---|
-| GET | `/admin/dashboard` | آمار کلیدی |
-| GET | `/admin/users?role=` | کاربران |
-| PATCH | `/admin/users/:id/active` | فعال/غیرفعال‌کردن |
-| GET | `/admin/teachers?status=` | اساتید |
-| POST | `/admin/teachers/:id/review` | `{ "approve": true\|false }` |
-| GET | `/admin/sessions?status=` | جلسات |
-| GET | `/admin/withdrawals?status=` | برداشت‌ها |
-| POST | `/admin/withdrawals/:id/process` | `{ "paid": true\|false }` |
-| GET | `/admin/services` | خدمات pending |
-| PUT | `/admin/services/:id/approve` | تأیید خدمت |
-| PUT | `/admin/services/:id/reject` | رد خدمت |
+| GET | `/admin/dashboard` | آمار واقعی کاربران، استادان، جلسات و مالی |
+| GET | `/admin/users` | فهرست صفحه‌بندی‌شده کاربران |
+| PATCH | `/admin/users/:id/active` | فعال/غیرفعال‌کردن با boolean صریح |
+| GET | `/admin/teachers` | فهرست با فیلتر status |
+| POST | `/admin/teachers/:id/review` | `{ "approve": true|false }` |
+| GET | `/admin/services` | خدمات در انتظار moderation |
+| PUT | `/admin/services/:id/approve` | انتشار خدمت |
+| PUT | `/admin/services/:id/reject` | رد و حذف خدمت |
+| GET | `/admin/sessions` | گزارش جلسات |
+| GET | `/admin/withdrawals` | درخواست‌های برداشت |
+| POST | `/admin/withdrawals/:id/process` | `{ "action": "paid"|"rejected" }` |
+| GET | `/admin/support/messages` | پیام‌های پشتیبانی با status و pagination |
+| PATCH | `/admin/support/messages/:id/resolve` | ثبت رسیدگی |
+| GET | `/admin/audit-logs` | گزارش actor/action/target/request ID |
 
-## وضعیت HTTP متداول
+mutationهای موفق ادمین در audit log ثبت می‌شوند. ثبت `paid` برای برداشت فقط وضعیت داخلی است و جایگزین انتقال بانکی واقعی نیست.
 
-| کد | معنا |
-|---:|---|
-| 200/201 | موفق |
-| 400 | validation نامعتبر |
-| 401 | token وجود ندارد یا نامعتبر است |
-| 403 | نقش/حساب مجاز نیست یا قابلیت development غیرفعال است |
-| 404 | منبع یافت نشد |
-| 409 | وضعیت چرخه یا زمان رزرو متعارض است |
-| 500/502 | خطای داخلی یا provider بیرونی |
+## پشتیبانی عمومی
 
-## نمونهٔ چرخهٔ development
+| متد | مسیر | توضیح |
+|---|---|---|
+| POST | `/support/messages` | ثبت rate-limited پیام با `name`، `contact` و `message` |
 
-```bash
-B=http://localhost:3420/api/v1
+## پاسخ خطا و request ID
 
-curl -s -X POST "$B/auth/request-otp" \
-  -H 'Content-Type: application/json' \
-  -d '{"mobile":"09120000000"}'
-
-TOKEN=$(curl -s -X POST "$B/auth/verify-otp" \
-  -H 'Content-Type: application/json' \
-  -d '{"mobile":"09120000000","code":"33365"}' | jq -r .data.token)
-
-curl -s "$B/me" -H "Authorization: Bearer $TOKEN"
-```
-
-> برای رزرو، استاد باید زمان کاری فعال داشته باشد و کاربر نیز موجودی کافی داشته باشد.
+- header ورودی/خروجی: `X-Request-ID`
+- خطاهای validation: HTTP 400
+- احراز هویت: HTTP 401
+- مجوز: HTTP 403
+- عدم وجود: HTTP 404
+- conflict مانند رزرو همزمان یا لغو بعد از شروع: HTTP 409
+- rate limit: HTTP 429 همراه `Retry-After`
 
 </div>
