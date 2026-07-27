@@ -1,18 +1,16 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { api, type Teacher, type TeacherService, type WorkTime } from '@/lib/api';
+import { api, type AvailabilitySlot, type Teacher, type TeacherService } from '@/lib/api';
 import { Icon } from '@/components/Icon';
 import { Avatar } from '@/components/web/ui';
 import { fullUrl, getToken } from '@/lib/auth';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { generateBookingSlots, nextCalendarDates, type BookingSlot } from '@/lib/booking-slots';
 
 const fa = (value: number | string) => String(value).replace(/[0-9]/g, (digit) => '۰۱۲۳۴۵۶۷۸۹'[+digit]);
 const toman = (value: number) => new Intl.NumberFormat('fa-IR').format(value);
-const dateFormatter = new Intl.DateTimeFormat('fa-IR', { weekday: 'short', month: 'short', day: 'numeric' });
-const fullDateFormatter = new Intl.DateTimeFormat('fa-IR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+const localDateFormatter = new Intl.DateTimeFormat('fa-IR', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' });
 
 export default function BookingPage() {
   const router = useRouter();
@@ -20,14 +18,16 @@ export default function BookingPage() {
   const teacherId = Number.parseInt(searchParams.get('teacher') || '0', 10);
 
   const [teacher, setTeacher] = useState<Teacher | null>(null);
-  const [workTimes, setWorkTimes] = useState<WorkTime[]>([]);
   const [serviceId, setServiceId] = useState(0);
+  const [availability, setAvailability] = useState<AvailabilitySlot[]>([]);
   const [selectedDateKey, setSelectedDateKey] = useState('');
-  const [selectedSlotKey, setSelectedSlotKey] = useState('');
+  const [selectedStart, setSelectedStart] = useState('');
   const [note, setNote] = useState('');
   const [loading, setLoading] = useState(true);
+  const [loadingAvailability, setLoadingAvailability] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [availabilityError, setAvailabilityError] = useState('');
   const [done, setDone] = useState(false);
 
   useEffect(() => {
@@ -38,49 +38,63 @@ export default function BookingPage() {
     }
 
     let active = true;
-    (async () => {
-      setLoading(true);
-      setError('');
-      try {
-        const [teacherResponse, workTimeResponse] = await Promise.all([
-          api.teacher(teacherId),
-          api.teacherWorkTimes(teacherId),
-        ]);
-        if (!active) return;
-        setTeacher(teacherResponse.data.teacher);
-        setWorkTimes((workTimeResponse.data || []).filter((slot) => slot.active !== false));
-      } catch (cause) {
-        if (active) setError(cause instanceof Error ? cause.message : 'اطلاعات رزرو دریافت نشد.');
-      } finally {
-        if (active) setLoading(false);
-      }
-    })();
+    setLoading(true);
+    setError('');
+    api.teacher(teacherId)
+      .then((response) => { if (active) setTeacher(response.data.teacher); })
+      .catch((cause) => { if (active) setError(cause instanceof Error ? cause.message : 'اطلاعات استاد دریافت نشد.'); })
+      .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [teacherId]);
 
+  useEffect(() => {
+    if (!serviceId || !teacherId) {
+      setAvailability([]);
+      return;
+    }
+    let active = true;
+    setLoadingAvailability(true);
+    setAvailabilityError('');
+    api.teacherAvailability(teacherId, serviceId, 14)
+      .then((response) => { if (active) setAvailability(response.data || []); })
+      .catch((cause) => {
+        if (!active) return;
+        setAvailability([]);
+        setAvailabilityError(cause instanceof Error ? cause.message : 'زمان‌های قابل رزرو دریافت نشدند.');
+      })
+      .finally(() => { if (active) setLoadingAvailability(false); });
+    return () => { active = false; };
+  }, [teacherId, serviceId]);
+
   const services = useMemo(() => (teacher?.services || []).filter((service) => service.active !== false), [teacher]);
   const selectedService = useMemo(() => services.find((service) => service.id === serviceId) || null, [serviceId, services]);
-  const dates = useMemo(() => nextCalendarDates(14), []);
-  const datesWithSlots = useMemo(() => {
-    if (!selectedService) return [];
-    const now = new Date();
-    return dates
-      .map((date) => ({ date, slots: generateBookingSlots(workTimes, selectedService.duration, date, now, 5) }))
-      .filter((item) => item.slots.length > 0);
-  }, [dates, selectedService, workTimes]);
-  const selectedDate = useMemo(() => datesWithSlots.find((item) => dateKey(item.date) === selectedDateKey) || null, [datesWithSlots, selectedDateKey]);
-  const selectedSlot: BookingSlot | null = useMemo(() => selectedDate?.slots.find((slot) => slot.key === selectedSlotKey) || null, [selectedDate, selectedSlotKey]);
+  const dateGroups = useMemo(() => {
+    const groups = new Map<string, AvailabilitySlot[]>();
+    for (const slot of availability) {
+      const current = groups.get(slot.local_date) || [];
+      current.push(slot);
+      groups.set(slot.local_date, current);
+    }
+    return Array.from(groups, ([localDate, slots]) => ({
+      localDate,
+      weekday: slots[0]?.weekday ?? 0,
+      slots: slots.sort((left, right) => left.start_at.localeCompare(right.start_at)),
+    }));
+  }, [availability]);
+  const selectedDate = useMemo(() => dateGroups.find((group) => group.localDate === selectedDateKey) || null, [dateGroups, selectedDateKey]);
+  const selectedSlot = useMemo(() => availability.find((slot) => slot.start_at === selectedStart) || null, [availability, selectedStart]);
 
   function chooseService(service: TeacherService) {
     setServiceId(service.id);
     setSelectedDateKey('');
-    setSelectedSlotKey('');
+    setSelectedStart('');
+    setAvailability([]);
     setError('');
   }
 
-  function chooseDate(date: Date) {
-    setSelectedDateKey(dateKey(date));
-    setSelectedSlotKey('');
+  function chooseDate(localDate: string) {
+    setSelectedDateKey(localDate);
+    setSelectedStart('');
     setError('');
   }
 
@@ -102,7 +116,7 @@ export default function BookingPage() {
       await api.bookSession(token, {
         teacher_id: teacherId,
         service_id: selectedService.id,
-        scheduled_at: selectedSlot.start.toISOString(),
+        scheduled_at: selectedSlot.start_at,
         note: note.trim() || undefined,
       });
       setDone(true);
@@ -153,18 +167,18 @@ export default function BookingPage() {
         </Card>
 
         <Card title="۲. انتخاب تاریخ و ساعت" disabled={!selectedService}>
-          {!selectedService ? <EmptyText>ابتدا یک خدمت را انتخاب کنید.</EmptyText> : datesWithSlots.length === 0 ? <EmptyText>در ۱۴ روز آینده زمان قابل رزروی برای این خدمت وجود ندارد.</EmptyText> : (
+          {!selectedService ? <EmptyText>ابتدا یک خدمت را انتخاب کنید.</EmptyText> : loadingAvailability ? <EmptyText>در حال دریافت زمان‌های قابل رزرو…</EmptyText> : availabilityError ? <div role="alert" style={{ color: 'var(--rose)', lineHeight: 1.9 }}>{availabilityError}<button type="button" onClick={() => { const current = serviceId; setServiceId(0); window.setTimeout(() => setServiceId(current), 0); }} style={{ display: 'block', marginTop: 10, border: 0, borderRadius: 10, padding: '8px 12px', background: 'var(--rose)', color: '#fff', cursor: 'pointer' }}>تلاش دوباره</button></div> : dateGroups.length === 0 ? <EmptyText>در ۱۴ روز آینده زمان آزاد و قابل رزروی برای این خدمت وجود ندارد.</EmptyText> : (
             <>
               <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8 }}>
-                {datesWithSlots.map(({ date, slots }) => (
-                  <button key={dateKey(date)} type="button" onClick={() => chooseDate(date)} style={dateButton(selectedDateKey === dateKey(date))}>
-                    <span>{dateFormatter.format(date)}</span><small style={{ opacity: .72 }}>{fa(slots.length)} زمان</small>
+                {dateGroups.map((group) => (
+                  <button key={group.localDate} type="button" onClick={() => chooseDate(group.localDate)} style={dateButton(selectedDateKey === group.localDate)}>
+                    <span>{formatLocalDate(group.localDate)}</span><small style={{ opacity: .72 }}>{fa(group.slots.length)} زمان</small>
                   </button>
                 ))}
               </div>
               {selectedDate && (
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 16 }}>
-                  {selectedDate.slots.map((slot) => <button key={slot.key} type="button" onClick={() => setSelectedSlotKey(slot.key)} style={slotButton(selectedSlotKey === slot.key)}>{fa(slot.label)} تا {fa(slot.endLabel)}</button>)}
+                  {selectedDate.slots.map((slot) => <button key={slot.start_at} type="button" onClick={() => setSelectedStart(slot.start_at)} style={slotButton(selectedStart === slot.start_at)}>{fa(slot.local_start)} تا {fa(slot.local_end)}</button>)}
                 </div>
               )}
             </>
@@ -176,12 +190,13 @@ export default function BookingPage() {
             <>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}>
                 <SummaryRow label="خدمت" value={selectedService.title} />
-                <SummaryRow label="زمان جلسه" value={fullDateFormatter.format(selectedSlot.start)} />
+                <SummaryRow label="تاریخ" value={formatLocalDate(selectedSlot.local_date)} />
+                <SummaryRow label="ساعت" value={`${fa(selectedSlot.local_start)} تا ${fa(selectedSlot.local_end)}`} />
                 <SummaryRow label="مدت" value={`${fa(selectedService.duration)} دقیقه`} />
                 <SummaryRow label="مبلغ" value={`${toman(selectedService.price)} تومان`} />
               </div>
               <textarea aria-label="یادداشت برای استاد" value={note} maxLength={500} onChange={(event) => setNote(event.target.value)} placeholder="یادداشت برای استاد (اختیاری)…" style={{ width: '100%', minHeight: 90, padding: 14, borderRadius: 14, border: '1px solid var(--sand-200)', resize: 'vertical', marginBottom: 14 }} />
-              <p style={{ fontSize: 12.5, color: 'var(--ink-3)', lineHeight: 1.9, marginBottom: 16 }}>مبلغ هنگام ثبت رزرو از کیف پول کسر می‌شود. رد درخواست یا لغو مجاز باعث ثبت بازگشت وجه خواهد شد.</p>
+              <p style={{ fontSize: 12.5, color: 'var(--ink-3)', lineHeight: 1.9, marginBottom: 16 }}>مبلغ هنگام ثبت رزرو از کیف پول کسر می‌شود. زمان‌ها در timezone رسمی سامانه محاسبه شده‌اند و ممکن است تا لحظهٔ ثبت توسط کاربر دیگری رزرو شوند.</p>
               {error && <div role="alert" style={{ fontSize: 13, color: 'var(--rose)', background: 'var(--clay-bg)', padding: 12, borderRadius: 12, marginBottom: 14 }}>{error}</div>}
               <button type="button" onClick={submitBooking} disabled={submitting} style={{ ...primaryButton, width: '100%', border: 0, cursor: submitting ? 'wait' : 'pointer', opacity: submitting ? .65 : 1 }}>{submitting ? 'در حال ثبت…' : 'ثبت درخواست رزرو'}</button>
             </>
@@ -192,7 +207,7 @@ export default function BookingPage() {
   );
 }
 
-function dateKey(date: Date) { return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`; }
+function formatLocalDate(localDate: string) { return localDateFormatter.format(new Date(`${localDate}T00:00:00Z`)); }
 function CenterBox({ children, color = 'var(--ink)' }: { children: React.ReactNode; color?: string }) { return <main style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', padding: 24, background: 'var(--sand-50)', color }}><div style={{ maxWidth: 480, textAlign: 'center' }}>{children}</div></main>; }
 function Card({ title, children, disabled = false }: { title: string; children: React.ReactNode; disabled?: boolean }) { return <section aria-disabled={disabled} style={{ background: '#fff', borderRadius: 20, padding: 20, boxShadow: 'var(--sh-sm)', marginBottom: 16, opacity: disabled ? .68 : 1 }}><h2 style={{ fontSize: 17, fontWeight: 800, marginBottom: 16 }}>{title}</h2>{children}</section>; }
 function EmptyText({ children }: { children: React.ReactNode }) { return <p style={{ fontSize: 14, color: 'var(--ink-4)', lineHeight: 1.9 }}>{children}</p>; }
