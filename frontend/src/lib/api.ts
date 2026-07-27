@@ -53,6 +53,15 @@ export type WorkTime = {
   active?: boolean;
 };
 
+export type AvailabilitySlot = {
+  start_at: string;
+  end_at: string;
+  local_date: string;
+  local_start: string;
+  local_end: string;
+  weekday: number;
+};
+
 export type BecomeTeacherInput = {
   field: string;
   tag: string;
@@ -92,6 +101,10 @@ export const api = {
     request<{ data: { teacher: Teacher; reviews: Review[] } }>(`/teachers/${id}`),
   teacherWorkTimes: (id: number) =>
     request<{ data: WorkTime[] }>(`/teachers/${id}/work-times`),
+  teacherAvailability: (teacherId: number, serviceId: number, days = 14) =>
+    request<{ data: AvailabilitySlot[] }>(
+      `/teachers/${teacherId}/availability?service_id=${serviceId}&days=${days}`,
+    ),
   sendSupportMessage: (body: { name: string; contact: string; message: string }) =>
     request<{ data: { id: number; received: boolean } }>('/support/messages', {
       method: 'POST',
