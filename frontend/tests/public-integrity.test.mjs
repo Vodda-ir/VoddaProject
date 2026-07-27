@@ -43,8 +43,8 @@ test('legacy panel API paths are routed through the HttpOnly BFF', async () => {
   ]);
   assert.match(config, /source:\s*['"]\/api\/v1\/:path\*['"]/);
   assert.match(config, /destination:\s*['"]\/api\/backend\/:path\*['"]/);
-  assert.match(bff, /cookieToken/);
-  assert.match(bff, /headers\.set\('Authorization'/);
+  assert.match(bff, /request\.cookies\.get\('vodda_token'\)/);
+  assert.match(bff, /headers\.set\('authorization'/);
 });
 
 test('production wallet and session UI do not advertise inactive capabilities', async () => {
