@@ -73,7 +73,7 @@ class TeacherRepository {
         if (field.trim().isNotEmpty) 'field': field.trim(),
         if (city.trim().isNotEmpty) 'city': city.trim(),
         if (female != null) 'female': female,
-        'limit': limit.clamp(1, 100),
+        'limit': limit.clamp(1, 100).toInt(),
         'offset': offset < 0 ? 0 : offset,
       },
     );
