@@ -27,81 +27,76 @@ class BookingScreen extends ConsumerStatefulWidget {
 
 class _BookingScreenState extends ConsumerState<BookingScreen> {
   Service? _service;
-  DateTime? _date;
+  String? _localDate;
   BookingSlot? _slot;
-  List<BookingWorkRange> _workTimes = const [];
-  bool _loadingWorkTimes = true;
+  List<BookingSlot> _availability = const [];
+  bool _loadingAvailability = false;
   bool _saving = false;
-  String _loadError = '';
+  String _availabilityError = '';
 
-  @override
-  void initState() {
-    super.initState();
-    _fetchWorkTimes();
+  List<_DateGroup> get _dateGroups {
+    final grouped = <String, List<BookingSlot>>{};
+    for (final slot in _availability) {
+      grouped.putIfAbsent(slot.localDate, () => <BookingSlot>[]).add(slot);
+    }
+    return grouped.entries.map((entry) {
+      entry.value.sort((left, right) => left.startAt.compareTo(right.startAt));
+      return _DateGroup(
+        localDate: entry.key,
+        weekday: entry.value.first.weekday,
+        slots: entry.value,
+      );
+    }).toList();
   }
 
-  Future<void> _fetchWorkTimes() async {
+  List<BookingSlot> get _selectedDateSlots {
+    final key = _localDate;
+    if (key == null) return const [];
+    for (final group in _dateGroups) {
+      if (group.localDate == key) return group.slots;
+    }
+    return const [];
+  }
+
+  Future<void> _chooseService(Service service) async {
     setState(() {
-      _loadingWorkTimes = true;
-      _loadError = '';
+      _service = service;
+      _localDate = null;
+      _slot = null;
+      _availability = const [];
+      _availabilityError = '';
+      _loadingAvailability = true;
     });
+
     try {
       final dio = ref.read(dioClientProvider).dio;
       final response = await dio.get(
-        '/teachers/${widget.teacherId}/work-times',
+        '/teachers/${widget.teacherId}/availability',
+        queryParameters: {'service_id': service.id, 'days': 14},
       );
       final raw = response.data is Map
           ? (response.data['data'] as List? ?? const [])
           : const [];
-      final ranges = raw
+      final slots = raw
           .map(
-            (item) => BookingWorkRange.fromJson(
+            (item) => BookingSlot.fromJson(
               Map<String, dynamic>.from(item as Map),
             ),
           )
-          .where((range) => range.active)
           .toList();
-      if (mounted) setState(() => _workTimes = ranges);
+      if (!mounted || _service?.id != service.id) return;
+      setState(() => _availability = slots);
     } catch (_) {
-      if (mounted) {
-        setState(() {
-          _workTimes = const [];
-          _loadError = 'زمان‌های کاری استاد دریافت نشد.';
-        });
-      }
+      if (!mounted || _service?.id != service.id) return;
+      setState(() {
+        _availability = const [];
+        _availabilityError = 'زمان‌های آزاد استاد دریافت نشد.';
+      });
     } finally {
-      if (mounted) setState(() => _loadingWorkTimes = false);
+      if (mounted && _service?.id == service.id) {
+        setState(() => _loadingAvailability = false);
+      }
     }
-  }
-
-  List<({DateTime date, List<BookingSlot> slots})> _availableDates() {
-    final selected = _service;
-    if (selected == null) return const [];
-    final now = DateTime.now();
-    return nextBookingDates(count: 14, now: now)
-        .map(
-          (date) => (
-            date: date,
-            slots: generateBookingSlots(
-              workTimes: _workTimes,
-              durationMinutes: selected.duration,
-              date: date,
-              now: now,
-              leadMinutes: 5,
-            ),
-          ),
-        )
-        .where((item) => item.slots.isNotEmpty)
-        .toList();
-  }
-
-  List<BookingSlot> _slotsForSelectedDate() {
-    final selectedDate = _date;
-    if (selectedDate == null) return const [];
-    for (final item in _availableDates()) {
-      if (_sameDate(item.date, selectedDate)) return item.slots;
-    }
-    return const [];
   }
 
   @override
@@ -131,8 +126,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
 
   Widget _buildContent(Teacher teacher) {
     final services = teacher.services.where((service) => service.active).toList();
-    final availableDates = _availableDates();
-    final dateSlots = _slotsForSelectedDate();
+    final groups = _dateGroups;
 
     return SafeArea(
       child: Column(
@@ -156,11 +150,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                                 (service) => _ServiceTile(
                                   service: service,
                                   selected: _service?.id == service.id,
-                                  onTap: () => setState(() {
-                                    _service = service;
-                                    _date = null;
-                                    _slot = null;
-                                  }),
+                                  onTap: () => _chooseService(service),
                                 ),
                               )
                               .toList(),
@@ -174,7 +164,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                       ? const _EmptyMessage(
                           text: 'ابتدا یک خدمت را انتخاب کنید.',
                         )
-                      : _loadingWorkTimes
+                      : _loadingAvailability
                       ? const Center(
                           child: Padding(
                             padding: EdgeInsets.all(20),
@@ -183,21 +173,21 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                             ),
                           ),
                         )
-                      : _loadError.isNotEmpty
+                      : _availabilityError.isNotEmpty
                       ? Column(
                           children: [
-                            _EmptyMessage(text: _loadError),
+                            _EmptyMessage(text: _availabilityError),
                             TextButton.icon(
-                              onPressed: _fetchWorkTimes,
-                              icon: const Icon(LucideIcons.refreshCw, size: 17),
+                              onPressed: () => _chooseService(_service!),
+                              icon: const Icon(Icons.refresh, size: 18),
                               label: const Text('تلاش دوباره'),
                             ),
                           ],
                         )
-                      : availableDates.isEmpty
+                      : groups.isEmpty
                       ? const _EmptyMessage(
                           text:
-                              'در ۱۴ روز آینده زمان قابل رزروی برای این خدمت وجود ندارد.',
+                              'در ۱۴ روز آینده زمان آزاد و قابل رزروی برای این خدمت وجود ندارد.',
                         )
                       : Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -206,35 +196,33 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                               height: 76,
                               child: ListView.separated(
                                 scrollDirection: Axis.horizontal,
-                                itemCount: availableDates.length,
+                                itemCount: groups.length,
                                 separatorBuilder: (_, _) =>
                                     const SizedBox(width: 9),
                                 itemBuilder: (_, index) {
-                                  final item = availableDates[index];
+                                  final group = groups[index];
                                   return _DateTile(
-                                    date: item.date,
-                                    count: item.slots.length,
-                                    selected: _date != null &&
-                                        _sameDate(_date!, item.date),
+                                    group: group,
+                                    selected: _localDate == group.localDate,
                                     onTap: () => setState(() {
-                                      _date = item.date;
+                                      _localDate = group.localDate;
                                       _slot = null;
                                     }),
                                   );
                                 },
                               ),
                             ),
-                            if (_date != null) ...[
+                            if (_localDate != null) ...[
                               const SizedBox(height: 18),
                               Wrap(
                                 spacing: 9,
                                 runSpacing: 9,
-                                children: dateSlots
+                                children: _selectedDateSlots
                                     .map(
                                       (slot) => _SlotChip(
                                         slot: slot,
                                         selected:
-                                            _slot?.start == slot.start,
+                                            _slot?.startAt == slot.startAt,
                                         onTap: () =>
                                             setState(() => _slot = slot),
                                       ),
@@ -299,7 +287,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
     final success = await ref.read(sessionRepositoryProvider).book(
           teacherId: teacher.id,
           serviceId: service.id,
-          at: slot.start,
+          at: slot.startAt,
         );
     if (mounted) setState(() => _saving = false);
     if (!mounted || !success) return;
@@ -331,6 +319,18 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
       ),
     );
   }
+}
+
+class _DateGroup {
+  const _DateGroup({
+    required this.localDate,
+    required this.weekday,
+    required this.slots,
+  });
+
+  final String localDate;
+  final int weekday;
+  final List<BookingSlot> slots;
 }
 
 class _TeacherSummary extends StatelessWidget {
@@ -516,24 +516,25 @@ class _ServiceTile extends StatelessWidget {
 
 class _DateTile extends StatelessWidget {
   const _DateTile({
-    required this.date,
-    required this.count,
+    required this.group,
     required this.selected,
     required this.onTap,
   });
 
-  final DateTime date;
-  final int count;
+  final _DateGroup group;
   final bool selected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final parts = group.localDate.split('-');
+    final month = parts.length > 1 ? parts[1] : '';
+    final day = parts.length > 2 ? parts[2] : '';
     return InkWell(
       borderRadius: BorderRadius.circular(15),
       onTap: onTap,
       child: Container(
-        width: 92,
+        width: 102,
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
         decoration: BoxDecoration(
           color: selected ? AppColors.olive600 : AppColors.sand50,
@@ -546,7 +547,7 @@ class _DateTile extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              _weekday(date),
+              _weekdayFromVodda(group.weekday),
               style: TextStyle(
                 fontSize: 12,
                 color: selected ? Colors.white : AppColors.ink2,
@@ -555,7 +556,7 @@ class _DateTile extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              '${faNumber(date.day)} · ${faNumber(count)} زمان',
+              '${faNumber(day)}/${faNumber(month)} · ${faNumber(group.slots.length)} زمان',
               style: TextStyle(
                 fontSize: 10.5,
                 color: selected ? Colors.white70 : AppColors.ink3,
@@ -584,7 +585,7 @@ class _SlotChip extends StatelessWidget {
     return ChoiceChip(
       selected: selected,
       onSelected: (_) => onTap(),
-      label: Text('${slot.startLabel} تا ${slot.endLabel}'),
+      label: Text('${slot.localStart} تا ${slot.localEnd}'),
       selectedColor: AppColors.olive600,
       labelStyle: TextStyle(
         color: selected ? Colors.white : AppColors.ink2,
@@ -607,11 +608,15 @@ class _BookingSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final dateParts = slot.localDate.split('-');
+    final localDate = dateParts.length == 3
+        ? '${faNumber(dateParts[2])}/${faNumber(dateParts[1])}/${faNumber(dateParts[0])}'
+        : slot.localDate;
     final rows = [
       ('استاد', teacher.name),
       ('خدمت', service.title),
-      ('تاریخ', '${_weekday(slot.start)} ${faNumber(slot.start.day)}'),
-      ('ساعت', '${slot.startLabel} تا ${slot.endLabel}'),
+      ('تاریخ', '${_weekdayFromVodda(slot.weekday)} $localDate'),
+      ('ساعت', '${slot.localStart} تا ${slot.localEnd}'),
       ('مدت', '${faNumber(service.duration)} دقیقه'),
       ('مبلغ', toman(service.price)),
     ];
@@ -640,7 +645,7 @@ class _BookingSummary extends StatelessWidget {
         ),
         const Divider(),
         const Text(
-          'مبلغ هنگام ثبت رزرو از کیف پول کسر می‌شود. رد درخواست یا لغو مجاز باعث بازگشت وجه خواهد شد.',
+          'زمان‌ها با timezone رسمی سامانه و تداخل جلسات فعال محاسبه شده‌اند. ممکن است تا لحظهٔ ثبت توسط کاربر دیگری رزرو شوند.',
           style: TextStyle(
             fontSize: 12,
             color: AppColors.ink3,
@@ -668,20 +673,15 @@ class _EmptyMessage extends StatelessWidget {
   }
 }
 
-bool _sameDate(DateTime left, DateTime right) =>
-    left.year == right.year &&
-    left.month == right.month &&
-    left.day == right.day;
-
-String _weekday(DateTime date) {
+String _weekdayFromVodda(int weekday) {
   const names = [
+    'شنبه',
+    'یک‌شنبه',
     'دوشنبه',
     'سه‌شنبه',
     'چهارشنبه',
     'پنج‌شنبه',
     'جمعه',
-    'شنبه',
-    'یک‌شنبه',
   ];
-  return names[date.weekday - 1];
+  return weekday >= 0 && weekday < names.length ? names[weekday] : 'روز';
 }
