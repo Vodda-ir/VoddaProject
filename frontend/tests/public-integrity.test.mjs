@@ -10,7 +10,6 @@ test('public pages do not fall back to fabricated teachers or metrics', async ()
     read('src/components/web/sections.tsx'),
     read('src/app/about/page.tsx'),
   ]);
-
   assert.doesNotMatch(home, /mockTeachers|sampleTeachers|fallbackTeachers/);
   assert.doesNotMatch(sections, /href=["']#["']/);
   assert.doesNotMatch(sections, /۱۲۰\+|۴۰\+|منتخب هفته|اساتید دنبال‌شده/);
@@ -23,7 +22,6 @@ test('contact form persists through the support API', async () => {
     read('src/lib/api.ts'),
     read('src/app/api/backend/[...path]/route.ts'),
   ]);
-
   assert.match(contact, /api\.sendSupportMessage/);
   assert.match(api, /\/support\/messages/);
   assert.match(bff, /path\[0\] === 'support'/);
@@ -61,11 +59,34 @@ test('production wallet and session UI do not advertise inactive capabilities', 
   assert.match(faq, /درگاه پرداخت عمومی هنوز فعال نشده/);
 });
 
-test('admin dashboard contains no fabricated time-series chart', async () => {
-  const dashboard = await read('src/app/panel/admin/page.tsx');
-  assert.doesNotMatch(dashboard, /MiniBars|\[3\.1,\s*3\.9/);
-  assert.match(dashboard, /pending_teachers/);
-  assert.match(dashboard, /نمودار تاریخی/);
+test('admin and teacher dashboards contain no fabricated metrics or charts', async () => {
+  const [adminDashboard, teacherDashboard] = await Promise.all([
+    read('src/app/panel/admin/page.tsx'),
+    read('src/app/panel/teacher/page.tsx'),
+  ]);
+  assert.doesNotMatch(adminDashboard, /MiniBars|\[3\.1,\s*3\.9/);
+  assert.match(adminDashboard, /pending_teachers/);
+  assert.match(adminDashboard, /نمودار تاریخی/);
+  assert.doesNotMatch(teacherDashboard, /MiniBars|4\.8|\[1\.8,\s*2\.4/);
+  assert.match(teacherDashboard, /teacher\.reviews/);
+  assert.match(teacherDashboard, /نمودار درآمد/);
+});
+
+test('teacher panel uses real endpoints and cannot self-approve services', async () => {
+  const [api, services, reviews, withdrawals] = await Promise.all([
+    read('src/lib/api.ts'),
+    read('src/app/panel/teacher/services/page.tsx'),
+    read('src/app/panel/teacher/reviews/page.tsx'),
+    read('src/app/panel/teacher/withdrawals/page.tsx'),
+  ]);
+  assert.match(api, /teacherReviews:[\s\S]*\/teacher\/reviews/);
+  assert.match(reviews, /api\.teacherReviews/);
+  assert.doesNotMatch(reviews, /data\?\.reviews/);
+  assert.doesNotMatch(services, /active:\s*!active|فعال‌سازی/);
+  assert.match(services, /deactivateTeacherService/);
+  assert.match(services, /parsedDuration < 10/);
+  assert.match(withdrawals, /requestTeacherWithdrawal/);
+  assert.match(withdrawals, /\^IR\\d\{24\}\$/);
 });
 
 test('web booking consumes backend-authoritative timezone-aware availability', async () => {
@@ -77,11 +98,34 @@ test('web booking consumes backend-authoritative timezone-aware availability', a
   ]);
   assert.match(booking, /api\.teacherAvailability/);
   assert.match(booking, /slot\.start_at/);
+  assert.match(booking, /refreshAvailability/);
   assert.doesNotMatch(booking, /generateBookingSlots|teacherWorkTimes/);
   assert.match(api, /\/availability\?service_id=/);
   assert.match(router, /\/teachers\/:id\/availability/);
   assert.match(availability, /AppTimezone/);
   assert.match(availability, /SessionPending, domain\.SessionConfirmed/);
+});
+
+test('all session lists render official backend local date and time fields', async () => {
+  const [learner, teacher, admin, api, router, display] = await Promise.all([
+    read('src/app/panel/user/sessions/page.tsx'),
+    read('src/app/panel/teacher/sessions/page.tsx'),
+    read('src/app/panel/admin/sessions/page.tsx'),
+    read('src/lib/api.ts'),
+    read('../backend/internal/delivery/http/router.go'),
+    read('../backend/internal/usecase/session_display.go'),
+  ]);
+  for (const page of [learner, teacher, admin]) {
+    assert.match(page, /local_date/);
+    assert.match(page, /local_start/);
+    assert.match(page, /local_end/);
+  }
+  assert.match(api, /type SessionListItem/);
+  assert.match(router, /learnerSessionDisplaysHandler/);
+  assert.match(router, /teacherSessionDisplaysHandler/);
+  assert.match(router, /adminSessionDisplaysHandler/);
+  assert.match(display, /AppTimezone/);
+  assert.match(display, /LocalStart/);
 });
 
 test('legal copy matches the cancellation policy implemented by backend', async () => {
