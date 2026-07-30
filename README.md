@@ -6,20 +6,22 @@
 
 ## وضعیت فعلی
 
-هستهٔ محصول برای یک استقرار تک‌نمونه‌ای پیاده شده است:
+هستهٔ محصول برای استقرار تک‌نمونه‌ای پیاده شده است:
 
-- ورود OTP، JWT و کنترل نقش جاری از دیتابیس
-- پروفایل و تأیید استاد، خدمات و ساعات کاری
-- جستجوی عمومی استادان تأییدشده با فیلتر و صفحه‌بندی
-- تولید زمان‌های واقعی رزرو بر اساس برنامهٔ کاری و مدت خدمت در وب و Flutter
-- رزرو، پذیرش، رد، لغو پیش از شروع، تکمیل و امتیازدهی جلسه
-- کیف پول، دفتر تراکنش، refund، settlement و برداشت اتمیک
-- فرم پشتیبانی ذخیره‌شونده، صندوق پیام و audit log عملیات ادمین
-- وب Next.js با نشست HttpOnly/BFF و سازگاری مسیرهای legacy پنل
-- اپ Flutter با secure storage، جستجوی server-side و release signing اجباری
-- Docker، readiness، backup/restore و CI چندلایه
+- OTP، JWT و کنترل نقش/فعال‌بودن حساب از دیتابیس
+- پروفایل، onboarding و moderation استاد و خدمت
+- جستجوی عمومی با فیلتر server-side و pagination
+- availability رزرو در Backend بر اساس `APP_TIMEZONE`، مدت خدمت، برنامهٔ کاری و تداخل
+- نگهداری UTC برای منطق و فیلدهای رسمی `local_date/local_start/local_end` برای نمایش یکسان وب و اپ
+- رزرو، پذیرش، رد، لغو پیش از شروع، تکمیل و امتیازدهی
+- کیف پول، refund، settlement و برداشت اتمیک
+- پنل کامل قرآن‌آموز، استاد و مدیر در وب
+- اپ Flutter با جستجو، رزرو، جلسه، خدمات و برداشت واقعی
+- پشتیبانی ذخیره‌شونده و audit log عملیات مدیر
+- نشست وب HttpOnly/BFF و token اپ در secure storage
+- Docker، readiness، backup/restore و workflow کنترل کیفیت چندلایه
 
-قابلیت‌های بیرونی **درگاه واقعی زرین‌پال** و **تماس صوتی واقعی** هنوز تکمیل نشده‌اند و در UI production به‌عنوان قابلیت فعال نمایش داده نمی‌شوند.
+درگاه واقعی زرین‌پال و تماس صوتی واقعی هنوز تکمیل نشده‌اند و در UI production به‌عنوان قابلیت فعال نمایش داده نمی‌شوند.
 
 ## ساختار مخزن
 
@@ -31,7 +33,7 @@ VoddaProject/
 ├── docs/                     # معماری، API، ممیزی و runbook
 ├── ops/                      # backup/restore
 ├── docker-compose.yml        # توسعه
-└── docker-compose.deploy.yml # استقرار production
+└── docker-compose.deploy.yml # production
 ```
 
 ## اجرای محلی
@@ -41,8 +43,6 @@ cp .env.example .env
 # مقادیر توسعه را تنظیم کنید
 docker compose up --build
 ```
-
-سرویس‌ها:
 
 | سرویس | آدرس |
 |---|---|
@@ -54,7 +54,7 @@ docker compose up --build
 
 ## دادهٔ نمونهٔ توسعه
 
-seed فقط در صورت فعال‌بودن `AUTO_SEED` و خالی‌بودن دیتابیس اجرا می‌شود و تراکنشی است.
+seed فقط با `AUTO_SEED=true` و دیتابیس خالی اجرا می‌شود و تراکنشی است.
 
 | نقش | موبایل |
 |---|---|
@@ -64,9 +64,9 @@ seed فقط در صورت فعال‌بودن `AUTO_SEED` و خالی‌بودن
 | استاد مداحی | `09130000003` |
 | استاد بانو | `09130000004` |
 
-seed امتیاز، تعداد جلسه یا follower ساختگی ایجاد نمی‌کند.
+seed امتیاز، تعداد جلسه، follower یا نمودار ساختگی ایجاد نمی‌کند.
 
-## اجرای مستقل سرویس‌ها
+## اجرای مستقل
 
 ### Backend
 
@@ -113,34 +113,38 @@ flutter analyze
 flutter test
 ```
 
-تست‌های فعلی علاوه بر جریان‌های مالی، onboarding و review، تولید slot رزرو در وب و Flutter و policy لغو پیش از شروع را پوشش می‌دهند.
+تست‌های مخزن availability و timezone رسمی، policy لغو، عملیات مالی، onboarding، review، BFF، صداقت محتوای UI، moderation خدمت، برداشت و parsing مدل Flutter را پوشش می‌دهند.
 
-CI همین بررسی‌ها را به‌همراه MySQL واقعی و اعتبارسنجی Docker Compose اجرا می‌کند. در اجرای قبلی، GitHub Actions مخزن jobها را پیش از اولین step متوقف می‌کرد؛ این مانع عملیاتی در گزارش ممیزی ثبت شده است و نباید با failure تست کد اشتباه گرفته شود.
+Workflow همین بررسی‌ها را با MySQL واقعی و validation فایل‌های Docker تعریف می‌کند. در اجرای commit نهایی، GitHub Actions هر چهار job را پیش از checkout و با `steps: null` متوقف کرده است؛ بنابراین failure فعلی اثبات‌کنندهٔ خطای کد نیست، اما جایگزین اجرای موفق CI نیز محسوب نمی‌شود.
+
+## قرارداد زمان جلسه
+
+- `scheduled_at` همیشه UTC و منبع حقیقت ذخیره و مقایسه است.
+- Backend برای availability و فهرست جلسه، `local_date`، `local_start` و `local_end` را بر اساس `APP_TIMEZONE` برمی‌گرداند.
+- وب و Flutter فقط فیلدهای `local_*` را نمایش می‌دهند و به timezone دستگاه متکی نیستند.
+- availability قطعی نیست؛ رزرو همهٔ قواعد را دوباره هنگام submit بررسی می‌کند و در تداخل پاسخ conflict می‌دهد.
 
 ## امنیت و یکپارچگی
 
-- JWT وب فقط در cookie امن `HttpOnly` نگهداری می‌شود.
-- همهٔ درخواست‌های پنل از BFF عبور می‌کنند؛ مسیرهای legacy نیز به BFF rewrite می‌شوند.
-- JWT اپ در platform secure storage است و در `SharedPreferences` ذخیره نمی‌شود.
+- JWT وب فقط در cookie امن `HttpOnly` است و تمام پنل‌ها از BFF عبور می‌کنند.
+- JWT اپ در platform secure storage است.
 - نقش و فعال‌بودن حساب در هر درخواست محافظت‌شده از دیتابیس بررسی می‌شود.
-- OTP جدید به‌صورت HMAC digest ذخیره می‌شود.
-- رزرو، refund، settlement، برداشت، onboarding استاد و امتیازدهی مرز تراکنش دارند.
-- لغو learner فقط پیش از زمان شروع جلسه مجاز است.
-- ورودی JSON ناشناخته یا ناقص رد می‌شود و booleanهای مدیریتی باید صریح باشند.
-- آپلود آواتار محدودیت حجم، MIME، پسوند و cleanup فایل ناقص دارد.
-- mutationهای موفق ادمین audit می‌شوند و در پنل قابل مشاهده‌اند.
+- OTP به‌صورت HMAC digest ذخیره می‌شود.
+- رزرو، refund، settlement، برداشت، onboarding و review مرز تراکنش دارند.
+- لغو learner فقط پیش از شروع جلسه مجاز است.
+- خدمت غیرفعال را فقط مدیر می‌تواند دوباره منتشر کند.
+- mutationهای موفق مدیر audit و در پنل قابل مشاهده‌اند.
 - Android release بدون keystore production عمداً fail می‌شود.
 
 ## وضعیت UI/UX
 
-- ناوبری عمومی موبایل، focus-visible و reduced-motion پیاده شده‌اند.
-- loading، empty، error و retry در مسیرهای اصلی از یکدیگر تفکیک شده‌اند.
-- نمودار، آمار، تماس صوتی، شارژ و CTAهای ساختگی حذف شده‌اند.
-- جستجوی وب درخواست قبلی را abort می‌کند و pagination واقعی دارد.
-- جستجوی Flutter فیلترهای نام، حوزه، شهر و جنسیت را به Backend می‌فرستد.
-- رزرو وب و Flutter زمان‌های واقعی را بر اساس مدت خدمت تولید می‌کند.
-- پنل مدیر UI کامل کاربران، استادان، خدمات، جلسات، برداشت، پشتیبانی و audit را دارد.
-- FAQ، قوانین و حریم خصوصی با قابلیت‌های فعال نسخهٔ فعلی هماهنگ‌اند.
+- loading، empty، error و retry در مسیرهای اصلی مستقل‌اند.
+- نمودار، امتیاز، درآمد، تماس صوتی، شارژ و CTAهای ساختگی حذف شده‌اند.
+- جستجوی وب abortable و صفحه‌بندی‌شده است؛ جستجوی Flutter فیلتر server-side دارد.
+- پنل استاد در وب و اپ درخواست، جلسه، تکمیل، خدمت، زمان کاری، کیف پول و برداشت واقعی دارد.
+- شماره کارت/شبا و موجودی برداشت در وب و Flutter اعتبارسنجی می‌شوند.
+- ناوبری موبایل، focus-visible و reduced-motion پیاده شده‌اند.
+- FAQ، قوانین و حریم خصوصی با قابلیت‌های فعال هماهنگ‌اند.
 
 ## استقرار production
 
@@ -153,24 +157,24 @@ docker compose -f docker-compose.deploy.yml up -d --build
 در production:
 
 - MySQL، Backend و Frontend فقط روی `127.0.0.1` publish می‌شوند.
-- Reverse proxy باید TLS را terminate کند و فقط Frontend/API لازم را منتشر کند.
+- Reverse proxy باید TLS را terminate کند.
 - `APP_ENV=production` الزامی است.
 - bypass OTP، seed خودکار و شارژ مستقیم توسعه‌ای غیرفعال‌اند.
-- برای Android، `app/android/key.properties.example` را مبنا قرار دهید و فایل واقعی را خارج از Git نگه دارید.
+- فایل keystore واقعی Android باید خارج از Git نگهداری شود.
 
 راهنمای عملیات: [`docs/production-runbook.md`](docs/production-runbook.md)
 
-## بدهی فنی باقی‌مانده
+## بدهی باقی‌مانده
 
-- درگاه واقعی زرین‌پال و reconciliation پرداخت
-- provider تماس صوتی و lifecycle توکن/اتصال
-- migrationهای نسخه‌دار و بررسی foreign keyها به‌جای اتکای نهایی به AutoMigrate
-- Redis و object storage برای چند replica
-- observability مرکزی و E2E روی staging
+- زرین‌پال واقعی و payment reconciliation
+- provider تماس صوتی و lifecycle اتصال
+- migration نسخه‌دار، rollback و foreign-key audit
+- Redis/shared limiter و object storage برای چند replica
+- metrics، tracing، alerting و staging E2E/restore drill
 - accessibility audit کامل با screen reader
-- بررسی archive/signing واقعی iOS و انتشار رسمی اپ
+- archive/signing واقعی iOS و انتشار رسمی اپ
 
-جزئیات کامل: [`CHECKLIST.md`](CHECKLIST.md) و [`docs/audit-2026-07-27.md`](docs/audit-2026-07-27.md)
+جزئیات: [`CHECKLIST.md`](CHECKLIST.md) و [`docs/audit-2026-07-27.md`](docs/audit-2026-07-27.md)
 
 ## مستندات
 
@@ -179,7 +183,7 @@ docker compose -f docker-compose.deploy.yml up -d --build
 - [راهنمای توسعه](docs/development.md)
 - [راهنمای استقرار](docs/deployment.md)
 - [Runbook تولید](docs/production-runbook.md)
-- [ممیزی فنی و UI/UX ـ ۲۰۲۶-۰۷-۲۷](docs/audit-2026-07-27.md)
-- [ممیزی production ـ ۲۰۲۶-۰۷-۲۱](docs/audit-2026-07-21.md)
+- [ممیزی فنی و UI/UX](docs/audit-2026-07-27.md)
+- [ممیزی production قبلی](docs/audit-2026-07-21.md)
 
 </div>
