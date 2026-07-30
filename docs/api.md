@@ -29,8 +29,6 @@
 
 ### قرارداد availability
 
-نمونه:
-
 ```json
 {
   "data": [
@@ -67,12 +65,34 @@
 | GET | `/notifications` | اعلان‌های کاربر |
 | POST | `/notifications/:id/read` | خوانده‌شدن اعلان متعلق به کاربر |
 
+## قرارداد نمایش جلسه
+
+فهرست‌های `/sessions`، `/teacher/sessions` و `/admin/sessions` زمان اصلی UTC را نگه می‌دارند و همزمان فیلدهای رسمی نمایش را برمی‌گردانند:
+
+```json
+{
+  "id": 17,
+  "service": "آموزش روخوانی",
+  "scheduled_at": "2026-07-30T05:30:00Z",
+  "local_date": "2026-07-30",
+  "local_start": "09:00",
+  "local_end": "09:30",
+  "weekday": 5,
+  "duration": 30,
+  "status": "confirmed"
+}
+```
+
+- `scheduled_at` منبع حقیقت منطق، مقایسه و ذخیره است.
+- UI باید `local_date`، `local_start` و `local_end` را نمایش دهد.
+- کلاینت نباید برای نمایش ساعت جلسه به timezone مرورگر/دستگاه یا `toLocal()` متکی باشد.
+
 ## جلسات قرآن‌آموز
 
 | متد | مسیر | توضیح |
 |---|---|---|
 | POST | `/sessions` | رزرو با `{ teacher_id, service_id, scheduled_at, note? }`؛ `scheduled_at` باید `start_at` availability باشد |
-| GET | `/sessions?when=upcoming|past` | جلسات کاربر |
+| GET | `/sessions?when=upcoming|past` | جلسات کاربر با قرارداد نمایش رسمی |
 | POST | `/sessions/:id/cancel` | لغو فقط توسط مالک، در وضعیت pending/confirmed و پیش از زمان شروع؛ refund اتمیک |
 | POST | `/reviews` | امتیاز یک‌باره پس از جلسهٔ تکمیل‌شده |
 
@@ -95,15 +115,18 @@
 |---|---|---|
 | GET/PUT | `/teacher/me` | مشاهده/ویرایش پروفایل استاد |
 | POST | `/teacher/services` | خدمت جدید؛ غیرفعال تا moderation |
-| PUT/DELETE | `/teacher/services/:id` | ویرایش یا حذف خدمت متعلق به استاد |
+| PUT/DELETE | `/teacher/services/:id` | ویرایش، غیرفعال‌کردن یا حذف خدمت متعلق به استاد؛ فعال‌سازی فقط توسط ادمین |
 | GET/PUT | `/teacher/work-times` | مشاهده یا جایگزینی کامل برنامهٔ کاری |
 | POST | `/teacher/work-times` | افزودن بازه |
 | PUT/DELETE | `/teacher/work-times/:id` | ویرایش یا حذف بازهٔ متعلق به استاد |
-| GET | `/teacher/sessions?when=...` | جلسات استاد |
+| GET | `/teacher/sessions?when=...` | جلسات استاد با قرارداد نمایش رسمی |
 | POST | `/teacher/sessions/:id/accept` | تأیید جلسهٔ pending معتبر |
 | POST | `/teacher/sessions/:id/reject` | رد و refund اتمیک |
 | POST | `/teacher/sessions/:id/complete` | تکمیل بعد از پایان زمان و settlement اتمیک |
+| GET | `/teacher/reviews` | نظرهای واقعی ثبت‌شده برای استاد جاری |
 | GET/POST | `/teacher/withdrawals` | مشاهده و ثبت درخواست برداشت |
+
+درخواست برداشت مبلغ را تا تعیین وضعیت رزرو می‌کند. شماره کارت باید ۱۶ رقم یا شبا باید `IR` به‌همراه ۲۴ رقم باشد.
 
 ## مدیریت
 
@@ -119,7 +142,7 @@
 | GET | `/admin/services` | خدمات در انتظار moderation |
 | PUT | `/admin/services/:id/approve` | انتشار خدمت |
 | PUT | `/admin/services/:id/reject` | رد و حذف خدمت |
-| GET | `/admin/sessions` | گزارش جلسات |
+| GET | `/admin/sessions` | گزارش جلسات با قرارداد نمایش رسمی |
 | GET | `/admin/withdrawals` | درخواست‌های برداشت |
 | POST | `/admin/withdrawals/:id/process` | `{ "action": "paid"|"rejected" }` |
 | GET | `/admin/support/messages` | پیام‌های پشتیبانی با status و pagination |
@@ -141,7 +164,7 @@ mutationهای موفق ادمین در audit log ثبت می‌شوند. ثبت
 - احراز هویت: HTTP 401
 - مجوز: HTTP 403
 - عدم وجود: HTTP 404
-- conflict مانند رزرو همزمان یا لغو بعد از شروع: HTTP 409
+- conflict مانند رزرو همزمان، تکمیل زودهنگام یا لغو بعد از شروع: HTTP 409
 - rate limit: HTTP 429 همراه `Retry-After`
 
 </div>
