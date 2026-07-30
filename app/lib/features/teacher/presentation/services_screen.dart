@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../../core/services/snackbar_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/fa.dart';
 import '../../../core/widgets/app_error.dart';
@@ -9,15 +11,13 @@ import '../data/teacher_repository.dart';
 
 class ServicesScreen extends ConsumerStatefulWidget {
   const ServicesScreen({super.key});
+
   @override
   ConsumerState<ServicesScreen> createState() => _ServicesScreenState();
 }
 
 class _ServicesScreenState extends ConsumerState<ServicesScreen> {
-  final _titleCtrl = TextEditingController();
-  final _priceCtrl = TextEditingController();
-  int _duration = 30;
-  bool _adding = false;
+  int? _busyId;
 
   @override
   Widget build(BuildContext context) {
@@ -27,9 +27,9 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
       body: Column(
         children: [
           const Padding(
-            padding: EdgeInsets.all(20),
+            padding: EdgeInsets.fromLTRB(20, 8, 20, 16),
             child: Text(
-              'خدماتی که برای قرآن‌آموزان قابل رزرو است. خدمت جدید پس از تأیید ادمین فعال می‌شود.',
+              'خدمت جدید یا ویرایش‌شده تا تأیید مدیر قابل رزرو نیست. فعال‌سازی فقط از پنل مدیریت انجام می‌شود.',
               style: TextStyle(
                 fontSize: 13,
                 color: AppColors.ink3,
@@ -46,8 +46,9 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
               },
               child: services.when(
                 loading: () => ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
                   children: const [
-                    SizedBox(height: 160),
+                    SizedBox(height: 180),
                     Center(
                       child: CircularProgressIndicator(
                         color: AppColors.olive600,
@@ -55,400 +56,393 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
                     ),
                   ],
                 ),
-                error: (e, _) => ListView(
+                error: (error, _) => ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
                   children: [
                     SizedBox(
-                      height: 160,
+                      height: 220,
                       child: AppErrorView(
-                        error: e,
+                        error: error,
                         onRetry: () => ref.invalidate(myServicesProvider),
                       ),
                     ),
                   ],
                 ),
-                data: (list) => list.isEmpty && !_adding
+                data: (items) => items.isEmpty
                     ? ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
                         children: const [
-                          SizedBox(height: 80),
+                          SizedBox(height: 100),
                           Center(
                             child: Text(
-                              'هنوز خدمتی تعریف نشده',
+                              'هنوز خدمتی تعریف نشده است',
                               style: TextStyle(color: AppColors.ink3),
                             ),
                           ),
                         ],
                       )
                     : ListView.separated(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        itemCount: list.length + (_adding ? 1 : 0),
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                        itemCount: items.length,
                         separatorBuilder: (_, _) => const SizedBox(height: 12),
-                        itemBuilder: (_, i) {
-                          if (_adding && i == list.length) return _addForm();
-                          return _serviceCard(list[i]);
-                        },
+                        itemBuilder: (_, index) =>
+                            _serviceCard(items[index]),
                       ),
               ),
             ),
           ),
-          if (!_adding)
-            Padding(
+          SafeArea(
+            top: false,
+            child: Padding(
               padding: const EdgeInsets.all(20),
               child: SizedBox(
-                height: 52,
                 width: double.infinity,
+                height: 52,
                 child: ElevatedButton.icon(
-                  onPressed: () => setState(() => _adding = true),
+                  onPressed: () => _openEditor(),
                   icon: const Icon(LucideIcons.plus, size: 19),
                   label: const Text('افزودن خدمت جدید'),
                 ),
               ),
             ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _serviceCard(Map<String, dynamic> s) {
-    final id = s['id'] as int;
-    final active = s['active'] as bool? ?? false;
-    final title = s['title'] as String? ?? '';
-    final duration = s['duration'] as int? ?? 30;
-    final price = s['price'] as int? ?? 0;
-    return GestureDetector(
-      onTap: () => _editService(id, title, duration, price),
-      child: AnimatedOpacity(
-        duration: const Duration(milliseconds: 200),
-        opacity: active ? 1.0 : 0.55,
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(18),
-            boxShadow: const [
-              BoxShadow(color: Color(0x0A2E3622), blurRadius: 4),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 46,
-                height: 46,
-                decoration: BoxDecoration(
-                  color: AppColors.olive100,
-                  borderRadius: BorderRadius.circular(13),
+  Widget _serviceCard(Map<String, dynamic> service) {
+    final id = _asInt(service['id']);
+    final active = service['active'] == true;
+    final title = '${service['title'] ?? ''}';
+    final duration = _asInt(service['duration'], fallback: 30);
+    final price = _asInt(service['price']);
+    final busy = _busyId == id;
+
+    return AnimatedOpacity(
+      duration: const Duration(milliseconds: 180),
+      opacity: busy ? 0.55 : 1,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: const [BoxShadow(color: Color(0x0A2E3622), blurRadius: 4)],
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    color: AppColors.olive100,
+                    borderRadius: BorderRadius.circular(13),
+                  ),
+                  child: const Icon(
+                    LucideIcons.bookOpen,
+                    size: 23,
+                    color: AppColors.olive700,
+                  ),
                 ),
-                child: const Icon(
-                  LucideIcons.bookOpen,
-                  size: 23,
-                  color: AppColors.olive700,
-                ),
-              ),
-              const SizedBox(width: 13),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            title,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                        if (!active)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.goldBg,
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                            child: const Text(
-                              'در انتظار تأیید',
-                              style: TextStyle(
-                                fontSize: 10,
+                const SizedBox(width: 13),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              title,
+                              style: const TextStyle(
+                                fontSize: 14,
                                 fontWeight: FontWeight.w700,
-                                color: AppColors.gold,
                               ),
                             ),
                           ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${faNumber(duration)} دقیقه · ${faNumber(price)} تومان',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.ink3,
+                          _StatusChip(active: active),
+                        ],
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              _Toggle(
-                on: active,
-                onChanged: (v) async {
-                  if (v && !active) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('فعال‌سازی نیازمند تأیید ادمین است'),
-                        duration: Duration(seconds: 2),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${faNumber(duration)} دقیقه · ${faNumber(price)} تومان',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.ink3,
+                        ),
                       ),
-                    );
-                    return;
-                  }
-                  final ok = await ref
-                      .read(teacherRepositoryProvider)
-                      .updateService(id, active: v);
-                  if (ok) ref.invalidate(myServicesProvider);
-                },
-              ),
-              const SizedBox(width: 4),
-              IconButton(
-                icon: const Icon(
-                  LucideIcons.trash2,
-                  size: 18,
-                  color: AppColors.ink4,
+                    ],
+                  ),
                 ),
-                onPressed: () => _confirmDelete(id, title),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-              ),
-            ],
-          ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: busy
+                        ? null
+                        : () => _openEditor(service: service),
+                    icon: const Icon(LucideIcons.pencil, size: 16),
+                    label: const Text('ویرایش'),
+                  ),
+                ),
+                if (active) ...[
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: busy
+                          ? null
+                          : () => _deactivate(id, title),
+                      child: const Text('غیرفعال‌کردن'),
+                    ),
+                  ),
+                ],
+                const SizedBox(width: 8),
+                IconButton(
+                  tooltip: 'حذف خدمت',
+                  onPressed: busy ? null : () => _delete(id, title),
+                  icon: const Icon(
+                    LucideIcons.trash2,
+                    size: 19,
+                    color: AppColors.rose,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
   }
 
-  void _confirmDelete(int id, String title) {
-    showDialog(
+  Future<void> _deactivate(int id, String title) async {
+    final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('حذف خدمت'),
-        content: Text('آیا مطمئنید می\u200Cخواهید "$title" را حذف کنید؟'),
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('غیرفعال‌کردن خدمت'),
+        content: Text(
+          'خدمت «$title» غیرفعال شود؟ فعال‌سازی مجدد نیازمند تأیید مدیر است.',
+        ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx),
+            onPressed: () => Navigator.pop(dialogContext, false),
             child: const Text('انصراف'),
           ),
-          ElevatedButton(
-            onPressed: () async {
-              await ref.read(teacherRepositoryProvider).deleteService(id);
-              ref.invalidate(myServicesProvider);
-              if (ctx.mounted) Navigator.pop(ctx);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.rose,
-              foregroundColor: Colors.white,
-            ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('غیرفعال‌کردن'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() => _busyId = id);
+    final saved = await ref
+        .read(teacherRepositoryProvider)
+        .updateService(id, active: false);
+    if (!mounted) return;
+    setState(() => _busyId = null);
+    if (saved) ref.invalidate(myServicesProvider);
+  }
+
+  Future<void> _delete(int id, String title) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('حذف خدمت'),
+        content: Text('خدمت «$title» حذف شود؟'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('انصراف'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.rose),
+            onPressed: () => Navigator.pop(dialogContext, true),
             child: const Text('حذف'),
           ),
         ],
       ),
     );
+    if (confirmed != true || !mounted) return;
+    setState(() => _busyId = id);
+    final deleted =
+        await ref.read(teacherRepositoryProvider).deleteService(id);
+    if (!mounted) return;
+    setState(() => _busyId = null);
+    if (deleted) ref.invalidate(myServicesProvider);
   }
 
-  void _editService(int id, String title, int duration, int price) {
-    final tCtrl = TextEditingController(text: title);
-    final pCtrl = TextEditingController(text: price.toString());
-    int dur = duration > 0 ? duration : 30;
-    showDialog(
+  Future<void> _openEditor({Map<String, dynamic>? service}) async {
+    final titleController =
+        TextEditingController(text: '${service?['title'] ?? ''}');
+    final durationController = TextEditingController(
+      text: '${service?['duration'] ?? 30}',
+    );
+    final priceController =
+        TextEditingController(text: '${service?['price'] ?? ''}');
+    var saving = false;
+    String? formError;
+
+    final saved = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('ویرایش خدمت'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: tCtrl,
-              decoration: const InputDecoration(labelText: 'عنوان'),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: pCtrl,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'قیمت (تومان)'),
-            ),
-            const SizedBox(height: 10),
-            DropdownButtonFormField<int>(
-              initialValue: dur,
-              items: const [
-                DropdownMenuItem(value: 30, child: Text('۳۰ دقیقه')),
-                DropdownMenuItem(value: 60, child: Text('۶۰ دقیقه')),
+      barrierDismissible: false,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text(service == null ? 'خدمت جدید' : 'ویرایش خدمت'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: titleController,
+                  maxLength: 160,
+                  decoration: const InputDecoration(labelText: 'عنوان'),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: durationController,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  decoration: const InputDecoration(
+                    labelText: 'مدت (۱۰ تا ۲۴۰ دقیقه)',
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: priceController,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  decoration: const InputDecoration(labelText: 'قیمت (تومان)'),
+                ),
+                if (formError != null) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    formError!,
+                    style: const TextStyle(color: AppColors.rose),
+                  ),
+                ],
               ],
-              onChanged: (v) => dur = v ?? 30,
-              decoration: const InputDecoration(labelText: 'مدت'),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed:
+                  saving ? null : () => Navigator.pop(dialogContext, false),
+              child: const Text('انصراف'),
+            ),
+            FilledButton(
+              onPressed: saving
+                  ? null
+                  : () async {
+                      final title = titleController.text.trim();
+                      final duration =
+                          int.tryParse(durationController.text.trim());
+                      final price = int.tryParse(priceController.text.trim());
+                      if (title.isEmpty) {
+                        setDialogState(() => formError = 'عنوان را وارد کنید');
+                        return;
+                      }
+                      if (duration == null ||
+                          duration < 10 ||
+                          duration > 240) {
+                        setDialogState(
+                          () => formError =
+                              'مدت باید بین ۱۰ تا ۲۴۰ دقیقه باشد',
+                        );
+                        return;
+                      }
+                      if (price == null || price <= 0) {
+                        setDialogState(
+                          () => formError = 'قیمت معتبر وارد کنید',
+                        );
+                        return;
+                      }
+                      setDialogState(() {
+                        saving = true;
+                        formError = null;
+                      });
+                      final repository =
+                          ref.read(teacherRepositoryProvider);
+                      final success = service == null
+                          ? await repository.addService(
+                                  title: title,
+                                  duration: duration,
+                                  price: price,
+                                ) !=
+                              null
+                          : await repository.updateService(
+                              _asInt(service['id']),
+                              title: title,
+                              duration: duration,
+                              price: price,
+                            );
+                      if (!dialogContext.mounted) return;
+                      if (success) {
+                        Navigator.pop(dialogContext, true);
+                      } else {
+                        setDialogState(() => saving = false);
+                      }
+                    },
+              child: saving
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text('ذخیره'),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('انصراف'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final nt = tCtrl.text.trim(),
-                  np = int.tryParse(pCtrl.text.trim()) ?? 0;
-              if (nt.isEmpty || np <= 0) return;
-              final ok = await ref
-                  .read(teacherRepositoryProvider)
-                  .updateService(id, title: nt, price: np, duration: dur);
-              if (ok) ref.invalidate(myServicesProvider);
-              if (ctx.mounted) Navigator.pop(ctx);
-            },
-            child: const Text('ذخیره'),
-          ),
-        ],
       ),
     );
-  }
 
-  Widget _addForm() => Container(
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      color: AppColors.surface,
-      borderRadius: BorderRadius.circular(18),
-      border: Border.all(color: AppColors.olive500, width: 1.5),
-      boxShadow: const [BoxShadow(color: Color(0x0A2E3622), blurRadius: 4)],
-    ),
-    child: Column(
-      children: [
-        TextField(
-          controller: _titleCtrl,
-          decoration: const InputDecoration(
-            hintText: 'عنوان خدمت',
-            border: OutlineInputBorder(),
-          ),
-        ),
-        const SizedBox(height: 10),
-        Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: _priceCtrl,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  hintText: 'قیمت (تومان)',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            DropdownButton<int>(
-              value: _duration > 0 ? _duration : 30,
-              items: const [
-                DropdownMenuItem(value: 30, child: Text('۳۰ دقیقه')),
-                DropdownMenuItem(value: 60, child: Text('۶۰ دقیقه')),
-              ],
-              onChanged: (v) => setState(() => _duration = v ?? 30),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton(
-                onPressed: () {
-                  setState(() => _adding = false);
-                  _titleCtrl.clear();
-                  _priceCtrl.clear();
-                },
-                child: const Text('انصراف'),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: ElevatedButton(
-                onPressed: () async {
-                  final title = _titleCtrl.text.trim(),
-                      price = int.tryParse(_priceCtrl.text.trim()) ?? 0;
-                  if (title.isEmpty || price <= 0) return;
-                  final result = await ref
-                      .read(teacherRepositoryProvider)
-                      .addService(
-                        title: title,
-                        duration: _duration,
-                        price: price,
-                      );
-                  if (result != null) {
-                    ref.invalidate(myServicesProvider);
-                    setState(() => _adding = false);
-                    _titleCtrl.clear();
-                    _priceCtrl.clear();
-                  }
-                },
-                child: const Text('افزودن'),
-              ),
-            ),
-          ],
-        ),
-      ],
-    ),
-  );
-
-  @override
-  void dispose() {
-    _titleCtrl.dispose();
-    _priceCtrl.dispose();
-    super.dispose();
+    titleController.dispose();
+    durationController.dispose();
+    priceController.dispose();
+    if (saved == true) {
+      ref.invalidate(myServicesProvider);
+      SnackBarService.show(
+        service == null
+            ? 'خدمت برای بررسی مدیر ثبت شد'
+            : 'ویرایش برای بررسی مدیر ثبت شد',
+      );
+    }
   }
 }
 
-class _Toggle extends StatefulWidget {
-  const _Toggle({required this.on, this.onChanged});
-  final bool on;
-  final ValueChanged<bool>? onChanged;
-  @override
-  State<_Toggle> createState() => _ToggleState();
-}
-
-class _ToggleState extends State<_Toggle> {
-  late bool _on;
-  @override
-  void initState() {
-    super.initState();
-    _on = widget.on;
-  }
+class _StatusChip extends StatelessWidget {
+  const _StatusChip({required this.active});
+  final bool active;
 
   @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        setState(() => _on = !_on);
-        widget.onChanged?.call(_on);
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: 46,
-        height: 28,
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
         decoration: BoxDecoration(
-          color: _on ? AppColors.olive600 : AppColors.sand200,
+          color: active ? AppColors.olive100 : AppColors.goldBg,
           borderRadius: BorderRadius.circular(999),
         ),
-        child: AnimatedAlign(
-          duration: const Duration(milliseconds: 200),
-          alignment: _on ? Alignment.centerRight : Alignment.centerLeft,
-          child: Container(
-            width: 22,
-            height: 22,
-            margin: const EdgeInsets.symmetric(horizontal: 3),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              boxShadow: [BoxShadow(color: Color(0x33000000), blurRadius: 2)],
-            ),
+        child: Text(
+          active ? 'فعال' : 'غیرفعال / در انتظار تأیید',
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            color: active ? AppColors.olive700 : AppColors.gold,
           ),
         ),
-      ),
-    );
-  }
+      );
+}
+
+int _asInt(Object? value, {int fallback = 0}) {
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  return int.tryParse('$value') ?? fallback;
 }
