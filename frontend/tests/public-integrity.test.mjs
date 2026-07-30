@@ -60,9 +60,10 @@ test('production wallet and session UI do not advertise inactive capabilities', 
 });
 
 test('admin and teacher dashboards contain no fabricated metrics or charts', async () => {
-  const [adminDashboard, teacherDashboard] = await Promise.all([
+  const [adminDashboard, teacherDashboard, flutterTeacherDashboard] = await Promise.all([
     read('src/app/panel/admin/page.tsx'),
     read('src/app/panel/teacher/page.tsx'),
+    read('../app/lib/features/teacher/presentation/teacher_dashboard.dart'),
   ]);
   assert.doesNotMatch(adminDashboard, /MiniBars|\[3\.1,\s*3\.9/);
   assert.match(adminDashboard, /pending_teachers/);
@@ -70,6 +71,9 @@ test('admin and teacher dashboards contain no fabricated metrics or charts', asy
   assert.doesNotMatch(teacherDashboard, /MiniBars|4\.8|\[1\.8,\s*2\.4/);
   assert.match(teacherDashboard, /teacher\.reviews/);
   assert.match(teacherDashboard, /نمودار درآمد/);
+  assert.doesNotMatch(flutterTeacherDashboard, /4\.8|درآمد این ماه|قابلیت تماس|شروع جلسه/);
+  assert.match(flutterTeacherDashboard, /teacherReviews/);
+  assert.match(flutterTeacherDashboard, /localStart/);
 });
 
 test('teacher panel uses real endpoints and cannot self-approve services', async () => {
@@ -107,10 +111,13 @@ test('web booking consumes backend-authoritative timezone-aware availability', a
 });
 
 test('all session lists render official backend local date and time fields', async () => {
-  const [learner, teacher, admin, api, router, display] = await Promise.all([
+  const [learner, teacher, admin, flutterLearner, flutterTeacher, flutterRequests, api, router, display] = await Promise.all([
     read('src/app/panel/user/sessions/page.tsx'),
     read('src/app/panel/teacher/sessions/page.tsx'),
     read('src/app/panel/admin/sessions/page.tsx'),
+    read('../app/lib/features/sessions/presentation/sessions_screen.dart'),
+    read('../app/lib/features/teacher/presentation/teacher_sessions.dart'),
+    read('../app/lib/features/teacher/presentation/requests_screen.dart'),
     read('src/lib/api.ts'),
     read('../backend/internal/delivery/http/router.go'),
     read('../backend/internal/usecase/session_display.go'),
@@ -119,6 +126,10 @@ test('all session lists render official backend local date and time fields', asy
     assert.match(page, /local_date/);
     assert.match(page, /local_start/);
     assert.match(page, /local_end/);
+  }
+  for (const dartSource of [flutterLearner, flutterTeacher, flutterRequests]) {
+    assert.match(dartSource, /localStart/);
+    assert.doesNotMatch(dartSource, /scheduledAt\.hour/);
   }
   assert.match(api, /type SessionListItem/);
   assert.match(router, /learnerSessionDisplaysHandler/);
