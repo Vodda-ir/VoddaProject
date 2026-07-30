@@ -8,16 +8,13 @@ class TeacherRepository {
   TeacherRepository(this._ref);
   final Ref _ref;
 
-  /// Fetch all services for the current teacher.
   Future<List<Map<String, dynamic>>> myServices() async {
     final dio = _ref.read(dioClientProvider).dio;
-    // GET /teacher/me returns teacher with services populated
     final res = await dio.get('/teacher/me');
     final services = (res.data['data']?['services'] as List?) ?? [];
     return services.cast<Map<String, dynamic>>();
   }
 
-  /// Add a new service. Returns the created service data, or null on error.
   Future<Map<String, dynamic>?> addService({
     required String title,
     required int duration,
@@ -42,7 +39,6 @@ class TeacherRepository {
     }
   }
 
-  /// Returns true on success, false if an error occurred.
   Future<bool> updateService(
     int id, {
     String? title,
@@ -56,7 +52,9 @@ class TeacherRepository {
       if (title != null) data['title'] = title;
       if (duration != null) data['duration'] = duration;
       if (price != null) data['price'] = price;
-      if (active != null) data['active'] = active;
+      // Teachers may deactivate a published service. Re-activation remains an
+      // admin moderation action and is intentionally never sent as true.
+      if (active == false) data['active'] = false;
       await dio.put('/teacher/services/$id', data: data);
       return true;
     } catch (e) {
@@ -65,7 +63,6 @@ class TeacherRepository {
     }
   }
 
-  /// Delete a service. Returns true on success.
   Future<bool> deleteService(int id) async {
     try {
       final dio = _ref.read(dioClientProvider).dio;
@@ -77,7 +74,6 @@ class TeacherRepository {
     }
   }
 
-  /// Fetch current teacher's work times.
   Future<List<Map<String, dynamic>>> myWorkTimes() async {
     final dio = _ref.read(dioClientProvider).dio;
     final res = await dio.get('/teacher/work-times');
@@ -85,7 +81,6 @@ class TeacherRepository {
     return data.cast<Map<String, dynamic>>();
   }
 
-  /// Save work times (replaces all). Returns true on success.
   Future<bool> saveWorkTimes(List<Map<String, dynamic>> slots) async {
     try {
       final dio = _ref.read(dioClientProvider).dio;
@@ -97,7 +92,6 @@ class TeacherRepository {
     }
   }
 
-  /// Toggle teacher availability. Returns true on success.
   Future<bool> setAvailable(bool available) async {
     try {
       final dio = _ref.read(dioClientProvider).dio;
@@ -109,11 +103,21 @@ class TeacherRepository {
     }
   }
 
-  /// Request a withdrawal. Returns true on success.
-  Future<bool> requestWithdrawal(int amount) async {
+  Future<bool> requestWithdrawal({
+    required int amount,
+    String card = '',
+    String sheba = '',
+  }) async {
     try {
       final dio = _ref.read(dioClientProvider).dio;
-      await dio.post('/teacher/withdrawals', data: {'amount': amount});
+      await dio.post(
+        '/teacher/withdrawals',
+        data: {
+          'amount': amount,
+          if (card.isNotEmpty) 'card': card,
+          if (sheba.isNotEmpty) 'sheba': sheba,
+        },
+      );
       return true;
     } catch (e) {
       SnackBarService.showError(e);
@@ -121,7 +125,6 @@ class TeacherRepository {
     }
   }
 
-  /// Fetch withdrawal history.
   Future<List<Map<String, dynamic>>> myWithdrawals() async {
     final dio = _ref.read(dioClientProvider).dio;
     final res = await dio.get('/teacher/withdrawals');
@@ -134,12 +137,10 @@ final teacherRepositoryProvider = Provider<TeacherRepository>(
   (ref) => TeacherRepository(ref),
 );
 
-/// Fetches the teacher's services, auto-refreshable.
 final myServicesProvider = FutureProvider<List<Map<String, dynamic>>>(
   (ref) => ref.watch(teacherRepositoryProvider).myServices(),
 );
 
-/// Fetches the teacher's work times, auto-refreshable.
 final myWorkTimesProvider = FutureProvider<List<Map<String, dynamic>>>(
   (ref) => ref.watch(teacherRepositoryProvider).myWorkTimes(),
 );

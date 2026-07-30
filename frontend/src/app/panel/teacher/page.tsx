@@ -1,112 +1,116 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { StatCard, Panel, MiniBars, faDigits } from '@/components/PanelShell';
+import { useCallback, useEffect, useState } from 'react';
+import { StatCard, Panel, faDigits } from '@/components/PanelShell';
 import { Avatar } from '@/components/web/ui';
 import { Icon } from '@/components/Icon';
-import { api } from '@/lib/api';
-import { getToken } from '@/lib/auth';
+import { api, type SessionListItem, type Teacher } from '@/lib/api';
+import { fullUrl, getToken } from '@/lib/auth';
 
 export default function TeacherDashboard() {
-  const [me, setMe] = useState<Record<string, unknown>>({});
-  const [pending, setPending] = useState<unknown[]>([]);
-  const [upcoming, setUpcoming] = useState<unknown[]>([]);
+  const [teacher, setTeacher] = useState<Teacher | null>(null);
+  const [wallet, setWallet] = useState(0);
+  const [pending, setPending] = useState<SessionListItem[]>([]);
+  const [upcoming, setUpcoming] = useState<SessionListItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [busyId, setBusyId] = useState<number | null>(null);
   const token = getToken();
 
-  useEffect(() => {
+  const load = useCallback(async () => {
     if (!token) return;
-    Promise.all([
-      api.me(token),
-      api.teacherSessions(token, 'pending'),
-      api.teacherSessions(token, 'upcoming'),
-    ]).then(([meRes, pendingRes, upcomingRes]) => {
-      setMe(meRes.data as Record<string, unknown> || {});
-      setPending((pendingRes.data || []) as unknown[]);
-      setUpcoming((upcomingRes.data || []) as unknown[]);
-    }).finally(() => setLoading(false));
+    setLoading(true);
+    setError('');
+    try {
+      const [meResponse, teacherResponse, pendingResponse, upcomingResponse] = await Promise.all([
+        api.me(token),
+        api.teacherMe(token),
+        api.teacherSessions(token, 'pending'),
+        api.teacherSessions(token, 'upcoming'),
+      ]);
+      setWallet(Number(meResponse.data.wallet) || 0);
+      setTeacher(teacherResponse.data);
+      setPending(pendingResponse.data || []);
+      setUpcoming(upcomingResponse.data || []);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'اطلاعات داشبورد استاد دریافت نشد.');
+    } finally {
+      setLoading(false);
+    }
   }, [token]);
 
-  const wallet = (me.wallet as number) || 0;
-  const rating = (me.teacherRating as number) || (me.teacher_rating as number) || 4.8;
+  useEffect(() => { void load(); }, [load]);
 
-  async function acceptSession(id: number) {
-    if (!token) return;
-    await fetch(`/api/v1/teacher/sessions/${id}/accept`, {
-      method: 'POST', headers: { Authorization: `Bearer ${token}` },
-    });
-    setPending(prev => prev.filter((s: unknown) => (s as Record<string, unknown>).id !== id));
-  }
-
-  async function rejectSession(id: number) {
-    if (!token) return;
-    await fetch(`/api/v1/teacher/sessions/${id}/reject`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ reason: '' }),
-    });
-    setPending(prev => prev.filter((s: unknown) => (s as Record<string, unknown>).id !== id));
+  async function respond(session: SessionListItem, approve: boolean) {
+    if (!token || busyId !== null) return;
+    const action = approve ? 'تأیید' : 'رد';
+    if (!window.confirm(`درخواست این جلسه ${action} شود؟`)) return;
+    setBusyId(session.id);
+    setError('');
+    try {
+      if (approve) await api.teacherAcceptSession(token, session.id);
+      else await api.teacherRejectSession(token, session.id);
+      setPending((items) => items.filter((item) => item.id !== session.id));
+      setUpcoming((items) => approve
+        ? items.map((item) => item.id === session.id ? { ...item, status: 'confirmed' } : item)
+        : items.filter((item) => item.id !== session.id));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : `${action} جلسه انجام نشد.`);
+    } finally {
+      setBusyId(null);
+    }
   }
 
   if (loading) return <div style={{ padding: 28, textAlign: 'center', color: 'var(--ink-3)' }}>در حال بارگذاری…</div>;
 
   return (
-    <div style={{ padding: 28 }}>
-      <h1 style={{ fontSize: 21, fontWeight: 800, marginBottom: 4 }}>داشبورد استاد</h1>
-      <p style={{ fontSize: 13, color: 'var(--ink-3)', marginBottom: 22 }}>مدیریت جلسات، درخواستها و درآمد</p>
+    <main style={{ padding: 28 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap', marginBottom: 22 }}>
+        <div><h1 style={{ fontSize: 21, fontWeight: 800, marginBottom: 4 }}>داشبورد استاد</h1><p style={{ fontSize: 13, color: 'var(--ink-3)' }}>درخواست‌ها، جلسات و موجودی ثبت‌شدهٔ واقعی</p></div>
+        <button type="button" onClick={load} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, border: '1px solid var(--sand-200)', background: '#fff', padding: '9px 14px', borderRadius: 12, cursor: 'pointer' }}><Icon name="trending" size={17} /> به‌روزرسانی</button>
+      </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16, marginBottom: 22 }}>
+      {error && <div role="alert" style={{ padding: 14, borderRadius: 14, background: 'var(--clay-bg)', color: 'var(--rose)', marginBottom: 18 }}>{error}</div>}
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(175px,1fr))', gap: 16, marginBottom: 22 }}>
         <StatCard icon="coins" label="موجودی قابل برداشت" value={`${faDigits(wallet)} ت`} tone="olive" />
-        <StatCard icon="message" label="درخواست جدید" value={faDigits(pending.length)} tone="clay" />
-        <StatCard icon="checkCircle" label="جلسات پیشرو" value={faDigits(upcoming.length)} tone="info" />
-        <StatCard icon="star" label="میانگین امتیاز" value={faDigits(rating)} tone="gold" />
+        <StatCard icon="message" label="درخواست در انتظار" value={faDigits(pending.length)} tone="clay" />
+        <StatCard icon="calendar" label="جلسات پیش‌رو" value={faDigits(upcoming.length)} tone="info" />
+        <StatCard icon="star" label="میانگین امتیاز" value={teacher && teacher.reviews > 0 ? faDigits(teacher.rating.toFixed(1)) : '—'} tone="gold" />
+        <StatCard icon="users" label="نظر ثبت‌شده" value={faDigits(teacher?.reviews || 0)} tone="info" />
+        <StatCard icon="checkCircle" label="جلسات تکمیل‌شده" value={faDigits(teacher?.sessions || 0)} tone="olive" />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 18, marginBottom: 18 }}>
-        <Panel title="درخواستهای در انتظار پاسخ" pad={false}>
-          {pending.length === 0 ? (
-            <div style={{ padding: 28, color: 'var(--ink-3)', textAlign: 'center' }}>درخواستی در انتظار نیست</div>
-          ) : (
-            (pending as Array<Record<string, unknown>>).map((r, i) => (
-              <div key={r.id as number} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 20px', borderBottom: i < pending.length - 1 ? '1px solid var(--sand-100)' : 'none' }}>
-                <Avatar size={42} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13.5, fontWeight: 700 }}>{(r.learner_name as string) || (r.learnerName as string) || 'قرآنآموز'}</div>
-                  <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 2 }}>{(r.service as string) || (r.title as string) || ''}</div>
-                </div>
-                <button onClick={() => acceptSession(r.id as number)} style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--olive-600)', color: '#fff', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="check" size={18} stroke={2.6} /></button>
-                <button onClick={() => rejectSession(r.id as number)} style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--clay-bg)', color: 'var(--clay)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="x" size={17} stroke={2.4} /></button>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: 18 }}>
+        <Panel title="درخواست‌های در انتظار پاسخ" pad={false}>
+          {pending.length === 0 ? <div style={{ padding: 28, color: 'var(--ink-3)', textAlign: 'center' }}>درخواستی در انتظار نیست.</div> : pending.slice(0, 6).map((session, index) => (
+            <article key={session.id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 20px', borderBottom: index < Math.min(pending.length, 6) - 1 ? '1px solid var(--sand-100)' : 'none', flexWrap: 'wrap' }}>
+              <Avatar size={42} imageUrl={fullUrl(session.learner?.avatar_url)} />
+              <div style={{ flex: '1 1 170px', minWidth: 0 }}>
+                <div style={{ fontSize: 13.5, fontWeight: 700 }}>{session.learner?.name || 'قرآن‌آموز'}</div>
+                <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 2 }}>{session.service} · {session.local_date} · {session.local_start}</div>
               </div>
-            ))
-          )}
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button type="button" aria-label="رد درخواست" disabled={busyId === session.id} onClick={() => respond(session, false)} style={actionButton(false, busyId === session.id)}><Icon name="x" size={17} /></button>
+                <button type="button" aria-label="تأیید درخواست" disabled={busyId === session.id} onClick={() => respond(session, true)} style={actionButton(true, busyId === session.id)}><Icon name="check" size={18} /></button>
+              </div>
+            </article>
+          ))}
         </Panel>
-        <Panel title="درآمد">
-          <MiniBars data={[1.8, 2.4, 2.1, 3.0, 2.7, 3.65]} labels={['آذر', 'دی', 'بهمن', 'اسفند', 'فرورد', 'اردیب']} />
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--sand-100)', fontSize: 13 }}>
-            <span style={{ color: 'var(--ink-3)' }}>موجودی</span>
-            <span style={{ fontWeight: 800, color: 'var(--olive-700)' }}>{faDigits(wallet)} ت</span>
-          </div>
+
+        <Panel title="وضعیت حساب و پروفایل">
+          <Metric label="موجودی فعلی" value={`${faDigits(wallet)} تومان`} />
+          <Metric label="وضعیت پروفایل" value={teacher?.status === 'approved' ? 'تأییدشده' : teacher?.status === 'rejected' ? 'ردشده' : 'در انتظار بررسی'} />
+          <Metric label="امکان رزرو" value={teacher?.available ? 'فعال' : 'غیرفعال'} />
+          <p style={{ marginTop: 18, paddingTop: 14, borderTop: '1px solid var(--sand-100)', color: 'var(--ink-3)', fontSize: 12.5, lineHeight: 1.9 }}>نمودار درآمد تا زمان وجود گزارش دوره‌ای واقعی نمایش داده نمی‌شود؛ این بخش فقط داده‌های ثبت‌شده را نشان می‌دهد.</p>
         </Panel>
       </div>
-
-      <Panel title="جلسات پیشرو" pad={false}>
-        {upcoming.length === 0 ? (
-          <div style={{ padding: 28, color: 'var(--ink-3)', textAlign: 'center' }}>جلسهای در پیش رو نیست</div>
-        ) : (
-          (upcoming as Array<Record<string, unknown>>).map((s, i) => (
-            <div key={s.id as number} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 20px', borderBottom: i < upcoming.length - 1 ? '1px solid var(--sand-100)' : 'none' }}>
-              <Avatar size={42} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13.5, fontWeight: 700 }}>{(s.learner_name as string) || (s.learnerName as string) || 'قرآنآموز'}</div>
-                <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 2 }}>{(s.service as string) || (s.title as string) || ''}</div>
-              </div>
-              <span style={{ fontSize: 12, fontWeight: 700, padding: '4px 12px', borderRadius: 999, background: 'var(--olive-100)', color: 'var(--olive-700)' }}>
-                {(s.status as string) === 'confirmed' ? 'تأییدشده' : 'در انتظار'}
-              </span>
-              <span style={{ fontSize: 13.5, fontWeight: 800, color: 'var(--olive-700)' }}>{faDigits((s.price as number) || 0)} ت</span>
-            </div>
-          ))
-        )}
-      </Panel>
-    </div>
+    </main>
   );
 }
+
+function Metric({ label, value }: { label: string; value: string }) {
+  return <div style={{ display: 'flex', justifyContent: 'space-between', gap: 14, paddingBlock: 8 }}><span style={{ color: 'var(--ink-3)', fontSize: 13 }}>{label}</span><strong style={{ fontSize: 13.5 }}>{value}</strong></div>;
+}
+
+const actionButton = (approve: boolean, busy: boolean): React.CSSProperties => ({ width: 38, height: 38, borderRadius: 11, border: 0, display: 'grid', placeItems: 'center', cursor: busy ? 'wait' : 'pointer', background: approve ? 'var(--olive-600)' : 'var(--clay-bg)', color: approve ? '#fff' : 'var(--clay)', opacity: busy ? .55 : 1 });

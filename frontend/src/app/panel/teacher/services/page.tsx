@@ -1,502 +1,153 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { faDigits } from '@/components/PanelShell';
 import { Icon } from '@/components/Icon';
+import { api, type TeacherService } from '@/lib/api';
 import { getToken } from '@/lib/auth';
 
-interface ServiceItem {
-  id: number;
-  title: string;
-  duration: number;
-  price: number;
-  icon: string;
-  active: boolean;
-}
-
-function authHeaders(): HeadersInit {
-  const t = getToken();
-  return t ? { Authorization: `Bearer ${t}`, 'Content-Type': 'application/json' } : {};
-}
-
 export default function TeacherServicesPage() {
-  const [services, setServices] = useState<ServiceItem[]>([]);
+  const [services, setServices] = useState<TeacherService[]>([]);
   const [loading, setLoading] = useState(true);
-  const [dialog, setDialog] = useState<{ mode: 'add' } | { mode: 'edit'; service: ServiceItem } | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<ServiceItem | null>(null);
+  const [error, setError] = useState('');
+  const [busyId, setBusyId] = useState<number | null>(null);
+  const [dialog, setDialog] = useState<{ mode: 'add' } | { mode: 'edit'; service: TeacherService } | null>(null);
   const token = getToken();
 
-  const fetchData = useCallback(() => {
+  const load = useCallback(async () => {
     if (!token) return;
     setLoading(true);
-    fetch('/api/v1/teacher/me', { headers: authHeaders() })
-      .then(r => (r.ok ? r.json() : { data: {} }))
-      .then(j => setServices((j.data?.services || []) as ServiceItem[]))
-      .finally(() => setLoading(false));
+    setError('');
+    try {
+      const response = await api.teacherServices(token);
+      setServices(response.data.services || []);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'خدمات استاد دریافت نشدند.');
+      setServices([]);
+    } finally {
+      setLoading(false);
+    }
   }, [token]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => { void load(); }, [load]);
 
-  async function toggleActive(id: number, active: boolean) {
-    if (!token) return;
-    await fetch(`/api/v1/teacher/services/${id}`, {
-      method: 'PUT',
-      headers: authHeaders(),
-      body: JSON.stringify({ active: !active }),
-    });
-    fetchData();
+  async function deactivate(service: TeacherService) {
+    if (!token || busyId !== null || !service.active) return;
+    if (!window.confirm(`خدمت «${service.title}» غیرفعال شود؟ فعال‌سازی مجدد نیازمند بررسی ادمین است.`)) return;
+    setBusyId(service.id);
+    setError('');
+    try {
+      await api.deactivateTeacherService(token, service.id);
+      setServices((items) => items.map((item) => item.id === service.id ? { ...item, active: false } : item));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'غیرفعال‌سازی خدمت انجام نشد.');
+    } finally {
+      setBusyId(null);
+    }
   }
 
-  async function handleDelete(id: number) {
-    if (!token) return;
-    await fetch(`/api/v1/teacher/services/${id}`, {
-      method: 'DELETE',
-      headers: authHeaders(),
-    });
-    setDeleteTarget(null);
-    fetchData();
+  async function remove(service: TeacherService) {
+    if (!token || busyId !== null) return;
+    if (!window.confirm(`خدمت «${service.title}» حذف شود؟`)) return;
+    setBusyId(service.id);
+    setError('');
+    try {
+      await api.deleteTeacherService(token, service.id);
+      setServices((items) => items.filter((item) => item.id !== service.id));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'حذف خدمت انجام نشد.');
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function save(data: { title: string; duration: number; price: number }) {
+    if (!token || !dialog) return;
+    setError('');
+    if (dialog.mode === 'add') {
+      await api.createTeacherService(token, data);
+    } else {
+      await api.updateTeacherService(token, dialog.service.id, data);
+    }
+    setDialog(null);
+    await load();
   }
 
   return (
-    <div style={{ padding: 28 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+    <main style={{ padding: 28 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap', marginBottom: 4 }}>
         <h1 style={{ fontSize: 21, fontWeight: 800 }}>خدمات من</h1>
-        <button
-          onClick={() => setDialog({ mode: 'add' })}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-            padding: '8px 16px',
-            borderRadius: 999,
-            border: 'none',
-            background: 'var(--olive-600)',
-            color: '#fff',
-            fontSize: 13,
-            fontWeight: 700,
-            cursor: 'pointer',
-          }}
-        >
-          <span style={{ fontSize: 16, lineHeight: 1 }}>+</span>
-          خدمت جدید
-        </button>
+        <button type="button" onClick={() => setDialog({ mode: 'add' })} style={primaryButton}><span style={{ fontSize: 17 }}>+</span> خدمت جدید</button>
       </div>
-      <p style={{ fontSize: 13, color: 'var(--ink-3)', marginBottom: 22 }}>
-        خدمات قابل رزرو برای قرآن‌آموزان · خدمت جدید پس از تأیید ادمین فعال می‌شود
-      </p>
+      <p style={{ fontSize: 13, color: 'var(--ink-3)', marginBottom: 22 }}>خدمت جدید یا ویرایش‌شده تا تأیید مدیر قابل رزرو نیست.</p>
 
-      {loading ? (
-        <div style={{ padding: 28 }}>در حال بارگذاری…</div>
-      ) : (
+      {error && <div role="alert" style={{ padding: 14, marginBottom: 16, borderRadius: 14, background: 'var(--clay-bg)', color: 'var(--rose)' }}>{error}<button type="button" onClick={load} style={{ display: 'block', marginTop: 10, border: 0, borderRadius: 10, padding: '7px 12px', background: 'var(--rose)', color: '#fff', cursor: 'pointer' }}>تلاش دوباره</button></div>}
+      {loading ? <div style={{ padding: 28, color: 'var(--ink-3)' }}>در حال بارگذاری…</div> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {services.map(s => (
-            <div
-              key={s.id}
-              style={{
-                background: '#fff',
-                borderRadius: 16,
-                padding: 16,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 14,
-                border: '1px solid var(--sand-150)',
-                boxShadow: 'var(--sh-sm)',
-                opacity: s.active ? 1 : 0.55,
-              }}
-            >
-              <div
-                style={{
-                  width: 46,
-                  height: 46,
-                  borderRadius: 13,
-                  background: 'var(--olive-100)',
-                  color: 'var(--olive-700)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Icon name="book" size={23} />
+          {services.map((service) => (
+            <article key={service.id} style={{ background: '#fff', borderRadius: 16, padding: 16, display: 'flex', alignItems: 'center', gap: 14, border: '1px solid var(--sand-150)', boxShadow: 'var(--sh-sm)', flexWrap: 'wrap', opacity: busyId === service.id ? .58 : 1 }}>
+              <div style={{ width: 46, height: 46, borderRadius: 13, background: 'var(--olive-100)', color: 'var(--olive-700)', display: 'grid', placeItems: 'center' }}><Icon name="book" size={23} /></div>
+              <div style={{ flex: '1 1 230px', minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}><strong style={{ fontSize: 14 }}>{service.title}</strong><span style={statusPill(Boolean(service.active))}>{service.active ? 'فعال و قابل رزرو' : 'غیرفعال / در انتظار تأیید'}</span></div>
+                <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 4 }}>{faDigits(service.duration)} دقیقه · {faDigits(service.price)} تومان</div>
               </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontSize: 14, fontWeight: 700 }}>{s.title}</span>
-                  {!s.active && (
-                    <span
-                      style={{
-                        fontSize: 10,
-                        fontWeight: 700,
-                        padding: '2px 8px',
-                        borderRadius: 999,
-                        background: 'var(--gold-bg)',
-                        color: 'var(--gold)',
-                      }}
-                    >
-                      در انتظار تأیید
-                    </span>
-                  )}
-                </div>
-                <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 3 }}>
-                  {s.duration} دقیقه · {faDigits(s.price)} تومان
-                </div>
+              <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
+                <button type="button" disabled={busyId === service.id} onClick={() => setDialog({ mode: 'edit', service })} style={secondaryButton}><Icon name="edit" size={14} /> ویرایش</button>
+                {service.active && <button type="button" disabled={busyId === service.id} onClick={() => deactivate(service)} style={secondaryButton}>غیرفعال‌کردن</button>}
+                <button type="button" aria-label="حذف خدمت" disabled={busyId === service.id} onClick={() => remove(service)} style={{ ...secondaryButton, color: 'var(--rose)', background: 'var(--clay-bg)' }}><Icon name="trash" size={14} /></button>
               </div>
-              <div style={{ display: 'flex', gap: 6 }}>
-                <button
-                  onClick={() => setDialog({ mode: 'edit', service: s })}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 4,
-                    padding: '6px 12px',
-                    borderRadius: 999,
-                    border: 'none',
-                    background: 'var(--sand-100)',
-                    color: 'var(--ink-2)',
-                    fontSize: 12,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                  }}
-                >
-                  <Icon name="edit" size={13} stroke={2} />
-                  ویرایش
-                </button>
-                <button
-                  onClick={() => toggleActive(s.id, s.active)}
-                  style={{
-                    fontSize: 12,
-                    fontWeight: 700,
-                    padding: '6px 14px',
-                    borderRadius: 999,
-                    border: 'none',
-                    cursor: 'pointer',
-                    background: s.active ? 'var(--olive-100)' : 'var(--sand-200)',
-                    color: s.active ? 'var(--olive-700)' : 'var(--ink-3)',
-                  }}
-                >
-                  {s.active ? 'فعال' : 'غیرفعال'}
-                </button>
-                <button
-                  onClick={() => setDeleteTarget(s)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 4,
-                    padding: '6px 10px',
-                    borderRadius: 999,
-                    border: 'none',
-                    background: 'transparent',
-                    color: 'var(--ink-3)',
-                    fontSize: 12,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                  }}
-                  title="حذف"
-                >
-                  <Icon name="trash" size={14} stroke={2} />
-                </button>
-              </div>
-            </div>
+            </article>
           ))}
-          {services.length === 0 && (
-            <div style={{ textAlign: 'center', padding: 40, color: 'var(--ink-3)' }}>
-              هنوز خدمتی تعریف نشده
-            </div>
-          )}
+          {services.length === 0 && <div style={{ textAlign: 'center', padding: 40, color: 'var(--ink-3)' }}>هنوز خدمتی تعریف نشده است.</div>}
         </div>
       )}
 
-      {/* Add / Edit Dialog */}
-      {dialog && (
-        <ServiceDialog
-          service={dialog.mode === 'edit' ? dialog.service : undefined}
-          onSave={async (data) => {
-            if (dialog.mode === 'add') {
-              await fetch('/api/v1/teacher/services', {
-                method: 'POST',
-                headers: authHeaders(),
-                body: JSON.stringify(data),
-              });
-            } else {
-              await fetch(`/api/v1/teacher/services/${dialog.service.id}`, {
-                method: 'PUT',
-                headers: authHeaders(),
-                body: JSON.stringify(data),
-              });
-            }
-            setDialog(null);
-            fetchData();
-          }}
-          onClose={() => setDialog(null)}
-        />
-      )}
-
-      {/* Delete Confirmation Dialog */}
-      {deleteTarget && (
-        <DeleteConfirmDialog
-          service={deleteTarget}
-          onConfirm={() => handleDelete(deleteTarget.id)}
-          onClose={() => setDeleteTarget(null)}
-        />
-      )}
-    </div>
+      {dialog && <ServiceDialog service={dialog.mode === 'edit' ? dialog.service : undefined} onSave={save} onClose={() => setDialog(null)} />}
+    </main>
   );
 }
 
-/* ── Service Dialog ── */
-
-function ServiceDialog({
-  service,
-  onSave,
-  onClose,
-}: {
-  service?: ServiceItem;
-  onSave: (data: { title: string; duration: number; price: number }) => void;
-  onClose: () => void;
-}) {
-  const [title, setTitle] = useState(service?.title ?? '');
-  const [duration, setDuration] = useState(String(service?.duration ?? '30'));
-  const [price, setPrice] = useState(String(service?.price ?? ''));
+function ServiceDialog({ service, onSave, onClose }: { service?: TeacherService; onSave: (data: { title: string; duration: number; price: number }) => Promise<void>; onClose: () => void }) {
+  const [title, setTitle] = useState(service?.title || '');
+  const [duration, setDuration] = useState(String(service?.duration || 30));
+  const [price, setPrice] = useState(String(service?.price || ''));
   const [saving, setSaving] = useState(false);
-  const isEdit = !!service;
+  const [error, setError] = useState('');
 
-  const handleSubmit = async () => {
-    if (!title.trim()) return;
-    const dur = parseInt(duration, 10);
-    const prc = parseInt(price, 10);
-    if (isNaN(dur) || dur < 5 || dur > 240) return;
-    if (isNaN(prc) || prc < 1000) return;
+  async function submit() {
+    const parsedDuration = Number.parseInt(duration, 10);
+    const parsedPrice = Number.parseInt(price, 10);
+    if (!title.trim()) return setError('عنوان خدمت را وارد کنید.');
+    if (!Number.isInteger(parsedDuration) || parsedDuration < 10 || parsedDuration > 240) return setError('مدت خدمت باید بین ۱۰ تا ۲۴۰ دقیقه باشد.');
+    if (!Number.isInteger(parsedPrice) || parsedPrice <= 0) return setError('قیمت معتبر وارد کنید.');
     setSaving(true);
-    onSave({ title: title.trim(), duration: dur, price: prc });
-  };
+    setError('');
+    try {
+      await onSave({ title: title.trim(), duration: parsedDuration, price: parsedPrice });
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'ذخیرهٔ خدمت انجام نشد.');
+      setSaving(false);
+    }
+  }
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        background: 'rgba(0,0,0,.35)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 1000,
-      }}
-      onClick={onClose}
-    >
-      <div
-        onClick={e => e.stopPropagation()}
-        style={{
-          background: '#fff',
-          borderRadius: 20,
-          padding: 28,
-          width: 400,
-          maxWidth: '90vw',
-          direction: 'rtl',
-        }}
-      >
-        <h3 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 20px' }}>
-          {isEdit ? 'ویرایش خدمت' : 'خدمت جدید'}
-        </h3>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {/* Title */}
-          <div>
-            <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink-3)', display: 'block', marginBottom: 6 }}>
-              عنوان خدمت
-            </label>
-            <input
-              type="text"
-              value={title}
-              onChange={e => setTitle(e.target.value)}
-              placeholder="مثلاً آموزش روخوانی قرآن"
-              style={{
-                width: '100%',
-                padding: '10px 14px',
-                borderRadius: 12,
-                border: '1.5px solid var(--sand-200)',
-                fontSize: 14,
-                fontWeight: 600,
-                outline: 'none',
-                boxSizing: 'border-box',
-              }}
-            />
-          </div>
-
-          {/* Duration */}
-          <div>
-            <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink-3)', display: 'block', marginBottom: 6 }}>
-              مدت زمان (دقیقه)
-            </label>
-            <input
-              type="number"
-              value={duration}
-              onChange={e => setDuration(e.target.value)}
-              min={5}
-              max={240}
-              style={{
-                width: '100%',
-                padding: '10px 14px',
-                borderRadius: 12,
-                border: '1.5px solid var(--sand-200)',
-                fontSize: 14,
-                fontWeight: 600,
-                outline: 'none',
-                boxSizing: 'border-box',
-              }}
-            />
-          </div>
-
-          {/* Price */}
-          <div>
-            <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink-3)', display: 'block', marginBottom: 6 }}>
-              قیمت (تومان)
-            </label>
-            <input
-              type="number"
-              value={price}
-              onChange={e => setPrice(e.target.value)}
-              min={1000}
-              placeholder="مثلاً ۵۰۰۰۰"
-              style={{
-                width: '100%',
-                padding: '10px 14px',
-                borderRadius: 12,
-                border: '1.5px solid var(--sand-200)',
-                fontSize: 14,
-                fontWeight: 600,
-                outline: 'none',
-                boxSizing: 'border-box',
-              }}
-            />
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', gap: 10, marginTop: 24, justifyContent: 'flex-end' }}>
-          <button
-            onClick={onClose}
-            style={{
-              padding: '10px 20px',
-              borderRadius: 12,
-              border: 'none',
-              background: 'var(--sand-100)',
-              color: 'var(--ink-3)',
-              fontSize: 14,
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
-            انصراف
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={saving || !title.trim()}
-            style={{
-              padding: '10px 24px',
-              borderRadius: 12,
-              border: 'none',
-              background: 'var(--olive-600)',
-              color: '#fff',
-              fontSize: 14,
-              fontWeight: 700,
-              cursor: saving ? 'not-allowed' : 'pointer',
-              opacity: saving || !title.trim() ? 0.6 : 1,
-            }}
-          >
-            {saving ? 'در حال ذخیره…' : isEdit ? 'ذخیره' : 'افزودن'}
-          </button>
-        </div>
-      </div>
+    <div role="presentation" style={overlayStyle} onClick={onClose}>
+      <section role="dialog" aria-modal="true" aria-labelledby="service-dialog-title" onClick={(event) => event.stopPropagation()} style={dialogStyle}>
+        <h2 id="service-dialog-title" style={{ fontSize: 17, marginBottom: 18 }}>{service ? 'ویرایش خدمت' : 'خدمت جدید'}</h2>
+        <label style={labelStyle}>عنوان<input value={title} maxLength={160} onChange={(event) => setTitle(event.target.value)} style={inputStyle} /></label>
+        <label style={labelStyle}>مدت (دقیقه)<input type="number" min={10} max={240} value={duration} onChange={(event) => setDuration(event.target.value)} style={inputStyle} /></label>
+        <label style={labelStyle}>قیمت (تومان)<input type="number" min={1} value={price} onChange={(event) => setPrice(event.target.value)} style={inputStyle} /></label>
+        {error && <div role="alert" style={{ color: 'var(--rose)', background: 'var(--clay-bg)', padding: 10, borderRadius: 10, fontSize: 13 }}>{error}</div>}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 20 }}><button type="button" disabled={saving} onClick={onClose} style={secondaryButton}>انصراف</button><button type="button" disabled={saving} onClick={submit} style={{ ...primaryButton, opacity: saving ? .6 : 1 }}>{saving ? 'در حال ذخیره…' : 'ذخیره'}</button></div>
+      </section>
     </div>
   );
 }
 
-/* ── Delete Confirmation Dialog ── */
-
-function DeleteConfirmDialog({
-  service,
-  onConfirm,
-  onClose,
-}: {
-  service: ServiceItem;
-  onConfirm: () => void;
-  onClose: () => void;
-}) {
-  return (
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        background: 'rgba(0,0,0,.35)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 1100,
-      }}
-      onClick={onClose}
-    >
-      <div
-        onClick={e => e.stopPropagation()}
-        style={{
-          background: '#fff',
-          borderRadius: 20,
-          padding: 28,
-          width: 360,
-          maxWidth: '85vw',
-          direction: 'rtl',
-          textAlign: 'center',
-        }}
-      >
-        <div
-          style={{
-            width: 52,
-            height: 52,
-            borderRadius: 16,
-            background: '#fef2f2',
-            color: '#dc2626',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: '0 auto 14px',
-          }}
-        >
-          <Icon name="trash" size={24} stroke={2} />
-        </div>
-        <h3 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 6px' }}>حذف خدمت</h3>
-        <p style={{ fontSize: 13.5, color: 'var(--ink-3)', margin: 0, lineHeight: 1.8 }}>
-          آیا از حذف خدمت <strong>{service.title}</strong> مطمئن هستید؟
-        </p>
-        <div style={{ display: 'flex', gap: 10, marginTop: 22, justifyContent: 'center' }}>
-          <button
-            onClick={onClose}
-            style={{
-              padding: '10px 24px',
-              borderRadius: 12,
-              border: 'none',
-              background: 'var(--sand-100)',
-              color: 'var(--ink-3)',
-              fontSize: 14,
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
-            انصراف
-          </button>
-          <button
-            onClick={onConfirm}
-            style={{
-              padding: '10px 24px',
-              borderRadius: 12,
-              border: 'none',
-              background: '#dc2626',
-              color: '#fff',
-              fontSize: 14,
-              fontWeight: 700,
-              cursor: 'pointer',
-            }}
-          >
-            حذف کن
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
+const primaryButton: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', gap: 6, padding: '9px 16px', borderRadius: 999, border: 0, background: 'var(--olive-600)', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' };
+const secondaryButton: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 12px', borderRadius: 999, border: 0, background: 'var(--sand-100)', color: 'var(--ink-2s)', fontSize: 12, fontWeight: 700, cursor: 'pointer' };
+const statusPill = (active: boolean): React.CSSProperties => ({ fontSize: 10.5, fontWeight: 700, padding: '3px 9px', borderRadius: 999, background: active ? 'var(--olive-100)' : 'var(--gold-bg)', color: active ? 'var(--olive-700)' : 'var(--gold)' });
+const overlayStyle: React.CSSProperties = { position: 'fixed', inset: 0, zIndex: 1000, display: 'grid', placeItems: 'center', padding: 16, background: 'rgba(0,0,0,.42)' };
+const dialogStyle: React.CSSProperties = { width: 420, maxWidth: '100%', background: '#fff', borderRadius: 20, padding: 24, boxShadow: 'var(--sh-lg)' };
+const labelStyle: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14, fontSize: 12.5, fontWeight: 700, color: 'var(--ink-3)' };
+const inputStyle: React.CSSProperties = { width: '100%', padding: '11px 13px', borderRadius: 12, border: '1px solid var(--sand-200)', color: 'var(--ink)', background: '#fff' };

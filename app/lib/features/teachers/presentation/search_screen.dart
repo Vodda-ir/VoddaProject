@@ -1,7 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/fa.dart';
@@ -11,7 +13,6 @@ import '../data/teacher_repository.dart';
 import '../domain/teacher.dart';
 import 'widgets/teacher_card.dart';
 
-/// Search/Explore screen, matching docs/design/vodda-screens-home.jsx.
 class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
 
@@ -20,18 +21,48 @@ class SearchScreen extends ConsumerStatefulWidget {
 }
 
 class _SearchScreenState extends ConsumerState<SearchScreen> {
-  String _q = '';
-  String _field = 'all';
+  final _searchController = TextEditingController();
+  Timer? _debounce;
+  String _query = '';
+  String _field = '';
+  String _city = '';
+  bool? _female;
 
   static const _fields = [
-    ('all', 'همه'),
+    ('', 'همه'),
     ('آموزش قرآن کریم', 'آموزش قرآن'),
     ('مداحی اهل‌بیت', 'مداحی'),
   ];
 
+  TeacherSearchFilter get _filter => TeacherSearchFilter(
+        query: _query,
+        field: _field,
+        city: _city,
+        female: _female,
+        limit: 50,
+      );
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onQueryChanged(String value) {
+    setState(() {});
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 350), () {
+      if (!mounted) return;
+      setState(() => _query = value.trim());
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    final teachersAsync = ref.watch(teachersProvider(''));
+    final filter = _filter;
+    final teachers = ref.watch(teacherSearchProvider(filter));
+    final hasAdvancedFilter = _city.isNotEmpty || _female != null;
 
     return SafeArea(
       child: Column(
@@ -46,6 +77,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   'جستجوی استاد',
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
                 ),
+                const SizedBox(height: 5),
+                const Text(
+                  'نام، تخصص، شهر و جنسیت استاد را جستجو کنید.',
+                  style: TextStyle(fontSize: 12.5, color: AppColors.ink3),
+                ),
                 const SizedBox(height: 14),
                 Row(
                   children: [
@@ -59,13 +95,30 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                           ],
                         ),
                         child: TextField(
-                          onChanged: (v) => setState(() => _q = v.trim()),
-                          decoration: const InputDecoration(
+                          controller: _searchController,
+                          onChanged: _onQueryChanged,
+                          textInputAction: TextInputAction.search,
+                          decoration: InputDecoration(
                             hintText: 'نام استاد یا تخصص…',
-                            prefixIcon: Icon(
+                            prefixIcon: const Icon(
                               LucideIcons.search,
                               color: AppColors.ink3,
                             ),
+                            suffixIcon: _searchController.text.isEmpty
+                                ? null
+                                : IconButton(
+                                    tooltip: 'پاک کردن جستجو',
+                                    onPressed: () {
+                                      _debounce?.cancel();
+                                      _searchController.clear();
+                                      setState(() => _query = '');
+                                    },
+                                    icon: const Icon(
+                                      LucideIcons.x,
+                                      size: 19,
+                                      color: AppColors.ink3,
+                                    ),
+                                  ),
                             border: InputBorder.none,
                             enabledBorder: InputBorder.none,
                             focusedBorder: InputBorder.none,
@@ -75,56 +128,77 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       ),
                     ),
                     const SizedBox(width: 10),
-                    Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        color: AppColors.olive600,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: const [
-                          BoxShadow(color: Color(0x475E6E43), blurRadius: 10),
-                        ],
+                    Badge(
+                      isLabelVisible: hasAdvancedFilter,
+                      child: IconButton.filled(
+                        tooltip: 'فیلتر شهر و جنسیت',
+                        onPressed: _showFilters,
+                        style: IconButton.styleFrom(
+                          fixedSize: const Size(50, 50),
+                          backgroundColor: AppColors.olive600,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        icon: const Icon(Icons.tune),
                       ),
-                      child: const Icon(Icons.tune, color: Colors.white),
                     ),
                   ],
                 ),
               ],
             ),
           ),
-          // field chips
           SizedBox(
-            height: 38,
-            child: ListView(
+            height: 40,
+            child: ListView.separated(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              children: [
-                for (final f in _fields) ...[
-                  VChip(
-                    label: f.$2,
-                    active: _field == f.$1,
-                    onTap: () => setState(() => _field = f.$1),
-                  ),
-                  const SizedBox(width: 8),
-                ],
-                const VChip(label: 'امتیاز بالا', icon: LucideIcons.star),
-                const SizedBox(width: 8),
-                const VChip(label: 'نزدیک من', icon: LucideIcons.mapPin),
-              ],
+              itemCount: _fields.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 8),
+              itemBuilder: (_, index) {
+                final item = _fields[index];
+                return VChip(
+                  label: item.$2,
+                  active: _field == item.$1,
+                  onTap: () => setState(() => _field = item.$1),
+                );
+              },
             ),
           ),
-          const SizedBox(height: 16),
+          if (hasAdvancedFilter)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  if (_city.isNotEmpty)
+                    InputChip(
+                      label: Text('شهر: $_city'),
+                      onDeleted: () => setState(() => _city = ''),
+                    ),
+                  if (_female != null)
+                    InputChip(
+                      label: Text(_female! ? 'استاد خانم' : 'استاد آقا'),
+                      onDeleted: () => setState(() => _female = null),
+                    ),
+                ],
+              ),
+            ),
+          const SizedBox(height: 14),
           Expanded(
             child: RefreshIndicator(
               color: AppColors.olive600,
               onRefresh: () async {
-                ref.invalidate(teachersProvider(''));
-                await ref.read(teachersProvider('').future);
+                ref.invalidate(teacherSearchProvider(filter));
+                await ref.read(teacherSearchProvider(filter).future);
               },
-              child: teachersAsync.when(
+              child: teachers.when(
                 loading: () => ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
                   children: const [
-                    SizedBox(height: 200),
+                    SizedBox(height: 220),
                     Center(
                       child: CircularProgressIndicator(
                         color: AppColors.olive600,
@@ -132,26 +206,20 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     ),
                   ],
                 ),
-                error: (e, _) => ListView(
+                error: (error, _) => ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
                   children: [
                     SizedBox(
-                      height: 200,
+                      height: 260,
                       child: AppErrorView(
-                        error: e,
-                        onRetry: () => ref.invalidate(teachersProvider('')),
+                        error: error,
+                        onRetry: () =>
+                            ref.invalidate(teacherSearchProvider(filter)),
                       ),
                     ),
                   ],
                 ),
-                data: (all) {
-                  final list = all.where((t) {
-                    final byField = _field == 'all' || t.field == _field;
-                    final byQuery =
-                        _q.isEmpty || t.name.contains(_q) || t.tag.contains(_q);
-                    return byField && byQuery;
-                  }).toList();
-                  return _results(list);
-                },
+                data: _results,
               ),
             ),
           ),
@@ -160,35 +228,126 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     );
   }
 
-  Widget _results(List<Teacher> list) {
+  Future<void> _showFilters() async {
+    final cityController = TextEditingController(text: _city);
+    var selectedFemale = _female;
+    final result = await showModalBottomSheet<({String city, bool? female})>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setSheetState) => Padding(
+          padding: EdgeInsets.fromLTRB(
+            20,
+            8,
+            20,
+            MediaQuery.viewInsetsOf(context).bottom + 20,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                'فیلترهای جستجو',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 18),
+              TextField(
+                controller: cityController,
+                decoration: const InputDecoration(
+                  labelText: 'شهر',
+                  prefixIcon: Icon(LucideIcons.mapPin),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'جنسیت استاد',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  ChoiceChip(
+                    label: const Text('فرقی ندارد'),
+                    selected: selectedFemale == null,
+                    onSelected: (_) =>
+                        setSheetState(() => selectedFemale = null),
+                  ),
+                  ChoiceChip(
+                    label: const Text('آقا'),
+                    selected: selectedFemale == false,
+                    onSelected: (_) =>
+                        setSheetState(() => selectedFemale = false),
+                  ),
+                  ChoiceChip(
+                    label: const Text('خانم'),
+                    selected: selectedFemale == true,
+                    onSelected: (_) =>
+                        setSheetState(() => selectedFemale = true),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 22),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(
+                  (
+                    city: cityController.text.trim(),
+                    female: selectedFemale,
+                  ),
+                ),
+                child: const Text('اعمال فیلتر'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(
+                  (city: '', female: null),
+                ),
+                child: const Text('پاک کردن فیلترها'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    cityController.dispose();
+    if (result == null || !mounted) return;
+    setState(() {
+      _city = result.city;
+      _female = result.female;
+    });
+  }
+
+  Widget _results(List<Teacher> teachers) {
     return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
       children: [
         Padding(
           padding: const EdgeInsets.only(bottom: 12),
           child: Text(
-            '${faNumber(list.length)} استاد یافت شد',
+            '${faNumber(teachers.length)} استاد یافت شد',
             style: const TextStyle(fontSize: 13, color: AppColors.ink3),
           ),
         ),
-        if (list.isEmpty)
+        if (teachers.isEmpty)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 60),
             child: Center(
               child: Text(
-                'نتیجه‌ای یافت نشد',
+                'نتیجه‌ای با این فیلترها یافت نشد.',
                 style: TextStyle(color: AppColors.ink3),
               ),
             ),
           )
         else
-          for (final t in list)
+          for (final teacher in teachers)
             Padding(
               padding: const EdgeInsets.only(bottom: 14),
               child: TeacherCard(
-                teacher: t,
+                teacher: teacher,
                 wide: true,
-                onTap: () => context.push('/teacher/${t.id}'),
+                onTap: () => context.push('/teacher/${teacher.id}'),
               ),
             ),
       ],

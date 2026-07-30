@@ -3,30 +3,25 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-import '../../../core/services/snackbar_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/fa.dart';
 import '../../../core/widgets/app_error.dart';
 import '../../../core/widgets/ui.dart';
 import '../../../core/widgets/vodda_avatar.dart';
 import '../../auth/data/user_repository.dart';
+import '../../auth/domain/user.dart';
 import '../../sessions/data/session_repository.dart';
 import '../../sessions/domain/session.dart';
-import '../../wallet/data/wallet_repository.dart';
 import 'role_sheet.dart';
 
-/// Teacher Dashboard — matches vodda-teacher-a.jsx TeacherDashboard.
 class TeacherDashboard extends ConsumerWidget {
   const TeacherDashboard({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final me = ref.watch(meProvider);
-    final sessions = ref.watch(myTeacherSessionsProvider('upcoming'));
-    final nextSession = sessions.maybeWhen(
-      data: (list) => list.isNotEmpty ? list.first : null,
-      orElse: () => null,
-    );
+    final upcoming = ref.watch(myTeacherSessionsProvider('upcoming'));
+    final pending = ref.watch(myTeacherSessionsProvider('pending'));
 
     return SafeArea(
       child: RefreshIndicator(
@@ -35,24 +30,73 @@ class TeacherDashboard extends ConsumerWidget {
           ref.invalidate(meProvider);
           ref.invalidate(myTeacherSessionsProvider('upcoming'));
           ref.invalidate(myTeacherSessionsProvider('pending'));
-          ref.invalidate(transactionsProvider);
-          await ref.read(meProvider.future);
+          await Future.wait([
+            ref.read(meProvider.future),
+            ref.read(myTeacherSessionsProvider('upcoming').future),
+          ]);
         },
         child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.only(bottom: 24),
           children: [
             _TeacherHeader(me: me),
-            const SizedBox(height: 20),
-            // Earnings hero
-            _EarningsHero(),
+            const SizedBox(height: 18),
+            me.when(
+              loading: () => const Padding(
+                padding: EdgeInsets.all(40),
+                child: Center(
+                  child: CircularProgressIndicator(color: AppColors.olive600),
+                ),
+              ),
+              error: (error, _) => Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: AppErrorView(
+                  error: error,
+                  onRetry: () => ref.invalidate(meProvider),
+                ),
+              ),
+              data: (user) => _AccountSummary(user: user),
+            ),
             const SizedBox(height: 22),
-            // Pending requests banner
-            _RequestsBanner(),
+            pending.when(
+              loading: () => const SizedBox.shrink(),
+              error: (error, _) => Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: AppErrorView(
+                  error: error,
+                  compact: true,
+                  onRetry: () =>
+                      ref.invalidate(myTeacherSessionsProvider('pending')),
+                ),
+              ),
+              data: (items) => _RequestsBanner(count: items.length),
+            ),
             const SizedBox(height: 22),
-            // Next session
-            if (nextSession != null && nextSession.status == 'confirmed')
-              _NextSession(session: nextSession),
-            // Quick manage
+            upcoming.when(
+              loading: () => const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20),
+                child: LinearProgressIndicator(color: AppColors.olive600),
+              ),
+              error: (error, _) => Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: AppErrorView(
+                  error: error,
+                  compact: true,
+                  onRetry: () =>
+                      ref.invalidate(myTeacherSessionsProvider('upcoming')),
+                ),
+              ),
+              data: (items) {
+                final confirmed = items
+                    .where((session) => session.status == 'confirmed')
+                    .toList()
+                  ..sort((left, right) =>
+                      left.scheduledAt.compareTo(right.scheduledAt));
+                return confirmed.isEmpty
+                    ? const SizedBox.shrink()
+                    : _NextSession(session: confirmed.first);
+              },
+            ),
             const SizedBox(height: 22),
             SectionHeader(title: 'مدیریت سریع'),
             const _QuickManage(),
@@ -63,37 +107,37 @@ class TeacherDashboard extends ConsumerWidget {
   }
 }
 
-class _TeacherHeader extends ConsumerWidget {
+class _TeacherHeader extends StatelessWidget {
   const _TeacherHeader({required this.me});
-  final AsyncValue<dynamic> me;
+  final AsyncValue<AppUser> me;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final name = me.maybeWhen(
-      data: (u) => u.name.isEmpty ? 'استاد' : u.name.split(' ').first,
+      data: (user) => user.name.isEmpty ? 'استاد' : user.name.split(' ').first,
       orElse: () => '',
     );
     final avatarUrl = me.maybeWhen(
-      data: (u) => u.avatarUrl,
+      data: (user) => user.avatarUrl,
       orElse: () => null,
     );
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          GestureDetector(
-            onTap: () => _showRoleSheet(context),
-            child: Row(
-              children: [
-                VoddaAvatar(
-                  size: 46,
-                  ring: true,
-                  verified: true,
-                  imageUrl: avatarUrl,
-                ),
-                const SizedBox(width: 11),
-                Column(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () => showModalBottomSheet(
+          context: context,
+          backgroundColor: Colors.transparent,
+          builder: (_) => const RoleSheet(isTeacher: true),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            children: [
+              VoddaAvatar(size: 46, ring: true, imageUrl: avatarUrl),
+              const SizedBox(width: 11),
+              Expanded(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
@@ -123,293 +167,202 @@ class _TeacherHeader extends ConsumerWidget {
                     ),
                   ],
                 ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AccountSummary extends StatelessWidget {
+  const _AccountSummary({required this.user});
+  final AppUser user;
+
+  @override
+  Widget build(BuildContext context) {
+    final rating = user.teacherReviews > 0
+        ? user.teacherRating.toStringAsFixed(1)
+        : '—';
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(22),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topRight,
+                end: Alignment.bottomLeft,
+                colors: [AppColors.olive800, AppColors.olive600],
+              ),
+              borderRadius: BorderRadius.circular(30),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x475E6E43),
+                  blurRadius: 28,
+                  offset: Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'موجودی قابل برداشت',
+                  style: TextStyle(fontSize: 13, color: Colors.white70),
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Text(
+                      faNumber(user.wallet),
+                      style: const TextStyle(
+                        fontSize: 30,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    const Text(
+                      'تومان',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white60,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+                Row(
+                  children: [
+                    _Metric(label: 'امتیاز', value: '$rating ★'),
+                    const _Divider(),
+                    _Metric(
+                      label: 'نظرها',
+                      value: faNumber(user.teacherReviews),
+                    ),
+                    const _Divider(),
+                    _Metric(
+                      label: 'جلسات',
+                      value: faNumber(user.teacherSessions),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(14),
-              boxShadow: const [
-                BoxShadow(color: Color(0x0A2E3622), blurRadius: 4),
-              ],
-            ),
-            child: GestureDetector(
-              onTap: () => SnackBarService.show('اعلان جدیدی نیست'),
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  const Icon(LucideIcons.bell, size: 21, color: AppColors.ink2),
-                  Positioned(
-                    top: 11,
-                    right: 12,
-                    child: Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: AppColors.clay,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: AppColors.surface, width: 2),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+          const SizedBox(height: 10),
+          const Text(
+            'آمار دوره‌ای درآمد تا زمان وجود گزارش واقعی نمایش داده نمی‌شود.',
+            style: TextStyle(
+              fontSize: 11.5,
+              color: AppColors.ink3,
+              height: 1.6,
             ),
           ),
         ],
       ),
     );
   }
-
-  void _showRoleSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (_) => const RoleSheet(isTeacher: true),
-    );
-  }
 }
 
-class _EarningsHero extends ConsumerWidget {
-  const _EarningsHero();
+class _Metric extends StatelessWidget {
+  const _Metric({required this.label, required this.value});
+  final String label;
+  final String value;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final txs = ref.watch(transactionsProvider);
-    final me = ref.watch(meProvider);
-    final rating = me.maybeWhen(
-      data: (u) => u.teacherRating,
-      orElse: () => 4.8,
-    );
-    final income = txs.maybeWhen(
-      data: (list) =>
-          list.where((t) => t.credit).fold<int>(0, (s, t) => s + t.amount),
-      orElse: () => 0,
-    );
+  Widget build(BuildContext context) => Expanded(
+        child: Column(
+          children: [
+            Text(
+              label,
+              style: const TextStyle(fontSize: 11, color: Colors.white60),
+            ),
+            const SizedBox(height: 3),
+            Text(
+              value,
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      );
+}
 
+class _Divider extends StatelessWidget {
+  const _Divider();
+
+  @override
+  Widget build(BuildContext context) =>
+      Container(width: 1, height: 34, color: Colors.white24);
+}
+
+class _RequestsBanner extends StatelessWidget {
+  const _RequestsBanner({required this.count});
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    if (count == 0) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Container(
-        padding: const EdgeInsets.all(22),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topRight,
-            end: Alignment.bottomLeft,
-            colors: [AppColors.olive800, AppColors.olive600],
+      child: InkWell(
+        borderRadius: BorderRadius.circular(24),
+        onTap: () => context.go('/t/requests'),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.goldBg,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: AppColors.goldSoft),
           ),
-          borderRadius: BorderRadius.circular(30),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x475E6E43),
-              blurRadius: 28,
-              offset: Offset(0, 10),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'درآمد این ماه',
-              style: TextStyle(fontSize: 13, color: Colors.white70),
-            ),
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                Text(
-                  faNumber(income),
-                  style: const TextStyle(
-                    fontSize: 30,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(width: 6),
-                const Text(
-                  'تومان',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white60,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                _earnCol('امروز', '—'),
-                Container(width: 1, height: 30, color: Colors.white24),
-                const SizedBox(width: 18),
-                _earnCol('این هفته', '—'),
-                Container(width: 1, height: 30, color: Colors.white24),
-                const SizedBox(width: 18),
-                _earnCol('امتیاز', '${rating.toStringAsFixed(1)} ★'),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _earnCol(String label, String value) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(fontSize: 11, color: Colors.white60),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w800,
-            color: Colors.white,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _RequestsBanner extends ConsumerWidget {
-  const _RequestsBanner();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final pending = ref.watch(myTeacherSessionsProvider('pending'));
-
-    return pending.when(
-      loading: () => const Padding(
-        padding: EdgeInsets.symmetric(horizontal: 20),
-        child: SizedBox(
-          height: 78,
-          child: Center(
-            child: CircularProgressIndicator(
-              color: AppColors.olive600,
-              strokeWidth: 2.5,
-            ),
-          ),
-        ),
-      ),
-      error: (e, _) => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: AppErrorView(
-          error: e,
-          compact: true,
-          onRetry: () => ref.invalidate(myTeacherSessionsProvider('pending')),
-        ),
-      ),
-      data: (list) {
-        final count = list.length;
-        final countStr = faNumber(count);
-        if (count == 0) return const SizedBox.shrink();
-
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: GestureDetector(
-            onTap: () => context.go('/t/requests'),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.goldBg,
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: AppColors.goldSoft),
+          child: Row(
+            children: [
+              const Icon(
+                LucideIcons.messageSquare,
+                size: 27,
+                color: AppColors.gold,
               ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 46,
-                    height: 46,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(14),
+              const SizedBox(width: 13),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${faNumber(count)} درخواست جدید',
+                      style: const TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF7A5E1E),
+                      ),
                     ),
-                    child: Stack(
-                      children: [
-                        const Center(
-                          child: Icon(
-                            LucideIcons.messageSquare,
-                            size: 24,
-                            color: AppColors.gold,
-                          ),
-                        ),
-                        if (count > 0)
-                          Positioned(
-                            top: -5,
-                            right: -5,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 5,
-                              ),
-                              constraints: const BoxConstraints(
-                                minWidth: 20,
-                                minHeight: 20,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.clay,
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                  color: AppColors.goldBg,
-                                  width: 2,
-                                ),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  countStr,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
+                    const Text(
+                      'برای تأیید یا رد، لمس کنید',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF9A7426),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 13),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '$countStr درخواست جدید',
-                          style: const TextStyle(
-                            fontSize: 14.5,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xFF7A5E1E),
-                          ),
-                        ),
-                        const Text(
-                          'برای تأیید یا رد، لمس کنید',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Color(0xFF9A7426),
-                            height: 1.6,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Icon(
-                    LucideIcons.chevronLeft,
-                    size: 20,
-                    color: Color(0xFF9A7426),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
+              const Icon(
+                LucideIcons.chevronLeft,
+                size: 20,
+                color: Color(0xFF9A7426),
+              ),
+            ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }
@@ -420,7 +373,6 @@ class _NextSession extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final d = session.scheduledAt;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -452,7 +404,7 @@ class _NextSession extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            session.teacherName,
+                            session.learnerName,
                             style: const TextStyle(
                               fontSize: 14.5,
                               fontWeight: FontWeight.w800,
@@ -469,24 +421,7 @@ class _NextSession extends StatelessWidget {
                         ],
                       ),
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 11,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.olive100,
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: const Text(
-                        'تأیید شده',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.olive700,
-                        ),
-                      ),
-                    ),
+                    const VChip(label: 'تأییدشده', active: true),
                   ],
                 ),
                 const SizedBox(height: 13),
@@ -506,70 +441,32 @@ class _NextSession extends StatelessWidget {
                         size: 16,
                         color: AppColors.olive500,
                       ),
-                      const SizedBox(width: 5),
-                      Text(
-                        '${faDigits('${d.day}')} ${_monthName(d.month)}',
-                        style: const TextStyle(
-                          fontSize: 12.5,
-                          color: AppColors.ink2,
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      const Icon(
-                        LucideIcons.clock,
-                        size: 16,
-                        color: AppColors.olive500,
-                      ),
-                      const SizedBox(width: 5),
-                      Text(
-                        faDigits(
-                          '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}',
-                        ),
-                        style: const TextStyle(
-                          fontSize: 12.5,
-                          color: AppColors.ink2,
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          session.hasOfficialLocalTime
+                              ? '${_faLocalDate(session.localDate)} · ${faDigits(session.localStart)} تا ${faDigits(session.localEnd)}'
+                              : 'زمان رسمی جلسه دریافت نشد',
+                          style: const TextStyle(
+                            fontSize: 12.5,
+                            color: AppColors.ink2,
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 13),
-                  SizedBox(
-                    height: 48,
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('قابلیت تماس به زودی اضافه می‌شود')),
-                        );
-                      },
-                      icon: const Icon(LucideIcons.phone, size: 19),
-                      label: const Text('شروع جلسه'),
-                    ),
-                  ),
+                const SizedBox(height: 10),
+                OutlinedButton(
+                  onPressed: () => context.go('/t/sessions'),
+                  child: const Text('مشاهدهٔ جزئیات جلسه'),
+                ),
               ],
             ),
           ),
         ),
       ],
     );
-  }
-
-  String _monthName(int m) {
-    const names = [
-      'فروردین',
-      'اردیبهشت',
-      'خرداد',
-      'تیر',
-      'مرداد',
-      'شهریور',
-      'مهر',
-      'آبان',
-      'آذر',
-      'دی',
-      'بهمن',
-      'اسفند',
-    ];
-    return names[m - 1];
   }
 }
 
@@ -579,12 +476,11 @@ class _QuickManage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = [
-      (LucideIcons.bookOpen, 'خدمات من', () => context.push('/t/services')),
-      (LucideIcons.clock, 'زمان‌های کاری', () => context.push('/t/worktimes')),
-      (LucideIcons.wallet, 'کیف پول', () => context.go('/t/wallet')),
-      (LucideIcons.star, 'نظرات', () => SnackBarService.show('به زودی')),
+      (LucideIcons.bookOpen, 'خدمات من', '/t/services'),
+      (LucideIcons.clock, 'زمان‌های کاری', '/t/worktimes'),
+      (LucideIcons.wallet, 'کیف پول', '/t/wallet'),
+      (LucideIcons.calendar, 'همهٔ جلسات', '/t/sessions'),
     ];
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: GridView.count(
@@ -594,43 +490,58 @@ class _QuickManage extends StatelessWidget {
         childAspectRatio: 2.3,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
-        children: items.map((item) {
-          return GestureDetector(
-            onTap: item.$3,
-            child: Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
+        children: items
+            .map(
+              (item) => InkWell(
                 borderRadius: BorderRadius.circular(18),
-                boxShadow: const [
-                  BoxShadow(color: Color(0x0A2E3622), blurRadius: 4),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: AppColors.olive100,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(item.$1, size: 21, color: AppColors.olive700),
+                onTap: () => context.push(item.$3),
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(18),
+                    boxShadow: const [
+                      BoxShadow(color: Color(0x0A2E3622), blurRadius: 4),
+                    ],
                   ),
-                  const SizedBox(width: 11),
-                  Text(
-                    item.$2,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                    ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: AppColors.olive100,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          item.$1,
+                          size: 21,
+                          color: AppColors.olive700,
+                        ),
+                      ),
+                      const SizedBox(width: 11),
+                      Expanded(
+                        child: Text(
+                          item.$2,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
-            ),
-          );
-        }).toList(),
+            )
+            .toList(),
       ),
     );
   }
+}
+
+String _faLocalDate(String value) {
+  final parts = value.split('-');
+  if (parts.length != 3) return value;
+  return faDigits('${parts[0]}/${parts[1]}/${parts[2]}');
 }

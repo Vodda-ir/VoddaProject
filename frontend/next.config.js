@@ -6,12 +6,16 @@ const nextConfig = {
   compress: true,
 
   async rewrites() {
-    // Only public media is proxied directly. API traffic must go through the
-    // /api/auth and /api/backend BFF route handlers so JWTs remain HttpOnly.
+    // Public media is proxied directly. API traffic must pass through the
+    // /api/auth and /api/backend route handlers so JWTs remain HttpOnly.
     const backend = process.env.SERVER_API_URL || 'http://backend:3420/api/v1';
     const origin = backend.replace(/\/api\/v1\/?$/, '');
     return [
       { source: '/uploads/:path*', destination: `${origin}/uploads/:path*` },
+      // Compatibility for older panel code. New code should call /api/backend.
+      // The destination route injects the HttpOnly JWT and enforces same-origin
+      // checks for mutations; the browser-provided Authorization header is ignored.
+      { source: '/api/v1/:path*', destination: '/api/backend/:path*' },
     ];
   },
 

@@ -2,95 +2,100 @@
 
 # چک‌لیست وضعیت وُدّا
 
-آخرین بازبینی: **۲۰۲۶-۰۷-۲۱**
+آخرین بازبینی: **۲۰۲۶-۰۷-۳۰**
 
-این فایل فقط وضعیت واقعی کد فعلی را نشان می‌دهد. قابلیت‌های وابسته به سرویس بیرونی تا زمانی که اتصال و آزمون end-to-end نشده‌اند، «تکمیل‌شده» محسوب نمی‌شوند.
+این فایل فقط وضعیت واقعی کد فعلی را نشان می‌دهد. قابلیت وابسته به سرویس بیرونی تا زمان اتصال و آزمون end-to-end «تکمیل‌شده» محسوب نمی‌شود.
 
 ## هستهٔ محصول
 
-- [x] ورود OTP و صدور JWT
-- [x] ذخیرهٔ digest کد OTP به‌جای متن خام، همراه با سازگاری موقت با رکوردهای قدیمی
-- [x] بررسی فعال‌بودن و نقش جاری کاربر از دیتابیس در هر درخواست محافظت‌شده
-- [x] پروفایل کاربر و استاد
-- [x] ثبت درخواست استادی به‌صورت اتمیک همراه با تغییر نقش
-- [x] بررسی و تأیید/رد استاد توسط ادمین
-- [x] تعریف، ویرایش، حذف و تأیید خدمات استاد
-- [x] تعریف ساعات کاری با اعتبارسنجی روز، ساعت و هم‌پوشانی
-- [x] جستجوی عمومی فقط میان استادان فعال، تأییدشده، verified و available
-- [x] رزرو جلسه با کنترل ساعات کاری و تداخل
-- [x] پذیرش، رد، لغو و تکمیل جلسه
-- [x] امتیازدهی یک‌باره پس از جلسه، به‌صورت اتمیک با aggregate استاد
-- [x] اعلان درون‌برنامه‌ای برای رویدادهای اصلی
+- [x] ورود OTP، JWT و کنترل نقش/فعال‌بودن حساب از دیتابیس
+- [x] ذخیرهٔ digest کد OTP و جلوگیری از bypass در production
+- [x] پروفایل کاربر و استاد و onboarding اتمیک استاد
+- [x] بررسی و تأیید/رد استاد و خدمت توسط مدیر
+- [x] تعریف و ویرایش برنامهٔ کاری با کنترل ساعت و هم‌پوشانی
+- [x] جستجوی استاد تأییدشده با نام، حوزه، شهر، جنسیت و pagination
+- [x] availability رزرو authoritative در Backend بر اساس timezone، مدت خدمت، برنامهٔ کاری و تداخل
+- [x] مصرف یکسان availability در وب و Flutter و refresh پس از conflict
+- [x] ذخیرهٔ UTC و بازگرداندن `local_date/local_start/local_end` رسمی برای همهٔ فهرست‌های جلسه
+- [x] رزرو، پذیرش، رد، لغو پیش از شروع، تکمیل و امتیازدهی
+- [x] refund و settlement اتمیک و جلوگیری از عملیات تکراری
+- [x] endpoint واقعی نظرهای استاد و نمایش آن در پنل
 
 ## مالی
 
 - [x] کیف پول و دفتر تراکنش
-- [x] debit شرطی و row locking برای جلوگیری از موجودی منفی
+- [x] debit شرطی، row locking و جلوگیری از موجودی منفی
 - [x] رزرو، refund، settlement و برداشت در transactionهای MySQL
-- [x] جلوگیری از اجرای تکراری refund، settlement و پردازش برداشت
-- [x] تطبیق gross earning، commission و موجودی استاد
-- [x] تست MySQL و concurrency برای عملیات مالی
-- [x] شارژ مستقیم توسعه‌ای فقط خارج از production
-- [ ] اتصال واقعی زرین‌پال: request، redirect، callback، verify، idempotency و reconciliation
+- [x] کنترل مبلغ برداشت نسبت به موجودی
+- [x] الزام شماره کارت ۱۶ رقمی یا شبا `IR` + ۲۴ رقم در وب و Flutter
+- [x] تاریخچه و وضعیت برداشت برای استاد و مدیر
+- [x] هشدار صریح که ثبت `paid` جایگزین انتقال بانکی نیست
+- [x] حذف شارژ development از UI production
+- [ ] زرین‌پال واقعی: request، redirect، callback، verify، idempotency و reconciliation
 
-## وب و تجربهٔ عمومی
+## وب و UI/UX
 
-- [x] نشست وب با cookie امن HttpOnly و BFF
-- [x] بررسی نقش واقعی پنل‌ها از Backend
-- [x] جستجوی هیرو با انتقال واقعی query و city
-- [x] فیلترهای وب منطبق با مقدارهای واقعی Backend
-- [x] حذف fallback استاد، آمار، testimonial، follower، تماس صوتی و لینک دانلود ساختگی
-- [x] نمایش شفاف وضعیت خالی و قطع Backend
-- [x] فرم تماس واقعی با ذخیره در دیتابیس
-- [x] مشاهده و resolve پیام‌های پشتیبانی توسط ادمین
-- [x] تست رگرسیون برای جلوگیری از بازگشت داده‌های عمومی ساختگی
+- [x] نشست HttpOnly و عبور همهٔ پنل‌ها از BFF
+- [x] rewrite مسیرهای legacy `/api/v1` به BFF
+- [x] ناوبری موبایل، focus-visible و reduced-motion
+- [x] جستجوی debounce‌شده با AbortController، URL state و pagination
+- [x] تفکیک loading، empty، error و retry در مسیرهای اصلی
+- [x] حذف آمار، نمودار، تماس، شارژ و CTAهای ساختگی
+- [x] پنل قرآن‌آموز با زمان رسمی، لغو واقعی و وضعیت مالی
+- [x] پنل استاد کامل: داشبورد واقعی، درخواست‌ها، جلسات، خدمات، برنامهٔ کاری، کیف پول، برداشت و نظرها
+- [x] جلوگیری از فعال‌سازی خدمت توسط استاد؛ فعال‌سازی فقط در moderation مدیر
+- [x] پنل مدیر: کاربران، استادان، خدمات، جلسات، برداشت، پشتیبانی و audit
+- [x] جدول‌ها و کارت‌های responsive و عملیات حساس دارای confirmation/busy state
+- [x] FAQ، قوانین و حریم خصوصی هماهنگ با قابلیت‌های فعال
 
-## اپ Flutter
+## Flutter
 
-- [x] Riverpod، go_router و Dio
-- [x] نگهداری JWT در platform secure storage؛ عدم ذخیره در SharedPreferences
-- [x] مسیریابی بر اساس نقش واقعی ذخیره‌شده در نشست
-- [x] جلوگیری از ورود learner به پوستهٔ استاد از مسیر مستقیم
-- [x] حذف follow، شمارنده، اعلان، شارژ و تماس صوتی نمایشی
-- [x] لغو واقعی جلسه و ثبت واقعی امتیاز
-- [x] غیرفعال‌بودن رزرو در صورت نبود خدمت تأییدشده
-- [x] الزام keystore واقعی برای Android release و جلوگیری از امضای debug
-- [x] غیرفعال‌سازی backup/transfer داده‌های حساس Android
-- [ ] بررسی release signing، Keychain و build archive روی iOS واقعی
-- [ ] انتشار نسخهٔ امضاشده در فروشگاه‌های هدف
+- [x] Riverpod، go_router، Dio و secure storage
+- [x] guard نقش استاد و learner
+- [x] جستجوی server-side با debounce و فیلتر واقعی
+- [x] رزرو از availability رسمی Backend
+- [x] نمایش زمان جلسه از فیلدهای رسمی Backend، نه timezone دستگاه
+- [x] تأیید/رد/لغو/تکمیل/امتیازدهی واقعی با busy و error state
+- [x] حذف اعلان، تماس، امتیاز و درآمد ساختگی
+- [x] داشبورد استاد با موجودی، امتیاز، نظر و تعداد جلسهٔ واقعی
+- [x] خدمات استاد با مدت ۱۰ تا ۲۴۰ دقیقه و policy moderation
+- [x] برداشت با مبلغ، کارت/شبا و پیام چرخهٔ واقعی
+- [x] Android release بدون keystore production عمداً fail می‌شود
+- [x] backup/transfer داده‌های حساس Android غیرفعال است
+- [ ] archive/signing و Keychain روی iOS واقعی
+- [ ] انتشار نسخهٔ امضاشده در فروشگاه‌ها
 
 ## امنیت و عملیات
 
-- [x] rate limit برای OTP، public search، mutation، مالی و admin
-- [x] request ID، access log ساختاریافته، security headers و HSTS
-- [x] body limit و اعتبارسنجی MIME/پسوند/حجم آواتار
-- [x] liveness و readiness واقعی دیتابیس
-- [x] audit log برای mutationهای موفق ادمین
+- [x] rate limit برای OTP، جستجو، mutation، مالی و admin
+- [x] request ID، access log، security headers و HSTS
+- [x] body limit و اعتبارسنجی آپلود آواتار
+- [x] liveness/readiness دیتابیس
+- [x] audit log عملیات موفق مدیر
 - [x] backup فشرده با checksum و restore محافظت‌شده
-- [x] پورت‌های production فقط روی localhost
-- [x] Docker runtime غیر root و `no-new-privileges`
-- [ ] جایگزینی AutoMigrate با migrationهای نسخه‌دار و آزمون rollback
-- [ ] تعریف و اعمال foreign keyهای دیتابیس پس از migration audit
-- [ ] Redis یا limiter مشترک برای استقرار چند replica
-- [ ] object storage مشترک برای upload در استقرار چند replica
-- [ ] observability مرکزی: metrics، tracing و alerting
+- [x] runtime غیر root، `no-new-privileges` و publish پورت production روی localhost
+- [ ] migration نسخه‌دار و rollback آزموده‌شده
+- [ ] ممیزی و اعمال foreign keyها
+- [ ] Redis/shared limiter و object storage برای چند replica
+- [ ] metrics، tracing و alerting مرکزی
 
-## کیفیت
+## کیفیت و اعتبارسنجی
 
-- [x] `gofmt`، `go vet`، race test و build در workflow
-- [x] integration test MySQL برای مالی، onboarding و review
-- [x] تست validation شناسهٔ route
-- [x] `npm test`، ESLint و Next build در workflow
-- [x] Flutter lockfile اجباری، analyze و test در workflow
-- [x] seed توسعه‌ای تراکنشی و بدون aggregate ساختگی
-- [ ] رفع مانع اجرایی GitHub Actions که jobها را پیش از اولین step متوقف می‌کند
-- [ ] smoke test کامل روی staging با سناریوهای نقش، رزرو، refund، settlement و restore
-- [ ] تست E2E مرورگر و اپ روی Backend واقعی staging
+- [x] تست‌های Go برای availability، timezone نمایش و policy لغو
+- [x] تست‌های Flutter برای parsing availability و زمان رسمی جلسه
+- [x] تست‌های Node برای BFF، صداقت محتوا، پنل استاد، moderation، برداشت و timezone
+- [x] workflow شامل Go format/vet/race/build، MySQL integration، Node test/lint/build، Flutter analyze/test و Docker validation است
+- [ ] اجرای موفق workflow روی commit نهایی؛ GitHub Actions فعلاً jobها را پیش از checkout با `steps: null` متوقف می‌کند
+- [ ] smoke test کامل staging برای نقش‌ها، رزرو، refund، settlement، برداشت و restore
+- [ ] E2E مرورگر و اپ روی Backend واقعی staging
+- [ ] accessibility audit خودکار و screen reader
 
-## قابلیت‌های بیرونی که هنوز پیاده نشده‌اند
+## قابلیت‌های بیرونی باقی‌مانده
 
-- [ ] درگاه پرداخت واقعی زرین‌پال
-- [ ] provider واقعی تماس صوتی و token lifecycle
+- [ ] درگاه واقعی زرین‌پال
+- [ ] provider واقعی تماس صوتی و lifecycle اتصال
 - [ ] انتشار رسمی اپ
+
+جزئیات: [`docs/audit-2026-07-27.md`](docs/audit-2026-07-27.md)
 
 </div>

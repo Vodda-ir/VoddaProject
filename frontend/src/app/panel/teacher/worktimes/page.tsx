@@ -1,484 +1,143 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Icon } from '@/components/Icon';
+import { api, type WorkTime } from '@/lib/api';
 import { getToken } from '@/lib/auth';
 
-const DAYS = ['شنبه', 'یکشنبه', 'دوشنبه', 'سهشنبه', 'چهارشنبه', 'پنجشنبه', 'جمعه'];
-
-interface WorkSlot {
-  id?: number;
-  weekday: number;
-  from: string;
-  to: string;
-}
-
-function authHeaders(): HeadersInit {
-  const t = getToken();
-  return t ? { Authorization: `Bearer ${t}`, 'Content-Type': 'application/json' } : {};
-}
+const DAYS = ['شنبه', 'یک‌شنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنج‌شنبه', 'جمعه'];
 
 export default function TeacherWorkTimesPage() {
-  const [workTimes, setWorkTimes] = useState<Record<number, WorkSlot[]>>({});
+  const [items, setItems] = useState<WorkTime[]>([]);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState<Record<string, boolean>>({});
-  const [dialog, setDialog] = useState<{
-    weekday: number;
-    slot?: WorkSlot; // undefined = adding, defined = editing
-  } | null>(null);
+  const [error, setError] = useState('');
+  const [busyId, setBusyId] = useState<number | null>(null);
+  const [dialog, setDialog] = useState<{ weekday: number; slot?: WorkTime } | null>(null);
   const token = getToken();
 
-  const fetchData = useCallback(() => {
+  const grouped = useMemo(() => {
+    const value = new Map<number, WorkTime[]>();
+    for (const item of items) {
+      const current = value.get(item.weekday) || [];
+      current.push(item);
+      value.set(item.weekday, current);
+    }
+    for (const ranges of value.values()) ranges.sort((left, right) => left.from.localeCompare(right.from));
+    return value;
+  }, [items]);
+
+  const load = useCallback(async () => {
     if (!token) return;
     setLoading(true);
-    fetch('/api/v1/teacher/work-times', { headers: authHeaders() })
-      .then(r => (r.ok ? r.json() : { data: [] }))
-      .then(j => {
-        const grouped: Record<number, WorkSlot[]> = {};
-        ((j.data ?? []) as any[]).forEach((w: any) => {
-          const d = w.weekday as number;
-          if (!grouped[d]) grouped[d] = [];
-          grouped[d].push({ id: w.id, weekday: d, from: w.from, to: w.to });
-        });
-        setWorkTimes(grouped);
-      })
-      .finally(() => setLoading(false));
+    setError('');
+    try {
+      const response = await api.teacherWorkTimesMine(token);
+      setItems(response.data || []);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'زمان‌های کاری دریافت نشدند.');
+      setItems([]);
+    } finally {
+      setLoading(false);
+    }
   }, [token]);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  useEffect(() => { void load(); }, [load]);
 
-  const handleAdd = async (weekday: number, from: string, to: string) => {
-    const key = `add-${weekday}`;
-    setSaving(s => ({ ...s, [key]: true }));
+  async function save(from: string, to: string) {
+    if (!token || !dialog) return;
+    const existing = dialog.slot;
     try {
-      const res = await fetch('/api/v1/teacher/work-times', {
-        method: 'POST',
-        headers: authHeaders(),
-        body: JSON.stringify({ weekday, from, to }),
-      });
-      if (res.ok) {
-        setDialog(null);
-        fetchData();
-      }
-    } finally {
-      setSaving(s => ({ ...s, [key]: false }));
+      if (existing) await api.updateTeacherWorkTime(token, existing.id, { weekday: dialog.weekday, from, to });
+      else await api.createTeacherWorkTime(token, { weekday: dialog.weekday, from, to });
+      setDialog(null);
+      await load();
+    } catch (cause) {
+      throw new Error(cause instanceof Error ? cause.message : 'ذخیرهٔ بازه انجام نشد.');
     }
-  };
+  }
 
-  const handleUpdate = async (slot: WorkSlot, from: string, to: string) => {
-    const key = `upd-${slot.id}`;
-    setSaving(s => ({ ...s, [key]: true }));
+  async function remove(slot: WorkTime) {
+    if (!token || busyId !== null) return;
+    if (!window.confirm(`بازهٔ ${slot.from} تا ${slot.to} حذف شود؟`)) return;
+    setBusyId(slot.id);
+    setError('');
     try {
-      const res = await fetch(`/api/v1/teacher/work-times/${slot.id}`, {
-        method: 'PUT',
-        headers: authHeaders(),
-        body: JSON.stringify({ weekday: slot.weekday, from, to }),
-      });
-      if (res.ok) {
-        setDialog(null);
-        fetchData();
-      }
+      await api.deleteTeacherWorkTime(token, slot.id);
+      setItems((values) => values.filter((item) => item.id !== slot.id));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'حذف بازه انجام نشد.');
     } finally {
-      setSaving(s => ({ ...s, [key]: false }));
+      setBusyId(null);
     }
-  };
-
-  const handleDelete = async (slot: WorkSlot) => {
-    const key = `del-${slot.id}`;
-    setSaving(s => ({ ...s, [key]: true }));
-    try {
-      await fetch(`/api/v1/teacher/work-times/${slot.id}`, {
-        method: 'DELETE',
-        headers: authHeaders(),
-      });
-      fetchData();
-    } finally {
-      setSaving(s => ({ ...s, [key]: false }));
-    }
-  };
+  }
 
   return (
-    <div style={{ padding: 28 }}>
+    <main style={{ padding: 28 }}>
       <h1 style={{ fontSize: 21, fontWeight: 800, marginBottom: 4 }}>زمان‌های کاری</h1>
-      <p style={{ fontSize: 13, color: 'var(--ink-3)', marginBottom: 22 }}>
-        روزها و ساعت‌هایی که برای برگزاری جلسه در دسترس هستید
-      </p>
+      <p style={{ fontSize: 13, color: 'var(--ink-3)', marginBottom: 22 }}>بازه‌های رسمی قابل رزرو؛ هم‌پوشانی و ساعت نامعتبر توسط Backend رد می‌شود.</p>
+      {error && <div role="alert" style={{ padding: 14, marginBottom: 16, borderRadius: 14, background: 'var(--clay-bg)', color: 'var(--rose)' }}>{error}<button type="button" onClick={load} style={{ display: 'block', marginTop: 10, border: 0, borderRadius: 10, padding: '7px 12px', background: 'var(--rose)', color: '#fff', cursor: 'pointer' }}>تلاش دوباره</button></div>}
 
-      {loading ? (
-        <div style={{ padding: 28 }}>در حال بارگذاری…</div>
-      ) : (
+      {loading ? <div style={{ padding: 28, color: 'var(--ink-3)' }}>در حال بارگذاری…</div> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {DAYS.map((day, i) => {
-            const ranges = workTimes[i] || [];
-            const active = ranges.length > 0;
+          {DAYS.map((day, weekday) => {
+            const ranges = grouped.get(weekday) || [];
             return (
-              <div
-                key={i}
-                style={{
-                  background: '#fff',
-                  borderRadius: 16,
-                  padding: 16,
-                  border: '1px solid var(--sand-150)',
-                  boxShadow: 'var(--sh-sm)',
-                }}
-              >
-                {/* Day header row */}
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 14,
-                    marginBottom: active ? 12 : 0,
-                  }}
-                >
-                  <div
-                    style={{
-                      width: 44,
-                      height: 44,
-                      borderRadius: 13,
-                      background: active ? 'var(--olive-100)' : 'var(--sand-100)',
-                      color: active ? 'var(--olive-700)' : 'var(--ink-3)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <Icon name="clock" size={22} />
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div
-                      style={{
-                        fontSize: 14,
-                        fontWeight: 700,
-                        color: active ? 'var(--ink)' : 'var(--ink-3)',
-                      }}
-                    >
-                      {day}
-                    </div>
-                    {!active && (
-                      <div style={{ fontSize: 12.5, color: 'var(--ink-4)', marginTop: 3 }}>
-                        تعطیل
-                      </div>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => setDialog({ weekday: i })}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 6,
-                      padding: '7px 14px',
-                      borderRadius: 999,
-                      border: 'none',
-                      background: 'var(--olive-50)',
-                      color: 'var(--olive-700)',
-                      fontSize: 12,
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <span style={{ fontSize: 16, lineHeight: 1 }}>+</span>
-                    افزودن بازه
-                  </button>
+              <section key={day} style={{ background: '#fff', borderRadius: 16, padding: 16, border: '1px solid var(--sand-150)', boxShadow: 'var(--sh-sm)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+                  <div style={{ width: 44, height: 44, borderRadius: 13, background: ranges.length ? 'var(--olive-100)' : 'var(--sand-100)', color: ranges.length ? 'var(--olive-700)' : 'var(--ink-3)', display: 'grid', placeItems: 'center' }}><Icon name="clock" size={22} /></div>
+                  <div style={{ flex: '1 1 160px' }}><strong style={{ fontSize: 14 }}>{day}</strong><div style={{ fontSize: 12, color: 'var(--ink-4)', marginTop: 3 }}>{ranges.length ? `${ranges.length} بازه ثبت شده` : 'تعطیل'}</div></div>
+                  <button type="button" onClick={() => setDialog({ weekday })} style={addButton}><span style={{ fontSize: 16 }}>+</span> افزودن بازه</button>
                 </div>
-
-                {/* Slots */}
-                {active && (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                    {ranges.map((slot, si) => {
-                      const busy = saving[`del-${slot.id}`] || saving[`upd-${slot.id}`];
-                      return (
-                        <div
-                          key={slot.id ?? si}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 6,
-                            padding: '6px 12px',
-                            borderRadius: 999,
-                            background: 'var(--olive-50)',
-                            color: 'var(--olive-700)',
-                            fontSize: 12,
-                            fontWeight: 600,
-                            opacity: busy ? 0.5 : 1,
-                          }}
-                        >
-                          <Icon name="clock" size={14} stroke={2} style={{ flexShrink: 0 }} />
-                          <span>{slot.from} تا {slot.to}</span>
-                          <button
-                            onClick={() => setDialog({ weekday: i, slot })}
-                            style={{
-                              background: 'none',
-                              border: 'none',
-                              padding: 2,
-                              cursor: 'pointer',
-                              color: 'var(--olive-600)',
-                              display: 'flex',
-                            }}
-                            title="ویرایش"
-                          >
-                            <Icon name="edit" size={13} stroke={2} />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(slot)}
-                            style={{
-                              background: 'none',
-                              border: 'none',
-                              padding: 2,
-                              cursor: 'pointer',
-                              color: 'var(--ink-3)',
-                              display: 'flex',
-                            }}
-                            title="حذف"
-                          >
-                            <Icon name="x" size={13} stroke={2} />
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+                {ranges.length > 0 && <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 13 }}>
+                  {ranges.map((slot) => <div key={slot.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '7px 11px', borderRadius: 999, background: 'var(--olive-50)', color: 'var(--olive-700)', opacity: busyId === slot.id ? .5 : 1 }}>
+                    <Icon name="clock" size={14} /><span style={{ fontSize: 12.5, fontWeight: 700 }}>{slot.from} تا {slot.to}</span>
+                    <button type="button" aria-label="ویرایش بازه" disabled={busyId === slot.id} onClick={() => setDialog({ weekday, slot })} style={iconButton}><Icon name="edit" size={13} /></button>
+                    <button type="button" aria-label="حذف بازه" disabled={busyId === slot.id} onClick={() => remove(slot)} style={{ ...iconButton, color: 'var(--rose)' }}><Icon name="x" size={13} /></button>
+                  </div>)}
+                </div>}
+              </section>
             );
           })}
         </div>
       )}
 
-      {/* Add / Edit Dialog */}
-      {dialog && (
-        <TimeRangeDialog
-          weekday={dialog.weekday}
-          dayName={DAYS[dialog.weekday]}
-          slot={dialog.slot}
-          saving={dialog.slot ? saving[`upd-${dialog.slot.id}`] : saving[`add-${dialog.weekday}`]}
-          onSave={(from, to) => {
-            if (dialog.slot) {
-              handleUpdate(dialog.slot, from, to);
-            } else {
-              handleAdd(dialog.weekday, from, to);
-            }
-          }}
-          onClose={() => setDialog(null)}
-        />
-      )}
-    </div>
+      {dialog && <TimeRangeDialog dayName={DAYS[dialog.weekday]} slot={dialog.slot} onSave={save} onClose={() => setDialog(null)} />}
+    </main>
   );
 }
 
-/* ── Dialog Component ── */
+function TimeRangeDialog({ dayName, slot, onSave, onClose }: { dayName: string; slot?: WorkTime; onSave: (from: string, to: string) => Promise<void>; onClose: () => void }) {
+  const [from, setFrom] = useState(slot?.from || '08:00');
+  const [to, setTo] = useState(slot?.to || '12:00');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
 
-function TimeRangeDialog({
-  weekday,
-  dayName,
-  slot,
-  saving,
-  onSave,
-  onClose,
-}: {
-  weekday: number;
-  dayName: string;
-  slot?: WorkSlot;
-  saving?: boolean;
-  onSave: (from: string, to: string) => void;
-  onClose: () => void;
-}) {
-  const [from, setFrom] = useState(slot?.from ?? '08:00');
-  const [to, setTo] = useState(slot?.to ?? '20:00');
-  const [error, setError] = useState<string | null>(null);
-  const isEdit = !!slot;
-
-  const validate = (f: string, t: string): string | null => {
-    const [fh, fm] = f.split(':').map(Number);
-    const [th, tm] = t.split(':').map(Number);
-    if (isNaN(fh) || isNaN(fm) || isNaN(th) || isNaN(tm)) return 'ساعت نامعتبر';
-    if (fh < 0 || fh > 23 || fm < 0 || fm > 59 || th < 0 || th > 23 || tm < 0 || tm > 59)
-      return 'ساعت باید بین ۰۰:۰۰ تا ۲۳:۵۹ باشد';
-    if (fh * 60 + fm >= th * 60 + tm) return 'ساعت پایان باید بعد از شروع باشد';
-    return null;
-  };
-
-  const handleSave = () => {
-    const err = validate(from, to);
-    if (err) {
-      setError(err);
-      return;
+  async function submit() {
+    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(from) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(to)) return setError('ساعت معتبر وارد کنید.');
+    if (from >= to) return setError('ساعت پایان باید بعد از شروع باشد.');
+    setSaving(true);
+    setError('');
+    try {
+      await onSave(from, to);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'ذخیرهٔ بازه انجام نشد.');
+      setSaving(false);
     }
-    setError(null);
-    onSave(from, to);
-  };
+  }
 
-  return (
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        background: 'rgba(0,0,0,.35)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 1000,
-      }}
-      onClick={onClose}
-    >
-      <div
-        onClick={e => e.stopPropagation()}
-        style={{
-          background: '#fff',
-          borderRadius: 20,
-          padding: 28,
-          width: 400,
-          maxWidth: '92vw',
-          direction: 'rtl',
-        }}
-      >
-        <h3 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 4px' }}>
-          {isEdit ? 'ویرایش' : 'افزودن'} بازه - {dayName}
-        </h3>
-
-        <div style={{ display: 'flex', gap: 12, marginTop: 20, justifyContent: 'center' }}>
-          <TimeField label="از" value={from} onChange={v => { setFrom(v); setError(null); }} />
-          <span
-            style={{
-              alignSelf: 'center',
-              fontSize: 14,
-              fontWeight: 600,
-              color: 'var(--ink-3)',
-              marginTop: 20,
-            }}
-          >
-            تا
-          </span>
-          <TimeField label="تا" value={to} onChange={v => { setTo(v); setError(null); }} />
-        </div>
-
-        {error && (
-          <div
-            style={{
-              marginTop: 12,
-              padding: '8px 12px',
-              background: '#fef2f2',
-              borderRadius: 10,
-              color: '#dc2626',
-              fontSize: 12.5,
-              fontWeight: 600,
-              textAlign: 'center',
-            }}
-          >
-            {error}
-          </div>
-        )}
-
-        <div
-          style={{
-            marginTop: 12,
-            padding: '10px 16px',
-            background: 'var(--olive-50)',
-            borderRadius: 12,
-            textAlign: 'center',
-            fontSize: 15,
-            fontWeight: 700,
-            color: 'var(--olive-700)',
-          }}
-        >
-          {from} تا {to}
-        </div>
-
-        <div style={{ display: 'flex', gap: 10, marginTop: 20, justifyContent: 'flex-end' }}>
-          <button
-            onClick={onClose}
-            style={{
-              padding: '10px 20px',
-              borderRadius: 12,
-              border: 'none',
-              background: 'var(--sand-100)',
-              color: 'var(--ink-3)',
-              fontSize: 14,
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
-            انصراف
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            style={{
-              padding: '10px 24px',
-              borderRadius: 12,
-              border: 'none',
-              background: 'var(--olive-600)',
-              color: '#fff',
-              fontSize: 14,
-              fontWeight: 700,
-              cursor: saving ? 'not-allowed' : 'pointer',
-              opacity: saving ? 0.6 : 1,
-            }}
-          >
-            {saving ? 'در حال ذخیره…' : isEdit ? 'ذخیره' : 'افزودن'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+  return <div role="presentation" style={overlayStyle} onClick={onClose}><section role="dialog" aria-modal="true" aria-labelledby="worktime-title" onClick={(event) => event.stopPropagation()} style={dialogStyle}>
+    <h2 id="worktime-title" style={{ fontSize: 17, marginBottom: 5 }}>{slot ? 'ویرایش' : 'افزودن'} بازهٔ {dayName}</h2>
+    <p style={{ margin: '0 0 18px', color: 'var(--ink-3)', fontSize: 12.5 }}>ساعت‌ها بر اساس timezone رسمی سامانه هستند.</p>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}><label style={labelStyle}>از<input type="time" value={from} onChange={(event) => setFrom(event.target.value)} style={inputStyle} /></label><label style={labelStyle}>تا<input type="time" value={to} onChange={(event) => setTo(event.target.value)} style={inputStyle} /></label></div>
+    {error && <div role="alert" style={{ padding: 10, borderRadius: 10, color: 'var(--rose)', background: 'var(--clay-bg)', fontSize: 13 }}>{error}</div>}
+    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 20 }}><button type="button" disabled={saving} onClick={onClose} style={secondaryButton}>انصراف</button><button type="button" disabled={saving} onClick={submit} style={{ ...addButton, background: 'var(--olive-600)', color: '#fff', opacity: saving ? .6 : 1 }}>{saving ? 'در حال ذخیره…' : 'ذخیره'}</button></div>
+  </section></div>;
 }
 
-function TimeField({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  const handleChange = (raw: string) => {
-    // فقط اعداد و دونقطه قبول کن
-    const cleaned = raw.replace(/[^0-9:]/g, '');
-    // خودکار دو نقطه بذار بین ساعت و دقیقه
-    if (/^\d{2}$/.test(cleaned) && !cleaned.includes(':') && value.length < cleaned.length) {
-      onChange(cleaned + ':');
-      return;
-    }
-    onChange(cleaned);
-  };
-
-  return (
-    <div style={{ textAlign: 'center' }}>
-      <div
-        style={{
-          fontSize: 11,
-          fontWeight: 600,
-          color: 'var(--ink-3)',
-          marginBottom: 4,
-        }}
-      >
-        {label}
-      </div>
-      <input
-        type="text"
-        inputMode="numeric"
-        value={value}
-        onChange={e => handleChange(e.target.value)}
-        placeholder="۰۰:۰۰"
-        maxLength={5}
-        style={{
-          padding: '10px 8px',
-          borderRadius: 12,
-          border: '1.5px solid var(--olive-200)',
-          background: 'var(--olive-50)',
-          color: 'var(--olive-700)',
-          fontSize: 16,
-          fontWeight: 700,
-          outline: 'none',
-          textAlign: 'center',
-          width: 100,
-          boxSizing: 'border-box',
-          fontVariantNumeric: 'tabular-nums',
-          letterSpacing: 2,
-        }}
-      />
-    </div>
-  );
-}
+const addButton: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 999, border: 0, background: 'var(--olive-50)', color: 'var(--olive-700)', fontSize: 12, fontWeight: 700, cursor: 'pointer' };
+const iconButton: React.CSSProperties = { display: 'grid', placeItems: 'center', border: 0, padding: 2, background: 'transparent', color: 'var(--olive-700)', cursor: 'pointer' };
+const overlayStyle: React.CSSProperties = { position: 'fixed', inset: 0, zIndex: 1000, display: 'grid', placeItems: 'center', padding: 16, background: 'rgba(0,0,0,.42)' };
+const dialogStyle: React.CSSProperties = { width: 420, maxWidth: '100%', background: '#fff', borderRadius: 20, padding: 24, boxShadow: 'var(--sh-lg)' };
+const labelStyle: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14, fontSize: 12.5, fontWeight: 700, color: 'var(--ink-3)' };
+const inputStyle: React.CSSProperties = { width: '100%', padding: '11px 13px', borderRadius: 12, border: '1px solid var(--sand-200)', color: 'var(--ink)', background: '#fff' };
+const secondaryButton: React.CSSProperties = { padding: '8px 14px', borderRadius: 999, border: 0, background: 'var(--sand-100)', color: 'var(--ink-2s)', fontSize: 12, fontWeight: 700, cursor: 'pointer' };
