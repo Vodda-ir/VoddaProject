@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/fa.dart';
@@ -9,14 +9,19 @@ import '../../../core/widgets/vodda_avatar.dart';
 import '../../sessions/data/session_repository.dart';
 import '../../sessions/domain/session.dart';
 
-/// Teacher incoming session requests screen.
-class RequestsScreen extends ConsumerWidget {
+class RequestsScreen extends ConsumerStatefulWidget {
   const RequestsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final sessions = ref.watch(myTeacherSessionsProvider('pending'));
+  ConsumerState<RequestsScreen> createState() => _RequestsScreenState();
+}
 
+class _RequestsScreenState extends ConsumerState<RequestsScreen> {
+  int? _busyId;
+
+  @override
+  Widget build(BuildContext context) {
+    final sessions = ref.watch(myTeacherSessionsProvider('pending'));
     return SafeArea(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -31,10 +36,10 @@ class RequestsScreen extends ConsumerWidget {
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
                 ),
                 sessions.maybeWhen(
-                  data: (list) => Padding(
+                  data: (items) => Padding(
                     padding: const EdgeInsets.only(top: 4),
                     child: Text(
-                      '${faNumber(list.length)} درخواست در انتظار پاسخ شما',
+                      '${faNumber(items.length)} درخواست در انتظار پاسخ شما',
                       style: const TextStyle(
                         fontSize: 13,
                         color: AppColors.ink3,
@@ -55,6 +60,7 @@ class RequestsScreen extends ConsumerWidget {
               },
               child: sessions.when(
                 loading: () => ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
                   children: const [
                     SizedBox(height: 200),
                     Center(
@@ -64,12 +70,13 @@ class RequestsScreen extends ConsumerWidget {
                     ),
                   ],
                 ),
-                error: (e, _) => ListView(
+                error: (error, _) => ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
                   children: [
                     SizedBox(
-                      height: 200,
+                      height: 240,
                       child: AppErrorView(
-                        error: e,
+                        error: error,
                         onRetry: () => ref.invalidate(
                           myTeacherSessionsProvider('pending'),
                         ),
@@ -77,7 +84,7 @@ class RequestsScreen extends ConsumerWidget {
                     ),
                   ],
                 ),
-                data: (list) => list.isEmpty
+                data: (items) => items.isEmpty
                     ? const Center(
                         child: Text(
                           'درخواستی در انتظار پاسخ نیست',
@@ -85,10 +92,19 @@ class RequestsScreen extends ConsumerWidget {
                         ),
                       )
                     : ListView.separated(
+                        physics: const AlwaysScrollableScrollPhysics(),
                         padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                        itemCount: list.length,
+                        itemCount: items.length,
                         separatorBuilder: (_, _) => const SizedBox(height: 14),
-                        itemBuilder: (_, i) => _RequestCard(session: list[i]),
+                        itemBuilder: (_, index) {
+                          final session = items[index];
+                          return _RequestCard(
+                            session: session,
+                            busy: _busyId == session.id,
+                            onAccept: () => _respond(session, true),
+                            onReject: () => _respond(session, false),
+                          );
+                        },
                       ),
               ),
             ),
@@ -97,14 +113,54 @@ class RequestsScreen extends ConsumerWidget {
       ),
     );
   }
+
+  Future<void> _respond(Session session, bool accept) async {
+    if (_busyId != null) return;
+    final action = accept ? 'تأیید' : 'رد';
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('$action درخواست'),
+        content: Text('درخواست جلسهٔ ${session.learnerName} $action شود؟'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('انصراف'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(action),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() => _busyId = session.id);
+    final repository = ref.read(sessionRepositoryProvider);
+    final saved = accept
+        ? await repository.accept(session.id)
+        : await repository.reject(session.id);
+    if (!mounted) return;
+    setState(() => _busyId = null);
+    if (saved) ref.invalidate(myTeacherSessionsProvider('pending'));
+  }
 }
 
-class _RequestCard extends ConsumerWidget {
-  const _RequestCard({required this.session});
+class _RequestCard extends StatelessWidget {
+  const _RequestCard({
+    required this.session,
+    required this.busy,
+    required this.onAccept,
+    required this.onReject,
+  });
+
   final Session session;
+  final bool busy;
+  final VoidCallback onAccept;
+  final VoidCallback onReject;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
@@ -124,7 +180,7 @@ class _RequestCard extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      session.teacherName,
+                      session.learnerName,
                       style: const TextStyle(
                         fontSize: 14.5,
                         fontWeight: FontWeight.w800,
@@ -142,10 +198,7 @@ class _RequestCard extends ConsumerWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: AppColors.clayBg,
                   borderRadius: BorderRadius.circular(999),
@@ -175,25 +228,18 @@ class _RequestCard extends ConsumerWidget {
                   size: 16,
                   color: AppColors.olive500,
                 ),
-                const SizedBox(width: 5),
-                Text(
-                  session.scheduledAt.toIso8601String().substring(0, 10),
-                  style: const TextStyle(fontSize: 12.5, color: AppColors.ink2),
-                ),
-                const SizedBox(width: 14),
-                const Icon(
-                  LucideIcons.clock,
-                  size: 16,
-                  color: AppColors.olive500,
-                ),
-                const SizedBox(width: 5),
-                Text(
-                  faDigits(
-                    '${session.scheduledAt.hour.toString().padLeft(2, '0')}:${session.scheduledAt.minute.toString().padLeft(2, '0')}',
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    session.hasOfficialLocalTime
+                        ? '${_faLocalDate(session.localDate)} · ${faDigits(session.localStart)} تا ${faDigits(session.localEnd)}'
+                        : 'زمان رسمی جلسه دریافت نشد',
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      color: AppColors.ink2,
+                    ),
                   ),
-                  style: const TextStyle(fontSize: 12.5, color: AppColors.ink2),
                 ),
-                const Spacer(),
                 Text(
                   '${faNumber(session.price)} ت',
                   style: const TextStyle(
@@ -205,19 +251,48 @@ class _RequestCard extends ConsumerWidget {
               ],
             ),
           ),
-          const SizedBox(height: 13),
-          SizedBox(
-            height: 44,
-            child: ElevatedButton(
-              onPressed: () async {
-                await ref.read(sessionRepositoryProvider).accept(session.id);
-                ref.invalidate(myTeacherSessionsProvider('pending'));
-              },
-              child: const Text('بررسی و پاسخ'),
+          if (session.note.isNotEmpty) ...[
+            const SizedBox(height: 9),
+            Text(
+              'یادداشت: ${session.note}',
+              style: const TextStyle(fontSize: 12, color: AppColors.ink3),
             ),
+          ],
+          const SizedBox(height: 13),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: busy ? null : onReject,
+                  child: const Text('رد'),
+                ),
+              ),
+              const SizedBox(width: 9),
+              Expanded(
+                child: FilledButton(
+                  onPressed: busy ? null : onAccept,
+                  child: busy
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text('تأیید'),
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
+}
+
+String _faLocalDate(String value) {
+  final parts = value.split('-');
+  if (parts.length != 3) return value;
+  return faDigits('${parts[0]}/${parts[1]}/${parts[2]}');
 }
