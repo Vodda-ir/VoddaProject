@@ -20,6 +20,7 @@ class SessionsScreen extends ConsumerStatefulWidget {
 
 class _SessionsScreenState extends ConsumerState<SessionsScreen> {
   String _tab = 'upcoming';
+  int? _busyId;
 
   @override
   Widget build(BuildContext context) {
@@ -30,9 +31,19 @@ class _SessionsScreenState extends ConsumerState<SessionsScreen> {
         children: [
           const Padding(
             padding: EdgeInsets.fromLTRB(20, 12, 20, 16),
-            child: Text(
-              'جلسات من',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'جلسات من',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'زمان‌ها بر اساس ساعت رسمی سامانه نمایش داده می‌شوند.',
+                  style: TextStyle(fontSize: 12.5, color: AppColors.ink3),
+                ),
+              ],
             ),
           ),
           Padding(
@@ -41,7 +52,7 @@ class _SessionsScreenState extends ConsumerState<SessionsScreen> {
               children: [
                 _tabButton('upcoming', 'پیش‌رو'),
                 const SizedBox(width: 8),
-                _tabButton('past', 'برگزارشده'),
+                _tabButton('past', 'گذشته'),
               ],
             ),
           ),
@@ -54,6 +65,7 @@ class _SessionsScreenState extends ConsumerState<SessionsScreen> {
               },
               child: sessions.when(
                 loading: () => ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
                   children: const [
                     SizedBox(height: 200),
                     Center(
@@ -64,9 +76,10 @@ class _SessionsScreenState extends ConsumerState<SessionsScreen> {
                   ],
                 ),
                 error: (error, _) => ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
                   children: [
                     SizedBox(
-                      height: 200,
+                      height: 240,
                       child: AppErrorView(
                         error: error,
                         onRetry: () =>
@@ -75,21 +88,26 @@ class _SessionsScreenState extends ConsumerState<SessionsScreen> {
                     ),
                   ],
                 ),
-                data: (list) => list.isEmpty
+                data: (items) => items.isEmpty
                     ? const EmptyState(
                         icon: LucideIcons.calendar,
                         title: 'جلسه‌ای نیست',
                         sub: 'هنوز جلسه‌ای در این بخش ندارید.',
                       )
                     : ListView.separated(
+                        physics: const AlwaysScrollableScrollPhysics(),
                         padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                        itemCount: list.length,
+                        itemCount: items.length,
                         separatorBuilder: (_, _) => const SizedBox(height: 14),
-                        itemBuilder: (_, index) => _SessionCard(
-                          session: list[index],
-                          onRate: () => _openRating(list[index]),
-                          onCancel: () => _cancel(list[index]),
-                        ),
+                        itemBuilder: (_, index) {
+                          final session = items[index];
+                          return _SessionCard(
+                            session: session,
+                            busy: _busyId == session.id,
+                            onRate: () => _openRating(session),
+                            onCancel: () => _cancel(session),
+                          );
+                        },
                       ),
               ),
             ),
@@ -139,12 +157,13 @@ class _SessionsScreenState extends ConsumerState<SessionsScreen> {
   }
 
   Future<void> _cancel(Session session) async {
+    if (_busyId != null) return;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('لغو جلسه'),
         content: const Text(
-          'در صورت تأیید لغو، مبلغ رزرو طبق وضعیت جلسه به کیف پول بازمی‌گردد. ادامه می‌دهید؟',
+          'لغو فقط پیش از زمان شروع مجاز است. در صورت موفقیت، مبلغ به کیف پول بازمی‌گردد.',
         ),
         actions: [
           TextButton(
@@ -158,29 +177,33 @@ class _SessionsScreenState extends ConsumerState<SessionsScreen> {
         ],
       ),
     );
-    if (confirmed != true) return;
-    final canceled = await ref
-        .read(sessionRepositoryProvider)
-        .cancel(session.id);
-    if (canceled) {
-      ref.invalidate(mySessionsProvider(_tab));
-    }
+    if (confirmed != true || !mounted) return;
+    setState(() => _busyId = session.id);
+    final canceled =
+        await ref.read(sessionRepositoryProvider).cancel(session.id);
+    if (!mounted) return;
+    setState(() => _busyId = null);
+    if (canceled) ref.invalidate(mySessionsProvider(_tab));
   }
 }
 
 class _SessionCard extends StatelessWidget {
   const _SessionCard({
     required this.session,
+    required this.busy,
     required this.onRate,
     required this.onCancel,
   });
 
   final Session session;
+  final bool busy;
   final VoidCallback onRate;
   final VoidCallback onCancel;
 
   @override
   Widget build(BuildContext context) {
+    final canCancel = session.isUpcoming &&
+        DateTime.now().isBefore(session.scheduledAt);
     return Container(
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
@@ -248,98 +271,79 @@ class _SessionCard extends StatelessWidget {
                   size: 16,
                   color: AppColors.olive500,
                 ),
-                const SizedBox(width: 5),
-                Text(
-                  _faDate(session.scheduledAt),
-                  style: const TextStyle(
-                    fontSize: 12.5,
-                    color: AppColors.ink2,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                const Icon(
-                  LucideIcons.clock,
-                  size: 16,
-                  color: AppColors.olive500,
-                ),
-                const SizedBox(width: 5),
-                Text(
-                  faDigits(
-                    '${session.scheduledAt.hour.toString().padLeft(2, '0')}:${session.scheduledAt.minute.toString().padLeft(2, '0')}',
-                  ),
-                  style: const TextStyle(
-                    fontSize: 12.5,
-                    color: AppColors.ink2,
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    session.hasOfficialLocalTime
+                        ? '${_faLocalDate(session.localDate)} · ${faDigits(session.localStart)} تا ${faDigits(session.localEnd)}'
+                        : 'زمان رسمی جلسه دریافت نشد',
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      color: AppColors.ink2,
+                    ),
                   ),
                 ),
               ],
             ),
           ),
-          ..._actions(),
+          if (session.rejectNote.isNotEmpty) ...[
+            const SizedBox(height: 9),
+            Text(
+              'دلیل لغو: ${session.rejectNote}',
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.clay,
+              ),
+            ),
+          ],
+          if (session.status == 'pending' ||
+              session.status == 'confirmed') ...[
+            const SizedBox(height: 11),
+            Text(
+              session.status == 'confirmed'
+                  ? 'جلسه تأیید شده است. جزئیات برگزاری را با استاد هماهنگ کنید.'
+                  : 'در انتظار تأیید استاد',
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.ink3,
+                height: 1.6,
+              ),
+            ),
+            if (canCancel) ...[
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: busy ? null : onCancel,
+                icon: busy
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(LucideIcons.x, size: 17),
+                label: Text(busy ? 'در حال لغو…' : 'لغو جلسه'),
+              ),
+            ],
+          ],
+          if (session.status == 'done' && !session.rated) ...[
+            const SizedBox(height: 13),
+            FilledButton.icon(
+              onPressed: onRate,
+              icon: const Icon(LucideIcons.star, size: 18),
+              label: const Text('ثبت امتیاز و نظر'),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.gold,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
+}
 
-  List<Widget> _actions() {
-    if (session.status == 'pending' || session.status == 'confirmed') {
-      final confirmed = session.status == 'confirmed';
-      return [
-        const SizedBox(height: 13),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          decoration: BoxDecoration(
-            color: confirmed ? AppColors.olive100 : AppColors.goldBg,
-            borderRadius: BorderRadius.circular(13),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                confirmed ? LucideIcons.checkCircle : LucideIcons.clock,
-                size: 17,
-                color: confirmed ? AppColors.olive700 : AppColors.gold,
-              ),
-              const SizedBox(width: 7),
-              Expanded(
-                child: Text(
-                  confirmed
-                      ? 'جلسه تأیید شده است. جزئیات برگزاری را با استاد هماهنگ کنید.'
-                      : 'در انتظار تأیید استاد',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.ink2,
-                    height: 1.6,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 8),
-        OutlinedButton.icon(
-          onPressed: onCancel,
-          icon: const Icon(LucideIcons.x, size: 17),
-          label: const Text('لغو جلسه'),
-        ),
-      ];
-    }
-    if (session.status == 'done' && !session.rated) {
-      return [
-        const SizedBox(height: 13),
-        FilledButton.icon(
-          onPressed: onRate,
-          icon: const Icon(LucideIcons.star, size: 18),
-          label: const Text('ثبت امتیاز و نظر'),
-          style: FilledButton.styleFrom(
-            backgroundColor: AppColors.gold,
-            foregroundColor: Colors.white,
-          ),
-        ),
-      ];
-    }
-    return const [];
-  }
-
-  static String _faDate(DateTime date) =>
-      faDigits('${date.year}/${date.month}/${date.day}');
+String _faLocalDate(String value) {
+  final parts = value.split('-');
+  if (parts.length != 3) return value;
+  return faDigits('${parts[0]}/${parts[1]}/${parts[2]}');
 }
