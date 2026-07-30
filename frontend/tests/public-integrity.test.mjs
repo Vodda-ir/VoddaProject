@@ -82,7 +82,7 @@ test('teacher panel uses real endpoints and cannot self-approve services', async
   assert.match(api, /teacherReviews:[\s\S]*\/teacher\/reviews/);
   assert.match(reviews, /api\.teacherReviews/);
   assert.doesNotMatch(reviews, /data\?\.reviews/);
-  assert.doesNotMatch(services, /active:\s*!active|فعال‌سازی/);
+  assert.doesNotMatch(services, /active:\s*!active|active:\s*true/);
   assert.match(services, /deactivateTeacherService/);
   assert.match(services, /parsedDuration < 10/);
   assert.match(withdrawals, /requestTeacherWithdrawal/);
