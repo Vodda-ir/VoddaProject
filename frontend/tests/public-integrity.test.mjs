@@ -77,11 +77,14 @@ test('admin and teacher dashboards contain no fabricated metrics or charts', asy
 });
 
 test('teacher panel uses real endpoints and cannot self-approve services', async () => {
-  const [api, services, reviews, withdrawals] = await Promise.all([
+  const [api, services, reviews, withdrawals, flutterServices, flutterRepository, flutterWithdraw] = await Promise.all([
     read('src/lib/api.ts'),
     read('src/app/panel/teacher/services/page.tsx'),
     read('src/app/panel/teacher/reviews/page.tsx'),
     read('src/app/panel/teacher/withdrawals/page.tsx'),
+    read('../app/lib/features/teacher/presentation/services_screen.dart'),
+    read('../app/lib/features/teacher/data/teacher_repository.dart'),
+    read('../app/lib/features/teacher/presentation/withdraw_screen.dart'),
   ]);
   assert.match(api, /teacherReviews:[\s\S]*\/teacher\/reviews/);
   assert.match(reviews, /api\.teacherReviews/);
@@ -91,6 +94,12 @@ test('teacher panel uses real endpoints and cannot self-approve services', async
   assert.match(services, /parsedDuration < 10/);
   assert.match(withdrawals, /requestTeacherWithdrawal/);
   assert.match(withdrawals, /\^IR\\d\{24\}\$/);
+  assert.doesNotMatch(flutterRepository, /data\['active'\]\s*=\s*true/);
+  assert.match(flutterServices, /duration < 10/);
+  assert.doesNotMatch(flutterServices, /_Toggle/);
+  assert.match(flutterWithdraw, /card:\s*card/);
+  assert.match(flutterWithdraw, /sheba:\s*sheba/);
+  assert.doesNotMatch(flutterWithdraw, /۲۴ تا ۷۲ ساعت/);
 });
 
 test('web booking consumes backend-authoritative timezone-aware availability', async () => {
