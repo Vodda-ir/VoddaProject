@@ -142,7 +142,7 @@ export function LearnerTeacherProfileScreen({
   const ratingLabel = teacher.reviews > 0 ? teacher.rating.toLocaleString("fa-IR", { maximumFractionDigits: 1 }) : "—";
 
   return (
-    <section style={{ display: "grid", gap: spacing.lg, paddingBottom: "calc(88px + env(safe-area-inset-bottom))" }}>
+    <section style={{ display: "grid", gap: spacing.lg }}>
       <Card elevated style={{ textAlign: "center" }}>
         <div style={{ display: "grid", justifyItems: "center", gap: spacing.sm }}>
           <div style={{ position: "relative" }}>
@@ -229,25 +229,23 @@ export function LearnerTeacherProfileScreen({
 
       <div
         style={{
-          position: "fixed",
-          zIndex: 20,
-          right: 0,
-          bottom: 0,
-          left: 0,
-          padding: `${spacing.sm}px max(${spacing.lg}px, env(safe-area-inset-right)) calc(${spacing.sm}px + env(safe-area-inset-bottom)) max(${spacing.lg}px, env(safe-area-inset-left))`,
+          position: "sticky",
+          zIndex: 10,
+          bottom: "calc(72px + env(safe-area-inset-bottom))",
+          padding: spacing.sm,
+          border: `1px solid ${colors.sand200}`,
+          borderRadius: 16,
           background: "rgba(255,255,255,0.96)",
-          borderTop: `1px solid ${colors.sand200}`,
+          backdropFilter: "blur(12px)",
         }}
       >
-        <div style={{ width: "min(100%, 760px)", margin: "0 auto" }}>
-          <Button
-            fullWidth
-            disabled={services.length === 0}
-            onClick={() => navigateApp(`/book/${teacher.id}`, config)}
-          >
-            {services.length === 0 ? "خدمت قابل رزرو وجود ندارد" : "رزرو جلسه"}
-          </Button>
-        </div>
+        <Button
+          fullWidth
+          disabled={services.length === 0}
+          onClick={() => navigateApp(`/book/${teacher.id}`, config)}
+        >
+          {services.length === 0 ? "خدمت قابل رزرو وجود ندارد" : "رزرو جلسه"}
+        </Button>
       </div>
     </section>
   );
