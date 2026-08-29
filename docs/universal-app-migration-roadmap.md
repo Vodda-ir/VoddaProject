@@ -44,13 +44,15 @@
 
 ## فاز 1 — Platform Adapter و Auth
 
-- [ ] تعریف interface مشترک برای platform runtime.
-- [ ] Web adapter برای BFF فعلی و HttpOnly session.
-- [ ] Native adapter برای direct Go API.
+- [x] تعریف interface مشترک برای platform runtime.
+- [x] Web adapter برای BFF فعلی و HttpOnly session.
+- [x] Native adapter برای direct Go API.
 - [ ] Secure token storage برای native.
-- [ ] logout/login/session restore مشترک با implementation متفاوت در web/native.
-- [ ] API base URL configurable برای development/production/native.
-- [ ] حذف نیاز universal app به `getToken()` وب فعلی.
+- [x] logout/login/session restore مشترک با implementation متفاوت در web/native.
+- [x] API base URL configurable برای development/production/native.
+- [x] حذف نیاز universal app به `getToken()` وب فعلی.
+
+> قرارداد `SecureTokenStorage` و اتصال Bearer در native adapter پیاده شده است؛ implementation امن واقعی آن عمداً همراه Capacitor در فاز 7 اضافه می‌شود تا feature code به plugin مشخصی وابسته نشود.
 
 **Done:** feature code بدون دانستن نوع platform بتواند authenticated API call انجام دهد.
 
