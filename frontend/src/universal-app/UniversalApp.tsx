@@ -7,6 +7,7 @@ import { ProfileCompletionScreen } from "./features/auth/ProfileCompletionScreen
 import { RoleModeSwitch } from "./features/auth/RoleModeSwitch";
 import { LearnerBookingScreen } from "./features/booking/LearnerBookingScreen";
 import { LearnerHomeScreen } from "./features/home/LearnerHomeScreen";
+import { LearnerProfileScreen } from "./features/profile/LearnerProfileScreen";
 import { LearnerSearchScreen } from "./features/search/LearnerSearchScreen";
 import { LearnerSessionsScreen } from "./features/sessions/LearnerSessionsScreen";
 import { LearnerTeacherProfileScreen } from "./features/teachers/LearnerTeacherProfileScreen";
@@ -120,6 +121,8 @@ function UniversalAppContent({ config, runtime }: { config: UniversalAppConfig; 
     <LearnerSessionsScreen />
   ) : route.name === "wallet" ? (
     <LearnerWalletScreen />
+  ) : route.name === "profile" ? (
+    <LearnerProfileScreen config={config} />
   ) : (
     <RoutePlaceholder routeName={route.name} pathname={route.pathname} config={config} />
   );
