@@ -13,7 +13,7 @@ type RoleModeSwitchProps = {
 };
 
 function canSwitchMode(user: AuthUser | null) {
-  return user?.role === "teacher";
+  return user?.role === "teacher" || user?.role === "admin";
 }
 
 export function RoleModeSwitch({ config, mode }: RoleModeSwitchProps) {
