@@ -77,7 +77,6 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
       const requestId = ++availabilityRequest.current;
       setAvailabilityLoading(true);
       setAvailabilityError("");
-      setSubmitError("");
       try {
         const rows = await getBookingAvailability(runtime, numericTeacherId, selectedService.id, 14);
         if (availabilityRequest.current !== requestId) return;
@@ -99,6 +98,7 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
       setAvailability([]);
       setLocalDate(null);
       setSlot(null);
+      setSubmitError("");
       setSubmitted(false);
       void loadAvailability(selectedService);
     },
@@ -139,6 +139,7 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
       setSubmitted(true);
     } catch (error) {
       if (error instanceof PlatformHttpError && error.status === 409) {
+        setLocalDate(null);
         setSlot(null);
         setSubmitError("این زمان همین حالا رزرو شده است. زمان‌های آزاد دوباره دریافت شدند؛ لطفاً زمان دیگری انتخاب کنید.");
         await loadAvailability(service);
@@ -150,8 +151,16 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
     }
   }, [loadAvailability, runtime, saving, service, slot, teacher]);
 
-  if (teacherLoading) return <LoadingState title="در حال دریافت اطلاعات استاد…" />;
-  if (teacherError || !teacher) return <ErrorState description={teacherError || "اطلاعات استاد دریافت نشد."} actionLabel="تلاش دوباره" onAction={() => void loadTeacher()} />;
+  if (teacherLoading) return <LoadingState label="در حال دریافت اطلاعات استاد…" />;
+  if (teacherError || !teacher) {
+    return (
+      <ErrorState
+        title="دریافت اطلاعات استاد ناموفق بود"
+        description={teacherError || "اطلاعات استاد دریافت نشد."}
+        action={<Button variant="secondary" onClick={() => void loadTeacher()}>تلاش دوباره</Button>}
+      />
+    );
+  }
 
   if (submitted) {
     return (
@@ -183,7 +192,7 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
       <Card>
         <h3 style={{ ...typography.title, marginTop: 0 }}>۱. انتخاب خدمت</h3>
         {services.length === 0 ? (
-          <EmptyState description="این استاد فعلاً خدمت فعال و قابل رزروی ندارد." />
+          <EmptyState title="خدمت قابل رزرو وجود ندارد" description="این استاد فعلاً خدمت فعال و قابل رزروی ندارد." />
         ) : (
           <div style={{ display: "grid", gap: spacing.sm }}>
             {services.map((item) => {
@@ -223,13 +232,17 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
       <Card>
         <h3 style={{ ...typography.title, marginTop: 0 }}>۲. انتخاب تاریخ و ساعت</h3>
         {!service ? (
-          <EmptyState description="ابتدا یک خدمت را انتخاب کنید." />
+          <EmptyState title="یک خدمت انتخاب کنید" description="بعد از انتخاب خدمت، زمان‌های آزاد رسمی استاد دریافت می‌شوند." />
         ) : availabilityLoading ? (
-          <LoadingState title="در حال دریافت زمان‌های آزاد…" />
+          <LoadingState label="در حال دریافت زمان‌های آزاد…" />
         ) : availabilityError ? (
-          <ErrorState description={availabilityError} actionLabel="تلاش دوباره" onAction={() => void loadAvailability(service)} />
+          <ErrorState
+            title="دریافت زمان‌های آزاد ناموفق بود"
+            description={availabilityError}
+            action={<Button variant="secondary" onClick={() => void loadAvailability(service)}>تلاش دوباره</Button>}
+          />
         ) : dateGroups.length === 0 ? (
-          <EmptyState description="در ۱۴ روز آینده زمان آزاد و قابل رزروی برای این خدمت وجود ندارد." />
+          <EmptyState title="زمان آزادی پیدا نشد" description="در ۱۴ روز آینده زمان آزاد و قابل رزروی برای این خدمت وجود ندارد." />
         ) : (
           <div style={{ display: "grid", gap: spacing.lg }}>
             <div style={{ display: "flex", gap: spacing.sm, overflowX: "auto", paddingBottom: spacing.xs }}>
@@ -301,7 +314,7 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
       <Card>
         <h3 style={{ ...typography.title, marginTop: 0 }}>۳. بررسی نهایی</h3>
         {!service || !slot ? (
-          <EmptyState description="پس از انتخاب خدمت و زمان، خلاصه رزرو اینجا نمایش داده می‌شود." />
+          <EmptyState title="رزرو هنوز آماده ثبت نیست" description="پس از انتخاب خدمت و زمان، خلاصه رزرو اینجا نمایش داده می‌شود." />
         ) : (
           <div style={{ display: "grid", gap: spacing.sm }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: spacing.md }}><span>استاد</span><strong>{teacher.name}</strong></div>
