@@ -10,6 +10,7 @@ import { LearnerHomeScreen } from "./features/home/LearnerHomeScreen";
 import { LearnerSearchScreen } from "./features/search/LearnerSearchScreen";
 import { LearnerSessionsScreen } from "./features/sessions/LearnerSessionsScreen";
 import { LearnerTeacherProfileScreen } from "./features/teachers/LearnerTeacherProfileScreen";
+import { LearnerWalletScreen } from "./features/wallet/LearnerWalletScreen";
 import { PlatformProvider } from "./platform/context";
 import type { PlatformRuntime } from "./platform/types";
 import { createWebPlatformRuntime } from "./platform/web";
@@ -117,6 +118,8 @@ function UniversalAppContent({ config, runtime }: { config: UniversalAppConfig; 
     <LearnerBookingScreen teacherId={route.params.id ?? ""} config={config} />
   ) : route.name === "sessions" ? (
     <LearnerSessionsScreen />
+  ) : route.name === "wallet" ? (
+    <LearnerWalletScreen />
   ) : (
     <RoutePlaceholder routeName={route.name} pathname={route.pathname} config={config} />
   );
