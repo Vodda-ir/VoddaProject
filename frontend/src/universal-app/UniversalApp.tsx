@@ -4,11 +4,12 @@ import { useMemo } from "react";
 import { createUniversalAppConfig, type UniversalAppConfig } from "./config";
 import { LoginScreen, SessionBootstrap } from "./features/auth/AuthExperience";
 import { ProfileCompletionScreen } from "./features/auth/ProfileCompletionScreen";
+import { RoleModeSwitch } from "./features/auth/RoleModeSwitch";
 import { PlatformProvider } from "./platform/context";
 import type { PlatformRuntime } from "./platform/types";
 import { createWebPlatformRuntime } from "./platform/web";
 import { navigateApp, useAppRoute, type AppRouteName } from "./router";
-import { MobileAppShell, TeacherAppShell, Card, colors, typography } from "./ui";
+import { MobileAppShell, TeacherAppShell, Card, colors, spacing, typography } from "./ui";
 
 export type UniversalAppProps = {
   config?: Partial<UniversalAppConfig>;
@@ -100,8 +101,16 @@ function UniversalAppContent({ config, runtime }: { config: UniversalAppConfig; 
     );
   }
 
-  const content = <RoutePlaceholder routeName={route.name} pathname={route.pathname} config={config} />;
-  const shell = teacherRoutes.has(route.name) ? (
+  const teacherMode = teacherRoutes.has(route.name);
+  const content = (
+    <>
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: spacing.md }}>
+        <RoleModeSwitch config={config} mode={teacherMode ? "teacher" : "learner"} />
+      </div>
+      <RoutePlaceholder routeName={route.name} pathname={route.pathname} config={config} />
+    </>
+  );
+  const shell = teacherMode ? (
     <TeacherAppShell config={config} routeName={route.name} title={routeTitles[route.name]}>
       {content}
     </TeacherAppShell>
