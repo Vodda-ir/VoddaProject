@@ -5,6 +5,7 @@ import { createUniversalAppConfig, type UniversalAppConfig } from "./config";
 import { LoginScreen, SessionBootstrap } from "./features/auth/AuthExperience";
 import { ProfileCompletionScreen } from "./features/auth/ProfileCompletionScreen";
 import { RoleModeSwitch } from "./features/auth/RoleModeSwitch";
+import { LearnerHomeScreen } from "./features/home/LearnerHomeScreen";
 import { PlatformProvider } from "./platform/context";
 import type { PlatformRuntime } from "./platform/types";
 import { createWebPlatformRuntime } from "./platform/web";
@@ -102,12 +103,17 @@ function UniversalAppContent({ config, runtime }: { config: UniversalAppConfig; 
   }
 
   const teacherMode = teacherRoutes.has(route.name);
+  const routeContent = route.name === "home" ? (
+    <LearnerHomeScreen config={config} />
+  ) : (
+    <RoutePlaceholder routeName={route.name} pathname={route.pathname} config={config} />
+  );
   const content = (
     <>
       <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: spacing.md }}>
         <RoleModeSwitch config={config} mode={teacherMode ? "teacher" : "learner"} />
       </div>
-      <RoutePlaceholder routeName={route.name} pathname={route.pathname} config={config} />
+      {routeContent}
     </>
   );
   const shell = teacherMode ? (
