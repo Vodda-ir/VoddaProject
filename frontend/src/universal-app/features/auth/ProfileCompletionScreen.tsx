@@ -1,14 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { FormEvent } from "react";
+import type { ChangeEvent, FormEvent } from "react";
 import type { UniversalAppConfig } from "../../config";
 import { PlatformHttpError } from "../../platform/http";
 import { usePlatform } from "../../platform/context";
 import type { AuthUser } from "../../platform/types";
 import { navigateApp } from "../../router";
-import { Button, Card, Input, colors, radii, spacing, typography } from "../../ui";
+import { Avatar, Button, Card, Input, colors, radii, spacing, typography } from "../../ui";
 import { defaultRouteForUser } from "./AuthExperience";
+
+const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
 
 function errorMessage(error: unknown) {
   if (error instanceof PlatformHttpError) return error.message;
@@ -37,6 +39,8 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
   const [name, setName] = useState("");
   const [city, setCity] = useState("");
   const [bio, setBio] = useState("");
+  const [avatar, setAvatar] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -71,8 +75,36 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
     };
   }, [config, platform]);
 
+  useEffect(() => {
+    if (!avatar) {
+      setAvatarPreview(null);
+      return;
+    }
+
+    const preview = URL.createObjectURL(avatar);
+    setAvatarPreview(preview);
+    return () => URL.revokeObjectURL(preview);
+  }, [avatar]);
+
+  const onboarding = !user?.name?.trim();
   const nameValid = useMemo(() => name.trim().length >= 2, [name]);
   const canSubmit = nameValid && !saving && !loading;
+
+  function selectAvatar(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0] ?? null;
+    event.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setError("فایل انتخاب‌شده باید تصویر باشد.");
+      return;
+    }
+    if (file.size > MAX_AVATAR_BYTES) {
+      setError("حجم تصویر پروفایل نباید بیشتر از ۵ مگابایت باشد.");
+      return;
+    }
+    setError(null);
+    setAvatar(file);
+  }
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -84,15 +116,28 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
     setSaving(true);
     setError(null);
     try {
-      const response = await platform.request<unknown>("/me", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: name.trim(),
-          city: city.trim(),
-          bio: bio.trim(),
-        }),
-      });
+      const profile = {
+        name: name.trim(),
+        city: city.trim(),
+        bio: bio.trim(),
+      };
+      const response = avatar
+        ? await platform.request<unknown>("/me", {
+            method: "PUT",
+            body: (() => {
+              const form = new FormData();
+              form.set("name", profile.name);
+              form.set("city", profile.city);
+              form.set("bio", profile.bio);
+              form.set("avatar", avatar, avatar.name || "avatar.jpg");
+              return form;
+            })(),
+          })
+        : await platform.request<unknown>("/me", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(profile),
+          });
 
       const updated = normalizeUser(response) ?? await platform.restoreSession();
       if (!updated) {
@@ -100,7 +145,7 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
         return;
       }
       setUser(updated);
-      navigateApp(defaultRouteForUser(updated), config, { replace: true });
+      navigateApp(onboarding ? defaultRouteForUser(updated) : "/profile", config, { replace: true });
     } catch (saveError) {
       setError(errorMessage(saveError));
     } finally {
@@ -127,12 +172,25 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
         }}
       >
         <header style={{ marginBottom: spacing.xl }}>
-          <p style={{ ...typography.caption, margin: 0, color: colors.olive700 }}>تکمیل حساب</p>
+          {!onboarding ? (
+            <Button
+              variant="ghost"
+              onClick={() => navigateApp("/profile", config)}
+              style={{ minHeight: 36, paddingInline: 0, marginBottom: spacing.sm }}
+            >
+              بازگشت به پروفایل
+            </Button>
+          ) : null}
+          <p style={{ ...typography.caption, margin: 0, color: colors.olive700 }}>
+            {onboarding ? "تکمیل حساب" : "حساب کاربری"}
+          </p>
           <h1 style={{ ...typography.heading, margin: "6px 0 0", color: colors.olive900 }}>
-            پروفایل خود را کامل کنید
+            {onboarding ? "پروفایل خود را کامل کنید" : "ویرایش پروفایل"}
           </h1>
           <p style={{ ...typography.bodySmall, margin: "8px 0 0", color: colors.inkMuted }}>
-            برای ورود به وُدّا حداقل نام و نام خانوادگی لازم است. شهر و توضیحات را می‌توانید همین حالا یا بعداً ثبت کنید.
+            {onboarding
+              ? "برای ورود به وُدّا حداقل نام و نام خانوادگی لازم است. شهر و توضیحات را می‌توانید همین حالا یا بعداً ثبت کنید."
+              : "نام، شهر، توضیحات و تصویر پروفایل خود را ویرایش کنید."}
           </p>
         </header>
 
@@ -143,6 +201,41 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
             </div>
           ) : (
             <form onSubmit={submit} style={{ display: "grid", gap: spacing.lg }}>
+              <div style={{ display: "grid", justifyItems: "center", gap: spacing.sm }}>
+                <Avatar
+                  name={name || user?.name}
+                  src={avatarPreview ?? user?.avatar_url}
+                  size={88}
+                  style={{ border: `3px solid ${colors.olive100}` }}
+                />
+                <label
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    minHeight: 40,
+                    padding: `7px ${spacing.md}px`,
+                    color: colors.olive800,
+                    background: colors.olive50,
+                    border: `1px solid ${colors.olive200}`,
+                    borderRadius: radii.sm,
+                    cursor: saving ? "not-allowed" : "pointer",
+                    opacity: saving ? 0.6 : 1,
+                    ...typography.bodySmall,
+                    fontWeight: 700,
+                  }}
+                >
+                  {avatar ? "تغییر تصویر انتخاب‌شده" : user?.avatar_url ? "تغییر تصویر" : "افزودن تصویر"}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    disabled={saving}
+                    onChange={selectAvatar}
+                    style={{ display: "none" }}
+                  />
+                </label>
+                <span style={{ ...typography.caption, color: colors.inkMuted }}>حداکثر حجم تصویر ۵ مگابایت</span>
+              </div>
+
               <Input
                 label="نام و نام خانوادگی"
                 name="name"
@@ -225,7 +318,7 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
               ) : null}
 
               <Button type="submit" fullWidth loading={saving} disabled={!canSubmit}>
-                ذخیره و ادامه
+                {onboarding ? "ذخیره و ادامه" : "ذخیره تغییرات"}
               </Button>
             </form>
           )}
