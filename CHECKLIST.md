@@ -57,16 +57,17 @@
 - [x] design tokens مشترک، Icon قابل استفاده در Universal App و primitiveهای framework-independent شامل Button/Input/Card/Avatar/State/Sheet/Dialog ایجاد شدند.
 - [x] shared mobile-first learner/teacher app shells و bottom navigation مستقل از `/panel` با RTL، safe-area و active route state ایجاد شدند.
 - [x] launch/session bootstrap، OTP request/verify و redirect اولیه بر اساس session/role در Universal App پیاده شد.
-- [x] onboarding مسیر `need_profile` در `/app/profile/edit` با restore session و `PUT /me` برای نام، شهر و bio پیاده شد و پس از ذخیره به shell مناسب نقش هدایت می‌شود.
-- [x] route guard namespace استاد در Universal App؛ `/app/t/...` فقط برای `role=teacher` قابل دسترسی است و learner namespace برای همه حساب‌های authenticated باز می‌ماند.
-- [x] role switch بین learner و teacher mode برای حساب teacher بدون mutation نقش سرور؛ switch فقط namespace/shell فعال را بین `/app/...` و `/app/t/...` تغییر می‌دهد.
+- [x] onboarding مسیر `need_profile` در `/app/profile/edit` با restore session و `PUT /me` برای نام، شهر و bio پیاده شد و همان route برای حساب موجود ویرایش نام/شهر/bio و آواتار multipart را انجام می‌دهد.
+- [x] route guard namespace استاد در Universal App؛ `/app/t/...` برای `role=teacher|admin` قابل دسترسی است و learner namespace برای همه حساب‌های authenticated باز می‌ماند.
+- [x] role switch بین learner و teacher mode برای حساب teacher/admin بدون mutation نقش سرور؛ switch فقط namespace/shell فعال را بین `/app/...` و `/app/t/...` تغییر می‌دهد.
 - [x] Home قرآن‌آموز در Universal App با header/session واقعی، hero و دسته‌های سریع، API واقعی `/teachers`، اساتید پیشنهادی، استادان بانو و featured teacher بدون داده ساختگی parity شده است.
 - [x] Search قرآن‌آموز در Universal App با جستجوی server-side روی `/teachers`، debounce، فیلترهای واقعی `q/field/city/female`، URL state و حالت‌های loading/empty/error/retry پیاده شده است.
 - [x] Teacher Profile قرآن‌آموز در `/app/teacher/:id` با اطلاعات واقعی استاد، serviceهای فعال/تأییدشده، review و rating واقعی و CTA رزرو متصل به `/app/book/:id` پیاده شده است.
 - [x] Booking قرآن‌آموز در `/app/book/:id` با انتخاب خدمت واقعی، availability authoritative بک‌اند، نمایش `local_*`، ارسال `scheduled_at` از `start_at` UTC و refresh خودکار availability پس از conflict پیاده شده است.
 - [x] Sessions قرآن‌آموز در `/app/sessions` با upcoming/past واقعی، نمایش `local_date/local_start/local_end` رسمی backend، لغو پیش از شروع و rating/review پس از completion پیاده شده است.
 - [x] Wallet قرآن‌آموز در `/app/wallet` با موجودی واقعی از `/me`، تاریخچه `/wallet/transactions` و بدون CTA شارژ تا اتصال درگاه واقعی پیاده شده است.
-- [ ] parity کامل learner app با Flutter.
+- [x] Profile قرآن‌آموز در `/app/profile` با اطلاعات session، لینک wallet، logout، ویرایش نام/شهر/bio، upload آواتار و role switch برای teacher/admin parity شده است.
+- [x] parity کامل learner app با Flutter.
 - [ ] parity کامل teacher app با Flutter.
 - [ ] route contract مستقل از `/panel/...`.
 - [ ] Capacitor/Vite scaffold با `ir.vodda.vodda` و local bundle.
