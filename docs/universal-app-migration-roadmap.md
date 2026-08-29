@@ -1,6 +1,6 @@
 # رودمپ مهاجرت اپ وُدّا به Universal Frontend + Capacitor
 
-آخرین به‌روزرسانی: 2026-08-29
+آخرین به‌روزرسانی: 2026-08-30
 
 ## هدف
 
@@ -112,11 +112,13 @@
 > `features/teachers/LearnerTeacherProfileScreen.tsx` route واقعی `/app/teacher/:id` را از پاسخ authoritative `GET /teachers/:id` پر می‌کند. همان پاسخ، اطلاعات استاد، serviceهای فعال/تأییدشده و reviewهای persisted را برمی‌گرداند؛ امتیاز و تعداد نظر نیز از آمار واقعی استاد نمایش داده می‌شود. CTA رزرو فقط وقتی حداقل یک خدمت قابل رزرو وجود داشته باشد فعال است و به `/app/book/:id` می‌رود.
 
 ### Booking
-- [ ] انتخاب خدمت.
-- [ ] دریافت availability authoritative از backend.
-- [ ] انتخاب slot با `local_*`.
-- [ ] ثبت رزرو.
-- [ ] refresh availability بعد از conflict.
+- [x] انتخاب خدمت.
+- [x] دریافت availability authoritative از backend.
+- [x] انتخاب slot با `local_*`.
+- [x] ثبت رزرو.
+- [x] refresh availability بعد از conflict.
+
+> `features/booking/LearnerBookingScreen.tsx` به route مستقل `/app/book/:id` متصل است، serviceهای فعال استاد را از teacher detail واقعی می‌گیرد و availability را فقط از `GET /teachers/:id/availability` دریافت می‌کند. تاریخ و ساعت نمایشی از `local_date/local_start/local_end` سرور می‌آیند، در حالی که `scheduled_at` رزرو مستقیماً از `start_at` UTC همان slot ارسال می‌شود. در HTTP 409 انتخاب slot باطل و availability دوباره از backend دریافت می‌شود تا کاربر روی داده stale ادامه ندهد.
 
 ### Sessions
 - [ ] upcoming/past.
