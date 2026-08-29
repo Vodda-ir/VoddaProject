@@ -2,7 +2,7 @@
 
 # چک‌لیست وضعیت وُدّا
 
-آخرین بازبینی: **۲۰۲۶-۰۸-۲۹**
+آخرین بازبینی: **۲۰۲۶-۰۸-۳۰**
 
 این فایل فقط وضعیت واقعی کد فعلی را نشان می‌دهد. قابلیت وابسته به سرویس بیرونی تا زمان اتصال و آزمون end-to-end «تکمیل‌شده» محسوب نمی‌شود.
 
@@ -63,6 +63,7 @@
 - [x] Home قرآن‌آموز در Universal App با header/session واقعی، hero و دسته‌های سریع، API واقعی `/teachers`، اساتید پیشنهادی، استادان بانو و featured teacher بدون داده ساختگی parity شده است.
 - [x] Search قرآن‌آموز در Universal App با جستجوی server-side روی `/teachers`، debounce، فیلترهای واقعی `q/field/city/female`، URL state و حالت‌های loading/empty/error/retry پیاده شده است.
 - [x] Teacher Profile قرآن‌آموز در `/app/teacher/:id` با اطلاعات واقعی استاد، serviceهای فعال/تأییدشده، review و rating واقعی و CTA رزرو متصل به `/app/book/:id` پیاده شده است.
+- [x] Booking قرآن‌آموز در `/app/book/:id` با انتخاب خدمت واقعی، availability authoritative بک‌اند، نمایش `local_*`، ارسال `scheduled_at` از `start_at` UTC و refresh خودکار availability پس از conflict پیاده شده است.
 - [ ] parity کامل learner app با Flutter.
 - [ ] parity کامل teacher app با Flutter.
 - [ ] route contract مستقل از `/panel/...`.
