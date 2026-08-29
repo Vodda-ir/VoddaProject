@@ -104,10 +104,12 @@
 > `features/search/LearnerSearchScreen.tsx` به route مستقل `/app/search` متصل است و درخواست واقعی `/teachers` را از طریق platform runtime اجرا می‌کند. عبارت جستجو با debounce 350ms ارسال می‌شود، فیلترهای `q`، `field`، `city` و `female` مستقیماً با قرارداد بک‌اند هماهنگ‌اند، URL state حفظ می‌شود و loading/empty/error/retry از primitiveهای مشترک Universal App استفاده می‌کنند. نتیجه‌ها به `/app/teacher/:id` هدایت می‌شوند و هیچ داده ساختگی در Search وجود ندارد.
 
 ### Teacher Profile
-- [ ] اطلاعات استاد.
-- [ ] خدمات تأییدشده.
-- [ ] نظرها و امتیاز واقعی.
-- [ ] CTA رزرو.
+- [x] اطلاعات استاد.
+- [x] خدمات تأییدشده.
+- [x] نظرها و امتیاز واقعی.
+- [x] CTA رزرو.
+
+> `features/teachers/LearnerTeacherProfileScreen.tsx` route واقعی `/app/teacher/:id` را از پاسخ authoritative `GET /teachers/:id` پر می‌کند. همان پاسخ، اطلاعات استاد، serviceهای فعال/تأییدشده و reviewهای persisted را برمی‌گرداند؛ امتیاز و تعداد نظر نیز از آمار واقعی استاد نمایش داده می‌شود. CTA رزرو فقط وقتی حداقل یک خدمت قابل رزرو وجود داشته باشد فعال است و به `/app/book/:id` می‌رود.
 
 ### Booking
 - [ ] انتخاب خدمت.
