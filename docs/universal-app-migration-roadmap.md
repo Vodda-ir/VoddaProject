@@ -87,11 +87,13 @@
 ## فاز 4 — Learner App Parity
 
 ### Home
-- [ ] انتقال header و وضعیت کاربر.
-- [ ] انتقال hero جستجوی استاد.
-- [ ] انتقال دسته‌های سریع قرآن/مداحی.
+- [x] انتقال header و وضعیت کاربر.
+- [x] انتقال hero جستجوی استاد.
+- [x] انتقال دسته‌های سریع قرآن/مداحی.
 - [ ] انتقال اساتید پیشنهادی و استادان بانو.
 - [ ] انتقال featured teacher.
+
+> `features/home/LearnerHomeScreen.tsx` اکنون session واقعی را از platform runtime می‌خواند، header و avatar کاربر را نمایش می‌دهد و hero جستجو و دسته‌های سریع قرآن/مداحی را به `/app/search` با query string هدایت می‌کند؛ هیچ داده ساختگی استاد در Home اضافه نشده است.
 
 ### Search
 - [ ] جستجوی server-side.
