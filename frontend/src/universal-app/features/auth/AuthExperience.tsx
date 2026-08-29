@@ -1,6 +1,7 @@
 "use client";
 
-import { FormEvent, ReactNode, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import type { FormEvent, ReactNode } from "react";
 import type { UniversalAppConfig } from "../../config";
 import { PlatformHttpError } from "../../platform/http";
 import { usePlatform } from "../../platform/context";
