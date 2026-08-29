@@ -7,6 +7,14 @@ export type TeacherService = {
   active: boolean;
 };
 
+export type TeacherReview = {
+  id: number;
+  rating: number;
+  text: string;
+  createdAt: string;
+  learnerName: string;
+};
+
 export type Teacher = {
   id: number;
   name: string;
@@ -24,6 +32,11 @@ export type Teacher = {
   sessions: number;
   followers: number;
   services: TeacherService[];
+};
+
+export type TeacherDetail = {
+  teacher: Teacher;
+  reviews: TeacherReview[];
 };
 
 type JsonRecord = Record<string, unknown>;
@@ -53,6 +66,18 @@ export function parseTeacherService(value: unknown): TeacherService {
     price: numberValue(data.price),
     icon: stringValue(data.icon, "book"),
     active: booleanValue(data.active),
+  };
+}
+
+export function parseTeacherReview(value: unknown): TeacherReview {
+  const data = record(value);
+  const learner = record(data.learner);
+  return {
+    id: numberValue(data.id),
+    rating: numberValue(data.rating),
+    text: stringValue(data.text),
+    createdAt: stringValue(data.created_at),
+    learnerName: stringValue(learner.name, "قرآن‌آموز وُدّا"),
   };
 }
 
