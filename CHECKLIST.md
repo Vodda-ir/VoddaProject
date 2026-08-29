@@ -58,7 +58,8 @@
 - [x] shared mobile-first learner/teacher app shells و bottom navigation مستقل از `/panel` با RTL، safe-area و active route state ایجاد شدند.
 - [x] launch/session bootstrap، OTP request/verify و redirect اولیه بر اساس session/role در Universal App پیاده شد.
 - [x] onboarding مسیر `need_profile` در `/app/profile/edit` با restore session و `PUT /me` برای نام، شهر و bio پیاده شد و پس از ذخیره به shell مناسب نقش هدایت می‌شود.
-- [ ] route guard دقیق learner/teacher و role switch در Universal App.
+- [x] route guard namespace استاد در Universal App؛ `/app/t/...` فقط برای `role=teacher` قابل دسترسی است و learner namespace برای همه حساب‌های authenticated باز می‌ماند تا learner mode آینده برای teacher/admin ممکن باشد.
+- [ ] role switch بین learner و teacher mode در Universal App.
 - [ ] parity کامل learner app با Flutter.
 - [ ] parity کامل teacher app با Flutter.
 - [ ] route contract مستقل از `/panel/...`.
