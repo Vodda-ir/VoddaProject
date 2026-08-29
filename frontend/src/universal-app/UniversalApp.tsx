@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { createUniversalAppConfig, type UniversalAppConfig } from "./config";
 import { LoginScreen, SessionBootstrap } from "./features/auth/AuthExperience";
+import { ProfileCompletionScreen } from "./features/auth/ProfileCompletionScreen";
 import { PlatformProvider } from "./platform/context";
 import type { PlatformRuntime } from "./platform/types";
 import { createWebPlatformRuntime } from "./platform/web";
@@ -87,6 +88,14 @@ function UniversalAppContent({ config, runtime }: { config: UniversalAppConfig; 
     return (
       <SessionBootstrap routeName={route.name} config={config}>
         <LoginScreen config={config} />
+      </SessionBootstrap>
+    );
+  }
+
+  if (route.name === "profile-edit") {
+    return (
+      <SessionBootstrap routeName={route.name} config={config}>
+        <ProfileCompletionScreen config={config} />
       </SessionBootstrap>
     );
   }
