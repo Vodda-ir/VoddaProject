@@ -77,10 +77,10 @@
 - [x] انتقال OTP verify.
 - [x] redirect بر اساس session و role.
 - [x] تکمیل profile در صورت `need_profile`.
-- [ ] guard مسیرهای learner/teacher.
+- [x] guard مسیرهای learner/teacher.
 - [ ] role switch بین حساب قرآن‌آموز و استاد.
 
-> `features/auth/AuthExperience.tsx` launch/session restore و OTP واقعی را روی runtime مشترک انجام می‌دهد. `ProfileCompletionScreen.tsx` نیز مسیر `need_profile -> /profile/edit` را با `PUT /me` برای نام، شهر و bio تکمیل می‌کند، session معتبر را restore می‌کند و بعد از ذخیره کاربر را به shell مناسب نقش هدایت می‌کند. guard دقیق learner/teacher و role-switch هنوز باز هستند.
+> `features/auth/AuthExperience.tsx` launch/session restore و OTP واقعی را روی runtime مشترک انجام می‌دهد. `ProfileCompletionScreen.tsx` نیز مسیر `need_profile -> /profile/edit` را با `PUT /me` برای نام، شهر و bio تکمیل می‌کند و بعد از ذخیره کاربر را به shell مناسب نقش هدایت می‌کند. `SessionBootstrap` اکنون namespace استاد را فقط برای session با `role=teacher` باز می‌گذارد و دسترسی غیرمجاز به `/app/t/...` را به مسیر پیش‌فرض همان حساب برمی‌گرداند. namespace learner عمداً برای همه حساب‌های authenticated باز است تا teacher/admin بتوانند در role-switch آینده وارد learner mode شوند. role-switch هنوز باز است.
 
 **Done:** flow ورود Flutter از ابتدا تا ورود به shell مناسب در `/app/...` کامل باشد.
 
