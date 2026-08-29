@@ -96,10 +96,12 @@
 > `features/home/LearnerHomeScreen.tsx` اکنون session واقعی را از platform runtime می‌خواند، header و avatar کاربر را نمایش می‌دهد، hero جستجو و دسته‌های سریع قرآن/مداحی را به `/app/search` هدایت می‌کند و با API واقعی `/teachers` اساتید پیشنهادی، استادان بانو و featured teacher را دقیقاً مطابق منطق Flutter نمایش می‌دهد. قرارداد و parser مشترک استاد نیز در `features/teachers/` اضافه شده و هیچ داده ساختگی استاد در Home وجود ندارد.
 
 ### Search
-- [ ] جستجوی server-side.
-- [ ] debounce.
-- [ ] فیلترهای واقعی بک‌اند.
-- [ ] loading/empty/error/retry.
+- [x] جستجوی server-side.
+- [x] debounce.
+- [x] فیلترهای واقعی بک‌اند.
+- [x] loading/empty/error/retry.
+
+> `features/search/LearnerSearchScreen.tsx` به route مستقل `/app/search` متصل است و درخواست واقعی `/teachers` را از طریق platform runtime اجرا می‌کند. عبارت جستجو با debounce 350ms ارسال می‌شود، فیلترهای `q`، `field`، `city` و `female` مستقیماً با قرارداد بک‌اند هماهنگ‌اند، URL state حفظ می‌شود و loading/empty/error/retry از primitiveهای مشترک Universal App استفاده می‌کنند. نتیجه‌ها به `/app/teacher/:id` هدایت می‌شوند و هیچ داده ساختگی در Search وجود ندارد.
 
 ### Teacher Profile
 - [ ] اطلاعات استاد.
