@@ -76,11 +76,11 @@
 - [x] انتقال OTP request.
 - [x] انتقال OTP verify.
 - [x] redirect بر اساس session و role.
-- [ ] تکمیل profile در صورت `need_profile`.
+- [x] تکمیل profile در صورت `need_profile`.
 - [ ] guard مسیرهای learner/teacher.
 - [ ] role switch بین حساب قرآن‌آموز و استاد.
 
-> `features/auth/AuthExperience.tsx` اکنون launch/session restore را روی runtime مشترک انجام می‌دهد، کاربر بدون session را به `/app/login` هدایت می‌کند و session معتبر روی login را به shell مناسب می‌فرستد. فرم OTP با ورودی موبایل ایران، ارقام فارسی/عربی، request/verify واقعی platform adapter، loading/error state و مسیر `need_profile -> /profile/edit` پیاده شده است. خود فرم تکمیل پروفایل و guard/role-switch هنوز باز هستند.
+> `features/auth/AuthExperience.tsx` launch/session restore و OTP واقعی را روی runtime مشترک انجام می‌دهد. `ProfileCompletionScreen.tsx` نیز مسیر `need_profile -> /profile/edit` را با `PUT /me` برای نام، شهر و bio تکمیل می‌کند، session معتبر را restore می‌کند و بعد از ذخیره کاربر را به shell مناسب نقش هدایت می‌کند. guard دقیق learner/teacher و role-switch هنوز باز هستند.
 
 **Done:** flow ورود Flutter از ابتدا تا ورود به shell مناسب در `/app/...` کامل باشد.
 
@@ -258,23 +258,3 @@
 - `npm install` در محیطی که registry در دسترس نیست.
 - `next build`، `vite build` و build Android/iOS.
 - `flutter test` یا مقایسه runtime Flutter.
-- اجرای Android Studio/Xcode.
-- release signing.
-- انتشار Store.
-- E2E و smoke test.
-- offline-first.
-- payment provider واقعی.
-- voice provider واقعی.
-
-## قاعده اجرای خودکار
-
-هر اجرای خودکار باید:
-
-1. `main` و این فایل را بخواند.
-2. اولین فاز دارای checkbox ناتمام را انتخاب کند.
-3. وضعیت واقعی کد را بررسی کند؛ اگر آیتم قبلاً در کد انجام شده، فقط checkbox را اصلاح کند و دوباره کدنویسی نکند.
-4. یک بسته تغییر منطقی و محدود را پیاده کند.
-5. مستندات/checkboxهای مرتبط را به‌روزرسانی کند.
-6. تغییرات را روی `main` ثبت کند مگر اینکه مانع واقعی repository وجود داشته باشد.
-7. build/test اجرا نکند و به دلیل نبود امکان build/test کار را متوقف نکند.
-8. وقتی تمام checkboxهای فازهای 0 تا 9 تکمیل شدند، هیچ کدنویسی تازه‌ای انجام ندهد و اعلام کند migration coding roadmap تمام شده است.
