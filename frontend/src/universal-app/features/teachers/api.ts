@@ -1,5 +1,10 @@
 import type { PlatformRuntime } from "../../platform/types";
-import { parseTeacher, type Teacher } from "./types";
+import {
+  parseTeacher,
+  parseTeacherReview,
+  type Teacher,
+  type TeacherDetail,
+} from "./types";
 
 export type TeacherSearchParams = {
   query?: string;
@@ -12,6 +17,13 @@ export type TeacherSearchParams = {
 
 type TeacherListResponse = {
   data?: unknown;
+};
+
+type TeacherDetailResponse = {
+  data?: {
+    teacher?: unknown;
+    reviews?: unknown;
+  };
 };
 
 export async function searchTeachers(runtime: PlatformRuntime, params: TeacherSearchParams = {}): Promise<Teacher[]> {
@@ -30,4 +42,18 @@ export async function searchTeachers(runtime: PlatformRuntime, params: TeacherSe
   const response = await runtime.request<TeacherListResponse>(`/teachers?${search.toString()}`);
   const rows = Array.isArray(response.data) ? response.data : [];
   return rows.map(parseTeacher).filter((teacher) => teacher.id > 0);
+}
+
+export async function getTeacherDetail(runtime: PlatformRuntime, id: number): Promise<TeacherDetail> {
+  if (!Number.isInteger(id) || id <= 0) throw new Error("شناسه استاد نامعتبر است.");
+
+  const response = await runtime.request<TeacherDetailResponse>(`/teachers/${id}`);
+  const teacher = parseTeacher(response.data?.teacher);
+  if (teacher.id <= 0) throw new Error("اطلاعات استاد دریافت نشد.");
+
+  const rows = Array.isArray(response.data?.reviews) ? response.data.reviews : [];
+  return {
+    teacher,
+    reviews: rows.map(parseTeacherReview).filter((review) => review.id > 0),
+  };
 }
