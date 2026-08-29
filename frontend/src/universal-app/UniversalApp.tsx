@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { createUniversalAppConfig, type UniversalAppConfig } from "./config";
+import { LoginScreen, SessionBootstrap } from "./features/auth/AuthExperience";
 import { PlatformProvider } from "./platform/context";
 import type { PlatformRuntime } from "./platform/types";
 import { createWebPlatformRuntime } from "./platform/web";
@@ -79,42 +80,18 @@ function RoutePlaceholder({
   );
 }
 
-export function UniversalApp({ config: configOverrides, platform }: UniversalAppProps) {
-  const config = useMemo(
-    () => createUniversalAppConfig(configOverrides),
-    [configOverrides?.basePath],
-  );
-  const runtime = useMemo(() => platform ?? createWebPlatformRuntime(), [platform]);
+function UniversalAppContent({ config, runtime }: { config: UniversalAppConfig; runtime: PlatformRuntime }) {
   const route = useAppRoute(config);
-  const content = <RoutePlaceholder routeName={route.name} pathname={route.pathname} config={config} />;
 
   if (route.name === "login") {
     return (
-      <PlatformProvider runtime={runtime}>
-        <main
-          dir="rtl"
-          data-universal-app="vodda"
-          data-platform={runtime.kind}
-          style={{ minHeight: "100dvh", background: colors.sand50, color: colors.ink }}
-        >
-          <section
-            style={{
-              width: "100%",
-              maxWidth: 520,
-              margin: "0 auto",
-              paddingInline: 20,
-              paddingTop: "max(32px, env(safe-area-inset-top))",
-              paddingBottom: "max(24px, env(safe-area-inset-bottom))",
-            }}
-          >
-            <h1 style={{ ...typography.heading, color: colors.olive900 }}>{routeTitles[route.name]}</h1>
-            {content}
-          </section>
-        </main>
-      </PlatformProvider>
+      <SessionBootstrap routeName={route.name} config={config}>
+        <LoginScreen config={config} />
+      </SessionBootstrap>
     );
   }
 
+  const content = <RoutePlaceholder routeName={route.name} pathname={route.pathname} config={config} />;
   const shell = teacherRoutes.has(route.name) ? (
     <TeacherAppShell config={config} routeName={route.name} title={routeTitles[route.name]}>
       {content}
@@ -126,10 +103,24 @@ export function UniversalApp({ config: configOverrides, platform }: UniversalApp
   );
 
   return (
-    <PlatformProvider runtime={runtime}>
+    <SessionBootstrap routeName={route.name} config={config}>
       <main data-universal-app="vodda" data-platform={runtime.kind} style={{ minHeight: "100dvh" }}>
         {shell}
       </main>
+    </SessionBootstrap>
+  );
+}
+
+export function UniversalApp({ config: configOverrides, platform }: UniversalAppProps) {
+  const config = useMemo(
+    () => createUniversalAppConfig(configOverrides),
+    [configOverrides?.basePath],
+  );
+  const runtime = useMemo(() => platform ?? createWebPlatformRuntime(), [platform]);
+
+  return (
+    <PlatformProvider runtime={runtime}>
+      <UniversalAppContent config={config} runtime={runtime} />
     </PlatformProvider>
   );
 }
