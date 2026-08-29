@@ -80,7 +80,7 @@
 - [x] guard مسیرهای learner/teacher.
 - [x] role switch بین حساب قرآن‌آموز و استاد.
 
-> `features/auth/AuthExperience.tsx` launch/session restore و OTP واقعی را روی runtime مشترک انجام می‌دهد. `ProfileCompletionScreen.tsx` نیز مسیر `need_profile -> /profile/edit` را با `PUT /me` برای نام، شهر و bio تکمیل می‌کند و بعد از ذخیره کاربر را به shell مناسب نقش هدایت می‌کند. `SessionBootstrap` namespace استاد را فقط برای session با `role=teacher` باز می‌گذارد و دسترسی غیرمجاز به `/app/t/...` را به مسیر پیش‌فرض همان حساب برمی‌گرداند. `RoleModeSwitch.tsx` نیز برای حساب teacher بدون mutation نقش بک‌اند، mode فعال را بین learner namespace و teacher namespace جابه‌جا می‌کند؛ مجوزها همچنان از session واقعی کنترل می‌شوند.
+> `features/auth/AuthExperience.tsx` launch/session restore و OTP واقعی را روی runtime مشترک انجام می‌دهد. `ProfileCompletionScreen.tsx` مسیر `need_profile -> /profile/edit` را با `PUT /me` تکمیل می‌کند و همان فرم در حالت حساب موجود ویرایش نام، شهر، bio و آواتار multipart را انجام می‌دهد. `SessionBootstrap` namespace استاد را برای sessionهای `teacher` و `admin` باز می‌گذارد و دسترسی غیرمجاز به `/app/t/...` را به مسیر پیش‌فرض همان حساب برمی‌گرداند. `RoleModeSwitch.tsx` نیز برای حساب teacher/admin بدون mutation نقش بک‌اند، mode فعال را بین learner namespace و teacher namespace جابه‌جا می‌کند؛ مجوزها همچنان از session واقعی کنترل می‌شوند.
 
 **Done:** flow ورود Flutter از ابتدا تا ورود به shell مناسب در `/app/...` کامل باشد.
 
@@ -136,12 +136,14 @@
 > `features/wallet/LearnerWalletScreen.tsx` route واقعی `/app/wallet` را با `GET /me` برای موجودی و `GET /wallet/transactions` برای دفتر تراکنش پر می‌کند. مدل transaction مطابق قرارداد Flutter (`id/type/title/amount/created_at`) parse می‌شود، loading/empty/error/retry دارد و هیچ CTA یا mutation شارژ در Universal App وجود ندارد؛ تا اتصال درگاه واقعی فقط پیام اطلاع‌رسانی نمایش داده می‌شود.
 
 ### Profile
-- [ ] نمایش اطلاعات کاربر.
-- [ ] ویرایش نام/شهر/bio.
-- [ ] انتخاب و upload آواتار.
-- [ ] لینک wallet.
-- [ ] role switch برای teacher/admin.
-- [ ] logout.
+- [x] نمایش اطلاعات کاربر.
+- [x] ویرایش نام/شهر/bio.
+- [x] انتخاب و upload آواتار.
+- [x] لینک wallet.
+- [x] role switch برای teacher/admin.
+- [x] logout.
+
+> `features/profile/LearnerProfileScreen.tsx` route واقعی `/app/profile` را با session فعلی پر می‌کند و اطلاعات حساب، موجودی و لینک کیف پول و logout مشترک platform runtime را ارائه می‌دهد. `/app/profile/edit` همان flow onboarding را برای حساب موجود به حالت edit تبدیل می‌کند و `PUT /me` را در حالت عادی با JSON و هنگام انتخاب تصویر با `multipart/form-data` مصرف می‌کند؛ runtime مشترک نیز اجازه می‌دهد browser boundary صحیح FormData را تنظیم کند. role switch و guard namespace استاد برای هر دو نقش `teacher` و `admin` با policy فعلی بک‌اند هم‌راستا هستند.
 
 **Done:** تمام flowهای learner موجود در Flutter در `/app/...` parity کدنویسی داشته باشند.
 
