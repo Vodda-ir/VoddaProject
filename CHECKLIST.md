@@ -56,8 +56,9 @@
 - [ ] حفظ HttpOnly/BFF روی وب و secure token/Bearer روی native؛ Web/BFF و Native/Bearer آماده است و implementation امن `SecureTokenStorage` همراه Capacitor باقی مانده.
 - [x] design tokens مشترک، Icon قابل استفاده در Universal App و primitiveهای framework-independent شامل Button/Input/Card/Avatar/State/Sheet/Dialog ایجاد شدند.
 - [x] shared mobile-first learner/teacher app shells و bottom navigation مستقل از `/panel` با RTL، safe-area و active route state ایجاد شدند.
-- [x] launch/session bootstrap، OTP request/verify و redirect اولیه بر اساس session/role در Universal App پیاده شد؛ `need_profile` به `/app/profile/edit` هدایت می‌شود تا onboarding در مرحله بعد تکمیل شود.
-- [ ] تکمیل profile onboarding، route guard دقیق learner/teacher و role switch در Universal App.
+- [x] launch/session bootstrap، OTP request/verify و redirect اولیه بر اساس session/role در Universal App پیاده شد.
+- [x] onboarding مسیر `need_profile` در `/app/profile/edit` با restore session و `PUT /me` برای نام، شهر و bio پیاده شد و پس از ذخیره به shell مناسب نقش هدایت می‌شود.
+- [ ] route guard دقیق learner/teacher و role switch در Universal App.
 - [ ] parity کامل learner app با Flutter.
 - [ ] parity کامل teacher app با Flutter.
 - [ ] route contract مستقل از `/panel/...`.
