@@ -60,6 +60,7 @@
 - [x] onboarding مسیر `need_profile` در `/app/profile/edit` با restore session و `PUT /me` برای نام، شهر و bio پیاده شد و پس از ذخیره به shell مناسب نقش هدایت می‌شود.
 - [x] route guard namespace استاد در Universal App؛ `/app/t/...` فقط برای `role=teacher` قابل دسترسی است و learner namespace برای همه حساب‌های authenticated باز می‌ماند.
 - [x] role switch بین learner و teacher mode برای حساب teacher بدون mutation نقش سرور؛ switch فقط namespace/shell فعال را بین `/app/...` و `/app/t/...` تغییر می‌دهد.
+- [x] foundation صفحه Home قرآن‌آموز در Universal App شامل header/session واقعی، avatar/profile navigation، hero جستجو و دسته‌های سریع قرآن/مداحی بدون داده ساختگی استاد.
 - [ ] parity کامل learner app با Flutter.
 - [ ] parity کامل teacher app با Flutter.
 - [ ] route contract مستقل از `/panel/...`.
