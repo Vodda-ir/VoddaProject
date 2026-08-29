@@ -33,12 +33,12 @@
 
 ## فاز 0 — تثبیت ساختار Universal App
 
-- [ ] ایجاد `frontend/src/universal-app/` به‌عنوان root سورس اپ.
-- [ ] تعریف entry مستقل React برای Universal App.
-- [ ] تعریف route config داخلی و مستقل از Next App Router.
-- [ ] ایجاد mount point در Next برای `/app/[[...path]]`.
-- [ ] جلوگیری از import مستقیم `next/navigation`، `next/link` و server-only modules در universal app.
-- [ ] تعریف base path قابل تنظیم برای حالت `/app` و حالت subdomain root.
+- [x] ایجاد `frontend/src/universal-app/` به‌عنوان root سورس اپ.
+- [x] تعریف entry مستقل React برای Universal App.
+- [x] تعریف route config داخلی و مستقل از Next App Router.
+- [x] ایجاد mount point در Next برای `/app/[[...path]]`.
+- [x] جلوگیری از import مستقیم `next/navigation`، `next/link` و server-only modules در universal app.
+- [x] تعریف base path قابل تنظیم برای حالت `/app` و حالت subdomain root.
 
 **Done:** اپ از نظر source/routing یک واحد مستقل باشد و Next صرفاً host آن باشد.
 
