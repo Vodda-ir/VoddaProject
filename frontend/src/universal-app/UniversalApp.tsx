@@ -6,6 +6,7 @@ import { LoginScreen, SessionBootstrap } from "./features/auth/AuthExperience";
 import { ProfileCompletionScreen } from "./features/auth/ProfileCompletionScreen";
 import { RoleModeSwitch } from "./features/auth/RoleModeSwitch";
 import { LearnerHomeScreen } from "./features/home/LearnerHomeScreen";
+import { LearnerSearchScreen } from "./features/search/LearnerSearchScreen";
 import { PlatformProvider } from "./platform/context";
 import type { PlatformRuntime } from "./platform/types";
 import { createWebPlatformRuntime } from "./platform/web";
@@ -105,6 +106,8 @@ function UniversalAppContent({ config, runtime }: { config: UniversalAppConfig; 
   const teacherMode = teacherRoutes.has(route.name);
   const routeContent = route.name === "home" ? (
     <LearnerHomeScreen config={config} />
+  ) : route.name === "search" ? (
+    <LearnerSearchScreen config={config} />
   ) : (
     <RoutePlaceholder routeName={route.name} pathname={route.pathname} config={config} />
   );
