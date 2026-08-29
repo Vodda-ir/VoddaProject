@@ -121,10 +121,12 @@
 > `features/booking/LearnerBookingScreen.tsx` به route مستقل `/app/book/:id` متصل است، serviceهای فعال استاد را از teacher detail واقعی می‌گیرد و availability را فقط از `GET /teachers/:id/availability` دریافت می‌کند. تاریخ و ساعت نمایشی از `local_date/local_start/local_end` سرور می‌آیند، در حالی که `scheduled_at` رزرو مستقیماً از `start_at` UTC همان slot ارسال می‌شود. در HTTP 409 انتخاب slot باطل و availability دوباره از backend دریافت می‌شود تا کاربر روی داده stale ادامه ندهد.
 
 ### Sessions
-- [ ] upcoming/past.
-- [ ] نمایش زمان رسمی backend.
-- [ ] لغو جلسه.
-- [ ] rating/review بعد از completion.
+- [x] upcoming/past.
+- [x] نمایش زمان رسمی backend.
+- [x] لغو جلسه.
+- [x] rating/review بعد از completion.
+
+> `features/sessions/LearnerSessionsScreen.tsx` route واقعی `/app/sessions` را با `GET /sessions?when=upcoming|past` پر می‌کند. نمایش زمان فقط از `local_date/local_start/local_end` authoritative بک‌اند است؛ sessionهای پیش‌رو با `POST /sessions/:id/cancel` و confirmation/busy state لغو می‌شوند و session تمام‌شده و هنوز امتیازنداده‌شده از طریق `POST /reviews` امتیاز ۱ تا ۵ و نظر اختیاری ثبت می‌کند. پس از mutation فهرست فعال از backend refresh می‌شود و هیچ زمان محلی دستگاه جایگزین زمان رسمی سرور نمی‌شود.
 
 ### Wallet
 - [ ] موجودی.

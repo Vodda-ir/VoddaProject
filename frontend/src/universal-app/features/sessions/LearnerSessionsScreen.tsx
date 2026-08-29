@@ -1,0 +1,353 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { usePlatform } from "../../platform/context";
+import {
+  Avatar,
+  Button,
+  Card,
+  Dialog,
+  EmptyState,
+  ErrorState,
+  LoadingState,
+  Sheet,
+  colors,
+  radii,
+  spacing,
+  typography,
+} from "../../ui";
+import {
+  cancelLearnerSession,
+  createSessionReview,
+  getLearnerSessions,
+  type LearnerSessionsWhen,
+} from "./api";
+import {
+  hasOfficialSessionTime,
+  isUpcomingSession,
+  type LearnerSession,
+} from "./types";
+
+const statusLabels: Record<string, string> = {
+  pending: "در انتظار تأیید",
+  confirmed: "تأیید شده",
+  done: "انجام شده",
+  canceled: "لغو شده",
+};
+
+function faDigits(value: string | number): string {
+  return String(value).replace(/\d/g, (digit) => "۰۱۲۳۴۵۶۷۸۹"[Number(digit)] ?? digit);
+}
+
+function officialTime(session: LearnerSession): string {
+  if (!hasOfficialSessionTime(session)) return "زمان رسمی جلسه دریافت نشد";
+  return `${faDigits(session.localDate.replaceAll("-", "/"))} · ${faDigits(session.localStart)} تا ${faDigits(session.localEnd)}`;
+}
+
+function messageOf(error: unknown): string {
+  return error instanceof Error && error.message ? error.message : "خطایی رخ داد. دوباره تلاش کنید.";
+}
+
+function canCancel(session: LearnerSession): boolean {
+  if (!isUpcomingSession(session)) return false;
+  const timestamp = Date.parse(session.scheduledAt);
+  return Number.isNaN(timestamp) || Date.now() < timestamp;
+}
+
+function SessionCard({
+  session,
+  busy,
+  onCancel,
+  onRate,
+}: {
+  session: LearnerSession;
+  busy: boolean;
+  onCancel: () => void;
+  onRate: () => void;
+}) {
+  return (
+    <Card elevated style={{ display: "grid", gap: spacing.md, borderRadius: radii.lg }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: spacing.md }}>
+        <span
+          style={{
+            ...typography.caption,
+            padding: "4px 10px",
+            borderRadius: radii.pill,
+            color: session.status === "canceled" ? colors.danger : colors.olive800,
+            background: session.status === "canceled" ? colors.clayBackground : colors.olive50,
+            fontWeight: 700,
+          }}
+        >
+          {statusLabels[session.status] ?? session.status}
+        </span>
+        <span style={{ ...typography.caption, color: colors.inkMuted }}>
+          {faDigits(session.duration)} دقیقه
+        </span>
+      </div>
+
+      <div style={{ display: "flex", alignItems: "center", gap: spacing.md }}>
+        <Avatar name={session.teacherName} size={46} />
+        <div style={{ minWidth: 0 }}>
+          <strong style={{ ...typography.body, display: "block" }}>{session.teacherName}</strong>
+          <span style={{ ...typography.bodySmall, color: colors.inkSecondary }}>{session.service}</span>
+        </div>
+      </div>
+
+      <div
+        style={{
+          padding: `${spacing.sm}px ${spacing.md}px`,
+          borderRadius: radii.sm,
+          background: colors.sand50,
+          color: colors.inkSecondary,
+          ...typography.bodySmall,
+        }}
+      >
+        {officialTime(session)}
+      </div>
+
+      {session.rejectNote ? (
+        <p style={{ ...typography.caption, margin: 0, color: colors.danger }}>
+          دلیل لغو: {session.rejectNote}
+        </p>
+      ) : null}
+
+      {session.status === "pending" || session.status === "confirmed" ? (
+        <div style={{ display: "grid", gap: spacing.sm }}>
+          <span style={{ ...typography.caption, color: colors.inkMuted }}>
+            {session.status === "confirmed"
+              ? "جلسه تأیید شده است. جزئیات برگزاری را با استاد هماهنگ کنید."
+              : "در انتظار تأیید استاد"}
+          </span>
+          {canCancel(session) ? (
+            <Button variant="danger" fullWidth loading={busy} onClick={onCancel}>
+              لغو جلسه
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
+
+      {session.status === "done" && !session.rated ? (
+        <Button fullWidth onClick={onRate} style={{ background: colors.gold, borderColor: colors.gold }}>
+          ثبت امتیاز و نظر
+        </Button>
+      ) : null}
+
+      {session.status === "done" && session.rated ? (
+        <span style={{ ...typography.caption, color: colors.olive600 }}>امتیاز این جلسه ثبت شده است.</span>
+      ) : null}
+    </Card>
+  );
+}
+
+export function LearnerSessionsScreen() {
+  const runtime = usePlatform();
+  const [when, setWhen] = useState<LearnerSessionsWhen>("upcoming");
+  const [sessions, setSessions] = useState<LearnerSession[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<LearnerSession | null>(null);
+  const [busyId, setBusyId] = useState<number | null>(null);
+  const [ratingTarget, setRatingTarget] = useState<LearnerSession | null>(null);
+  const [rating, setRating] = useState(5);
+  const [reviewText, setReviewText] = useState("");
+  const [reviewSaving, setReviewSaving] = useState(false);
+  const [reviewError, setReviewError] = useState<string | null>(null);
+
+  const load = useCallback(
+    async (target: LearnerSessionsWhen) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const next = await getLearnerSessions(runtime, target);
+        setSessions(next);
+      } catch (loadError) {
+        setSessions([]);
+        setError(messageOf(loadError));
+      } finally {
+        setLoading(false);
+      }
+    },
+    [runtime],
+  );
+
+  useEffect(() => {
+    void load(when);
+  }, [load, when]);
+
+  const title = useMemo(() => (when === "upcoming" ? "جلسات پیش‌رو" : "جلسات گذشته"), [when]);
+
+  async function confirmCancel() {
+    if (!cancelTarget || busyId !== null) return;
+    const session = cancelTarget;
+    setBusyId(session.id);
+    setCancelTarget(null);
+    setError(null);
+    try {
+      await cancelLearnerSession(runtime, session.id);
+      await load(when);
+    } catch (cancelError) {
+      setError(messageOf(cancelError));
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  function openRating(session: LearnerSession) {
+    setRatingTarget(session);
+    setRating(5);
+    setReviewText("");
+    setReviewError(null);
+  }
+
+  async function submitRating() {
+    if (!ratingTarget || reviewSaving) return;
+    setReviewSaving(true);
+    setReviewError(null);
+    try {
+      await createSessionReview(runtime, {
+        sessionId: ratingTarget.id,
+        rating,
+        text: reviewText,
+      });
+      setRatingTarget(null);
+      await load(when);
+    } catch (saveError) {
+      setReviewError(messageOf(saveError));
+    } finally {
+      setReviewSaving(false);
+    }
+  }
+
+  return (
+    <section style={{ display: "grid", gap: spacing.lg }}>
+      <header>
+        <h1 style={{ ...typography.heading, margin: 0 }}>جلسات من</h1>
+        <p style={{ ...typography.bodySmall, margin: `${spacing.xs}px 0 0`, color: colors.inkMuted }}>
+          زمان‌ها فقط بر اساس ساعت رسمی سامانه نمایش داده می‌شوند.
+        </p>
+      </header>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: spacing.sm }}>
+        {(["upcoming", "past"] as const).map((tab) => {
+          const selected = tab === when;
+          return (
+            <Button
+              key={tab}
+              variant={selected ? "primary" : "secondary"}
+              onClick={() => setWhen(tab)}
+              aria-pressed={selected}
+            >
+              {tab === "upcoming" ? "پیش‌رو" : "گذشته"}
+            </Button>
+          );
+        })}
+      </div>
+
+      {loading ? <LoadingState label={`در حال دریافت ${title}…`} /> : null}
+      {!loading && error ? (
+        <ErrorState
+          title="دریافت جلسات ناموفق بود"
+          description={error}
+          action={<Button onClick={() => void load(when)}>تلاش دوباره</Button>}
+        />
+      ) : null}
+      {!loading && !error && sessions.length === 0 ? (
+        <EmptyState title="جلسه‌ای نیست" description="هنوز جلسه‌ای در این بخش ندارید." />
+      ) : null}
+      {!loading && !error && sessions.length > 0 ? (
+        <div style={{ display: "grid", gap: spacing.md }}>
+          {sessions.map((session) => (
+            <SessionCard
+              key={session.id}
+              session={session}
+              busy={busyId === session.id}
+              onCancel={() => setCancelTarget(session)}
+              onRate={() => openRating(session)}
+            />
+          ))}
+        </div>
+      ) : null}
+
+      <Dialog
+        open={cancelTarget !== null}
+        title="لغو جلسه"
+        onClose={() => {
+          if (busyId === null) setCancelTarget(null);
+        }}
+      >
+        <p style={{ ...typography.body, marginTop: 0, color: colors.inkSecondary }}>
+          لغو فقط پیش از زمان شروع مجاز است. در صورت موفقیت، مبلغ طبق policy بک‌اند به کیف پول بازمی‌گردد.
+        </p>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: spacing.sm }}>
+          <Button variant="secondary" onClick={() => setCancelTarget(null)} disabled={busyId !== null}>
+            انصراف
+          </Button>
+          <Button variant="danger" onClick={() => void confirmCancel()} loading={busyId !== null}>
+            لغو جلسه
+          </Button>
+        </div>
+      </Dialog>
+
+      <Sheet
+        open={ratingTarget !== null}
+        title={ratingTarget ? `امتیاز جلسه با ${ratingTarget.teacherName}` : "ثبت امتیاز"}
+        onClose={() => {
+          if (!reviewSaving) setRatingTarget(null);
+        }}
+      >
+        <div style={{ display: "grid", gap: spacing.lg }}>
+          <div style={{ display: "flex", justifyContent: "center", gap: spacing.sm, direction: "ltr" }}>
+            {[1, 2, 3, 4, 5].map((value) => (
+              <button
+                key={value}
+                type="button"
+                aria-label={`${faDigits(value)} ستاره`}
+                aria-pressed={value <= rating}
+                onClick={() => setRating(value)}
+                disabled={reviewSaving}
+                style={{
+                  border: 0,
+                  padding: spacing.xs,
+                  background: "transparent",
+                  color: value <= rating ? colors.gold : colors.sand200,
+                  fontSize: 34,
+                  cursor: reviewSaving ? "not-allowed" : "pointer",
+                }}
+              >
+                ★
+              </button>
+            ))}
+          </div>
+
+          <label style={{ display: "grid", gap: spacing.sm, ...typography.bodySmall, color: colors.ink }}>
+            <span style={{ fontWeight: 700 }}>نظر شما (اختیاری)</span>
+            <textarea
+              value={reviewText}
+              onChange={(event) => setReviewText(event.target.value)}
+              maxLength={1000}
+              rows={4}
+              disabled={reviewSaving}
+              placeholder="نظر خود را درباره جلسه بنویسید…"
+              style={{
+                width: "100%",
+                resize: "vertical",
+                padding: spacing.md,
+                border: `1px solid ${colors.sand200}`,
+                borderRadius: radii.sm,
+                color: colors.ink,
+                background: colors.surface,
+                fontFamily: typography.fontFamily,
+                ...typography.body,
+              }}
+            />
+          </label>
+
+          {reviewError ? <span role="alert" style={{ ...typography.caption, color: colors.danger }}>{reviewError}</span> : null}
+          <Button fullWidth loading={reviewSaving} onClick={() => void submitRating()}>
+            ثبت امتیاز
+          </Button>
+        </div>
+      </Sheet>
+    </section>
+  );
+}

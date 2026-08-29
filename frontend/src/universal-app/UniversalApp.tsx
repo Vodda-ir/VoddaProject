@@ -8,6 +8,7 @@ import { RoleModeSwitch } from "./features/auth/RoleModeSwitch";
 import { LearnerBookingScreen } from "./features/booking/LearnerBookingScreen";
 import { LearnerHomeScreen } from "./features/home/LearnerHomeScreen";
 import { LearnerSearchScreen } from "./features/search/LearnerSearchScreen";
+import { LearnerSessionsScreen } from "./features/sessions/LearnerSessionsScreen";
 import { LearnerTeacherProfileScreen } from "./features/teachers/LearnerTeacherProfileScreen";
 import { PlatformProvider } from "./platform/context";
 import type { PlatformRuntime } from "./platform/types";
@@ -114,6 +115,8 @@ function UniversalAppContent({ config, runtime }: { config: UniversalAppConfig; 
     <LearnerTeacherProfileScreen teacherId={route.params.id ?? ""} config={config} />
   ) : route.name === "book" ? (
     <LearnerBookingScreen teacherId={route.params.id ?? ""} config={config} />
+  ) : route.name === "sessions" ? (
+    <LearnerSessionsScreen />
   ) : (
     <RoutePlaceholder routeName={route.name} pathname={route.pathname} config={config} />
   );
