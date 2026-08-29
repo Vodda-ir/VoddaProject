@@ -47,7 +47,7 @@ export function defaultRouteForUser(user: AuthUser) {
 
 export function canAccessAppRoute(user: AuthUser, routeName: AppRouteName) {
   if (teacherOnlyRoutes.has(routeName)) {
-    return user.role === "teacher";
+    return user.role === "teacher" || user.role === "admin";
   }
 
   // Learner routes are intentionally available to every authenticated account.
