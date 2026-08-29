@@ -58,13 +58,15 @@
 
 ## فاز 2 — Shared UI و Design System
 
-- [ ] استخراج color/token/typographyهای مشترک.
-- [ ] اشتراک `Icon` و primitiveهای عمومی مناسب app.
-- [ ] ایجاد componentهای پایه: Button، Input، Card، Avatar، EmptyState، ErrorState، LoadingState، Sheet/Dialog.
+- [x] استخراج color/token/typographyهای مشترک.
+- [x] اشتراک `Icon` و primitiveهای عمومی مناسب app.
+- [x] ایجاد componentهای پایه: Button، Input، Card، Avatar، EmptyState، ErrorState، LoadingState، Sheet/Dialog.
 - [ ] ایجاد app shell موبایل با bottom navigation.
 - [ ] ایجاد teacher app shell مستقل.
 - [ ] رعایت RTL و safe-area در ساختار اپ.
 - [ ] جلوگیری از وابستگی app UI به layoutهای desktop پنل وب.
+
+> foundation این فاز در `frontend/src/universal-app/ui/` قرار دارد؛ tokenها مستقل از CSS سراسری Next هستند تا همان source در Vite/Capacitor هم قابل استفاده باشد.
 
 **Done:** featureهای بعدی روی یک UI kit واحد و mobile-first ساخته شوند.
 
