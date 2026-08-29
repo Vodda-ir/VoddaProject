@@ -22,7 +22,8 @@ export async function requestJson<T>(
   init: PlatformRequestInit = {},
 ): Promise<T> {
   const headers = new Headers(init.headers);
-  if (init.body != null && !headers.has("Content-Type")) {
+  const isFormData = typeof FormData !== "undefined" && init.body instanceof FormData;
+  if (init.body != null && !isFormData && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
 
