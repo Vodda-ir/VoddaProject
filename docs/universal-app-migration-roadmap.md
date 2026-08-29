@@ -72,13 +72,15 @@
 
 ## فاز 3 — Auth و Onboarding اپ
 
-- [ ] انتقال صفحه launch/splash فعلی Flutter.
-- [ ] انتقال OTP request.
-- [ ] انتقال OTP verify.
-- [ ] redirect بر اساس session و role.
+- [x] انتقال صفحه launch/splash فعلی Flutter.
+- [x] انتقال OTP request.
+- [x] انتقال OTP verify.
+- [x] redirect بر اساس session و role.
 - [ ] تکمیل profile در صورت `need_profile`.
 - [ ] guard مسیرهای learner/teacher.
 - [ ] role switch بین حساب قرآن‌آموز و استاد.
+
+> `features/auth/AuthExperience.tsx` اکنون launch/session restore را روی runtime مشترک انجام می‌دهد، کاربر بدون session را به `/app/login` هدایت می‌کند و session معتبر روی login را به shell مناسب می‌فرستد. فرم OTP با ورودی موبایل ایران، ارقام فارسی/عربی، request/verify واقعی platform adapter، loading/error state و مسیر `need_profile -> /profile/edit` پیاده شده است. خود فرم تکمیل پروفایل و guard/role-switch هنوز باز هستند.
 
 **Done:** flow ورود Flutter از ابتدا تا ورود به shell مناسب در `/app/...` کامل باشد.
 
