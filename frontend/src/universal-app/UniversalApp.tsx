@@ -47,14 +47,22 @@ const teacherRoutes = new Set<AppRouteName>([
   "teacher-reviews",
 ]);
 
-function RoutePlaceholder({ routeName, pathname }: { routeName: AppRouteName; pathname: string }) {
+function RoutePlaceholder({
+  routeName,
+  pathname,
+  config,
+}: {
+  routeName: AppRouteName;
+  pathname: string;
+  config: UniversalAppConfig;
+}) {
   if (routeName === "not-found") {
     return (
       <Card>
         <p style={{ ...typography.body, marginTop: 0, color: colors.inkSecondary }}>
           این مسیر در اپ وُدّا تعریف نشده است.
         </p>
-        <button type="button" onClick={() => navigateApp("/")}>بازگشت به اپ</button>
+        <button type="button" onClick={() => navigateApp("/", config)}>بازگشت به اپ</button>
       </Card>
     );
   }
@@ -78,7 +86,7 @@ export function UniversalApp({ config: configOverrides, platform }: UniversalApp
   );
   const runtime = useMemo(() => platform ?? createWebPlatformRuntime(), [platform]);
   const route = useAppRoute(config);
-  const content = <RoutePlaceholder routeName={route.name} pathname={route.pathname} />;
+  const content = <RoutePlaceholder routeName={route.name} pathname={route.pathname} config={config} />;
 
   if (route.name === "login") {
     return (
