@@ -6,7 +6,7 @@ import { usePlatform } from "../../platform/context";
 import { navigateApp } from "../../router";
 import { searchTeachers } from "../teachers/api";
 import type { Teacher } from "../teachers/types";
-import { Card, EmptyState, ErrorState, LoadingState, colors, spacing, typography } from "../../ui";
+import { Button, Card, EmptyState, ErrorState, LoadingState, colors, spacing, typography } from "../../ui";
 
 type SearchFilters = {
   query: string;
@@ -16,9 +16,7 @@ type SearchFilters = {
 };
 
 function readInitialFilters(): SearchFilters {
-  if (typeof window === "undefined") {
-    return { query: "", field: "", city: "", female: "all" };
-  }
+  if (typeof window === "undefined") return { query: "", field: "", city: "", female: "all" };
   const params = new URLSearchParams(window.location.search);
   const femaleParam = params.get("female");
   return {
@@ -29,13 +27,26 @@ function readInitialFilters(): SearchFilters {
   };
 }
 
+function controlStyle() {
+  return {
+    width: "100%",
+    marginTop: 6,
+    padding: 12,
+    borderRadius: 12,
+    border: `1px solid ${colors.sand200}`,
+    background: colors.surface,
+    color: colors.ink,
+    fontFamily: typography.fontFamily,
+  } as const;
+}
+
 function TeacherResultCard({ teacher, config }: { teacher: Teacher; config: UniversalAppConfig }) {
   return (
     <Card>
       <button
         type="button"
         onClick={() => navigateApp(`/teacher/${teacher.id}`, config)}
-        style={{ width: "100%", textAlign: "right", border: 0, background: "transparent", padding: 0, cursor: "pointer" }}
+        style={{ width: "100%", textAlign: "right", border: 0, background: "transparent", padding: 0, cursor: "pointer", fontFamily: typography.fontFamily }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", gap: spacing.md, alignItems: "flex-start" }}>
           <div>
@@ -44,13 +55,9 @@ function TeacherResultCard({ teacher, config }: { teacher: Teacher; config: Univ
               {[teacher.field, teacher.city].filter(Boolean).join(" · ") || "استاد وُدّا"}
             </p>
           </div>
-          {teacher.rating > 0 ? (
-            <span style={{ ...typography.caption, color: colors.inkSecondary }}>★ {teacher.rating.toFixed(1)}</span>
-          ) : null}
+          {teacher.rating > 0 ? <span style={{ ...typography.caption, color: colors.inkSecondary }}>★ {teacher.rating.toFixed(1)}</span> : null}
         </div>
-        {teacher.bio ? (
-          <p style={{ ...typography.caption, margin: "10px 0 0", color: colors.inkMuted, lineHeight: 1.9 }}>{teacher.bio}</p>
-        ) : null}
+        {teacher.bio ? <p style={{ ...typography.caption, margin: "10px 0 0", color: colors.inkMuted, lineHeight: 1.9 }}>{teacher.bio}</p> : null}
       </button>
     </Card>
   );
@@ -78,17 +85,14 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
     if (filters.city.trim()) params.set("city", filters.city.trim());
     if (filters.female === "female") params.set("female", "true");
     if (filters.female === "male") params.set("female", "false");
-    if (typeof window !== "undefined") {
-      const next = `${window.location.pathname}${params.size ? `?${params.toString()}` : ""}`;
-      window.history.replaceState({}, "", next);
-    }
+    const next = `${window.location.pathname}${params.size ? `?${params.toString()}` : ""}`;
+    window.history.replaceState({}, "", next);
   }, [filters]);
 
   useEffect(() => {
     let active = true;
     setLoading(true);
     setError("");
-
     searchTeachers(runtime, {
       query: debouncedQuery,
       field: filters.field,
@@ -97,21 +101,14 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
       limit: 50,
       offset: 0,
     })
-      .then((rows) => {
-        if (active) setTeachers(rows);
-      })
+      .then((rows) => { if (active) setTeachers(rows); })
       .catch((reason: unknown) => {
         if (!active) return;
         setTeachers([]);
         setError(reason instanceof Error ? reason.message : "دریافت فهرست استادان با خطا روبه‌رو شد.");
       })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
   }, [runtime, debouncedQuery, filters.field, filters.city, filters.female, reloadKey]);
 
   return (
@@ -120,40 +117,21 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
         <div style={{ display: "grid", gap: spacing.sm }}>
           <label>
             <span style={{ ...typography.caption, color: colors.inkSecondary }}>نام یا عبارت جستجو</span>
-            <input
-              value={filters.query}
-              onChange={(event) => setFilters((current) => ({ ...current, query: event.target.value }))}
-              placeholder="مثلاً تجوید یا نام استاد"
-              style={{ width: "100%", marginTop: 6, padding: 12, borderRadius: 12, border: `1px solid ${colors.border}`, background: colors.surface, color: colors.ink }}
-            />
+            <input value={filters.query} onChange={(event) => setFilters((current) => ({ ...current, query: event.target.value }))} placeholder="مثلاً تجوید یا نام استاد" style={controlStyle()} />
           </label>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: spacing.sm }}>
             <label>
               <span style={{ ...typography.caption, color: colors.inkSecondary }}>حوزه</span>
-              <input
-                value={filters.field}
-                onChange={(event) => setFilters((current) => ({ ...current, field: event.target.value }))}
-                placeholder="قرآن، مداحی..."
-                style={{ width: "100%", marginTop: 6, padding: 12, borderRadius: 12, border: `1px solid ${colors.border}`, background: colors.surface, color: colors.ink }}
-              />
+              <input value={filters.field} onChange={(event) => setFilters((current) => ({ ...current, field: event.target.value }))} placeholder="قرآن، مداحی..." style={controlStyle()} />
             </label>
             <label>
               <span style={{ ...typography.caption, color: colors.inkSecondary }}>شهر</span>
-              <input
-                value={filters.city}
-                onChange={(event) => setFilters((current) => ({ ...current, city: event.target.value }))}
-                placeholder="نام شهر"
-                style={{ width: "100%", marginTop: 6, padding: 12, borderRadius: 12, border: `1px solid ${colors.border}`, background: colors.surface, color: colors.ink }}
-              />
+              <input value={filters.city} onChange={(event) => setFilters((current) => ({ ...current, city: event.target.value }))} placeholder="نام شهر" style={controlStyle()} />
             </label>
           </div>
           <label>
             <span style={{ ...typography.caption, color: colors.inkSecondary }}>جنسیت استاد</span>
-            <select
-              value={filters.female}
-              onChange={(event) => setFilters((current) => ({ ...current, female: event.target.value as SearchFilters["female"] }))}
-              style={{ width: "100%", marginTop: 6, padding: 12, borderRadius: 12, border: `1px solid ${colors.border}`, background: colors.surface, color: colors.ink }}
-            >
+            <select value={filters.female} onChange={(event) => setFilters((current) => ({ ...current, female: event.target.value as SearchFilters["female"] }))} style={controlStyle()}>
               <option value="all">همه</option>
               <option value="female">بانو</option>
               <option value="male">آقا</option>
@@ -162,9 +140,9 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
         </div>
       </Card>
 
-      {loading ? <LoadingState>در حال جستجوی استادان...</LoadingState> : null}
-      {!loading && error ? <ErrorState actionLabel="تلاش دوباره" onAction={() => setReloadKey((value) => value + 1)}>{error}</ErrorState> : null}
-      {!loading && !error && teachers.length === 0 ? <EmptyState>استادی با این فیلترها پیدا نشد.</EmptyState> : null}
+      {loading ? <LoadingState label="در حال جستجوی استادان..." /> : null}
+      {!loading && error ? <ErrorState title="خطا در جستجو" description={error} action={<Button variant="secondary" onClick={() => setReloadKey((value) => value + 1)}>تلاش دوباره</Button>} /> : null}
+      {!loading && !error && teachers.length === 0 ? <EmptyState title="استادی پیدا نشد" description="فیلترها یا عبارت جستجو را تغییر دهید." /> : null}
       {!loading && !error ? teachers.map((teacher) => <TeacherResultCard key={teacher.id} teacher={teacher} config={config} />) : null}
     </section>
   );
