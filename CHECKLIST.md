@@ -52,8 +52,8 @@
 
 - [x] رودمپ اجرایی مهاجرت در [`docs/universal-app-migration-roadmap.md`](docs/universal-app-migration-roadmap.md) ایجاد شد.
 - [x] ساختار `frontend/src/universal-app/`، entry مستقل React، routing داخلی و mount مستقل `/app/...` ایجاد شد؛ importهای `next/*` در این لایه با ESLint ممنوع شده‌اند و base path قابل تنظیم است.
-- [ ] platform adapter مستقل برای web/native.
-- [ ] حفظ HttpOnly/BFF روی وب و secure token/Bearer روی native.
+- [x] platform adapter مستقل برای web/native، شامل runtime contract، API request مشترک، session restore و login/logout ایجاد شد.
+- [ ] حفظ HttpOnly/BFF روی وب و secure token/Bearer روی native؛ Web/BFF و Native/Bearer آماده است و implementation امن `SecureTokenStorage` همراه Capacitor باقی مانده.
 - [ ] shared mobile-first UI kit و app shell.
 - [ ] parity کامل learner app با Flutter.
 - [ ] parity کامل teacher app با Flutter.
