@@ -65,6 +65,7 @@
 - [x] Teacher Profile قرآن‌آموز در `/app/teacher/:id` با اطلاعات واقعی استاد، serviceهای فعال/تأییدشده، review و rating واقعی و CTA رزرو متصل به `/app/book/:id` پیاده شده است.
 - [x] Booking قرآن‌آموز در `/app/book/:id` با انتخاب خدمت واقعی، availability authoritative بک‌اند، نمایش `local_*`، ارسال `scheduled_at` از `start_at` UTC و refresh خودکار availability پس از conflict پیاده شده است.
 - [x] Sessions قرآن‌آموز در `/app/sessions` با upcoming/past واقعی، نمایش `local_date/local_start/local_end` رسمی backend، لغو پیش از شروع و rating/review پس از completion پیاده شده است.
+- [x] Wallet قرآن‌آموز در `/app/wallet` با موجودی واقعی از `/me`، تاریخچه `/wallet/transactions` و بدون CTA شارژ تا اتصال درگاه واقعی پیاده شده است.
 - [ ] parity کامل learner app با Flutter.
 - [ ] parity کامل teacher app با Flutter.
 - [ ] route contract مستقل از `/panel/...`.
