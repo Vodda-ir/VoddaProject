@@ -16,4 +16,5 @@ export {
   type OverlayProps,
   type StateProps,
 } from "./primitives";
+export { MobileAppShell, TeacherAppShell } from "./shells";
 export { appTheme, colors, radii, shadows, spacing, typography, type AppTheme } from "./theme";
