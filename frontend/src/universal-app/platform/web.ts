@@ -1,4 +1,4 @@
-import { joinUrl, requestJson } from "./http";
+import { joinUrl, PlatformHttpError, requestJson } from "./http";
 import type {
   AuthUser,
   PlatformRequestInit,
@@ -60,7 +60,7 @@ export function createWebPlatformRuntime(
         const response = await request<{ data: AuthUser }>("/me");
         return response.data;
       } catch (error) {
-        if (error instanceof Error && "status" in error && error.status === 401) {
+        if (error instanceof PlatformHttpError && error.status === 401) {
           return null;
         }
         throw error;
