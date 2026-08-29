@@ -5,6 +5,7 @@ import { createUniversalAppConfig, type UniversalAppConfig } from "./config";
 import { LoginScreen, SessionBootstrap } from "./features/auth/AuthExperience";
 import { ProfileCompletionScreen } from "./features/auth/ProfileCompletionScreen";
 import { RoleModeSwitch } from "./features/auth/RoleModeSwitch";
+import { LearnerBookingScreen } from "./features/booking/LearnerBookingScreen";
 import { LearnerHomeScreen } from "./features/home/LearnerHomeScreen";
 import { LearnerSearchScreen } from "./features/search/LearnerSearchScreen";
 import { LearnerTeacherProfileScreen } from "./features/teachers/LearnerTeacherProfileScreen";
@@ -111,6 +112,8 @@ function UniversalAppContent({ config, runtime }: { config: UniversalAppConfig; 
     <LearnerSearchScreen config={config} />
   ) : route.name === "teacher" ? (
     <LearnerTeacherProfileScreen teacherId={route.params.id ?? ""} config={config} />
+  ) : route.name === "book" ? (
+    <LearnerBookingScreen teacherId={route.params.id ?? ""} config={config} />
   ) : (
     <RoutePlaceholder routeName={route.name} pathname={route.pathname} config={config} />
   );
