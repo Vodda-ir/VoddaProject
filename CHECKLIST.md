@@ -51,7 +51,7 @@
 ## مهاجرت Universal App + Capacitor
 
 - [x] رودمپ اجرایی مهاجرت در [`docs/universal-app-migration-roadmap.md`](docs/universal-app-migration-roadmap.md) ایجاد شد.
-- [ ] ساختار `frontend/src/universal-app/` و routing مستقل `/app/...`.
+- [x] ساختار `frontend/src/universal-app/`، entry مستقل React، routing داخلی و mount مستقل `/app/...` ایجاد شد؛ importهای `next/*` در این لایه با ESLint ممنوع شده‌اند و base path قابل تنظیم است.
 - [ ] platform adapter مستقل برای web/native.
 - [ ] حفظ HttpOnly/BFF روی وب و secure token/Bearer روی native.
 - [ ] shared mobile-first UI kit و app shell.
