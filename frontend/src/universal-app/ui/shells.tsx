@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from "react";
+import type { CSSProperties, MouseEvent, ReactNode } from "react";
 import type { UniversalAppConfig } from "../config";
 import { appUrl, navigateApp, type AppRouteName } from "../router";
 import { Icon } from "./Icon";
@@ -60,7 +60,7 @@ const contentStyle: CSSProperties = {
   paddingBottom: `calc(92px + env(safe-area-inset-bottom))`,
 };
 
-function navigate(event: React.MouseEvent<HTMLAnchorElement>, path: string, config: UniversalAppConfig) {
+function navigate(event: MouseEvent<HTMLAnchorElement>, path: string, config: UniversalAppConfig) {
   if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
   event.preventDefault();
   navigateApp(path, config);
