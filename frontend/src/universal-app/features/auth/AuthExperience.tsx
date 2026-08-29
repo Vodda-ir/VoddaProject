@@ -29,8 +29,30 @@ function errorMessage(error: unknown) {
   return "ارتباط با سرور برقرار نشد. دوباره تلاش کنید.";
 }
 
+const teacherOnlyRoutes = new Set<AppRouteName>([
+  "teacher-home",
+  "teacher-requests",
+  "teacher-sessions",
+  "teacher-services",
+  "teacher-work-times",
+  "teacher-wallet",
+  "teacher-withdraw",
+  "teacher-profile",
+  "teacher-reviews",
+]);
+
 export function defaultRouteForUser(user: AuthUser) {
   return user.role === "teacher" ? "/t" : "/";
+}
+
+export function canAccessAppRoute(user: AuthUser, routeName: AppRouteName) {
+  if (teacherOnlyRoutes.has(routeName)) {
+    return user.role === "teacher";
+  }
+
+  // Learner routes are intentionally available to every authenticated account.
+  // Teacher/admin accounts need this namespace for the learner-mode role switch.
+  return true;
 }
 
 export function LaunchScreen() {
@@ -100,6 +122,10 @@ export function SessionBootstrap({ routeName, config, children }: SessionBootstr
           return;
         }
         if (user && routeName === "login") {
+          navigateApp(defaultRouteForUser(user), config, { replace: true });
+          return;
+        }
+        if (user && !canAccessAppRoute(user, routeName)) {
           navigateApp(defaultRouteForUser(user), config, { replace: true });
           return;
         }
