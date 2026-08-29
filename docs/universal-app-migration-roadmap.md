@@ -129,9 +129,11 @@
 > `features/sessions/LearnerSessionsScreen.tsx` route واقعی `/app/sessions` را با `GET /sessions?when=upcoming|past` پر می‌کند. نمایش زمان فقط از `local_date/local_start/local_end` authoritative بک‌اند است؛ sessionهای پیش‌رو با `POST /sessions/:id/cancel` و confirmation/busy state لغو می‌شوند و session تمام‌شده و هنوز امتیازنداده‌شده از طریق `POST /reviews` امتیاز ۱ تا ۵ و نظر اختیاری ثبت می‌کند. پس از mutation فهرست فعال از backend refresh می‌شود و هیچ زمان محلی دستگاه جایگزین زمان رسمی سرور نمی‌شود.
 
 ### Wallet
-- [ ] موجودی.
-- [ ] تاریخچه transaction.
-- [ ] حذف هرگونه CTA ساختگی شارژ تا اتصال درگاه واقعی.
+- [x] موجودی.
+- [x] تاریخچه transaction.
+- [x] حذف هرگونه CTA ساختگی شارژ تا اتصال درگاه واقعی.
+
+> `features/wallet/LearnerWalletScreen.tsx` route واقعی `/app/wallet` را با `GET /me` برای موجودی و `GET /wallet/transactions` برای دفتر تراکنش پر می‌کند. مدل transaction مطابق قرارداد Flutter (`id/type/title/amount/created_at`) parse می‌شود، loading/empty/error/retry دارد و هیچ CTA یا mutation شارژ در Universal App وجود ندارد؛ تا اتصال درگاه واقعی فقط پیام اطلاع‌رسانی نمایش داده می‌شود.
 
 ### Profile
 - [ ] نمایش اطلاعات کاربر.
