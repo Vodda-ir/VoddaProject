@@ -55,7 +55,7 @@
 - [x] platform adapter مستقل برای web/native، شامل runtime contract، API request مشترک، session restore و login/logout ایجاد شد.
 - [ ] حفظ HttpOnly/BFF روی وب و secure token/Bearer روی native؛ Web/BFF و Native/Bearer آماده است و implementation امن `SecureTokenStorage` همراه Capacitor باقی مانده.
 - [x] design tokens مشترک، Icon قابل استفاده در Universal App و primitiveهای framework-independent شامل Button/Input/Card/Avatar/State/Sheet/Dialog ایجاد شدند.
-- [ ] shared mobile-first app shell و bottom navigation.
+- [x] shared mobile-first learner/teacher app shells و bottom navigation مستقل از `/panel` با RTL، safe-area و active route state ایجاد شدند.
 - [ ] parity کامل learner app با Flutter.
 - [ ] parity کامل teacher app با Flutter.
 - [ ] route contract مستقل از `/panel/...`.
