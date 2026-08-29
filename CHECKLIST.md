@@ -2,7 +2,7 @@
 
 # چک‌لیست وضعیت وُدّا
 
-آخرین بازبینی: **۲۰۲۶-۰۷-۳۰**
+آخرین بازبینی: **۲۰۲۶-۰۸-۲۹**
 
 این فایل فقط وضعیت واقعی کد فعلی را نشان می‌دهد. قابلیت وابسته به سرویس بیرونی تا زمان اتصال و آزمون end-to-end «تکمیل‌شده» محسوب نمی‌شود.
 
@@ -47,6 +47,22 @@
 - [x] پنل مدیر: کاربران، استادان، خدمات، جلسات، برداشت، پشتیبانی و audit
 - [x] جدول‌ها و کارت‌های responsive و عملیات حساس دارای confirmation/busy state
 - [x] FAQ، قوانین و حریم خصوصی هماهنگ با قابلیت‌های فعال
+
+## مهاجرت Universal App + Capacitor
+
+- [x] رودمپ اجرایی مهاجرت در [`docs/universal-app-migration-roadmap.md`](docs/universal-app-migration-roadmap.md) ایجاد شد.
+- [ ] ساختار `frontend/src/universal-app/` و routing مستقل `/app/...`.
+- [ ] platform adapter مستقل برای web/native.
+- [ ] حفظ HttpOnly/BFF روی وب و secure token/Bearer روی native.
+- [ ] shared mobile-first UI kit و app shell.
+- [ ] parity کامل learner app با Flutter.
+- [ ] parity کامل teacher app با Flutter.
+- [ ] route contract مستقل از `/panel/...`.
+- [ ] Capacitor/Vite scaffold با `ir.vodda.vodda` و local bundle.
+- [ ] آمادگی انتقال از `vodda.ir/app` به `app.vodda.ir` فقط با config/deployment.
+- [ ] تکمیل مستندات و حذف duplicate codeهای مهاجرت.
+
+> در scope فعلی، build/test/npm install/Android/iOS generation شرط تکمیل این رودمپ نیست و اجرا نمی‌شود.
 
 ## Flutter
 
