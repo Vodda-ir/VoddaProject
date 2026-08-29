@@ -62,6 +62,7 @@
 - [x] role switch بین learner و teacher mode برای حساب teacher بدون mutation نقش سرور؛ switch فقط namespace/shell فعال را بین `/app/...` و `/app/t/...` تغییر می‌دهد.
 - [x] Home قرآن‌آموز در Universal App با header/session واقعی، hero و دسته‌های سریع، API واقعی `/teachers`، اساتید پیشنهادی، استادان بانو و featured teacher بدون داده ساختگی parity شده است.
 - [x] Search قرآن‌آموز در Universal App با جستجوی server-side روی `/teachers`، debounce، فیلترهای واقعی `q/field/city/female`، URL state و حالت‌های loading/empty/error/retry پیاده شده است.
+- [x] Teacher Profile قرآن‌آموز در `/app/teacher/:id` با اطلاعات واقعی استاد، serviceهای فعال/تأییدشده، review و rating واقعی و CTA رزرو متصل به `/app/book/:id` پیاده شده است.
 - [ ] parity کامل learner app با Flutter.
 - [ ] parity کامل teacher app با Flutter.
 - [ ] route contract مستقل از `/panel/...`.
