@@ -11,6 +11,8 @@ import { LearnerProfileScreen } from "./features/profile/LearnerProfileScreen";
 import { LearnerSearchScreen } from "./features/search/LearnerSearchScreen";
 import { LearnerSessionsScreen } from "./features/sessions/LearnerSessionsScreen";
 import { TeacherDashboardScreen } from "./features/teacher/TeacherDashboardScreen";
+import { TeacherProfileScreen } from "./features/teacher/TeacherProfileScreen";
+import { TeacherReviewsScreen } from "./features/teacher/TeacherReviewsScreen";
 import { TeacherServicesScreen } from "./features/teacher/TeacherServicesScreen";
 import { TeacherSessionsScreen } from "./features/teacher/TeacherSessionsScreen";
 import { TeacherWalletScreen } from "./features/teacher/TeacherWalletScreen";
@@ -143,6 +145,10 @@ function UniversalAppContent({ config, runtime }: { config: UniversalAppConfig; 
     <TeacherWalletScreen config={config} />
   ) : route.name === "teacher-withdraw" ? (
     <TeacherWithdrawScreen config={config} />
+  ) : route.name === "teacher-profile" ? (
+    <TeacherProfileScreen config={config} />
+  ) : route.name === "teacher-reviews" ? (
+    <TeacherReviewsScreen />
   ) : (
     <RoutePlaceholder routeName={route.name} pathname={route.pathname} config={config} />
   );
