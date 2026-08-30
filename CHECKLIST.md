@@ -83,7 +83,8 @@
 - [x] audit نهایی asset path/hostname: Universal Source هیچ asset محلی وابسته به `/app` و هیچ hostname بیزینسی hardcode نمی‌کند و native Vite از asset base نسبی `./` استفاده می‌کند؛ فاز ۸ آماده انتقال config/deployment است.
 - [x] `AGENTS.md` و `README.md` با معماری Universal App، مرزهای Next/Capacitor، route contract و مدل auth متفاوت web/native همگام شده‌اند و وضعیت فازهای ۰ تا ۸ در این checklist ثبت شده است.
 - [x] mapping دقیق Flutter → Universal React در [`docs/flutter-universal-mapping.md`](docs/flutter-universal-mapping.md) ثبت شده و route/componentهای learner/teacher، flowهای ادغام‌شده و تفاوت‌های عمدی migration را مشخص می‌کند.
-- [ ] مستند کردن platform adapter contract و تفاوت auth web/native.
+- [x] platform adapter contract در [`docs/platform-adapter-contract.md`](docs/platform-adapter-contract.md) مستند شد؛ مرز `PlatformRuntime`، request/session lifecycle، error contract، secure storage و capability injection را مشخص می‌کند.
+- [ ] مستند کردن تفاوت auth web/native.
 - [ ] حذف duplicate component/API codeهای ایجادشده در migration و علامت‌گذاری Flutter به‌عنوان deprecated reference پس از audit نهایی.
 - [ ] حذف Flutter از workflowها فقط پس از تصمیم صریح برای حذف پوشه `app/`.
 
