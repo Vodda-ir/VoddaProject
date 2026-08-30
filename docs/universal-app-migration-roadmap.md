@@ -236,7 +236,7 @@
 
 - [x] به‌روزرسانی `AGENTS.md` با معماری جدید.
 - [x] به‌روزرسانی `README.md`.
-- [ ] به‌روزرسانی `CHECKLIST.md`.
+- [x] به‌روزرسانی `CHECKLIST.md`.
 - [ ] مستند کردن mapping Flutter → Universal React.
 - [ ] مستند کردن platform adapter contract.
 - [ ] مستند کردن auth تفاوت web/native.
@@ -244,7 +244,7 @@
 - [ ] علامت‌گذاری Flutter به‌عنوان deprecated reference بعد از تکمیل parity کدنویسی.
 - [ ] حذف Flutter از workflowها فقط پس از تصمیم صریح برای حذف پوشه `app/`.
 
-> `AGENTS.md` اکنون Universal App را source اصلی migration معرفی می‌کند و مرزهای `frontend/src/universal-app/`، Next host، Capacitor wrapper، Flutter reference، route contract و تفاوت اجباری auth وب/native را برای agentهای بعدی صریح می‌کند. `README.md` نیز ساختار جدید repository، routeهای `/app`، مرز Next/Universal/Capacitor، قرارداد متفاوت auth وب/native، اسکریپت‌های native و نقش Flutter به‌عنوان reference/fallback را منعکس می‌کند.
+> `AGENTS.md` اکنون Universal App را source اصلی migration معرفی می‌کند و مرزهای `frontend/src/universal-app/`، Next host، Capacitor wrapper، Flutter reference، route contract و تفاوت اجباری auth وب/native را برای agentهای بعدی صریح می‌کند. `README.md` نیز ساختار جدید repository، routeهای `/app`، مرز Next/Universal/Capacitor، قرارداد متفاوت auth وب/native، اسکریپت‌های native و نقش Flutter به‌عنوان reference/fallback را منعکس می‌کند. `CHECKLIST.md` هم اکنون وضعیت واقعی فازهای ۰ تا ۸ و بسته‌های باقیمانده فاز ۹ را به‌صورت جداگانه ثبت می‌کند تا آیتم کلی و مبهم «تکمیل مستندات و حذف duplicate code» جای وضعیت واقعی را نگیرد.
 
 ---
 
