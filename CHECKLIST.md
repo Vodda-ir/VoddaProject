@@ -53,7 +53,7 @@
 - [x] رودمپ اجرایی مهاجرت در [`docs/universal-app-migration-roadmap.md`](docs/universal-app-migration-roadmap.md) ایجاد شد.
 - [x] ساختار `frontend/src/universal-app/`، entry مستقل React، routing داخلی و mount مستقل `/app/...` ایجاد شد؛ importهای `next/*` در این لایه با ESLint ممنوع شده‌اند و base path قابل تنظیم است.
 - [x] platform adapter مستقل برای web/native، شامل runtime contract، API request مشترک، session restore و login/logout ایجاد شد.
-- [ ] حفظ HttpOnly/BFF روی وب و secure token/Bearer روی native؛ Web/BFF و Native/Bearer آماده است و implementation امن `SecureTokenStorage` همراه Capacitor باقی مانده.
+- [x] حفظ HttpOnly/BFF روی وب و secure token/Bearer روی native؛ Native wrapper token را با `@aparajita/capacitor-secure-storage` ذخیره می‌کند و فقط native adapter آن را به Bearer header تبدیل می‌کند.
 - [x] design tokens مشترک، Icon قابل استفاده در Universal App و primitiveهای framework-independent شامل Button/Input/Card/Avatar/State/Sheet/Dialog ایجاد شدند.
 - [x] shared mobile-first learner/teacher app shells و bottom navigation مستقل از `/panel` با RTL، safe-area و active route state ایجاد شدند.
 - [x] launch/session bootstrap، OTP request/verify و redirect اولیه بر اساس session/role در Universal App پیاده شد.
@@ -76,8 +76,8 @@
 - [x] Teacher Profile & Reviews استاد در `/app/t/profile` و `/app/t/reviews` با اطلاعات واقعی `/me` و `/teacher/me`، ویرایش فقط فیلدهای مجاز، availability واقعی، reviewهای persisted و role switch به learner پیاده شد.
 - [x] parity کامل teacher app با Flutter.
 - [x] helper مرکزی route در Universal App با `appRoutePaths`/`appPath`/`appRouteUrl`/`navigateAppRoute` ایجاد شد و shellها از route name به‌جای path تکراری استفاده می‌کنند.
-- [ ] route contract مستقل از `/panel/...`.
-- [ ] Capacitor/Vite scaffold با `ir.vodda.vodda` و local bundle.
+- [x] route contract مستقل از `/panel/...`؛ deep-link/refreshهای `/app/...` از catch-all مستقل Next به Universal App resolve می‌شوند و universal source routeهای `/panel` را hardcode نمی‌کند.
+- [x] Capacitor/Vite scaffold با `ir.vodda.vodda`، local `dist` bundle، بدون `server.url`، API base URL محیطی و secure token storage ایجاد شد؛ فقط hooks قابلیت‌های native آینده باقی مانده است.
 - [ ] آمادگی انتقال از `vodda.ir/app` به `app.vodda.ir` فقط با config/deployment.
 - [ ] تکمیل مستندات و حذف duplicate codeهای مهاجرت.
 
