@@ -128,7 +128,7 @@
 - [x] موجودی/امتیاز/review count واقعی.
 - [x] availability toggle در صورت پشتیبانی endpoint فعلی.
 
-> `TeacherDashboardScreen.tsx` از `/me` و `/teacher/sessions?when=pending|upcoming` استفاده می‌کند. endpoint قابل اتکایی برای availability toggle در router فعلی backend وجود ندارد، بنابراین mutation ساختگی اضافه نشده است.
+> `TeacherDashboardScreen.tsx` از `/me` و `/teacher/sessions?when=pending|upcoming` استفاده می‌کند. backend در `PUT /teacher/me` فیلد `available` را پشتیبانی می‌کند و toggle واقعی آن در پروفایل استاد در دسترس است تا mutation ساختگی یا duplicate در داشبورد ایجاد نشود.
 
 ### Requests & Sessions
 - [x] درخواست‌های جلسه.
@@ -166,10 +166,12 @@
 > `TeacherWalletScreen.tsx` برای `/app/t/wallet` موجودی `/me` و ledger مشترک `/wallet/transactions` را مصرف می‌کند و به flow برداشت واقعی لینک می‌دهد. `TeacherWithdrawScreen.tsx` در `/app/t/withdraw` تاریخچه `GET /teacher/withdrawals` و ثبت `POST /teacher/withdrawals` را پیاده می‌کند؛ مبلغ مثبت و حداکثر موجودی، کارت دقیقاً ۱۶ رقم و شبا `IR` + ۲۴ رقم پیش از mutation کنترل می‌شوند و backend همچنان مرجع نهایی validation و رزرو وجه است.
 
 ### Teacher Profile & Reviews
-- [ ] پروفایل استاد.
-- [ ] ویرایش داده‌های قابل ویرایش.
-- [ ] reviews واقعی.
-- [ ] role switch به learner.
+- [x] پروفایل استاد.
+- [x] ویرایش داده‌های قابل ویرایش.
+- [x] reviews واقعی.
+- [x] role switch به learner.
+
+> `TeacherProfileScreen.tsx` در `/app/t/profile` اطلاعات `/me` و `/teacher/me` را ترکیب می‌کند، فقط فیلدهای مجاز `PUT /teacher/me` را ویرایش می‌کند، availability واقعی را از همان endpoint تغییر می‌دهد، به ویرایش حساب مشترک لینک می‌دهد و switch صریح به learner namespace دارد. `TeacherReviewsScreen.tsx` در `/app/t/reviews` فقط reviewهای persisted از `GET /teacher/reviews` را با loading/empty/error/retry نمایش می‌دهد و هیچ moderation یا داده ساختگی اضافه نمی‌کند.
 
 **Done:** تمام flowهای teacher موجود در Flutter در Universal App پیاده شده باشند.
 
