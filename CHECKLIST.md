@@ -75,6 +75,7 @@
 - [x] Wallet & Withdrawals استاد در `/app/t/wallet` و `/app/t/withdraw` با موجودی و transaction واقعی، تاریخچه برداشت، ثبت درخواست و validation کارت ۱۶ رقمی/شبا `IR` + ۲۴ رقم پیاده شد.
 - [x] Teacher Profile & Reviews استاد در `/app/t/profile` و `/app/t/reviews` با اطلاعات واقعی `/me` و `/teacher/me`، ویرایش فقط فیلدهای مجاز، availability واقعی، reviewهای persisted و role switch به learner پیاده شد.
 - [x] parity کامل teacher app با Flutter.
+- [x] helper مرکزی route در Universal App با `appRoutePaths`/`appPath`/`appRouteUrl`/`navigateAppRoute` ایجاد شد و shellها از route name به‌جای path تکراری استفاده می‌کنند.
 - [ ] route contract مستقل از `/panel/...`.
 - [ ] Capacitor/Vite scaffold با `ir.vodda.vodda` و local bundle.
 - [ ] آمادگی انتقال از `vodda.ir/app` به `app.vodda.ir` فقط با config/deployment.
