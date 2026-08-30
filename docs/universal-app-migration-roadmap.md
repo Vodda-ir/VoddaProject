@@ -4,16 +4,7 @@
 
 ## هدف
 
-اپ Flutter فعلی به یک Universal React Frontend منتقل شود که:
-
-- صفحات عمومی سایت و روت‌های فعلی وب بدون تغییر باقی بمانند.
-- اپ کاربر و استاد در namespace مستقل `/app/...` اجرا شود.
-- routing اپ از `/panel/...` و صفحات public مستقل باشد.
-- کامپوننت‌ها، مدل‌ها، API contractها و design primitives تا حد ممکن بین سایت/پنل/اپ مشترک باشند.
-- سورس اپ به Next.js وابسته نباشد و Next فقط میزبان نسخه وب در `/app/...` باشد.
-- همان سورس اپ بعداً با Capacitor برای Android/iOS بسته‌بندی شود.
-- انتقال آینده از `vodda.ir/app/...` به `app.vodda.ir/...` بدون rewrite اپ انجام شود.
-- محصول آنلاین است؛ offline-first، sync engine، IndexedDB mutation queue و service worker آفلاین جزو scope نیستند.
+اپ Flutter فعلی به یک Universal React Frontend منتقل شود که صفحات public و `/panel` فعلی را دست‌نخورده نگه دارد، اپ را فقط زیر `/app/...` اجرا کند، source آن از `next/*` مستقل باشد و همان source بعداً با Capacitor برای Android/iOS بسته‌بندی شود.
 
 ## قواعد ثابت معماری
 
@@ -52,9 +43,7 @@
 - [x] API base URL configurable برای development/production/native.
 - [x] حذف نیاز universal app به `getToken()` وب فعلی.
 
-> قرارداد `SecureTokenStorage` و اتصال Bearer در native adapter پیاده شده است؛ implementation امن واقعی آن عمداً همراه Capacitor در فاز 7 اضافه می‌شود تا feature code به plugin مشخصی وابسته نشود.
-
-**Done:** feature code بدون دانستن نوع platform بتواند authenticated API call انجام دهد.
+> قرارداد `SecureTokenStorage` و اتصال Bearer در native adapter پیاده شده است؛ implementation امن واقعی آن همراه Capacitor در فاز 7 اضافه می‌شود تا feature code به plugin مشخصی وابسته نشود.
 
 ## فاز 2 — Shared UI و Design System
 
@@ -66,9 +55,7 @@
 - [x] رعایت RTL و safe-area در ساختار اپ.
 - [x] جلوگیری از وابستگی app UI به layoutهای desktop پنل وب.
 
-> foundation این فاز در `frontend/src/universal-app/ui/` قرار دارد؛ tokenها مستقل از CSS سراسری Next هستند تا همان source در Vite/Capacitor هم قابل استفاده باشد. `MobileAppShell` و `TeacherAppShell` نیز در `ui/shells.tsx` ناوبری مستقل learner/teacher، active-route state، RTL و safe-area را بدون استفاده از layoutهای `/panel` فراهم می‌کنند.
-
-**Done:** featureهای بعدی روی یک UI kit واحد و mobile-first ساخته شوند.
+> foundation این فاز در `frontend/src/universal-app/ui/` قرار دارد و shellهای learner/teacher ناوبری مستقل از `/panel` دارند.
 
 ## فاز 3 — Auth و Onboarding اپ
 
@@ -80,9 +67,7 @@
 - [x] guard مسیرهای learner/teacher.
 - [x] role switch بین حساب قرآن‌آموز و استاد.
 
-> `features/auth/AuthExperience.tsx` launch/session restore و OTP واقعی را روی runtime مشترک انجام می‌دهد. `ProfileCompletionScreen.tsx` مسیر `need_profile -> /profile/edit` را با `PUT /me` تکمیل می‌کند و همان فرم در حالت حساب موجود ویرایش نام، شهر، bio و آواتار multipart را انجام می‌دهد. `SessionBootstrap` namespace استاد را برای sessionهای `teacher` و `admin` باز می‌گذارد و دسترسی غیرمجاز به `/app/t/...` را به مسیر پیش‌فرض همان حساب برمی‌گرداند. `RoleModeSwitch.tsx` نیز برای حساب teacher/admin بدون mutation نقش بک‌اند، mode فعال را بین learner namespace و teacher namespace جابه‌جا می‌کند؛ مجوزها همچنان از session واقعی کنترل می‌شوند.
-
-**Done:** flow ورود Flutter از ابتدا تا ورود به shell مناسب در `/app/...` کامل باشد.
+> `features/auth/` flow ورود، profile completion و role-mode switch را روی platform runtime مشترک اجرا می‌کند؛ namespace استاد فقط برای `teacher|admin` باز است.
 
 ## فاز 4 — Learner App Parity
 
@@ -93,23 +78,17 @@
 - [x] انتقال اساتید پیشنهادی و استادان بانو.
 - [x] انتقال featured teacher.
 
-> `features/home/LearnerHomeScreen.tsx` اکنون session واقعی را از platform runtime می‌خواند، header و avatar کاربر را نمایش می‌دهد، hero جستجو و دسته‌های سریع قرآن/مداحی را به `/app/search` هدایت می‌کند و با API واقعی `/teachers` اساتید پیشنهادی، استادان بانو و featured teacher را دقیقاً مطابق منطق Flutter نمایش می‌دهد. قرارداد و parser مشترک استاد نیز در `features/teachers/` اضافه شده و هیچ داده ساختگی استاد در Home وجود ندارد.
-
 ### Search
 - [x] جستجوی server-side.
 - [x] debounce.
 - [x] فیلترهای واقعی بک‌اند.
 - [x] loading/empty/error/retry.
 
-> `features/search/LearnerSearchScreen.tsx` به route مستقل `/app/search` متصل است و درخواست واقعی `/teachers` را از طریق platform runtime اجرا می‌کند. عبارت جستجو با debounce 350ms ارسال می‌شود، فیلترهای `q`، `field`، `city` و `female` مستقیماً با قرارداد بک‌اند هماهنگ‌اند، URL state حفظ می‌شود و loading/empty/error/retry از primitiveهای مشترک Universal App استفاده می‌کنند. نتیجه‌ها به `/app/teacher/:id` هدایت می‌شوند و هیچ داده ساختگی در Search وجود ندارد.
-
 ### Teacher Profile
 - [x] اطلاعات استاد.
 - [x] خدمات تأییدشده.
 - [x] نظرها و امتیاز واقعی.
 - [x] CTA رزرو.
-
-> `features/teachers/LearnerTeacherProfileScreen.tsx` route واقعی `/app/teacher/:id` را از پاسخ authoritative `GET /teachers/:id` پر می‌کند. همان پاسخ، اطلاعات استاد، serviceهای فعال/تأییدشده و reviewهای persisted را برمی‌گرداند؛ امتیاز و تعداد نظر نیز از آمار واقعی استاد نمایش داده می‌شود. CTA رزرو فقط وقتی حداقل یک خدمت قابل رزرو وجود داشته باشد فعال است و به `/app/book/:id` می‌رود.
 
 ### Booking
 - [x] انتخاب خدمت.
@@ -118,22 +97,16 @@
 - [x] ثبت رزرو.
 - [x] refresh availability بعد از conflict.
 
-> `features/booking/LearnerBookingScreen.tsx` به route مستقل `/app/book/:id` متصل است، serviceهای فعال استاد را از teacher detail واقعی می‌گیرد و availability را فقط از `GET /teachers/:id/availability` دریافت می‌کند. تاریخ و ساعت نمایشی از `local_date/local_start/local_end` سرور می‌آیند، در حالی که `scheduled_at` رزرو مستقیماً از `start_at` UTC همان slot ارسال می‌شود. در HTTP 409 انتخاب slot باطل و availability دوباره از backend دریافت می‌شود تا کاربر روی داده stale ادامه ندهد.
-
 ### Sessions
 - [x] upcoming/past.
 - [x] نمایش زمان رسمی backend.
 - [x] لغو جلسه.
 - [x] rating/review بعد از completion.
 
-> `features/sessions/LearnerSessionsScreen.tsx` route واقعی `/app/sessions` را با `GET /sessions?when=upcoming|past` پر می‌کند. نمایش زمان فقط از `local_date/local_start/local_end` authoritative بک‌اند است؛ sessionهای پیش‌رو با `POST /sessions/:id/cancel` و confirmation/busy state لغو می‌شوند و session تمام‌شده و هنوز امتیازنداده‌شده از طریق `POST /reviews` امتیاز ۱ تا ۵ و نظر اختیاری ثبت می‌کند. پس از mutation فهرست فعال از backend refresh می‌شود و هیچ زمان محلی دستگاه جایگزین زمان رسمی سرور نمی‌شود.
-
 ### Wallet
 - [x] موجودی.
 - [x] تاریخچه transaction.
 - [x] حذف هرگونه CTA ساختگی شارژ تا اتصال درگاه واقعی.
-
-> `features/wallet/LearnerWalletScreen.tsx` route واقعی `/app/wallet` را با `GET /me` برای موجودی و `GET /wallet/transactions` برای دفتر تراکنش پر می‌کند. مدل transaction مطابق قرارداد Flutter (`id/type/title/amount/created_at`) parse می‌شود، loading/empty/error/retry دارد و هیچ CTA یا mutation شارژ در Universal App وجود ندارد؛ تا اتصال درگاه واقعی فقط پیام اطلاع‌رسانی نمایش داده می‌شود.
 
 ### Profile
 - [x] نمایش اطلاعات کاربر.
@@ -143,7 +116,7 @@
 - [x] role switch برای teacher/admin.
 - [x] logout.
 
-> `features/profile/LearnerProfileScreen.tsx` route واقعی `/app/profile` را با session فعلی پر می‌کند و اطلاعات حساب، موجودی و لینک کیف پول و logout مشترک platform runtime را ارائه می‌دهد. `/app/profile/edit` همان flow onboarding را برای حساب موجود به حالت edit تبدیل می‌کند و `PUT /me` را در حالت عادی با JSON و هنگام انتخاب تصویر با `multipart/form-data` مصرف می‌کند؛ runtime مشترک نیز اجازه می‌دهد browser boundary صحیح FormData را تنظیم کند. role switch و guard namespace استاد برای هر دو نقش `teacher` و `admin` با policy فعلی بک‌اند هم‌راستا هستند.
+> parity learner در `frontend/src/universal-app/features/` با API واقعی، زمان رسمی backend و بدون داده/CTA ساختگی تکمیل شده است.
 
 **Done:** تمام flowهای learner موجود در Flutter در `/app/...` parity کدنویسی داشته باشند.
 
@@ -155,7 +128,7 @@
 - [x] موجودی/امتیاز/review count واقعی.
 - [x] availability toggle در صورت پشتیبانی endpoint فعلی.
 
-> `features/teacher/TeacherDashboardScreen.tsx` به route واقعی `/app/t` متصل شد و مطابق Flutter از `GET /me` و `GET /teacher/sessions?when=pending|upcoming` استفاده می‌کند. موجودی، امتیاز، تعداد نظر و تعداد جلسه فقط از داده واقعی حساب نمایش داده می‌شوند، درخواست‌های pending و نزدیک‌ترین جلسه confirmed از sessionهای واقعی ساخته می‌شوند و زمان جلسه فقط از `local_date/local_start/local_end` رسمی backend نمایش داده می‌شود. در router فعلی backend endpointی برای تغییر availability استاد وجود ندارد؛ بنابراین checkbox مربوط به toggle به‌صورت «در صورت پشتیبانی endpoint» بسته شده و هیچ کنترل یا mutation ساختگی اضافه نشده است.
+> `TeacherDashboardScreen.tsx` از `/me` و `/teacher/sessions?when=pending|upcoming` استفاده می‌کند. endpoint قابل اتکایی برای availability toggle در router فعلی backend وجود ندارد، بنابراین mutation ساختگی اضافه نشده است.
 
 ### Requests & Sessions
 - [x] درخواست‌های جلسه.
@@ -165,15 +138,17 @@
 - [x] complete session.
 - [x] نمایش `local_*`.
 
-> `features/teacher/TeacherSessionsScreen.tsx` هر دو route `/app/t/requests` و `/app/t/sessions` را از قرارداد واقعی `GET /teacher/sessions?when=pending|upcoming|past` پر می‌کند. درخواست pending با `POST /teacher/sessions/:id/accept` تأیید یا با `POST /teacher/sessions/:id/reject` و reason اجباری رد می‌شود؛ جلسه confirmed نیز پس از confirmation با `POST /teacher/sessions/:id/complete` تکمیل می‌شود. همه mutationها busy/error state دارند و پس از موفقیت فهرست فعال refresh می‌شود. تاریخ و ساعت فقط از `local_date/local_start/local_end` رسمی backend نمایش داده می‌شوند و `scheduled_at` صرفاً برای قرارداد داده نگه داشته می‌شود.
+> `TeacherSessionsScreen.tsx` قرارداد واقعی `GET /teacher/sessions?when=pending|upcoming|past` و mutationهای accept/reject/complete را مصرف می‌کند و زمان فقط از `local_*` نمایش داده می‌شود.
 
 ### Services
-- [ ] list services.
-- [ ] create.
-- [ ] edit.
-- [ ] deactivate.
-- [ ] delete.
-- [ ] حفظ moderation policy؛ استاد نباید self-approve کند.
+- [x] list services.
+- [x] create.
+- [x] edit.
+- [x] deactivate.
+- [x] delete.
+- [x] حفظ moderation policy؛ استاد نباید self-approve کند.
+
+> `features/teacher/TeacherServicesScreen.tsx` route `/app/t/services` را از `GET /teacher/me -> data.services` پر می‌کند و create/edit/delete را روی `/teacher/services` انجام می‌دهد. deactivate فقط `active:false` می‌فرستد و هیچ مسیر یا کنترل client-side برای `active:true` وجود ندارد؛ service جدید یا ویرایش‌شده تا moderation مدیر قابل رزرو نیست. validation مدت ۱۰ تا ۲۴۰ دقیقه و قیمت مثبت با مرجع Flutter هم‌راستاست.
 
 ### Work Times
 - [ ] list.
@@ -224,8 +199,6 @@
 - [ ] helper مرکزی برای ساخت app URL ایجاد شود.
 - [ ] هیچ component مشترکی routeهای `/panel/...` را hardcode نکند.
 
-**Done:** app navigation کاملاً namespace-safe باشد.
-
 ## فاز 7 — Capacitor Scaffold
 
 - [ ] ایجاد `frontend/native/` برای build wrapper.
@@ -238,20 +211,14 @@
 - [ ] آماده‌سازی hooks برای Camera/Image Picker و قابلیت‌های native آینده.
 - [ ] scripts لازم برای `native:dev`, `native:build`, `cap:sync`, `cap:android`, `cap:ios` در package config.
 
-**Done:** کدنویسی scaffold native کامل باشد؛ generate/build واقعی platformها در scope فعلی نیست.
-
 ## فاز 8 — آمادگی `app.vodda.ir`
 
 - [ ] base path اپ configurable باشد.
 - [ ] asset pathها absolute و وابسته به `/app` نباشند.
 - [ ] API origin configurable باشد.
 - [ ] web auth adapter امکان same-site/subdomain deployment را در طراحی داشته باشد.
-- [ ] document deployment برای دو حالت زیر:
-  - `vodda.ir/app/...`
-  - `app.vodda.ir/...`
+- [ ] document deployment برای دو حالت `vodda.ir/app/...` و `app.vodda.ir/...`.
 - [ ] هیچ business componentی hostname را hardcode نکند.
-
-**Done:** انتقال به subdomain صرفاً deployment/config change باشد.
 
 ## فاز 9 — Cleanup کدنویسی و Documentation
 
@@ -264,8 +231,6 @@
 - [ ] حذف duplicate component/API codeهای ایجادشده در طول migration.
 - [ ] علامت‌گذاری Flutter به‌عنوان deprecated reference بعد از تکمیل parity کدنویسی.
 - [ ] حذف Flutter از workflowها فقط پس از تصمیم صریح برای حذف پوشه `app/`.
-
-**Done:** سورس جدید قابل نگهداری باشد و agent/developer بعدی بتواند بدون رجوع به این گفتگو ادامه دهد.
 
 ---
 
