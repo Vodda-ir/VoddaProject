@@ -79,7 +79,8 @@
 - [x] route contract مستقل از `/panel/...`؛ deep-link/refreshهای `/app/...` از catch-all مستقل Next به Universal App resolve می‌شوند و universal source routeهای `/panel` را hardcode نمی‌کند.
 - [x] Capacitor/Vite scaffold با `ir.vodda.vodda`، local `dist` bundle، بدون `server.url`، API base URL محیطی و secure token storage ایجاد شد.
 - [x] native capability hook مستقل از Universal Source با `PlatformRuntime.capabilities` ایجاد شد؛ wrapper بومی Camera/Photo Picker را با `@capacitor/camera` تزریق می‌کند و الگوی توسعه capabilityهای بعدی در `docs/native-capabilities.md` مستند است.
-- [ ] آمادگی انتقال از `vodda.ir/app` به `app.vodda.ir` فقط با config/deployment.
+- [x] deployment config وب برای base path و BFF/auth origin محیطی شد؛ Web adapter با HttpOnly/BFF و `credentials: include` برای same-origin یا same-site subdomain آماده است و قرارداد دو حالت `/app` و `app.vodda.ir` در `docs/universal-app-web-deployment.md` مستند شد.
+- [ ] تکمیل audit asset path و hostname برای نهایی‌شدن آمادگی انتقال از `vodda.ir/app` به `app.vodda.ir`.
 - [ ] تکمیل مستندات و حذف duplicate codeهای مهاجرت.
 
 > در scope فعلی، build/test/npm install/Android/iOS generation شرط تکمیل این رودمپ نیست و اجرا نمی‌شود.
