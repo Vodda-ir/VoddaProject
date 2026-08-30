@@ -158,12 +158,14 @@
 > `features/teacher/TeacherDashboardScreen.tsx` به route واقعی `/app/t` متصل شد و مطابق Flutter از `GET /me` و `GET /teacher/sessions?when=pending|upcoming` استفاده می‌کند. موجودی، امتیاز، تعداد نظر و تعداد جلسه فقط از داده واقعی حساب نمایش داده می‌شوند، درخواست‌های pending و نزدیک‌ترین جلسه confirmed از sessionهای واقعی ساخته می‌شوند و زمان جلسه فقط از `local_date/local_start/local_end` رسمی backend نمایش داده می‌شود. در router فعلی backend endpointی برای تغییر availability استاد وجود ندارد؛ بنابراین checkbox مربوط به toggle به‌صورت «در صورت پشتیبانی endpoint» بسته شده و هیچ کنترل یا mutation ساختگی اضافه نشده است.
 
 ### Requests & Sessions
-- [ ] درخواست‌های جلسه.
-- [ ] accept.
-- [ ] reject با reason.
-- [ ] upcoming/past sessions.
-- [ ] complete session.
-- [ ] نمایش `local_*`.
+- [x] درخواست‌های جلسه.
+- [x] accept.
+- [x] reject با reason.
+- [x] upcoming/past sessions.
+- [x] complete session.
+- [x] نمایش `local_*`.
+
+> `features/teacher/TeacherSessionsScreen.tsx` هر دو route `/app/t/requests` و `/app/t/sessions` را از قرارداد واقعی `GET /teacher/sessions?when=pending|upcoming|past` پر می‌کند. درخواست pending با `POST /teacher/sessions/:id/accept` تأیید یا با `POST /teacher/sessions/:id/reject` و reason اجباری رد می‌شود؛ جلسه confirmed نیز پس از confirmation با `POST /teacher/sessions/:id/complete` تکمیل می‌شود. همه mutationها busy/error state دارند و پس از موفقیت فهرست فعال refresh می‌شود. تاریخ و ساعت فقط از `local_date/local_start/local_end` رسمی backend نمایش داده می‌شوند و `scheduled_at` صرفاً برای قرارداد داده نگه داشته می‌شود.
 
 ### Services
 - [ ] list services.

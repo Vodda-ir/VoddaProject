@@ -69,6 +69,7 @@
 - [x] Profile قرآن‌آموز در `/app/profile` با اطلاعات session، لینک wallet، logout، ویرایش نام/شهر/bio، upload آواتار و role switch برای teacher/admin parity شده است.
 - [x] parity کامل learner app با Flutter.
 - [x] Dashboard استاد در `/app/t` با اطلاعات واقعی `/me`، موجودی/امتیاز/تعداد نظر و جلسه، pending requests و جلسه بعدی از `/teacher/sessions` و زمان رسمی `local_*` پیاده شد؛ availability toggle چون endpoint فعلی ندارد عمداً اضافه نشده است.
+- [x] Requests & Sessions استاد در `/app/t/requests` و `/app/t/sessions` با pending/upcoming/past واقعی، accept، reject با reason اجباری، complete با confirmation، refresh پس از mutation و نمایش صرفاً `local_*` رسمی backend پیاده شد.
 - [ ] parity کامل teacher app با Flutter.
 - [ ] route contract مستقل از `/panel/...`.
 - [ ] Capacitor/Vite scaffold با `ir.vodda.vodda` و local bundle.
