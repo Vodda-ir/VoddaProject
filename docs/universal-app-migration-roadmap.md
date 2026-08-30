@@ -202,8 +202,10 @@
 
 - [ ] deep-link داخلی اپ مستقل از `/panel` باشد.
 - [ ] refresh هر route روی Next mount درست resolve شود.
-- [ ] helper مرکزی برای ساخت app URL ایجاد شود.
+- [x] helper مرکزی برای ساخت app URL ایجاد شود.
 - [ ] هیچ component مشترکی routeهای `/panel/...` را hardcode نکند.
+
+> قرارداد route در `frontend/src/universal-app/router.ts` متمرکز شده است: `appRoutePaths`، `appPath`، `appRouteUrl` و `navigateAppRoute` مسیرهای static/dynamic را از base path جدا می‌کنند. shellهای learner/teacher نیز به‌جای pathهای تکراری از route name استفاده می‌کنند.
 
 ## فاز 7 — Capacitor Scaffold
 
