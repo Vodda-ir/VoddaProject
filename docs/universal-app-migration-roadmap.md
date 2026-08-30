@@ -223,12 +223,14 @@
 
 ## فاز 8 — آمادگی `app.vodda.ir`
 
-- [ ] base path اپ configurable باشد.
+- [x] base path اپ configurable باشد.
 - [ ] asset pathها absolute و وابسته به `/app` نباشند.
-- [ ] API origin configurable باشد.
-- [ ] web auth adapter امکان same-site/subdomain deployment را در طراحی داشته باشد.
-- [ ] document deployment برای دو حالت `vodda.ir/app/...` و `app.vodda.ir/...`.
+- [x] API origin configurable باشد.
+- [x] web auth adapter امکان same-site/subdomain deployment را در طراحی داشته باشد.
+- [x] document deployment برای دو حالت `vodda.ir/app/...` و `app.vodda.ir/...`.
 - [ ] هیچ business componentی hostname را hardcode نکند.
+
+> Next host اکنون `NEXT_PUBLIC_UNIVERSAL_APP_BASE_PATH`، `NEXT_PUBLIC_UNIVERSAL_APP_BFF_BASE_URL` و `NEXT_PUBLIC_UNIVERSAL_APP_AUTH_BASE_URL` را به Universal App/Web Platform تزریق می‌کند. Web runtime برای API و auth همچنان HttpOnly/BFF است و با `credentials: include` هم deployment هم‌origin و هم sibling same-site صریح را پوشش می‌دهد؛ Native runtime تغییری نکرده است. قرارداد و rewrite لازم برای هر دو حالت در `docs/universal-app-web-deployment.md` مستند شده‌اند. audit asset path و hostname عمداً به بسته بعدی فاز ۸ موکول شده است.
 
 ## فاز 9 — Cleanup کدنویسی و Documentation
 
