@@ -1,13 +1,6 @@
+import type { ApiEnvelope } from "../../platform/api";
 import type { PlatformRuntime } from "../../platform/types";
 import { parseBookingSlot, type BookingSlot } from "./types";
-
-type AvailabilityResponse = {
-  data?: unknown;
-};
-
-type CreateBookingResponse = {
-  data?: unknown;
-};
 
 export async function getBookingAvailability(
   runtime: PlatformRuntime,
@@ -22,7 +15,7 @@ export async function getBookingAvailability(
     service_id: String(serviceId),
     days: String(Math.min(60, Math.max(1, days))),
   });
-  const response = await runtime.request<AvailabilityResponse>(
+  const response = await runtime.request<ApiEnvelope>(
     `/teachers/${teacherId}/availability?${search.toString()}`,
   );
   const rows = Array.isArray(response.data) ? response.data : [];
@@ -42,7 +35,7 @@ export async function createBooking(
   runtime: PlatformRuntime,
   input: { teacherId: number; serviceId: number; scheduledAt: string; note?: string },
 ) {
-  return runtime.request<CreateBookingResponse>("/sessions", {
+  return runtime.request<ApiEnvelope>("/sessions", {
     method: "POST",
     body: JSON.stringify({
       teacher_id: input.teacherId,

@@ -85,6 +85,7 @@
 - [x] mapping دقیق Flutter → Universal React در [`docs/flutter-universal-mapping.md`](docs/flutter-universal-mapping.md) ثبت شده و route/componentهای learner/teacher، flowهای ادغام‌شده و تفاوت‌های عمدی migration را مشخص می‌کند.
 - [x] platform adapter contract در [`docs/platform-adapter-contract.md`](docs/platform-adapter-contract.md) مستند شد؛ مرز `PlatformRuntime`، request/session lifecycle، error contract، secure storage و capability injection را مشخص می‌کند.
 - [x] تفاوت auth web/native در [`docs/auth-web-native.md`](docs/auth-web-native.md) مستند شد؛ وب فقط HttpOnly cookie + BFF و native فقط secure token + Bearer روی Go API مستقیم باقی می‌ماند.
+- [x] اولین بسته duplicate API cleanup: envelope مشترک پاسخ `data` در `frontend/src/universal-app/platform/api.ts` متمرکز شد و featureهای booking/sessions/teachers/wallet از تعریف‌های تکراری محلی خارج شدند.
 - [ ] حذف duplicate component/API codeهای ایجادشده در migration و علامت‌گذاری Flutter به‌عنوان deprecated reference پس از audit نهایی.
 - [ ] حذف Flutter از workflowها فقط پس از تصمیم صریح برای حذف پوشه `app/`.
 

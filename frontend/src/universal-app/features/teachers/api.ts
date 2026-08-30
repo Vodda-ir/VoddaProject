@@ -1,3 +1,4 @@
+import type { ApiEnvelope } from "../../platform/api";
 import type { PlatformRuntime } from "../../platform/types";
 import {
   parseTeacher,
@@ -15,15 +16,9 @@ export type TeacherSearchParams = {
   offset?: number;
 };
 
-type TeacherListResponse = {
-  data?: unknown;
-};
-
-type TeacherDetailResponse = {
-  data?: {
-    teacher?: unknown;
-    reviews?: unknown;
-  };
+type TeacherDetailData = {
+  teacher?: unknown;
+  reviews?: unknown;
 };
 
 export async function searchTeachers(runtime: PlatformRuntime, params: TeacherSearchParams = {}): Promise<Teacher[]> {
@@ -39,7 +34,7 @@ export async function searchTeachers(runtime: PlatformRuntime, params: TeacherSe
   search.set("limit", String(Math.min(100, Math.max(1, params.limit ?? 50))));
   search.set("offset", String(Math.max(0, params.offset ?? 0)));
 
-  const response = await runtime.request<TeacherListResponse>(`/teachers?${search.toString()}`);
+  const response = await runtime.request<ApiEnvelope>(`/teachers?${search.toString()}`);
   const rows = Array.isArray(response.data) ? response.data : [];
   return rows.map(parseTeacher).filter((teacher) => teacher.id > 0);
 }
@@ -47,7 +42,7 @@ export async function searchTeachers(runtime: PlatformRuntime, params: TeacherSe
 export async function getTeacherDetail(runtime: PlatformRuntime, id: number): Promise<TeacherDetail> {
   if (!Number.isInteger(id) || id <= 0) throw new Error("شناسه استاد نامعتبر است.");
 
-  const response = await runtime.request<TeacherDetailResponse>(`/teachers/${id}`);
+  const response = await runtime.request<ApiEnvelope<TeacherDetailData>>(`/teachers/${id}`);
   const teacher = parseTeacher(response.data?.teacher);
   if (teacher.id <= 0) throw new Error("اطلاعات استاد دریافت نشد.");
 

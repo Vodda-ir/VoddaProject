@@ -1,18 +1,15 @@
+import type { ApiEnvelope } from "../../platform/api";
 import type { PlatformRuntime } from "../../platform/types";
 import { parseLearnerSession, type LearnerSession } from "./types";
 
 export type LearnerSessionsWhen = "upcoming" | "past";
-
-type DataResponse = {
-  data?: unknown;
-};
 
 export async function getLearnerSessions(
   runtime: PlatformRuntime,
   when: LearnerSessionsWhen,
 ): Promise<LearnerSession[]> {
   const search = new URLSearchParams({ when });
-  const response = await runtime.request<DataResponse>(`/sessions?${search.toString()}`);
+  const response = await runtime.request<ApiEnvelope>(`/sessions?${search.toString()}`);
   const rows = Array.isArray(response.data) ? response.data : [];
 
   return rows
@@ -24,7 +21,7 @@ export async function cancelLearnerSession(runtime: PlatformRuntime, sessionId: 
   if (!Number.isInteger(sessionId) || sessionId <= 0) {
     throw new Error("شناسه جلسه نامعتبر است.");
   }
-  return runtime.request<DataResponse>(`/sessions/${sessionId}/cancel`, {
+  return runtime.request<ApiEnvelope>(`/sessions/${sessionId}/cancel`, {
     method: "POST",
   });
 }
@@ -40,7 +37,7 @@ export async function createSessionReview(
     throw new Error("امتیاز باید بین ۱ تا ۵ باشد.");
   }
 
-  return runtime.request<DataResponse>("/reviews", {
+  return runtime.request<ApiEnvelope>("/reviews", {
     method: "POST",
     body: JSON.stringify({
       session_id: input.sessionId,
