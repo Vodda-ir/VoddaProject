@@ -77,7 +77,8 @@
 - [x] parity کامل teacher app با Flutter.
 - [x] helper مرکزی route در Universal App با `appRoutePaths`/`appPath`/`appRouteUrl`/`navigateAppRoute` ایجاد شد و shellها از route name به‌جای path تکراری استفاده می‌کنند.
 - [x] route contract مستقل از `/panel/...`؛ deep-link/refreshهای `/app/...` از catch-all مستقل Next به Universal App resolve می‌شوند و universal source routeهای `/panel` را hardcode نمی‌کند.
-- [x] Capacitor/Vite scaffold با `ir.vodda.vodda`، local `dist` bundle، بدون `server.url`، API base URL محیطی و secure token storage ایجاد شد؛ فقط hooks قابلیت‌های native آینده باقی مانده است.
+- [x] Capacitor/Vite scaffold با `ir.vodda.vodda`، local `dist` bundle، بدون `server.url`، API base URL محیطی و secure token storage ایجاد شد.
+- [x] native capability hook مستقل از Universal Source با `PlatformRuntime.capabilities` ایجاد شد؛ wrapper بومی Camera/Photo Picker را با `@capacitor/camera` تزریق می‌کند و الگوی توسعه capabilityهای بعدی در `docs/native-capabilities.md` مستند است.
 - [ ] آمادگی انتقال از `vodda.ir/app` به `app.vodda.ir` فقط با config/deployment.
 - [ ] تکمیل مستندات و حذف duplicate codeهای مهاجرت.
 

@@ -1,6 +1,7 @@
 import { joinUrl, PlatformHttpError, requestJson } from "./http";
 import type {
   AuthUser,
+  PlatformCapabilities,
   PlatformRequestInit,
   PlatformRuntime,
   SecureTokenStorage,
@@ -10,6 +11,7 @@ import type {
 type NativePlatformOptions = {
   apiBaseUrl: string;
   tokenStorage: SecureTokenStorage;
+  capabilities?: PlatformCapabilities;
 };
 
 type VerifyResponse = {
@@ -23,6 +25,7 @@ type VerifyResponse = {
 export function createNativePlatformRuntime({
   apiBaseUrl,
   tokenStorage,
+  capabilities,
 }: NativePlatformOptions): PlatformRuntime {
   const request = async <T>(path: string, init: PlatformRequestInit = {}) => {
     const headers = new Headers(init.headers);
@@ -45,6 +48,7 @@ export function createNativePlatformRuntime({
   return {
     kind: "native",
     apiBaseUrl,
+    capabilities,
     request,
     async requestOtp(mobile) {
       await requestJson(joinUrl(apiBaseUrl, "/auth/request-otp"), {

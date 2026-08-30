@@ -216,10 +216,10 @@
 - [x] عدم استفاده از `server.url`.
 - [x] native API base URL از env/config.
 - [x] secure storage adapter.
-- [ ] آماده‌سازی hooks برای Camera/Image Picker و قابلیت‌های native آینده.
+- [x] آماده‌سازی hooks برای Camera/Image Picker و قابلیت‌های native آینده.
 - [x] scripts لازم برای `native:dev`, `native:build`, `cap:sync`, `cap:android`, `cap:ios` در package config.
 
-> wrapper مستقل `frontend/native/` از `src/universal-app/entry.tsx` mount می‌کند، `basePath` را برای bundle محلی خالی می‌گذارد، API مستقیم را فقط از `VITE_NATIVE_API_BASE_URL` می‌گیرد و token را با `@aparajita/capacitor-secure-storage` به native Bearer runtime می‌دهد. `vite.config.ts` از asset base نسبی استفاده می‌کند و Capacitor فقط `dist` محلی را load می‌کند.
+> wrapper مستقل `frontend/native/` از `src/universal-app/entry.tsx` mount می‌کند، `basePath` را برای bundle محلی خالی می‌گذارد، API مستقیم را فقط از `VITE_NATIVE_API_BASE_URL` می‌گیرد و token را با `@aparajita/capacitor-secure-storage` به native Bearer runtime می‌دهد. `vite.config.ts` از asset base نسبی استفاده می‌کند و Capacitor فقط `dist` محلی را load می‌کند. قرارداد `PlatformRuntime.capabilities` نیز device capabilityها را بدون import شدن Capacitor در Universal Source تزریق می‌کند؛ implementation فعلی `frontend/native/src/native-capabilities.ts` از `@capacitor/camera` برای Camera/Photo Picker استفاده می‌کند و الگوی توسعه capabilityهای بعدی در `docs/native-capabilities.md` مستند شده است.
 
 ## فاز 8 — آمادگی `app.vodda.ir`
 
