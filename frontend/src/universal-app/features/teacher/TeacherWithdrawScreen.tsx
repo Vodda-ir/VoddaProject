@@ -2,13 +2,13 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { UniversalAppConfig } from "../../config";
+import type { ApiEnvelope } from "../../platform/api";
 import { usePlatform } from "../../platform/context";
 import type { PlatformRuntime } from "../../platform/types";
 import { navigateApp } from "../../router";
 import { Button, Card, EmptyState, ErrorState, LoadingState, colors, radii, spacing, typography } from "../../ui";
 import { getWalletSnapshot } from "../wallet/api";
 
-type DataEnvelope<T> = { data?: T };
 type UnknownRecord = Record<string, unknown>;
 
 type Withdrawal = {
@@ -45,7 +45,7 @@ function parseWithdrawal(value: unknown): Withdrawal | null {
 }
 
 async function getWithdrawals(runtime: PlatformRuntime): Promise<Withdrawal[]> {
-  const response = await runtime.request<DataEnvelope<unknown[]>>("/teacher/withdrawals");
+  const response = await runtime.request<ApiEnvelope<unknown[]>>("/teacher/withdrawals");
   return (response.data ?? []).map(parseWithdrawal).filter((item): item is Withdrawal => item !== null);
 }
 
@@ -53,7 +53,7 @@ async function requestWithdrawal(
   runtime: PlatformRuntime,
   payload: { amount: number; card?: string; sheba?: string },
 ) {
-  await runtime.request<DataEnvelope<unknown>>("/teacher/withdrawals", {
+  await runtime.request<ApiEnvelope<unknown>>("/teacher/withdrawals", {
     method: "POST",
     body: JSON.stringify(payload),
   });
