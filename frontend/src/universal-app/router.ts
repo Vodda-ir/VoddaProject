@@ -29,6 +29,28 @@ export type AppRoute = {
   params: Record<string, string>;
 };
 
+export const appRoutePaths = {
+  home: "/",
+  login: "/login",
+  search: "/search",
+  sessions: "/sessions",
+  wallet: "/wallet",
+  profile: "/profile",
+  "profile-edit": "/profile/edit",
+  "teacher-home": "/t",
+  "teacher-requests": "/t/requests",
+  "teacher-sessions": "/t/sessions",
+  "teacher-services": "/t/services",
+  "teacher-work-times": "/t/work-times",
+  "teacher-wallet": "/t/wallet",
+  "teacher-withdraw": "/t/withdraw",
+  "teacher-profile": "/t/profile",
+  "teacher-reviews": "/t/reviews",
+} as const;
+
+type StaticAppRouteName = keyof typeof appRoutePaths;
+type DynamicAppRouteName = "teacher" | "book";
+
 const listeners = new Set<() => void>();
 let listening = false;
 
@@ -71,24 +93,13 @@ export function resolveAppRoute(
   config: UniversalAppConfig = defaultUniversalAppConfig,
 ): AppRoute {
   const path = stripBasePath(pathname, config).replace(/\/+$/, "") || "/";
-  const staticRoutes: Record<string, AppRouteName> = {
-    "/": "home",
-    "/login": "login",
-    "/search": "search",
-    "/sessions": "sessions",
-    "/wallet": "wallet",
-    "/profile": "profile",
-    "/profile/edit": "profile-edit",
-    "/t": "teacher-home",
-    "/t/requests": "teacher-requests",
-    "/t/sessions": "teacher-sessions",
-    "/t/services": "teacher-services",
-    "/t/work-times": "teacher-work-times",
-    "/t/wallet": "teacher-wallet",
-    "/t/withdraw": "teacher-withdraw",
-    "/t/profile": "teacher-profile",
-    "/t/reviews": "teacher-reviews",
-  };
+  const staticRoutes = Object.entries(appRoutePaths).reduce<Record<string, StaticAppRouteName>>(
+    (routes, [name, routePath]) => {
+      routes[routePath] = name as StaticAppRouteName;
+      return routes;
+    },
+    {},
+  );
   const staticName = staticRoutes[path];
   if (staticName) return { name: staticName, pathname: path, params: {} };
   return (
@@ -98,12 +109,43 @@ export function resolveAppRoute(
   );
 }
 
+export function appPath(name: StaticAppRouteName): string;
+export function appPath(name: DynamicAppRouteName, params: { id: string }): string;
+export function appPath(name: StaticAppRouteName | DynamicAppRouteName, params?: { id: string }) {
+  if (name === "teacher" || name === "book") {
+    const id = params?.id?.trim();
+    if (!id) throw new Error(`Missing route parameter \"id\" for ${name}`);
+    return `/${name}/${encodeURIComponent(id)}`;
+  }
+  return appRoutePaths[name];
+}
+
 export function appUrl(
   path: string,
   config: UniversalAppConfig = defaultUniversalAppConfig,
 ) {
   const normalizedPath = path === "/" ? "" : path.startsWith("/") ? path : `/${path}`;
   return `${config.basePath}${normalizedPath}` || "/";
+}
+
+export function appRouteUrl(
+  name: StaticAppRouteName,
+  config?: UniversalAppConfig,
+): string;
+export function appRouteUrl(
+  name: DynamicAppRouteName,
+  params: { id: string },
+  config?: UniversalAppConfig,
+): string;
+export function appRouteUrl(
+  name: StaticAppRouteName | DynamicAppRouteName,
+  paramsOrConfig?: { id: string } | UniversalAppConfig,
+  maybeConfig: UniversalAppConfig = defaultUniversalAppConfig,
+) {
+  if (name === "teacher" || name === "book") {
+    return appUrl(appPath(name, paramsOrConfig as { id: string }), maybeConfig);
+  }
+  return appUrl(appPath(name), (paramsOrConfig as UniversalAppConfig | undefined) ?? defaultUniversalAppConfig);
 }
 
 export function navigateApp(
@@ -116,6 +158,38 @@ export function navigateApp(
   if (options.replace) window.history.replaceState({}, "", url);
   else window.history.pushState({}, "", url);
   emitRouteChange();
+}
+
+export function navigateAppRoute(
+  name: StaticAppRouteName,
+  config?: UniversalAppConfig,
+  options?: { replace?: boolean },
+): void;
+export function navigateAppRoute(
+  name: DynamicAppRouteName,
+  params: { id: string },
+  config?: UniversalAppConfig,
+  options?: { replace?: boolean },
+): void;
+export function navigateAppRoute(
+  name: StaticAppRouteName | DynamicAppRouteName,
+  paramsOrConfig?: { id: string } | UniversalAppConfig,
+  configOrOptions?: UniversalAppConfig | { replace?: boolean },
+  maybeOptions: { replace?: boolean } = {},
+) {
+  if (name === "teacher" || name === "book") {
+    navigateApp(
+      appPath(name, paramsOrConfig as { id: string }),
+      (configOrOptions as UniversalAppConfig | undefined) ?? defaultUniversalAppConfig,
+      maybeOptions,
+    );
+    return;
+  }
+  navigateApp(
+    appPath(name),
+    (paramsOrConfig as UniversalAppConfig | undefined) ?? defaultUniversalAppConfig,
+    (configOrOptions as { replace?: boolean } | undefined) ?? {},
+  );
 }
 
 export function useAppRoute(config: UniversalAppConfig = defaultUniversalAppConfig) {
