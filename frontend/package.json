@@ -7,7 +7,12 @@
     "build": "next build",
     "start": "next start -p ${PORT:-3421} -H 0.0.0.0",
     "lint": "eslint . --max-warnings=0",
-    "test": "node --test tests/*.test.mjs"
+    "test": "node --test tests/*.test.mjs",
+    "native:dev": "npm --prefix native run dev",
+    "native:build": "npm --prefix native run build",
+    "cap:sync": "npm --prefix native run cap:sync",
+    "cap:android": "npm --prefix native run cap:android",
+    "cap:ios": "npm --prefix native run cap:ios"
   },
   "dependencies": {
     "next": "15.5.20",
