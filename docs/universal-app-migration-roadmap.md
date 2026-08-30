@@ -38,12 +38,12 @@
 - [x] تعریف interface مشترک برای platform runtime.
 - [x] Web adapter برای BFF فعلی و HttpOnly session.
 - [x] Native adapter برای direct Go API.
-- [ ] Secure token storage برای native.
+- [x] Secure token storage برای native.
 - [x] logout/login/session restore مشترک با implementation متفاوت در web/native.
 - [x] API base URL configurable برای development/production/native.
 - [x] حذف نیاز universal app به `getToken()` وب فعلی.
 
-> قرارداد `SecureTokenStorage` و اتصال Bearer در native adapter پیاده شده است؛ implementation امن واقعی آن همراه Capacitor در فاز 7 اضافه می‌شود تا feature code به plugin مشخصی وابسته نشود.
+> `SecureTokenStorage` در wrapper Capacitor با `@aparajita/capacitor-secure-storage` پیاده شده و native adapter همان token را فقط به‌صورت `Authorization: Bearer` روی API مستقیم مصرف می‌کند؛ Web همچنان HttpOnly/BFF باقی مانده است.
 
 ## فاز 2 — Shared UI و Design System
 
@@ -200,24 +200,26 @@
 /app/t/reviews
 ```
 
-- [ ] deep-link داخلی اپ مستقل از `/panel` باشد.
-- [ ] refresh هر route روی Next mount درست resolve شود.
+- [x] deep-link داخلی اپ مستقل از `/panel` باشد.
+- [x] refresh هر route روی Next mount درست resolve شود.
 - [x] helper مرکزی برای ساخت app URL ایجاد شود.
-- [ ] هیچ component مشترکی routeهای `/panel/...` را hardcode نکند.
+- [x] هیچ component مشترکی routeهای `/panel/...` را hardcode نکند.
 
-> قرارداد route در `frontend/src/universal-app/router.ts` متمرکز شده است: `appRoutePaths`، `appPath`، `appRouteUrl` و `navigateAppRoute` مسیرهای static/dynamic را از base path جدا می‌کنند. shellهای learner/teacher نیز به‌جای pathهای تکراری از route name استفاده می‌کنند.
+> قرارداد route در `frontend/src/universal-app/router.ts` متمرکز شده است: `appRoutePaths`، `appPath`، `appRouteUrl` و `navigateAppRoute` مسیرهای static/dynamic را از base path جدا می‌کنند. shellهای learner/teacher به‌جای pathهای تکراری از route name استفاده می‌کنند؛ catch-all مستقل `frontend/src/app/app/[[...path]]/page.tsx` همه deep-linkها و refreshهای `/app/...` را به همان Universal App mount می‌کند و universal source هیچ routeای به `/panel` hardcode نمی‌کند.
 
 ## فاز 7 — Capacitor Scaffold
 
-- [ ] ایجاد `frontend/native/` برای build wrapper.
-- [ ] Vite entry از همان universal source.
-- [ ] `capacitor.config.ts` با `appId = ir.vodda.vodda`.
-- [ ] `webDir` روی local generated bundle.
-- [ ] عدم استفاده از `server.url`.
-- [ ] native API base URL از env/config.
-- [ ] secure storage adapter.
+- [x] ایجاد `frontend/native/` برای build wrapper.
+- [x] Vite entry از همان universal source.
+- [x] `capacitor.config.ts` با `appId = ir.vodda.vodda`.
+- [x] `webDir` روی local generated bundle.
+- [x] عدم استفاده از `server.url`.
+- [x] native API base URL از env/config.
+- [x] secure storage adapter.
 - [ ] آماده‌سازی hooks برای Camera/Image Picker و قابلیت‌های native آینده.
-- [ ] scripts لازم برای `native:dev`, `native:build`, `cap:sync`, `cap:android`, `cap:ios` در package config.
+- [x] scripts لازم برای `native:dev`, `native:build`, `cap:sync`, `cap:android`, `cap:ios` در package config.
+
+> wrapper مستقل `frontend/native/` از `src/universal-app/entry.tsx` mount می‌کند، `basePath` را برای bundle محلی خالی می‌گذارد، API مستقیم را فقط از `VITE_NATIVE_API_BASE_URL` می‌گیرد و token را با `@aparajita/capacitor-secure-storage` به native Bearer runtime می‌دهد. `vite.config.ts` از asset base نسبی استفاده می‌کند و Capacitor فقط `dist` محلی را load می‌کند.
 
 ## فاز 8 — آمادگی `app.vodda.ir`
 
