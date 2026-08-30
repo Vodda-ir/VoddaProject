@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import type { ApiEnvelope } from "../../platform/api";
 import { usePlatform } from "../../platform/context";
 import type { PlatformRuntime } from "../../platform/types";
 import {
@@ -20,7 +21,6 @@ import {
 
 type TeacherSessionsMode = "requests" | "sessions";
 type TeacherSessionsWhen = "pending" | "upcoming" | "past";
-type DataEnvelope<T> = { data?: T };
 type UnknownRecord = Record<string, unknown>;
 
 type TeacherSession = {
@@ -84,23 +84,23 @@ function parseTeacherSession(value: unknown): TeacherSession | null {
 
 async function getTeacherSessions(runtime: PlatformRuntime, when: TeacherSessionsWhen): Promise<TeacherSession[]> {
   const search = new URLSearchParams({ when });
-  const response = await runtime.request<DataEnvelope<unknown[]>>(`/teacher/sessions?${search.toString()}`);
+  const response = await runtime.request<ApiEnvelope<unknown[]>>(`/teacher/sessions?${search.toString()}`);
   return (response.data ?? []).map(parseTeacherSession).filter((item): item is TeacherSession => item !== null);
 }
 
 async function acceptTeacherSession(runtime: PlatformRuntime, sessionId: number) {
-  return runtime.request<DataEnvelope<unknown>>(`/teacher/sessions/${sessionId}/accept`, { method: "POST" });
+  return runtime.request<ApiEnvelope<unknown>>(`/teacher/sessions/${sessionId}/accept`, { method: "POST" });
 }
 
 async function rejectTeacherSession(runtime: PlatformRuntime, sessionId: number, reason: string) {
-  return runtime.request<DataEnvelope<unknown>>(`/teacher/sessions/${sessionId}/reject`, {
+  return runtime.request<ApiEnvelope<unknown>>(`/teacher/sessions/${sessionId}/reject`, {
     method: "POST",
     body: JSON.stringify({ reason: reason.trim() }),
   });
 }
 
 async function completeTeacherSession(runtime: PlatformRuntime, sessionId: number) {
-  return runtime.request<DataEnvelope<unknown>>(`/teacher/sessions/${sessionId}/complete`, { method: "POST" });
+  return runtime.request<ApiEnvelope<unknown>>(`/teacher/sessions/${sessionId}/complete`, { method: "POST" });
 }
 
 function faDigits(value: string | number): string {
