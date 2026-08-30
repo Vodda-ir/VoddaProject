@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import type { ApiEnvelope } from "../../platform/api";
 import { usePlatform } from "../../platform/context";
 import type { PlatformRuntime } from "../../platform/types";
 import {
@@ -17,7 +18,6 @@ import {
   typography,
 } from "../../ui";
 
-type DataEnvelope<T> = { data?: T };
 type UnknownRecord = Record<string, unknown>;
 
 type TeacherService = {
@@ -64,14 +64,14 @@ function parseService(value: unknown): TeacherService | null {
 }
 
 async function getServices(runtime: PlatformRuntime): Promise<TeacherService[]> {
-  const response = await runtime.request<DataEnvelope<UnknownRecord>>("/teacher/me");
+  const response = await runtime.request<ApiEnvelope<UnknownRecord>>("/teacher/me");
   const payload = record(response.data);
   const services = Array.isArray(payload?.services) ? payload.services : [];
   return services.map(parseService).filter((item): item is TeacherService => item !== null);
 }
 
 async function createService(runtime: PlatformRuntime, draft: { title: string; duration: number; price: number }) {
-  return runtime.request<DataEnvelope<unknown>>("/teacher/services", {
+  return runtime.request<ApiEnvelope<unknown>>("/teacher/services", {
     method: "POST",
     body: JSON.stringify({ ...draft, icon: "" }),
   });
@@ -82,14 +82,14 @@ async function updateService(
   id: number,
   draft: Partial<{ title: string; duration: number; price: number; active: false }>,
 ) {
-  return runtime.request<DataEnvelope<unknown>>(`/teacher/services/${id}`, {
+  return runtime.request<ApiEnvelope<unknown>>(`/teacher/services/${id}`, {
     method: "PUT",
     body: JSON.stringify(draft),
   });
 }
 
 async function deleteService(runtime: PlatformRuntime, id: number) {
-  return runtime.request<DataEnvelope<unknown>>(`/teacher/services/${id}`, { method: "DELETE" });
+  return runtime.request<ApiEnvelope<unknown>>(`/teacher/services/${id}`, { method: "DELETE" });
 }
 
 function faDigits(value: string | number): string {
