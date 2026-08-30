@@ -151,9 +151,11 @@
 > `features/teacher/TeacherServicesScreen.tsx` route `/app/t/services` را از `GET /teacher/me -> data.services` پر می‌کند و create/edit/delete را روی `/teacher/services` انجام می‌دهد. deactivate فقط `active:false` می‌فرستد و هیچ مسیر یا کنترل client-side برای `active:true` وجود ندارد؛ service جدید یا ویرایش‌شده تا moderation مدیر قابل رزرو نیست. validation مدت ۱۰ تا ۲۴۰ دقیقه و قیمت مثبت با مرجع Flutter هم‌راستاست.
 
 ### Work Times
-- [ ] list.
-- [ ] create/update/delete طبق API فعلی.
-- [ ] validation روز/ساعت.
+- [x] list.
+- [x] create/update/delete طبق API فعلی.
+- [x] validation روز/ساعت.
+
+> `features/teacher/TeacherWorkTimesScreen.tsx` route `/app/t/work-times` را از `GET /teacher/work-times` پر می‌کند و create/update/delete را روی endpointهای رسمی `POST /teacher/work-times` و `PUT/DELETE /teacher/work-times/:id` انجام می‌دهد. روز فقط ۰ تا ۶ پذیرفته می‌شود، ساعت با قالب ۲۴ ساعته اعتبارسنجی می‌شود، پایان باید بعد از شروع باشد و overlap در همان روز پیش از mutation رد می‌شود؛ backend نیز مرجع نهایی validation باقی می‌ماند.
 
 ### Wallet & Withdrawals
 - [ ] موجودی و transactionها.
