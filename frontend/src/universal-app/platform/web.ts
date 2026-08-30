@@ -27,7 +27,7 @@ export function createWebPlatformRuntime(
   const request = <T>(path: string, init?: PlatformRequestInit) =>
     requestJson<T>(joinUrl(apiBaseUrl, path), {
       ...init,
-      credentials: "same-origin",
+      credentials: "include",
     });
 
   return {
@@ -37,7 +37,7 @@ export function createWebPlatformRuntime(
     async requestOtp(mobile) {
       await requestJson(joinUrl(authBaseUrl, "/request-otp"), {
         method: "POST",
-        credentials: "same-origin",
+        credentials: "include",
         body: JSON.stringify({ mobile }),
       });
     },
@@ -46,7 +46,7 @@ export function createWebPlatformRuntime(
         joinUrl(authBaseUrl, "/verify-otp"),
         {
           method: "POST",
-          credentials: "same-origin",
+          credentials: "include",
           body: JSON.stringify({ mobile, code }),
         },
       );
@@ -69,7 +69,7 @@ export function createWebPlatformRuntime(
     async logout() {
       await requestJson(joinUrl(authBaseUrl, "/logout"), {
         method: "POST",
-        credentials: "same-origin",
+        credentials: "include",
       });
     },
   };
