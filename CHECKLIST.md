@@ -68,6 +68,7 @@
 - [x] Wallet قرآن‌آموز در `/app/wallet` با موجودی واقعی از `/me`، تاریخچه `/wallet/transactions` و بدون CTA شارژ تا اتصال درگاه واقعی پیاده شده است.
 - [x] Profile قرآن‌آموز در `/app/profile` با اطلاعات session، لینک wallet، logout، ویرایش نام/شهر/bio، upload آواتار و role switch برای teacher/admin parity شده است.
 - [x] parity کامل learner app با Flutter.
+- [x] Dashboard استاد در `/app/t` با اطلاعات واقعی `/me`، موجودی/امتیاز/تعداد نظر و جلسه، pending requests و جلسه بعدی از `/teacher/sessions` و زمان رسمی `local_*` پیاده شد؛ availability toggle چون endpoint فعلی ندارد عمداً اضافه نشده است.
 - [ ] parity کامل teacher app با Flutter.
 - [ ] route contract مستقل از `/panel/...`.
 - [ ] Capacitor/Vite scaffold با `ir.vodda.vodda` و local bundle.

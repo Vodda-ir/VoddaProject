@@ -10,6 +10,7 @@ import { LearnerHomeScreen } from "./features/home/LearnerHomeScreen";
 import { LearnerProfileScreen } from "./features/profile/LearnerProfileScreen";
 import { LearnerSearchScreen } from "./features/search/LearnerSearchScreen";
 import { LearnerSessionsScreen } from "./features/sessions/LearnerSessionsScreen";
+import { TeacherDashboardScreen } from "./features/teacher/TeacherDashboardScreen";
 import { LearnerTeacherProfileScreen } from "./features/teachers/LearnerTeacherProfileScreen";
 import { LearnerWalletScreen } from "./features/wallet/LearnerWalletScreen";
 import { PlatformProvider } from "./platform/context";
@@ -123,6 +124,8 @@ function UniversalAppContent({ config, runtime }: { config: UniversalAppConfig; 
     <LearnerWalletScreen />
   ) : route.name === "profile" ? (
     <LearnerProfileScreen config={config} />
+  ) : route.name === "teacher-home" ? (
+    <TeacherDashboardScreen config={config} />
   ) : (
     <RoutePlaceholder routeName={route.name} pathname={route.pathname} config={config} />
   );

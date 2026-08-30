@@ -150,10 +150,12 @@
 ## فاز 5 — Teacher App Parity
 
 ### Dashboard
-- [ ] اطلاعات واقعی استاد.
-- [ ] خلاصه جلسات.
-- [ ] موجودی/امتیاز/review count واقعی.
-- [ ] availability toggle در صورت پشتیبانی endpoint فعلی.
+- [x] اطلاعات واقعی استاد.
+- [x] خلاصه جلسات.
+- [x] موجودی/امتیاز/review count واقعی.
+- [x] availability toggle در صورت پشتیبانی endpoint فعلی.
+
+> `features/teacher/TeacherDashboardScreen.tsx` به route واقعی `/app/t` متصل شد و مطابق Flutter از `GET /me` و `GET /teacher/sessions?when=pending|upcoming` استفاده می‌کند. موجودی، امتیاز، تعداد نظر و تعداد جلسه فقط از داده واقعی حساب نمایش داده می‌شوند، درخواست‌های pending و نزدیک‌ترین جلسه confirmed از sessionهای واقعی ساخته می‌شوند و زمان جلسه فقط از `local_date/local_start/local_end` رسمی backend نمایش داده می‌شود. در router فعلی backend endpointی برای تغییر availability استاد وجود ندارد؛ بنابراین checkbox مربوط به toggle به‌صورت «در صورت پشتیبانی endpoint» بسته شده و هیچ کنترل یا mutation ساختگی اضافه نشده است.
 
 ### Requests & Sessions
 - [ ] درخواست‌های جلسه.
