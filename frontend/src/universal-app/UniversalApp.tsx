@@ -11,6 +11,7 @@ import { LearnerProfileScreen } from "./features/profile/LearnerProfileScreen";
 import { LearnerSearchScreen } from "./features/search/LearnerSearchScreen";
 import { LearnerSessionsScreen } from "./features/sessions/LearnerSessionsScreen";
 import { TeacherDashboardScreen } from "./features/teacher/TeacherDashboardScreen";
+import { TeacherServicesScreen } from "./features/teacher/TeacherServicesScreen";
 import { TeacherSessionsScreen } from "./features/teacher/TeacherSessionsScreen";
 import { LearnerTeacherProfileScreen } from "./features/teachers/LearnerTeacherProfileScreen";
 import { LearnerWalletScreen } from "./features/wallet/LearnerWalletScreen";
@@ -131,6 +132,8 @@ function UniversalAppContent({ config, runtime }: { config: UniversalAppConfig; 
     <TeacherSessionsScreen mode="requests" />
   ) : route.name === "teacher-sessions" ? (
     <TeacherSessionsScreen mode="sessions" />
+  ) : route.name === "teacher-services" ? (
+    <TeacherServicesScreen />
   ) : (
     <RoutePlaceholder routeName={route.name} pathname={route.pathname} config={config} />
   );
