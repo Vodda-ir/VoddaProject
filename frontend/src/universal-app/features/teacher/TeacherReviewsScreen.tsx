@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import type { ApiEnvelope } from "../../platform/api";
 import { usePlatform } from "../../platform/context";
 import {
   Avatar,
@@ -13,8 +14,6 @@ import {
   spacing,
   typography,
 } from "../../ui";
-
-type DataEnvelope<T> = { data?: T };
 
 type Review = {
   id: number;
@@ -77,7 +76,7 @@ export function TeacherReviewsScreen() {
     setLoading(true);
     setError(null);
     try {
-      const response = await runtime.request<DataEnvelope<unknown[]>>("/teacher/reviews");
+      const response = await runtime.request<ApiEnvelope<unknown[]>>("/teacher/reviews");
       setReviews((response.data ?? []).map(parseReview).filter((item): item is Review => item !== null));
     } catch (loadError) {
       setReviews([]);
