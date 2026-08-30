@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { UniversalAppConfig } from "../../config";
+import type { ApiEnvelope } from "../../platform/api";
 import { usePlatform } from "../../platform/context";
 import type { PlatformRuntime } from "../../platform/types";
 import { navigateApp } from "../../router";
@@ -17,8 +18,6 @@ import {
   spacing,
   typography,
 } from "../../ui";
-
-type DataEnvelope<T> = { data?: T };
 
 type TeacherSummary = {
   id: number;
@@ -100,9 +99,9 @@ function parseTeacherSession(value: unknown): TeacherSession | null {
 
 async function getTeacherDashboardSnapshot(runtime: PlatformRuntime): Promise<DashboardSnapshot> {
   const [meResponse, pendingResponse, upcomingResponse] = await Promise.all([
-    runtime.request<DataEnvelope<unknown>>("/me"),
-    runtime.request<DataEnvelope<unknown[]>>("/teacher/sessions?when=pending"),
-    runtime.request<DataEnvelope<unknown[]>>("/teacher/sessions?when=upcoming"),
+    runtime.request<ApiEnvelope<unknown>>("/me"),
+    runtime.request<ApiEnvelope<unknown[]>>("/teacher/sessions?when=pending"),
+    runtime.request<ApiEnvelope<unknown[]>>("/teacher/sessions?when=upcoming"),
   ]);
 
   const teacher = parseTeacherSummary(meResponse.data);
