@@ -81,7 +81,10 @@
 - [x] native capability hook مستقل از Universal Source با `PlatformRuntime.capabilities` ایجاد شد؛ wrapper بومی Camera/Photo Picker را با `@capacitor/camera` تزریق می‌کند و الگوی توسعه capabilityهای بعدی در `docs/native-capabilities.md` مستند است.
 - [x] deployment config وب برای base path و BFF/auth origin محیطی شد؛ Web adapter با HttpOnly/BFF و `credentials: include` برای same-origin یا same-site subdomain آماده است و قرارداد دو حالت `/app` و `app.vodda.ir` در `docs/universal-app-web-deployment.md` مستند شد.
 - [x] audit نهایی asset path/hostname: Universal Source هیچ asset محلی وابسته به `/app` و هیچ hostname بیزینسی hardcode نمی‌کند و native Vite از asset base نسبی `./` استفاده می‌کند؛ فاز ۸ آماده انتقال config/deployment است.
-- [ ] تکمیل مستندات و حذف duplicate codeهای مهاجرت.
+- [x] `AGENTS.md` و `README.md` با معماری Universal App، مرزهای Next/Capacitor، route contract و مدل auth متفاوت web/native همگام شده‌اند و وضعیت فازهای ۰ تا ۸ در این checklist ثبت شده است.
+- [ ] مستند کردن mapping دقیق Flutter → Universal React، platform adapter contract و تفاوت auth web/native.
+- [ ] حذف duplicate component/API codeهای ایجادشده در migration و علامت‌گذاری Flutter به‌عنوان deprecated reference پس از audit نهایی.
+- [ ] حذف Flutter از workflowها فقط پس از تصمیم صریح برای حذف پوشه `app/`.
 
 > در scope فعلی، build/test/npm install/Android/iOS generation شرط تکمیل این رودمپ نیست و اجرا نمی‌شود.
 
