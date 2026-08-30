@@ -158,10 +158,12 @@
 > `features/teacher/TeacherWorkTimesScreen.tsx` route `/app/t/work-times` را از `GET /teacher/work-times` پر می‌کند و create/update/delete را روی endpointهای رسمی `POST /teacher/work-times` و `PUT/DELETE /teacher/work-times/:id` انجام می‌دهد. روز فقط ۰ تا ۶ پذیرفته می‌شود، ساعت با قالب ۲۴ ساعته اعتبارسنجی می‌شود، پایان باید بعد از شروع باشد و overlap در همان روز پیش از mutation رد می‌شود؛ backend نیز مرجع نهایی validation باقی می‌ماند.
 
 ### Wallet & Withdrawals
-- [ ] موجودی و transactionها.
-- [ ] withdrawal history.
-- [ ] درخواست برداشت.
-- [ ] validation کارت 16 رقمی / شبا `IR` + 24 رقم.
+- [x] موجودی و transactionها.
+- [x] withdrawal history.
+- [x] درخواست برداشت.
+- [x] validation کارت 16 رقمی / شبا `IR` + 24 رقم.
+
+> `TeacherWalletScreen.tsx` برای `/app/t/wallet` موجودی `/me` و ledger مشترک `/wallet/transactions` را مصرف می‌کند و به flow برداشت واقعی لینک می‌دهد. `TeacherWithdrawScreen.tsx` در `/app/t/withdraw` تاریخچه `GET /teacher/withdrawals` و ثبت `POST /teacher/withdrawals` را پیاده می‌کند؛ مبلغ مثبت و حداکثر موجودی، کارت دقیقاً ۱۶ رقم و شبا `IR` + ۲۴ رقم پیش از mutation کنترل می‌شوند و backend همچنان مرجع نهایی validation و رزرو وجه است.
 
 ### Teacher Profile & Reviews
 - [ ] پروفایل استاد.
