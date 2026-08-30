@@ -68,12 +68,13 @@
 - [x] Wallet قرآن‌آموز در `/app/wallet` با موجودی واقعی از `/me`، تاریخچه `/wallet/transactions` و بدون CTA شارژ تا اتصال درگاه واقعی پیاده شده است.
 - [x] Profile قرآن‌آموز در `/app/profile` با اطلاعات session، لینک wallet، logout، ویرایش نام/شهر/bio، upload آواتار و role switch برای teacher/admin parity شده است.
 - [x] parity کامل learner app با Flutter.
-- [x] Dashboard استاد در `/app/t` با اطلاعات واقعی `/me`، موجودی/امتیاز/تعداد نظر و جلسه، pending requests و جلسه بعدی از `/teacher/sessions` و زمان رسمی `local_*` پیاده شد؛ availability toggle چون endpoint فعلی ندارد عمداً اضافه نشده است.
+- [x] Dashboard استاد در `/app/t` با اطلاعات واقعی `/me`، موجودی/امتیاز/تعداد نظر و جلسه، pending requests و جلسه بعدی از `/teacher/sessions` و زمان رسمی `local_*` پیاده شد؛ availability واقعی از `PUT /teacher/me` پشتیبانی می‌شود و کنترل آن در پروفایل استاد قرار دارد.
 - [x] Requests & Sessions استاد در `/app/t/requests` و `/app/t/sessions` با pending/upcoming/past واقعی، accept، reject با reason اجباری، complete با confirmation، refresh پس از mutation و نمایش صرفاً `local_*` رسمی backend پیاده شد.
 - [x] Services استاد در `/app/t/services` با list واقعی از `/teacher/me`، create/edit/delete روی `/teacher/services`، deactivate فقط با `active:false`، validation مدت ۱۰ تا ۲۴۰ دقیقه و حفظ moderation بدون self-approve پیاده شد.
 - [x] Work Times استاد در `/app/t/work-times` با list واقعی `/teacher/work-times`، create/update/delete روی endpointهای رسمی، validation روز ۰ تا ۶، ساعت ۲۴ ساعته، پایان بعد از شروع و جلوگیری از overlap همان روز پیاده شد.
 - [x] Wallet & Withdrawals استاد در `/app/t/wallet` و `/app/t/withdraw` با موجودی و transaction واقعی، تاریخچه برداشت، ثبت درخواست و validation کارت ۱۶ رقمی/شبا `IR` + ۲۴ رقم پیاده شد.
-- [ ] parity کامل teacher app با Flutter.
+- [x] Teacher Profile & Reviews استاد در `/app/t/profile` و `/app/t/reviews` با اطلاعات واقعی `/me` و `/teacher/me`، ویرایش فقط فیلدهای مجاز، availability واقعی، reviewهای persisted و role switch به learner پیاده شد.
+- [x] parity کامل teacher app با Flutter.
 - [ ] route contract مستقل از `/panel/...`.
 - [ ] Capacitor/Vite scaffold با `ir.vodda.vodda` و local bundle.
 - [ ] آمادگی انتقال از `vodda.ir/app` به `app.vodda.ir` فقط با config/deployment.
