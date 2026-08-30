@@ -1,6 +1,6 @@
 import type { CSSProperties, MouseEvent, ReactNode } from "react";
 import type { UniversalAppConfig } from "../config";
-import { appUrl, navigateApp, type AppRouteName } from "../router";
+import { appRouteUrl, navigateAppRoute, type AppRouteName } from "../router";
 import { Icon } from "./Icon";
 import { colors, radii, shadows, spacing, typography } from "./theme";
 
@@ -8,7 +8,7 @@ type IconName = Parameters<typeof Icon>[0]["name"];
 
 type NavigationItem = {
   label: string;
-  path: string;
+  target: Exclude<AppRouteName, "teacher" | "book" | "not-found">;
   icon: IconName;
   routes: AppRouteName[];
 };
@@ -21,19 +21,19 @@ type AppShellProps = {
 };
 
 const learnerNavigation: NavigationItem[] = [
-  { label: "خانه", path: "/", icon: "home", routes: ["home"] },
-  { label: "جستجو", path: "/search", icon: "search", routes: ["search", "teacher", "book"] },
-  { label: "جلسات", path: "/sessions", icon: "calendar", routes: ["sessions"] },
-  { label: "کیف پول", path: "/wallet", icon: "wallet", routes: ["wallet"] },
-  { label: "پروفایل", path: "/profile", icon: "user", routes: ["profile", "profile-edit"] },
+  { label: "خانه", target: "home", icon: "home", routes: ["home"] },
+  { label: "جستجو", target: "search", icon: "search", routes: ["search", "teacher", "book"] },
+  { label: "جلسات", target: "sessions", icon: "calendar", routes: ["sessions"] },
+  { label: "کیف پول", target: "wallet", icon: "wallet", routes: ["wallet"] },
+  { label: "پروفایل", target: "profile", icon: "user", routes: ["profile", "profile-edit"] },
 ];
 
 const teacherNavigation: NavigationItem[] = [
-  { label: "داشبورد", path: "/t", icon: "home", routes: ["teacher-home"] },
-  { label: "درخواست‌ها", path: "/t/requests", icon: "bell", routes: ["teacher-requests"] },
-  { label: "جلسات", path: "/t/sessions", icon: "calendar", routes: ["teacher-sessions"] },
-  { label: "کیف پول", path: "/t/wallet", icon: "wallet", routes: ["teacher-wallet", "teacher-withdraw"] },
-  { label: "پروفایل", path: "/t/profile", icon: "user", routes: ["teacher-profile", "teacher-reviews", "teacher-services", "teacher-work-times"] },
+  { label: "داشبورد", target: "teacher-home", icon: "home", routes: ["teacher-home"] },
+  { label: "درخواست‌ها", target: "teacher-requests", icon: "bell", routes: ["teacher-requests"] },
+  { label: "جلسات", target: "teacher-sessions", icon: "calendar", routes: ["teacher-sessions"] },
+  { label: "کیف پول", target: "teacher-wallet", icon: "wallet", routes: ["teacher-wallet", "teacher-withdraw"] },
+  { label: "پروفایل", target: "teacher-profile", icon: "user", routes: ["teacher-profile", "teacher-reviews", "teacher-services", "teacher-work-times"] },
 ];
 
 const rootStyle: CSSProperties = {
@@ -60,10 +60,14 @@ const contentStyle: CSSProperties = {
   paddingBottom: `calc(92px + env(safe-area-inset-bottom))`,
 };
 
-function navigate(event: MouseEvent<HTMLAnchorElement>, path: string, config: UniversalAppConfig) {
+function navigate(
+  event: MouseEvent<HTMLAnchorElement>,
+  target: NavigationItem["target"],
+  config: UniversalAppConfig,
+) {
   if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
   event.preventDefault();
-  navigateApp(path, config);
+  navigateAppRoute(target, config);
 }
 
 function BottomNavigation({
@@ -102,10 +106,10 @@ function BottomNavigation({
         const active = item.routes.includes(routeName);
         return (
           <a
-            key={item.path}
-            href={appUrl(item.path, config)}
+            key={item.target}
+            href={appRouteUrl(item.target, config)}
             aria-current={active ? "page" : undefined}
-            onClick={(event) => navigate(event, item.path, config)}
+            onClick={(event) => navigate(event, item.target, config)}
             style={{
               minWidth: 0,
               minHeight: 54,
