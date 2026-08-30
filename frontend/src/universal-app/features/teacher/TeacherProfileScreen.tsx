@@ -2,6 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import type { UniversalAppConfig } from "../../config";
+import type { ApiEnvelope } from "../../platform/api";
 import { usePlatform } from "../../platform/context";
 import { navigateApp } from "../../router";
 import {
@@ -16,8 +17,6 @@ import {
   spacing,
   typography,
 } from "../../ui";
-
-type DataEnvelope<T> = { data?: T };
 
 type UserProfile = {
   name: string;
@@ -177,8 +176,8 @@ export function TeacherProfileScreen({ config }: { config: UniversalAppConfig })
     setError(null);
     try {
       const [meResponse, teacherResponse] = await Promise.all([
-        runtime.request<DataEnvelope<unknown>>("/me"),
-        runtime.request<DataEnvelope<unknown>>("/teacher/me"),
+        runtime.request<ApiEnvelope<unknown>>("/me"),
+        runtime.request<ApiEnvelope<unknown>>("/teacher/me"),
       ]);
       const nextUser = parseUser(meResponse.data);
       const nextTeacher = parseTeacher(teacherResponse.data);
@@ -228,7 +227,7 @@ export function TeacherProfileScreen({ config }: { config: UniversalAppConfig })
     setSaving(true);
     setNotice(null);
     try {
-      const response = await runtime.request<DataEnvelope<unknown>>("/teacher/me", {
+      const response = await runtime.request<ApiEnvelope<unknown>>("/teacher/me", {
         method: "PUT",
         body: JSON.stringify(payload),
       });
@@ -249,7 +248,7 @@ export function TeacherProfileScreen({ config }: { config: UniversalAppConfig })
     setAvailabilitySaving(true);
     setNotice(null);
     try {
-      const response = await runtime.request<DataEnvelope<unknown>>("/teacher/me", {
+      const response = await runtime.request<ApiEnvelope<unknown>>("/teacher/me", {
         method: "PUT",
         body: JSON.stringify({ available: nextValue }),
       });
