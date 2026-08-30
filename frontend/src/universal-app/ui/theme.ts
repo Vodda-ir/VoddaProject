@@ -12,6 +12,7 @@ export const colors = {
   sand100: "#f4f0e7",
   sand150: "#ede8db",
   sand200: "#e4ddcc",
+  line: "#e4ddcc",
   surface: "#ffffff",
   surfaceWarm: "#fcfaf4",
   olive900: "#2e3622",
