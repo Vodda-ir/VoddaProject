@@ -234,7 +234,7 @@
 
 ## فاز 9 — Cleanup کدنویسی و Documentation
 
-- [ ] به‌روزرسانی `AGENTS.md` با معماری جدید.
+- [x] به‌روزرسانی `AGENTS.md` با معماری جدید.
 - [ ] به‌روزرسانی `README.md`.
 - [ ] به‌روزرسانی `CHECKLIST.md`.
 - [ ] مستند کردن mapping Flutter → Universal React.
@@ -243,6 +243,8 @@
 - [ ] حذف duplicate component/API codeهای ایجادشده در طول migration.
 - [ ] علامت‌گذاری Flutter به‌عنوان deprecated reference بعد از تکمیل parity کدنویسی.
 - [ ] حذف Flutter از workflowها فقط پس از تصمیم صریح برای حذف پوشه `app/`.
+
+> `AGENTS.md` اکنون Universal App را source اصلی migration معرفی می‌کند و مرزهای `frontend/src/universal-app/`، Next host، Capacitor wrapper، Flutter reference، route contract و تفاوت اجباری auth وب/native را برای agentهای بعدی صریح می‌کند.
 
 ---
 
