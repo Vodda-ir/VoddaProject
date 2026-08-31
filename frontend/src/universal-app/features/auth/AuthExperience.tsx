@@ -3,11 +3,11 @@
 import { useEffect, useMemo, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import type { UniversalAppConfig } from "../../config";
-import { PlatformHttpError } from "../../platform/http";
 import { usePlatform } from "../../platform/context";
 import type { AuthUser } from "../../platform/types";
 import { navigateApp, type AppRouteName } from "../../router";
 import { Button, Card, Input, colors, radii, spacing, typography } from "../../ui";
+import { messageOf } from "../../ui/errorMessage";
 
 function normalizeDigits(value: string) {
   return value
@@ -21,12 +21,6 @@ function normalizedMobile(value: string) {
 
 function normalizedOtp(value: string) {
   return normalizeDigits(value).replace(/\D/g, "").slice(0, 6);
-}
-
-function errorMessage(error: unknown) {
-  if (error instanceof PlatformHttpError) return error.message;
-  if (error instanceof Error && error.message) return error.message;
-  return "ارتباط با سرور برقرار نشد. دوباره تلاش کنید.";
 }
 
 const teacherOnlyRoutes = new Set<AppRouteName>([
@@ -173,7 +167,7 @@ export function LoginScreen({ config }: LoginScreenProps) {
       setCodeSent(true);
       setCode("");
     } catch (requestError) {
-      setError(errorMessage(requestError));
+      setError(messageOf(requestError, "ارتباط با سرور برقرار نشد. دوباره تلاش کنید."));
     } finally {
       setLoading(null);
     }
@@ -194,7 +188,7 @@ export function LoginScreen({ config }: LoginScreenProps) {
         replace: true,
       });
     } catch (verifyError) {
-      setError(errorMessage(verifyError));
+      setError(messageOf(verifyError, "ارتباط با سرور برقرار نشد. دوباره تلاش کنید."));
     } finally {
       setLoading(null);
     }
