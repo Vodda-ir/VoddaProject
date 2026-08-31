@@ -86,6 +86,7 @@
 - [x] platform adapter contract در [`docs/platform-adapter-contract.md`](docs/platform-adapter-contract.md) مستند شد؛ مرز `PlatformRuntime`، request/session lifecycle، error contract، secure storage و capability injection را مشخص می‌کند.
 - [x] تفاوت auth web/native در [`docs/auth-web-native.md`](docs/auth-web-native.md) مستند شد؛ وب فقط HttpOnly cookie + BFF و native فقط secure token + Bearer روی Go API مستقیم باقی می‌ماند.
 - [x] اولین بسته duplicate API cleanup: envelope مشترک پاسخ `data` در `frontend/src/universal-app/platform/api.ts` متمرکز شد و featureهای booking/sessions/teachers/wallet از تعریف‌های تکراری محلی خارج شدند.
+- [x] بسته duplicate component cleanup کیف پول: کارت تراکنش و تبدیل ارقام مشترک learner/teacher در `features/wallet/WalletTransactionCard.tsx` متمرکز شد و هر دو screen همان component را مصرف می‌کنند.
 - [ ] حذف duplicate component/API codeهای ایجادشده در migration و علامت‌گذاری Flutter به‌عنوان deprecated reference پس از audit نهایی.
 - [ ] حذف Flutter از workflowها فقط پس از تصمیم صریح برای حذف پوشه `app/`.
 
