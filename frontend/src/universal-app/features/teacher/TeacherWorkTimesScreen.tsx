@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { ApiEnvelope } from "../../platform/api";
+import { asArray, asInteger, asRecord, asString, type ApiEnvelope } from "../../platform/api";
 import { usePlatform } from "../../platform/context";
 import type { PlatformRuntime } from "../../platform/types";
 import {
@@ -19,8 +19,6 @@ import {
 import { messageOf } from "../../ui/errorMessage";
 import { toFaDigits } from "../wallet/WalletTransactionCard";
 
-type UnknownRecord = Record<string, unknown>;
-
 type WorkTime = {
   id: number;
   weekday: number;
@@ -37,35 +35,20 @@ type WorkTimeDraft = {
 const days = ["شنبه", "یکشنبه", "دوشنبه", "سه‌شنبه", "چهارشنبه", "پنج‌شنبه", "جمعه"];
 const timePattern = /^([01]\d|2[0-3]):[0-5]\d$/;
 
-function record(value: unknown): UnknownRecord | null {
-  return value && typeof value === "object" && !Array.isArray(value) ? (value as UnknownRecord) : null;
-}
-
-function integer(value: unknown, fallback = 0): number {
-  if (typeof value === "number" && Number.isFinite(value)) return Math.trunc(value);
-  const parsed = Number.parseInt(String(value ?? ""), 10);
-  return Number.isFinite(parsed) ? parsed : fallback;
-}
-
-function text(value: unknown, fallback = ""): string {
-  return typeof value === "string" ? value : fallback;
-}
-
 function parseWorkTime(value: unknown): WorkTime | null {
-  const row = record(value);
+  const row = asRecord(value);
   if (!row || row.active === false) return null;
-  const id = integer(row.id);
-  const weekday = integer(row.weekday, -1);
-  const from = text(row.from);
-  const to = text(row.to);
+  const id = asInteger(row.id);
+  const weekday = asInteger(row.weekday, -1);
+  const from = asString(row.from);
+  const to = asString(row.to);
   if (id <= 0 || weekday < 0 || weekday > 6 || !timePattern.test(from) || !timePattern.test(to)) return null;
   return { id, weekday, from, to };
 }
 
 async function getWorkTimes(runtime: PlatformRuntime): Promise<WorkTime[]> {
   const response = await runtime.request<ApiEnvelope<unknown[]>>("/teacher/work-times");
-  const rows = Array.isArray(response.data) ? response.data : [];
-  return rows
+  return asArray(response.data)
     .map(parseWorkTime)
     .filter((item): item is WorkTime => item !== null)
     .sort((left, right) => left.weekday - right.weekday || left.from.localeCompare(right.from));
