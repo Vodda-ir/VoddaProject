@@ -3,16 +3,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { usePlatform } from "../../platform/context";
 import { Card, EmptyState, ErrorState, LoadingState, Button, colors, radii, shadows, spacing, typography } from "../../ui";
+import { messageOf } from "../../ui/errorMessage";
 import { getWalletSnapshot } from "./api";
 import type { WalletTransaction } from "./types";
 import { toFaDigits, WalletTransactionCard } from "./WalletTransactionCard";
 
 function faNumber(value: number): string {
   return toFaDigits(new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(value));
-}
-
-function messageOf(error: unknown): string {
-  return error instanceof Error && error.message ? error.message : "خطایی رخ داد. دوباره تلاش کنید.";
 }
 
 export function LearnerWalletScreen() {

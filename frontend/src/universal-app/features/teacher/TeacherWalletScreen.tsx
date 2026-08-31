@@ -5,16 +5,13 @@ import type { UniversalAppConfig } from "../../config";
 import { usePlatform } from "../../platform/context";
 import { navigateApp } from "../../router";
 import { Button, Card, EmptyState, ErrorState, LoadingState, colors, radii, shadows, spacing, typography } from "../../ui";
+import { messageOf } from "../../ui/errorMessage";
 import { getWalletSnapshot } from "../wallet/api";
 import type { WalletTransaction } from "../wallet/types";
 import { toFaDigits, WalletTransactionCard } from "../wallet/WalletTransactionCard";
 
 function money(value: number): string {
   return toFaDigits(Math.trunc(value).toLocaleString("en-US"));
-}
-
-function messageOf(error: unknown): string {
-  return error instanceof Error && error.message ? error.message : "خطایی رخ داد. دوباره تلاش کنید.";
 }
 
 export function TeacherWalletScreen({ config }: { config: UniversalAppConfig }) {
