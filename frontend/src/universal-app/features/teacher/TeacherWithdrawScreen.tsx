@@ -2,16 +2,14 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { UniversalAppConfig } from "../../config";
-import type { ApiEnvelope } from "../../platform/api";
+import { asArray, asNumber, asRecord, asString, type ApiEnvelope } from "../../platform/api";
 import { usePlatform } from "../../platform/context";
 import type { PlatformRuntime } from "../../platform/types";
 import { navigateApp } from "../../router";
 import { Button, Card, EmptyState, ErrorState, LoadingState, colors, radii, spacing, typography } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
 import { getWalletSnapshot } from "../wallet/api";
-import { toFaDigits } from "../wallet/WalletTransactionCard";
-
-type UnknownRecord = Record<string, unknown>;
+import { formatWalletAmount, toFaDigits } from "../wallet/WalletTransactionCard";
 
 type Withdrawal = {
   id: number;
@@ -22,33 +20,24 @@ type Withdrawal = {
   createdAt: string;
 };
 
-function record(value: unknown): UnknownRecord | null {
-  return value && typeof value === "object" && !Array.isArray(value) ? (value as UnknownRecord) : null;
-}
-
-function number(value: unknown): number {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : 0;
-}
-
 function parseWithdrawal(value: unknown): Withdrawal | null {
-  const row = record(value);
+  const row = asRecord(value);
   if (!row) return null;
-  const id = number(row.id);
+  const id = asNumber(row.id);
   if (id <= 0) return null;
   return {
     id,
-    amount: number(row.amount),
-    card: typeof row.card === "string" ? row.card : "",
-    sheba: typeof row.sheba === "string" ? row.sheba : "",
-    status: typeof row.status === "string" ? row.status : "pending",
-    createdAt: typeof row.created_at === "string" ? row.created_at : "",
+    amount: asNumber(row.amount),
+    card: asString(row.card),
+    sheba: asString(row.sheba),
+    status: asString(row.status, "pending"),
+    createdAt: asString(row.created_at),
   };
 }
 
 async function getWithdrawals(runtime: PlatformRuntime): Promise<Withdrawal[]> {
-  const response = await runtime.request<ApiEnvelope<unknown[]>>("/teacher/withdrawals");
-  return (response.data ?? []).map(parseWithdrawal).filter((item): item is Withdrawal => item !== null);
+  const response = await runtime.request<ApiEnvelope<unknown>>("/teacher/withdrawals");
+  return asArray(response.data).map(parseWithdrawal).filter((item): item is Withdrawal => item !== null);
 }
 
 async function requestWithdrawal(
@@ -79,10 +68,6 @@ function cleanCard(value: string): string {
 
 function cleanSheba(value: string): string {
   return normalizeDigits(value).replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
-}
-
-function money(value: number): string {
-  return toFaDigits(Math.trunc(value).toLocaleString("en-US"));
 }
 
 function dateLabel(value: string): string {
@@ -180,7 +165,7 @@ export function TeacherWithdrawScreen({ config }: { config: UniversalAppConfig }
       setAmount("");
       setCard("");
       setSheba("");
-      setSuccess(`درخواست برداشت ${money(normalizedAmount)} تومان ثبت شد و تا تعیین وضعیت از موجودی رزرو می‌شود.`);
+      setSuccess(`درخواست برداشت ${formatWalletAmount(normalizedAmount)} تومان ثبت شد و تا تعیین وضعیت از موجودی رزرو می‌شود.`);
       await load();
     } catch (submitError) {
       setFormError(messageOf(submitError));
@@ -206,7 +191,7 @@ export function TeacherWithdrawScreen({ config }: { config: UniversalAppConfig }
           <Card style={{ display: "grid", gap: spacing.md }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: spacing.md }}>
               <span style={{ ...typography.bodySmall, color: colors.inkSecondary }}>موجودی قابل برداشت</span>
-              <strong style={{ ...typography.title, color: colors.olive700 }}>{balance === null ? "—" : `${money(balance)} تومان`}</strong>
+              <strong style={{ ...typography.title, color: colors.olive700 }}>{balance === null ? "—" : `${formatWalletAmount(balance)} تومان`}</strong>
             </div>
 
             <label style={{ display: "grid", gap: spacing.xs }}>
@@ -215,7 +200,7 @@ export function TeacherWithdrawScreen({ config }: { config: UniversalAppConfig }
             </label>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: spacing.xs }}>
               {[500000, 1000000, 2000000].map((quickAmount) => (
-                <Button key={quickAmount} variant="secondary" onClick={() => setAmount(String(quickAmount))}>{money(quickAmount)}</Button>
+                <Button key={quickAmount} variant="secondary" onClick={() => setAmount(String(quickAmount))}>{formatWalletAmount(quickAmount)}</Button>
               ))}
             </div>
 
@@ -253,7 +238,7 @@ export function TeacherWithdrawScreen({ config }: { config: UniversalAppConfig }
               {withdrawals.map((withdrawal) => (
                 <Card key={withdrawal.id} style={{ display: "grid", gap: spacing.sm }}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: spacing.md }}>
-                    <strong style={typography.body}>{money(withdrawal.amount)} تومان</strong>
+                    <strong style={typography.body}>{formatWalletAmount(withdrawal.amount)} تومان</strong>
                     <span style={{ ...typography.bodySmall, color: withdrawal.status === "paid" ? colors.olive700 : withdrawal.status === "rejected" ? colors.clay : colors.inkSecondary }}>
                       {statusLabel(withdrawal.status)}
                     </span>
