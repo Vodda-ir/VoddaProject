@@ -6,11 +6,7 @@ import { Card, EmptyState, ErrorState, LoadingState, Button, colors, radii, shad
 import { messageOf } from "../../ui/errorMessage";
 import { getWalletSnapshot } from "./api";
 import type { WalletTransaction } from "./types";
-import { toFaDigits, WalletTransactionCard } from "./WalletTransactionCard";
-
-function faNumber(value: number): string {
-  return toFaDigits(new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(value));
-}
+import { formatWalletAmount, WalletTransactionCard } from "./WalletTransactionCard";
 
 export function LearnerWalletScreen() {
   const runtime = usePlatform();
@@ -57,7 +53,7 @@ export function LearnerWalletScreen() {
         <span style={{ ...typography.bodySmall, color: "rgba(255,255,255,.72)" }}>موجودی کیف پول</span>
         <div style={{ marginTop: spacing.sm }}>
           <strong style={{ fontSize: 30, lineHeight: 1.4, fontWeight: 800 }}>
-            {balance === null ? "—" : faNumber(balance)}
+            {balance === null ? "—" : formatWalletAmount(balance)}
           </strong>
           <span style={{ ...typography.body, marginInlineStart: spacing.sm, color: "rgba(255,255,255,.72)", fontWeight: 700 }}>تومان</span>
         </div>
@@ -84,7 +80,7 @@ export function LearnerWalletScreen() {
       {!loading && !error && transactions.length > 0 ? (
         <div style={{ display: "grid", gap: spacing.sm }}>
           {transactions.map((transaction) => (
-            <WalletTransactionCard key={transaction.id} transaction={transaction} formatAmount={faNumber} />
+            <WalletTransactionCard key={transaction.id} transaction={transaction} />
           ))}
         </div>
       ) : null}
