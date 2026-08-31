@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { ApiEnvelope } from "../../platform/api";
+import { asNumber, asRecord, type ApiEnvelope } from "../../platform/api";
 import { usePlatform } from "../../platform/context";
 import { messageOf } from "../../ui/errorMessage";
 import {
@@ -15,6 +15,7 @@ import {
   spacing,
   typography,
 } from "../../ui";
+import { toFaDigits } from "../wallet/WalletTransactionCard";
 
 type Review = {
   id: number;
@@ -24,18 +25,6 @@ type Review = {
   learnerName: string;
   learnerAvatar?: string;
 };
-
-function asRecord(value: unknown): Record<string, unknown> | null {
-  return value !== null && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : null;
-}
-
-function asNumber(value: unknown): number {
-  if (typeof value === "number" && Number.isFinite(value)) return value;
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : 0;
-}
 
 function parseReview(value: unknown): Review | null {
   const record = asRecord(value);
@@ -50,10 +39,6 @@ function parseReview(value: unknown): Review | null {
       typeof learner?.name === "string" && learner.name.trim() ? learner.name : "قرآن‌آموز",
     learnerAvatar: typeof learner?.avatar_url === "string" ? learner.avatar_url : undefined,
   };
-}
-
-function faDigits(value: string | number): string {
-  return String(value).replace(/\d/g, (digit) => "۰۱۲۳۴۵۶۷۸۹"[Number(digit)] ?? digit);
 }
 
 function formatDate(value: string): string {
@@ -117,11 +102,11 @@ export function TeacherReviewsScreen() {
       <Card elevated style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: spacing.md }}>
         <div>
           <span style={{ ...typography.caption, color: colors.inkMuted }}>میانگین همین نظرهای ثبت‌شده</span>
-          <strong style={{ ...typography.heading, display: "block", marginTop: 2 }}>{faDigits(average.toFixed(1))} ★</strong>
+          <strong style={{ ...typography.heading, display: "block", marginTop: 2 }}>{toFaDigits(average.toFixed(1))} ★</strong>
         </div>
         <div style={{ textAlign: "left" }}>
           <span style={{ ...typography.caption, color: colors.inkMuted }}>تعداد نظرها</span>
-          <strong style={{ ...typography.title, display: "block", marginTop: 2 }}>{faDigits(reviews.length)}</strong>
+          <strong style={{ ...typography.title, display: "block", marginTop: 2 }}>{toFaDigits(reviews.length)}</strong>
         </div>
       </Card>
 
@@ -137,7 +122,7 @@ export function TeacherReviewsScreen() {
                 ) : null}
               </div>
               <span aria-label={`امتیاز ${review.rating} از ۵`} style={{ ...typography.body, color: colors.gold, fontWeight: 800 }}>
-                {faDigits(review.rating)} ★
+                {toFaDigits(review.rating)} ★
               </span>
             </div>
             {review.text.trim() ? (
