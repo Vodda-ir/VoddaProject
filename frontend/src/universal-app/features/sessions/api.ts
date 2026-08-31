@@ -1,4 +1,4 @@
-import type { ApiEnvelope } from "../../platform/api";
+import { asArray, type ApiEnvelope } from "../../platform/api";
 import type { PlatformRuntime } from "../../platform/types";
 import { parseLearnerSession, type LearnerSession } from "./types";
 
@@ -10,7 +10,7 @@ export async function getLearnerSessions(
 ): Promise<LearnerSession[]> {
   const search = new URLSearchParams({ when });
   const response = await runtime.request<ApiEnvelope>(`/sessions?${search.toString()}`);
-  const rows = Array.isArray(response.data) ? response.data : [];
+  const rows = asArray(response.data);
 
   return rows
     .map(parseLearnerSession)
