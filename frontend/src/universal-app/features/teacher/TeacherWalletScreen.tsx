@@ -8,11 +8,7 @@ import { Button, Card, EmptyState, ErrorState, LoadingState, colors, radii, shad
 import { messageOf } from "../../ui/errorMessage";
 import { getWalletSnapshot } from "../wallet/api";
 import type { WalletTransaction } from "../wallet/types";
-import { toFaDigits, WalletTransactionCard } from "../wallet/WalletTransactionCard";
-
-function money(value: number): string {
-  return toFaDigits(Math.trunc(value).toLocaleString("en-US"));
-}
+import { formatWalletAmount, toFaDigits, WalletTransactionCard } from "../wallet/WalletTransactionCard";
 
 export function TeacherWalletScreen({ config }: { config: UniversalAppConfig }) {
   const runtime = usePlatform();
@@ -64,7 +60,7 @@ export function TeacherWalletScreen({ config }: { config: UniversalAppConfig }) 
         <span style={{ ...typography.bodySmall, color: "rgba(255,255,255,.72)" }}>موجودی قابل برداشت</span>
         <div style={{ marginTop: spacing.sm }}>
           <strong style={{ fontSize: 30, lineHeight: 1.4, fontWeight: 800 }}>
-            {balance === null ? "—" : money(balance)}
+            {balance === null ? "—" : formatWalletAmount(balance)}
           </strong>
           <span style={{ ...typography.body, marginInlineStart: spacing.sm, color: "rgba(255,255,255,.72)", fontWeight: 700 }}>تومان</span>
         </div>
@@ -75,7 +71,7 @@ export function TeacherWalletScreen({ config }: { config: UniversalAppConfig }) 
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: spacing.sm }}>
         <Card style={{ textAlign: "center" }}>
-          <strong style={{ ...typography.title, color: colors.olive700 }}>{money(income)}</strong>
+          <strong style={{ ...typography.title, color: colors.olive700 }}>{formatWalletAmount(income)}</strong>
           <span style={{ ...typography.caption, display: "block", color: colors.inkMuted, marginTop: spacing.xs }}>درآمد ثبت‌شده</span>
         </Card>
         <Card style={{ textAlign: "center" }}>
@@ -99,7 +95,7 @@ export function TeacherWalletScreen({ config }: { config: UniversalAppConfig }) 
       {!loading && !error && transactions.length > 0 ? (
         <div style={{ display: "grid", gap: spacing.sm }}>
           {transactions.map((transaction) => (
-            <WalletTransactionCard key={transaction.id} transaction={transaction} formatAmount={money} />
+            <WalletTransactionCard key={transaction.id} transaction={transaction} />
           ))}
         </div>
       ) : null}
