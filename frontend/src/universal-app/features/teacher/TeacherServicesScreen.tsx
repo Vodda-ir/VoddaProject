@@ -17,6 +17,8 @@ import {
   spacing,
   typography,
 } from "../../ui";
+import { messageOf } from "../../ui/errorMessage";
+import { toFaDigits } from "../wallet/WalletTransactionCard";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -92,16 +94,8 @@ async function deleteService(runtime: PlatformRuntime, id: number) {
   return runtime.request<ApiEnvelope<unknown>>(`/teacher/services/${id}`, { method: "DELETE" });
 }
 
-function faDigits(value: string | number): string {
-  return String(value).replace(/\d/g, (digit) => "۰۱۲۳۴۵۶۷۸۹"[Number(digit)] ?? digit);
-}
-
 function money(value: number): string {
-  return faDigits(Math.trunc(value).toLocaleString("en-US"));
-}
-
-function messageOf(error: unknown): string {
-  return error instanceof Error && error.message ? error.message : "خطایی رخ داد. دوباره تلاش کنید.";
+  return toFaDigits(Math.trunc(value).toLocaleString("en-US"));
 }
 
 const emptyDraft: ServiceDraft = { title: "", duration: "30", price: "" };
@@ -254,7 +248,7 @@ export function TeacherServicesScreen() {
                   <div style={{ minWidth: 0 }}>
                     <strong style={{ ...typography.body, display: "block" }}>{service.title}</strong>
                     <span style={{ ...typography.caption, color: colors.inkMuted }}>
-                      {faDigits(service.duration)} دقیقه · {money(service.price)} تومان
+                      {toFaDigits(service.duration)} دقیقه · {money(service.price)} تومان
                     </span>
                   </div>
                   <span
