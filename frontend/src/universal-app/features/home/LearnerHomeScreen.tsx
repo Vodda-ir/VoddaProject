@@ -8,6 +8,7 @@ import { navigateApp } from "../../router";
 import { searchTeachers } from "../teachers/api";
 import type { Teacher } from "../teachers/types";
 import { Avatar, Button, Card, colors, radii, spacing, typography } from "../../ui";
+import { messageOf } from "../../ui/errorMessage";
 
 export type LearnerHomeScreenProps = {
   config: UniversalAppConfig;
@@ -214,7 +215,7 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
       .catch((error: unknown) => {
         if (!active) return;
         setTeachers([]);
-        setTeachersError(error instanceof Error ? error.message : "دریافت استادان ناموفق بود.");
+        setTeachersError(messageOf(error, "دریافت استادان ناموفق بود."));
       })
       .finally(() => {
         if (active) setTeachersLoading(false);
