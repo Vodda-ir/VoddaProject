@@ -3,20 +3,14 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import type { UniversalAppConfig } from "../../config";
-import { PlatformHttpError } from "../../platform/http";
 import { usePlatform } from "../../platform/context";
 import type { AuthUser } from "../../platform/types";
 import { navigateApp } from "../../router";
 import { Avatar, Button, Card, Input, colors, radii, spacing, typography } from "../../ui";
+import { messageOf } from "../../ui/errorMessage";
 import { defaultRouteForUser } from "./AuthExperience";
 
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
-
-function errorMessage(error: unknown) {
-  if (error instanceof PlatformHttpError) return error.message;
-  if (error instanceof Error && error.message) return error.message;
-  return "ذخیره پروفایل انجام نشد. دوباره تلاش کنید.";
-}
 
 function normalizeUser(payload: unknown): AuthUser | null {
   if (!payload || typeof payload !== "object") return null;
@@ -63,7 +57,7 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
         setCity(restored.city ?? "");
         setBio(restored.bio ?? "");
       } catch (loadError) {
-        if (!cancelled) setError(errorMessage(loadError));
+        if (!cancelled) setError(messageOf(loadError, "ذخیره پروفایل انجام نشد. دوباره تلاش کنید."));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -147,7 +141,7 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
       setUser(updated);
       navigateApp(onboarding ? defaultRouteForUser(updated) : "/profile", config, { replace: true });
     } catch (saveError) {
-      setError(errorMessage(saveError));
+      setError(messageOf(saveError, "ذخیره پروفایل انجام نشد. دوباره تلاش کنید."));
     } finally {
       setSaving(false);
     }
