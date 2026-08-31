@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { UniversalAppConfig } from "../../config";
-import type { ApiEnvelope } from "../../platform/api";
+import { asNumber, asRecord, type ApiEnvelope } from "../../platform/api";
 import { usePlatform } from "../../platform/context";
 import type { PlatformRuntime } from "../../platform/types";
 import { navigateApp } from "../../router";
@@ -19,6 +19,7 @@ import {
   spacing,
   typography,
 } from "../../ui";
+import { formatWalletAmount, toFaDigits } from "../wallet/WalletTransactionCard";
 
 type TeacherSummary = {
   id: number;
@@ -46,18 +47,6 @@ type DashboardSnapshot = {
   pending: TeacherSession[];
   upcoming: TeacherSession[];
 };
-
-function asNumber(value: unknown): number {
-  if (typeof value === "number" && Number.isFinite(value)) return value;
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : 0;
-}
-
-function asRecord(value: unknown): Record<string, unknown> | null {
-  return value !== null && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : null;
-}
 
 function parseTeacherSummary(value: unknown): TeacherSummary | null {
   const user = asRecord(value);
@@ -115,19 +104,11 @@ async function getTeacherDashboardSnapshot(runtime: PlatformRuntime): Promise<Da
   };
 }
 
-function faDigits(value: string | number): string {
-  return String(value).replace(/\d/g, (digit) => "۰۱۲۳۴۵۶۷۸۹"[Number(digit)] ?? digit);
-}
-
-function formatMoney(value: number): string {
-  return faDigits(Math.trunc(value).toLocaleString("en-US"));
-}
-
 function officialTime(session: TeacherSession): string {
   if (!session.localDate || !session.localStart || !session.localEnd) {
     return "زمان رسمی جلسه دریافت نشد";
   }
-  return `${faDigits(session.localDate.replaceAll("-", "/"))} · ${faDigits(session.localStart)} تا ${faDigits(session.localEnd)}`;
+  return `${toFaDigits(session.localDate.replaceAll("-", "/"))} · ${toFaDigits(session.localStart)} تا ${toFaDigits(session.localEnd)}`;
 }
 
 export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig }) {
@@ -202,15 +183,15 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
         <div>
           <span style={{ ...typography.caption, opacity: 0.78 }}>موجودی قابل برداشت</span>
           <div style={{ display: "flex", alignItems: "baseline", gap: spacing.xs, marginTop: spacing.xs }}>
-            <strong style={{ fontSize: 30, lineHeight: 1.2 }}>{formatMoney(teacher.wallet)}</strong>
+            <strong style={{ fontSize: 30, lineHeight: 1.2 }}>{formatWalletAmount(teacher.wallet)}</strong>
             <span style={{ ...typography.bodySmall, opacity: 0.78 }}>تومان</span>
           </div>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: spacing.sm }}>
           {[
             ["امتیاز", `${rating} ★`],
-            ["نظرها", faDigits(teacher.reviews)],
-            ["جلسات", faDigits(teacher.sessions)],
+            ["نظرها", toFaDigits(teacher.reviews)],
+            ["جلسات", toFaDigits(teacher.sessions)],
           ].map(([label, value]) => (
             <div key={label} style={{ textAlign: "center", minWidth: 0 }}>
               <span style={{ ...typography.caption, display: "block", opacity: 0.7 }}>{label}</span>
@@ -223,7 +204,7 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
       {pending.length > 0 ? (
         <Card style={{ display: "grid", gap: spacing.md, borderColor: colors.gold }}>
           <div>
-            <strong style={{ ...typography.body, display: "block" }}>{faDigits(pending.length)} درخواست جدید</strong>
+            <strong style={{ ...typography.body, display: "block" }}>{toFaDigits(pending.length)} درخواست جدید</strong>
             <span style={{ ...typography.caption, color: colors.inkMuted }}>برای تأیید یا رد درخواست‌ها وارد فهرست شوید.</span>
           </div>
           <Button fullWidth onClick={() => navigateApp("/t/requests", config)}>مشاهده درخواست‌ها</Button>
