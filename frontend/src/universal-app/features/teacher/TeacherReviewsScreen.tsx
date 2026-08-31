@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { asNumber, asRecord, type ApiEnvelope } from "../../platform/api";
+import { asArray, asNumber, asRecord, asString, type ApiEnvelope } from "../../platform/api";
 import { usePlatform } from "../../platform/context";
 import { messageOf } from "../../ui/errorMessage";
 import {
@@ -30,14 +30,15 @@ function parseReview(value: unknown): Review | null {
   const record = asRecord(value);
   if (!record) return null;
   const learner = asRecord(record.learner);
+  const learnerName = asString(learner?.name).trim();
+  const learnerAvatar = asString(learner?.avatar_url);
   return {
     id: asNumber(record.id),
     rating: Math.max(0, Math.min(5, asNumber(record.rating))),
-    text: typeof record.text === "string" ? record.text : "",
-    createdAt: typeof record.created_at === "string" ? record.created_at : "",
-    learnerName:
-      typeof learner?.name === "string" && learner.name.trim() ? learner.name : "قرآن‌آموز",
-    learnerAvatar: typeof learner?.avatar_url === "string" ? learner.avatar_url : undefined,
+    text: asString(record.text),
+    createdAt: asString(record.created_at),
+    learnerName: learnerName || "قرآن‌آموز",
+    learnerAvatar: learnerAvatar || undefined,
   };
 }
 
@@ -58,8 +59,8 @@ export function TeacherReviewsScreen() {
     setLoading(true);
     setError(null);
     try {
-      const response = await runtime.request<ApiEnvelope<unknown[]>>("/teacher/reviews");
-      setReviews((response.data ?? []).map(parseReview).filter((item): item is Review => item !== null));
+      const response = await runtime.request<ApiEnvelope<unknown>>("/teacher/reviews");
+      setReviews(asArray(response.data).map(parseReview).filter((item): item is Review => item !== null));
     } catch (loadError) {
       setReviews([]);
       setError(messageOf(loadError));
