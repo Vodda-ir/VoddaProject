@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ApiEnvelope } from "../../platform/api";
 import { usePlatform } from "../../platform/context";
+import { messageOf } from "../../ui/errorMessage";
 import {
   Avatar,
   Button,
@@ -60,10 +61,6 @@ function formatDate(value: string): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
   return new Intl.DateTimeFormat("fa-IR", { year: "numeric", month: "long", day: "numeric" }).format(date);
-}
-
-function messageOf(error: unknown): string {
-  return error instanceof Error && error.message ? error.message : "خطایی رخ داد. دوباره تلاش کنید.";
 }
 
 export function TeacherReviewsScreen() {
