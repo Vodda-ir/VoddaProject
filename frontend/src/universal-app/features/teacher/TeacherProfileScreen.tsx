@@ -2,7 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import type { UniversalAppConfig } from "../../config";
-import type { ApiEnvelope } from "../../platform/api";
+import { asArray, asNumber, asRecord, asString, type ApiEnvelope } from "../../platform/api";
 import { usePlatform } from "../../platform/context";
 import { navigateApp } from "../../router";
 import {
@@ -18,7 +18,7 @@ import {
   typography,
 } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
-import { toFaDigits } from "../wallet/WalletTransactionCard";
+import { formatWalletAmount, toFaDigits } from "../wallet/WalletTransactionCard";
 
 type UserProfile = {
   name: string;
@@ -55,22 +55,6 @@ type TeacherForm = {
   price60: string;
 };
 
-function asRecord(value: unknown): Record<string, unknown> | null {
-  return value !== null && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : null;
-}
-
-function asNumber(value: unknown): number {
-  if (typeof value === "number" && Number.isFinite(value)) return value;
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : 0;
-}
-
-function asString(value: unknown): string {
-  return typeof value === "string" ? value : "";
-}
-
 function parseUser(value: unknown): UserProfile | null {
   const record = asRecord(value);
   if (!record) return null;
@@ -83,12 +67,13 @@ function parseUser(value: unknown): UserProfile | null {
 function parseTeacher(value: unknown): TeacherProfile | null {
   const record = asRecord(value);
   if (!record) return null;
-  const services = Array.isArray(record.services)
-    ? record.services.map(asRecord).filter((item): item is Record<string, unknown> => item !== null)
-    : [];
-  const skills = Array.isArray(record.skills)
-    ? record.skills.filter((item): item is string => typeof item === "string").map((item) => item.trim()).filter(Boolean)
-    : [];
+  const services = asArray(record.services)
+    .map(asRecord)
+    .filter((item): item is Record<string, unknown> => item !== null);
+  const skills = asArray(record.skills)
+    .filter((item): item is string => typeof item === "string")
+    .map((item) => item.trim())
+    .filter(Boolean);
 
   return {
     id: asNumber(record.id),
@@ -121,10 +106,6 @@ function toForm(teacher: TeacherProfile): TeacherForm {
     price30: teacher.price30 > 0 ? String(teacher.price30) : "",
     price60: teacher.price60 > 0 ? String(teacher.price60) : "",
   };
-}
-
-function formatMoney(value: number): string {
-  return toFaDigits(Math.trunc(value).toLocaleString("en-US"));
 }
 
 function validate(form: TeacherForm): string | null {
@@ -349,7 +330,7 @@ export function TeacherProfileScreen({ config }: { config: UniversalAppConfig })
           </div>
           {teacher.price30 > 0 || teacher.price60 > 0 ? (
             <p style={{ ...typography.caption, margin: 0, color: colors.inkMuted }}>
-              تعرفه فعلی: ۳۰ دقیقه {formatMoney(teacher.price30)} تومان · ۶۰ دقیقه {formatMoney(teacher.price60)} تومان
+              تعرفه فعلی: ۳۰ دقیقه {formatWalletAmount(teacher.price30)} تومان · ۶۰ دقیقه {formatWalletAmount(teacher.price60)} تومان
             </p>
           ) : null}
           {notice ? <p role="status" style={{ ...typography.bodySmall, margin: 0, color: colors.inkSecondary }}>{notice}</p> : null}
