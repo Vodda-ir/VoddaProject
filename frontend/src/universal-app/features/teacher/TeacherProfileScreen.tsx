@@ -17,6 +17,8 @@ import {
   spacing,
   typography,
 } from "../../ui";
+import { messageOf } from "../../ui/errorMessage";
+import { toFaDigits } from "../wallet/WalletTransactionCard";
 
 type UserProfile = {
   name: string;
@@ -121,16 +123,8 @@ function toForm(teacher: TeacherProfile): TeacherForm {
   };
 }
 
-function faDigits(value: string | number): string {
-  return String(value).replace(/\d/g, (digit) => "۰۱۲۳۴۵۶۷۸۹"[Number(digit)] ?? digit);
-}
-
 function formatMoney(value: number): string {
-  return faDigits(Math.trunc(value).toLocaleString("en-US"));
-}
-
-function messageOf(error: unknown): string {
-  return error instanceof Error && error.message ? error.message : "خطایی رخ داد. دوباره تلاش کنید.";
+  return toFaDigits(Math.trunc(value).toLocaleString("en-US"));
 }
 
 function validate(form: TeacherForm): string | null {
@@ -290,7 +284,7 @@ export function TeacherProfileScreen({ config }: { config: UniversalAppConfig })
           <Button variant="secondary" onClick={() => navigateApp("/profile/edit", config)}>ویرایش حساب</Button>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: spacing.sm }}>
-          {[["امتیاز", `${rating} ★`], ["نظرها", faDigits(teacher.reviews)], ["جلسات", faDigits(teacher.sessions)]].map(([label, value]) => (
+          {[["امتیاز", `${rating} ★`], ["نظرها", toFaDigits(teacher.reviews)], ["جلسات", toFaDigits(teacher.sessions)]].map(([label, value]) => (
             <div key={label} style={{ textAlign: "center", padding: spacing.sm, borderRadius: radii.sm, background: colors.sand50 }}>
               <span style={{ ...typography.caption, display: "block", color: colors.inkMuted }}>{label}</span>
               <strong style={{ ...typography.body }}>{value}</strong>
@@ -319,10 +313,10 @@ export function TeacherProfileScreen({ config }: { config: UniversalAppConfig })
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: spacing.sm }}>
         <Button variant="secondary" onClick={() => navigateApp("/t/services", config)}>
-          خدمات فعال: {faDigits(activeServices)}
+          خدمات فعال: {toFaDigits(activeServices)}
         </Button>
         <Button variant="secondary" onClick={() => navigateApp("/t/reviews", config)}>
-          مشاهده {faDigits(teacher.reviews)} نظر
+          مشاهده {toFaDigits(teacher.reviews)} نظر
         </Button>
       </div>
 
