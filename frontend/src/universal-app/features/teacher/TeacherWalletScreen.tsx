@@ -7,57 +7,14 @@ import { navigateApp } from "../../router";
 import { Button, Card, EmptyState, ErrorState, LoadingState, colors, radii, shadows, spacing, typography } from "../../ui";
 import { getWalletSnapshot } from "../wallet/api";
 import type { WalletTransaction } from "../wallet/types";
-
-function faDigits(value: string | number): string {
-  return String(value).replace(/\d/g, (digit) => "۰۱۲۳۴۵۶۷۸۹"[Number(digit)] ?? digit);
-}
+import { toFaDigits, WalletTransactionCard } from "../wallet/WalletTransactionCard";
 
 function money(value: number): string {
-  return faDigits(Math.trunc(value).toLocaleString("en-US"));
-}
-
-function transactionDate(value: string): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  return faDigits(`${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`);
+  return toFaDigits(Math.trunc(value).toLocaleString("en-US"));
 }
 
 function messageOf(error: unknown): string {
   return error instanceof Error && error.message ? error.message : "خطایی رخ داد. دوباره تلاش کنید.";
-}
-
-function TransactionCard({ transaction }: { transaction: WalletTransaction }) {
-  const credit = transaction.amount > 0;
-  return (
-    <Card style={{ display: "flex", alignItems: "center", gap: spacing.md, borderRadius: radii.md }}>
-      <div
-        aria-hidden="true"
-        style={{
-          width: 42,
-          height: 42,
-          flex: "0 0 42px",
-          display: "grid",
-          placeItems: "center",
-          borderRadius: radii.sm,
-          background: credit ? colors.olive100 : colors.clayBackground,
-          color: credit ? colors.olive700 : colors.clay,
-          fontSize: 18,
-          fontWeight: 800,
-        }}
-      >
-        {credit ? "↙" : "↗"}
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <strong style={{ ...typography.body, display: "block" }}>{transaction.title || transaction.type || "تراکنش"}</strong>
-        {transaction.createdAt ? (
-          <span style={{ ...typography.caption, color: colors.inkMuted }}>{transactionDate(transaction.createdAt)}</span>
-        ) : null}
-      </div>
-      <strong style={{ ...typography.body, color: credit ? colors.olive700 : colors.ink, whiteSpace: "nowrap" }}>
-        {credit ? "+" : "−"}{money(Math.abs(transaction.amount))}
-      </strong>
-    </Card>
-  );
 }
 
 export function TeacherWalletScreen({ config }: { config: UniversalAppConfig }) {
@@ -125,7 +82,7 @@ export function TeacherWalletScreen({ config }: { config: UniversalAppConfig }) 
           <span style={{ ...typography.caption, display: "block", color: colors.inkMuted, marginTop: spacing.xs }}>درآمد ثبت‌شده</span>
         </Card>
         <Card style={{ textAlign: "center" }}>
-          <strong style={typography.title}>{faDigits(transactions.length)}</strong>
+          <strong style={typography.title}>{toFaDigits(transactions.length)}</strong>
           <span style={{ ...typography.caption, display: "block", color: colors.inkMuted, marginTop: spacing.xs }}>تراکنش‌ها</span>
         </Card>
       </div>
@@ -144,7 +101,9 @@ export function TeacherWalletScreen({ config }: { config: UniversalAppConfig }) 
       ) : null}
       {!loading && !error && transactions.length > 0 ? (
         <div style={{ display: "grid", gap: spacing.sm }}>
-          {transactions.map((transaction) => <TransactionCard key={transaction.id} transaction={transaction} />)}
+          {transactions.map((transaction) => (
+            <WalletTransactionCard key={transaction.id} transaction={transaction} formatAmount={money} />
+          ))}
         </div>
       ) : null}
     </section>
