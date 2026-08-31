@@ -16,6 +16,8 @@ import {
   spacing,
   typography,
 } from "../../ui";
+import { messageOf } from "../../ui/errorMessage";
+import { toFaDigits } from "../wallet/WalletTransactionCard";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -85,14 +87,6 @@ async function updateWorkTime(runtime: PlatformRuntime, id: number, draft: WorkT
 
 async function deleteWorkTime(runtime: PlatformRuntime, id: number) {
   return runtime.request<ApiEnvelope<unknown>>(`/teacher/work-times/${id}`, { method: "DELETE" });
-}
-
-function messageOf(error: unknown): string {
-  return error instanceof Error && error.message ? error.message : "خطایی رخ داد. دوباره تلاش کنید.";
-}
-
-function faDigits(value: string | number): string {
-  return String(value).replace(/\d/g, (digit) => "۰۱۲۳۴۵۶۷۸۹"[Number(digit)] ?? digit);
 }
 
 function minutes(value: string): number {
@@ -240,7 +234,7 @@ export function TeacherWorkTimesScreen() {
                   <div>
                     <strong style={{ ...typography.body, display: "block" }}>{day}</strong>
                     <span style={{ ...typography.caption, color: colors.inkMuted }}>
-                      {slots.length ? `${faDigits(slots.length)} بازه ثبت شده` : "تعطیل"}
+                      {slots.length ? `${toFaDigits(slots.length)} بازه ثبت شده` : "تعطیل"}
                     </span>
                   </div>
                   <Button variant="secondary" onClick={() => openEditor(weekday)}>افزودن بازه</Button>
@@ -265,7 +259,7 @@ export function TeacherWorkTimesScreen() {
                           }}
                         >
                           <strong dir="ltr" style={{ ...typography.bodySmall, color: colors.olive800 }}>
-                            {faDigits(slot.from)} — {faDigits(slot.to)}
+                            {toFaDigits(slot.from)} — {toFaDigits(slot.to)}
                           </strong>
                           <div style={{ display: "flex", gap: spacing.xs }}>
                             <Button variant="secondary" disabled={busy} onClick={() => openEditor(weekday, slot)}>ویرایش</Button>
@@ -319,7 +313,7 @@ export function TeacherWorkTimesScreen() {
         onClose={() => { if (busyId === null) setDeleteTarget(null); }}
       >
         <p style={{ ...typography.body, marginTop: 0, color: colors.inkSecondary }}>
-          {deleteTarget ? `بازهٔ ${faDigits(deleteTarget.from)} تا ${faDigits(deleteTarget.to)} حذف شود؟` : ""}
+          {deleteTarget ? `بازهٔ ${toFaDigits(deleteTarget.from)} تا ${toFaDigits(deleteTarget.to)} حذف شود؟` : ""}
         </p>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: spacing.sm }}>
           <Button variant="secondary" disabled={busyId !== null} onClick={() => setDeleteTarget(null)}>انصراف</Button>
