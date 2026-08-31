@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import type { ApiEnvelope } from "../../platform/api";
+import { asArray, asInteger, asRecord, asString, type ApiEnvelope } from "../../platform/api";
 import { usePlatform } from "../../platform/context";
 import type { PlatformRuntime } from "../../platform/types";
 import {
@@ -18,7 +18,7 @@ import {
   typography,
 } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
-import { toFaDigits } from "../wallet/WalletTransactionCard";
+import { formatWalletAmount, toFaDigits } from "../wallet/WalletTransactionCard";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -36,40 +36,25 @@ type ServiceDraft = {
   price: string;
 };
 
-function record(value: unknown): UnknownRecord | null {
-  return value && typeof value === "object" && !Array.isArray(value) ? (value as UnknownRecord) : null;
-}
-
-function integer(value: unknown, fallback = 0): number {
-  if (typeof value === "number" && Number.isFinite(value)) return Math.trunc(value);
-  const parsed = Number.parseInt(String(value ?? ""), 10);
-  return Number.isFinite(parsed) ? parsed : fallback;
-}
-
-function text(value: unknown, fallback = ""): string {
-  return typeof value === "string" ? value : fallback;
-}
-
 function parseService(value: unknown): TeacherService | null {
-  const row = record(value);
+  const row = asRecord(value);
   if (!row) return null;
-  const id = integer(row.id);
+  const id = asInteger(row.id);
   if (id <= 0) return null;
 
   return {
     id,
-    title: text(row.title, "خدمت"),
-    duration: integer(row.duration, 30),
-    price: integer(row.price),
+    title: asString(row.title, "خدمت"),
+    duration: asInteger(row.duration, 30),
+    price: asInteger(row.price),
     active: row.active === true,
   };
 }
 
 async function getServices(runtime: PlatformRuntime): Promise<TeacherService[]> {
   const response = await runtime.request<ApiEnvelope<UnknownRecord>>("/teacher/me");
-  const payload = record(response.data);
-  const services = Array.isArray(payload?.services) ? payload.services : [];
-  return services.map(parseService).filter((item): item is TeacherService => item !== null);
+  const payload = asRecord(response.data);
+  return asArray(payload?.services).map(parseService).filter((item): item is TeacherService => item !== null);
 }
 
 async function createService(runtime: PlatformRuntime, draft: { title: string; duration: number; price: number }) {
@@ -92,10 +77,6 @@ async function updateService(
 
 async function deleteService(runtime: PlatformRuntime, id: number) {
   return runtime.request<ApiEnvelope<unknown>>(`/teacher/services/${id}`, { method: "DELETE" });
-}
-
-function money(value: number): string {
-  return toFaDigits(Math.trunc(value).toLocaleString("en-US"));
 }
 
 const emptyDraft: ServiceDraft = { title: "", duration: "30", price: "" };
@@ -248,7 +229,7 @@ export function TeacherServicesScreen() {
                   <div style={{ minWidth: 0 }}>
                     <strong style={{ ...typography.body, display: "block" }}>{service.title}</strong>
                     <span style={{ ...typography.caption, color: colors.inkMuted }}>
-                      {toFaDigits(service.duration)} دقیقه · {money(service.price)} تومان
+                      {toFaDigits(service.duration)} دقیقه · {formatWalletAmount(service.price)} تومان
                     </span>
                   </div>
                   <span
