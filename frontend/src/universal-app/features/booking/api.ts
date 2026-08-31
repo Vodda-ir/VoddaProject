@@ -1,4 +1,4 @@
-import type { ApiEnvelope } from "../../platform/api";
+import { asArray, type ApiEnvelope } from "../../platform/api";
 import type { PlatformRuntime } from "../../platform/types";
 import { parseBookingSlot, type BookingSlot } from "./types";
 
@@ -18,7 +18,7 @@ export async function getBookingAvailability(
   const response = await runtime.request<ApiEnvelope>(
     `/teachers/${teacherId}/availability?${search.toString()}`,
   );
-  const rows = Array.isArray(response.data) ? response.data : [];
+  const rows = asArray(response.data);
   return rows
     .map(parseBookingSlot)
     .filter(
