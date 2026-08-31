@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { ApiEnvelope } from "../../platform/api";
+import { asInteger, asRecord, asString, type ApiEnvelope } from "../../platform/api";
 import { usePlatform } from "../../platform/context";
 import type { PlatformRuntime } from "../../platform/types";
 import {
@@ -22,7 +22,6 @@ import { messageOf } from "../../ui/errorMessage";
 
 type TeacherSessionsMode = "requests" | "sessions";
 type TeacherSessionsWhen = "pending" | "upcoming" | "past";
-type UnknownRecord = Record<string, unknown>;
 
 type TeacherSession = {
   id: number;
@@ -46,40 +45,26 @@ const statusLabels: Record<string, string> = {
   canceled: "لغو شده",
 };
 
-function record(value: unknown): UnknownRecord | null {
-  return value && typeof value === "object" && !Array.isArray(value) ? (value as UnknownRecord) : null;
-}
-
-function integer(value: unknown, fallback = 0): number {
-  if (typeof value === "number" && Number.isFinite(value)) return Math.trunc(value);
-  const parsed = Number.parseInt(String(value ?? ""), 10);
-  return Number.isFinite(parsed) ? parsed : fallback;
-}
-
-function text(value: unknown, fallback = ""): string {
-  return typeof value === "string" ? value : fallback;
-}
-
 function parseTeacherSession(value: unknown): TeacherSession | null {
-  const row = record(value);
+  const row = asRecord(value);
   if (!row) return null;
-  const id = integer(row.id);
+  const id = asInteger(row.id);
   if (id <= 0) return null;
-  const learner = record(row.learner);
+  const learner = asRecord(row.learner);
 
   return {
     id,
-    learnerName: text(learner?.name, "قرآن‌آموز"),
-    service: text(row.service ?? row.title, "جلسه"),
-    scheduledAt: text(row.scheduled_at),
-    localDate: text(row.local_date),
-    localStart: text(row.local_start),
-    localEnd: text(row.local_end),
-    duration: integer(row.duration, 30),
-    price: integer(row.price),
-    status: text(row.status, "pending"),
-    note: text(row.note),
-    rejectNote: text(row.reject_note),
+    learnerName: asString(learner?.name, "قرآن‌آموز"),
+    service: asString(row.service ?? row.title, "جلسه"),
+    scheduledAt: asString(row.scheduled_at),
+    localDate: asString(row.local_date),
+    localStart: asString(row.local_start),
+    localEnd: asString(row.local_end),
+    duration: asInteger(row.duration, 30),
+    price: asInteger(row.price),
+    status: asString(row.status, "pending"),
+    note: asString(row.note),
+    rejectNote: asString(row.reject_note),
   };
 }
 
