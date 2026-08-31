@@ -18,6 +18,7 @@ import {
   spacing,
   typography,
 } from "../../ui";
+import { messageOf } from "../../ui/errorMessage";
 
 type TeacherSessionsMode = "requests" | "sessions";
 type TeacherSessionsWhen = "pending" | "upcoming" | "past";
@@ -114,10 +115,6 @@ function formatMoney(value: number): string {
 function officialTime(session: TeacherSession): string {
   if (!session.localDate || !session.localStart || !session.localEnd) return "زمان رسمی جلسه دریافت نشد";
   return `${faDigits(session.localDate.replaceAll("-", "/"))} · ${faDigits(session.localStart)} تا ${faDigits(session.localEnd)}`;
-}
-
-function messageOf(error: unknown): string {
-  return error instanceof Error && error.message ? error.message : "خطایی رخ داد. دوباره تلاش کنید.";
 }
 
 function SessionCard({
