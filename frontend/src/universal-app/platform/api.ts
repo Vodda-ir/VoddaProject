@@ -8,6 +8,10 @@ export function asRecord(value: unknown): Record<string, unknown> | null {
     : null;
 }
 
+export function asArray(value: unknown): unknown[] {
+  return Array.isArray(value) ? value : [];
+}
+
 export function asNumber(value: unknown): number {
   if (typeof value === "number" && Number.isFinite(value)) return value;
   const parsed = Number(value);
