@@ -5,6 +5,10 @@ export function toFaDigits(value: string | number): string {
   return String(value).replace(/\d/g, (digit) => "۰۱۲۳۴۵۶۷۸۹"[Number(digit)] ?? digit);
 }
 
+export function formatWalletAmount(value: number): string {
+  return toFaDigits(new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(value));
+}
+
 function transactionDate(value: string): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
@@ -13,10 +17,10 @@ function transactionDate(value: string): string {
 
 export function WalletTransactionCard({
   transaction,
-  formatAmount,
+  formatAmount = formatWalletAmount,
 }: {
   transaction: WalletTransaction;
-  formatAmount: (value: number) => string;
+  formatAmount?: (value: number) => string;
 }) {
   const credit = transaction.amount > 0;
 
