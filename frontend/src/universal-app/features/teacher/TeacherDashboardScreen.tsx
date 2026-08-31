@@ -6,6 +6,7 @@ import type { ApiEnvelope } from "../../platform/api";
 import { usePlatform } from "../../platform/context";
 import type { PlatformRuntime } from "../../platform/types";
 import { navigateApp } from "../../router";
+import { messageOf } from "../../ui/errorMessage";
 import {
   Avatar,
   Button,
@@ -127,10 +128,6 @@ function officialTime(session: TeacherSession): string {
     return "زمان رسمی جلسه دریافت نشد";
   }
   return `${faDigits(session.localDate.replaceAll("-", "/"))} · ${faDigits(session.localStart)} تا ${faDigits(session.localEnd)}`;
-}
-
-function messageOf(error: unknown): string {
-  return error instanceof Error && error.message ? error.message : "خطایی رخ داد. دوباره تلاش کنید.";
 }
 
 export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig }) {
