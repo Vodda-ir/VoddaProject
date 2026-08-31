@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import type { UniversalAppConfig } from "../../config";
-import { PlatformHttpError } from "../../platform/http";
 import { usePlatform } from "../../platform/context";
 import type { AuthUser } from "../../platform/types";
 import { navigateApp } from "../../router";
@@ -17,20 +16,14 @@ import {
   spacing,
   typography,
 } from "../../ui";
+import { messageOf } from "../../ui/errorMessage";
+import { formatWalletAmount } from "../wallet/WalletTransactionCard";
 
 export type LearnerProfileScreenProps = {
   config: UniversalAppConfig;
 };
 
-function errorMessage(error: unknown) {
-  if (error instanceof PlatformHttpError) return error.message;
-  if (error instanceof Error && error.message) return error.message;
-  return "دریافت اطلاعات حساب انجام نشد. دوباره تلاش کنید.";
-}
-
-function formatWallet(amount: number) {
-  return `${new Intl.NumberFormat("fa-IR").format(amount)} تومان`;
-}
+const profileErrorMessage = "دریافت اطلاعات حساب انجام نشد. دوباره تلاش کنید.";
 
 export function LearnerProfileScreen({ config }: LearnerProfileScreenProps) {
   const platform = usePlatform();
@@ -50,7 +43,7 @@ export function LearnerProfileScreen({ config }: LearnerProfileScreenProps) {
       }
       setUser(restored);
     } catch (loadError) {
-      setError(errorMessage(loadError));
+      setError(messageOf(loadError, profileErrorMessage));
     } finally {
       setLoading(false);
     }
@@ -71,7 +64,7 @@ export function LearnerProfileScreen({ config }: LearnerProfileScreenProps) {
         }
         setUser(restored);
       } catch (loadError) {
-        if (!cancelled) setError(errorMessage(loadError));
+        if (!cancelled) setError(messageOf(loadError, profileErrorMessage));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -90,7 +83,7 @@ export function LearnerProfileScreen({ config }: LearnerProfileScreenProps) {
       await platform.logout();
       navigateApp("/login", config, { replace: true });
     } catch (logoutError) {
-      setError(errorMessage(logoutError));
+      setError(messageOf(logoutError, profileErrorMessage));
       setLoggingOut(false);
     }
   }
@@ -187,7 +180,7 @@ export function LearnerProfileScreen({ config }: LearnerProfileScreenProps) {
             <span style={{ ...typography.caption, color: colors.inkMuted }}>مشاهده موجودی و گردش حساب</span>
           </span>
           <strong dir="ltr" style={{ ...typography.bodySmall, color: colors.olive800 }}>
-            {formatWallet(user.wallet)}
+            {formatWalletAmount(user.wallet)} تومان
           </strong>
         </button>
       </Card>
