@@ -16,6 +16,8 @@ import {
   spacing,
   typography,
 } from "../../ui";
+import { messageOf } from "../../ui/errorMessage";
+import { toFaDigits } from "../wallet/WalletTransactionCard";
 import {
   cancelLearnerSession,
   createSessionReview,
@@ -35,17 +37,9 @@ const statusLabels: Record<string, string> = {
   canceled: "لغو شده",
 };
 
-function faDigits(value: string | number): string {
-  return String(value).replace(/\d/g, (digit) => "۰۱۲۳۴۵۶۷۸۹"[Number(digit)] ?? digit);
-}
-
 function officialTime(session: LearnerSession): string {
   if (!hasOfficialSessionTime(session)) return "زمان رسمی جلسه دریافت نشد";
-  return `${faDigits(session.localDate.replaceAll("-", "/"))} · ${faDigits(session.localStart)} تا ${faDigits(session.localEnd)}`;
-}
-
-function messageOf(error: unknown): string {
-  return error instanceof Error && error.message ? error.message : "خطایی رخ داد. دوباره تلاش کنید.";
+  return `${toFaDigits(session.localDate.replaceAll("-", "/"))} · ${toFaDigits(session.localStart)} تا ${toFaDigits(session.localEnd)}`;
 }
 
 function canCancel(session: LearnerSession): boolean {
@@ -81,7 +75,7 @@ function SessionCard({
           {statusLabels[session.status] ?? session.status}
         </span>
         <span style={{ ...typography.caption, color: colors.inkMuted }}>
-          {faDigits(session.duration)} دقیقه
+          {toFaDigits(session.duration)} دقیقه
         </span>
       </div>
 
@@ -301,7 +295,7 @@ export function LearnerSessionsScreen() {
               <button
                 key={value}
                 type="button"
-                aria-label={`${faDigits(value)} ستاره`}
+                aria-label={`${toFaDigits(value)} ستاره`}
                 aria-pressed={value <= rating}
                 onClick={() => setRating(value)}
                 disabled={reviewSaving}
