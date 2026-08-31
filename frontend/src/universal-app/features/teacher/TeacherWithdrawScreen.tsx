@@ -7,7 +7,9 @@ import { usePlatform } from "../../platform/context";
 import type { PlatformRuntime } from "../../platform/types";
 import { navigateApp } from "../../router";
 import { Button, Card, EmptyState, ErrorState, LoadingState, colors, radii, spacing, typography } from "../../ui";
+import { messageOf } from "../../ui/errorMessage";
 import { getWalletSnapshot } from "../wallet/api";
+import { toFaDigits } from "../wallet/WalletTransactionCard";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -79,28 +81,20 @@ function cleanSheba(value: string): string {
   return normalizeDigits(value).replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
 }
 
-function faDigits(value: string | number): string {
-  return String(value).replace(/\d/g, (digit) => "۰۱۲۳۴۵۶۷۸۹"[Number(digit)] ?? digit);
-}
-
 function money(value: number): string {
-  return faDigits(Math.trunc(value).toLocaleString("en-US"));
+  return toFaDigits(Math.trunc(value).toLocaleString("en-US"));
 }
 
 function dateLabel(value: string): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
-  return faDigits(`${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`);
+  return toFaDigits(`${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`);
 }
 
 function statusLabel(status: string): string {
   if (status === "paid") return "پرداخت‌شده";
   if (status === "rejected") return "ردشده";
   return "در انتظار بررسی";
-}
-
-function messageOf(error: unknown): string {
-  return error instanceof Error && error.message ? error.message : "خطایی رخ داد. دوباره تلاش کنید.";
 }
 
 const inputStyle = {
@@ -265,7 +259,7 @@ export function TeacherWithdrawScreen({ config }: { config: UniversalAppConfig }
                     </span>
                   </div>
                   <div style={{ ...typography.caption, color: colors.inkMuted }}>
-                    {withdrawal.card ? `کارت: ${faDigits(withdrawal.card)}` : withdrawal.sheba ? `شبا: ${withdrawal.sheba}` : "حساب مقصد"}
+                    {withdrawal.card ? `کارت: ${toFaDigits(withdrawal.card)}` : withdrawal.sheba ? `شبا: ${withdrawal.sheba}` : "حساب مقصد"}
                     {withdrawal.createdAt ? ` · ${dateLabel(withdrawal.createdAt)}` : ""}
                   </div>
                 </Card>
