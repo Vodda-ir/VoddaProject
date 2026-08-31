@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import type { ApiEnvelope } from "../../platform/api";
 import { usePlatform } from "../../platform/context";
 import type { PlatformRuntime } from "../../platform/types";
 import {
@@ -16,7 +17,6 @@ import {
   typography,
 } from "../../ui";
 
-type DataEnvelope<T> = { data?: T };
 type UnknownRecord = Record<string, unknown>;
 
 type WorkTime = {
@@ -61,7 +61,7 @@ function parseWorkTime(value: unknown): WorkTime | null {
 }
 
 async function getWorkTimes(runtime: PlatformRuntime): Promise<WorkTime[]> {
-  const response = await runtime.request<DataEnvelope<unknown[]>>("/teacher/work-times");
+  const response = await runtime.request<ApiEnvelope<unknown[]>>("/teacher/work-times");
   const rows = Array.isArray(response.data) ? response.data : [];
   return rows
     .map(parseWorkTime)
@@ -70,21 +70,21 @@ async function getWorkTimes(runtime: PlatformRuntime): Promise<WorkTime[]> {
 }
 
 async function createWorkTime(runtime: PlatformRuntime, draft: WorkTimeDraft) {
-  return runtime.request<DataEnvelope<unknown>>("/teacher/work-times", {
+  return runtime.request<ApiEnvelope<unknown>>("/teacher/work-times", {
     method: "POST",
     body: JSON.stringify(draft),
   });
 }
 
 async function updateWorkTime(runtime: PlatformRuntime, id: number, draft: WorkTimeDraft) {
-  return runtime.request<DataEnvelope<unknown>>(`/teacher/work-times/${id}`, {
+  return runtime.request<ApiEnvelope<unknown>>(`/teacher/work-times/${id}`, {
     method: "PUT",
     body: JSON.stringify(draft),
   });
 }
 
 async function deleteWorkTime(runtime: PlatformRuntime, id: number) {
-  return runtime.request<DataEnvelope<unknown>>(`/teacher/work-times/${id}`, { method: "DELETE" });
+  return runtime.request<ApiEnvelope<unknown>>(`/teacher/work-times/${id}`, { method: "DELETE" });
 }
 
 function messageOf(error: unknown): string {
