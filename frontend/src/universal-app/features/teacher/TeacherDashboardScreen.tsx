@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { UniversalAppConfig } from "../../config";
-import { asNumber, asRecord, type ApiEnvelope } from "../../platform/api";
+import { asNumber, asRecord, asString, type ApiEnvelope } from "../../platform/api";
 import { usePlatform } from "../../platform/context";
 import type { PlatformRuntime } from "../../platform/types";
 import { navigateApp } from "../../router";
@@ -55,8 +55,8 @@ function parseTeacherSummary(value: unknown): TeacherSummary | null {
 
   return {
     id: asNumber(user.id),
-    name: typeof user.name === "string" && user.name.trim() ? user.name : "استاد",
-    avatarUrl: typeof user.avatar_url === "string" ? user.avatar_url : undefined,
+    name: asString(user.name, "استاد"),
+    avatarUrl: asString(user.avatar_url) || undefined,
     wallet: asNumber(user.wallet),
     rating: asNumber(teacher?.rating),
     reviews: asNumber(teacher?.reviews),
@@ -71,19 +71,13 @@ function parseTeacherSession(value: unknown): TeacherSession | null {
 
   return {
     id: asNumber(session.id),
-    learnerName:
-      typeof learner?.name === "string" && learner.name.trim() ? learner.name : "قرآن‌آموز",
-    service:
-      typeof session.service === "string"
-        ? session.service
-        : typeof session.title === "string"
-          ? session.title
-          : "جلسه",
-    scheduledAt: typeof session.scheduled_at === "string" ? session.scheduled_at : "",
-    localDate: typeof session.local_date === "string" ? session.local_date : "",
-    localStart: typeof session.local_start === "string" ? session.local_start : "",
-    localEnd: typeof session.local_end === "string" ? session.local_end : "",
-    status: typeof session.status === "string" ? session.status : "pending",
+    learnerName: asString(learner?.name, "قرآن‌آموز"),
+    service: asString(session.service ?? session.title, "جلسه"),
+    scheduledAt: asString(session.scheduled_at),
+    localDate: asString(session.local_date),
+    localStart: asString(session.local_start),
+    localEnd: asString(session.local_end),
+    status: asString(session.status, "pending"),
   };
 }
 
