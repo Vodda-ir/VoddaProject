@@ -15,16 +15,10 @@ import {
   spacing,
   typography,
 } from "../../ui";
+import { messageOf } from "../../ui/errorMessage";
+import { formatWalletAmount } from "../wallet/WalletTransactionCard";
 import { getTeacherDetail } from "./api";
 import type { TeacherDetail, TeacherReview, TeacherService } from "./types";
-
-function faNumber(value: number) {
-  return new Intl.NumberFormat("fa-IR").format(value);
-}
-
-function toman(value: number) {
-  return `${new Intl.NumberFormat("fa-IR").format(value)} تومان`;
-}
 
 function reviewDate(value: string) {
   if (!value) return "";
@@ -57,9 +51,11 @@ function ServiceCard({ service }: { service: TeacherService }) {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: spacing.md }}>
         <div style={{ minWidth: 0 }}>
           <strong style={{ ...typography.body, display: "block", color: colors.ink }}>{service.title}</strong>
-          <span style={{ ...typography.caption, color: colors.inkMuted }}>{faNumber(service.duration)} دقیقه</span>
+          <span style={{ ...typography.caption, color: colors.inkMuted }}>{formatWalletAmount(service.duration)} دقیقه</span>
         </div>
-        <strong style={{ ...typography.bodySmall, flexShrink: 0, color: colors.olive800 }}>{toman(service.price)}</strong>
+        <strong style={{ ...typography.bodySmall, flexShrink: 0, color: colors.olive800 }}>
+          {formatWalletAmount(service.price)} تومان
+        </strong>
       </div>
     </Card>
   );
@@ -115,7 +111,7 @@ export function LearnerTeacherProfileScreen({
       })
       .catch((reason: unknown) => {
         if (!active) return;
-        setError(reason instanceof Error ? reason.message : "دریافت پروفایل استاد با خطا روبه‌رو شد.");
+        setError(messageOf(reason, "دریافت پروفایل استاد با خطا روبه‌رو شد."));
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -184,8 +180,8 @@ export function LearnerTeacherProfileScreen({
 
         <div style={{ display: "flex", gap: spacing.sm, marginTop: spacing.lg }}>
           <Stat value={ratingLabel} label="امتیاز" />
-          <Stat value={faNumber(teacher.reviews)} label="نظر" />
-          <Stat value={faNumber(teacher.sessions)} label="جلسه" />
+          <Stat value={formatWalletAmount(teacher.reviews)} label="نظر" />
+          <Stat value={formatWalletAmount(teacher.sessions)} label="جلسه" />
         </div>
       </Card>
 
@@ -214,7 +210,7 @@ export function LearnerTeacherProfileScreen({
           <h3 style={{ ...typography.title, margin: 0, color: colors.ink }}>نظر قرآن‌آموزان</h3>
           {teacher.reviews > 0 ? (
             <span style={{ ...typography.caption, color: colors.inkMuted }}>
-              {ratingLabel} از ۵ · {faNumber(teacher.reviews)} نظر
+              {ratingLabel} از ۵ · {formatWalletAmount(teacher.reviews)} نظر
             </span>
           ) : null}
         </div>
