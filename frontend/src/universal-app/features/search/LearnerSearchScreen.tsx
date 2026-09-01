@@ -7,6 +7,7 @@ import { navigateApp } from "../../router";
 import { searchTeachers } from "../teachers/api";
 import type { Teacher } from "../teachers/types";
 import { Button, Card, EmptyState, ErrorState, LoadingState, colors, spacing, typography } from "../../ui";
+import { messageOf } from "../../ui/errorMessage";
 
 type SearchFilters = {
   query: string;
@@ -105,7 +106,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
       .catch((reason: unknown) => {
         if (!active) return;
         setTeachers([]);
-        setError(reason instanceof Error ? reason.message : "دریافت فهرست استادان با خطا روبه‌رو شد.");
+        setError(messageOf(reason, "دریافت فهرست استادان با خطا روبه‌رو شد."));
       })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
