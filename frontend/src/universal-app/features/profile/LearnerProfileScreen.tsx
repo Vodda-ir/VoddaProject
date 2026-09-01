@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { UniversalAppConfig } from "../../config";
 import { usePlatform } from "../../platform/context";
 import type { AuthUser } from "../../platform/types";
@@ -32,49 +32,35 @@ export function LearnerProfileScreen({ config }: LearnerProfileScreenProps) {
   const [loggingOut, setLoggingOut] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function loadProfile() {
-    setLoading(true);
-    setError(null);
-    try {
-      const restored = await platform.restoreSession();
-      if (!restored) {
-        navigateApp("/login", config, { replace: true });
-        return;
-      }
-      setUser(restored);
-    } catch (loadError) {
-      setError(messageOf(loadError, profileErrorMessage));
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
+  const loadProfile = useCallback(
+    async (isCancelled: () => boolean = () => false) => {
       setLoading(true);
       setError(null);
       try {
         const restored = await platform.restoreSession();
-        if (cancelled) return;
+        if (isCancelled()) return;
         if (!restored) {
           navigateApp("/login", config, { replace: true });
           return;
         }
         setUser(restored);
       } catch (loadError) {
-        if (!cancelled) setError(messageOf(loadError, profileErrorMessage));
+        if (!isCancelled()) setError(messageOf(loadError, profileErrorMessage));
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!isCancelled()) setLoading(false);
       }
-    }
+    },
+    [config, platform],
+  );
 
-    void load();
+  useEffect(() => {
+    let cancelled = false;
+
+    void loadProfile(() => cancelled);
     return () => {
       cancelled = true;
     };
-  }, [config, platform]);
+  }, [loadProfile]);
 
   async function logout() {
     setLoggingOut(true);
