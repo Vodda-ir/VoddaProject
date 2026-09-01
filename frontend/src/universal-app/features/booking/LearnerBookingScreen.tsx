@@ -8,15 +8,13 @@ import { navigateApp } from "../../router";
 import { getTeacherDetail } from "../teachers/api";
 import type { Teacher, TeacherService } from "../teachers/types";
 import { Avatar, Button, Card, EmptyState, ErrorState, LoadingState, colors, radii, spacing, typography } from "../../ui";
+import { messageOf } from "../../ui/errorMessage";
+import { formatWalletAmount } from "../wallet/WalletTransactionCard";
 import { createBooking, getBookingAvailability } from "./api";
 import type { BookingSlot } from "./types";
 
 const weekdays = ["شنبه", "یکشنبه", "دوشنبه", "سه‌شنبه", "چهارشنبه", "پنجشنبه", "جمعه"];
 const numberFormatter = new Intl.NumberFormat("fa-IR");
-
-function money(value: number) {
-  return `${numberFormatter.format(Math.max(0, value))} تومان`;
-}
 
 function dateLabel(localDate: string, weekday: number) {
   const parts = localDate.split("-");
@@ -62,7 +60,7 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
       setTeacher(detail.teacher);
     } catch (error) {
       setTeacher(null);
-      setTeacherError(error instanceof Error ? error.message : "اطلاعات استاد دریافت نشد.");
+      setTeacherError(messageOf(error, "اطلاعات استاد دریافت نشد."));
     } finally {
       setTeacherLoading(false);
     }
@@ -84,7 +82,7 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
       } catch (error) {
         if (availabilityRequest.current !== requestId) return;
         setAvailability([]);
-        setAvailabilityError(error instanceof Error ? error.message : "زمان‌های آزاد استاد دریافت نشد.");
+        setAvailabilityError(messageOf(error, "زمان‌های آزاد استاد دریافت نشد."));
       } finally {
         if (availabilityRequest.current === requestId) setAvailabilityLoading(false);
       }
@@ -144,7 +142,7 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
         setSubmitError("این زمان همین حالا رزرو شده است. زمان‌های آزاد دوباره دریافت شدند؛ لطفاً زمان دیگری انتخاب کنید.");
         await loadAvailability(service);
       } else {
-        setSubmitError(error instanceof Error ? error.message : "ثبت درخواست رزرو انجام نشد.");
+        setSubmitError(messageOf(error, "ثبت درخواست رزرو انجام نشد."));
       }
     } finally {
       setSaving(false);
@@ -221,7 +219,7 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
                     <strong style={{ display: "block", ...typography.body }}>{item.title}</strong>
                     <span style={{ ...typography.caption, color: colors.inkMuted }}>{numberFormatter.format(item.duration)} دقیقه</span>
                   </span>
-                  <strong style={{ ...typography.bodySmall, color: colors.olive700 }}>{money(item.price)}</strong>
+                  <strong style={{ ...typography.bodySmall, color: colors.olive700 }}>{formatWalletAmount(Math.max(0, item.price))} تومان</strong>
                 </button>
               );
             })}
@@ -320,7 +318,7 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
             <div style={{ display: "flex", justifyContent: "space-between", gap: spacing.md }}><span>استاد</span><strong>{teacher.name}</strong></div>
             <div style={{ display: "flex", justifyContent: "space-between", gap: spacing.md }}><span>خدمت</span><strong>{service.title}</strong></div>
             <div style={{ display: "flex", justifyContent: "space-between", gap: spacing.md }}><span>زمان محلی وُدّا</span><strong>{dateLabel(slot.localDate, slot.weekday)} · {slot.localStart} تا {slot.localEnd}</strong></div>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: spacing.md }}><span>مبلغ</span><strong>{money(service.price)}</strong></div>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: spacing.md }}><span>مبلغ</span><strong>{formatWalletAmount(Math.max(0, service.price))} تومان</strong></div>
           </div>
         )}
       </Card>
