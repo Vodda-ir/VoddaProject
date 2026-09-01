@@ -19,6 +19,7 @@ import {
   typography,
 } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
+import { formatWalletAmount, toFaDigits } from "../wallet/WalletTransactionCard";
 
 type TeacherSessionsMode = "requests" | "sessions";
 type TeacherSessionsWhen = "pending" | "upcoming" | "past";
@@ -89,17 +90,9 @@ async function completeTeacherSession(runtime: PlatformRuntime, sessionId: numbe
   return runtime.request<ApiEnvelope<unknown>>(`/teacher/sessions/${sessionId}/complete`, { method: "POST" });
 }
 
-function faDigits(value: string | number): string {
-  return String(value).replace(/\d/g, (digit) => "۰۱۲۳۴۵۶۷۸۹"[Number(digit)] ?? digit);
-}
-
-function formatMoney(value: number): string {
-  return faDigits(Math.trunc(value).toLocaleString("en-US"));
-}
-
 function officialTime(session: TeacherSession): string {
   if (!session.localDate || !session.localStart || !session.localEnd) return "زمان رسمی جلسه دریافت نشد";
-  return `${faDigits(session.localDate.replaceAll("-", "/"))} · ${faDigits(session.localStart)} تا ${faDigits(session.localEnd)}`;
+  return `${toFaDigits(session.localDate.replaceAll("-", "/"))} · ${toFaDigits(session.localStart)} تا ${toFaDigits(session.localEnd)}`;
 }
 
 function SessionCard({
@@ -132,7 +125,7 @@ function SessionCard({
         >
           {statusLabels[session.status] ?? session.status}
         </span>
-        <span style={{ ...typography.caption, color: colors.inkMuted }}>{faDigits(session.duration)} دقیقه</span>
+        <span style={{ ...typography.caption, color: colors.inkMuted }}>{toFaDigits(session.duration)} دقیقه</span>
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: spacing.md }}>
@@ -148,7 +141,7 @@ function SessionCard({
       </div>
 
       {session.price > 0 ? (
-        <span style={{ ...typography.caption, color: colors.inkMuted }}>{formatMoney(session.price)} تومان</span>
+        <span style={{ ...typography.caption, color: colors.inkMuted }}>{formatWalletAmount(session.price)} تومان</span>
       ) : null}
       {session.note ? <p style={{ ...typography.bodySmall, margin: 0 }}>یادداشت قرآن‌آموز: {session.note}</p> : null}
       {session.rejectNote ? <p style={{ ...typography.caption, margin: 0, color: colors.danger }}>دلیل رد: {session.rejectNote}</p> : null}
