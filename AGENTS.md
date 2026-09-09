@@ -5,13 +5,13 @@
 ## ساختار پروژه
 
 ### `backend/`
-Backend اصلی با Go + Gin + MySQL است و مرجع authoritative برای وب، Universal App و Flutter reference باقی می‌ماند. زمان جلسه با `scheduled_at` به UTC نگه‌داری می‌شود و clientها برای نمایش زمان رسمی باید از `local_date`، `local_start` و `local_end` برگشتی backend استفاده کنند.
+Backend اصلی با Go + Gin + MySQL است و مرجع authoritative برای وب، Universal App و Flutter deprecated reference باقی می‌ماند. زمان جلسه با `scheduled_at` به UTC نگه‌داری می‌شود و clientها برای نمایش زمان رسمی باید از `local_date`، `local_start` و `local_end` برگشتی backend استفاده کنند.
 
 ### `frontend/`
 Next.js شامل صفحات public، پنل‌های موجود `/panel/...` و host وب Universal App است. migration اپ نباید public یا `/panel` را بشکند.
 
 ### `frontend/src/universal-app/`
-سورس اصلی اپ جدید و مشترک بین web و native است.
+سورس canonical و اصلی اپ مشترک بین web و native است.
 
 قواعد ثابت:
 - از `next/*` یا moduleهای server-only import نکنید.
@@ -32,7 +32,7 @@ Wrapper Capacitor + Vite برای همان Universal App است.
 - قابلیت‌های device از طریق `PlatformRuntime.capabilities` inject شوند؛ Universal Source مستقیماً Capacitor import نکند.
 
 ### `app/`
-Flutter فعلی بعد از تکمیل parity کدنویسی نقش reference/fallback مهاجرت را دارد و فعلاً حذف نمی‌شود. حذف پوشه Flutter یا workflowهای آن فقط با تصمیم صریح انجام شود.
+Flutter اکنون **deprecated reference** است و فعلاً در repository نگه‌داری می‌شود. این پوشه دیگر target پیش‌فرض توسعهٔ feature، parity یا bugfix محصول نیست؛ source canonical اپ `frontend/src/universal-app/` است. مراجعه به Flutter برای رفتار legacy، مقایسهٔ migration یا درخواست صریح مجاز است، اما نباید business logic موازی جدید ایجاد شود. حذف پوشه Flutter یا workflowهای آن فقط با تصمیم صریح جداگانه انجام شود.
 
 ## Auth و Platform Adapter
 
@@ -99,6 +99,7 @@ Backend و frontend داکرایز می‌شوند. پورت‌های پروژه
 - public و `/panel` را دست‌نخورده نگه دارید.
 - Universal Source را از `next/*` مستقل نگه دارید.
 - Web auth را HttpOnly/BFF و Native auth را secure token/Bearer نگه دارید.
+- Flutter deprecated reference را برای توسعهٔ عادی تغییر ندهید و حذف نکنید؛ هر تغییر یا حذف آن نیازمند درخواست صریح است.
 - `npm install`، build، test و Android/iOS build در scope فعلی migration شرط ادامه کدنویسی نیستند و بدون درخواست صریح اجرا نشوند.
 - بعد از هر بسته، roadmap و در صورت اثرگذاری `CHECKLIST.md`، README یا docs را با وضعیت واقعی sync کنید.
 

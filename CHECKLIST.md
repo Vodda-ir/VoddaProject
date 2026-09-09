@@ -2,7 +2,7 @@
 
 # چک‌لیست وضعیت وُدّا
 
-آخرین بازبینی: **۲۰۲۶-۰۸-۳۰**
+آخرین بازبینی: **۲۰۲۶-۰۹-۰۹**
 
 این فایل فقط وضعیت واقعی کد فعلی را نشان می‌دهد. قابلیت وابسته به سرویس بیرونی تا زمان اتصال و آزمون end-to-end «تکمیل‌شده» محسوب نمی‌شود.
 
@@ -87,12 +87,15 @@
 - [x] تفاوت auth web/native در [`docs/auth-web-native.md`](docs/auth-web-native.md) مستند شد؛ وب فقط HttpOnly cookie + BFF و native فقط secure token + Bearer روی Go API مستقیم باقی می‌ماند.
 - [x] اولین بسته duplicate API cleanup: envelope مشترک پاسخ `data` در `frontend/src/universal-app/platform/api.ts` متمرکز شد و featureهای booking/sessions/teachers/wallet از تعریف‌های تکراری محلی خارج شدند.
 - [x] بسته duplicate component cleanup کیف پول: کارت تراکنش و تبدیل ارقام مشترک learner/teacher در `features/wallet/WalletTransactionCard.tsx` متمرکز شد و هر دو screen همان component را مصرف می‌کنند.
-- [ ] حذف duplicate component/API codeهای ایجادشده در migration و علامت‌گذاری Flutter به‌عنوان deprecated reference پس از audit نهایی.
-- [ ] حذف Flutter از workflowها فقط پس از تصمیم صریح برای حذف پوشه `app/`.
+- [x] audit نهایی duplicate component/API codeهای migration تکمیل شد؛ coercionهای API در `platform/api.ts`، error mapping در `ui/errorMessage.ts` و formatter/componentهای مشترک wallet متمرکزند و duplicate معنی‌داری که abstraction جدیدی را توجیه کند باقی نمانده است.
+- [x] Flutter در `app/` پس از تکمیل parity و cleanup به‌عنوان **deprecated reference** علامت‌گذاری شد؛ Universal App source canonical است و توسعهٔ عادی feature/bugfix نباید در Flutter ادامه پیدا کند.
+- [ ] حذف Flutter از workflowها فقط پس از تصمیم صریح برای حذف پوشه `app/`؛ طبق تصمیم ۲۰۲۶-۰۹-۰۹ پوشه و workflowهای Flutter فعلاً حفظ می‌شوند.
 
-> در scope فعلی، build/test/npm install/Android/iOS generation شرط تکمیل این رودمپ نیست و اجرا نمی‌شود.
+> در scope فعلی، build/test/npm install/Android/iOS generation شرط تکمیل این رودمپ نیست و اجرا نمی‌شود. دو آیتم اجرایی cleanup/deprecation migration بسته شده‌اند؛ checkbox حذف Flutter عمداً deferred است و مانع تکمیل کدنویسی migration نیست.
 
-## Flutter
+## Flutter — Deprecated Reference
+
+> Flutter دیگر source اصلی توسعهٔ محصول نیست. پوشه `app/` برای مراجعهٔ legacy و تاریخچهٔ migration حفظ می‌شود و حذف یا تغییر عادی آن بدون درخواست صریح انجام نمی‌شود.
 
 - [x] Riverpod، go_router، Dio و secure storage
 - [x] guard نقش استاد و learner

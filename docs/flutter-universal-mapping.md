@@ -1,12 +1,19 @@
 # Flutter → Universal React Mapping
 
-آخرین بازبینی: 2026-08-30
+آخرین بازبینی: 2026-09-09
 
-این سند mapping مرجع migration اپ Flutter قدیمی در `app/` به Universal React Source در `frontend/src/universal-app/` است. هدف آن جلوگیری از بازنویسی دوباره flowهای parity‌شده و مشخص‌کردن محل canonical هر قابلیت پس از مهاجرت است.
+این سند mapping مرجع migration اپ Flutter قدیمی در `app/` به Universal React Source در `frontend/src/universal-app/` است. parity کدنویسی و cleanup migration تکمیل شده و Flutter اکنون **deprecated reference** است؛ هدف این سند جلوگیری از بازنویسی دوباره flowهای parity‌شده و مشخص‌کردن محل canonical هر قابلیت پس از مهاجرت است.
+
+## وضعیت پس از migration
+
+- `frontend/src/universal-app/` source canonical قابلیت‌های اپ برای web و native است.
+- `app/` حذف نشده و برای مراجعه به رفتار legacy، مقایسهٔ migration و تاریخچهٔ implementation نگه‌داری می‌شود، اما target پیش‌فرض توسعهٔ feature یا bugfix نیست.
+- حذف Flutter یا workflowهای آن فقط با تصمیم صریح جداگانه انجام می‌شود.
+- اگر تغییری فقط به‌دلیل تفاوت ساختار Flutter با Universal پیشنهاد شد، ابتدا باید بررسی شود که رفتار بیزینسی موردنظر قبلاً در source canonical پوشش داده نشده باشد.
 
 ## قواعد استفاده از این mapping
 
-- `frontend/src/universal-app/` منبع اصلی اپ جدید است؛ Flutter فقط تا پایان cleanup نقش reference/fallback دارد.
+- `frontend/src/universal-app/` منبع اصلی اپ است؛ Flutter فقط deprecated reference است.
 - routeهای اپ وب زیر base path فعلی `/app` نمایش داده می‌شوند، اما Universal Source خود base path را hardcode نمی‌کند.
 - `/panel/...` بخشی از این migration نیست و routeهای آن نباید جایگزین routeهای اپ شوند.
 - تفاوت transport/auth وب و native در platform adapter نگه داشته می‌شود؛ componentهای feature نباید منطق Flutter `Dio` یا token storage را کپی کنند.
@@ -66,7 +73,7 @@
 1. feature-local `api.ts`/typeها برای contract بیزینسی هر feature، مانند `features/teachers/api.ts`، `features/booking/api.ts`، `features/sessions/api.ts` و `features/wallet/api.ts`؛
 2. `frontend/src/universal-app/platform/` برای transport/session وابسته به محیط.
 
-بنابراین هنگام cleanup نباید Flutter repositoryها به React منتقل یا دوباره کپی شوند. endpoint بیزینسی باید از feature API فعلی عبور کند و transport باید از `PlatformRuntime` بیاید.
+بنابراین Flutter repositoryها نباید دوباره به React منتقل یا کپی شوند. endpoint بیزینسی باید از feature API فعلی عبور کند و transport باید از `PlatformRuntime` بیاید.
 
 ## تفاوت‌های عمدی نسبت به Flutter
 
@@ -79,4 +86,4 @@
 
 ## معیار مراجعه بعدی
 
-اگر در ادامه migration قابلیتی در Flutter پیدا شد که در این جدول نیست، قبل از ایجاد component جدید باید ابتدا بررسی شود که همان flow در یکی از screenهای Universal موجود ادغام نشده باشد. فقط فقدان رفتار بیزینسی واقعی، نه تفاوت نام فایل یا layout، به‌عنوان gap parity محسوب می‌شود.
+اگر رفتار legacy مهمی در Flutter پیدا شد که در این جدول نیست، قبل از ایجاد component یا implementation جدید باید ابتدا بررسی شود که همان flow در یکی از screenهای Universal موجود ادغام نشده باشد. فقط فقدان رفتار بیزینسی واقعی، نه تفاوت نام فایل یا layout، یک gap محسوب می‌شود؛ رفع gap نیز به‌صورت پیش‌فرض باید در Universal Source انجام شود، نه با احیای توسعهٔ موازی Flutter.

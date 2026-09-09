@@ -1,17 +1,15 @@
-# vodda
+# Flutter App — Deprecated Reference
 
-A new Flutter project.
+> **وضعیت: Deprecated Reference**
+>
+> این پوشه فعلاً حذف نمی‌شود، اما دیگر source اصلی توسعهٔ اپ وُدّا نیست. منبع canonical قابلیت‌های اپ، `frontend/src/universal-app/` است و نسخهٔ native از همان source با wrapper واقع در `frontend/native/` ساخته می‌شود.
 
-## Getting Started
+## قواعد نگه‌داری
 
-This project is a starting point for a Flutter application.
+- feature یا parity جدید را به‌صورت پیش‌فرض در Flutter پیاده‌سازی نکنید.
+- برای bugfix یا تغییر محصول ابتدا Universal App را مرجع قرار دهید؛ تغییر Flutter فقط با درخواست صریح یا برای حفظ یک نیاز legacy مشخص انجام شود.
+- این پوشه برای مراجعه به رفتار قدیمی، مقایسهٔ migration و تاریخچهٔ implementation نگه‌داری می‌شود.
+- حذف `app/` یا حذف Flutter از workflowهای repository فقط با تصمیم صریح جداگانه مجاز است.
+- وجود این پوشه نباید باعث ایجاد business logic موازی با Universal App شود.
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Mapping کامل رفتارهای منتقل‌شده در `../docs/flutter-universal-mapping.md` و وضعیت migration در `../docs/universal-app-migration-roadmap.md` ثبت شده است.

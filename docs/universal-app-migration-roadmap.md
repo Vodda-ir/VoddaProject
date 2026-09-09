@@ -1,6 +1,6 @@
 # رودمپ مهاجرت اپ وُدّا به Universal Frontend + Capacitor
 
-آخرین به‌روزرسانی: 2026-08-30
+آخرین به‌روزرسانی: 2026-09-09
 
 ## هدف
 
@@ -17,7 +17,7 @@
 7. API و زمان جلسه همچنان از قرارداد authoritative بک‌اند استفاده می‌کنند؛ `scheduled_at` UTC و `local_date/local_start/local_end` برای نمایش.
 8. `appId` نسخه Capacitor باید `ir.vodda.vodda` باقی بماند.
 9. Capacitor باید local web bundle را اجرا کند؛ استفاده از `server.url` برای نمایش سایت آنلاین ممنوع است.
-10. Flutter تا زمان تکمیل parity کدنویسی حذف نمی‌شود و نقش reference/fallback دارد.
+10. پس از تکمیل parity و cleanup، Flutter در `app/` فقط به‌عنوان **deprecated reference** نگه‌داری می‌شود؛ حذف پوشه یا workflowهای آن فقط با تصمیم صریح جداگانه مجاز است.
 11. Build و test در این roadmap شرط تکمیل کدنویسی نیستند و فعلاً اجرا نمی‌شوند.
 
 ---
@@ -240,11 +240,15 @@
 - [x] مستند کردن mapping Flutter → Universal React.
 - [x] مستند کردن platform adapter contract.
 - [x] مستند کردن auth تفاوت web/native.
-- [ ] حذف duplicate component/API codeهای ایجادشده در طول migration.
-- [ ] علامت‌گذاری Flutter به‌عنوان deprecated reference بعد از تکمیل parity کدنویسی.
+- [x] حذف duplicate component/API codeهای ایجادشده در طول migration.
+- [x] علامت‌گذاری Flutter به‌عنوان deprecated reference بعد از تکمیل parity کدنویسی.
 - [ ] حذف Flutter از workflowها فقط پس از تصمیم صریح برای حذف پوشه `app/`.
 
-> `AGENTS.md` اکنون Universal App را source اصلی migration معرفی می‌کند و مرزهای `frontend/src/universal-app/`، Next host، Capacitor wrapper، Flutter reference، route contract و تفاوت اجباری auth وب/native را برای agentهای بعدی صریح می‌کند. `README.md` نیز ساختار جدید repository، routeهای `/app`، مرز Next/Universal/Capacitor، قرارداد متفاوت auth وب/native، اسکریپت‌های native و نقش Flutter به‌عنوان reference/fallback را منعکس می‌کند. `CHECKLIST.md` هم اکنون وضعیت واقعی فازهای ۰ تا ۸ و بسته‌های باقیمانده فاز ۹ را به‌صورت جداگانه ثبت می‌کند تا آیتم کلی و مبهم «تکمیل مستندات و حذف duplicate code» جای وضعیت واقعی را نگیرد. mapping مرجع Flutter به route/componentهای Universal نیز در `docs/flutter-universal-mapping.md` ثبت شده و تفاوت‌های عمدی مانند حذف route مستقل `/launch`، نرمال‌سازی `/t/work-times` و ادغام request/session استاد را مشخص می‌کند. قرارداد runtime مشترک، request boundary، session lifecycle، secure storage و capability injection نیز در `docs/platform-adapter-contract.md` مستند شده است. مرز احراز هویت Web/Native نیز در `docs/auth-web-native.md` تثبیت شده است: وب فقط HttpOnly cookie + BFF و native فقط secure token + Bearer روی API مستقیم. cleanup کدنویسی تا اینجا envelope تکراری پاسخ API را در `platform/api.ts` متمرکز کرده و کارت تراکنش کیف پول/تبدیل ارقام مشترک learner و teacher را به `features/wallet/WalletTransactionCard.tsx` منتقل کرده است؛ checkbox کلی duplicate cleanup تا پایان audit component/APIها باز می‌ماند.
+> `AGENTS.md` Universal App را source canonical معرفی می‌کند و مرزهای `frontend/src/universal-app/`، Next host، Capacitor wrapper، Flutter deprecated reference، route contract و تفاوت اجباری auth وب/native را برای agentهای بعدی صریح می‌کند. mapping مرجع Flutter به route/componentهای Universal در `docs/flutter-universal-mapping.md` ثبت شده و Flutter پس از تکمیل parity دیگر target پیش‌فرض توسعه نیست. قرارداد runtime مشترک در `docs/platform-adapter-contract.md` و مرز احراز هویت Web/Native در `docs/auth-web-native.md` تثبیت شده‌اند.
+>
+> audit نهایی duplicateهای migration در 2026-09-09 بسته شد. envelope و coercionهای عمومی پاسخ API در `platform/api.ts` (`ApiEnvelope`, `asRecord`, `asArray`, `asNumber`, `asInteger`, `asString`) متمرکز هستند؛ error mapping عمومی در `ui/errorMessage.ts` قرار دارد؛ نمایش transaction، تبدیل رقم و format مبلغ learner/teacher در `features/wallet/WalletTransactionCard.tsx` مشترک شده‌اند؛ و duplicateهای session/profile load و validationهای تکراری که در بسته‌های cleanup شناسایی شدند نیز جمع شده‌اند. در audit نهایی مورد تکراری معنی‌داری که abstraction مشترک جدیدی را توجیه کند باقی نماند.
+>
+> **تصمیم 2026-09-09:** پوشه `app/` فعلاً حذف نمی‌شود. Flutter فقط deprecated reference است و workflowهای آن نیز تا تصمیم صریح آینده دست‌نخورده می‌مانند؛ بنابراین checkbox آخر عمداً باز است و مانع تکمیل کدنویسی migration نیست.
 
 ---
 
