@@ -96,14 +96,51 @@ type SessionBootstrapProps = {
   children: ReactNode;
 };
 
+type BootstrapStatus = "loading" | "ready" | "error";
+
+function SessionRestoreError({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return (
+    <main
+      dir="rtl"
+      data-universal-app="vodda"
+      style={{
+        minHeight: "100dvh",
+        display: "grid",
+        placeItems: "center",
+        padding: spacing.xl,
+        background: colors.sand50,
+        color: colors.ink,
+        fontFamily: typography.fontFamily,
+      }}
+    >
+      <Card elevated style={{ width: "min(100%, 460px)", textAlign: "center" }}>
+        <div style={{ display: "grid", gap: spacing.md, justifyItems: "center" }}>
+          <strong style={{ ...typography.title, color: colors.danger }}>اتصال به حساب برقرار نشد</strong>
+          <p style={{ ...typography.bodySmall, margin: 0, color: colors.inkMuted }}>
+            {message}
+          </p>
+          <Button type="button" onClick={onRetry}>
+            تلاش دوباره
+          </Button>
+        </div>
+      </Card>
+    </main>
+  );
+}
+
 export function SessionBootstrap({ routeName, config, children }: SessionBootstrapProps) {
   const platform = usePlatform();
-  const [ready, setReady] = useState(false);
+  const [status, setStatus] = useState<BootstrapStatus>("loading");
+  const [error, setError] = useState<string | null>(null);
+  const [retryKey, setRetryKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
 
     async function restore() {
+      setStatus("loading");
+      setError(null);
+
       try {
         const [user] = await Promise.all([
           platform.restoreSession(),
@@ -111,20 +148,35 @@ export function SessionBootstrap({ routeName, config, children }: SessionBootstr
         ]);
         if (cancelled) return;
 
-        if (!user && routeName !== "login") {
-          navigateApp("/login", config, { replace: true });
+        if (!user) {
+          if (routeName !== "login") {
+            navigateApp("/login", config, { replace: true });
+            return;
+          }
+          setStatus("ready");
           return;
         }
-        if (user && routeName === "login") {
+
+        if (user.needProfile && routeName !== "profile-edit") {
+          navigateApp("/profile/edit", config, { replace: true });
+          return;
+        }
+
+        if (routeName === "login") {
           navigateApp(defaultRouteForUser(user), config, { replace: true });
           return;
         }
-        if (user && !canAccessAppRoute(user, routeName)) {
+
+        if (!canAccessAppRoute(user, routeName)) {
           navigateApp(defaultRouteForUser(user), config, { replace: true });
           return;
         }
-      } finally {
-        if (!cancelled) setReady(true);
+
+        setStatus("ready");
+      } catch (restoreError) {
+        if (cancelled) return;
+        setError(messageOf(restoreError, "وضعیت ورود از سرور دریافت نشد. اتصال اینترنت را بررسی کنید و دوباره تلاش کنید."));
+        setStatus("error");
       }
     }
 
@@ -132,9 +184,17 @@ export function SessionBootstrap({ routeName, config, children }: SessionBootstr
     return () => {
       cancelled = true;
     };
-  }, [config, platform, routeName]);
+  }, [config, platform, retryKey, routeName]);
 
-  if (!ready) return <LaunchScreen />;
+  if (status === "loading") return <LaunchScreen />;
+  if (status === "error") {
+    return (
+      <SessionRestoreError
+        message={error ?? "وضعیت ورود از سرور دریافت نشد."}
+        onRetry={() => setRetryKey((value) => value + 1)}
+      />
+    );
+  }
   return <>{children}</>;
 }
 
