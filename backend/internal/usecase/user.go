@@ -58,7 +58,6 @@ type UpdateProfileInput struct {
 }
 
 // UpdateProfile mutates the user's basic profile.
-type UpdateProfileInput carries editable profile fields.
 func (uc *UserUsecase) UpdateProfile(ctx context.Context, id uint, in UpdateProfileInput) (*domain.User, error) {
 	name := strings.TrimSpace(in.Name)
 	city := strings.TrimSpace(in.City)
@@ -135,18 +134,18 @@ func (uc *UserUsecase) BecomeTeacher(ctx context.Context, userID uint, in Become
 		}
 	}
 	t := &domain.Teacher{
-		UserID:   userID,
-		Field:    in.Field,
-		Tag:      in.Tag,
-		Level:    in.Level,
-		City:     in.City,
-		Bio:      in.Bio,
-		Skills:   strings.Join(cleanSkills, ","),
-		Price30:  in.Price30,
-		Price60:  in.Price60,
-		Female:   in.Female,
-		Status:   domain.TeacherPending,
-		Verified: false,
+		UserID:    userID,
+		Field:     in.Field,
+		Tag:       in.Tag,
+		Level:     in.Level,
+		City:      in.City,
+		Bio:       in.Bio,
+		Skills:    strings.Join(cleanSkills, ","),
+		Price30:   in.Price30,
+		Price60:   in.Price60,
+		Female:    in.Female,
+		Status:    domain.TeacherPending,
+		Verified:  false,
 		Available: true,
 	}
 
