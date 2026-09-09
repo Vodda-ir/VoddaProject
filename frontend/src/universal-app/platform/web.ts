@@ -1,6 +1,6 @@
+import { normalizeAuthUser, type AuthUserPayload } from "./auth";
 import { joinUrl, PlatformHttpError, requestJson } from "./http";
 import type {
-  AuthUser,
   PlatformRequestInit,
   PlatformRuntime,
   VerifyOtpResult,
@@ -13,7 +13,7 @@ type WebPlatformOptions = {
 
 type VerifyResponse = {
   data: {
-    user: AuthUser;
+    user: AuthUserPayload;
     need_profile?: boolean;
   };
 };
@@ -50,15 +50,16 @@ export function createWebPlatformRuntime(
           body: JSON.stringify({ mobile, code }),
         },
       );
+      const needProfile = response.data.need_profile === true;
       return {
-        user: response.data.user,
-        needProfile: response.data.need_profile === true,
+        user: normalizeAuthUser(response.data.user, needProfile),
+        needProfile,
       };
     },
     async restoreSession() {
       try {
-        const response = await request<{ data: AuthUser }>("/me");
-        return response.data;
+        const response = await request<{ data: AuthUserPayload }>("/me");
+        return normalizeAuthUser(response.data);
       } catch (error) {
         if (error instanceof PlatformHttpError && error.status === 401) {
           return null;
