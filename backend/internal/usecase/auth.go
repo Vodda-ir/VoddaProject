@@ -102,23 +102,20 @@ func (uc *AuthUsecase) VerifyOTP(ctx context.Context, mobile, code string) (*Aut
 	}
 
 	user, err := uc.users.ByMobile(ctx, mobile)
-	needProfile := false
 	if err == domain.ErrNotFound {
 		user = &domain.User{Mobile: mobile, Role: domain.RoleLearner, Active: true}
 		if err := uc.users.Create(ctx, user); err != nil {
 			return nil, err
 		}
-		needProfile = true
 	} else if err != nil {
 		return nil, err
-	} else if strings.TrimSpace(user.Name) == "" {
-		needProfile = true
 	}
 
 	if !user.Active {
 		return nil, domain.ErrForbidden
 	}
 
+	needProfile := NeedsProfile(user)
 	tkn, err := uc.tokens.Generate(user.ID, user.Role)
 	if err != nil {
 		return nil, err
