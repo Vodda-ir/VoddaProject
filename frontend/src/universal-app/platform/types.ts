@@ -9,6 +9,7 @@ export type AuthUser = {
   bio: string;
   wallet: number;
   avatar_url?: string;
+  needProfile: boolean;
 };
 
 export type VerifyOtpResult = {
