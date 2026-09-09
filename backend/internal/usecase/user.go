@@ -25,9 +25,28 @@ func NewUserUsecase(u domain.UserRepository, t domain.TeacherRepository, onboard
 	return &UserUsecase{users: u, teachers: t, onboarding: transaction}
 }
 
-// Me returns the current user.
-func (uc *UserUsecase) Me(ctx context.Context, id uint) (*domain.User, error) {
-	return uc.users.ByID(ctx, id)
+// CurrentUserState is the authenticated account plus server-authoritative
+// onboarding state. Embedding User keeps the existing /me JSON shape intact
+// while exposing need_profile for web and native session restore.
+type CurrentUserState struct {
+	*domain.User
+	NeedProfile bool `json:"need_profile"`
+}
+
+// NeedsProfile is the single business rule for basic account completion.
+// Keeping it in the usecase layer prevents OTP verification and session restore
+// from drifting apart over time.
+func NeedsProfile(user *domain.User) bool {
+	return user == nil || strings.TrimSpace(user.Name) == ""
+}
+
+// Me returns the current user together with authoritative onboarding state.
+func (uc *UserUsecase) Me(ctx context.Context, id uint) (*CurrentUserState, error) {
+	u, err := uc.users.ByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return &CurrentUserState{User: u, NeedProfile: NeedsProfile(u)}, nil
 }
 
 // UpdateProfileInput carries editable profile fields.
@@ -39,6 +58,7 @@ type UpdateProfileInput struct {
 }
 
 // UpdateProfile mutates the user's basic profile.
+type UpdateProfileInput carries editable profile fields.
 func (uc *UserUsecase) UpdateProfile(ctx context.Context, id uint, in UpdateProfileInput) (*domain.User, error) {
 	name := strings.TrimSpace(in.Name)
 	city := strings.TrimSpace(in.City)
