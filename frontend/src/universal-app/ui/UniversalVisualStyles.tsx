@@ -1,6 +1,48 @@
 export function UniversalVisualStyles() {
   return (
     <style>{`
+      @font-face {
+        font-family: "IRANYekanXFaNum";
+        src: url("/fonts/IRANYekanXFaNum-Regular.ttf") format("truetype");
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: "IRANYekanXFaNum";
+        src: url("/fonts/IRANYekanXFaNum-Medium.ttf") format("truetype");
+        font-style: normal;
+        font-weight: 500;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: "IRANYekanXFaNum";
+        src: url("/fonts/IRANYekanXFaNum-DemiBold.ttf") format("truetype");
+        font-style: normal;
+        font-weight: 600;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: "IRANYekanXFaNum";
+        src: url("/fonts/IRANYekanXFaNum-Bold.ttf") format("truetype");
+        font-style: normal;
+        font-weight: 700;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: "IRANYekanXFaNum";
+        src: url("/fonts/IRANYekanXFaNum-ExtraBold.ttf") format("truetype");
+        font-style: normal;
+        font-weight: 800;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: "IRANYekanXFaNum";
+        src: url("/fonts/IRANYekanXFaNum-ExtraBold.ttf") format("truetype");
+        font-style: normal;
+        font-weight: 900;
+        font-display: swap;
+      }
       [data-universal-app="vodda"],
       [data-app-shell] {
         font-family: "IRANYekanXFaNum", system-ui, sans-serif;
