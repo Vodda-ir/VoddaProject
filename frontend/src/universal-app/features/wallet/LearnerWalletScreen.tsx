@@ -2,7 +2,19 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { usePlatform } from "../../platform/context";
-import { Card, EmptyState, ErrorState, LoadingState, Button, colors, radii, shadows, spacing, typography } from "../../ui";
+import {
+  Button,
+  Card,
+  EmptyState,
+  ErrorState,
+  Icon,
+  LoadingState,
+  SectionHeader,
+  WalletHero,
+  colors,
+  spacing,
+  typography,
+} from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
 import { getWalletSnapshot } from "./api";
 import type { WalletTransaction } from "./types";
@@ -36,46 +48,60 @@ export function LearnerWalletScreen() {
   }, [load]);
 
   return (
-    <section style={{ display: "grid", gap: spacing.lg }}>
-      <header>
-        <h1 style={{ ...typography.heading, margin: 0 }}>کیف پول</h1>
-      </header>
+    <section className="vodda-screen" style={{ display: "grid", gap: spacing.xl }}>
+      <WalletHero amount={balance === null ? "—" : formatWalletAmount(balance)} />
 
       <Card
+        className="vodda-enter vodda-enter-delay-1"
         style={{
-          padding: spacing.xxl,
-          borderRadius: radii.xl,
-          color: colors.surface,
-          background: `linear-gradient(135deg, ${colors.olive800}, ${colors.olive600})`,
-          boxShadow: shadows.olive,
+          display: "flex",
+          alignItems: "flex-start",
+          gap: spacing.md,
+          background: colors.goldBackground,
+          borderColor: colors.goldSoft,
         }}
       >
-        <span style={{ ...typography.bodySmall, color: "rgba(255,255,255,.72)" }}>موجودی کیف پول</span>
-        <div style={{ marginTop: spacing.sm }}>
-          <strong style={{ fontSize: 30, lineHeight: 1.4, fontWeight: 800 }}>
-            {balance === null ? "—" : formatWalletAmount(balance)}
-          </strong>
-          <span style={{ ...typography.body, marginInlineStart: spacing.sm, color: "rgba(255,255,255,.72)", fontWeight: 700 }}>تومان</span>
-        </div>
-      </Card>
-
-      <Card style={{ background: colors.goldBackground, border: `1px solid ${colors.goldSoft}` }}>
+        <span
+          aria-hidden="true"
+          style={{
+            width: 42,
+            height: 42,
+            flex: "0 0 42px",
+            display: "grid",
+            placeItems: "center",
+            borderRadius: 14,
+            color: colors.goldDark,
+            background: "rgba(255,255,255,.55)",
+          }}
+        >
+          <Icon name="shield" size={20} />
+        </span>
         <p style={{ ...typography.bodySmall, margin: 0, color: colors.inkSecondary }}>
-          شارژ اینترنتی کیف پول پس از اتصال و تأیید درگاه پرداخت فعال می‌شود. تا آن زمان هیچ دکمه یا مسیر شارژ آزمایشی در اپ نمایش داده نمی‌شود.
+          شارژ اینترنتی پس از اتصال و تأیید درگاه پرداخت فعال می‌شود. تا آن زمان هیچ مسیر شارژ آزمایشی در اپ نمایش داده نمی‌شود.
         </p>
       </Card>
 
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: spacing.md }}>
-        <h2 style={{ ...typography.title, margin: 0 }}>تراکنش‌ها</h2>
-        {!loading ? <Button variant="secondary" onClick={() => void load()}>به‌روزرسانی</Button> : null}
-      </div>
+      <SectionHeader
+        title="تراکنش‌ها"
+        description={transactions.length ? `${transactions.length.toLocaleString("fa-IR")} گردش مالی ثبت‌شده` : undefined}
+        action={!loading ? "به‌روزرسانی" : undefined}
+        onAction={() => void load()}
+      />
 
       {loading ? <LoadingState label="در حال دریافت کیف پول…" /> : null}
       {!loading && error ? (
-        <ErrorState title="دریافت کیف پول ناموفق بود" description={error} action={<Button onClick={() => void load()}>تلاش دوباره</Button>} />
+        <ErrorState
+          title="دریافت کیف پول ناموفق بود"
+          description={error}
+          action={<Button onClick={() => void load()}>تلاش دوباره</Button>}
+        />
       ) : null}
       {!loading && !error && transactions.length === 0 ? (
-        <EmptyState title="تراکنشی ثبت نشده" description="هنوز تراکنشی در کیف پول شما وجود ندارد." />
+        <EmptyState
+          icon={<Icon name="wallet" size={30} />}
+          title="تراکنشی ثبت نشده"
+          description="هنوز تراکنشی در کیف پول شما وجود ندارد."
+        />
       ) : null}
       {!loading && !error && transactions.length > 0 ? (
         <div style={{ display: "grid", gap: spacing.sm }}>
