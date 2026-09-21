@@ -89,7 +89,7 @@ export default function UserDashboard() {
                   <div style={{ fontSize: 11.5, color: 'var(--olive-600)' }}>{(teacher.tag as string) || ''}</div>
                 </div>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, fontSize: 12.5, fontWeight: 800, color: 'var(--gold)' }}>
-                  <Icon name="star" size={13} fill /> {Number(teacher.rating) > 0 ? Number(teacher.rating).toFixed(1) : '—'}
+                  <Icon name="star" size={13} fill /> {Number(teacher.rating) > 0 ? faDigits(Number(teacher.rating).toFixed(1)) : '—'}
                 </span>
               </Link>
             ))}
