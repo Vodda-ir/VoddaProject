@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import type { UniversalAppConfig } from "../../config";
 import { usePlatform } from "../../platform/context";
 import type { AuthUser } from "../../platform/types";
 import { navigateApp, type AppRouteName } from "../../router";
-import { Button, Card, Icon, Input, colors, gradients, radii, shadows, spacing, typography } from "../../ui";
+import { Button, Card, Icon, colors, radii, shadows, spacing, typography } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
 
 function normalizeDigits(value: string) {
@@ -20,7 +20,7 @@ function normalizedMobile(value: string) {
 }
 
 function normalizedOtp(value: string) {
-  return normalizeDigits(value).replace(/\D/g, "").slice(0, 6);
+  return normalizeDigits(value).replace(/\D/g, "").slice(0, 5);
 }
 
 const teacherOnlyRoutes = new Set<AppRouteName>([
@@ -59,33 +59,22 @@ export function LaunchScreen() {
         display: "grid",
         placeItems: "center",
         padding: spacing.xl,
-        background: `radial-gradient(circle at 50% 20%, ${colors.olive100}, ${colors.sand50} 48%, ${colors.sand100})`,
+        background: colors.sand50,
         color: colors.ink,
         fontFamily: typography.fontFamily,
       }}
     >
-      <div style={{ display: "grid", justifyItems: "center", gap: spacing.md, textAlign: "center" }}>
-        <div
-          aria-hidden="true"
-          style={{
-            width: 92,
-            height: 92,
-            display: "grid",
-            placeItems: "center",
-            borderRadius: radii.xl,
-            background: gradients.deep,
-            boxShadow: shadows.olive,
-            color: colors.surface,
-            fontSize: 34,
-            fontWeight: 900,
-          }}
-        >
-          و
-        </div>
-        <strong style={{ ...typography.heading, color: colors.olive900 }}>وُدّا</strong>
-        <span style={{ ...typography.bodySmall, color: colors.inkMuted }}>
-          نرم‌افزار تخصصی آموزش قرآن کریم
-        </span>
+      <div style={{ display: "grid", justifyItems: "center", gap: 12, textAlign: "center" }}>
+        <img
+          src="/vodda-logo.svg"
+          alt="وُدّا"
+          width={150}
+          height={173}
+          style={{ width: 150, height: "auto", display: "block" }}
+        />
+        <strong style={{ fontSize: 14, fontWeight: 900, color: colors.ink }}>
+          نرم افزار تخصصی آموزش قرآن کریم
+        </strong>
       </div>
     </main>
   );
@@ -205,6 +194,7 @@ type LoginScreenProps = {
 
 export function LoginScreen({ config }: LoginScreenProps) {
   const platform = usePlatform();
+  const otpRef = useRef<HTMLInputElement>(null);
   const [mobile, setMobile] = useState("");
   const [code, setCode] = useState("");
   const [codeSent, setCodeSent] = useState(false);
@@ -212,12 +202,18 @@ export function LoginScreen({ config }: LoginScreenProps) {
   const [error, setError] = useState<string | null>(null);
 
   const mobileValid = useMemo(() => /^09\d{9}$/.test(mobile), [mobile]);
-  const codeValid = code.length >= 5;
+  const codeValid = code.length === 5;
+
+  useEffect(() => {
+    if (!codeSent) return;
+    const timer = window.setTimeout(() => otpRef.current?.focus(), 120);
+    return () => window.clearTimeout(timer);
+  }, [codeSent]);
 
   async function requestOtp(event?: FormEvent) {
     event?.preventDefault();
     if (!mobileValid) {
-      setError("شماره موبایل را به‌صورت ۱۱ رقمی و با ۰۹ وارد کنید.");
+      setError("شماره موبایل ۱۱ رقمی وارد کنید.");
       return;
     }
 
@@ -266,99 +262,222 @@ export function LoginScreen({ config }: LoginScreenProps) {
       dir="rtl"
       data-universal-app="vodda"
       data-platform={platform.kind}
-      style={{ minHeight: "100dvh", background: `radial-gradient(circle at 50% 0%, ${colors.olive100}, ${colors.sand50} 40%, ${colors.sand100})`, color: colors.ink }}
+      style={{
+        minHeight: "100dvh",
+        display: "grid",
+        justifyItems: "center",
+        alignItems: "start",
+        background: colors.sand50,
+        color: colors.ink,
+        fontFamily: typography.fontFamily,
+      }}
     >
       <section
         style={{
           width: "100%",
-          maxWidth: 520,
-          margin: "0 auto",
-          paddingInline: spacing.xl,
-          paddingTop: "max(40px, env(safe-area-inset-top))",
-          paddingBottom: "max(24px, env(safe-area-inset-bottom))",
-          fontFamily: typography.fontFamily,
+          maxWidth: 440,
+          padding: "max(28px, env(safe-area-inset-top)) 28px max(28px, env(safe-area-inset-bottom))",
         }}
       >
-        <div style={{ marginBottom: spacing.xxl, textAlign: "center" }}>
-          <div
-            aria-hidden="true"
-            style={{
-              width: 72,
-              height: 72,
-              display: "grid",
-              placeItems: "center",
-              margin: "0 auto 12px",
-              borderRadius: radii.xl,
-              background: gradients.deep,
-              boxShadow: shadows.olive,
-              color: colors.surface,
-              fontSize: 28,
-              fontWeight: 900,
-            }}
-          >
-            و
-          </div>
-          <h1 style={{ ...typography.heading, margin: 0, color: colors.olive900 }}>ورود به وُدّا</h1>
-          <p style={{ ...typography.bodySmall, margin: "8px 0 0", color: colors.inkMuted }}>
-            نرم‌افزار تخصصی آموزش قرآن کریم
+        <div className="vodda-enter" style={{ display: "grid", justifyItems: "center", paddingTop: 8 }}>
+          <img
+            src="/vodda-logo.svg"
+            alt="وُدّا"
+            width={96}
+            height={111}
+            style={{ width: 96, height: "auto", display: "block" }}
+          />
+          <p style={{ margin: "12px 0 0", color: colors.ink, fontSize: 14, fontWeight: 900, textAlign: "center" }}>
+            نرم افزار تخصصی آموزش قرآن کریم
           </p>
         </div>
 
-        <Card elevated className="vodda-enter" style={{ padding: spacing.xl }}>
-          <form onSubmit={codeSent ? verifyOtp : requestOtp} style={{ display: "grid", gap: spacing.lg }}>
-            <Input
-              label="شماره موبایل"
-              name="mobile"
-              inputMode="numeric"
-              autoComplete="tel"
-              dir="ltr"
-              value={mobile}
-              disabled={codeSent || loading !== null}
-              placeholder="09123456789"
-              onChange={(event) => setMobile(normalizedMobile(event.target.value))}
-              error={!mobileValid && mobile.length === 11 ? "شماره موبایل معتبر نیست." : undefined}
-            />
-
-            {codeSent ? (
-              <>
-                <Input
-                  label="کد تأیید"
-                  name="otp"
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  dir="ltr"
-                  autoFocus
-                  value={code}
-                  disabled={loading !== null}
-                  placeholder="-----"
-                  onChange={(event) => setCode(normalizedOtp(event.target.value))}
-                  hint={`کد ارسال‌شده به ${mobile} را وارد کنید.`}
-                />
-                <Button type="submit" fullWidth loading={loading === "verify"} disabled={!codeValid}><Icon name="checkCircle" size={18} />ورود</Button>
-                <Button type="button" fullWidth variant="ghost" disabled={loading !== null} onClick={resetMobile}>
-                  ویرایش شماره موبایل
-                </Button>
-              </>
-            ) : (
-              <Button type="submit" fullWidth loading={loading === "otp"} disabled={!mobileValid}><Icon name="phone" size={18} />دریافت کد تأیید</Button>
-            )}
-
-            {error ? (
-              <div
-                role="alert"
+        <form
+          onSubmit={codeSent ? verifyOtp : requestOtp}
+          className="vodda-enter vodda-enter-delay-1"
+          style={{ display: "grid", gap: 16, marginTop: 32 }}
+        >
+          <label style={{ display: "grid", gap: 8 }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: codeSent ? colors.inkFaint : colors.inkSecondary }}>
+              شماره موبایل
+            </span>
+            <div style={{ position: "relative" }}>
+              <Icon
+                name="phone"
+                size={20}
                 style={{
-                  padding: `${spacing.sm}px ${spacing.md}px`,
-                  borderRadius: radii.md,
-                  background: colors.dangerBackground,
-                  color: colors.danger,
-                  ...typography.bodySmall,
+                  position: "absolute",
+                  insetInlineStart: 16,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  color: codeSent ? colors.inkFaint : colors.olive600,
+                }}
+              />
+              <input
+                name="mobile"
+                inputMode="numeric"
+                autoComplete="tel"
+                dir="ltr"
+                value={mobile}
+                disabled={codeSent || loading !== null}
+                placeholder="۰۹××× ××× ×××"
+                onChange={(event) => {
+                  setMobile(normalizedMobile(event.target.value));
+                  setError(null);
+                }}
+                style={{
+                  width: "100%",
+                  minHeight: 58,
+                  padding: "12px 46px 12px 16px",
+                  textAlign: "center",
+                  border: "1px solid " + colors.sand200,
+                  borderRadius: 18,
+                  outline: "none",
+                  color: codeSent ? colors.inkMuted : colors.ink,
+                  background: codeSent ? colors.sand100 : colors.surface,
+                  boxShadow: codeSent ? "none" : shadows.xs,
+                  fontFamily: typography.fontFamily,
+                  fontSize: 18,
+                  fontWeight: 700,
+                  letterSpacing: 2,
+                }}
+              />
+            </div>
+          </label>
+
+          {!codeSent ? (
+            <Button type="submit" fullWidth loading={loading === "otp"} disabled={!mobileValid} style={{ minHeight: 52 }}>
+              دریافت کد تأیید
+            </Button>
+          ) : (
+            <div style={{ display: "grid", gap: 20 }}>
+              <p style={{ ...typography.bodySmall, margin: "0 0 -2px", color: colors.inkMuted, textAlign: "center" }}>
+                کد پیامک‌شده به <span dir="ltr">{mobile}</span> را وارد کنید
+              </p>
+
+              <div
+                dir="ltr"
+                role="group"
+                aria-label="کد تأیید پنج رقمی"
+                onClick={() => otpRef.current?.focus()}
+                style={{
+                  position: "relative",
+                  display: "grid",
+                  gridTemplateColumns: "repeat(5, minmax(0, 52px))",
+                  justifyContent: "center",
+                  gap: 8,
+                  cursor: "text",
                 }}
               >
-                {error}
+                {Array.from({ length: 5 }, (_, index) => {
+                  const digit = code[index] ?? "";
+                  const focused = index === Math.min(code.length, 4) && loading === null;
+                  return (
+                    <span
+                      key={index}
+                      aria-hidden="true"
+                      style={{
+                        height: 56,
+                        display: "grid",
+                        placeItems: "center",
+                        border: focused ? "1.8px solid " + colors.olive500 : "1px solid " + (digit ? colors.olive300 : colors.sand200),
+                        borderRadius: 14,
+                        color: colors.ink,
+                        background: digit ? colors.olive50 : colors.surface,
+                        boxShadow: shadows.xs,
+                        fontSize: 22,
+                        fontWeight: 800,
+                      }}
+                    >
+                      {digit}
+                    </span>
+                  );
+                })}
+                <input
+                  ref={otpRef}
+                  value={code}
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  disabled={loading !== null}
+                  maxLength={5}
+                  onChange={(event) => {
+                    setCode(normalizedOtp(event.target.value));
+                    setError(null);
+                  }}
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    width: "100%",
+                    height: "100%",
+                    opacity: 0,
+                    border: 0,
+                    cursor: "text",
+                  }}
+                  aria-label="کد تأیید"
+                />
               </div>
-            ) : null}
-          </form>
-        </Card>
+
+              <Button type="submit" fullWidth loading={loading === "verify"} disabled={!codeValid} style={{ minHeight: 52 }}>
+                ورود
+              </Button>
+
+              <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 12 }}>
+                <button
+                  type="button"
+                  disabled={loading !== null}
+                  onClick={() => void requestOtp()}
+                  style={{
+                    padding: "8px 2px",
+                    border: 0,
+                    color: colors.olive600,
+                    background: "transparent",
+                    fontFamily: typography.fontFamily,
+                    fontWeight: 600,
+                    cursor: loading ? "not-allowed" : "pointer",
+                  }}
+                >
+                  ارسال مجدد کد
+                </button>
+                <span aria-hidden="true" style={{ width: 3, height: 3, borderRadius: "50%", background: colors.sand200 }} />
+                <button
+                  type="button"
+                  disabled={loading !== null}
+                  onClick={resetMobile}
+                  style={{
+                    padding: "8px 2px",
+                    border: 0,
+                    color: colors.inkMuted,
+                    background: "transparent",
+                    fontFamily: typography.fontFamily,
+                    fontWeight: 600,
+                    cursor: loading ? "not-allowed" : "pointer",
+                  }}
+                >
+                  تغییر شماره
+                </button>
+              </div>
+            </div>
+          )}
+
+          {error ? (
+            <div
+              role="alert"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                padding: "12px 16px",
+                borderRadius: 14,
+                background: colors.clayBackground,
+                color: colors.danger,
+                ...typography.bodySmall,
+              }}
+            >
+              <Icon name="shield" size={18} />
+              <span>{error}</span>
+            </div>
+          ) : null}
+        </form>
       </section>
     </main>
   );
