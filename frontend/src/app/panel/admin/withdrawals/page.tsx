@@ -85,7 +85,7 @@ export default function AdminWithdrawals() {
               <Avatar size={46} imageUrl={fullUrl(withdrawal.user?.avatar_url)} />
               <div style={{ flex: '1 1 230px', minWidth: 0 }}>
                 <div style={{ fontSize: 14, fontWeight: 700 }}>{withdrawal.user?.name || '—'}</div>
-                <div dir="ltr" style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 3, textAlign: 'right' }}>{withdrawal.sheba || 'شماره شبا ثبت نشده'}</div>
+                <div dir="ltr" style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 3, textAlign: 'right' }}>{withdrawal.sheba ? faDigits(withdrawal.sheba) : 'شماره شبا ثبت نشده'}</div>
                 {withdrawal.created_at && <time dateTime={withdrawal.created_at} style={{ display: 'block', fontSize: 12, color: 'var(--ink-4)', marginTop: 3 }}>{new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(withdrawal.created_at))}</time>}
               </div>
               <span style={{ fontSize: 16, fontWeight: 800, color: 'var(--olive-700)' }}>{faDigits(Number(withdrawal.amount) || 0)} تومان</span>
