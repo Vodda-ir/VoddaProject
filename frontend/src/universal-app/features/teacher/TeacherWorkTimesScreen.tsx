@@ -14,10 +14,11 @@ import {
   colors,
   radii,
   spacing,
+  toFaDigits,
+  toLatinDigits,
   typography,
 } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
-import { toFaDigits } from "../wallet/WalletTransactionCard";
 
 type WorkTime = {
   id: number;
@@ -303,20 +304,24 @@ export function TeacherWorkTimesScreen() {
           <label style={{ display: "grid", gap: spacing.xs, ...typography.bodySmall }}>
             <span style={{ fontWeight: 700 }}>از ساعت</span>
             <input
-              type="time"
-              value={draft.from}
+              type="text"
+              inputMode="numeric"
+              value={toFaDigits(draft.from)}
               disabled={busyId !== null}
-              onChange={(event) => setDraft((current) => ({ ...current, from: event.target.value }))}
+              placeholder="۰۸:۰۰"
+              onChange={(event) => setDraft((current) => ({ ...current, from: toLatinDigits(event.target.value).replace(/[^0-9:]/g, "").slice(0, 5) }))}
               style={{ width: "100%", padding: spacing.md, border: `1px solid ${colors.sand200}`, borderRadius: radii.md, background: colors.surface, color: colors.ink, boxShadow: "none", fontFamily: typography.fontFamily }}
             />
           </label>
           <label style={{ display: "grid", gap: spacing.xs, ...typography.bodySmall }}>
             <span style={{ fontWeight: 700 }}>تا ساعت</span>
             <input
-              type="time"
-              value={draft.to}
+              type="text"
+              inputMode="numeric"
+              value={toFaDigits(draft.to)}
               disabled={busyId !== null}
-              onChange={(event) => setDraft((current) => ({ ...current, to: event.target.value }))}
+              placeholder="۱۲:۰۰"
+              onChange={(event) => setDraft((current) => ({ ...current, to: toLatinDigits(event.target.value).replace(/[^0-9:]/g, "").slice(0, 5) }))}
               style={{ width: "100%", padding: spacing.md, border: `1px solid ${colors.sand200}`, borderRadius: radii.md, background: colors.surface, color: colors.ink, boxShadow: "none", fontFamily: typography.fontFamily }}
             />
           </label>
