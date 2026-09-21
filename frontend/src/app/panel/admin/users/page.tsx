@@ -51,7 +51,7 @@ export default function AdminUsers() {
     if (!token || busyId !== null) return;
     const next = !user.active;
     const verb = next ? 'فعال' : 'غیرفعال';
-    if (!window.confirm(`حساب «${user.name || user.mobile || 'کاربر'}» ${verb} شود؟`)) return;
+    if (!window.confirm(`حساب «${user.name || (user.mobile ? faDigits(user.mobile) : 'کاربر')}» ${verb} شود؟`)) return;
 
     setBusyId(user.id);
     setError('');
@@ -93,7 +93,7 @@ export default function AdminUsers() {
                 <Avatar size={34} imageUrl={fullUrl(user.avatar_url)} />
                 <span style={{ fontWeight: 600 }}>{user.name || '—'}</span>
               </div>
-              <span dir="ltr" style={{ color: 'var(--ink-2s)', textAlign: 'right' }}>{user.mobile || '—'}</span>
+              <span dir="ltr" style={{ color: 'var(--ink-2s)', textAlign: 'right' }}>{faDigits(user.mobile || '—')}</span>
               <span style={{ fontSize: 12, fontWeight: 700, padding: '3px 10px', borderRadius: 999, width: 'fit-content', background: user.role === 'admin' ? 'var(--clay-bg)' : user.role === 'teacher' ? 'var(--olive-100)' : 'var(--sand-100)', color: user.role === 'admin' ? 'var(--clay)' : user.role === 'teacher' ? 'var(--olive-700)' : 'var(--ink-3)' }}>
                 {user.role === 'admin' ? 'ادمین' : user.role === 'teacher' ? 'استاد' : 'قرآن‌آموز'}
               </span>
