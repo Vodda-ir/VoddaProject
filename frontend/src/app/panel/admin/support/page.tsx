@@ -1,5 +1,6 @@
 'use client';
 
+import { toFaDigits } from '@/lib/persian';
 import { useCallback, useEffect, useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { getToken } from '@/lib/auth';
@@ -80,7 +81,7 @@ export default function AdminSupportPage() {
                 <div style={{ width: 42, height: 42, borderRadius: 12, background: 'var(--olive-100)', color: 'var(--olive-700)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="message" size={21} /></div>
                 <div style={{ flex: '1 1 220px' }}>
                   <h2 style={{ fontSize: 15, fontWeight: 800, margin: 0 }}>{item.name}</h2>
-                  <div dir="ltr" style={{ fontSize: 12.5, color: 'var(--ink-3)', marginTop: 3, textAlign: 'right' }}>{item.contact}</div>
+                  <div dir="ltr" style={{ fontSize: 12.5, color: 'var(--ink-3)', marginTop: 3, textAlign: 'right' }}>{toFaDigits(item.contact)}</div>
                 </div>
                 <time dateTime={item.created_at} style={{ fontSize: 12, color: 'var(--ink-4)' }}>{new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(item.created_at))}</time>
               </div>
