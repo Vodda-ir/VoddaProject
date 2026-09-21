@@ -14,13 +14,15 @@ import {
   IconBadge,
   LoadingState,
   colors,
+  digitsOnly,
   radii,
   shadows,
   spacing,
+  toFaDigits,
   typography,
 } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
-import { formatWalletAmount, toFaDigits } from "../wallet/WalletTransactionCard";
+import { formatWalletAmount } from "../wallet/WalletTransactionCard";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -304,9 +306,9 @@ export function TeacherServicesScreen() {
             <span style={{ fontWeight: 700 }}>مدت (۱۰ تا ۲۴۰ دقیقه)</span>
             <input
               inputMode="numeric"
-              value={draft.duration}
+              value={toFaDigits(draft.duration)}
               disabled={busyId !== null}
-              onChange={(event) => setDraft((current) => ({ ...current, duration: event.target.value.replace(/\D/g, "") }))}
+              onChange={(event) => setDraft((current) => ({ ...current, duration: digitsOnly(event.target.value) }))}
               style={{ width: "100%", padding: spacing.md, border: `1px solid ${colors.sand200}`, borderRadius: radii.md, background: colors.surface, color: colors.ink, boxShadow: shadows.xs, fontFamily: typography.fontFamily }}
             />
           </label>
@@ -314,9 +316,9 @@ export function TeacherServicesScreen() {
             <span style={{ fontWeight: 700 }}>قیمت (تومان)</span>
             <input
               inputMode="numeric"
-              value={draft.price}
+              value={toFaDigits(draft.price)}
               disabled={busyId !== null}
-              onChange={(event) => setDraft((current) => ({ ...current, price: event.target.value.replace(/\D/g, "") }))}
+              onChange={(event) => setDraft((current) => ({ ...current, price: digitsOnly(event.target.value) }))}
               style={{ width: "100%", padding: spacing.md, border: `1px solid ${colors.sand200}`, borderRadius: radii.md, background: colors.surface, color: colors.ink, boxShadow: shadows.xs, fontFamily: typography.fontFamily }}
             />
           </label>
