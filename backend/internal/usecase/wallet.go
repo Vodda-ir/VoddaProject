@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"unicode"
 
@@ -90,6 +91,9 @@ func (uc *WalletUsecase) RequestWithdrawal(ctx context.Context, userID uint, in 
 	}
 
 	t, err := uc.teachers.ByUserID(ctx, userID)
+	if errors.Is(err, domain.ErrNotFound) {
+		return nil, domain.ErrTeacherProfileRequired
+	}
 	if err != nil {
 		return nil, err
 	}
