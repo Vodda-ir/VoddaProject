@@ -2,7 +2,7 @@
 
 import type { UniversalAppConfig } from "../../config";
 import { navigateApp } from "../../router";
-import { Icon, Sheet, colors, radii, shadows, spacing, typography } from "../../ui";
+import { Icon, Sheet, colors, shadows, typography } from "../../ui";
 
 export function RoleModeSheet({
   open,
