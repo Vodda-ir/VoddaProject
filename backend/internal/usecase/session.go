@@ -270,7 +270,7 @@ func (uc *SessionUsecase) LearnerSessions(ctx context.Context, learnerID uint, w
 
 // TeacherSessions lists a teacher's sessions by status set.
 func (uc *SessionUsecase) TeacherSessions(ctx context.Context, userID uint, statuses []domain.SessionStatus) ([]domain.Session, error) {
-	teacher, err := uc.teachers.ByUserID(ctx, userID)
+	teacher, err := uc.teacherProfileForUser(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -278,7 +278,7 @@ func (uc *SessionUsecase) TeacherSessions(ctx context.Context, userID uint, stat
 }
 
 func (uc *SessionUsecase) ownTeacherSession(ctx context.Context, userID, sessionID uint) (*domain.Session, *domain.Teacher, error) {
-	teacher, err := uc.teachers.ByUserID(ctx, userID)
+	teacher, err := uc.teacherProfileForUser(ctx, userID)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -290,6 +290,14 @@ func (uc *SessionUsecase) ownTeacherSession(ctx context.Context, userID, session
 		return nil, nil, domain.ErrForbidden
 	}
 	return s, teacher, nil
+}
+
+func (uc *SessionUsecase) teacherProfileForUser(ctx context.Context, userID uint) (*domain.Teacher, error) {
+	teacher, err := uc.teachers.ByUserID(ctx, userID)
+	if errors.Is(err, domain.ErrNotFound) {
+		return nil, domain.ErrTeacherProfileRequired
+	}
+	return teacher, err
 }
 
 func (uc *SessionUsecase) ensureWithinWorkTime(ctx context.Context, teacherID uint, scheduledAt time.Time, duration int) error {
