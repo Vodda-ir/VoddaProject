@@ -23,7 +23,7 @@ import { PlatformProvider } from "./platform/context";
 import type { PlatformRuntime } from "./platform/types";
 import { createWebPlatformRuntime } from "./platform/web";
 import { navigateApp, useAppRoute, type AppRouteName } from "./router";
-import { MobileAppShell, TeacherAppShell, Card, UniversalVisualStyles, colors, spacing, typography } from "./ui";
+import { MobileAppShell, TeacherAppShell, Card, UniversalVisualStyles, colors, typography } from "./ui";
 
 export type UniversalAppProps = {
   config?: Partial<UniversalAppConfig>;
