@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { UniversalAppConfig } from "../../config";
 import { usePlatform } from "../../platform/context";
 import type { AuthUser } from "../../platform/types";
@@ -20,6 +20,7 @@ import {
   typography,
 } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
+import { RoleModeSheet } from "../auth/RoleModeSheet";
 import { searchTeachers } from "../teachers/api";
 import type { Teacher } from "../teachers/types";
 
@@ -257,11 +258,11 @@ function FeaturedTeacher({ teacher, config }: { teacher: Teacher; config: Univer
 export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
   const runtime = usePlatform();
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [query, setQuery] = useState("");
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [teachersLoading, setTeachersLoading] = useState(true);
   const [teachersError, setTeachersError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const [roleSheetOpen, setRoleSheetOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -304,11 +305,7 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
   const recommended = men.length > 0 ? men : teachers;
   const featured = teachers[0] ?? null;
   const firstName = user?.name?.trim().split(/\s+/)[0] || "دوست";
-
-  function submitSearch(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    navigateApp(searchUrl(query), config);
-  }
+  const canUseTeacherMode = user?.role === "teacher" || user?.role === "admin";
 
   return (
     <div style={{ display: "grid", gap: 26 }}>
@@ -324,7 +321,7 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
       >
         <button
           type="button"
-          onClick={() => navigateApp("/profile", config)}
+          onClick={() => { if (canUseTeacherMode) setRoleSheetOpen(true); }}
           className="vodda-tappable"
           style={{
             minWidth: 0,
@@ -337,7 +334,7 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
             color: colors.ink,
             background: "transparent",
             fontFamily: typography.fontFamily,
-            cursor: "pointer",
+            cursor: canUseTeacherMode ? "pointer" : "default",
           }}
         >
           <Avatar name={user?.name} src={user?.avatar_url} size={48} ring />
@@ -356,6 +353,11 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
             >
               {firstName} جان 🌿
             </strong>
+            {canUseTeacherMode ? (
+              <span style={{ display: "block", marginTop: 1, fontSize: 11.5, color: colors.olive700, fontWeight: 600 }}>
+                برای تغییر پنل روی پروفایل بزنید
+              </span>
+            ) : null}
           </span>
         </button>
         <button
@@ -386,62 +388,23 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
         title={"استاد قرآن و مداحی‌ات را\nپیدا و زمان آزادش را رزرو کن"}
         description="پروفایل استادان تأییدشده و خدمات قابل رزرو را ببین."
       >
-        <form onSubmit={submitSearch} style={{ display: "flex", gap: spacing.sm, alignItems: "center" }}>
-          <div style={{ position: "relative", minWidth: 0, flex: 1 }}>
-            <Icon
-              name="search"
-              size={18}
-              stroke={1.9}
-              style={{ position: "absolute", insetInlineStart: 14, top: "50%", transform: "translateY(-50%)", color: colors.inkMuted }}
-            />
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="نام استاد، مهارت یا شهر"
-              aria-label="جستجوی استاد"
-              className="vodda-input"
-              style={{
-                width: "100%",
-                minHeight: 48,
-                padding: "10px 42px 10px 14px",
-                border: "1px solid rgba(255,255,255,.26)",
-                borderRadius: radii.pill,
-                outline: "none",
-                color: colors.ink,
-                background: "rgba(255,255,255,.96)",
-                boxShadow: "0 8px 20px rgba(31,37,23,.12)",
-                fontFamily: typography.fontFamily,
-                ...typography.bodySmall,
-              }}
-            />
-          </div>
-          <Button
-            type="submit"
-            style={{
-              minWidth: 48,
-              width: 48,
-              minHeight: 48,
-              padding: 0,
-              color: colors.olive700,
-              background: colors.surface,
-              borderColor: colors.surface,
-              boxShadow: "0 8px 20px rgba(31,37,23,.12)",
-            }}
-            aria-label="جستجو"
-          >
-            <Icon name="arrowL" size={19} stroke={2} />
-          </Button>
-        </form>
+        <Button
+          onClick={() => navigateApp("/search", config)}
+          style={{
+            minHeight: 44,
+            color: colors.olive700,
+            background: colors.surface,
+            borderColor: colors.surface,
+            boxShadow: "none",
+          }}
+        >
+          <Icon name="search" size={18} />
+          جستجوی استاد
+        </Button>
       </HeroPanel>
 
-      <section className="vodda-enter vodda-enter-delay-1" aria-labelledby="quick-categories-title">
-        <SectionHeader
-          title="دسته‌های سریع"
-          description="مستقیم وارد جستجوی تخصصی شو"
-          action="همه استادها"
-          onAction={() => navigateApp("/search", config)}
-        />
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: spacing.md, marginTop: spacing.md }}>
+      <section className="vodda-enter vodda-enter-delay-1">
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
           {quickCategories.map((category) => (
             <button
               key={category.id}
@@ -517,6 +480,13 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
           <TeacherRail title="اساتید بانو" teachers={women} config={config} />
         </>
       )}
+
+      <RoleModeSheet
+        open={roleSheetOpen}
+        mode="learner"
+        config={config}
+        onClose={() => setRoleSheetOpen(false)}
+      />
     </div>
   );
 }
