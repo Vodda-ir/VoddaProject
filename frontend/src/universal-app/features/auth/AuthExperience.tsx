@@ -6,7 +6,7 @@ import type { UniversalAppConfig } from "../../config";
 import { usePlatform } from "../../platform/context";
 import type { AuthUser } from "../../platform/types";
 import { navigateApp, type AppRouteName } from "../../router";
-import { Button, Card, Input, colors, radii, spacing, typography } from "../../ui";
+import { Button, Card, Icon, Input, colors, gradients, radii, shadows, spacing, typography } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
 
 function normalizeDigits(value: string) {
@@ -59,7 +59,7 @@ export function LaunchScreen() {
         display: "grid",
         placeItems: "center",
         padding: spacing.xl,
-        background: colors.sand50,
+        background: `radial-gradient(circle at 50% 20%, ${colors.olive100}, ${colors.sand50} 48%, ${colors.sand100})`,
         color: colors.ink,
         fontFamily: typography.fontFamily,
       }}
@@ -72,8 +72,9 @@ export function LaunchScreen() {
             height: 92,
             display: "grid",
             placeItems: "center",
-            borderRadius: radii.lg,
-            background: colors.olive700,
+            borderRadius: radii.xl,
+            background: gradients.deep,
+            boxShadow: shadows.olive,
             color: colors.surface,
             fontSize: 34,
             fontWeight: 900,
@@ -265,7 +266,7 @@ export function LoginScreen({ config }: LoginScreenProps) {
       dir="rtl"
       data-universal-app="vodda"
       data-platform={platform.kind}
-      style={{ minHeight: "100dvh", background: colors.sand50, color: colors.ink }}
+      style={{ minHeight: "100dvh", background: `radial-gradient(circle at 50% 0%, ${colors.olive100}, ${colors.sand50} 40%, ${colors.sand100})`, color: colors.ink }}
     >
       <section
         style={{
@@ -287,8 +288,9 @@ export function LoginScreen({ config }: LoginScreenProps) {
               display: "grid",
               placeItems: "center",
               margin: "0 auto 12px",
-              borderRadius: radii.lg,
-              background: colors.olive700,
+              borderRadius: radii.xl,
+              background: gradients.deep,
+              boxShadow: shadows.olive,
               color: colors.surface,
               fontSize: 28,
               fontWeight: 900,
@@ -302,7 +304,7 @@ export function LoginScreen({ config }: LoginScreenProps) {
           </p>
         </div>
 
-        <Card elevated>
+        <Card elevated className="vodda-enter" style={{ padding: spacing.xl }}>
           <form onSubmit={codeSent ? verifyOtp : requestOtp} style={{ display: "grid", gap: spacing.lg }}>
             <Input
               label="شماره موبایل"
@@ -332,17 +334,13 @@ export function LoginScreen({ config }: LoginScreenProps) {
                   onChange={(event) => setCode(normalizedOtp(event.target.value))}
                   hint={`کد ارسال‌شده به ${mobile} را وارد کنید.`}
                 />
-                <Button type="submit" fullWidth loading={loading === "verify"} disabled={!codeValid}>
-                  ورود
-                </Button>
+                <Button type="submit" fullWidth loading={loading === "verify"} disabled={!codeValid}><Icon name="checkCircle" size={18} />ورود</Button>
                 <Button type="button" fullWidth variant="ghost" disabled={loading !== null} onClick={resetMobile}>
                   ویرایش شماره موبایل
                 </Button>
               </>
             ) : (
-              <Button type="submit" fullWidth loading={loading === "otp"} disabled={!mobileValid}>
-                دریافت کد تأیید
-              </Button>
+              <Button type="submit" fullWidth loading={loading === "otp"} disabled={!mobileValid}><Icon name="phone" size={18} />دریافت کد تأیید</Button>
             )}
 
             {error ? (
@@ -350,8 +348,8 @@ export function LoginScreen({ config }: LoginScreenProps) {
                 role="alert"
                 style={{
                   padding: `${spacing.sm}px ${spacing.md}px`,
-                  borderRadius: radii.sm,
-                  background: "rgba(166, 81, 81, 0.08)",
+                  borderRadius: radii.md,
+                  background: colors.dangerBackground,
                   color: colors.danger,
                   ...typography.bodySmall,
                 }}
