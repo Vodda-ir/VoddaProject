@@ -194,7 +194,7 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
         <WalletHero label="موجودی قابل برداشت" amount={formatWalletAmount(teacher.wallet)}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1px 1fr 1px 1fr", alignItems: "center" }}>
             {[
-              ["امتیاز", rating + " ★"],
+              ["امتیاز", (rating === "—" ? rating : toFaDigits(rating)) + " ★"],
               ["نظرها", toFaDigits(teacher.reviews)],
               ["جلسات", toFaDigits(teacher.sessions)],
             ].flatMap(([label, value], index) => {
