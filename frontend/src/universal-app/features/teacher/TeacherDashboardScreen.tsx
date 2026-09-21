@@ -12,9 +12,7 @@ import {
   Avatar,
   Button,
   Card,
-  EmptyState,
   ErrorState,
-  ActionTile,
   Icon,
   LoadingState,
   SectionHeader,
@@ -192,101 +190,129 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
         </span>
       </button>
 
-      <WalletHero label="موجودی قابل برداشت" amount={formatWalletAmount(teacher.wallet)}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: spacing.sm }}>
-          {[
-            ["امتیاز", rating + " ★"],
-            ["نظرها", toFaDigits(teacher.reviews)],
-            ["جلسات", toFaDigits(teacher.sessions)],
-          ].map(([label, value]) => (
-            <div
-              key={label}
-              style={{
-                minWidth: 0,
-                padding: "9px 8px",
-                textAlign: "center",
-                borderRadius: radii.md,
-                background: "rgba(255,255,255,.08)",
-              }}
-            >
-              <strong style={{ ...typography.body, display: "block", color: colors.surface }}>{value}</strong>
-              <span style={{ ...typography.caption, display: "block", color: "rgba(255,255,255,.62)" }}>{label}</span>
-            </div>
-          ))}
-        </div>
-      </WalletHero>
+      <div>
+        <WalletHero label="موجودی قابل برداشت" amount={formatWalletAmount(teacher.wallet)}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1px 1fr 1px 1fr", alignItems: "center" }}>
+            {[
+              ["امتیاز", rating + " ★"],
+              ["نظرها", toFaDigits(teacher.reviews)],
+              ["جلسات", toFaDigits(teacher.sessions)],
+            ].flatMap(([label, value], index) => {
+              const metric = (
+                <div key={label} style={{ minWidth: 0, textAlign: "center" }}>
+                  <span style={{ display: "block", fontSize: 11, color: "rgba(255,255,255,.60)" }}>{label}</span>
+                  <strong style={{ display: "block", marginTop: 3, fontSize: 15, fontWeight: 800, color: colors.surface }}>{value}</strong>
+                </div>
+              );
+              if (index === 2) return [metric];
+              return [metric, <span key={label + "-divider"} aria-hidden="true" style={{ width: 1, height: 34, background: "rgba(255,255,255,.24)" }} />];
+            })}
+          </div>
+        </WalletHero>
+        <p style={{ margin: "10px 0 0", textAlign: "center", fontSize: 11.5, lineHeight: 1.6, color: colors.inkMuted }}>
+          آمار دوره‌ای درآمد تا زمان وجود گزارش واقعی نمایش داده نمی‌شود.
+        </p>
+      </div>
 
       {pending.length > 0 ? (
         <button
           type="button"
-          className="vodda-card vodda-card--interactive vodda-tappable vodda-enter vodda-enter-delay-1"
+          className="vodda-tappable"
           onClick={() => navigateApp("/t/requests", config)}
           style={{
             width: "100%",
             display: "flex",
             alignItems: "center",
-            gap: spacing.md,
-            padding: spacing.lg,
+            gap: 13,
+            padding: 16,
             textAlign: "right",
             border: "1px solid " + colors.goldSoft,
-            borderRadius: radii.lg,
+            borderRadius: 24,
             color: colors.ink,
             background: colors.goldBackground,
             fontFamily: typography.fontFamily,
             cursor: "pointer",
           }}
         >
-          <span style={{ width: 46, height: 46, display: "grid", placeItems: "center", flex: "0 0 46px", borderRadius: 15, color: colors.goldDark, background: "rgba(255,255,255,.6)" }}>
-            <Icon name="bell" size={21} />
-          </span>
+          <Icon name="message" size={27} style={{ flex: "0 0 auto", color: colors.gold }} />
           <span style={{ minWidth: 0, flex: 1 }}>
-            <strong style={{ ...typography.body, display: "block", fontWeight: 900 }}>{toFaDigits(pending.length)} درخواست جدید</strong>
-            <span style={{ ...typography.caption, color: colors.inkMuted }}>برای تأیید یا رد منتظر پاسخ شما هستند.</span>
+            <strong style={{ display: "block", fontSize: 14.5, fontWeight: 800, color: "#7a5e1e" }}>{toFaDigits(pending.length)} درخواست جدید</strong>
+            <span style={{ display: "block", marginTop: 2, fontSize: 12, color: "#9a7426" }}>برای تأیید یا رد، لمس کنید</span>
           </span>
-          <Icon name="chevronL" size={18} style={{ color: colors.goldDark }} />
+          <Icon name="chevronL" size={20} style={{ color: "#9a7426" }} />
         </button>
       ) : null}
 
-      <section>
-        <SectionHeader title="جلسه بعدی شما" action="همه جلسات" onAction={() => navigateApp("/t/sessions", config)} />
-        <div style={{ marginTop: spacing.md }}>
-          {nextSession ? (
-            <Card elevated className="vodda-card--interactive" style={{ display: "grid", gap: spacing.md, padding: spacing.lg }}>
-              <div style={{ display: "flex", alignItems: "center", gap: spacing.md }}>
-                <Avatar name={nextSession.learnerName} size={48} ring={false} />
-                <div style={{ minWidth: 0, flex: 1 }}>
-                  <strong style={{ ...typography.body, display: "block", color: colors.ink }}>{nextSession.learnerName}</strong>
-                  <span style={{ ...typography.caption, color: colors.inkMuted }}>{nextSession.service}</span>
-                </div>
-                <span style={{ padding: "5px 9px", borderRadius: radii.pill, color: colors.olive700, background: colors.olive50, ...typography.caption, fontWeight: 800 }}>
-                  تأییدشده
-                </span>
+      {nextSession ? (
+        <section>
+          <SectionHeader title="جلسهٔ بعدی شما" action="همهٔ جلسات" onAction={() => navigateApp("/t/sessions", config)} />
+          <Card
+            style={{
+              display: "grid",
+              gap: 13,
+              marginTop: spacing.md,
+              padding: 15,
+              borderRadius: 24,
+              boxShadow: "0 0 6px rgba(46,54,34,.04)",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <Avatar name={nextSession.learnerName} size={46} ring={false} />
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <strong style={{ display: "block", fontSize: 14.5, fontWeight: 800, color: colors.ink }}>{nextSession.learnerName}</strong>
+                <span style={{ display: "block", marginTop: 3, fontSize: 12.5, color: colors.inkSecondary }}>{nextSession.service}</span>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: spacing.sm, padding: spacing.md, borderRadius: radii.md, color: colors.olive800, background: colors.olive50, ...typography.bodySmall, fontWeight: 700 }}>
-                <Icon name="clock" size={17} />
-                {officialTime(nextSession)}
-              </div>
-              <Button variant="secondary" fullWidth onClick={() => navigateApp("/t/sessions", config)}>
-                مشاهده جزئیات جلسه
-              </Button>
-            </Card>
-          ) : (
-            <EmptyState
-              icon={<Icon name="calendar" size={30} />}
-              title="جلسه تأییدشده‌ای نیست"
-              description="جلسه بعدی پس از تأیید درخواست در این بخش نمایش داده می‌شود."
-            />
-          )}
-        </div>
-      </section>
+              <span style={{ padding: "5px 9px", borderRadius: radii.pill, color: colors.surface, background: colors.olive600, ...typography.caption, fontWeight: 700 }}>
+                تأییدشده
+              </span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "11px 14px", borderRadius: 13, color: colors.inkSecondary, background: colors.sand50, fontSize: 12.5 }}>
+              <Icon name="calendar" size={16} style={{ color: colors.olive500 }} />
+              {officialTime(nextSession)}
+            </div>
+            <Button variant="secondary" fullWidth onClick={() => navigateApp("/t/sessions", config)}>
+              مشاهدهٔ جزئیات جلسه
+            </Button>
+          </Card>
+        </section>
+      ) : null}
 
       <section>
-        <SectionHeader title="مدیریت سریع" description="دسترسی سریع به ابزارهای روزمره استاد" />
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: spacing.sm, marginTop: spacing.md }}>
-          <ActionTile icon="book" title="خدمات من" description="مدیریت خدمات" onClick={() => navigateApp("/t/services", config)} />
-          <ActionTile icon="clock" title="زمان‌های کاری" description="برنامه هفتگی" onClick={() => navigateApp("/t/work-times", config)} tone="info" />
-          <ActionTile icon="wallet" title="کیف پول" description="درآمد و برداشت" onClick={() => navigateApp("/t/wallet", config)} tone="gold" />
-          <ActionTile icon="calendar" title="همه جلسات" description="پیش‌رو و گذشته" onClick={() => navigateApp("/t/sessions", config)} tone="clay" />
+        <SectionHeader title="مدیریت سریع" />
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12, marginTop: spacing.md }}>
+          {[
+            ["book" as const, "خدمات من", "/t/services"],
+            ["clock" as const, "زمان‌های کاری", "/t/work-times"],
+            ["wallet" as const, "کیف پول", "/t/wallet"],
+            ["calendar" as const, "همهٔ جلسات", "/t/sessions"],
+          ].map(([icon, label, path]) => (
+            <button
+              key={path}
+              type="button"
+              onClick={() => navigateApp(path, config)}
+              className="vodda-tappable"
+              style={{
+                minHeight: 68,
+                display: "flex",
+                alignItems: "center",
+                gap: 11,
+                padding: 14,
+                textAlign: "right",
+                border: 0,
+                borderRadius: 18,
+                color: colors.ink,
+                background: colors.surface,
+                boxShadow: "0 0 4px rgba(46,54,34,.04)",
+                fontFamily: typography.fontFamily,
+                cursor: "pointer",
+              }}
+            >
+              <span style={{ width: 40, height: 40, display: "grid", placeItems: "center", flex: "0 0 40px", borderRadius: 12, color: colors.olive700, background: colors.olive100 }}>
+                <Icon name={icon} size={21} />
+              </span>
+              <strong style={{ minWidth: 0, fontSize: 13, fontWeight: 700 }}>{label}</strong>
+            </button>
+          ))}
         </div>
       </section>
 
