@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { UniversalAppConfig } from "../../config";
 import { usePlatform } from "../../platform/context";
-import { navigateApp } from "../../router";
 import {
   Button,
   EmptyState,
