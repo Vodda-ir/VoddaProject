@@ -6,7 +6,7 @@ type IconName =
   | 'book' | 'mic' | 'star' | 'heart' | 'chevronL' | 'chevronUp' | 'arrowL' | 'play'
   | 'check' | 'checkCircle' | 'bell' | 'message' | 'pin' | 'clock' | 'info' | 'shield'
   | 'award' | 'users' | 'sparkle' | 'download' | 'quran' | 'headphones'
-  | 'settings' | 'filter' | 'refresh' | 'logout' | 'edit' | 'grid' | 'list' | 'trending' | 'coins' | 'doc' | 'x' | 'trash';
+  | 'settings' | 'filter' | 'refresh' | 'plus' | 'logout' | 'edit' | 'grid' | 'list' | 'trending' | 'coins' | 'doc' | 'x' | 'trash';
 
 export function Icon({
   name,
@@ -65,6 +65,7 @@ export function Icon({
     settings: <><circle {...p} cx="12" cy="12" r="3" /><path {...p} d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8" /></>,
     filter: <><path {...p} d="M4 6h16M7 12h10M10 18h4" /><circle cx="8" cy="6" r="1.5" fill="currentColor" stroke="none" /><circle cx="15" cy="12" r="1.5" fill="currentColor" stroke="none" /><circle cx="12" cy="18" r="1.5" fill="currentColor" stroke="none" /></>,
     refresh: <><path {...p} d="M19 8a7.5 7.5 0 0 0-12.5-2L4 8.5" /><path {...p} d="M4 4v4.5h4.5" /><path {...p} d="M5 16a7.5 7.5 0 0 0 12.5 2l2.5-2.5" /><path {...p} d="M20 20v-4.5h-4.5" /></>,
+    plus: <path {...p} d="M12 5v14M5 12h14" />,
     logout: <><path {...p} d="M14 4h-7A1.5 1.5 0 0 0 5.5 5.5v13A1.5 1.5 0 0 0 7 20h7" /><path {...p} d="M17 8.5 20.5 12 17 15.5M10 12h10.5" /></>,
     edit: <path {...p} d="M16.5 4.5 19.5 7.5 9 18l-4 1 1-4 10.5-10.5Z" />,
     grid: <><rect {...p} x="4" y="4" width="6.5" height="6.5" rx="1.8" /><rect {...p} x="13.5" y="4" width="6.5" height="6.5" rx="1.8" /><rect {...p} x="4" y="13.5" width="6.5" height="6.5" rx="1.8" /><rect {...p} x="13.5" y="13.5" width="6.5" height="6.5" rx="1.8" /></>,
