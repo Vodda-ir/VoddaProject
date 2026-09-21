@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { api, type WorkTime } from '@/lib/api';
 import { getToken } from '@/lib/auth';
+import { toFaDigits, toLatinDigits } from '@/lib/persian';
 
 const DAYS = ['شنبه', 'یک‌شنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنج‌شنبه', 'جمعه'];
 
@@ -58,7 +59,7 @@ export default function TeacherWorkTimesPage() {
 
   async function remove(slot: WorkTime) {
     if (!token || busyId !== null) return;
-    if (!window.confirm(`بازهٔ ${slot.from} تا ${slot.to} حذف شود؟`)) return;
+    if (!window.confirm(`بازهٔ ${toFaDigits(slot.from)} تا ${toFaDigits(slot.to)} حذف شود؟`)) return;
     setBusyId(slot.id);
     setError('');
     try {
@@ -85,12 +86,12 @@ export default function TeacherWorkTimesPage() {
               <section key={day} style={{ background: '#fff', borderRadius: 16, padding: 16, border: '1px solid var(--sand-150)', boxShadow: 'var(--sh-sm)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
                   <div style={{ width: 44, height: 44, borderRadius: 13, background: ranges.length ? 'var(--olive-100)' : 'var(--sand-100)', color: ranges.length ? 'var(--olive-700)' : 'var(--ink-3)', display: 'grid', placeItems: 'center' }}><Icon name="clock" size={22} /></div>
-                  <div style={{ flex: '1 1 160px' }}><strong style={{ fontSize: 14 }}>{day}</strong><div style={{ fontSize: 12, color: 'var(--ink-4)', marginTop: 3 }}>{ranges.length ? `${ranges.length} بازه ثبت شده` : 'تعطیل'}</div></div>
+                  <div style={{ flex: '1 1 160px' }}><strong style={{ fontSize: 14 }}>{day}</strong><div style={{ fontSize: 12, color: 'var(--ink-4)', marginTop: 3 }}>{ranges.length ? `${toFaDigits(ranges.length)} بازه ثبت شده` : 'تعطیل'}</div></div>
                   <button type="button" onClick={() => setDialog({ weekday })} style={addButton}><span style={{ fontSize: 16 }}>+</span> افزودن بازه</button>
                 </div>
                 {ranges.length > 0 && <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 13 }}>
                   {ranges.map((slot) => <div key={slot.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '7px 11px', borderRadius: 999, background: 'var(--olive-50)', color: 'var(--olive-700)', opacity: busyId === slot.id ? .5 : 1 }}>
-                    <Icon name="clock" size={14} /><span style={{ fontSize: 12.5, fontWeight: 700 }}>{slot.from} تا {slot.to}</span>
+                    <Icon name="clock" size={14} /><span style={{ fontSize: 12.5, fontWeight: 700 }}>{toFaDigits(slot.from)} تا {toFaDigits(slot.to)}</span>
                     <button type="button" aria-label="ویرایش بازه" disabled={busyId === slot.id} onClick={() => setDialog({ weekday, slot })} style={iconButton}><Icon name="edit" size={13} /></button>
                     <button type="button" aria-label="حذف بازه" disabled={busyId === slot.id} onClick={() => remove(slot)} style={{ ...iconButton, color: 'var(--rose)' }}><Icon name="x" size={13} /></button>
                   </div>)}
@@ -128,7 +129,7 @@ function TimeRangeDialog({ dayName, slot, onSave, onClose }: { dayName: string; 
   return <div role="presentation" style={overlayStyle} onClick={onClose}><section role="dialog" aria-modal="true" aria-labelledby="worktime-title" onClick={(event) => event.stopPropagation()} style={dialogStyle}>
     <h2 id="worktime-title" style={{ fontSize: 17, marginBottom: 5 }}>{slot ? 'ویرایش' : 'افزودن'} بازهٔ {dayName}</h2>
     <p style={{ margin: '0 0 18px', color: 'var(--ink-3)', fontSize: 12.5 }}>ساعت‌ها بر اساس timezone رسمی سامانه هستند.</p>
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}><label style={labelStyle}>از<input type="time" value={from} onChange={(event) => setFrom(event.target.value)} style={inputStyle} /></label><label style={labelStyle}>تا<input type="time" value={to} onChange={(event) => setTo(event.target.value)} style={inputStyle} /></label></div>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}><label style={labelStyle}>از<input type="text" inputMode="numeric" value={toFaDigits(from)} onChange={(event) => setFrom(toLatinDigits(event.target.value).replace(/[^0-9:]/g, '').slice(0, 5))} placeholder="۰۸:۰۰" style={inputStyle} /></label><label style={labelStyle}>تا<input type="text" inputMode="numeric" value={toFaDigits(to)} onChange={(event) => setTo(toLatinDigits(event.target.value).replace(/[^0-9:]/g, '').slice(0, 5))} placeholder="۱۲:۰۰" style={inputStyle} /></label></div>
     {error && <div role="alert" style={{ padding: 10, borderRadius: 10, color: 'var(--rose)', background: 'var(--clay-bg)', fontSize: 13 }}>{error}</div>}
     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 20 }}><button type="button" disabled={saving} onClick={onClose} style={secondaryButton}>انصراف</button><button type="button" disabled={saving} onClick={submit} style={{ ...addButton, background: 'var(--olive-600)', color: '#fff', opacity: saving ? .6 : 1 }}>{saving ? 'در حال ذخیره…' : 'ذخیره'}</button></div>
   </section></div>;
