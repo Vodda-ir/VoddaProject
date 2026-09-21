@@ -55,12 +55,12 @@ func (uc *TeacherUsecase) Get(ctx context.Context, id uint) (*domain.Teacher, []
 // Mine returns the teacher profile owned by the user. It never auto-approves or
 // auto-creates a profile; onboarding must go through BecomeTeacher and admin review.
 func (uc *TeacherUsecase) Mine(ctx context.Context, userID uint) (*domain.Teacher, error) {
-	return uc.teachers.ByUserID(ctx, userID)
+	return uc.teacherForUser(ctx, userID)
 }
 
 // MyWorkTimes returns the work times for the calling teacher.
 func (uc *TeacherUsecase) MyWorkTimes(ctx context.Context, userID uint) ([]domain.WorkTime, error) {
-	t, err := uc.teachers.ByUserID(ctx, userID)
+	t, err := uc.teacherForUser(ctx, userID)
 	if err != nil {
 		if errors.Is(err, domain.ErrNotFound) {
 			return []domain.WorkTime{}, nil
@@ -72,7 +72,7 @@ func (uc *TeacherUsecase) MyWorkTimes(ctx context.Context, userID uint) ([]domai
 
 // UpdateMine updates editable teacher fields while preserving moderation state.
 func (uc *TeacherUsecase) UpdateMine(ctx context.Context, userID uint, in BecomeTeacherInput) (*domain.Teacher, error) {
-	t, err := uc.teachers.ByUserID(ctx, userID)
+	t, err := uc.teacherForUser(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +124,7 @@ func (uc *TeacherUsecase) UpdateMine(ctx context.Context, userID uint, in Become
 // AddService creates a bookable service for the teacher. New services remain
 // inactive until admin moderation.
 func (uc *TeacherUsecase) AddService(ctx context.Context, userID uint, s *domain.Service) (*domain.Service, error) {
-	t, err := uc.teachers.ByUserID(ctx, userID)
+	t, err := uc.teacherForUser(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +146,7 @@ func (uc *TeacherUsecase) AddService(ctx context.Context, userID uint, s *domain
 // UpdateService edits a service owned by the teacher. Content changes return it
 // to pending moderation. Teachers may deactivate but cannot self-approve.
 func (uc *TeacherUsecase) UpdateService(ctx context.Context, userID uint, s *domain.Service) error {
-	t, err := uc.teachers.ByUserID(ctx, userID)
+	t, err := uc.teacherForUser(ctx, userID)
 	if err != nil {
 		return err
 	}
@@ -189,7 +189,7 @@ func (uc *TeacherUsecase) ToggleServiceActive(ctx context.Context, userID uint, 
 	if active {
 		return domain.ErrForbidden
 	}
-	t, err := uc.teachers.ByUserID(ctx, userID)
+	t, err := uc.teacherForUser(ctx, userID)
 	if err != nil {
 		return err
 	}
@@ -206,7 +206,7 @@ func (uc *TeacherUsecase) ToggleServiceActive(ctx context.Context, userID uint, 
 
 // DeleteService removes a service owned by the teacher.
 func (uc *TeacherUsecase) DeleteService(ctx context.Context, userID, serviceID uint) error {
-	t, err := uc.teachers.ByUserID(ctx, userID)
+	t, err := uc.teacherForUser(ctx, userID)
 	if err != nil {
 		return err
 	}
@@ -225,7 +225,7 @@ func (uc *TeacherUsecase) DeleteService(ctx context.Context, userID, serviceID u
 // SetWorkTimes replaces the teacher's availability slots after validating the
 // complete schedule and rejecting overlapping ranges.
 func (uc *TeacherUsecase) SetWorkTimes(ctx context.Context, userID uint, wt []domain.WorkTime) error {
-	t, err := uc.teachers.ByUserID(ctx, userID)
+	t, err := uc.teacherForUser(ctx, userID)
 	if err != nil {
 		return err
 	}
@@ -252,7 +252,7 @@ func (uc *TeacherUsecase) WorkTimes(ctx context.Context, teacherID uint) ([]doma
 
 // AddWorkTime creates a single availability slot.
 func (uc *TeacherUsecase) AddWorkTime(ctx context.Context, userID uint, wt *domain.WorkTime) error {
-	t, err := uc.teachers.ByUserID(ctx, userID)
+	t, err := uc.teacherForUser(ctx, userID)
 	if err != nil {
 		return err
 	}
@@ -271,7 +271,7 @@ func (uc *TeacherUsecase) AddWorkTime(ctx context.Context, userID uint, wt *doma
 
 // UpdateWorkTime updates a single availability slot.
 func (uc *TeacherUsecase) UpdateWorkTime(ctx context.Context, userID uint, wt *domain.WorkTime) error {
-	t, err := uc.teachers.ByUserID(ctx, userID)
+	t, err := uc.teacherForUser(ctx, userID)
 	if err != nil {
 		return err
 	}
@@ -302,11 +302,19 @@ func (uc *TeacherUsecase) UpdateWorkTime(ctx context.Context, userID uint, wt *d
 
 // DeleteWorkTime deletes a single availability slot.
 func (uc *TeacherUsecase) DeleteWorkTime(ctx context.Context, userID uint, workTimeID uint) error {
-	t, err := uc.teachers.ByUserID(ctx, userID)
+	t, err := uc.teacherForUser(ctx, userID)
 	if err != nil {
 		return err
 	}
 	return uc.teachers.DeleteWorkTime(ctx, t.ID, workTimeID)
+}
+
+func (uc *TeacherUsecase) teacherForUser(ctx context.Context, userID uint) (*domain.Teacher, error) {
+	t, err := uc.teachers.ByUserID(ctx, userID)
+	if errors.Is(err, domain.ErrNotFound) {
+		return nil, domain.ErrTeacherProfileRequired
+	}
+	return t, err
 }
 
 func publicTeacher(t *domain.Teacher) bool {
