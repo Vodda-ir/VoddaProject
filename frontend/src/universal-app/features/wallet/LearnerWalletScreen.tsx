@@ -49,6 +49,7 @@ export function LearnerWalletScreen() {
 
   return (
     <section className="vodda-screen" style={{ display: "grid", gap: spacing.xl }}>
+      <h1 style={{ ...typography.heading, fontSize: 24, margin: 0, color: colors.ink }}>کیف پول</h1>
       <WalletHero amount={balance === null ? "—" : formatWalletAmount(balance)} />
 
       <Card
@@ -74,7 +75,7 @@ export function LearnerWalletScreen() {
             background: "rgba(255,255,255,.55)",
           }}
         >
-          <Icon name="shield" size={20} />
+          <Icon name="info" size={20} />
         </span>
         <p style={{ ...typography.bodySmall, margin: 0, color: colors.inkSecondary }}>
           شارژ اینترنتی پس از اتصال و تأیید درگاه پرداخت فعال می‌شود. تا آن زمان هیچ مسیر شارژ آزمایشی در اپ نمایش داده نمی‌شود.
