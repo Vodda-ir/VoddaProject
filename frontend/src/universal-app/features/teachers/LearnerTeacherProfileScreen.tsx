@@ -16,9 +16,7 @@ import {
   MetricTile,
   SectionHeader,
   colors,
-  gradients,
   radii,
-  shadows,
   spacing,
   typography,
 } from "../../ui";
@@ -138,85 +136,51 @@ export function LearnerTeacherProfileScreen({
 
   return (
     <section className="vodda-screen" style={{ display: "grid", gap: spacing.xl }}>
-      <div
-        className="vodda-enter"
-        style={{
-          position: "relative",
-          overflow: "hidden",
-          padding: `${spacing.xxl}px ${spacing.xl}px`,
-          borderRadius: radii.xl,
-          color: colors.surface,
-          background: gradients.deep,
-          boxShadow: shadows.olive,
-          textAlign: "center",
-        }}
-      >
-        <span
-          aria-hidden="true"
-          style={{
-            position: "absolute",
-            width: 170,
-            height: 170,
-            top: -95,
-            insetInlineEnd: -65,
-            borderRadius: "50%",
-            background: "rgba(255,255,255,.06)",
-          }}
-        />
-        <div style={{ position: "relative", display: "grid", justifyItems: "center", gap: spacing.sm }}>
-          <div style={{ position: "relative" }}>
-            <Avatar name={teacher.name} size={92} ring />
-            {teacher.verified ? (
-              <span
-                aria-label="استاد تأییدشده"
-                title="استاد تأییدشده"
-                style={{
-                  position: "absolute",
-                  insetInlineEnd: -2,
-                  bottom: 2,
-                  width: 27,
-                  height: 27,
-                  display: "grid",
-                  placeItems: "center",
-                  border: "3px solid " + colors.olive800,
-                  borderRadius: "50%",
-                  color: colors.surface,
-                  background: colors.olive500,
-                }}
-              >
-                <Icon name="check" size={14} stroke={2.4} />
-              </span>
-            ) : null}
-          </div>
-          <h2 style={{ ...typography.heading, margin: `${spacing.xs}px 0 0`, color: colors.surface }}>{teacher.name}</h2>
-          <p style={{ ...typography.bodySmall, margin: 0, color: colors.goldSoft, fontWeight: 800 }}>
-            {teacher.tag || teacher.field || "استاد وُدّا"}
-          </p>
-          {[teacher.field, teacher.level, teacher.city].filter(Boolean).length ? (
-            <p style={{ ...typography.caption, margin: 0, color: "rgba(255,255,255,.66)" }}>
-              {[teacher.field, teacher.level, teacher.city].filter(Boolean).join(" · ")}
-            </p>
+      <div className="vodda-enter" style={{ display: "grid", justifyItems: "center", textAlign: "center", gap: 4 }}>
+        <div style={{ position: "relative" }}>
+          <Avatar name={teacher.name} size={88} ring />
+          {teacher.verified ? (
+            <span
+              aria-label="استاد تأییدشده"
+              style={{
+                position: "absolute",
+                insetInlineEnd: -2,
+                bottom: 1,
+                width: 25,
+                height: 25,
+                display: "grid",
+                placeItems: "center",
+                border: "3px solid " + colors.sand50,
+                borderRadius: "50%",
+                color: colors.surface,
+                background: colors.olive600,
+              }}
+            >
+              <Icon name="check" size={13} stroke={2.4} />
+            </span>
           ) : null}
         </div>
+        <h2 style={{ fontSize: 20, fontWeight: 800, margin: "8px 0 0", color: colors.ink }}>{teacher.name}</h2>
+        <p style={{ fontSize: 13, fontWeight: 600, margin: 0, color: colors.olive600 }}>
+          {teacher.tag || teacher.field || "استاد وُدّا"}
+        </p>
       </div>
 
-      <div className="vodda-enter vodda-enter-delay-1" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: spacing.sm }}>
-        <MetricTile label="امتیاز" value={<span>{ratingLabel} <span style={{ color: colors.gold }}>★</span></span>} />
-        <MetricTile label="نظر" value={formatWalletAmount(teacher.reviews)} />
-        <MetricTile label="جلسه" value={formatWalletAmount(teacher.sessions)} />
+      <div className="vodda-enter vodda-enter-delay-1" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
+        <MetricTile icon="star" tone="gold" label="امتیاز" value={ratingLabel} style={{ padding: "14px 8px", textAlign: "center", borderRadius: 18, boxShadow: "none" }} />
+        <MetricTile icon="message" tone="info" label="نظر" value={formatWalletAmount(teacher.reviews)} style={{ padding: "14px 8px", textAlign: "center", borderRadius: 18, boxShadow: "none" }} />
+        <MetricTile icon="calendar" label="جلسه" value={formatWalletAmount(teacher.sessions)} style={{ padding: "14px 8px", textAlign: "center", borderRadius: 18, boxShadow: "none" }} />
       </div>
 
       <section>
-        <SectionHeader title="درباره استاد" />
-        <Card style={{ marginTop: spacing.md, background: colors.surfaceWarm }}>
-          <p style={{ ...typography.body, margin: 0, color: colors.inkSecondary, lineHeight: 2 }}>
-            {teacher.bio || "اطلاعاتی ثبت نشده است."}
-          </p>
-        </Card>
+        <h3 style={{ fontSize: 16, fontWeight: 800, margin: 0, color: colors.ink }}>دربارهٔ استاد</h3>
+        <p style={{ fontSize: 14, lineHeight: 1.7, margin: "8px 0 0", color: colors.inkSecondary }}>
+          {teacher.bio || "اطلاعاتی ثبت نشده است."}
+        </p>
       </section>
 
       <section>
-        <SectionHeader title="خدمات قابل رزرو" description={services.length ? `${services.length.toLocaleString("fa-IR")} خدمت فعال` : undefined} />
+        <h3 style={{ fontSize: 16, fontWeight: 800, margin: 0, color: colors.ink }}>خدمات تأییدشده</h3>
         {services.length ? (
           <div style={{ display: "grid", gap: spacing.sm, marginTop: spacing.md }}>
             {services.map((service) => <ServiceCard key={service.id} service={service} />)}
@@ -252,13 +216,9 @@ export function LearnerTeacherProfileScreen({
         style={{
           position: "sticky",
           zIndex: 12,
-          bottom: "calc(84px + env(safe-area-inset-bottom))",
-          padding: 8,
-          border: "1px solid rgba(228,221,204,.82)",
-          borderRadius: radii.lg,
-          background: "rgba(255,255,255,.92)",
-          boxShadow: shadows.floating,
-          backdropFilter: "blur(16px)",
+          bottom: "calc(68px + env(safe-area-inset-bottom))",
+          padding: "8px 0 12px",
+          background: colors.sand50,
         }}
       >
         <Button
@@ -267,7 +227,7 @@ export function LearnerTeacherProfileScreen({
           onClick={() => navigateApp(`/book/${teacher.id}`, config)}
         >
           <Icon name="calendar" size={18} />
-          {services.length === 0 ? "خدمت قابل رزرو وجود ندارد" : "رزرو جلسه با این استاد"}
+          {services.length === 0 ? "خدمت قابل رزرو وجود ندارد" : "رزرو جلسه"}
         </Button>
       </div>
     </section>
