@@ -10,9 +10,7 @@ import {
   Dialog,
   ErrorState,
   Icon,
-  IconBadge,
   LoadingState,
-  SectionHeader,
   Sheet,
   colors,
   radii,
@@ -195,7 +193,7 @@ export function TeacherWorkTimesScreen() {
 
   return (
     <section className="vodda-screen" style={{ display: "grid", gap: spacing.xl }}>
-      <SectionHeader title="زمان‌های کاری" description="روزها و ساعت‌های قابل رزرو را مدیریت کنید؛ بازه‌های هم‌پوشان پذیرفته نمی‌شوند." />
+      <p style={{ ...typography.bodySmall, margin: 0, color: colors.inkMuted, lineHeight: 1.9 }}>روزها و ساعت‌هایی که برای برگزاری جلسه در دسترس هستید را مشخص کنید.</p>
 
       {loading ? <LoadingState label="در حال دریافت زمان‌های کاری…" /> : null}
       {!loading && error ? (
@@ -211,15 +209,31 @@ export function TeacherWorkTimesScreen() {
           {days.map((day, weekday) => {
             const slots = grouped.get(weekday) ?? [];
             return (
-              <Card key={day} className="vodda-card--interactive vodda-enter" style={{ display: "grid", gap: spacing.md, padding: spacing.lg }}>
+              <Card key={day} className="vodda-card--interactive vodda-enter" style={{ display: "grid", gap: spacing.md, padding: 14, borderRadius: 18 }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: spacing.md }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: spacing.md }}><IconBadge icon="calendar" tone={slots.length ? "olive" : "info"} size={42} /><div>
-                    <strong style={{ ...typography.body, display: "block" }}>{day}</strong>
-                    <span style={{ ...typography.caption, color: colors.inkMuted }}>
-                      {slots.length ? `${toFaDigits(slots.length)} بازه ثبت شده` : "تعطیل"}
-                    </span>
-                  </div></div>
-                  <Button variant="secondary" onClick={() => openEditor(weekday)}><Icon name="clock" size={16} />افزودن</Button>
+                  <strong style={{ fontSize: 14.5, fontWeight: 700, color: slots.length ? colors.ink : colors.inkFaint }}>{day}</strong>
+                  <button
+                    type="button"
+                    className="vodda-tappable"
+                    onClick={() => openEditor(weekday)}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 4,
+                      padding: "7px 12px",
+                      border: 0,
+                      borderRadius: radii.pill,
+                      color: colors.olive700,
+                      background: colors.olive50,
+                      fontFamily: typography.fontFamily,
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                    }}
+                  >
+                    <Icon name="plus" size={14} />
+                    افزودن بازه
+                  </button>
                 </div>
 
                 {slots.length ? (
@@ -234,9 +248,8 @@ export function TeacherWorkTimesScreen() {
                             alignItems: "center",
                             justifyContent: "space-between",
                             gap: spacing.sm,
-                            padding: spacing.md,
-                            borderRadius: radii.md,
-                            border: `1px solid ${colors.olive100}`,
+                            padding: "10px 12px",
+                            borderRadius: 13,
                             background: colors.olive50,
                             opacity: busy ? 0.55 : 1,
                           }}
