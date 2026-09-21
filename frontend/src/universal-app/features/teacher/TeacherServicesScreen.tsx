@@ -13,7 +13,6 @@ import {
   Icon,
   IconBadge,
   LoadingState,
-  SectionHeader,
   Sheet,
   colors,
   radii,
@@ -202,9 +201,9 @@ export function TeacherServicesScreen() {
 
   return (
     <section className="vodda-screen" style={{ display: "grid", gap: spacing.xl }}>
-      <SectionHeader title="خدمات من" description="خدمت جدید یا ویرایش‌شده تا تأیید مدیر قابل رزرو نیست." />
-
-      <Button fullWidth onClick={() => openEditor()}><Icon name="book" size={18} />افزودن خدمت جدید</Button>
+      <p style={{ ...typography.bodySmall, margin: 0, color: colors.inkMuted, lineHeight: 1.9 }}>
+        خدمت جدید یا ویرایش‌شده تا تأیید مدیر قابل رزرو نیست. فعال‌سازی فقط از پنل مدیریت انجام می‌شود.
+      </p>
 
       {loading ? <LoadingState label="در حال دریافت خدمات…" /> : null}
       {!loading && error ? (
@@ -223,9 +222,9 @@ export function TeacherServicesScreen() {
           {services.map((service) => {
             const busy = busyId === service.id;
             return (
-              <Card key={service.id} className="vodda-card--interactive vodda-enter" style={{ display: "grid", gap: spacing.md, padding: spacing.lg, opacity: busy ? 0.55 : 1 }}>
+              <Card key={service.id} className="vodda-card--interactive vodda-enter" style={{ display: "grid", gap: spacing.md, padding: 14, borderRadius: 18, opacity: busy ? 0.55 : 1 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: spacing.md, alignItems: "flex-start" }}>
-                  <div style={{ minWidth: 0, flex: 1, display: "flex", alignItems: "center", gap: spacing.md }}><IconBadge icon="book" tone={service.active ? "olive" : "info"} size={42} /><div style={{ minWidth: 0 }}>
+                  <div style={{ minWidth: 0, flex: 1, display: "flex", alignItems: "center", gap: spacing.md }}><IconBadge icon="book" tone={service.active ? "olive" : "info"} size={46} /><div style={{ minWidth: 0 }}>
                     <strong style={{ ...typography.body, display: "block" }}>{service.title}</strong>
                     <span style={{ ...typography.caption, color: colors.inkMuted }}>
                       {toFaDigits(service.duration)} دقیقه · {formatWalletAmount(service.price)} تومان
@@ -258,6 +257,13 @@ export function TeacherServicesScreen() {
           })}
         </div>
       ) : null}
+
+      <div style={{ position: "sticky", zIndex: 12, bottom: "calc(68px + env(safe-area-inset-bottom))", padding: "10px 0 12px", background: colors.sand50 }}>
+        <Button fullWidth onClick={() => openEditor()} style={{ minHeight: 52 }}>
+          <Icon name="plus" size={19} />
+          افزودن خدمت جدید
+        </Button>
+      </div>
 
       <Sheet open={editorTarget !== null} title={editorTarget === "new" ? "خدمت جدید" : "ویرایش خدمت"} onClose={closeEditor}>
         <div style={{ display: "grid", gap: spacing.md }}>
