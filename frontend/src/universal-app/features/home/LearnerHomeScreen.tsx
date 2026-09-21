@@ -34,7 +34,6 @@ const quickCategories = [
     id: "quran",
     title: "آموزش قرآن",
     description: "روخوانی، تجوید و حفظ",
-    field: "قرآن کریم",
     icon: "quran" as const,
     tone: "olive" as const,
   },
@@ -42,20 +41,10 @@ const quickCategories = [
     id: "maddahi",
     title: "مداحی",
     description: "صوت، لحن و اجرا",
-    field: "مداحی اهل‌بیت",
     icon: "mic" as const,
     tone: "clay" as const,
   },
 ] as const;
-
-function searchUrl(query: string, field?: string) {
-  const params = new URLSearchParams();
-  const normalizedQuery = query.trim();
-  if (normalizedQuery) params.set("q", normalizedQuery);
-  if (field) params.set("field", field);
-  const suffix = params.toString();
-  return suffix ? `/search?${suffix}` : "/search";
-}
 
 function teacherSubtitle(teacher: Teacher) {
   return [teacher.tag || teacher.field, teacher.city].filter(Boolean).join(" · ");
@@ -320,7 +309,7 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
             <button
               key={category.id}
               type="button"
-              onClick={() => navigateApp(searchUrl("", category.field), config)}
+              onClick={() => navigateApp("/search", config)}
               className="vodda-card vodda-card--interactive vodda-tappable"
               style={{
                 minHeight: 142,
