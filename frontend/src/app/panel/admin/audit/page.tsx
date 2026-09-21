@@ -1,5 +1,6 @@
 'use client';
 
+import { toFaDigits } from '@/lib/persian';
 import { useEffect, useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { getToken } from '@/lib/auth';
@@ -55,7 +56,7 @@ export default function AdminAuditPage() {
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontWeight: 700 }}><Icon name="shield" size={16} style={{ color: 'var(--olive-600)' }} />{entry.action}</span>
               <span>{entry.target_type || '—'} {entry.target_id ? `#${entry.target_id}` : ''}</span>
               <span>#{entry.actor_id}</span>
-              <code dir="ltr" style={{ textAlign: 'right', color: 'var(--ink-3)', overflow: 'hidden', textOverflow: 'ellipsis' }}>{entry.request_id || '—'}</code>
+              <code dir="ltr" style={{ textAlign: 'right', color: 'var(--ink-3)', overflow: 'hidden', textOverflow: 'ellipsis' }}>{entry.request_id ? toFaDigits(entry.request_id) : '—'}</code>
             </article>
           ))}
           {!loading && entries.length === 0 && <div style={{ padding: 50, textAlign: 'center', color: 'var(--ink-3)' }}>هنوز عملیات مدیریتی ثبت نشده است.</div>}
