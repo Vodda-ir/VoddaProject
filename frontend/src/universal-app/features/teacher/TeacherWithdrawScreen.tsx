@@ -6,10 +6,10 @@ import { asArray, asNumber, asRecord, asString, type ApiEnvelope } from "../../p
 import { usePlatform } from "../../platform/context";
 import type { PlatformRuntime } from "../../platform/types";
 import { navigateApp } from "../../router";
-import { Button, Card, EmptyState, ErrorState, Icon, LoadingState, SectionHeader, StatusPill, colors, radii, spacing, typography } from "../../ui";
+import { Button, Card, EmptyState, ErrorState, Icon, LoadingState, SectionHeader, StatusPill, colors, digitsOnly, radii, spacing, toFaDigits, toLatinDigits, typography } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
 import { getWalletSnapshot } from "../wallet/api";
-import { formatWalletAmount, toFaDigits } from "../wallet/WalletTransactionCard";
+import { formatWalletAmount } from "../wallet/WalletTransactionCard";
 
 type Withdrawal = {
   id: number;
@@ -50,24 +50,16 @@ async function requestWithdrawal(
   });
 }
 
-function normalizeDigits(value: string): string {
-  const persian = "۰۱۲۳۴۵۶۷۸۹";
-  const arabic = "٠١٢٣٤٥٦٧٨٩";
-  return Array.from(value).map((char) => {
-    const faIndex = persian.indexOf(char);
-    if (faIndex >= 0) return String(faIndex);
-    const arIndex = arabic.indexOf(char);
-    if (arIndex >= 0) return String(arIndex);
-    return char;
-  }).join("");
-}
-
 function cleanCard(value: string): string {
-  return normalizeDigits(value).replace(/\D/g, "");
+  return digitsOnly(value, 16);
 }
 
 function cleanSheba(value: string): string {
-  return normalizeDigits(value).replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+  return toLatinDigits(value).replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 26);
+}
+
+function cardDisplay(value: string): string {
+  return toFaDigits(value.replace(/(\d{4})(?=\d)/g, "$1 "));
 }
 
 function dateLabel(value: string): string {
@@ -128,7 +120,7 @@ export function TeacherWithdrawScreen({ config }: { config: UniversalAppConfig }
   }, [load]);
 
   const submit = async () => {
-    const normalizedAmount = Number.parseInt(normalizeDigits(amount).replace(/\D/g, ""), 10);
+    const normalizedAmount = Number.parseInt(digitsOnly(amount), 10);
     const normalizedCard = cleanCard(card);
     const normalizedSheba = cleanSheba(sheba);
 
@@ -211,7 +203,7 @@ export function TeacherWithdrawScreen({ config }: { config: UniversalAppConfig }
             <div style={{ display: "grid", gap: spacing.md }}>
             <label style={{ display: "grid", gap: spacing.xs }}>
               <span style={{ ...typography.bodySmall, fontWeight: 700 }}>مبلغ برداشت</span>
-              <input value={amount} onChange={(event) => setAmount(event.target.value)} inputMode="numeric" placeholder="مثلاً ۵۰۰۰۰۰" style={inputStyle} />
+              <input value={toFaDigits(amount)} onChange={(event) => setAmount(digitsOnly(event.target.value))} inputMode="numeric" placeholder="مثلاً ۵۰۰۰۰۰" style={inputStyle} />
             </label>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: spacing.xs }}>
               {[500000, 1000000, 2000000].map((quickAmount) => (
@@ -225,11 +217,11 @@ export function TeacherWithdrawScreen({ config }: { config: UniversalAppConfig }
             </div>
             <label style={{ display: "grid", gap: spacing.xs }}>
               <span style={{ ...typography.bodySmall, fontWeight: 700 }}>شماره کارت (اختیاری)</span>
-              <input value={card} onChange={(event) => setCard(event.target.value)} inputMode="numeric" dir="ltr" maxLength={19} placeholder="6037 9975 1234 5678" style={inputStyle} />
+              <input value={cardDisplay(card)} onChange={(event) => setCard(cleanCard(event.target.value))} inputMode="numeric" dir="ltr" maxLength={19} placeholder="۶۰۳۷ ۹۹۷۵ ۱۲۳۴ ۵۶۷۸" style={inputStyle} />
             </label>
             <label style={{ display: "grid", gap: spacing.xs }}>
               <span style={{ ...typography.bodySmall, fontWeight: 700 }}>شماره شبا (اختیاری)</span>
-              <input value={sheba} onChange={(event) => setSheba(event.target.value)} dir="ltr" maxLength={34} placeholder="IR000000000000000000000000" style={inputStyle} />
+              <input value={toFaDigits(sheba)} onChange={(event) => setSheba(cleanSheba(event.target.value))} dir="ltr" maxLength={26} placeholder="IR۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰" style={inputStyle} />
             </label>
 
             <Card style={{ background: colors.goldBackground, border: `1px solid ${colors.goldSoft}` }}>
@@ -254,7 +246,7 @@ export function TeacherWithdrawScreen({ config }: { config: UniversalAppConfig }
                     <StatusPill status={withdrawal.status} label={statusLabel(withdrawal.status)} />
                   </div>
                   <div style={{ ...typography.caption, color: colors.inkMuted }}>
-                    {withdrawal.card ? `کارت: ${toFaDigits(withdrawal.card)}` : withdrawal.sheba ? `شبا: ${withdrawal.sheba}` : "حساب مقصد"}
+                    {withdrawal.card ? `کارت: ${toFaDigits(withdrawal.card)}` : withdrawal.sheba ? `شبا: ${toFaDigits(withdrawal.sheba)}` : "حساب مقصد"}
                     {withdrawal.createdAt ? ` · ${dateLabel(withdrawal.createdAt)}` : ""}
                   </div>
                 </Card>
