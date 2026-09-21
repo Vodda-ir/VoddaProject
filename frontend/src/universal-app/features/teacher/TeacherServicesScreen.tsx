@@ -13,7 +13,6 @@ import {
   Icon,
   IconBadge,
   LoadingState,
-  Sheet,
   colors,
   radii,
   shadows,
@@ -222,7 +221,7 @@ export function TeacherServicesScreen() {
           {services.map((service) => {
             const busy = busyId === service.id;
             return (
-              <Card key={service.id} className="vodda-card--interactive vodda-enter" style={{ display: "grid", gap: spacing.md, padding: 14, borderRadius: 18, opacity: busy ? 0.55 : 1 }}>
+              <Card key={service.id} className="vodda-card--interactive" style={{ display: "grid", gap: 12, padding: 14, borderRadius: 18, boxShadow: "0 0 4px rgba(46,54,34,.04)", opacity: busy ? 0.55 : 1 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: spacing.md, alignItems: "flex-start" }}>
                   <div style={{ minWidth: 0, flex: 1, display: "flex", alignItems: "center", gap: spacing.md }}><IconBadge icon="book" tone={service.active ? "olive" : "info"} size={46} /><div style={{ minWidth: 0 }}>
                     <strong style={{ ...typography.body, display: "block" }}>{service.title}</strong>
@@ -232,26 +231,50 @@ export function TeacherServicesScreen() {
                   </div></div>
                   <span
                     style={{
-                      ...typography.caption,
                       flexShrink: 0,
-                      padding: "4px 9px",
+                      padding: "3px 8px",
                       borderRadius: radii.pill,
+                      fontSize: 10,
                       fontWeight: 700,
-                      color: service.active ? colors.olive800 : colors.inkSecondary,
-                      background: service.active ? colors.olive50 : colors.sand100,
+                      color: service.active ? colors.olive700 : colors.gold,
+                      background: service.active ? colors.olive100 : colors.goldBackground,
                     }}
                   >
                     {service.active ? "فعال" : "غیرفعال / در انتظار تأیید"}
                   </span>
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: service.active ? "1fr 1fr" : "1fr", gap: spacing.sm }}>
-                  <Button variant="secondary" disabled={busy} onClick={() => openEditor(service)}>ویرایش</Button>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <Button variant="secondary" disabled={busy} onClick={() => openEditor(service)} style={{ minHeight: 40, flex: 1, padding: "7px 12px", fontSize: 13 }}>
+                    <Icon name="edit" size={16} />
+                    ویرایش
+                  </Button>
                   {service.active ? (
-                    <Button variant="secondary" disabled={busy} onClick={() => setDeactivateTarget(service)}>غیرفعال‌کردن</Button>
+                    <Button variant="secondary" disabled={busy} onClick={() => setDeactivateTarget(service)} style={{ minHeight: 40, flex: 1, padding: "7px 10px", fontSize: 13 }}>
+                      غیرفعال‌کردن
+                    </Button>
                   ) : null}
+                  <button
+                    type="button"
+                    aria-label="حذف خدمت"
+                    disabled={busy}
+                    onClick={() => setDeleteTarget(service)}
+                    style={{
+                      width: 40,
+                      height: 40,
+                      display: "grid",
+                      placeItems: "center",
+                      flex: "0 0 40px",
+                      border: 0,
+                      borderRadius: "50%",
+                      color: colors.danger,
+                      background: "transparent",
+                      cursor: busy ? "not-allowed" : "pointer",
+                    }}
+                  >
+                    <Icon name="trash" size={19} />
+                  </button>
                 </div>
-                <Button variant="danger" fullWidth disabled={busy} onClick={() => setDeleteTarget(service)}>حذف خدمت</Button>
               </Card>
             );
           })}
@@ -265,7 +288,7 @@ export function TeacherServicesScreen() {
         </Button>
       </div>
 
-      <Sheet open={editorTarget !== null} title={editorTarget === "new" ? "خدمت جدید" : "ویرایش خدمت"} onClose={closeEditor}>
+      <Dialog open={editorTarget !== null} title={editorTarget === "new" ? "خدمت جدید" : "ویرایش خدمت"} onClose={closeEditor}>
         <div style={{ display: "grid", gap: spacing.md }}>
           <label style={{ display: "grid", gap: spacing.xs, ...typography.bodySmall }}>
             <span style={{ fontWeight: 700 }}>عنوان</span>
@@ -298,9 +321,12 @@ export function TeacherServicesScreen() {
             />
           </label>
           {formError ? <span role="alert" style={{ ...typography.caption, color: colors.danger }}>{formError}</span> : null}
-          <Button fullWidth loading={busyId !== null} onClick={() => void saveService()}>ذخیره و ارسال برای بررسی</Button>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: spacing.sm }}>
+            <Button variant="ghost" disabled={busyId !== null} onClick={closeEditor}>انصراف</Button>
+            <Button loading={busyId !== null} onClick={() => void saveService()}>ذخیره</Button>
+          </div>
         </div>
-      </Sheet>
+      </Dialog>
 
       <Dialog open={deactivateTarget !== null} title="غیرفعال‌کردن خدمت" onClose={() => { if (busyId === null) setDeactivateTarget(null); }}>
         <p style={{ ...typography.body, marginTop: 0, color: colors.inkSecondary }}>
