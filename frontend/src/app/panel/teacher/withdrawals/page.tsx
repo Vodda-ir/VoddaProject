@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { faDigits } from '@/components/PanelShell';
 import { api, type Withdrawal } from '@/lib/api';
 import { getToken } from '@/lib/auth';
+import { digitsOnly, toFaDigits, toLatinDigits } from '@/lib/persian';
 
 const statusLabel: Record<Withdrawal['status'], string> = { pending: 'در انتظار', paid: 'پرداخت‌شده', rejected: 'ردشده' };
 
@@ -38,9 +39,9 @@ export default function TeacherWithdrawalsPage() {
 
   async function submit() {
     if (!token || saving) return;
-    const numericAmount = Number.parseInt(normalizeDigits(amount).replace(/\D/g, ''), 10);
-    const normalizedCard = normalizeDigits(card).replace(/\D/g, '');
-    const normalizedSheba = normalizeDigits(sheba).replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+    const numericAmount = Number.parseInt(digitsOnly(amount), 10);
+    const normalizedCard = digitsOnly(card, 16);
+    const normalizedSheba = toLatinDigits(sheba).replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
     if (!Number.isInteger(numericAmount) || numericAmount <= 0) return setError('مبلغ معتبر وارد کنید.');
     if (numericAmount > wallet) return setError('مبلغ درخواست از موجودی کیف پول بیشتر است.');
     if (!normalizedCard && !normalizedSheba) return setError('حداقل شماره کارت یا شبا را وارد کنید.');
@@ -78,9 +79,9 @@ export default function TeacherWithdrawalsPage() {
       <section style={{ background: '#fff', borderRadius: 18, padding: 20, border: '1px solid var(--sand-150)', boxShadow: 'var(--sh-sm)', marginBottom: 24 }}>
         <h2 style={{ fontSize: 16, marginBottom: 15 }}>درخواست جدید</h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(210px,1fr))', gap: 12 }}>
-          <label style={labelStyle}>مبلغ (تومان)<input inputMode="numeric" value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="مثلاً ۵۰۰۰۰۰" style={inputStyle} /></label>
-          <label style={labelStyle}>شماره کارت<input inputMode="numeric" value={card} maxLength={19} onChange={(event) => setCard(event.target.value)} placeholder="۱۶ رقم، اختیاری" style={inputStyle} /></label>
-          <label style={labelStyle}>شماره شبا<input dir="ltr" value={sheba} maxLength={34} onChange={(event) => setSheba(event.target.value)} placeholder="IRxxxxxxxxxxxxxxxxxxxxxxxx" style={{ ...inputStyle, textAlign: 'left' }} /></label>
+          <label style={labelStyle}>مبلغ (تومان)<input inputMode="numeric" value={toFaDigits(amount)} onChange={(event) => setAmount(digitsOnly(event.target.value))} placeholder="مثلاً ۵۰۰۰۰۰" style={inputStyle} /></label>
+          <label style={labelStyle}>شماره کارت<input inputMode="numeric" value={toFaDigits(card)} maxLength={16} onChange={(event) => setCard(digitsOnly(event.target.value, 16))} placeholder="۱۶ رقم، اختیاری" style={inputStyle} /></label>
+          <label style={labelStyle}>شماره شبا<input dir="ltr" value={toFaDigits(sheba)} maxLength={26} onChange={(event) => setSheba(toLatinDigits(event.target.value).replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 26))} placeholder="IR۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰" style={{ ...inputStyle, textAlign: 'left' }} /></label>
         </div>
         <p style={{ fontSize: 12, color: 'var(--ink-3)', lineHeight: 1.8, marginBottom: 14 }}>حداقل یکی از شماره کارت یا شبا الزامی است. ثبت درخواست به معنی انتقال بانکی نیست و مبلغ تا بررسی مدیر از موجودی کسر می‌شود.</p>
         {error && <div role="alert" style={{ padding: 11, borderRadius: 11, color: 'var(--rose)', background: 'var(--clay-bg)', marginBottom: 12 }}>{error}</div>}
@@ -92,7 +93,7 @@ export default function TeacherWithdrawalsPage() {
       {loading ? <div style={{ padding: 28, color: 'var(--ink-3)' }}>در حال بارگذاری…</div> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {withdrawals.map((withdrawal) => <article key={withdrawal.id} style={{ background: '#fff', borderRadius: 16, padding: 16, display: 'flex', alignItems: 'center', gap: 14, border: '1px solid var(--sand-150)', boxShadow: 'var(--sh-sm)', flexWrap: 'wrap' }}>
-            <div style={{ flex: '1 1 230px' }}><strong>{faDigits(withdrawal.amount)} تومان</strong><div dir="ltr" style={{ fontSize: 12, color: 'var(--ink-3)', textAlign: 'right', marginTop: 4 }}>{withdrawal.sheba || withdrawal.card || '—'}</div><time dateTime={withdrawal.created_at} style={{ display: 'block', fontSize: 12, color: 'var(--ink-4)', marginTop: 3 }}>{formatDate(withdrawal.created_at)}</time></div>
+            <div style={{ flex: '1 1 230px' }}><strong>{faDigits(withdrawal.amount)} تومان</strong><div dir="ltr" style={{ fontSize: 12, color: 'var(--ink-3)', textAlign: 'right', marginTop: 4 }}>{toFaDigits(withdrawal.sheba || withdrawal.card || '—')}</div><time dateTime={withdrawal.created_at} style={{ display: 'block', fontSize: 12, color: 'var(--ink-4)', marginTop: 3 }}>{formatDate(withdrawal.created_at)}</time></div>
             <span style={statusStyle(withdrawal.status)}>{statusLabel[withdrawal.status]}</span>
           </article>)}
           {withdrawals.length === 0 && <div style={{ textAlign: 'center', padding: 40, color: 'var(--ink-3)' }}>هنوز درخواست برداشتی ثبت نشده است.</div>}
@@ -102,9 +103,6 @@ export default function TeacherWithdrawalsPage() {
   );
 }
 
-function normalizeDigits(value: string) {
-  return value.replace(/[۰-۹]/g, (digit) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit))).replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)));
-}
 function formatDate(value: string) { const date = new Date(value); return Number.isNaN(date.getTime()) ? '—' : new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium', timeStyle: 'short' }).format(date); }
 const labelStyle: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12.5, fontWeight: 700, color: 'var(--ink-3)' };
 const inputStyle: React.CSSProperties = { width: '100%', padding: '11px 13px', borderRadius: 12, border: '1px solid var(--sand-200)', color: 'var(--ink)', background: '#fff' };
