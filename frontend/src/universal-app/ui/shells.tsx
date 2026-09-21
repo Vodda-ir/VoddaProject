@@ -164,8 +164,7 @@ function BottomNavigation({
 }
 
 function ShellHeader({ title, routeName }: { title?: string; routeName: AppRouteName }) {
-  if (!title || routeName === "home" || routeName === "teacher-home") return null;
-  const canGoBack = !tabRoutes.has(routeName);
+  if (!title || tabRoutes.has(routeName)) return null;
   return (
     <header
       style={{
@@ -177,29 +176,26 @@ function ShellHeader({ title, routeName }: { title?: string; routeName: AppRoute
       }}
     >
       <div>
-        {canGoBack ? (
-          <button
-            type="button"
-            aria-label="بازگشت"
-            className="vodda-tappable"
-            onClick={() => window.history.back()}
-            style={{
-              width: 40,
-              height: 40,
-              display: "grid",
-              placeItems: "center",
-              padding: 0,
-              border: `1px solid ${colors.sand200}`,
-              borderRadius: "50%",
-              color: colors.inkSecondary,
-              background: colors.surface,
-              boxShadow: shadows.xs,
-              cursor: "pointer",
-            }}
-          >
-            <Icon name="arrowL" size={19} stroke={1.9} />
-          </button>
-        ) : null}
+        <button
+          type="button"
+          aria-label="بازگشت"
+          className="vodda-tappable"
+          onClick={() => window.history.back()}
+          style={{
+            width: 40,
+            height: 40,
+            display: "grid",
+            placeItems: "center",
+            padding: 0,
+            border: 0,
+            borderRadius: "50%",
+            color: colors.inkSecondary,
+            background: "transparent",
+            cursor: "pointer",
+          }}
+        >
+          <Icon name="arrowL" size={20} stroke={1.9} />
+        </button>
       </div>
       <div style={{ minWidth: 0, textAlign: "center" }}>
         <p style={{ ...typography.caption, margin: 0, color: colors.inkMuted }}>
