@@ -157,38 +157,38 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
 
   const { teacher, pending } = snapshot;
   const rating = teacher.reviews > 0 ? teacher.rating.toFixed(1) : "—";
+  const firstName = teacher.name.trim().split(/\s+/)[0] || "استاد";
 
   return (
     <section className="vodda-screen" style={{ display: "grid", gap: spacing.xl }}>
-      <header className="vodda-enter" style={{ display: "flex", alignItems: "center", gap: spacing.md }}>
-        <Avatar name={teacher.name} src={teacher.avatarUrl} size={52} ring />
-        <div style={{ minWidth: 0, flex: 1 }}>
-          <p style={{ ...typography.caption, margin: 0, color: colors.inkMuted }}>وقت بخیر،</p>
-          <h1 style={{ ...typography.title, margin: "2px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {teacher.name} 🌿
-          </h1>
-          <p style={{ ...typography.caption, margin: 0, color: colors.olive700, fontWeight: 700 }}>فضای مدیریت استاد</p>
-        </div>
-        <button
-          type="button"
-          className="vodda-tappable"
-          aria-label="پروفایل استاد"
-          onClick={() => navigateApp("/t/profile", config)}
-          style={{
-            width: 42,
-            height: 42,
-            display: "grid",
-            placeItems: "center",
-            border: "1px solid " + colors.olive100,
-            borderRadius: 14,
-            color: colors.olive700,
-            background: colors.olive50,
-            cursor: "pointer",
-          }}
-        >
-          <Icon name="settings" size={19} />
-        </button>
-      </header>
+      <button
+        type="button"
+        className="vodda-tappable vodda-enter"
+        onClick={() => navigateApp("/", config)}
+        aria-label="تغییر به فضای قرآن‌آموز"
+        style={{
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          gap: 11,
+          padding: "4px 0",
+          textAlign: "right",
+          border: 0,
+          color: colors.ink,
+          background: "transparent",
+          fontFamily: typography.fontFamily,
+          cursor: "pointer",
+        }}
+      >
+        <Avatar name={teacher.name} src={teacher.avatarUrl} size={46} ring />
+        <span style={{ minWidth: 0, flex: 1 }}>
+          <span style={{ ...typography.caption, display: "block", color: colors.inkMuted }}>پنل استاد · {firstName}</span>
+          <strong style={{ ...typography.body, display: "inline-flex", alignItems: "center", gap: 5, color: colors.olive700 }}>
+            تغییر حساب
+            <Icon name="refresh" size={15} stroke={1.9} />
+          </strong>
+        </span>
+      </button>
 
       <WalletHero label="موجودی قابل برداشت" amount={formatWalletAmount(teacher.wallet)}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: spacing.sm }}>
