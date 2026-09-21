@@ -5,6 +5,7 @@ import { faDigits } from '@/components/PanelShell';
 import { Icon } from '@/components/Icon';
 import { api, type TeacherService } from '@/lib/api';
 import { getToken } from '@/lib/auth';
+import { digitsOnly, toFaDigits } from '@/lib/persian';
 
 export default function TeacherServicesPage() {
   const [services, setServices] = useState<TeacherService[]>([]);
@@ -135,8 +136,8 @@ function ServiceDialog({ service, onSave, onClose }: { service?: TeacherService;
       <section role="dialog" aria-modal="true" aria-labelledby="service-dialog-title" onClick={(event) => event.stopPropagation()} style={dialogStyle}>
         <h2 id="service-dialog-title" style={{ fontSize: 17, marginBottom: 18 }}>{service ? 'ویرایش خدمت' : 'خدمت جدید'}</h2>
         <label style={labelStyle}>عنوان<input value={title} maxLength={160} onChange={(event) => setTitle(event.target.value)} style={inputStyle} /></label>
-        <label style={labelStyle}>مدت (دقیقه)<input type="number" min={10} max={240} value={duration} onChange={(event) => setDuration(event.target.value)} style={inputStyle} /></label>
-        <label style={labelStyle}>قیمت (تومان)<input type="number" min={1} value={price} onChange={(event) => setPrice(event.target.value)} style={inputStyle} /></label>
+        <label style={labelStyle}>مدت (دقیقه)<input type="text" inputMode="numeric" value={toFaDigits(duration)} onChange={(event) => setDuration(digitsOnly(event.target.value))} style={inputStyle} /></label>
+        <label style={labelStyle}>قیمت (تومان)<input type="text" inputMode="numeric" value={toFaDigits(price)} onChange={(event) => setPrice(digitsOnly(event.target.value))} style={inputStyle} /></label>
         {error && <div role="alert" style={{ color: 'var(--rose)', background: 'var(--clay-bg)', padding: 10, borderRadius: 10, fontSize: 13 }}>{error}</div>}
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 20 }}><button type="button" disabled={saving} onClick={onClose} style={secondaryButton}>انصراف</button><button type="button" disabled={saving} onClick={submit} style={{ ...primaryButton, opacity: saving ? .6 : 1 }}>{saving ? 'در حال ذخیره…' : 'ذخیره'}</button></div>
       </section>
