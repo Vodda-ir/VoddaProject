@@ -6,7 +6,7 @@ import { asArray, asNumber, asRecord, asString, type ApiEnvelope } from "../../p
 import { usePlatform } from "../../platform/context";
 import type { PlatformRuntime } from "../../platform/types";
 import { navigateApp } from "../../router";
-import { Button, Card, EmptyState, ErrorState, Icon, LoadingState, SectionHeader, StatusPill, WalletHero, colors, radii, shadows, spacing, typography } from "../../ui";
+import { Button, Card, EmptyState, ErrorState, Icon, LoadingState, SectionHeader, StatusPill, WalletHero, colors, radii, spacing, typography } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
 import { getWalletSnapshot } from "../wallet/api";
 import { formatWalletAmount, toFaDigits } from "../wallet/WalletTransactionCard";
