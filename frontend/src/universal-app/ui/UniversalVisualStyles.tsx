@@ -118,14 +118,6 @@ export function UniversalVisualStyles() {
           transition: none !important;
         }
       }
-      @media (min-width: 760px) {
-        [data-app-shell] [data-vodda-frame] {
-          min-height: calc(100dvh - 32px);
-          margin-block: 16px;
-          border-radius: 34px;
-          overflow: clip;
-        }
-      }
     `}</style>
   );
 }
