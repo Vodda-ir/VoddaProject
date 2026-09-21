@@ -12,6 +12,7 @@ import {
   HeroPanel,
   Icon,
   IconBadge,
+  LoadingState,
   SectionHeader,
   colors,
   radii,
@@ -283,79 +284,65 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
         </button>
       </header>
 
-      <HeroPanel
-        eyebrow="به وُدّا خوش آمدید"
-        title={"استاد قرآن و مداحی‌ات را\nپیدا و زمان آزادش را رزرو کن"}
-        description="پروفایل استادان تأییدشده و خدمات قابل رزرو را ببین."
-      >
-        <Button
-          onClick={() => navigateApp("/search", config)}
-          style={{
-            minHeight: 44,
-            color: colors.olive700,
-            background: colors.surface,
-            borderColor: colors.surface,
-            boxShadow: "none",
-          }}
+      {!teachersLoading ? (
+        <HeroPanel
+          eyebrow="به وُدّا خوش آمدید"
+          title={"استاد قرآن و مداحی‌ات را\nپیدا و زمان آزادش را رزرو کن"}
+          description="پروفایل استادان تأییدشده و خدمات قابل رزرو را ببین."
         >
-          <Icon name="search" size={18} />
-          جستجوی استاد
-        </Button>
-      </HeroPanel>
+          <Button
+            onClick={() => navigateApp("/search", config)}
+            style={{
+              minHeight: 44,
+              color: colors.olive700,
+              background: colors.surface,
+              borderColor: colors.surface,
+              boxShadow: "none",
+            }}
+          >
+            <Icon name="search" size={18} />
+            جستجوی استاد
+          </Button>
+        </HeroPanel>
+      ) : null}
 
-      <section className="vodda-enter vodda-enter-delay-1">
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
-          {quickCategories.map((category) => (
-            <button
-              key={category.id}
-              type="button"
-              onClick={() => navigateApp("/search", config)}
-              className="vodda-card vodda-card--interactive vodda-tappable"
-              style={{
-                minHeight: 142,
-                display: "grid",
-                justifyItems: "center",
-                alignContent: "center",
-                gap: spacing.sm,
-                padding: spacing.lg,
-                textAlign: "center",
-                color: colors.ink,
-                background: colors.surface,
-                border: `1px solid ${colors.sand150}`,
-                borderRadius: radii.lg,
-                boxShadow: shadows.sm,
-                cursor: "pointer",
-                fontFamily: typography.fontFamily,
-              }}
-            >
-              <IconBadge icon={category.icon} tone={category.tone} size={50} />
-              <strong style={{ ...typography.body, color: colors.ink, fontWeight: 900 }}>{category.title}</strong>
-              <span style={{ ...typography.caption, color: colors.inkMuted }}>{category.description}</span>
-            </button>
-          ))}
-        </div>
-      </section>
-
-      {teachersLoading ? (
-        <div className="vodda-enter" style={{ display: "grid", gap: spacing.md }}>
-          <SectionHeader title="اساتید پیشنهادی" />
-          <div className="vodda-scroll-rail" style={{ display: "flex", gap: spacing.md, overflow: "hidden" }}>
-            {[0, 1, 2].map((item) => (
-              <div
-                key={item}
+      {!teachersLoading && !teachersError ? (
+        <section className="vodda-enter vodda-enter-delay-1">
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
+            {quickCategories.map((category) => (
+              <button
+                key={category.id}
+                type="button"
+                onClick={() => navigateApp("/search", config)}
+                className="vodda-card vodda-card--interactive vodda-tappable"
                 style={{
-                  width: 176,
-                  height: 198,
-                  flex: "0 0 176px",
+                  minHeight: 142,
+                  display: "grid",
+                  justifyItems: "center",
+                  alignContent: "center",
+                  gap: spacing.sm,
+                  padding: spacing.lg,
+                  textAlign: "center",
+                  color: colors.ink,
+                  background: colors.surface,
+                  border: `1px solid ${colors.sand150}`,
                   borderRadius: radii.lg,
-                  background: `linear-gradient(110deg, ${colors.sand100} 25%, ${colors.surface} 42%, ${colors.sand100} 60%)`,
-                  backgroundSize: "300% 100%",
-                  boxShadow: shadows.xs,
+                  boxShadow: shadows.sm,
+                  cursor: "pointer",
+                  fontFamily: typography.fontFamily,
                 }}
-              />
+              >
+                <IconBadge icon={category.icon} tone={category.tone} size={50} />
+                <strong style={{ ...typography.body, color: colors.ink, fontWeight: 900 }}>{category.title}</strong>
+                <span style={{ ...typography.caption, color: colors.inkMuted }}>{category.description}</span>
+              </button>
             ))}
           </div>
-        </div>
+        </section>
+      ) : null}
+
+      {teachersLoading ? (
+        <LoadingState label="در حال دریافت استادان…" style={{ minHeight: 220 }} />
       ) : teachersError ? (
         <Card elevated style={{ display: "grid", gap: spacing.md, textAlign: "center" }}>
           <IconBadge icon="users" tone="olive" size={52} />
