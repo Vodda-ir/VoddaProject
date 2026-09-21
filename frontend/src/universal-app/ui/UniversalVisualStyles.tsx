@@ -3,7 +3,7 @@ export function UniversalVisualStyles() {
     <style>{`
       [data-universal-app="vodda"],
       [data-app-shell] {
-        font-family: "IRANYekanXFaNum", "Yekan Bakh", "Vazirmatn", system-ui, sans-serif;
+        font-family: "IRANYekanXFaNum", system-ui, sans-serif;
         -webkit-font-smoothing: antialiased;
         text-rendering: optimizeLegibility;
       }
