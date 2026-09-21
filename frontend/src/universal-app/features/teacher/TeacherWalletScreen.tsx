@@ -10,10 +10,11 @@ import {
   ErrorState,
   Icon,
   LoadingState,
-  MetricTile,
   SectionHeader,
   WalletHero,
+  colors,
   spacing,
+  typography,
 } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
 import { getWalletSnapshot } from "../wallet/api";
@@ -60,9 +61,11 @@ export function TeacherWalletScreen({ config }: { config: UniversalAppConfig }) 
           fullWidth
           onClick={() => navigateApp("/t/withdraw", config)}
           style={{
-            color: "var(--vodda-olive-900, #2e3622)",
-            background: "rgba(255,255,255,.94)",
-            borderColor: "rgba(255,255,255,.94)",
+            minHeight: 48,
+            color: colors.olive700,
+            background: colors.surface,
+            borderColor: colors.surface,
+            boxShadow: "none",
           }}
         >
           <Icon name="download" size={18} />
@@ -70,17 +73,30 @@ export function TeacherWalletScreen({ config }: { config: UniversalAppConfig }) 
         </Button>
       </WalletHero>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: spacing.sm }}>
-        <MetricTile icon="trending" label="درآمد ثبت‌شده" value={formatWalletAmount(income)} />
-        <MetricTile icon="list" label="تراکنش‌ها" value={toFaDigits(transactions.length)} tone="info" />
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 10 }}>
+        {[
+          ["درآمد کل", formatWalletAmount(income), colors.olive700],
+          ["تراکنش‌ها", toFaDigits(transactions.length), colors.ink],
+          ["کارمزد وُدّا", "۱۵٪", colors.ink],
+        ].map(([label, value, valueColor]) => (
+          <div
+            key={label}
+            style={{
+              minWidth: 0,
+              padding: "14px 6px",
+              textAlign: "center",
+              borderRadius: 18,
+              background: colors.surface,
+              boxShadow: "0 0 4px rgba(46,54,34,.04)",
+            }}
+          >
+            <strong style={{ display: "block", fontSize: 18, fontWeight: 800, color: valueColor }}>{value}</strong>
+            <span style={{ ...typography.caption, display: "block", marginTop: 4, color: colors.inkMuted }}>{label}</span>
+          </div>
+        ))}
       </div>
 
-      <SectionHeader
-        title="تراکنش‌ها"
-        description="درآمد، برداشت و سایر گردش‌های مالی"
-        action={!loading ? "به‌روزرسانی" : undefined}
-        onAction={() => void load()}
-      />
+      <SectionHeader title="تراکنش‌ها" />
 
       {loading ? <LoadingState label="در حال دریافت کیف پول استاد…" /> : null}
       {!loading && error ? (
