@@ -3,8 +3,21 @@ export function UniversalVisualStyles() {
     <style>{`
       [data-universal-app="vodda"],
       [data-app-shell] {
+        font-family: "IRANYekanXFaNum", "Yekan Bakh", "Vazirmatn", system-ui, sans-serif;
         -webkit-font-smoothing: antialiased;
         text-rendering: optimizeLegibility;
+      }
+      [data-universal-app="vodda"] button,
+      [data-universal-app="vodda"] input,
+      [data-universal-app="vodda"] textarea,
+      [data-universal-app="vodda"] select,
+      [data-universal-app="vodda"] option,
+      [data-app-shell] button,
+      [data-app-shell] input,
+      [data-app-shell] textarea,
+      [data-app-shell] select,
+      [data-app-shell] option {
+        font-family: inherit !important;
       }
       [data-universal-app="vodda"] *,
       [data-app-shell] * {
