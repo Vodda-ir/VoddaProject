@@ -187,7 +187,7 @@ export function TeacherSessionsScreen({ mode }: { mode: TeacherSessionsMode }) {
     void load(when);
   }, [load, when]);
 
-  const heading = mode === "requests" ? "درخواست‌های جلسه" : "جلسات استاد";
+  const heading = mode === "requests" ? "درخواست‌های دریافتی" : "جلسات من";
   const emptyDescription = mode === "requests" ? "درخواست جدیدی برای بررسی ندارید." : "جلسه‌ای در این بخش ندارید.";
   const loadLabel = useMemo(() => when === "pending" ? "در حال دریافت درخواست‌ها…" : when === "upcoming" ? "در حال دریافت جلسات پیش‌رو…" : "در حال دریافت جلسات گذشته…", [when]);
 
@@ -250,7 +250,7 @@ export function TeacherSessionsScreen({ mode }: { mode: TeacherSessionsMode }) {
 
   return (
     <section className="vodda-screen" style={{ display: "grid", gap: spacing.xl }}>
-      <SectionHeader title={heading} description="تاریخ و ساعت از زمان رسمی سامانه نمایش داده می‌شوند" />
+      <SectionHeader title={heading} description={mode === "requests" ? `${toFaDigits(sessions.length)} درخواست در انتظار پاسخ شما` : "زمان‌ها بر اساس ساعت رسمی سامانه نمایش داده می‌شوند."} />
 
       {mode === "sessions" ? (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
