@@ -155,6 +155,7 @@ function AppPreview() {
       <div className="landing-orb landing-orb-gold" />
       <div className="landing-orb landing-orb-olive" />
 
+      <span className="landing-preview-label">نمونه رابط اپ</span>
       <div className="landing-phone">
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <Avatar size={42} ring />
@@ -458,13 +459,13 @@ function TeacherDashboardPreview() {
       </div>
       <div className="teacher-preview-wallet">
         <small>موجودی قابل برداشت</small>
-        <strong>۲٬۴۸۰٬۰۰۰ <span>تومان</span></strong>
+        <strong>— <span>تومان</span></strong>
         <div>
-          <span>امتیاز<strong>۴٫۹ ★</strong></span>
+          <span>امتیاز<strong>—</strong></span>
           <i />
-          <span>جلسات<strong>۳۲</strong></span>
+          <span>جلسات<strong>—</strong></span>
           <i />
-          <span>نظرها<strong>۱۸</strong></span>
+          <span>نظرها<strong>—</strong></span>
         </div>
       </div>
       <div className="teacher-preview-actions">
