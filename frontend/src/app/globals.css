@@ -69,8 +69,11 @@ body {
 button,
 input,
 textarea,
-select {
+select,
+option,
+optgroup {
   font: inherit;
+  font-family: var(--font) !important;
 }
 
 a {
@@ -90,6 +93,7 @@ a {
 input::placeholder,
 textarea::placeholder {
   color: var(--ink-4);
+  font-family: var(--font);
 }
 
 /* ── responsive helpers used by the landing composition ── */
