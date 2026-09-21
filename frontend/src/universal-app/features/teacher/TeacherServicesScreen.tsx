@@ -15,7 +15,6 @@ import {
   LoadingState,
   SectionHeader,
   Sheet,
-  StatusPill,
   colors,
   radii,
   shadows,
