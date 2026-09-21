@@ -73,7 +73,7 @@ function SessionCard({
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: spacing.md }}>
-        <Avatar name={session.teacherName} size={50} ring />
+        <Avatar name={session.teacherName} size={46} ring />
         <div style={{ minWidth: 0 }}>
           <strong style={{ ...typography.body, display: "block" }}>{session.teacherName}</strong>
           <span style={{ ...typography.bodySmall, color: colors.inkSecondary }}>{session.service}</span>
@@ -214,19 +214,7 @@ export function LearnerSessionsScreen() {
     <section className="vodda-screen" style={{ display: "grid", gap: spacing.xl }}>
       <SectionHeader title="جلسات من" description="زمان‌ها بر اساس ساعت رسمی سامانه نمایش داده می‌شوند" />
 
-      <div
-        className="vodda-enter"
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: 4,
-          padding: 4,
-          border: `1px solid ${colors.sand200}`,
-          borderRadius: radii.pill,
-          background: colors.surface,
-          boxShadow: shadows.xs,
-        }}
-      >
+      <div className="vodda-enter" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
         {(["upcoming", "past"] as const).map((tab) => {
           const selected = tab === when;
           return (
@@ -237,13 +225,15 @@ export function LearnerSessionsScreen() {
               onClick={() => setWhen(tab)}
               aria-pressed={selected}
               style={{
-                minHeight: 42,
+                minHeight: 44,
                 border: 0,
-                borderRadius: radii.pill,
+                borderRadius: 14,
                 color: selected ? colors.surface : colors.inkMuted,
-                background: selected ? colors.olive600 : "transparent",
+                background: selected ? colors.olive600 : colors.surface,
+                boxShadow: shadows.xs,
                 fontFamily: typography.fontFamily,
-                fontWeight: 800,
+                fontSize: 14,
+                fontWeight: 700,
                 cursor: "pointer",
               }}
             >
