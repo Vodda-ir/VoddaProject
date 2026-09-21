@@ -290,7 +290,7 @@ export function TeacherProfileScreen({ config }: { config: UniversalAppConfig })
             </span>
             <span style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 7, fontSize: 12, color: colors.goldDark }}>
               <Icon name="star" size={14} fill style={{ color: colors.gold }} />
-              <strong>{rating}</strong>
+              <strong>{rating === "—" ? rating : toFaDigits(rating)}</strong>
               <span style={{ color: colors.inkFaint }}>({toFaDigits(teacher.reviews)} نظر)</span>
             </span>
           </div>
