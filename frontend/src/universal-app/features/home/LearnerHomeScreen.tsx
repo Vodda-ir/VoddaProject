@@ -5,10 +5,23 @@ import type { UniversalAppConfig } from "../../config";
 import { usePlatform } from "../../platform/context";
 import type { AuthUser } from "../../platform/types";
 import { navigateApp } from "../../router";
+import {
+  Avatar,
+  Button,
+  Card,
+  HeroPanel,
+  Icon,
+  IconBadge,
+  SectionHeader,
+  colors,
+  radii,
+  shadows,
+  spacing,
+  typography,
+} from "../../ui";
+import { messageOf } from "../../ui/errorMessage";
 import { searchTeachers } from "../teachers/api";
 import type { Teacher } from "../teachers/types";
-import { Avatar, Button, Card, colors, radii, spacing, typography } from "../../ui";
-import { messageOf } from "../../ui/errorMessage";
 
 export type LearnerHomeScreenProps = {
   config: UniversalAppConfig;
@@ -17,21 +30,27 @@ export type LearnerHomeScreenProps = {
 const quickCategories = [
   {
     id: "quran",
-    title: "قرآن",
-    description: "تلاوت، تجوید و آموزش قرآن",
+    title: "آموزش قرآن",
+    description: "روخوانی، تجوید و حفظ",
+    field: "قرآن کریم",
+    icon: "quran" as const,
+    tone: "olive" as const,
   },
   {
     id: "maddahi",
     title: "مداحی",
-    description: "آموزش مداحی و فن بیان",
+    description: "صوت، لحن و اجرا",
+    field: "مداحی اهل‌بیت",
+    icon: "mic" as const,
+    tone: "clay" as const,
   },
 ] as const;
 
-function searchUrl(query: string, category?: string) {
+function searchUrl(query: string, field?: string) {
   const params = new URLSearchParams();
   const normalizedQuery = query.trim();
   if (normalizedQuery) params.set("q", normalizedQuery);
-  if (category) params.set("category", category);
+  if (field) params.set("field", field);
   const suffix = params.toString();
   return suffix ? `/search?${suffix}` : "/search";
 }
@@ -44,24 +63,49 @@ function TeacherCard({ teacher, config }: { teacher: Teacher; config: UniversalA
   return (
     <button
       type="button"
+      className="vodda-card vodda-card--interactive vodda-tappable"
       onClick={() => navigateApp(`/teacher/${teacher.id}`, config)}
       style={{
         width: 176,
+        minHeight: 198,
         flex: "0 0 176px",
         display: "grid",
+        alignContent: "start",
+        justifyItems: "start",
         gap: spacing.sm,
-        padding: spacing.md,
+        padding: spacing.lg,
         textAlign: "right",
         color: colors.ink,
         background: colors.surface,
-        border: `1px solid ${colors.sand200}`,
-        borderRadius: radii.md,
+        border: `1px solid ${colors.sand150}`,
+        borderRadius: radii.lg,
+        boxShadow: shadows.sm,
         cursor: "pointer",
         fontFamily: typography.fontFamily,
       }}
     >
-      <Avatar name={teacher.name} size={48} />
-      <div style={{ minWidth: 0 }}>
+      <div style={{ width: "100%", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: spacing.sm }}>
+        <Avatar name={teacher.name} size={54} ring />
+        {teacher.rating > 0 ? (
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 3,
+              padding: "5px 7px",
+              borderRadius: radii.pill,
+              color: colors.goldDark,
+              background: colors.goldBackground,
+              ...typography.caption,
+              fontWeight: 900,
+            }}
+          >
+            <Icon name="star" size={13} fill style={{ color: colors.gold }} />
+            {teacher.rating.toFixed(1)}
+          </span>
+        ) : null}
+      </div>
+      <div style={{ minWidth: 0, width: "100%" }}>
         <strong
           style={{
             ...typography.body,
@@ -70,6 +114,7 @@ function TeacherCard({ teacher, config }: { teacher: Teacher; config: UniversalA
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
             color: colors.ink,
+            fontWeight: 900,
           }}
         >
           {teacher.name}
@@ -78,16 +123,27 @@ function TeacherCard({ teacher, config }: { teacher: Teacher; config: UniversalA
           style={{
             ...typography.caption,
             display: "block",
-            minHeight: 36,
-            marginTop: spacing.xs,
-            color: colors.inkSecondary,
+            minHeight: 38,
+            marginTop: 3,
+            color: colors.inkMuted,
           }}
         >
           {teacherSubtitle(teacher) || "استاد تأییدشده وُدّا"}
         </span>
       </div>
-      <span style={{ ...typography.caption, color: colors.olive800, fontWeight: 700 }}>
-        {teacher.rating > 0 ? `امتیاز ${teacher.rating.toFixed(1)}` : "مشاهده پروفایل"}
+      <span
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 3,
+          marginTop: "auto",
+          color: colors.olive700,
+          ...typography.caption,
+          fontWeight: 800,
+        }}
+      >
+        مشاهده پروفایل
+        <Icon name="chevronL" size={14} stroke={2} />
       </span>
     </button>
   );
@@ -105,19 +161,16 @@ function TeacherRail({
   if (teachers.length === 0) return null;
 
   return (
-    <section aria-label={title}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: spacing.md }}>
-        <h2 style={{ ...typography.title, margin: 0, color: colors.ink }}>{title}</h2>
-        <Button variant="ghost" onClick={() => navigateApp("/search", config)} style={{ paddingInline: spacing.sm }}>
-          مشاهده همه
-        </Button>
-      </div>
+    <section aria-label={title} className="vodda-enter">
+      <SectionHeader title={title} action="مشاهدهٔ همه" onAction={() => navigateApp("/search", config)} />
       <div
+        className="vodda-scroll-rail"
         style={{
           display: "flex",
           gap: spacing.md,
           overflowX: "auto",
-          paddingBlock: spacing.md,
+          marginInline: -spacing.xl,
+          padding: `${spacing.md}px ${spacing.xl}px ${spacing.sm}px`,
           scrollSnapType: "x proximity",
         }}
       >
@@ -135,46 +188,66 @@ function FeaturedTeacher({ teacher, config }: { teacher: Teacher; config: Univer
   return (
     <button
       type="button"
+      className="vodda-tappable vodda-enter"
       onClick={() => navigateApp(`/teacher/${teacher.id}`, config)}
       style={{
         width: "100%",
+        position: "relative",
+        overflow: "hidden",
         display: "flex",
         alignItems: "center",
         gap: spacing.lg,
-        padding: spacing.xl,
+        padding: spacing.lg,
         textAlign: "right",
         color: colors.surface,
-        background: `linear-gradient(145deg, ${colors.olive800}, ${colors.olive900})`,
+        background: `linear-gradient(145deg, ${colors.olive900}, ${colors.olive800})`,
         border: 0,
-        borderRadius: radii.lg,
+        borderRadius: radii.xl,
+        boxShadow: shadows.md,
         cursor: "pointer",
         fontFamily: typography.fontFamily,
       }}
     >
+      <span
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          width: 145,
+          height: 145,
+          insetInlineEnd: -70,
+          top: -82,
+          borderRadius: "50%",
+          background: "rgba(255,255,255,.06)",
+        }}
+      />
       <div
         aria-hidden="true"
         style={{
-          width: 76,
-          height: 92,
-          flex: "0 0 76px",
+          width: 78,
+          height: 96,
+          flex: "0 0 78px",
           display: "grid",
           placeItems: "center",
           borderRadius: radii.md,
-          background: "rgba(255,255,255,0.12)",
+          background: "rgba(255,255,255,0.1)",
           border: "1px solid rgba(255,255,255,0.16)",
           fontSize: 34,
         }}
       >
         {teacher.field.includes("مداح") ? "🎤" : "📖"}
       </div>
-      <div style={{ minWidth: 0, flex: 1 }}>
-        <p style={{ ...typography.caption, margin: 0, color: colors.goldSoft, fontWeight: 700 }}>پروفایل تأییدشده</p>
+      <div style={{ minWidth: 0, flex: 1, position: "relative" }}>
+        <p style={{ ...typography.caption, display: "flex", alignItems: "center", gap: 5, margin: 0, color: colors.goldSoft, fontWeight: 800 }}>
+          <Icon name="checkCircle" size={14} stroke={2} />
+          پروفایل تأییدشده
+        </p>
         <h2 style={{ ...typography.title, margin: `${spacing.sm}px 0 0`, color: colors.surface }}>{teacher.name}</h2>
-        <p style={{ ...typography.bodySmall, margin: `${spacing.xs}px 0 0`, color: "rgba(255,255,255,0.72)" }}>
+        <p style={{ ...typography.bodySmall, margin: "3px 0 0", color: "rgba(255,255,255,0.7)" }}>
           {teacherSubtitle(teacher) || "مشاهده خدمات و زمان‌های قابل رزرو"}
         </p>
-        <p style={{ ...typography.caption, margin: `${spacing.md}px 0 0`, color: colors.surface, fontWeight: 700 }}>
-          مشاهده خدمات و رزرو زمان
+        <p style={{ ...typography.caption, display: "flex", alignItems: "center", gap: 3, margin: `${spacing.md}px 0 0`, color: colors.surface, fontWeight: 800 }}>
+          مشاهدهٔ خدمات و زمان‌های قابل رزرو
+          <Icon name="chevronL" size={14} />
         </p>
       </div>
     </button>
@@ -188,11 +261,11 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [teachersLoading, setTeachersLoading] = useState(true);
   const [teachersError, setTeachersError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let active = true;
-    runtime
-      .restoreSession()
+    runtime.restoreSession()
       .then((sessionUser) => {
         if (active) setUser(sessionUser);
       })
@@ -224,12 +297,13 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
     return () => {
       active = false;
     };
-  }, [runtime]);
+  }, [runtime, reloadKey]);
 
   const women = useMemo(() => teachers.filter((teacher) => teacher.female), [teachers]);
   const men = useMemo(() => teachers.filter((teacher) => !teacher.female), [teachers]);
   const recommended = men.length > 0 ? men : teachers;
   const featured = teachers[0] ?? null;
+  const firstName = user?.name?.trim().split(/\s+/)[0] || "دوست";
 
   function submitSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -237,154 +311,201 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
   }
 
   return (
-    <div style={{ display: "grid", gap: spacing.xl }}>
+    <div style={{ display: "grid", gap: 26 }}>
       <header
+        className="vodda-enter"
         style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           gap: spacing.md,
+          paddingBlock: spacing.xs,
         }}
       >
-        <div style={{ minWidth: 0 }}>
-          <p style={{ ...typography.caption, margin: 0, color: colors.inkMuted }}>خوش آمدی</p>
-          <h1
-            style={{
-              ...typography.heading,
-              margin: `${spacing.xs}px 0 0`,
-              color: colors.ink,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {user?.name?.trim() || "قرآن‌آموز وُدّا"}
-          </h1>
-          {user?.city ? (
-            <p style={{ ...typography.bodySmall, margin: `${spacing.xs}px 0 0`, color: colors.inkSecondary }}>
-              {user.city}
-            </p>
-          ) : null}
-        </div>
         <button
           type="button"
-          aria-label="رفتن به پروفایل"
           onClick={() => navigateApp("/profile", config)}
-          style={{ padding: 0, border: 0, background: "transparent", cursor: "pointer", flex: "0 0 auto" }}
+          className="vodda-tappable"
+          style={{
+            minWidth: 0,
+            display: "flex",
+            alignItems: "center",
+            gap: 11,
+            padding: 0,
+            textAlign: "right",
+            border: 0,
+            color: colors.ink,
+            background: "transparent",
+            fontFamily: typography.fontFamily,
+            cursor: "pointer",
+          }}
         >
-          <Avatar name={user?.name} src={user?.avatar_url} size={52} />
+          <Avatar name={user?.name} src={user?.avatar_url} size={48} ring />
+          <span style={{ minWidth: 0 }}>
+            <span style={{ ...typography.caption, display: "block", color: colors.inkMuted }}>وقت بخیر،</span>
+            <strong
+              style={{
+                ...typography.body,
+                display: "block",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                color: colors.ink,
+                fontWeight: 900,
+              }}
+            >
+              {firstName} جان 🌿
+            </strong>
+          </span>
+        </button>
+        <button
+          type="button"
+          aria-label="کیف پول"
+          className="vodda-tappable"
+          onClick={() => navigateApp("/wallet", config)}
+          style={{
+            width: 44,
+            height: 44,
+            display: "grid",
+            placeItems: "center",
+            flex: "0 0 44px",
+            padding: 0,
+            border: `1px solid ${colors.olive100}`,
+            borderRadius: 16,
+            color: colors.olive700,
+            background: colors.olive50,
+            cursor: "pointer",
+          }}
+        >
+          <Icon name="wallet" size={20} />
         </button>
       </header>
 
-      <Card
-        elevated
-        style={{
-          display: "grid",
-          gap: spacing.lg,
-          padding: spacing.xl,
-          background: `linear-gradient(145deg, ${colors.olive50}, ${colors.surface})`,
-          borderColor: colors.olive200,
-        }}
+      <HeroPanel
+        eyebrow="به وُدّا خوش آمدید"
+        title={"استاد قرآن و مداحی‌ات را\nپیدا و زمان آزادش را رزرو کن"}
+        description="پروفایل استادان تأییدشده و خدمات قابل رزرو را ببین."
       >
-        <div>
-          <p style={{ ...typography.caption, margin: 0, color: colors.olive800, fontWeight: 700 }}>استاد مناسب خودت را پیدا کن</p>
-          <h2 style={{ ...typography.title, margin: `${spacing.sm}px 0 0`, color: colors.ink }}>
-            برای چه مهارتی دنبال استاد هستی؟
-          </h2>
-          <p style={{ ...typography.bodySmall, margin: `${spacing.sm}px 0 0`, color: colors.inkSecondary }}>
-            نام استاد، حوزه آموزشی یا شهر را جستجو کن.
-          </p>
-        </div>
-        <form onSubmit={submitSearch} style={{ display: "flex", gap: spacing.sm, alignItems: "stretch" }}>
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="مثلاً تجوید، مداحی یا کرمان"
-            aria-label="جستجوی استاد"
+        <form onSubmit={submitSearch} style={{ display: "flex", gap: spacing.sm, alignItems: "center" }}>
+          <div style={{ position: "relative", minWidth: 0, flex: 1 }}>
+            <Icon
+              name="search"
+              size={18}
+              stroke={1.9}
+              style={{ position: "absolute", insetInlineStart: 14, top: "50%", transform: "translateY(-50%)", color: colors.inkMuted }}
+            />
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="نام استاد، مهارت یا شهر"
+              aria-label="جستجوی استاد"
+              className="vodda-input"
+              style={{
+                width: "100%",
+                minHeight: 48,
+                padding: "10px 42px 10px 14px",
+                border: "1px solid rgba(255,255,255,.26)",
+                borderRadius: radii.pill,
+                outline: "none",
+                color: colors.ink,
+                background: "rgba(255,255,255,.96)",
+                boxShadow: "0 8px 20px rgba(31,37,23,.12)",
+                fontFamily: typography.fontFamily,
+                ...typography.bodySmall,
+              }}
+            />
+          </div>
+          <Button
+            type="submit"
             style={{
-              ...typography.body,
-              minWidth: 0,
-              flex: 1,
-              minHeight: 46,
-              padding: `9px ${spacing.md}px`,
-              color: colors.ink,
+              minWidth: 48,
+              width: 48,
+              minHeight: 48,
+              padding: 0,
+              color: colors.olive700,
               background: colors.surface,
-              border: `1px solid ${colors.sand200}`,
-              borderRadius: radii.sm,
-              outline: "none",
-              fontFamily: typography.fontFamily,
+              borderColor: colors.surface,
+              boxShadow: "0 8px 20px rgba(31,37,23,.12)",
             }}
-          />
-          <Button type="submit" style={{ flex: "0 0 auto" }}>
-            جستجو
+            aria-label="جستجو"
+          >
+            <Icon name="arrowL" size={19} stroke={2} />
           </Button>
         </form>
-      </Card>
+      </HeroPanel>
 
-      <section aria-labelledby="quick-categories-title">
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: spacing.md }}>
-          <div>
-            <h2 id="quick-categories-title" style={{ ...typography.title, margin: 0, color: colors.ink }}>
-              دسته‌های سریع
-            </h2>
-            <p style={{ ...typography.bodySmall, margin: `${spacing.xs}px 0 0`, color: colors.inkMuted }}>
-              مستقیم وارد جستجوی تخصصی شو
-            </p>
-          </div>
-          <Button variant="ghost" onClick={() => navigateApp("/search", config)} style={{ paddingInline: spacing.sm }}>
-            همه استادها
-          </Button>
-        </div>
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-            gap: spacing.md,
-            marginTop: spacing.md,
-          }}
-        >
+      <section className="vodda-enter vodda-enter-delay-1" aria-labelledby="quick-categories-title">
+        <SectionHeader
+          title="دسته‌های سریع"
+          description="مستقیم وارد جستجوی تخصصی شو"
+          action="همه استادها"
+          onAction={() => navigateApp("/search", config)}
+        />
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: spacing.md, marginTop: spacing.md }}>
           {quickCategories.map((category) => (
             <button
               key={category.id}
               type="button"
-              onClick={() => navigateApp(searchUrl("", category.id), config)}
+              onClick={() => navigateApp(searchUrl("", category.field), config)}
+              className="vodda-card vodda-card--interactive vodda-tappable"
               style={{
+                minHeight: 142,
                 display: "grid",
+                justifyItems: "center",
+                alignContent: "center",
                 gap: spacing.sm,
-                minHeight: 112,
                 padding: spacing.lg,
-                textAlign: "right",
+                textAlign: "center",
                 color: colors.ink,
                 background: colors.surface,
-                border: `1px solid ${colors.sand200}`,
-                borderRadius: radii.md,
+                border: `1px solid ${colors.sand150}`,
+                borderRadius: radii.lg,
+                boxShadow: shadows.sm,
                 cursor: "pointer",
                 fontFamily: typography.fontFamily,
               }}
             >
-              <strong style={{ ...typography.body, color: colors.olive800 }}>{category.title}</strong>
-              <span style={{ ...typography.caption, color: colors.inkSecondary }}>{category.description}</span>
+              <IconBadge icon={category.icon} tone={category.tone} size={50} />
+              <strong style={{ ...typography.body, color: colors.ink, fontWeight: 900 }}>{category.title}</strong>
+              <span style={{ ...typography.caption, color: colors.inkMuted }}>{category.description}</span>
             </button>
           ))}
         </div>
       </section>
 
       {teachersLoading ? (
-        <Card style={{ padding: spacing.xl, textAlign: "center" }}>
-          <p style={{ ...typography.bodySmall, margin: 0, color: colors.inkMuted }}>در حال دریافت استادان تأییدشده…</p>
-        </Card>
+        <div className="vodda-enter" style={{ display: "grid", gap: spacing.md }}>
+          <SectionHeader title="اساتید پیشنهادی" />
+          <div className="vodda-scroll-rail" style={{ display: "flex", gap: spacing.md, overflow: "hidden" }}>
+            {[0, 1, 2].map((item) => (
+              <div
+                key={item}
+                style={{
+                  width: 176,
+                  height: 198,
+                  flex: "0 0 176px",
+                  borderRadius: radii.lg,
+                  background: `linear-gradient(110deg, ${colors.sand100} 25%, ${colors.surface} 42%, ${colors.sand100} 60%)`,
+                  backgroundSize: "300% 100%",
+                  boxShadow: shadows.xs,
+                }}
+              />
+            ))}
+          </div>
+        </div>
       ) : teachersError ? (
-        <Card style={{ display: "grid", gap: spacing.md, padding: spacing.xl }}>
-          <strong style={{ ...typography.body, color: colors.ink }}>دریافت استادان ناموفق بود</strong>
+        <Card elevated style={{ display: "grid", gap: spacing.md, textAlign: "center" }}>
+          <IconBadge icon="users" tone="olive" size={52} />
+          <strong style={{ ...typography.title, color: colors.ink }}>دریافت استادان ناموفق بود</strong>
           <span style={{ ...typography.caption, color: colors.inkMuted }}>{teachersError}</span>
-          <Button variant="secondary" onClick={() => navigateApp("/search", config)}>
-            رفتن به جستجو
+          <Button variant="secondary" onClick={() => setReloadKey((value) => value + 1)}>
+            تلاش دوباره
           </Button>
         </Card>
       ) : teachers.length === 0 ? (
-        <Card style={{ padding: spacing.xl, textAlign: "center" }}>
-          <strong style={{ ...typography.body, color: colors.ink }}>هنوز استادی منتشر نشده</strong>
+        <Card style={{ paddingBlock: spacing.huge, textAlign: "center" }}>
+          <IconBadge icon="users" tone="olive" size={58} />
+          <strong style={{ ...typography.title, display: "block", marginTop: spacing.md }}>هنوز استادی منتشر نشده</strong>
           <p style={{ ...typography.caption, margin: `${spacing.sm}px 0 0`, color: colors.inkMuted }}>
             پس از تأیید اولین استاد، پروفایل او در این بخش نمایش داده می‌شود.
           </p>
