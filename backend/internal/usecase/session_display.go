@@ -59,7 +59,7 @@ func (uc *SessionUsecase) LearnerSessionDisplays(ctx context.Context, learnerID 
 
 // TeacherSessionDisplays lists teacher sessions with official local date/time.
 func (uc *SessionUsecase) TeacherSessionDisplays(ctx context.Context, userID uint, statuses []domain.SessionStatus) ([]SessionDisplay, error) {
-	teacher, err := uc.teachers.ByUserID(ctx, userID)
+	teacher, err := uc.teacherProfileForUser(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
