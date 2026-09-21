@@ -7,7 +7,7 @@ import { usePlatform } from "../../platform/context";
 import { navigateApp } from "../../router";
 import { getTeacherDetail } from "../teachers/api";
 import type { Teacher, TeacherService } from "../teachers/types";
-import { Avatar, Button, Card, EmptyState, ErrorState, Icon, IconBadge, LoadingState, SectionHeader, colors, radii, shadows, spacing, typography } from "../../ui";
+import { Avatar, Button, Card, EmptyState, ErrorState, Icon, LoadingState, colors, radii, shadows, spacing, typography } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
 import { formatWalletAmount } from "../wallet/WalletTransactionCard";
 import { createBooking, getBookingAvailability } from "./api";
@@ -22,6 +22,39 @@ function dateLabel(localDate: string, weekday: number) {
   const month = parts[1] ?? "";
   const prefix = weekdays[weekday] ?? "";
   return `${prefix}${prefix ? " · " : ""}${numberFormatter.format(Number(day) || 0)}/${numberFormatter.format(Number(month) || 0)}`;
+}
+
+function fullDateLabel(localDate: string, weekday: number) {
+  const parts = localDate.split("-");
+  if (parts.length !== 3) return dateLabel(localDate, weekday);
+  const [year, month, day] = parts;
+  const prefix = weekdays[weekday] ?? "";
+  return `${prefix}${prefix ? " " : ""}${numberFormatter.format(Number(day) || 0)}/${numberFormatter.format(Number(month) || 0)}/${numberFormatter.format(Number(year) || 0)}`;
+}
+
+function BookingStepHeader({ number, title }: { number: number; title: string }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+      <span
+        aria-hidden="true"
+        style={{
+          width: 28,
+          height: 28,
+          display: "grid",
+          placeItems: "center",
+          flex: "0 0 28px",
+          borderRadius: "50%",
+          color: colors.surface,
+          background: colors.olive600,
+          fontSize: 13,
+          fontWeight: 800,
+        }}
+      >
+        {numberFormatter.format(number)}
+      </span>
+      <strong style={{ fontSize: 16, fontWeight: 800, color: colors.ink }}>{title}</strong>
+    </div>
+  );
 }
 
 type DateGroup = {
@@ -179,19 +212,17 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
 
   return (
     <div className="vodda-screen" style={{ display: "grid", gap: spacing.xl }}>
-      <Card elevated className="vodda-enter" style={{ display: "flex", alignItems: "center", gap: spacing.md, padding: spacing.lg, background: colors.surfaceWarm }}>
-        <Avatar name={teacher.name} size={58} ring />
+      <Card elevated className="vodda-enter" style={{ display: "flex", alignItems: "center", gap: 13, padding: 16, borderRadius: 20 }}>
+        <Avatar name={teacher.name} size={56} ring={false} />
         <div style={{ minWidth: 0, flex: 1 }}>
-          <p style={{ ...typography.caption, color: colors.inkMuted, margin: 0 }}>در حال رزرو با</p>
-          <h2 style={{ ...typography.title, margin: "2px 0 0" }}>{teacher.name}</h2>
-          <p style={{ ...typography.bodySmall, color: colors.olive700, margin: "2px 0 0", fontWeight: 700 }}>{teacher.tag || teacher.field}</p>
+          <strong style={{ fontSize: 16, fontWeight: 800, display: "block", color: colors.ink }}>{teacher.name}</strong>
+          <span style={{ fontSize: 12.5, color: colors.olive700 }}>{teacher.tag || teacher.field}</span>
         </div>
-        <IconBadge icon="calendar" tone="olive" size={44} />
       </Card>
 
-      <Card className="vodda-enter vodda-enter-delay-1">
-        <SectionHeader title="۱. انتخاب خدمت" description="نوع جلسه‌ای که می‌خواهید رزرو کنید" />
-        <div style={{ height: spacing.md }} />
+      <Card className="vodda-enter vodda-enter-delay-1" style={{ padding: 18, borderRadius: 20, borderColor: colors.sand200, boxShadow: "none" }}>
+        <BookingStepHeader number={1} title="انتخاب خدمت" />
+        <div style={{ height: 16 }} />
         {services.length === 0 ? (
           <EmptyState title="خدمت قابل رزرو وجود ندارد" description="این استاد فعلاً خدمت فعال و قابل رزروی ندارد." />
         ) : (
@@ -208,13 +239,12 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
                     display: "grid",
                     gridTemplateColumns: "1fr auto",
                     gap: spacing.md,
-                    padding: spacing.md,
+                    padding: 13,
                     textAlign: "right",
                     color: colors.ink,
-                    background: selected ? colors.olive50 : colors.surface,
-                    border: `1px solid ${selected ? colors.olive600 : colors.sand200}`,
-                    borderRadius: radii.lg,
-                    boxShadow: selected ? "0 7px 20px rgba(94,110,67,.12)" : shadows.xs,
+                    background: selected ? colors.olive50 : colors.sand50,
+                    border: selected ? `1.6px solid ${colors.olive600}` : `1px solid ${colors.sand200}`,
+                    borderRadius: 16,
                     cursor: "pointer",
                     fontFamily: typography.fontFamily,
                   }}
@@ -231,9 +261,9 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
         )}
       </Card>
 
-      <Card className="vodda-enter vodda-enter-delay-2">
-        <SectionHeader title="۲. انتخاب تاریخ و ساعت" description="زمان‌ها مستقیماً از برنامه رسمی استاد دریافت می‌شوند" />
-        <div style={{ height: spacing.md }} />
+      <Card className="vodda-enter vodda-enter-delay-2" style={{ padding: 18, borderRadius: 20, borderColor: colors.sand200, boxShadow: "none" }}>
+        <BookingStepHeader number={2} title="انتخاب تاریخ و ساعت" />
+        <div style={{ height: 16 }} />
         {!service ? (
           <EmptyState title="یک خدمت انتخاب کنید" description="بعد از انتخاب خدمت، زمان‌های آزاد رسمی استاد دریافت می‌شوند." />
         ) : availabilityLoading ? (
@@ -263,20 +293,24 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
                     }}
                     style={{
                       flex: "0 0 auto",
-                      minWidth: 112,
-                      padding: `${spacing.sm}px ${spacing.md}px`,
+                      width: 102,
+                      minHeight: 76,
+                      padding: "10px 8px",
                       color: selected ? colors.surface : colors.inkSecondary,
-                      background: selected ? colors.olive700 : colors.sand50,
-                      border: `1px solid ${selected ? colors.olive700 : colors.sand200}`,
-                      borderRadius: radii.lg,
-                      boxShadow: selected ? "0 7px 18px rgba(94,110,67,.18)" : shadows.xs,
+                      background: selected ? colors.olive600 : colors.sand50,
+                      border: `1px solid ${selected ? colors.olive600 : colors.sand200}`,
+                      borderRadius: 15,
                       cursor: "pointer",
                       fontFamily: typography.fontFamily,
                       ...typography.bodySmall,
                     }}
                   >
-                    {dateLabel(group.localDate, group.weekday)}
-                    <span style={{ display: "block", opacity: 0.8, ...typography.caption }}>{numberFormatter.format(group.slots.length)} زمان</span>
+                    <strong style={{ display: "block", fontSize: 12, fontWeight: 700 }}>
+                      {weekdays[group.weekday] ?? "روز"}
+                    </strong>
+                    <span style={{ display: "block", marginTop: 4, opacity: 0.82, fontSize: 10.5 }}>
+                      {dateLabel(group.localDate, -1)} · {numberFormatter.format(group.slots.length)} زمان
+                    </span>
                   </button>
                 );
               })}
@@ -296,9 +330,9 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
                       }}
                       style={{
                         padding: `${spacing.sm}px ${spacing.md}px`,
-                        color: selected ? colors.surface : colors.olive800,
-                        background: selected ? colors.olive700 : colors.olive50,
-                        border: `1px solid ${selected ? colors.olive700 : colors.olive200}`,
+                        color: selected ? colors.surface : colors.inkSecondary,
+                        background: selected ? colors.olive600 : colors.surface,
+                        border: `1px solid ${selected ? colors.olive600 : colors.sand200}`,
                         borderRadius: radii.pill,
                         cursor: "pointer",
                         fontFamily: typography.fontFamily,
@@ -315,25 +349,37 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
         )}
       </Card>
 
-      <Card className="vodda-enter vodda-enter-delay-3" style={{ background: service && slot ? colors.olive50 : colors.surface }}>
-        <SectionHeader title="۳. بررسی نهایی" description="قبل از ثبت، جزئیات درخواست را مرور کنید" />
-        <div style={{ height: spacing.md }} />
+      <Card className="vodda-enter vodda-enter-delay-3" style={{ padding: 18, borderRadius: 20, borderColor: colors.sand200, boxShadow: "none" }}>
+        <BookingStepHeader number={3} title="بررسی نهایی" />
+        <div style={{ height: 16 }} />
         {!service || !slot ? (
           <EmptyState title="رزرو هنوز آماده ثبت نیست" description="پس از انتخاب خدمت و زمان، خلاصه رزرو اینجا نمایش داده می‌شود." />
         ) : (
-          <div style={{ display: "grid", gap: spacing.sm }}>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: spacing.md }}><span>استاد</span><strong>{teacher.name}</strong></div>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: spacing.md }}><span>خدمت</span><strong>{service.title}</strong></div>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: spacing.md }}><span>زمان محلی وُدّا</span><strong>{dateLabel(slot.localDate, slot.weekday)} · {slot.localStart} تا {slot.localEnd}</strong></div>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: spacing.md }}><span>مبلغ</span><strong>{formatWalletAmount(Math.max(0, service.price))} تومان</strong></div>
+          <div style={{ display: "grid" }}>
+            {[
+              ["استاد", teacher.name],
+              ["خدمت", service.title],
+              ["تاریخ", fullDateLabel(slot.localDate, slot.weekday)],
+              ["ساعت", `${slot.localStart} تا ${slot.localEnd}`],
+              ["مدت", `${numberFormatter.format(service.duration)} دقیقه`],
+              ["مبلغ", `${formatWalletAmount(Math.max(0, service.price))} تومان`],
+            ].map(([label, value]) => (
+              <div key={label} style={{ display: "flex", justifyContent: "space-between", gap: spacing.md, paddingBlock: 8 }}>
+                <span style={{ color: colors.inkMuted }}>{label}</span>
+                <strong style={{ textAlign: "left" }}>{value}</strong>
+              </div>
+            ))}
+            <div style={{ height: 1, marginBlock: 4, background: colors.sand150 }} />
+            <p style={{ ...typography.caption, margin: "8px 0 0", color: colors.inkMuted, lineHeight: 1.8 }}>
+              زمان‌ها با timezone رسمی سامانه و تداخل جلسات فعال محاسبه شده‌اند. ممکن است تا لحظهٔ ثبت توسط کاربر دیگری رزرو شوند.
+            </p>
           </div>
         )}
       </Card>
 
       {submitError ? <p role="alert" style={{ ...typography.bodySmall, padding: spacing.md, borderRadius: radii.md, background: colors.dangerBackground, color: colors.danger, margin: 0 }}>{submitError}</p> : null}
-      <div style={{ position: "sticky", zIndex: 12, bottom: "calc(84px + env(safe-area-inset-bottom))", padding: 8, border: "1px solid rgba(228,221,204,.82)", borderRadius: radii.lg, background: "rgba(255,255,255,.92)", boxShadow: shadows.floating, backdropFilter: "blur(16px)" }}>
-        <Button fullWidth loading={saving} disabled={!service || !slot} onClick={() => void submit()}>
-          <Icon name="checkCircle" size={18} />
+      <div style={{ position: "sticky", zIndex: 12, bottom: "calc(68px + env(safe-area-inset-bottom))", padding: "8px 0 12px", background: colors.sand50 }}>
+        <Button fullWidth loading={saving} disabled={!service || !slot} onClick={() => void submit()} style={{ minHeight: 52 }}>
           ثبت درخواست رزرو
         </Button>
       </div>
