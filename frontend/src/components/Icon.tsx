@@ -6,7 +6,7 @@ type IconName =
   | 'book' | 'mic' | 'star' | 'heart' | 'chevronL' | 'chevronUp' | 'arrowL' | 'play'
   | 'check' | 'checkCircle' | 'bell' | 'message' | 'pin' | 'clock' | 'shield'
   | 'award' | 'users' | 'sparkle' | 'download' | 'quran' | 'headphones'
-  | 'settings' | 'logout' | 'edit' | 'grid' | 'list' | 'trending' | 'coins' | 'doc' | 'x' | 'trash';
+  | 'settings' | 'filter' | 'refresh' | 'logout' | 'edit' | 'grid' | 'list' | 'trending' | 'coins' | 'doc' | 'x' | 'trash';
 
 export function Icon({
   name,
@@ -62,6 +62,8 @@ export function Icon({
     quran: <><path {...p} d="M12 6.5C12 6.5 10 4.5 4.5 4.5V18c5.5 0 7.5 2 7.5 2s2-2 7.5-2V4.5C14 4.5 12 6.5 12 6.5Z" /><path {...p} d="M12 6.5v13.5" /><path {...p} d="M8.2 10.5c.6.5 1 1.2 1 2s-.4 1.5-1 2M15.8 10.5c-.6.5-1 1.2-1 2s.4 1.5 1 2" /></>,
     headphones: <><path {...p} d="M5 13v-1a7 7 0 0 1 14 0v1" /><rect {...p} x="3.5" y="13" width="3.5" height="6" rx="1.6" /><rect {...p} x="17" y="13" width="3.5" height="6" rx="1.6" /></>,
     settings: <><circle {...p} cx="12" cy="12" r="3" /><path {...p} d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8" /></>,
+    filter: <><path {...p} d="M4 6h16M7 12h10M10 18h4" /><circle cx="8" cy="6" r="1.5" fill="currentColor" stroke="none" /><circle cx="15" cy="12" r="1.5" fill="currentColor" stroke="none" /><circle cx="12" cy="18" r="1.5" fill="currentColor" stroke="none" /></>,
+    refresh: <><path {...p} d="M19 8a7.5 7.5 0 0 0-12.5-2L4 8.5" /><path {...p} d="M4 4v4.5h4.5" /><path {...p} d="M5 16a7.5 7.5 0 0 0 12.5 2l2.5-2.5" /><path {...p} d="M20 20v-4.5h-4.5" /></>,
     logout: <><path {...p} d="M14 4h-7A1.5 1.5 0 0 0 5.5 5.5v13A1.5 1.5 0 0 0 7 20h7" /><path {...p} d="M17 8.5 20.5 12 17 15.5M10 12h10.5" /></>,
     edit: <path {...p} d="M16.5 4.5 19.5 7.5 9 18l-4 1 1-4 10.5-10.5Z" />,
     grid: <><rect {...p} x="4" y="4" width="6.5" height="6.5" rx="1.8" /><rect {...p} x="13.5" y="4" width="6.5" height="6.5" rx="1.8" /><rect {...p} x="4" y="13.5" width="6.5" height="6.5" rx="1.8" /><rect {...p} x="13.5" y="13.5" width="6.5" height="6.5" rx="1.8" /></>,
