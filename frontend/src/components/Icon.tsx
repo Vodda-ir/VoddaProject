@@ -4,7 +4,7 @@ import type { CSSProperties } from 'react';
 type IconName =
   | 'home' | 'search' | 'calendar' | 'wallet' | 'user' | 'phone' | 'video'
   | 'book' | 'mic' | 'star' | 'heart' | 'chevronL' | 'chevronUp' | 'arrowL' | 'play'
-  | 'check' | 'checkCircle' | 'bell' | 'message' | 'pin' | 'clock' | 'shield'
+  | 'check' | 'checkCircle' | 'bell' | 'message' | 'pin' | 'clock' | 'info' | 'shield'
   | 'award' | 'users' | 'sparkle' | 'download' | 'quran' | 'headphones'
   | 'settings' | 'filter' | 'refresh' | 'logout' | 'edit' | 'grid' | 'list' | 'trending' | 'coins' | 'doc' | 'x' | 'trash';
 
@@ -54,6 +54,7 @@ export function Icon({
     message: <path {...p} d="M5 5h14a1.5 1.5 0 0 1 1.5 1.5v8A1.5 1.5 0 0 1 19 16H9l-4 3.5V6.5A1.5 1.5 0 0 1 6.5 5Z" />,
     pin: <><path {...p} d="M12 21s6.5-5.5 6.5-11a6.5 6.5 0 1 0-13 0C5.5 15.5 12 21 12 21Z" /><circle {...p} cx="12" cy="10" r="2.3" /></>,
     clock: <><circle {...p} cx="12" cy="12" r="8.5" /><path {...p} d="M12 7.5V12l3 2" /></>,
+    info: <><circle {...p} cx="12" cy="12" r="8.5" /><path {...p} d="M12 10.5v5" /><circle cx="12" cy="7.5" r="1" fill="currentColor" stroke="none" /></>,
     shield: <><path {...p} d="M12 3.5 5 6v5c0 4.5 3 7.8 7 9.5 4-1.7 7-5 7-9.5V6l-7-2.5Z" /><path {...p} d="m9 12 2 2 4-4" /></>,
     award: <><circle {...p} cx="12" cy="9" r="5" /><path {...p} d="m8.5 13.5-1.5 6 5-2.5 5 2.5-1.5-6" /></>,
     users: <><circle {...p} cx="9" cy="8" r="3.3" /><path {...p} d="M3.5 19c0-3 2.4-5 5.5-5s5.5 2 5.5 5" /><path {...p} d="M16 5.2a3.3 3.3 0 0 1 0 6.4M17 14c2.4.4 4 2.3 4 5" /></>,
