@@ -31,24 +31,25 @@ export function WalletTransactionCard({
         display: "flex",
         alignItems: "center",
         gap: spacing.md,
-        padding: spacing.lg,
-        borderRadius: radii.lg,
+        padding: 14,
+        borderRadius: 18,
+        boxShadow: "0 0 6px rgba(46,54,34,.04)",
       }}
     >
       <div
         aria-hidden="true"
         style={{
-          width: 46,
-          height: 46,
-          flex: "0 0 46px",
+          width: 42,
+          height: 42,
+          flex: "0 0 42px",
           display: "grid",
           placeItems: "center",
-          borderRadius: 15,
+          borderRadius: 12,
           background: credit ? colors.successBackground : colors.clayBackground,
           color: credit ? colors.olive700 : colors.clay,
         }}
       >
-        <Icon name={credit ? "download" : "trending"} size={21} stroke={1.9} />
+        <Icon name={credit ? "arrowDownLeft" : "arrowUpRight"} size={20} stroke={1.9} />
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <strong
@@ -78,12 +79,11 @@ export function WalletTransactionCard({
             display: "block",
             color: credit ? colors.olive700 : colors.ink,
             whiteSpace: "nowrap",
-            fontWeight: 900,
+            fontWeight: 800,
           }}
         >
           {credit ? "+" : "−"}{formatAmount(Math.abs(transaction.amount))}
         </strong>
-        <span style={{ ...typography.caption, color: colors.inkFaint }}>تومان</span>
       </div>
     </Card>
   );
