@@ -10,7 +10,10 @@ import {
   Card,
   EmptyState,
   ErrorState,
+  Icon,
   LoadingState,
+  MetricTile,
+  SectionHeader,
   colors,
   spacing,
   typography,
@@ -92,6 +95,7 @@ export function TeacherReviewsScreen() {
   if (!reviews.length) {
     return (
       <EmptyState
+        icon={<Icon name="message" size={30} />}
         title="هنوز نظری ثبت نشده"
         description="پس از تکمیل جلسه، نظرهای ثبت‌شده قرآن‌آموزان در این صفحه نمایش داده می‌شود."
       />
@@ -99,32 +103,25 @@ export function TeacherReviewsScreen() {
   }
 
   return (
-    <section style={{ display: "grid", gap: spacing.lg }}>
-      <Card elevated style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: spacing.md }}>
-        <div>
-          <span style={{ ...typography.caption, color: colors.inkMuted }}>میانگین همین نظرهای ثبت‌شده</span>
-          <strong style={{ ...typography.heading, display: "block", marginTop: 2 }}>{toFaDigits(average.toFixed(1))} ★</strong>
-        </div>
-        <div style={{ textAlign: "left" }}>
-          <span style={{ ...typography.caption, color: colors.inkMuted }}>تعداد نظرها</span>
-          <strong style={{ ...typography.title, display: "block", marginTop: 2 }}>{toFaDigits(reviews.length)}</strong>
-        </div>
-      </Card>
+    <section className="vodda-screen" style={{ display: "grid", gap: spacing.xl }}>
+      <SectionHeader title="نظر قرآن‌آموزان" description="بازخوردهای ثبت‌شده پس از جلسات تکمیل‌شده" />
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: spacing.sm }}>
+        <MetricTile icon="star" tone="gold" label="میانگین امتیاز" value={toFaDigits(average.toFixed(1)) + " ★"} />
+        <MetricTile icon="message" tone="info" label="تعداد نظرها" value={toFaDigits(reviews.length)} />
+      </div>
 
       <div style={{ display: "grid", gap: spacing.sm }}>
         {reviews.map((review) => (
-          <Card key={review.id} style={{ display: "grid", gap: spacing.md }}>
+          <Card key={review.id} className="vodda-card--interactive vodda-enter" style={{ display: "grid", gap: spacing.md, padding: spacing.lg }}>
             <div style={{ display: "flex", alignItems: "center", gap: spacing.sm }}>
-              <Avatar name={review.learnerName} src={review.learnerAvatar} size={42} />
+              <Avatar name={review.learnerName} src={review.learnerAvatar} size={46} ring />
               <div style={{ minWidth: 0, flex: 1 }}>
                 <strong style={{ ...typography.body, display: "block" }}>{review.learnerName}</strong>
                 {review.createdAt ? (
                   <span style={{ ...typography.caption, color: colors.inkMuted }}>{formatDate(review.createdAt)}</span>
                 ) : null}
               </div>
-              <span aria-label={`امتیاز ${review.rating} از ۵`} style={{ ...typography.body, color: colors.gold, fontWeight: 800 }}>
-                {toFaDigits(review.rating)} ★
-              </span>
+              <span aria-label={`امتیاز ${review.rating} از ۵`} style={{ display: "inline-flex", alignItems: "center", gap: 3, ...typography.body, color: colors.goldDark, fontWeight: 900 }}><Icon name="star" size={15} fill style={{ color: colors.gold }} />{toFaDigits(review.rating)}</span>
             </div>
             {review.text.trim() ? (
               <p style={{ ...typography.body, margin: 0, color: colors.inkSecondary, whiteSpace: "pre-wrap" }}>{review.text}</p>
