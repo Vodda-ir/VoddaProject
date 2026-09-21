@@ -9,10 +9,14 @@ import {
   Card,
   Dialog,
   ErrorState,
+  Icon,
+  IconBadge,
   LoadingState,
+  SectionHeader,
   Sheet,
   colors,
   radii,
+  shadows,
   spacing,
   typography,
 } from "../../ui";
@@ -190,13 +194,8 @@ export function TeacherWorkTimesScreen() {
   }
 
   return (
-    <section style={{ display: "grid", gap: spacing.lg }}>
-      <header>
-        <h1 style={{ ...typography.heading, margin: 0 }}>زمان‌های کاری</h1>
-        <p style={{ ...typography.bodySmall, margin: `${spacing.xs}px 0 0`, color: colors.inkMuted, lineHeight: 1.9 }}>
-          روزها و ساعت‌هایی را مشخص کنید که برای برگزاری جلسه در دسترس هستید. بازه‌های هم‌پوشان پذیرفته نمی‌شوند.
-        </p>
-      </header>
+    <section className="vodda-screen" style={{ display: "grid", gap: spacing.xl }}>
+      <SectionHeader title="زمان‌های کاری" description="روزها و ساعت‌های قابل رزرو را مدیریت کنید؛ بازه‌های هم‌پوشان پذیرفته نمی‌شوند." />
 
       {loading ? <LoadingState label="در حال دریافت زمان‌های کاری…" /> : null}
       {!loading && error ? (
@@ -212,15 +211,15 @@ export function TeacherWorkTimesScreen() {
           {days.map((day, weekday) => {
             const slots = grouped.get(weekday) ?? [];
             return (
-              <Card key={day} elevated style={{ display: "grid", gap: spacing.md }}>
+              <Card key={day} className="vodda-card--interactive vodda-enter" style={{ display: "grid", gap: spacing.md, padding: spacing.lg }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: spacing.md }}>
-                  <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: spacing.md }}><IconBadge icon="calendar" tone={slots.length ? "olive" : "info"} size={42} /><div>
                     <strong style={{ ...typography.body, display: "block" }}>{day}</strong>
                     <span style={{ ...typography.caption, color: colors.inkMuted }}>
                       {slots.length ? `${toFaDigits(slots.length)} بازه ثبت شده` : "تعطیل"}
                     </span>
-                  </div>
-                  <Button variant="secondary" onClick={() => openEditor(weekday)}>افزودن بازه</Button>
+                  </div></div>
+                  <Button variant="secondary" onClick={() => openEditor(weekday)}><Icon name="clock" size={16} />افزودن</Button>
                 </div>
 
                 {slots.length ? (
@@ -235,8 +234,9 @@ export function TeacherWorkTimesScreen() {
                             alignItems: "center",
                             justifyContent: "space-between",
                             gap: spacing.sm,
-                            padding: spacing.sm,
+                            padding: spacing.md,
                             borderRadius: radii.md,
+                            border: `1px solid ${colors.olive100}`,
                             background: colors.olive50,
                             opacity: busy ? 0.55 : 1,
                           }}
@@ -272,7 +272,7 @@ export function TeacherWorkTimesScreen() {
               value={draft.from}
               disabled={busyId !== null}
               onChange={(event) => setDraft((current) => ({ ...current, from: event.target.value }))}
-              style={{ width: "100%", padding: spacing.md, border: `1px solid ${colors.sand200}`, borderRadius: radii.sm, background: colors.surface, color: colors.ink, fontFamily: typography.fontFamily }}
+              style={{ width: "100%", padding: spacing.md, border: `1px solid ${colors.sand200}`, borderRadius: radii.md, background: colors.surface, color: colors.ink, boxShadow: shadows.xs, fontFamily: typography.fontFamily }}
             />
           </label>
           <label style={{ display: "grid", gap: spacing.xs, ...typography.bodySmall }}>
@@ -282,7 +282,7 @@ export function TeacherWorkTimesScreen() {
               value={draft.to}
               disabled={busyId !== null}
               onChange={(event) => setDraft((current) => ({ ...current, to: event.target.value }))}
-              style={{ width: "100%", padding: spacing.md, border: `1px solid ${colors.sand200}`, borderRadius: radii.sm, background: colors.surface, color: colors.ink, fontFamily: typography.fontFamily }}
+              style={{ width: "100%", padding: spacing.md, border: `1px solid ${colors.sand200}`, borderRadius: radii.md, background: colors.surface, color: colors.ink, boxShadow: shadows.xs, fontFamily: typography.fontFamily }}
             />
           </label>
           {formError ? <span role="alert" style={{ ...typography.caption, color: colors.danger }}>{formError}</span> : null}
