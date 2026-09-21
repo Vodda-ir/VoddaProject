@@ -5,6 +5,7 @@ import { Icon } from '@/components/Icon';
 import { Avatar } from '@/components/web/ui';
 import { getToken, clearToken, fullUrl } from '@/lib/auth';
 import Link from 'next/link';
+import { toFaDigits } from '@/lib/persian';
 
 export default function UserSettingsPage() {
   const [me, setMe] = useState<Record<string, unknown>>({});
@@ -57,7 +58,7 @@ export default function UserSettingsPage() {
           <Avatar size={72} imageUrl={avatarUrl} ring />
           <div>
             <div style={{ fontSize: 16, fontWeight: 800 }}>{name || 'کاربر'}</div>
-            <div style={{ fontSize: 13, color: 'var(--ink-3)', marginTop: 3, direction: 'ltr' }}>{mobile}</div>
+            <div style={{ fontSize: 13, color: 'var(--ink-3)', marginTop: 3, direction: 'ltr' }}>{toFaDigits(mobile)}</div>
             <Link href="/" style={{ fontSize: 12, color: 'var(--olive-600)', fontWeight: 600, textDecoration: 'none' }}>تغییر عکس (در اپ)</Link>
           </div>
         </div>
