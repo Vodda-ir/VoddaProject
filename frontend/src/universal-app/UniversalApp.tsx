@@ -4,7 +4,6 @@ import { useMemo } from "react";
 import { createUniversalAppConfig, type UniversalAppConfig } from "./config";
 import { LoginScreen, SessionBootstrap } from "./features/auth/AuthExperience";
 import { ProfileCompletionScreen } from "./features/auth/ProfileCompletionScreen";
-import { RoleModeSwitch } from "./features/auth/RoleModeSwitch";
 import { LearnerBookingScreen } from "./features/booking/LearnerBookingScreen";
 import { LearnerHomeScreen } from "./features/home/LearnerHomeScreen";
 import { LearnerProfileScreen } from "./features/profile/LearnerProfileScreen";
@@ -152,14 +151,7 @@ function UniversalAppContent({ config, runtime }: { config: UniversalAppConfig; 
   ) : (
     <RoutePlaceholder routeName={route.name} pathname={route.pathname} config={config} />
   );
-  const content = (
-    <>
-      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: spacing.md }}>
-        <RoleModeSwitch config={config} mode={teacherMode ? "teacher" : "learner"} />
-      </div>
-      {routeContent}
-    </>
-  );
+  const content = routeContent;
   const shell = teacherMode ? (
     <TeacherAppShell config={config} routeName={route.name} title={routeTitles[route.name]}>
       {content}
