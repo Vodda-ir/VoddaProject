@@ -2,6 +2,42 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: 'IRANYekanXFaNum';
+  src: url('/fonts/IRANYekanXFaNum-Regular.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'IRANYekanXFaNum';
+  src: url('/fonts/IRANYekanXFaNum-Medium.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'IRANYekanXFaNum';
+  src: url('/fonts/IRANYekanXFaNum-DemiBold.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'IRANYekanXFaNum';
+  src: url('/fonts/IRANYekanXFaNum-Bold.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'IRANYekanXFaNum';
+  src: url('/fonts/IRANYekanXFaNum-ExtraBold.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 800 900;
+  font-display: swap;
+}
+
 /* ───────────────────────────────────────────────
    Vodda design tokens — mirrors docs/design/styles.css
 ─────────────────────────────────────────────── */
@@ -48,7 +84,7 @@
   --sh-lg: 0 14px 40px rgba(46, 54, 34, 0.1), 0 4px 12px rgba(46, 54, 34, 0.05);
   --sh-olive: 0 10px 28px rgba(76, 90, 54, 0.28);
 
-  --font: 'Yekan Bakh', 'Vazirmatn', system-ui, sans-serif;
+  --font: 'IRANYekanXFaNum', system-ui, sans-serif;
 }
 
 * {
