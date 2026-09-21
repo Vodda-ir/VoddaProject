@@ -4,7 +4,17 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { UniversalAppConfig } from "../../config";
 import { usePlatform } from "../../platform/context";
 import { navigateApp } from "../../router";
-import { Button, Card, EmptyState, ErrorState, LoadingState, colors, radii, shadows, spacing, typography } from "../../ui";
+import {
+  Button,
+  EmptyState,
+  ErrorState,
+  Icon,
+  LoadingState,
+  MetricTile,
+  SectionHeader,
+  WalletHero,
+  spacing,
+} from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
 import { getWalletSnapshot } from "../wallet/api";
 import type { WalletTransaction } from "../wallet/types";
@@ -43,54 +53,48 @@ export function TeacherWalletScreen({ config }: { config: UniversalAppConfig }) 
   );
 
   return (
-    <section style={{ display: "grid", gap: spacing.lg }}>
-      <header>
-        <h1 style={{ ...typography.heading, margin: 0 }}>کیف پول استاد</h1>
-      </header>
-
-      <Card
-        style={{
-          padding: spacing.xxl,
-          borderRadius: radii.xl,
-          color: colors.surface,
-          background: `linear-gradient(135deg, ${colors.olive800}, ${colors.olive600})`,
-          boxShadow: shadows.olive,
-        }}
-      >
-        <span style={{ ...typography.bodySmall, color: "rgba(255,255,255,.72)" }}>موجودی قابل برداشت</span>
-        <div style={{ marginTop: spacing.sm }}>
-          <strong style={{ fontSize: 30, lineHeight: 1.4, fontWeight: 800 }}>
-            {balance === null ? "—" : formatWalletAmount(balance)}
-          </strong>
-          <span style={{ ...typography.body, marginInlineStart: spacing.sm, color: "rgba(255,255,255,.72)", fontWeight: 700 }}>تومان</span>
-        </div>
-        <div style={{ marginTop: spacing.lg }}>
-          <Button fullWidth onClick={() => navigateApp("/t/withdraw", config)}>درخواست برداشت وجه</Button>
-        </div>
-      </Card>
+    <section className="vodda-screen" style={{ display: "grid", gap: spacing.xl }}>
+      <WalletHero label="موجودی قابل برداشت" amount={balance === null ? "—" : formatWalletAmount(balance)}>
+        <Button
+          fullWidth
+          onClick={() => navigateApp("/t/withdraw", config)}
+          style={{
+            color: "var(--vodda-olive-900, #2e3622)",
+            background: "rgba(255,255,255,.94)",
+            borderColor: "rgba(255,255,255,.94)",
+          }}
+        >
+          <Icon name="download" size={18} />
+          درخواست برداشت وجه
+        </Button>
+      </WalletHero>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: spacing.sm }}>
-        <Card style={{ textAlign: "center" }}>
-          <strong style={{ ...typography.title, color: colors.olive700 }}>{formatWalletAmount(income)}</strong>
-          <span style={{ ...typography.caption, display: "block", color: colors.inkMuted, marginTop: spacing.xs }}>درآمد ثبت‌شده</span>
-        </Card>
-        <Card style={{ textAlign: "center" }}>
-          <strong style={typography.title}>{toFaDigits(transactions.length)}</strong>
-          <span style={{ ...typography.caption, display: "block", color: colors.inkMuted, marginTop: spacing.xs }}>تراکنش‌ها</span>
-        </Card>
+        <MetricTile icon="trending" label="درآمد ثبت‌شده" value={formatWalletAmount(income)} />
+        <MetricTile icon="list" label="تراکنش‌ها" value={toFaDigits(transactions.length)} tone="info" />
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: spacing.md }}>
-        <h2 style={{ ...typography.title, margin: 0 }}>تراکنش‌ها</h2>
-        {!loading ? <Button variant="secondary" onClick={() => void load()}>به‌روزرسانی</Button> : null}
-      </div>
+      <SectionHeader
+        title="تراکنش‌ها"
+        description="درآمد، برداشت و سایر گردش‌های مالی"
+        action={!loading ? "به‌روزرسانی" : undefined}
+        onAction={() => void load()}
+      />
 
       {loading ? <LoadingState label="در حال دریافت کیف پول استاد…" /> : null}
       {!loading && error ? (
-        <ErrorState title="دریافت کیف پول ناموفق بود" description={error} action={<Button onClick={() => void load()}>تلاش دوباره</Button>} />
+        <ErrorState
+          title="دریافت کیف پول ناموفق بود"
+          description={error}
+          action={<Button onClick={() => void load()}>تلاش دوباره</Button>}
+        />
       ) : null}
       {!loading && !error && transactions.length === 0 ? (
-        <EmptyState title="تراکنشی ثبت نشده" description="تراکنش‌های درآمد و برداشت شما در این بخش نمایش داده می‌شوند." />
+        <EmptyState
+          icon={<Icon name="wallet" size={30} />}
+          title="تراکنشی ثبت نشده"
+          description="تراکنش‌های درآمد و برداشت شما در این بخش نمایش داده می‌شوند."
+        />
       ) : null}
       {!loading && !error && transactions.length > 0 ? (
         <div style={{ display: "grid", gap: spacing.sm }}>
