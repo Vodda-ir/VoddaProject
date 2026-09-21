@@ -29,11 +29,11 @@ const learnerNavigation: NavigationItem[] = [
 ];
 
 const teacherNavigation: NavigationItem[] = [
-  { label: "داشبورد", target: "teacher-home", icon: "grid", routes: ["teacher-home"] },
+  { label: "داشبورد", target: "teacher-home", icon: "grid", routes: ["teacher-home", "teacher-services", "teacher-work-times", "teacher-reviews"] },
   { label: "درخواست‌ها", target: "teacher-requests", icon: "message", routes: ["teacher-requests"] },
   { label: "جلسات", target: "teacher-sessions", icon: "calendar", routes: ["teacher-sessions"] },
   { label: "کیف پول", target: "teacher-wallet", icon: "wallet", routes: ["teacher-wallet", "teacher-withdraw"] },
-  { label: "پروفایل", target: "teacher-profile", icon: "user", routes: ["teacher-profile", "teacher-reviews", "teacher-services", "teacher-work-times"] },
+  { label: "پروفایل", target: "teacher-profile", icon: "user", routes: ["teacher-profile"] },
 ];
 
 const tabRoutes = new Set<AppRouteName>([
@@ -59,7 +59,7 @@ const rootStyle: CSSProperties = {
 
 const frameStyle: CSSProperties = {
   width: "100%",
-  maxWidth: 720,
+  maxWidth: 600,
   minHeight: "100dvh",
   margin: "0 auto",
   background: colors.sand50,
@@ -70,7 +70,7 @@ const frameStyle: CSSProperties = {
 const contentStyle: CSSProperties = {
   paddingInline: spacing.xl,
   paddingTop: `max(${spacing.lg}px, env(safe-area-inset-top))`,
-  paddingBottom: `calc(106px + env(safe-area-inset-bottom))`,
+  paddingBottom: `calc(88px + env(safe-area-inset-bottom))`,
 };
 
 function navigate(
@@ -102,18 +102,17 @@ function BottomNavigation({
         position: "fixed",
         zIndex: 30,
         left: "50%",
-        bottom: "max(10px, env(safe-area-inset-bottom))",
-        width: "min(calc(100% - 24px), 620px)",
+        bottom: 0,
+        width: "min(100%, 600px)",
+        minHeight: 68,
         transform: "translateX(-50%)",
         display: "grid",
         gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))`,
-        gap: 2,
-        padding: "7px 8px",
-        border: "1px solid rgba(228,221,204,.82)",
-        borderRadius: 26,
-        background: "rgba(255,255,255,.92)",
-        boxShadow: shadows.floating,
-        backdropFilter: "blur(18px)",
+        gap: 0,
+        padding: "4px 8px max(4px, env(safe-area-inset-bottom))",
+        borderTop: `1px solid ${colors.sand150}`,
+        background: colors.surface,
+        boxShadow: "0 -6px 24px rgba(46,54,34,.055)",
       }}
     >
       {items.map((item) => {
@@ -126,13 +125,13 @@ function BottomNavigation({
             onClick={(event) => navigate(event, item.target, config)}
             style={{
               minWidth: 0,
-              minHeight: 58,
+              minHeight: 60,
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
               gap: 3,
-              borderRadius: 20,
+              borderRadius: radii.md,
               color: active ? colors.olive700 : colors.inkMuted,
               background: "transparent",
               textDecoration: "none",
@@ -142,14 +141,14 @@ function BottomNavigation({
           >
             <span
               style={{
-                width: 38,
-                height: 29,
+                width: 58,
+                height: 30,
                 display: "grid",
                 placeItems: "center",
                 borderRadius: radii.pill,
                 color: active ? colors.surface : colors.inkMuted,
                 background: active ? colors.olive600 : "transparent",
-                boxShadow: active ? "0 5px 14px rgba(94,110,67,.23)" : undefined,
+                boxShadow: undefined,
               }}
             >
               <Icon name={item.icon} size={19} stroke={active ? 2 : 1.7} />
