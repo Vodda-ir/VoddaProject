@@ -6,7 +6,7 @@ import { asArray, asNumber, asRecord, asString, type ApiEnvelope } from "../../p
 import { usePlatform } from "../../platform/context";
 import type { PlatformRuntime } from "../../platform/types";
 import { navigateApp } from "../../router";
-import { Button, Card, EmptyState, ErrorState, LoadingState, colors, radii, spacing, typography } from "../../ui";
+import { Button, Card, EmptyState, ErrorState, Icon, LoadingState, SectionHeader, StatusPill, WalletHero, colors, radii, shadows, spacing, typography } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
 import { getWalletSnapshot } from "../wallet/api";
 import { formatWalletAmount, toFaDigits } from "../wallet/WalletTransactionCard";
@@ -175,11 +175,8 @@ export function TeacherWithdrawScreen({ config }: { config: UniversalAppConfig }
   };
 
   return (
-    <section style={{ display: "grid", gap: spacing.lg }}>
-      <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: spacing.md }}>
-        <h1 style={{ ...typography.heading, margin: 0 }}>برداشت وجه</h1>
-        <Button variant="secondary" onClick={() => navigateApp("/t/wallet", config)}>بازگشت به کیف پول</Button>
-      </header>
+    <section className="vodda-screen" style={{ display: "grid", gap: spacing.xl }}>
+      <SectionHeader title="برداشت وجه" description="درخواست برداشت و وضعیت پرداخت‌های شما" action="کیف پول" onAction={() => navigateApp("/t/wallet", config)} />
 
       {loading ? <LoadingState label="در حال دریافت وضعیت برداشت‌ها…" /> : null}
       {!loading && error ? (
@@ -188,11 +185,9 @@ export function TeacherWithdrawScreen({ config }: { config: UniversalAppConfig }
 
       {!loading && !error ? (
         <>
-          <Card style={{ display: "grid", gap: spacing.md }}>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: spacing.md }}>
-              <span style={{ ...typography.bodySmall, color: colors.inkSecondary }}>موجودی قابل برداشت</span>
-              <strong style={{ ...typography.title, color: colors.olive700 }}>{balance === null ? "—" : `${formatWalletAmount(balance)} تومان`}</strong>
-            </div>
+          <div style={{ display: "grid", gap: spacing.lg }}>
+            <WalletHero label="موجودی قابل برداشت" amount={balance === null ? "—" : formatWalletAmount(balance)} />
+            <Card style={{ display: "grid", gap: spacing.md }}>
 
             <label style={{ display: "grid", gap: spacing.xs }}>
               <span style={{ ...typography.bodySmall, fontWeight: 700 }}>مبلغ برداشت</span>
@@ -224,24 +219,20 @@ export function TeacherWithdrawScreen({ config }: { config: UniversalAppConfig }
             </Card>
             {formError ? <p role="alert" style={{ ...typography.bodySmall, margin: 0, color: colors.clay }}>{formError}</p> : null}
             {success ? <p role="status" style={{ ...typography.bodySmall, margin: 0, color: colors.olive700 }}>{success}</p> : null}
-            <Button fullWidth disabled={busy} onClick={() => void submit()}>{busy ? "در حال ثبت…" : "ثبت درخواست برداشت"}</Button>
-          </Card>
-
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: spacing.md }}>
-            <h2 style={{ ...typography.title, margin: 0 }}>تاریخچه برداشت</h2>
-            <Button variant="secondary" onClick={() => void load()}>به‌روزرسانی</Button>
+            <Button fullWidth loading={busy} disabled={busy} onClick={() => void submit()}><Icon name="download" size={18} />ثبت درخواست برداشت</Button>
+            </Card>
           </div>
+
+          <SectionHeader title="تاریخچه برداشت" action="به‌روزرسانی" onAction={() => void load()} />
           {withdrawals.length === 0 ? (
-            <EmptyState title="درخواستی ثبت نشده" description="پس از ثبت برداشت، وضعیت آن در این بخش قابل پیگیری است." />
+            <EmptyState icon={<Icon name="download" size={30} />} title="درخواستی ثبت نشده" description="پس از ثبت برداشت، وضعیت آن در این بخش قابل پیگیری است." />
           ) : (
             <div style={{ display: "grid", gap: spacing.sm }}>
               {withdrawals.map((withdrawal) => (
                 <Card key={withdrawal.id} style={{ display: "grid", gap: spacing.sm }}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: spacing.md }}>
                     <strong style={typography.body}>{formatWalletAmount(withdrawal.amount)} تومان</strong>
-                    <span style={{ ...typography.bodySmall, color: withdrawal.status === "paid" ? colors.olive700 : withdrawal.status === "rejected" ? colors.clay : colors.inkSecondary }}>
-                      {statusLabel(withdrawal.status)}
-                    </span>
+                    <StatusPill status={withdrawal.status} label={statusLabel(withdrawal.status)} />
                   </div>
                   <div style={{ ...typography.caption, color: colors.inkMuted }}>
                     {withdrawal.card ? `کارت: ${toFaDigits(withdrawal.card)}` : withdrawal.sheba ? `شبا: ${withdrawal.sheba}` : "حساب مقصد"}
