@@ -33,6 +33,8 @@
 - [x] حذف شارژ development از UI production
 - [ ] زرین‌پال واقعی: request، redirect، callback، verify، idempotency و reconciliation
 
+- [x] required production seed مستقل از `AUTO_SEED`: دو ادمین الزامی و ۴۵ مدرس تأییدشده/حذف‌نشده از دیتابیس legacy به‌صورت idempotent در [`docs/required-production-seed.md`](docs/required-production-seed.md) مستند و seed می‌شوند.
+
 ## وب و UI/UX
 
 - [x] نشست HttpOnly و عبور همهٔ پنل‌ها از BFF
