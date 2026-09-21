@@ -5,7 +5,6 @@ import type { UniversalAppConfig } from "../../config";
 import { usePlatform } from "../../platform/context";
 import { navigateApp } from "../../router";
 import {
-  Avatar,
   Button,
   EmptyState,
   ErrorState,
@@ -20,6 +19,7 @@ import {
 } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
 import { searchTeachers } from "../teachers/api";
+import { TeacherCard } from "../teachers/TeacherCard";
 import type { Teacher } from "../teachers/types";
 
 type SearchFilters = {
@@ -64,93 +64,6 @@ function chipStyle(active: boolean) {
     cursor: "pointer",
     whiteSpace: "nowrap" as const,
   };
-}
-
-function TeacherResultCard({ teacher, config }: { teacher: Teacher; config: UniversalAppConfig }) {
-  const subtitle = [teacher.tag || teacher.field, teacher.city].filter(Boolean).join(" · ");
-  return (
-    <button
-      type="button"
-      onClick={() => navigateApp("/teacher/" + teacher.id, config)}
-      className="vodda-card vodda-card--interactive vodda-tappable vodda-enter"
-      style={{
-        width: "100%",
-        display: "grid",
-        gap: spacing.md,
-        padding: 15,
-        textAlign: "right",
-        border: 0,
-        borderRadius: 24,
-        color: colors.ink,
-        background: colors.surface,
-        boxShadow: shadows.sm,
-        cursor: "pointer",
-        fontFamily: typography.fontFamily,
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <Avatar name={teacher.name} size={56} ring />
-        <div style={{ minWidth: 0, flex: 1 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-            <strong
-              style={{
-                fontSize: 14.5,
-                fontWeight: 800,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {teacher.name}
-            </strong>
-            {teacher.verified ? <Icon name="checkCircle" size={15} stroke={2} style={{ color: colors.olive600 }} /> : null}
-          </div>
-          <span style={{ ...typography.bodySmall, display: "block", marginTop: 3, color: colors.inkSecondary }}>
-            {subtitle || "استاد وُدّا"}
-          </span>
-        </div>
-        {teacher.rating > 0 ? (
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 3, color: colors.goldDark, ...typography.caption, fontWeight: 800 }}>
-            <Icon name="star" size={14} fill style={{ color: colors.gold }} />
-            {teacher.rating.toFixed(1)}
-          </span>
-        ) : null}
-      </div>
-
-      {teacher.bio ? (
-        <p
-          style={{
-            ...typography.caption,
-            display: "-webkit-box",
-            overflow: "hidden",
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: "vertical",
-            margin: 0,
-            color: colors.inkMuted,
-            lineHeight: 1.8,
-          }}
-        >
-          {teacher.bio}
-        </p>
-      ) : null}
-
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: spacing.sm }}>
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          {teacher.services.length > 0 ? (
-            <span style={{ ...typography.caption, padding: "4px 8px", borderRadius: radii.pill, color: colors.olive700, background: colors.olive50 }}>
-              {teacher.services.length.toLocaleString("fa-IR")} خدمت
-            </span>
-          ) : null}
-          {teacher.sessions > 0 ? (
-            <span style={{ ...typography.caption, padding: "4px 8px", borderRadius: radii.pill, color: colors.inkMuted, background: colors.sand100 }}>
-              {teacher.sessions.toLocaleString("fa-IR")} جلسه
-            </span>
-          ) : null}
-        </div>
-        <Icon name="chevronL" size={18} stroke={1.8} style={{ color: colors.inkFaint }} />
-      </div>
-    </button>
-  );
 }
 
 export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) {
@@ -410,7 +323,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
             />
           ) : (
             <div style={{ display: "grid", gap: 14, paddingBottom: spacing.md }}>
-              {teachers.map((teacher) => <TeacherResultCard key={teacher.id} teacher={teacher} config={config} />)}
+              {teachers.map((teacher) => <TeacherCard key={teacher.id} teacher={teacher} config={config} wide />)}
             </div>
           )}
         </>
