@@ -8,6 +8,12 @@ import { toFaDigits, toLatinDigits } from '@/lib/persian';
 
 const DAYS = ['شنبه', 'یک‌شنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنج‌شنبه', 'جمعه'];
 
+function normalizeTimeInput(value: string) {
+  const digits = toLatinDigits(value).replace(/\D/g, '').slice(0, 4);
+  if (digits.length <= 2) return digits;
+  return `${digits.slice(0, 2)}:${digits.slice(2)}`;
+}
+
 export default function TeacherWorkTimesPage() {
   const [items, setItems] = useState<WorkTime[]>([]);
   const [loading, setLoading] = useState(true);
@@ -129,7 +135,7 @@ function TimeRangeDialog({ dayName, slot, onSave, onClose }: { dayName: string; 
   return <div role="presentation" style={overlayStyle} onClick={onClose}><section role="dialog" aria-modal="true" aria-labelledby="worktime-title" onClick={(event) => event.stopPropagation()} style={dialogStyle}>
     <h2 id="worktime-title" style={{ fontSize: 17, marginBottom: 5 }}>{slot ? 'ویرایش' : 'افزودن'} بازهٔ {dayName}</h2>
     <p style={{ margin: '0 0 18px', color: 'var(--ink-3)', fontSize: 12.5 }}>ساعت‌ها بر اساس timezone رسمی سامانه هستند.</p>
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}><label style={labelStyle}>از<input type="text" inputMode="numeric" value={toFaDigits(from)} onChange={(event) => setFrom(toLatinDigits(event.target.value).replace(/[^0-9:]/g, '').slice(0, 5))} placeholder="۰۸:۰۰" style={inputStyle} /></label><label style={labelStyle}>تا<input type="text" inputMode="numeric" value={toFaDigits(to)} onChange={(event) => setTo(toLatinDigits(event.target.value).replace(/[^0-9:]/g, '').slice(0, 5))} placeholder="۱۲:۰۰" style={inputStyle} /></label></div>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}><label style={labelStyle}>از<input type="text" inputMode="numeric" value={toFaDigits(from)} onChange={(event) => setFrom(normalizeTimeInput(event.target.value))} placeholder="۰۸:۰۰" style={inputStyle} /></label><label style={labelStyle}>تا<input type="text" inputMode="numeric" value={toFaDigits(to)} onChange={(event) => setTo(normalizeTimeInput(event.target.value))} placeholder="۱۲:۰۰" style={inputStyle} /></label></div>
     {error && <div role="alert" style={{ padding: 10, borderRadius: 10, color: 'var(--rose)', background: 'var(--clay-bg)', fontSize: 13 }}>{error}</div>}
     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 20 }}><button type="button" disabled={saving} onClick={onClose} style={secondaryButton}>انصراف</button><button type="button" disabled={saving} onClick={submit} style={{ ...addButton, background: 'var(--olive-600)', color: '#fff', opacity: saving ? .6 : 1 }}>{saving ? 'در حال ذخیره…' : 'ذخیره'}</button></div>
   </section></div>;
