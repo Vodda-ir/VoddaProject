@@ -14,14 +14,16 @@ import {
   Input,
   LoadingState,
   colors,
+  digitsOnly,
   radii,
   Sheet,
   shadows,
   spacing,
+  toFaDigits,
   typography,
 } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
-import { formatWalletAmount, toFaDigits } from "../wallet/WalletTransactionCard";
+import { formatWalletAmount } from "../wallet/WalletTransactionCard";
 
 type UserProfile = {
   name: string;
@@ -471,8 +473,8 @@ export function TeacherProfileScreen({ config }: { config: UniversalAppConfig })
           </label>
           <Input label="مهارت‌ها" hint="با ویرگول جدا کنید؛ حداکثر ۲۰ مورد" value={form.skills} onChange={(event) => setForm({ ...form, skills: event.target.value })} />
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: spacing.sm }}>
-            <Input label="تعرفه ۳۰ دقیقه (تومان)" inputMode="numeric" value={form.price30} onChange={(event) => setForm({ ...form, price30: event.target.value.replace(/\D/g, "") })} />
-            <Input label="تعرفه ۶۰ دقیقه (تومان)" inputMode="numeric" value={form.price60} onChange={(event) => setForm({ ...form, price60: event.target.value.replace(/\D/g, "") })} />
+            <Input label="تعرفه ۳۰ دقیقه (تومان)" inputMode="numeric" value={toFaDigits(form.price30)} onChange={(event) => setForm({ ...form, price30: digitsOnly(event.target.value) })} />
+            <Input label="تعرفه ۶۰ دقیقه (تومان)" inputMode="numeric" value={toFaDigits(form.price60)} onChange={(event) => setForm({ ...form, price60: digitsOnly(event.target.value) })} />
           </div>
           {teacher.price30 > 0 || teacher.price60 > 0 ? (
             <p style={{ ...typography.caption, margin: 0, color: colors.inkMuted }}>
