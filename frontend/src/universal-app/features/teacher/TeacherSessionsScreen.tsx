@@ -11,10 +11,14 @@ import {
   Dialog,
   EmptyState,
   ErrorState,
+  Icon,
   LoadingState,
+  SectionHeader,
   Sheet,
+  StatusPill,
   colors,
   radii,
+  shadows,
   spacing,
   typography,
 } from "../../ui";
@@ -111,32 +115,22 @@ function SessionCard({
   onComplete: () => void;
 }) {
   return (
-    <Card elevated style={{ display: "grid", gap: spacing.md, borderRadius: radii.lg }}>
+    <Card className="vodda-card--interactive vodda-enter" style={{ display: "grid", gap: spacing.md, borderRadius: radii.lg, padding: spacing.lg }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: spacing.md }}>
-        <span
-          style={{
-            ...typography.caption,
-            padding: "4px 10px",
-            borderRadius: radii.pill,
-            fontWeight: 700,
-            color: session.status === "canceled" ? colors.danger : colors.olive800,
-            background: session.status === "canceled" ? colors.clayBackground : colors.olive50,
-          }}
-        >
-          {statusLabels[session.status] ?? session.status}
-        </span>
+        <StatusPill status={session.status} label={statusLabels[session.status] ?? session.status} />
         <span style={{ ...typography.caption, color: colors.inkMuted }}>{toFaDigits(session.duration)} دقیقه</span>
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: spacing.md }}>
-        <Avatar name={session.learnerName} size={46} />
+        <Avatar name={session.learnerName} size={50} ring />
         <div style={{ minWidth: 0 }}>
           <strong style={{ ...typography.body, display: "block" }}>{session.learnerName}</strong>
           <span style={{ ...typography.bodySmall, color: colors.inkSecondary }}>{session.service}</span>
         </div>
       </div>
 
-      <div style={{ padding: `${spacing.sm}px ${spacing.md}px`, borderRadius: radii.sm, background: colors.sand50, color: colors.inkSecondary, ...typography.bodySmall }}>
+      <div style={{ display: "flex", alignItems: "center", gap: spacing.sm, padding: `${spacing.sm}px ${spacing.md}px`, borderRadius: radii.md, background: colors.olive50, color: colors.olive800, ...typography.bodySmall, fontWeight: 700 }}>
+        <Icon name="clock" size={17} />
         {officialTime(session)}
       </div>
 
@@ -255,24 +249,25 @@ export function TeacherSessionsScreen({ mode }: { mode: TeacherSessionsMode }) {
   }
 
   return (
-    <section style={{ display: "grid", gap: spacing.lg }}>
-      <header>
-        <h1 style={{ ...typography.heading, margin: 0 }}>{heading}</h1>
-        <p style={{ ...typography.bodySmall, margin: `${spacing.xs}px 0 0`, color: colors.inkMuted }}>
-          تاریخ و ساعت فقط از زمان رسمی backend نمایش داده می‌شوند.
-        </p>
-      </header>
+    <section className="vodda-screen" style={{ display: "grid", gap: spacing.xl }}>
+      <SectionHeader title={heading} description="تاریخ و ساعت از زمان رسمی سامانه نمایش داده می‌شوند" />
 
       {mode === "sessions" ? (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: spacing.sm }}>
-          <Button variant={when === "upcoming" ? "primary" : "secondary"} aria-pressed={when === "upcoming"} onClick={() => setWhen("upcoming")}>پیش‌رو</Button>
-          <Button variant={when === "past" ? "primary" : "secondary"} aria-pressed={when === "past"} onClick={() => setWhen("past")}>گذشته</Button>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4, padding: 4, border: `1px solid ${colors.sand200}`, borderRadius: radii.pill, background: colors.surface, boxShadow: shadows.xs }}>
+          {(["upcoming", "past"] as const).map((tab) => {
+            const selected = when === tab;
+            return (
+              <button key={tab} type="button" className="vodda-tappable" aria-pressed={selected} onClick={() => setWhen(tab)} style={{ minHeight: 42, border: 0, borderRadius: radii.pill, color: selected ? colors.surface : colors.inkMuted, background: selected ? colors.olive600 : "transparent", fontFamily: typography.fontFamily, fontWeight: 800, cursor: "pointer" }}>
+                {tab === "upcoming" ? "پیش‌رو" : "گذشته"}
+              </button>
+            );
+          })}
         </div>
       ) : null}
 
       {loading ? <LoadingState label={loadLabel} /> : null}
       {!loading && error ? <ErrorState title="دریافت اطلاعات ناموفق بود" description={error} action={<Button onClick={() => void load(when)}>تلاش دوباره</Button>} /> : null}
-      {!loading && !error && sessions.length === 0 ? <EmptyState title="موردی نیست" description={emptyDescription} /> : null}
+      {!loading && !error && sessions.length === 0 ? <EmptyState icon={<Icon name="calendar" size={30} />} title="موردی نیست" description={emptyDescription} /> : null}
       {!loading && !error && sessions.length > 0 ? (
         <div style={{ display: "grid", gap: spacing.md }}>
           {sessions.map((session) => (
@@ -300,7 +295,7 @@ export function TeacherSessionsScreen({ mode }: { mode: TeacherSessionsMode }) {
               maxLength={1000}
               disabled={busyId !== null}
               placeholder="دلیل رد درخواست را برای قرآن‌آموز بنویسید…"
-              style={{ width: "100%", resize: "vertical", padding: spacing.md, border: `1px solid ${colors.sand200}`, borderRadius: radii.sm, color: colors.ink, background: colors.surface, fontFamily: typography.fontFamily, ...typography.body }}
+              style={{ width: "100%", resize: "vertical", padding: spacing.md, border: `1px solid ${colors.sand200}`, borderRadius: radii.md, color: colors.ink, background: colors.surface, boxShadow: shadows.xs, fontFamily: typography.fontFamily, ...typography.body }}
             />
           </label>
           {rejectError ? <span role="alert" style={{ ...typography.caption, color: colors.danger }}>{rejectError}</span> : null}
