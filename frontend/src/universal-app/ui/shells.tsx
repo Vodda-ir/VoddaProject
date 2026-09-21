@@ -2,7 +2,7 @@ import type { CSSProperties, MouseEvent, ReactNode } from "react";
 import type { UniversalAppConfig } from "../config";
 import { appRouteUrl, navigateAppRoute, type AppRouteName } from "../router";
 import { Icon } from "./Icon";
-import { colors, radii, shadows, spacing, typography } from "./theme";
+import { colors, gradients, radii, shadows, spacing, typography } from "./theme";
 
 type IconName = Parameters<typeof Icon>[0]["name"];
 
@@ -29,16 +29,29 @@ const learnerNavigation: NavigationItem[] = [
 ];
 
 const teacherNavigation: NavigationItem[] = [
-  { label: "داشبورد", target: "teacher-home", icon: "home", routes: ["teacher-home"] },
-  { label: "درخواست‌ها", target: "teacher-requests", icon: "bell", routes: ["teacher-requests"] },
+  { label: "داشبورد", target: "teacher-home", icon: "grid", routes: ["teacher-home"] },
+  { label: "درخواست‌ها", target: "teacher-requests", icon: "message", routes: ["teacher-requests"] },
   { label: "جلسات", target: "teacher-sessions", icon: "calendar", routes: ["teacher-sessions"] },
   { label: "کیف پول", target: "teacher-wallet", icon: "wallet", routes: ["teacher-wallet", "teacher-withdraw"] },
   { label: "پروفایل", target: "teacher-profile", icon: "user", routes: ["teacher-profile", "teacher-reviews", "teacher-services", "teacher-work-times"] },
 ];
 
+const tabRoutes = new Set<AppRouteName>([
+  "home",
+  "search",
+  "sessions",
+  "wallet",
+  "profile",
+  "teacher-home",
+  "teacher-requests",
+  "teacher-sessions",
+  "teacher-wallet",
+  "teacher-profile",
+]);
+
 const rootStyle: CSSProperties = {
   minHeight: "100dvh",
-  background: colors.sand50,
+  background: `radial-gradient(circle at 50% -20%, ${colors.olive100} 0%, ${colors.sand50} 36%, ${colors.sand100} 100%)`,
   color: colors.ink,
   fontFamily: typography.fontFamily,
   direction: "rtl",
@@ -46,18 +59,18 @@ const rootStyle: CSSProperties = {
 
 const frameStyle: CSSProperties = {
   width: "100%",
-  maxWidth: 640,
+  maxWidth: 720,
   minHeight: "100dvh",
   margin: "0 auto",
-  background: colors.surfaceWarm,
+  background: colors.sand50,
   position: "relative",
-  boxShadow: shadows.sm,
+  boxShadow: shadows.md,
 };
 
 const contentStyle: CSSProperties = {
-  paddingInline: spacing.lg,
-  paddingTop: `max(${spacing.xl}px, env(safe-area-inset-top))`,
-  paddingBottom: `calc(92px + env(safe-area-inset-bottom))`,
+  paddingInline: spacing.xl,
+  paddingTop: `max(${spacing.lg}px, env(safe-area-inset-top))`,
+  paddingBottom: `calc(106px + env(safe-area-inset-bottom))`,
 };
 
 function navigate(
@@ -84,22 +97,23 @@ function BottomNavigation({
   return (
     <nav
       aria-label={ariaLabel}
+      className="vodda-bottom-nav"
       style={{
         position: "fixed",
-        zIndex: 20,
-        insetInline: 0,
-        bottom: 0,
-        width: "100%",
-        maxWidth: 640,
-        marginInline: "auto",
+        zIndex: 30,
+        left: "50%",
+        bottom: "max(10px, env(safe-area-inset-bottom))",
+        width: "min(calc(100% - 24px), 620px)",
+        transform: "translateX(-50%)",
         display: "grid",
         gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))`,
-        gap: spacing.xs,
-        padding: `${spacing.sm}px ${spacing.sm}px max(${spacing.sm}px, env(safe-area-inset-bottom))`,
-        borderTop: `1px solid ${colors.sand200}`,
-        background: "rgba(255,255,255,0.96)",
-        boxShadow: "0 -8px 28px rgba(46, 54, 34, 0.07)",
-        backdropFilter: "blur(14px)",
+        gap: 2,
+        padding: "7px 8px",
+        border: "1px solid rgba(228,221,204,.82)",
+        borderRadius: 26,
+        background: "rgba(255,255,255,.92)",
+        boxShadow: shadows.floating,
+        backdropFilter: "blur(18px)",
       }}
     >
       {items.map((item) => {
@@ -112,21 +126,34 @@ function BottomNavigation({
             onClick={(event) => navigate(event, item.target, config)}
             style={{
               minWidth: 0,
-              minHeight: 54,
+              minHeight: 58,
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
               gap: 3,
-              borderRadius: radii.md,
+              borderRadius: 20,
               color: active ? colors.olive700 : colors.inkMuted,
-              background: active ? colors.olive50 : "transparent",
+              background: "transparent",
               textDecoration: "none",
-              fontSize: 11,
-              fontWeight: active ? 700 : 500,
+              fontSize: 10.5,
+              fontWeight: active ? 800 : 600,
             }}
           >
-            <Icon name={item.icon} size={21} stroke={active ? 2 : 1.7} />
+            <span
+              style={{
+                width: 38,
+                height: 29,
+                display: "grid",
+                placeItems: "center",
+                borderRadius: radii.pill,
+                color: active ? colors.surface : colors.inkMuted,
+                background: active ? colors.olive600 : "transparent",
+                boxShadow: active ? "0 5px 14px rgba(94,110,67,.23)" : undefined,
+              }}
+            >
+              <Icon name={item.icon} size={19} stroke={active ? 2 : 1.7} />
+            </span>
             <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }}>
               {item.label}
             </span>
@@ -137,50 +164,104 @@ function BottomNavigation({
   );
 }
 
-function ShellHeader({ title, eyebrow }: { title?: string; eyebrow: string }) {
-  if (!title) return null;
+function ShellHeader({ title, routeName }: { title?: string; routeName: AppRouteName }) {
+  if (!title || routeName === "home" || routeName === "teacher-home") return null;
+  const canGoBack = !tabRoutes.has(routeName);
   return (
-    <header style={{ marginBottom: spacing.xl }}>
-      <p style={{ ...typography.caption, margin: 0, color: colors.inkMuted }}>{eyebrow}</p>
-      <h1 style={{ ...typography.heading, margin: `${spacing.xs}px 0 0`, color: colors.olive900 }}>{title}</h1>
+    <header
+      style={{
+        minHeight: 52,
+        display: "grid",
+        gridTemplateColumns: "44px 1fr 44px",
+        alignItems: "center",
+        marginBottom: spacing.lg,
+      }}
+    >
+      <div>
+        {canGoBack ? (
+          <button
+            type="button"
+            aria-label="بازگشت"
+            className="vodda-tappable"
+            onClick={() => window.history.back()}
+            style={{
+              width: 40,
+              height: 40,
+              display: "grid",
+              placeItems: "center",
+              padding: 0,
+              border: `1px solid ${colors.sand200}`,
+              borderRadius: "50%",
+              color: colors.inkSecondary,
+              background: colors.surface,
+              boxShadow: shadows.xs,
+              cursor: "pointer",
+            }}
+          >
+            <Icon name="arrowL" size={19} stroke={1.9} />
+          </button>
+        ) : null}
+      </div>
+      <div style={{ minWidth: 0, textAlign: "center" }}>
+        <p style={{ ...typography.caption, margin: 0, color: colors.inkMuted }}>
+          {routeName.startsWith("teacher-") ? "فضای استاد" : "وُدّا"}
+        </p>
+        <h1
+          style={{
+            ...typography.title,
+            margin: 1,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+            color: colors.ink,
+          }}
+        >
+          {title}
+        </h1>
+      </div>
+      <div />
     </header>
   );
 }
 
-export function MobileAppShell({ children, config, routeName, title }: AppShellProps) {
+function Shell({
+  children,
+  config,
+  routeName,
+  title,
+  mode,
+}: AppShellProps & { mode: "learner" | "teacher" }) {
+  const items = mode === "teacher" ? teacherNavigation : learnerNavigation;
   return (
-    <div dir="rtl" data-app-shell="learner" style={rootStyle}>
-      <div style={frameStyle}>
+    <div dir="rtl" data-app-shell={mode} style={rootStyle}>
+      <div
+        data-vodda-frame
+        style={{
+          ...frameStyle,
+          background: mode === "teacher"
+            ? `linear-gradient(180deg, ${colors.olive50} 0px, ${colors.sand50} 220px)`
+            : colors.sand50,
+        }}
+      >
         <div style={contentStyle}>
-          <ShellHeader title={title} eyebrow="وُدّا" />
+          <ShellHeader title={title} routeName={routeName} />
           {children}
         </div>
         <BottomNavigation
-          items={learnerNavigation}
+          items={items}
           routeName={routeName}
           config={config}
-          ariaLabel="ناوبری اصلی قرآن‌آموز"
+          ariaLabel={mode === "teacher" ? "ناوبری اصلی استاد" : "ناوبری اصلی قرآن‌آموز"}
         />
       </div>
     </div>
   );
 }
 
-export function TeacherAppShell({ children, config, routeName, title }: AppShellProps) {
-  return (
-    <div dir="rtl" data-app-shell="teacher" style={rootStyle}>
-      <div style={{ ...frameStyle, background: colors.olive50 }}>
-        <div style={contentStyle}>
-          <ShellHeader title={title} eyebrow="فضای استاد" />
-          {children}
-        </div>
-        <BottomNavigation
-          items={teacherNavigation}
-          routeName={routeName}
-          config={config}
-          ariaLabel="ناوبری اصلی استاد"
-        />
-      </div>
-    </div>
-  );
+export function MobileAppShell(props: AppShellProps) {
+  return <Shell {...props} mode="learner" />;
+}
+
+export function TeacherAppShell(props: AppShellProps) {
+  return <Shell {...props} mode="teacher" />;
 }
