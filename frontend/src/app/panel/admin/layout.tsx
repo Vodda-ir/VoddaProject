@@ -22,7 +22,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const [userOpen, setUserOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [user, setUser] = useState({ name: '...', role: 'admin', avatarUrl: '' });
+  const [user, setUser] = useState({ name: '...', role: 'admin', avatarUrl: '', hasTeacherProfile: false });
   const token = getToken();
 
   useEffect(() => {
@@ -34,6 +34,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         name: payload.data.name || 'مدیر',
         role: payload.data.role || 'admin',
         avatarUrl: fullUrl(payload.data.avatar_url) || '',
+        hasTeacherProfile: Boolean(payload.data.teacher?.id),
       }) : null)
       .catch(() => undefined);
     return () => controller.abort();
@@ -43,7 +44,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const allPanels = [
     { href: '/panel/admin', label: 'پنل مدیریت', icon: 'shield' as const, bg: 'rgba(255,255,255,.1)', fg: '#fff' },
-    { href: '/panel/teacher', label: 'پنل استاد', icon: 'award' as const, bg: 'rgba(255,255,255,.08)', fg: 'rgba(255,255,255,.7)' },
+    ...(user.hasTeacherProfile ? [{ href: '/panel/teacher', label: 'پنل استاد', icon: 'award' as const, bg: 'rgba(255,255,255,.08)', fg: 'rgba(255,255,255,.7)' }] : []),
     { href: '/panel/user', label: 'پنل کاربری', icon: 'user' as const, bg: 'rgba(255,255,255,.06)', fg: 'rgba(255,255,255,.6)' },
   ];
 
