@@ -169,7 +169,7 @@ export function Card({ elevated = false, children, style, className, ...props }:
           padding: spacing.xl,
           color: colors.ink,
           background: colors.surface,
-          border: 0,
+          border: "1px solid transparent",
           borderRadius: radii.lg,
           boxShadow: elevated ? shadows.md : "none",
           fontFamily: typography.fontFamily,
