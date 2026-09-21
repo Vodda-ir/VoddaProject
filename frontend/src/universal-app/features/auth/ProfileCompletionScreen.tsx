@@ -6,7 +6,7 @@ import type { UniversalAppConfig } from "../../config";
 import { usePlatform } from "../../platform/context";
 import type { AuthUser } from "../../platform/types";
 import { navigateApp } from "../../router";
-import { Avatar, Icon, LoadingState, colors, radii, typography } from "../../ui";
+import { Avatar, Icon, LoadingState, colors, radii, toFaDigits, typography } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
 import { defaultRouteForUser } from "./AuthExperience";
 
@@ -260,7 +260,7 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
               <span style={{ fontSize: 13.5, fontWeight: 700, color: colors.inkSecondary }}>شماره موبایل</span>
               <div style={{ minHeight: 54, display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderRadius: 16, background: colors.sand100 }}>
                 <Icon name="phone" size={19} style={{ color: colors.inkFaint }} />
-                <span dir="ltr" style={{ flex: 1, color: colors.inkMuted, fontSize: 15, fontWeight: 600 }}>{user.mobile}</span>
+                <span dir="ltr" style={{ flex: 1, color: colors.inkMuted, fontSize: 15, fontWeight: 600 }}>{toFaDigits(user.mobile)}</span>
                 <span style={{ padding: "4px 10px", borderRadius: radii.pill, color: colors.inkFaint, background: colors.sand200, fontSize: 11, fontWeight: 600 }}>قابل تغییر نیست</span>
               </div>
             </div>
