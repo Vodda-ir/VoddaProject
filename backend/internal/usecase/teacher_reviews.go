@@ -8,7 +8,7 @@ import (
 
 // MyReviews returns persisted learner reviews for the calling teacher.
 func (uc *TeacherUsecase) MyReviews(ctx context.Context, userID uint) ([]domain.Review, error) {
-	teacher, err := uc.teachers.ByUserID(ctx, userID)
+	teacher, err := uc.teacherForUser(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
