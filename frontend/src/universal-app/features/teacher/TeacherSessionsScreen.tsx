@@ -99,6 +99,12 @@ function officialTime(session: TeacherSession): string {
   return `${toFaDigits(session.localDate.replaceAll("-", "/"))} · ${toFaDigits(session.localStart)} تا ${toFaDigits(session.localEnd)}`;
 }
 
+function canCompleteSession(session: TeacherSession): boolean {
+  const startAt = Date.parse(session.scheduledAt);
+  if (Number.isNaN(startAt)) return false;
+  return Date.now() >= startAt + Math.max(0, session.duration) * 60_000;
+}
+
 function SessionCard({
   session,
   busy,
@@ -114,41 +120,83 @@ function SessionCard({
   onReject: () => void;
   onComplete: () => void;
 }) {
+  const commonCardStyle = {
+    display: "grid",
+    gap: 13,
+    padding: 15,
+    borderRadius: 24,
+    boxShadow: "0 0 6px rgba(46,54,34,.04)",
+  } as const;
+
+  if (mode === "requests") {
+    return (
+      <Card className="vodda-card--interactive" style={commonCardStyle}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <Avatar name={session.learnerName} size={46} ring={false} />
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <strong style={{ display: "block", fontSize: 14.5, fontWeight: 800, color: colors.ink }}>{session.learnerName}</strong>
+            <span style={{ display: "block", marginTop: 3, fontSize: 12.5, color: colors.inkSecondary }}>{session.service}</span>
+          </div>
+          <span style={{ padding: "4px 10px", borderRadius: radii.pill, color: colors.clay, background: colors.clayBackground, fontSize: 11, fontWeight: 800 }}>
+            جدید
+          </span>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "11px 14px", borderRadius: 13, background: colors.sand50 }}>
+          <Icon name="calendar" size={16} style={{ flex: "0 0 auto", color: colors.olive500 }} />
+          <span style={{ minWidth: 0, flex: 1, fontSize: 12.5, color: colors.inkSecondary }}>{officialTime(session)}</span>
+          <strong style={{ flex: "0 0 auto", fontSize: 12.5, fontWeight: 800, color: colors.olive700 }}>
+            {formatWalletAmount(session.price)} ت
+          </strong>
+        </div>
+
+        {session.note ? <p style={{ margin: 0, fontSize: 12, color: colors.inkMuted }}>یادداشت: {session.note}</p> : null}
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 9 }}>
+          <Button variant="secondary" disabled={busy} onClick={onReject}>رد</Button>
+          <Button loading={busy} onClick={onAccept}>تأیید</Button>
+        </div>
+      </Card>
+    );
+  }
+
+  const canComplete = session.status === "confirmed" && canCompleteSession(session);
+
   return (
-    <Card className="vodda-card--interactive vodda-enter" style={{ display: "grid", gap: spacing.md, borderRadius: radii.lg, padding: spacing.lg }}>
+    <Card className="vodda-card--interactive" style={commonCardStyle}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: spacing.md }}>
         <StatusPill status={session.status} label={statusLabels[session.status] ?? session.status} />
-        <span style={{ ...typography.caption, color: colors.inkMuted }}>{toFaDigits(session.duration)} دقیقه</span>
+        <span style={{ fontSize: 12, color: colors.inkMuted, fontWeight: 600 }}>
+          {toFaDigits(session.duration)} دقیقه · {formatWalletAmount(session.price)} ت
+        </span>
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: spacing.md }}>
-        <Avatar name={session.learnerName} size={46} ring />
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <Avatar name={session.learnerName} size={46} ring={false} />
         <div style={{ minWidth: 0 }}>
-          <strong style={{ ...typography.body, display: "block" }}>{session.learnerName}</strong>
-          <span style={{ ...typography.bodySmall, color: colors.inkSecondary }}>{session.service}</span>
+          <strong style={{ display: "block", fontSize: 14.5, fontWeight: 800, color: colors.ink }}>{session.learnerName}</strong>
+          <span style={{ display: "block", marginTop: 3, fontSize: 12.5, color: colors.inkSecondary }}>{session.service}</span>
         </div>
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: spacing.sm, padding: `${spacing.sm}px ${spacing.md}px`, borderRadius: 13, background: colors.sand50, color: colors.inkSecondary, ...typography.bodySmall, fontWeight: 700 }}>
-        <Icon name="clock" size={17} />
+      <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "11px 14px", borderRadius: 13, background: colors.sand50, color: colors.inkSecondary, fontSize: 12.5 }}>
+        <Icon name="calendar" size={16} style={{ flex: "0 0 auto", color: colors.olive500 }} />
         {officialTime(session)}
       </div>
 
-      {session.price > 0 ? (
-        <span style={{ ...typography.caption, color: colors.inkMuted }}>{formatWalletAmount(session.price)} تومان</span>
-      ) : null}
-      {session.note ? <p style={{ ...typography.bodySmall, margin: 0 }}>یادداشت قرآن‌آموز: {session.note}</p> : null}
-      {session.rejectNote ? <p style={{ ...typography.caption, margin: 0, color: colors.danger }}>دلیل رد: {session.rejectNote}</p> : null}
+      {session.note ? <p style={{ margin: 0, fontSize: 12, color: colors.inkMuted }}>یادداشت: {session.note}</p> : null}
+      {session.rejectNote ? <p style={{ margin: 0, fontSize: 12, color: colors.clay }}>دلیل رد: {session.rejectNote}</p> : null}
 
-      {mode === "requests" && session.status === "pending" ? (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: spacing.sm }}>
-          <Button variant="secondary" disabled={busy} onClick={onReject}>رد درخواست</Button>
-          <Button loading={busy} onClick={onAccept}>تأیید درخواست</Button>
-        </div>
-      ) : null}
-
-      {mode === "sessions" && session.status === "confirmed" ? (
-        <Button fullWidth loading={busy} onClick={onComplete}>ثبت انجام جلسه</Button>
+      {session.status === "confirmed" ? (
+        <Button
+          fullWidth
+          disabled={!canComplete || busy}
+          loading={busy}
+          onClick={onComplete}
+        >
+          <Icon name="checkCircle" size={18} />
+          {canComplete ? "ثبت برگزاری جلسه" : "پس از پایان جلسه قابل ثبت است"}
+        </Button>
       ) : null}
     </Card>
   );
