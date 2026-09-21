@@ -7,6 +7,7 @@ import { usePlatform } from "../../platform/context";
 import type { PlatformRuntime } from "../../platform/types";
 import { navigateApp } from "../../router";
 import { messageOf } from "../../ui/errorMessage";
+import { RoleModeSheet } from "../auth/RoleModeSheet";
 import {
   Avatar,
   Button,
@@ -114,6 +115,7 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
   const [snapshot, setSnapshot] = useState<DashboardSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [roleSheetOpen, setRoleSheetOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -164,7 +166,7 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
       <button
         type="button"
         className="vodda-tappable vodda-enter"
-        onClick={() => navigateApp("/", config)}
+        onClick={() => setRoleSheetOpen(true)}
         aria-label="تغییر به فضای قرآن‌آموز"
         style={{
           width: "100%",
@@ -287,6 +289,13 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
           <ActionTile icon="calendar" title="همه جلسات" description="پیش‌رو و گذشته" onClick={() => navigateApp("/t/sessions", config)} tone="clay" />
         </div>
       </section>
+
+      <RoleModeSheet
+        open={roleSheetOpen}
+        mode="teacher"
+        config={config}
+        onClose={() => setRoleSheetOpen(false)}
+      />
     </section>
   );
 }
