@@ -7,7 +7,7 @@ import { usePlatform } from "../../platform/context";
 import { navigateApp } from "../../router";
 import { getTeacherDetail } from "../teachers/api";
 import type { Teacher, TeacherService } from "../teachers/types";
-import { Avatar, Button, Card, EmptyState, ErrorState, LoadingState, colors, radii, spacing, typography } from "../../ui";
+import { Avatar, Button, Card, EmptyState, ErrorState, Icon, IconBadge, LoadingState, SectionHeader, colors, radii, shadows, spacing, typography } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
 import { formatWalletAmount } from "../wallet/WalletTransactionCard";
 import { createBooking, getBookingAvailability } from "./api";
@@ -163,7 +163,7 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
   if (submitted) {
     return (
       <Card elevated style={{ display: "grid", gap: spacing.lg, textAlign: "center" }}>
-        <div style={{ fontSize: 42 }} aria-hidden="true">✓</div>
+        <div aria-hidden="true" style={{ width: 68, height: 68, display: "grid", placeItems: "center", marginInline: "auto", borderRadius: "50%", color: colors.surface, background: colors.olive600, boxShadow: shadows.olive }}><Icon name="check" size={30} stroke={2.5} /></div>
         <div>
           <h2 style={{ ...typography.title, margin: 0 }}>درخواست جلسه ثبت شد</h2>
           <p style={{ ...typography.body, color: colors.inkSecondary, marginBottom: 0 }}>
@@ -178,17 +178,20 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
   const services = teacher.services.filter((item) => item.active && item.id > 0);
 
   return (
-    <div style={{ display: "grid", gap: spacing.lg }}>
-      <Card elevated style={{ display: "flex", alignItems: "center", gap: spacing.md }}>
-        <Avatar name={teacher.name} size={56} />
-        <div style={{ minWidth: 0 }}>
-          <h2 style={{ ...typography.title, margin: 0 }}>{teacher.name}</h2>
-          <p style={{ ...typography.bodySmall, color: colors.olive700, margin: "2px 0 0" }}>{teacher.tag || teacher.field}</p>
+    <div className="vodda-screen" style={{ display: "grid", gap: spacing.xl }}>
+      <Card elevated className="vodda-enter" style={{ display: "flex", alignItems: "center", gap: spacing.md, padding: spacing.lg, background: colors.surfaceWarm }}>
+        <Avatar name={teacher.name} size={58} ring />
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <p style={{ ...typography.caption, color: colors.inkMuted, margin: 0 }}>در حال رزرو با</p>
+          <h2 style={{ ...typography.title, margin: "2px 0 0" }}>{teacher.name}</h2>
+          <p style={{ ...typography.bodySmall, color: colors.olive700, margin: "2px 0 0", fontWeight: 700 }}>{teacher.tag || teacher.field}</p>
         </div>
+        <IconBadge icon="calendar" tone="olive" size={44} />
       </Card>
 
-      <Card>
-        <h3 style={{ ...typography.title, marginTop: 0 }}>۱. انتخاب خدمت</h3>
+      <Card className="vodda-enter vodda-enter-delay-1">
+        <SectionHeader title="۱. انتخاب خدمت" description="نوع جلسه‌ای که می‌خواهید رزرو کنید" />
+        <div style={{ height: spacing.md }} />
         {services.length === 0 ? (
           <EmptyState title="خدمت قابل رزرو وجود ندارد" description="این استاد فعلاً خدمت فعال و قابل رزروی ندارد." />
         ) : (
@@ -208,9 +211,10 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
                     padding: spacing.md,
                     textAlign: "right",
                     color: colors.ink,
-                    background: selected ? colors.olive50 : colors.sand50,
+                    background: selected ? colors.olive50 : colors.surface,
                     border: `1px solid ${selected ? colors.olive600 : colors.sand200}`,
-                    borderRadius: radii.sm,
+                    borderRadius: radii.lg,
+                    boxShadow: selected ? "0 7px 20px rgba(94,110,67,.12)" : shadows.xs,
                     cursor: "pointer",
                     fontFamily: typography.fontFamily,
                   }}
@@ -227,8 +231,9 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
         )}
       </Card>
 
-      <Card>
-        <h3 style={{ ...typography.title, marginTop: 0 }}>۲. انتخاب تاریخ و ساعت</h3>
+      <Card className="vodda-enter vodda-enter-delay-2">
+        <SectionHeader title="۲. انتخاب تاریخ و ساعت" description="زمان‌ها مستقیماً از برنامه رسمی استاد دریافت می‌شوند" />
+        <div style={{ height: spacing.md }} />
         {!service ? (
           <EmptyState title="یک خدمت انتخاب کنید" description="بعد از انتخاب خدمت، زمان‌های آزاد رسمی استاد دریافت می‌شوند." />
         ) : availabilityLoading ? (
@@ -243,7 +248,7 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
           <EmptyState title="زمان آزادی پیدا نشد" description="در ۱۴ روز آینده زمان آزاد و قابل رزروی برای این خدمت وجود ندارد." />
         ) : (
           <div style={{ display: "grid", gap: spacing.lg }}>
-            <div style={{ display: "flex", gap: spacing.sm, overflowX: "auto", paddingBottom: spacing.xs }}>
+            <div className="vodda-scroll-rail" style={{ display: "flex", gap: spacing.sm, overflowX: "auto", paddingBottom: spacing.xs }}>
               {dateGroups.map((group) => {
                 const selected = localDate === group.localDate;
                 return (
@@ -263,7 +268,8 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
                       color: selected ? colors.surface : colors.inkSecondary,
                       background: selected ? colors.olive700 : colors.sand50,
                       border: `1px solid ${selected ? colors.olive700 : colors.sand200}`,
-                      borderRadius: radii.sm,
+                      borderRadius: radii.lg,
+                      boxShadow: selected ? "0 7px 18px rgba(94,110,67,.18)" : shadows.xs,
                       cursor: "pointer",
                       fontFamily: typography.fontFamily,
                       ...typography.bodySmall,
@@ -309,8 +315,9 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
         )}
       </Card>
 
-      <Card>
-        <h3 style={{ ...typography.title, marginTop: 0 }}>۳. بررسی نهایی</h3>
+      <Card className="vodda-enter vodda-enter-delay-3" style={{ background: service && slot ? colors.olive50 : colors.surface }}>
+        <SectionHeader title="۳. بررسی نهایی" description="قبل از ثبت، جزئیات درخواست را مرور کنید" />
+        <div style={{ height: spacing.md }} />
         {!service || !slot ? (
           <EmptyState title="رزرو هنوز آماده ثبت نیست" description="پس از انتخاب خدمت و زمان، خلاصه رزرو اینجا نمایش داده می‌شود." />
         ) : (
@@ -323,10 +330,13 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
         )}
       </Card>
 
-      {submitError ? <p role="alert" style={{ ...typography.bodySmall, color: colors.danger, margin: 0 }}>{submitError}</p> : null}
-      <Button fullWidth loading={saving} disabled={!service || !slot} onClick={() => void submit()}>
-        ثبت درخواست رزرو
-      </Button>
+      {submitError ? <p role="alert" style={{ ...typography.bodySmall, padding: spacing.md, borderRadius: radii.md, background: colors.dangerBackground, color: colors.danger, margin: 0 }}>{submitError}</p> : null}
+      <div style={{ position: "sticky", zIndex: 12, bottom: "calc(84px + env(safe-area-inset-bottom))", padding: 8, border: "1px solid rgba(228,221,204,.82)", borderRadius: radii.lg, background: "rgba(255,255,255,.92)", boxShadow: shadows.floating, backdropFilter: "blur(16px)" }}>
+        <Button fullWidth loading={saving} disabled={!service || !slot} onClick={() => void submit()}>
+          <Icon name="checkCircle" size={18} />
+          ثبت درخواست رزرو
+        </Button>
+      </div>
     </div>
   );
 }
