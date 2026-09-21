@@ -64,8 +64,17 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
     return () => controller.abort();
   }, [token]);
 
-  if (access !== 'allowed') {
+  const registrationAllowed =
+    pathname === '/panel/teacher/register' &&
+    access === 'missing' &&
+    user.role !== 'admin';
+
+  if (access !== 'allowed' && !registrationAllowed) {
     return <TeacherPanelAccessState access={access} role={user.role} />;
+  }
+
+  if (registrationAllowed) {
+    return <>{children}</>;
   }
 
   const activeId = NAV.find((item) => item.id === 'dash' ? pathname === '/panel/teacher' : pathname.startsWith(item.href))?.id || 'dash';
