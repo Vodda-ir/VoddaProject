@@ -1,6 +1,6 @@
 # رودمپ مهاجرت اپ وُدّا به Universal Frontend + Capacitor
 
-آخرین به‌روزرسانی: 2026-09-09
+آخرین به‌روزرسانی: 2026-09-21
 
 ## هدف
 
@@ -249,6 +249,19 @@
 > audit نهایی duplicateهای migration در 2026-09-09 بسته شد. envelope و coercionهای عمومی پاسخ API در `platform/api.ts` (`ApiEnvelope`, `asRecord`, `asArray`, `asNumber`, `asInteger`, `asString`) متمرکز هستند؛ error mapping عمومی در `ui/errorMessage.ts` قرار دارد؛ نمایش transaction، تبدیل رقم و format مبلغ learner/teacher در `features/wallet/WalletTransactionCard.tsx` مشترک شده‌اند؛ و duplicateهای session/profile load و validationهای تکراری که در بسته‌های cleanup شناسایی شدند نیز جمع شده‌اند. در audit نهایی مورد تکراری معنی‌داری که abstraction مشترک جدیدی را توجیه کند باقی نماند.
 >
 > **تصمیم 2026-09-09:** پوشه `app/` فعلاً حذف نمی‌شود. Flutter فقط deprecated reference است و workflowهای آن نیز تا تصمیم صریح آینده دست‌نخورده می‌مانند؛ بنابراین checkbox آخر عمداً باز است و مانع تکمیل کدنویسی migration نیست.
+
+
+## Post-migration — Visual parity با Flutter
+
+- [x] استخراج palette، typography، radius، shadow و interaction language از Flutter.
+- [x] بازطراحی design tokens و primitiveهای Universal.
+- [x] بازطراحی shell و navigation مشترک learner/teacher.
+- [x] visual parity کامل auth/onboarding.
+- [x] visual parity کامل همه flowهای learner: Home، Search، Teacher Profile، Booking، Sessions، Wallet و Profile.
+- [x] visual parity کامل همه flowهای teacher: Dashboard، Requests/Sessions، Services، Work Times، Wallet/Withdrawals، Profile و Reviews.
+- [x] audit استاتیک همه ۱۶ Screen اصلی و تأیید استقلال Universal Source از `next/*`.
+
+> جزئیات این pass در `docs/universal-ui-visual-parity.md` ثبت شده است. Flutter همچنان فقط deprecated reference باقی می‌ماند و این pass هیچ تغییری در تصمیم عدم حذف `app/` یا workflowهای Flutter ایجاد نمی‌کند.
 
 ---
 
