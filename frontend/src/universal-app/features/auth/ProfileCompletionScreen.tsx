@@ -6,7 +6,7 @@ import type { UniversalAppConfig } from "../../config";
 import { usePlatform } from "../../platform/context";
 import type { AuthUser } from "../../platform/types";
 import { navigateApp } from "../../router";
-import { Avatar, Button, Card, Icon, Input, colors, radii, shadows, spacing, typography } from "../../ui";
+import { Avatar, Icon, LoadingState, colors, radii, spacing, typography } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
 import { defaultRouteForUser } from "./AuthExperience";
 
@@ -147,176 +147,170 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
     }
   }
 
+  if (loading) {
+    return (
+      <main dir="rtl" data-universal-app="vodda" style={{ minHeight: "100dvh", display: "grid", placeItems: "center", background: colors.sand50 }}>
+        <LoadingState label="در حال دریافت اطلاعات حساب…" />
+      </main>
+    );
+  }
+
   return (
     <main
       dir="rtl"
       data-universal-app="vodda"
       data-platform={platform.kind}
-      style={{ minHeight: "100dvh", background: `radial-gradient(circle at 50% 0%, ${colors.olive100}, ${colors.sand50} 42%, ${colors.sand100})`, color: colors.ink }}
+      style={{ minHeight: "100dvh", background: colors.sand50, color: colors.ink, fontFamily: typography.fontFamily }}
     >
-      <section
-        style={{
-          width: "100%",
-          maxWidth: 560,
-          margin: "0 auto",
-          paddingInline: spacing.xl,
-          paddingTop: "max(32px, env(safe-area-inset-top))",
-          paddingBottom: "max(24px, env(safe-area-inset-bottom))",
-          fontFamily: typography.fontFamily,
-        }}
-      >
-        <header className="vodda-enter" style={{ marginBottom: spacing.xl }}>
-          {!onboarding ? (
-            <Button
-              variant="ghost"
-              onClick={() => navigateApp("/profile", config)}
-              style={{ minHeight: 36, paddingInline: 0, marginBottom: spacing.sm }}
-            >
-              بازگشت به پروفایل
-            </Button>
-          ) : null}
-          <p style={{ ...typography.caption, margin: 0, color: colors.olive700 }}>
-            {onboarding ? "تکمیل حساب" : "حساب کاربری"}
-          </p>
-          <h1 style={{ ...typography.heading, margin: "6px 0 0", color: colors.olive900 }}>
-            {onboarding ? "پروفایل خود را کامل کنید" : "ویرایش پروفایل"}
+      <section style={{ width: "100%", maxWidth: 600, minHeight: "100dvh", margin: "0 auto", paddingBottom: "max(24px, env(safe-area-inset-bottom))" }}>
+        <header
+          style={{
+            minHeight: 56,
+            display: "grid",
+            gridTemplateColumns: "72px 1fr 72px",
+            alignItems: "center",
+            padding: `max(6px, env(safe-area-inset-top)) 12px 0`,
+          }}
+        >
+          <div>
+            {!onboarding ? (
+              <button
+                type="button"
+                aria-label="بازگشت"
+                onClick={() => navigateApp("/profile", config)}
+                style={{ width: 44, height: 44, display: "grid", placeItems: "center", border: 0, borderRadius: "50%", color: colors.inkSecondary, background: "transparent", cursor: "pointer" }}
+              >
+                <Icon name="arrowL" size={21} />
+              </button>
+            ) : null}
+          </div>
+          <h1 style={{ fontSize: 18, fontWeight: 700, margin: 0, textAlign: "center", color: colors.ink }}>
+            {onboarding ? "تکمیل پروفایل" : "ویرایش پروفایل"}
           </h1>
-          <p style={{ ...typography.bodySmall, margin: "8px 0 0", color: colors.inkMuted }}>
-            {onboarding
-              ? "برای ورود به وُدّا حداقل نام و نام خانوادگی لازم است. شهر و توضیحات را می‌توانید همین حالا یا بعداً ثبت کنید."
-              : "نام، شهر، توضیحات و تصویر پروفایل خود را ویرایش کنید."}
-          </p>
+          <button
+            type="submit"
+            form="profile-edit-form"
+            disabled={!canSubmit}
+            style={{
+              justifySelf: "end",
+              padding: "8px 6px",
+              border: 0,
+              color: canSubmit ? colors.olive600 : colors.inkFaint,
+              background: "transparent",
+              fontFamily: typography.fontFamily,
+              fontSize: 15,
+              fontWeight: 700,
+              cursor: canSubmit ? "pointer" : "not-allowed",
+            }}
+          >
+            {saving ? "…" : "ذخیره"}
+          </button>
         </header>
 
-        <Card elevated className="vodda-enter vodda-enter-delay-1" style={{ padding: spacing.xl }}>
-          {loading ? (
-            <div aria-live="polite" style={{ ...typography.body, color: colors.inkMuted }}>
-              در حال دریافت اطلاعات حساب…
-            </div>
-          ) : (
-            <form onSubmit={submit} style={{ display: "grid", gap: spacing.lg }}>
-              <div style={{ display: "grid", justifyItems: "center", gap: spacing.sm }}>
-                <Avatar
-                  name={name || user?.name}
-                  src={avatarPreview ?? user?.avatar_url}
-                  size={92}
-                  ring
-                  style={{ boxShadow: shadows.md }}
-                />
-                <label
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    minHeight: 40,
-                    padding: `7px ${spacing.md}px`,
-                    color: colors.olive800,
-                    background: colors.olive50,
-                    border: `1px solid ${colors.olive200}`,
-                    borderRadius: radii.pill,
-                    cursor: saving ? "not-allowed" : "pointer",
-                    opacity: saving ? 0.6 : 1,
-                    ...typography.bodySmall,
-                    fontWeight: 700,
-                  }}
-                >
-                  {avatar ? "تغییر تصویر انتخاب‌شده" : user?.avatar_url ? "تغییر تصویر" : "افزودن تصویر"}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    disabled={saving}
-                    onChange={selectAvatar}
-                    style={{ display: "none" }}
-                  />
-                </label>
-                <span style={{ ...typography.caption, color: colors.inkMuted }}>حداکثر حجم تصویر ۵ مگابایت</span>
-              </div>
+        <form id="profile-edit-form" onSubmit={submit} style={{ display: "grid", gap: 18, padding: "20px 20px 28px" }}>
+          <div style={{ display: "grid", justifyItems: "center", gap: 8, marginBottom: 2 }}>
+            <label style={{ position: "relative", display: "block", cursor: saving ? "not-allowed" : "pointer" }}>
+              <Avatar name={name || user?.name} src={avatarPreview ?? user?.avatar_url} size={88} ring />
+              <span
+                aria-hidden="true"
+                style={{
+                  position: "absolute",
+                  insetInlineEnd: 0,
+                  bottom: 0,
+                  width: 32,
+                  height: 32,
+                  display: "grid",
+                  placeItems: "center",
+                  border: `2px solid ${colors.surface}`,
+                  borderRadius: "50%",
+                  color: colors.surface,
+                  background: colors.olive600,
+                }}
+              >
+                <Icon name="camera" size={16} />
+              </span>
+              <input type="file" accept="image/*" disabled={saving} onChange={selectAvatar} style={{ display: "none" }} />
+            </label>
+            <label style={{ color: colors.olive600, fontSize: 13, fontWeight: 600, cursor: saving ? "not-allowed" : "pointer" }}>
+              {avatar || user?.avatar_url ? "تغییر تصویر" : "افزودن تصویر"}
+              <input type="file" accept="image/*" disabled={saving} onChange={selectAvatar} style={{ display: "none" }} />
+            </label>
+            <span aria-hidden="true" style={{ width: 48, height: 3, marginTop: 2, borderRadius: 3, background: colors.olive200 }} />
+          </div>
 
-              <Input
-                label="نام و نام خانوادگی"
+          <label style={{ display: "grid", gap: 6 }}>
+            <span style={{ fontSize: 13.5, fontWeight: 700, color: colors.inkSecondary }}>نام و نام خانوادگی</span>
+            <div style={{ position: "relative" }}>
+              <Icon name="user" size={19} style={{ position: "absolute", insetInlineStart: 16, top: "50%", transform: "translateY(-50%)", color: colors.inkFaint }} />
+              <input
                 name="name"
                 autoComplete="name"
                 value={name}
                 disabled={saving}
                 placeholder="نام خود را وارد کنید"
                 onChange={(event) => setName(event.target.value)}
-                error={name.length > 0 && !nameValid ? "حداقل دو حرف وارد کنید." : undefined}
+                style={{ width: "100%", minHeight: 54, padding: "12px 46px 12px 16px", border: `1px solid ${name.length > 0 && !nameValid ? colors.danger : colors.sand200}`, borderRadius: 16, outline: "none", color: colors.ink, background: colors.surface, fontFamily: typography.fontFamily, fontSize: 15, fontWeight: 500 }}
               />
+            </div>
+            {name.length > 0 && !nameValid ? <span style={{ fontSize: 11.5, color: colors.danger }}>حداقل دو حرف وارد کنید.</span> : null}
+          </label>
 
-              <Input
-                label="شهر"
+          {user?.mobile ? (
+            <div style={{ display: "grid", gap: 6 }}>
+              <span style={{ fontSize: 13.5, fontWeight: 700, color: colors.inkSecondary }}>شماره موبایل</span>
+              <div style={{ minHeight: 54, display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderRadius: 16, background: colors.sand100 }}>
+                <Icon name="phone" size={19} style={{ color: colors.inkFaint }} />
+                <span dir="ltr" style={{ flex: 1, color: colors.inkMuted, fontSize: 15, fontWeight: 600 }}>{user.mobile}</span>
+                <span style={{ padding: "4px 10px", borderRadius: radii.pill, color: colors.inkFaint, background: colors.sand200, fontSize: 11, fontWeight: 600 }}>قابل تغییر نیست</span>
+              </div>
+            </div>
+          ) : null}
+
+          <label style={{ display: "grid", gap: 6 }}>
+            <span style={{ fontSize: 13.5, fontWeight: 700, color: colors.inkSecondary }}>شهر</span>
+            <div style={{ position: "relative" }}>
+              <Icon name="pin" size={19} style={{ position: "absolute", insetInlineStart: 16, top: "50%", transform: "translateY(-50%)", color: colors.inkFaint }} />
+              <input
                 name="city"
                 autoComplete="address-level2"
                 value={city}
                 disabled={saving}
-                placeholder="مثلاً کرمان"
+                placeholder="شهر خود را وارد کنید"
                 onChange={(event) => setCity(event.target.value)}
+                style={{ width: "100%", minHeight: 54, padding: "12px 46px 12px 16px", border: `1px solid ${colors.sand200}`, borderRadius: 16, outline: "none", color: colors.ink, background: colors.surface, fontFamily: typography.fontFamily, fontSize: 15, fontWeight: 500 }}
               />
+            </div>
+          </label>
 
-              <label style={{ display: "grid", gap: spacing.xs }}>
-                <span style={{ ...typography.bodySmall, fontWeight: 700, color: colors.inkSecondary }}>
-                  درباره من
-                </span>
-                <textarea
-                  name="bio"
-                  rows={4}
-                  value={bio}
-                  disabled={saving}
-                  maxLength={500}
-                  placeholder="توضیح کوتاهی درباره خودتان بنویسید"
-                  onChange={(event) => setBio(event.target.value)}
-                  style={{
-                    width: "100%",
-                    resize: "vertical",
-                    boxSizing: "border-box",
-                    border: `1px solid ${colors.border}`,
-                    borderRadius: radii.md,
-                    padding: `${spacing.md}px ${spacing.lg}px`,
-                    boxShadow: shadows.xs,
-                    background: colors.surface,
-                    color: colors.ink,
-                    font: "inherit",
-                    lineHeight: 1.8,
-                    outline: "none",
-                  }}
-                />
-                <span style={{ ...typography.caption, color: colors.inkMuted, textAlign: "left" }}>
-                  {bio.length}/500
-                </span>
-              </label>
+          <label style={{ display: "grid", gap: 6 }}>
+            <span style={{ fontSize: 13.5, fontWeight: 700, color: colors.inkSecondary }}>دربارهٔ شما</span>
+            <textarea
+              name="bio"
+              rows={4}
+              value={bio}
+              disabled={saving}
+              maxLength={200}
+              placeholder="چند خط دربارهٔ خودتان بنویسید…"
+              onChange={(event) => setBio(event.target.value)}
+              className="vodda-textarea"
+              style={{ width: "100%", resize: "vertical", padding: 14, border: `1px solid ${colors.sand200}`, borderRadius: 16, outline: "none", color: colors.ink, background: colors.surface, fontFamily: typography.fontFamily, fontSize: 15, fontWeight: 500, lineHeight: 1.8 }}
+            />
+            <span style={{ fontSize: 11, color: colors.inkFaint, textAlign: "left" }}>{bio.length}/200</span>
+          </label>
 
-              {user?.mobile ? (
-                <div
-                  style={{
-                    padding: `${spacing.sm}px ${spacing.md}px`,
-                    borderRadius: radii.md,
-                    background: colors.sand100,
-                    ...typography.bodySmall,
-                    color: colors.inkMuted,
-                  }}
-                >
-                  شماره حساب: <span dir="ltr">{user.mobile}</span>
-                </div>
-              ) : null}
+          {onboarding ? (
+            <p style={{ ...typography.caption, margin: "-4px 0 0", color: colors.inkMuted }}>
+              برای ورود به وُدّا حداقل نام و نام خانوادگی لازم است؛ بقیه اطلاعات را می‌توانید بعداً هم ویرایش کنید.
+            </p>
+          ) : null}
 
-              {error ? (
-                <div
-                  role="alert"
-                  style={{
-                    padding: `${spacing.sm}px ${spacing.md}px`,
-                    borderRadius: radii.sm,
-                    background: "rgba(166, 81, 81, 0.08)",
-                    color: colors.danger,
-                    ...typography.bodySmall,
-                  }}
-                >
-                  {error}
-                </div>
-              ) : null}
-
-              <Button type="submit" fullWidth loading={saving} disabled={!canSubmit}><Icon name="checkCircle" size={18} />{onboarding ? "ذخیره و ادامه" : "ذخیره تغییرات"}</Button>
-            </form>
-          )}
-        </Card>
+          {error ? (
+            <div role="alert" style={{ display: "flex", alignItems: "center", gap: 10, padding: 14, borderRadius: 14, background: colors.clayBackground, color: colors.danger, ...typography.bodySmall }}>
+              <Icon name="info" size={18} />
+              <span>{error}</span>
+            </div>
+          ) : null}
+        </form>
       </section>
     </main>
   );
