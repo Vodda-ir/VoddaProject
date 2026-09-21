@@ -2,7 +2,7 @@
 
 # چک‌لیست وضعیت وُدّا
 
-آخرین بازبینی: **۲۰۲۶-۰۹-۰۹**
+آخرین بازبینی: **۲۰۲۶-۰۹-۲۱**
 
 این فایل فقط وضعیت واقعی کد فعلی را نشان می‌دهد. قابلیت وابسته به سرویس بیرونی تا زمان اتصال و آزمون end-to-end «تکمیل‌شده» محسوب نمی‌شود.
 
@@ -47,6 +47,7 @@
 - [x] پنل مدیر: کاربران، استادان، خدمات، جلسات، برداشت، پشتیبانی و audit
 - [x] جدول‌ها و کارت‌های responsive و عملیات حساس دارای confirmation/busy state
 - [x] FAQ، قوانین و حریم خصوصی هماهنگ با قابلیت‌های فعال
+- [x] visual parity کامل Universal App با Flutter: design system، shell/navigation، auth/onboarding، تمام screenهای learner و teacher، stateها، heroها، statusها و interaction hierarchy بازطراحی شدند.
 
 ## مهاجرت Universal App + Capacitor
 
@@ -89,6 +90,7 @@
 - [x] بسته duplicate component cleanup کیف پول: کارت تراکنش و تبدیل ارقام مشترک learner/teacher در `features/wallet/WalletTransactionCard.tsx` متمرکز شد و هر دو screen همان component را مصرف می‌کنند.
 - [x] audit نهایی duplicate component/API codeهای migration تکمیل شد؛ coercionهای API در `platform/api.ts`، error mapping در `ui/errorMessage.ts` و formatter/componentهای مشترک wallet متمرکزند و duplicate معنی‌داری که abstraction جدیدی را توجیه کند باقی نمانده است.
 - [x] Flutter در `app/` پس از تکمیل parity و cleanup به‌عنوان **deprecated reference** علامت‌گذاری شد؛ Universal App source canonical است و توسعهٔ عادی feature/bugfix نباید در Flutter ادامه پیدا کند.
+- [x] pass نهایی UI/UX و visual parity در [`docs/universal-ui-visual-parity.md`](docs/universal-ui-visual-parity.md) ثبت شد؛ زبان بصری Flutter به design system مشترک Universal منتقل و همهٔ ۱۶ Screen اصلی audit شدند.
 - [ ] حذف Flutter از workflowها فقط پس از تصمیم صریح برای حذف پوشه `app/`؛ طبق تصمیم ۲۰۲۶-۰۹-۰۹ پوشه و workflowهای Flutter فعلاً حفظ می‌شوند.
 
 > در scope فعلی، build/test/npm install/Android/iOS generation شرط تکمیل این رودمپ نیست و اجرا نمی‌شود. دو آیتم اجرایی cleanup/deprecation migration بسته شده‌اند؛ checkbox حذف Flutter عمداً deferred است و مانع تکمیل کدنویسی migration نیست.
