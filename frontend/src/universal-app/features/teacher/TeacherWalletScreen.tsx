@@ -54,6 +54,7 @@ export function TeacherWalletScreen({ config }: { config: UniversalAppConfig }) 
 
   return (
     <section className="vodda-screen" style={{ display: "grid", gap: spacing.xl }}>
+      <h1 style={{ fontSize: 24, fontWeight: 800, margin: 0 }}>کیف پول استاد</h1>
       <WalletHero label="موجودی قابل برداشت" amount={balance === null ? "—" : formatWalletAmount(balance)}>
         <Button
           fullWidth
