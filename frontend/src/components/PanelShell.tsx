@@ -29,7 +29,7 @@ export function PanelShell({
 }: {
   brandSub: string;
   nav: NavItem[];
-  user: { name: string; role: string; avatarUrl?: string };
+  user: { name: string; role: string; avatarUrl?: string; hasTeacherProfile?: boolean };
   title: string;
   sub?: string;
   children: (active: string) => ReactNode;
@@ -40,10 +40,10 @@ export function PanelShell({
 
   const roleLabel = user.role === 'admin' ? 'ادمین' : user.role === 'teacher' ? 'مربی' : 'قرآن آموز';
 
-  // All users can switch to any panel
+  // Panel switches are capability-aware. Role alone is not enough for teacher access.
   const allPanels = [
-    { href: '/panel/admin', label: 'پنل مدیریت', icon: 'shield' as const, bg: 'rgba(255,255,255,.1)', fg: '#fff' },
-    { href: '/panel/teacher', label: 'پنل مربی', icon: 'award' as const, bg: 'rgba(255,255,255,.08)', fg: 'rgba(255,255,255,.7)' },
+    ...(user.role === 'admin' ? [{ href: '/panel/admin', label: 'پنل مدیریت', icon: 'shield' as const, bg: 'rgba(255,255,255,.1)', fg: '#fff' }] : []),
+    ...((user.role === 'teacher' || user.hasTeacherProfile) ? [{ href: '/panel/teacher', label: 'پنل مربی', icon: 'award' as const, bg: 'rgba(255,255,255,.08)', fg: 'rgba(255,255,255,.7)' }] : []),
     { href: '/panel/user', label: 'پنل کاربری', icon: 'user' as const, bg: 'rgba(255,255,255,.06)', fg: 'rgba(255,255,255,.6)' },
   ];
 
