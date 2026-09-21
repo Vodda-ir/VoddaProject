@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Avatar } from '@/components/web/ui';
 import { Icon } from '@/components/Icon';
+import { faDigits } from '@/components/PanelShell';
 import { api, type Review } from '@/lib/api';
 import { fullUrl, getToken } from '@/lib/auth';
 
@@ -35,7 +36,7 @@ export default function TeacherReviewsPage() {
     <main style={{ padding: 28 }}>
       <h1 style={{ fontSize: 21, fontWeight: 800, marginBottom: 4 }}>نظرهای قرآن‌آموزان</h1>
       <p style={{ fontSize: 13, color: 'var(--ink-3)', marginBottom: 18 }}>فقط بازخوردهای ثبت‌شده پس از جلسهٔ تکمیل‌شده</p>
-      {reviews.length > 0 && <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '9px 14px', borderRadius: 14, background: 'var(--gold-bg)', color: '#765918', marginBottom: 18 }}><Icon name="star" size={17} fill /> میانگین {average.toFixed(1)} از {reviews.length} نظر</div>}
+      {reviews.length > 0 && <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '9px 14px', borderRadius: 14, background: 'var(--gold-bg)', color: '#765918', marginBottom: 18 }}><Icon name="star" size={17} fill /> میانگین {faDigits(average.toFixed(1))} از {faDigits(reviews.length)} نظر</div>}
       {error && <div role="alert" style={{ padding: 14, marginBottom: 16, borderRadius: 14, background: 'var(--clay-bg)', color: 'var(--rose)' }}>{error}<button type="button" onClick={load} style={{ display: 'block', marginTop: 10, border: 0, borderRadius: 10, padding: '7px 12px', background: 'var(--rose)', color: '#fff', cursor: 'pointer' }}>تلاش دوباره</button></div>}
       {loading ? <div style={{ padding: 28, color: 'var(--ink-3)' }}>در حال بارگذاری…</div> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
