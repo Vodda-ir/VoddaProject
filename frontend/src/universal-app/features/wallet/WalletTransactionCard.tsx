@@ -1,4 +1,4 @@
-import { Card, Icon, colors, radii, spacing, typography } from "../../ui";
+import { Card, Icon, colors, spacing, typography } from "../../ui";
 import type { WalletTransaction } from "./types";
 
 export function toFaDigits(value: string | number): string {
