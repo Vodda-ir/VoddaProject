@@ -6,7 +6,7 @@ import type { UniversalAppConfig } from "../../config";
 import { usePlatform } from "../../platform/context";
 import type { AuthUser } from "../../platform/types";
 import { navigateApp } from "../../router";
-import { Avatar, Icon, LoadingState, colors, radii, spacing, typography } from "../../ui";
+import { Avatar, Icon, LoadingState, colors, radii, typography } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
 import { defaultRouteForUser } from "./AuthExperience";
 
