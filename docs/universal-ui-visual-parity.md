@@ -11,14 +11,16 @@
 زبان بصری مرجع از theme و screenهای Flutter استخراج و در `frontend/src/universal-app/ui/` متمرکز شده است:
 
 - palette اصلی sand/olive و accentهای gold/clay دقیقاً با `AppColors` Flutter هم‌راستاست؛
-- font اصلی `IRANYekanXFaNum` و hierarchy متن با اندازه/وزن‌های نزدیک screenهای Flutter استفاده می‌شود؛
+- font اصلی `IRANYekanXFaNum` و hierarchy متن با اندازه/وزن‌های نزدیک screenهای Flutter استفاده می‌شود؛ فونت‌های 400/500/600/700/800/900 از فایل‌های همان خانواده داخل `frontend/public/fonts/` و `frontend/native/public/fonts/` self-host می‌شوند و وابستگی runtime به FontAPI/Google Fonts حذف شده است؛
 - Button پایه 52px و 15px/700، Input با radius 18 و Card پیش‌فرض flat با radius 24 مطابق Material theme مرجع تنظیم شده‌اند؛
 - focus ورودی‌ها فقط border olive دارد و scale/lift/glow و shadowهای وبی اضافه که در Flutter وجود ندارند حذف شده‌اند؛
 - `HeroPanel` با gradient `olive700 → olive600 → olive500` و `WalletHero` با gradient `olive800 → olive600` و radius/padding/shadow مرجع هم‌راستا شده‌اند؛
 - patternهای مشترک `SectionHeader`, `IconBadge`, `StatusPill`, `MetricTile`, `WalletHero`, `ActionTile`, `HeroPanel` حفظ شده‌اند؛
 - app frame حداکثر 600px است و bottom navigation ثابت، تمام‌عرض frame و 68px است؛ navigation شناور/card-like استفاده نمی‌شود؛
 - animation فقط برای spinner/overlay/dialog/sheet حفظ شده و animationهای ورود section و hover/tap transformهای اضافه حذف شده‌اند؛
-- safe-area، RTL و base-path navigation همچنان در shell مشترک learner/teacher رعایت می‌شوند.
+- safe-area، RTL و base-path navigation همچنان در shell مشترک learner/teacher رعایت می‌شوند؛
+- اعداد قابل‌نمایش (موبایل، OTP، تعرفه، مبلغ، کارت، شبا، ساعت، rating و شمارنده‌ها) در UI فارسی می‌شوند، اما قبل از validation/API به رقم لاتین canonical normalize می‌شوند تا قرارداد backend تغییر نکند؛
+- کنترل‌های فرم شامل `button/input/textarea/select/option` به‌صورت سراسری همان font family را inherit می‌کنند تا fallback ناخواستهٔ مرورگر رخ ندهد.
 
 ## Learner surfaces
 
@@ -58,6 +60,6 @@
 
 ## Validation
 
-در پایان این refinement، فایل‌های اصلی learner/teacher، primitive/patternهای UI و shellها به‌صورت استاتیک برای توازن JSX/براکت‌ها و importهای بلااستفاده audit شدند. جستجوی repository برای `RoleModeSwitch` نتیجه‌ای ندارد و داخل `frontend/src/universal-app/` import از `next/*` باقی نمانده است. shell روی frame حداکثر 600px و bottom navigation 68px تثبیت شده و Capacitor config فقط `webDir: "dist"` دارد.
+در پایان این refinement، فایل‌های اصلی learner/teacher، صفحات public/panel، primitive/patternهای UI و shellها به‌صورت استاتیک برای توازن JSX/براکت‌ها، importهای بلااستفاده، native numeric/time controls و نمایش خام اعداد audit شدند. جستجوی repository برای `RoleModeSwitch` نتیجه‌ای ندارد و داخل `frontend/src/universal-app/` import از `next/*` باقی نمانده است. shell روی frame حداکثر 600px و bottom navigation 68px تثبیت شده و Capacitor config فقط `webDir: "dist"` دارد.
 
 طبق محدودیت این migration، build، test، `npm install`، Capacitor sync و Android/iOS build در این pass اجرا نشده‌اند؛ validation runtime/staging مرحله جداگانه است.
