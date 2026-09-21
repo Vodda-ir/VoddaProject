@@ -4,10 +4,9 @@ import { useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { Icon } from './Icon';
 import { Avatar } from './web/ui';
+import { toFaDigits } from '@/lib/persian';
 
 export type NavItem = { id: string; label: string; icon: Parameters<typeof Icon>[0]['name']; badge?: string };
-
-const fa = (n: number | string) => String(n).replace(/[0-9]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[+d]);
 
 const switchItemStyle: CSSProperties = {
   display: 'flex', alignItems: 'center', gap: 10, padding: '10px 10px', borderRadius: 11,
@@ -222,7 +221,7 @@ export function Placeholder({ label }: { label: string }) {
   );
 }
 
-export const faDigits = fa;
+export const faDigits = toFaDigits;
 
 const cellStyle: CSSProperties = { padding: '13px 16px', fontSize: 13.5 };
 export { cellStyle };
