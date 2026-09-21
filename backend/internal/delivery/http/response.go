@@ -46,6 +46,8 @@ func fail(c *gin.Context, err error) {
 		status, msg = http.StatusBadRequest, "موجودی کیف پول کافی نیست"
 	case errors.Is(err, domain.ErrTeacherNotReady):
 		status, msg = http.StatusBadRequest, "پروفایل استاد هنوز تأیید نشده است"
+	case errors.Is(err, domain.ErrTeacherProfileRequired):
+		status, msg = http.StatusForbidden, "برای این حساب پروفایل استاد فعال نیست"
 	}
 	c.AbortWithStatusJSON(status, gin.H{"error": msg})
 }
