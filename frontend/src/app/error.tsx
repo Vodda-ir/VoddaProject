@@ -8,39 +8,19 @@ export default function Error({ reset }: { error: Error; reset: () => void }) {
   return (
     <div style={{ background: 'var(--sand-50)', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Nav />
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 40 }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ width: 100, height: 100, borderRadius: 28, background: '#FDE8E8', color: 'var(--rose)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}>
-            <Icon name="x" size={50} />
-          </div>
-          <h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 10 }}>خطایی رخ داد</h1>
-          <p style={{ fontSize: 16, color: 'var(--ink-3)', marginBottom: 28, lineHeight: 1.9 }}>
-            مشکلی در بارگذاری صفحه پیش آمد. لطفاً دوباره تلاش کنید.
-          </p>
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
-            <button
-              onClick={reset}
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: 8,
-                padding: '14px 28px', borderRadius: 999, border: 'none', cursor: 'pointer',
-                background: 'var(--olive-600)', color: '#fff', fontSize: 15, fontWeight: 700, fontFamily: 'inherit',
-              }}
-            >
-              <Icon name="edit" size={20} /> تلاش مجدد
-            </button>
-            <Link
-              href="/"
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: 8,
-                padding: '14px 28px', borderRadius: 999, textDecoration: 'none',
-                background: 'var(--sand-100)', color: 'var(--ink-2s)', fontSize: 15, fontWeight: 700,
-              }}
-            >
-              <Icon name="home" size={20} /> خانه
-            </Link>
-          </div>
+      <main className="public-system-state">
+        <div className="public-system-visual error">
+          <span><Icon name="info" size={36} /></span>
+          <i />
         </div>
-      </div>
+        <small>خطای موقت</small>
+        <h1>بارگذاری این صفحه کامل نشد</h1>
+        <p>یک مشکل موقت رخ داده است. می‌توانید دوباره تلاش کنید یا به صفحه اصلی برگردید.</p>
+        <div className="public-system-actions">
+          <button type="button" onClick={reset}><Icon name="refresh" size={18} />تلاش دوباره</button>
+          <Link href="/"><Icon name="home" size={18} />خانه</Link>
+        </div>
+      </main>
       <Footer />
     </div>
   );
