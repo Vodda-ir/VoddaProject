@@ -4,7 +4,7 @@ import { useState } from 'react';
 import type { CSSProperties, FormEvent } from 'react';
 import { Nav, Footer } from '@/components/web/sections';
 import { Icon } from '@/components/Icon';
-import { SectionTitle } from '@/components/web/ui';
+import { PublicPageHero, PublicSurface } from '@/components/web/ui';
 import { api } from '@/lib/api';
 
 const SUPPORT_EMAIL = 'info@vodda.app';
@@ -47,53 +47,85 @@ export default function ContactPage() {
   return (
     <div style={{ background: 'var(--sand-50)', minHeight: '100vh' }}>
       <Nav />
-      <div style={{ maxWidth: 760, margin: '0 auto', padding: '40px 20px 80px' }}>
-        <SectionTitle kicker="تماس با ما" title="پیام شما ثبت و پیگیری می‌شود" sub="سؤال، پیشنهاد یا گزارش مشکل را مستقیم برای تیم وُدّا بفرستید." />
+      <PublicPageHero
+        kicker="تماس با وُدّا"
+        title="پیام شما داخل سامانه ثبت و پیگیری می‌شود"
+        description="برای سؤال، پیشنهاد یا گزارش مشکل، راه ارتباطی معتبر بگذارید تا امکان پاسخ‌گویی وجود داشته باشد."
+        icon="message"
+      />
 
-        <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', marginTop: 36 }}>
-          <div style={{ flex: '1 1 260px' }}>
-            <a href={`mailto:${SUPPORT_EMAIL}`} style={{ background: '#fff', borderRadius: 18, padding: 20, display: 'flex', alignItems: 'center', gap: 16, boxShadow: 'var(--sh-sm)', color: 'inherit', textDecoration: 'none' }}>
-              <div style={{ width: 48, height: 48, borderRadius: 12, background: 'var(--olive-100)', color: 'var(--olive-600)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Icon name="message" size={24} />
-              </div>
-              <div>
-                <div style={{ fontSize: 12, color: 'var(--ink-3)' }}>ایمیل جایگزین پشتیبانی</div>
-                <div dir="ltr" style={{ fontSize: 15, fontWeight: 700, marginTop: 2 }}>{SUPPORT_EMAIL}</div>
-              </div>
-            </a>
-            <p style={{ fontSize: 13, color: 'var(--ink-3)', lineHeight: 2, marginTop: 14 }}>
-              فرم روبه‌رو پیام را داخل سامانه ثبت می‌کند. اطلاعات حقوقی و شماره تماس عمومی پس از نهایی‌شدن مجموعه منتشر می‌شود.
-            </p>
+      <main className="public-container public-content">
+        <div className="contact-layout">
+          <div className="contact-info-column">
+            <PublicSurface style={{ padding: 22 }}>
+              <span className="contact-info-icon"><Icon name="message" size={23} /></span>
+              <small>ایمیل پشتیبانی</small>
+              <strong dir="ltr">{SUPPORT_EMAIL}</strong>
+              <p>برای موضوعاتی که نیاز به توضیح یا فایل تکمیلی دارند می‌توانید مستقیماً ایمیل بزنید.</p>
+              <a href={`mailto:${SUPPORT_EMAIL}`} className="contact-email-link">ارسال ایمیل <Icon name="arrowL" size={16} /></a>
+            </PublicSurface>
+
+            <PublicSurface style={{ padding: 22 }}>
+              <span className="contact-info-icon olive"><Icon name="shield" size={23} /></span>
+              <small>پیگیری ساختاریافته</small>
+              <strong>فرم داخل سامانه</strong>
+              <p>ارسال فرم این صفحه پیام را در backend ثبت می‌کند تا قابل مشاهده و پیگیری در پنل مدیریت باشد.</p>
+            </PublicSurface>
+
+            <div className="contact-note">
+              <Icon name="info" size={18} />
+              اطلاعات حقوقی و شماره تماس عمومی پس از نهایی‌شدن مجموعه در همین صفحه منتشر می‌شود.
+            </div>
           </div>
 
-          <div style={{ flex: '1 1 360px', background: '#fff', borderRadius: 20, padding: 28, boxShadow: 'var(--sh-sm)' }}>
-            <h3 style={{ fontSize: 17, fontWeight: 800, marginBottom: 8 }}>ارسال پیام</h3>
-            <p style={{ fontSize: 12.5, lineHeight: 1.9, color: 'var(--ink-3)', marginBottom: 18 }}>
-              ایمیل یا شماره تماس معتبری بنویسید تا امکان پاسخ‌گویی وجود داشته باشد.
-            </p>
-            <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <input aria-label="نام و نام خانوادگی" value={name} onChange={(event) => setName(event.target.value)} maxLength={120} autoComplete="name" placeholder="نام و نام خانوادگی" style={inputStyle} disabled={submitting} />
-              <input aria-label="ایمیل یا شماره تماس" value={contact} onChange={(event) => setContact(event.target.value)} maxLength={160} autoComplete="email" placeholder="ایمیل یا شماره تماس" style={inputStyle} disabled={submitting} />
-              <textarea aria-label="متن پیام" value={message} onChange={(event) => setMessage(event.target.value)} maxLength={4000} placeholder="متن پیام…" style={{ ...inputStyle, minHeight: 120, resize: 'vertical' }} disabled={submitting} />
-              {error && <div role="alert" style={{ fontSize: 13, color: 'var(--rose)', lineHeight: 1.8 }}>{error}</div>}
-              {sent && !error && (
-                <div role="status" style={{ fontSize: 13, color: 'var(--olive-700)', lineHeight: 1.8 }}>
-                  پیام با موفقیت ثبت شد. پس از بررسی از طریق راه ارتباطی واردشده پاسخ می‌دهیم.
-                </div>
-              )}
-              <button type="submit" disabled={submitting} style={{ padding: '14px', borderRadius: 999, border: 'none', cursor: submitting ? 'wait' : 'pointer', background: 'var(--olive-600)', color: '#fff', fontSize: 15, fontWeight: 700, fontFamily: 'inherit', opacity: submitting ? 0.7 : 1 }}>
+          <PublicSurface style={{ padding: 26 }}>
+            <div className="contact-form-heading">
+              <span><Icon name="edit" size={20} /></span>
+              <div>
+                <strong>ارسال پیام</strong>
+                <p>اطلاعات زیر فقط برای ثبت و پاسخ‌گویی به پیام استفاده می‌شود.</p>
+              </div>
+            </div>
+
+            <form onSubmit={submit} className="contact-form">
+              <label>
+                <span>نام و نام خانوادگی</span>
+                <input aria-label="نام و نام خانوادگی" value={name} onChange={(event) => setName(event.target.value)} maxLength={120} autoComplete="name" placeholder="نام شما" style={inputStyle} disabled={submitting} />
+              </label>
+              <label>
+                <span>ایمیل یا شماره تماس</span>
+                <input aria-label="ایمیل یا شماره تماس" value={contact} onChange={(event) => setContact(event.target.value)} maxLength={160} autoComplete="email" placeholder="راه ارتباطی برای پاسخ" style={inputStyle} disabled={submitting} />
+              </label>
+              <label>
+                <span>متن پیام</span>
+                <textarea aria-label="متن پیام" value={message} onChange={(event) => setMessage(event.target.value)} maxLength={4000} placeholder="سؤال یا توضیح خود را بنویسید…" style={{ ...inputStyle, minHeight: 145, resize: 'vertical' }} disabled={submitting} />
+              </label>
+
+              {error && <div role="alert" className="contact-form-message error"><Icon name="info" size={17} />{error}</div>}
+              {sent && !error && <div role="status" className="contact-form-message success"><Icon name="checkCircle" size={17} />پیام با موفقیت ثبت شد. پس از بررسی از راه ارتباطی واردشده پاسخ می‌دهیم.</div>}
+
+              <button type="submit" disabled={submitting} className="contact-submit">
                 {submitting ? 'در حال ارسال…' : 'ثبت پیام'}
+                {!submitting && <Icon name="arrowL" size={17} />}
               </button>
             </form>
-          </div>
+          </PublicSurface>
         </div>
-      </div>
+      </main>
       <Footer />
     </div>
   );
 }
 
 const inputStyle: CSSProperties = {
-  padding: '12px 16px', borderRadius: 14, border: '1px solid var(--sand-200)',
-  fontFamily: 'inherit', fontSize: 14, outline: 'none', width: '100%',
+  width: '100%',
+  minHeight: 50,
+  padding: '12px 14px',
+  border: '1px solid var(--sand-200)',
+  borderRadius: 14,
+  outline: 'none',
+  color: 'var(--ink)',
+  background: '#fff',
+  fontFamily: 'inherit',
+  fontSize: 13.5,
 };
