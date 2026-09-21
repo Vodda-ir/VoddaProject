@@ -46,8 +46,11 @@ func main() {
 	}
 	if cfg.AutoSeed {
 		if err := seed.Run(db); err != nil {
-			log.Printf("seed: %v", err)
+			log.Printf("seed development data: %v", err)
 		}
+	}
+	if err := seed.RunRequired(db); err != nil {
+		log.Fatalf("required seed: %v", err)
 	}
 
 	userRepo := repository.NewUserRepository(db)
