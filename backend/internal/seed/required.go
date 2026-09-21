@@ -56,6 +56,9 @@ func RunRequired(db *gorm.DB) error {
 	if err := json.Unmarshal(legacyTeacherSeedJSON, &teachers); err != nil {
 		return fmt.Errorf("decode required legacy teachers: %w", err)
 	}
+	if err := validateLegacyTeacherSeeds(teachers); err != nil {
+		return err
+	}
 
 	ctx := context.Background()
 	err := db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
@@ -109,10 +112,10 @@ func ensureLegacyTeacher(tx *gorm.DB, seed legacyTeacherProfileSeed) error {
 	switch {
 	case errors.Is(err, gorm.ErrRecordNotFound):
 		user = domain.User{
-			Name:   seed.Name,
+			Name:   truncateRunes(seed.Name, 120),
 			Mobile: seed.Mobile,
 			Role:   domain.RoleTeacher,
-			City:   seed.City,
+			City:   truncateRunes(seed.City, 80),
 			Bio:    truncateRunes(seed.Bio, 500),
 			Active: true,
 		}
@@ -128,10 +131,10 @@ func ensureLegacyTeacher(tx *gorm.DB, seed legacyTeacherProfileSeed) error {
 			updates["role"] = domain.RoleTeacher
 		}
 		if strings.TrimSpace(user.Name) == "" {
-			updates["name"] = seed.Name
+			updates["name"] = truncateRunes(seed.Name, 120)
 		}
 		if strings.TrimSpace(user.City) == "" {
-			updates["city"] = seed.City
+			updates["city"] = truncateRunes(seed.City, 80)
 		}
 		if strings.TrimSpace(user.Bio) == "" && strings.TrimSpace(seed.Bio) != "" {
 			updates["bio"] = truncateRunes(seed.Bio, 500)
@@ -156,11 +159,11 @@ func ensureLegacyTeacher(tx *gorm.DB, seed legacyTeacherProfileSeed) error {
 	teacher = domain.Teacher{
 		UserID:    user.ID,
 		Field:     "آموزش قرآن کریم",
-		Tag:       seed.Tag,
-		Level:     seed.Level,
-		City:      seed.City,
+		Tag:       truncateRunes(seed.Tag, 60),
+		Level:     truncateRunes(seed.Level, 30),
+		City:      truncateRunes(seed.City, 80),
 		Bio:       truncateRunes(seed.Bio, 1000),
-		Skills:    seed.Tag,
+		Skills:    truncateRunes(seed.Tag, 500),
 		Price30:   seed.Price30,
 		Price60:   seed.Price60,
 		Female:    seed.Female,
@@ -169,6 +172,28 @@ func ensureLegacyTeacher(tx *gorm.DB, seed legacyTeacherProfileSeed) error {
 		Status:    domain.TeacherApproved,
 	}
 	return tx.Create(&teacher).Error
+}
+
+func validateLegacyTeacherSeeds(seeds []legacyTeacherProfileSeed) error {
+	const expectedLegacyTeachers = 45
+	if len(seeds) != expectedLegacyTeachers {
+		return fmt.Errorf("required legacy teachers: expected %d rows, got %d", expectedLegacyTeachers, len(seeds))
+	}
+
+	seenMobiles := make(map[string]int, len(seeds))
+	for _, seed := range seeds {
+		if seed.LegacyID <= 0 {
+			return errors.New("required legacy teachers: legacy_id must be positive")
+		}
+		if len(seed.Mobile) != 11 || !strings.HasPrefix(seed.Mobile, "09") {
+			return fmt.Errorf("required legacy teacher %d: invalid normalized mobile", seed.LegacyID)
+		}
+		if previous, exists := seenMobiles[seed.Mobile]; exists {
+			return fmt.Errorf("required legacy teachers: duplicate mobile for legacy ids %d and %d", previous, seed.LegacyID)
+		}
+		seenMobiles[seed.Mobile] = seed.LegacyID
+	}
+	return nil
 }
 
 func truncateRunes(value string, max int) string {
