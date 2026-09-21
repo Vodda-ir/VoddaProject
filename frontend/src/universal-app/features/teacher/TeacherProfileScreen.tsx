@@ -132,12 +132,6 @@ function validate(form: TeacherForm): string | null {
   return null;
 }
 
-function statusLabel(status: string): string {
-  if (status === "approved") return "تأییدشده";
-  if (status === "rejected") return "ردشده";
-  return "در انتظار بررسی";
-}
-
 export function TeacherProfileScreen({ config }: { config: UniversalAppConfig }) {
   const runtime = usePlatform();
   const [user, setUser] = useState<UserProfile | null>(null);
