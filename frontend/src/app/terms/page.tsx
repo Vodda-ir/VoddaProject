@@ -1,5 +1,6 @@
 import { Nav, Footer } from '@/components/web/sections';
-import { SectionTitle } from '@/components/web/ui';
+import { Icon } from '@/components/Icon';
+import { PublicPageHero } from '@/components/web/ui';
 
 export const metadata = { title: 'قوانین و مقررات · وُدّا' };
 
@@ -17,16 +18,36 @@ export default function TermsPage() {
   return (
     <div style={{ background: 'var(--sand-50)', minHeight: '100vh' }}>
       <Nav />
-      <main style={{ maxWidth: 760, margin: '0 auto', padding: '40px 20px 80px' }}>
-        <SectionTitle kicker="قوانین و مقررات" title="شرایط استفاده از خدمات وُدّا" sub="این متن رفتار واقعی نسخهٔ فعلی سامانه را توضیح می‌دهد." />
+      <PublicPageHero
+        kicker="قوانین و مقررات"
+        title="شرایط استفاده از خدمات وُدّا"
+        description="این متن رفتار واقعی نسخهٔ فعلی سامانه را توضیح می‌دهد."
+        icon="doc"
+      />
 
-        <div style={{ background: '#fff', borderRadius: 24, padding: 32, boxShadow: 'var(--sh-sm)', marginTop: 36 }}>
-          {sections.map((section, index) => (
-            <section key={section.title} style={{ paddingBottom: index < sections.length - 1 ? 24 : 0, marginBottom: index < sections.length - 1 ? 24 : 0, borderBottom: index < sections.length - 1 ? '1px solid var(--sand-100)' : 'none' }}>
-              <h2 style={{ fontSize: 17, fontWeight: 800, marginBottom: 10 }}>{section.title}</h2>
-              <p style={{ fontSize: 14.5, lineHeight: 2, color: 'var(--ink-3)' }}>{section.body}</p>
-            </section>
-          ))}
+      <main className="public-container public-content">
+        <div className="legal-layout">
+          <aside className="legal-side">
+            <span className="public-principle-icon"><Icon name="doc" size={22} /></span>
+            <strong>شرایط استفاده</strong>
+            <p>قوانین باید با منطق واقعی Backend، جریان مالی و قابلیت‌های فعال محصول هم‌زمان به‌روز شوند.</p>
+            <div className="legal-side-meta">
+              <span><Icon name="checkCircle" size={16} />هم‌راستا با رفتار محصول</span>
+              <span><Icon name="info" size={16} />قابل بازبینی پیش از استفاده</span>
+            </div>
+          </aside>
+
+          <article className="legal-document">
+            {sections.map((section, index) => (
+              <section key={section.title} className="legal-section">
+                <span className="legal-index">{String(index + 1).replace(/[0-9]/g, (digit) => '۰۱۲۳۴۵۶۷۸۹'[Number(digit)])}</span>
+                <div>
+                  <h2>{section.title.replace(/^[۰-۹]+\.\s*/, '')}</h2>
+                  <p>{section.body}</p>
+                </div>
+              </section>
+            ))}
+          </article>
         </div>
       </main>
       <Footer />
