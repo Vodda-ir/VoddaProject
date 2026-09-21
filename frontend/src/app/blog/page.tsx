@@ -1,43 +1,55 @@
 import { Nav, Footer } from '@/components/web/sections';
 import { Icon } from '@/components/Icon';
-import { SectionTitle } from '@/components/web/ui';
+import { PublicPageHero } from '@/components/web/ui';
 
 export const metadata = { title: 'وبلاگ · وُدّا' };
 
 const posts = [
-  { title: 'روش‌های مؤثر در حفظ قرآن کریم', excerpt: 'در این مقاله به بررسی روش‌های نوین و مؤثر در حفظ قرآن می‌پردازیم…', date: '۱۴۰۳/۰۴/۱۵', tag: 'حفظ' },
-  { title: 'تجوید قرآن؛ قواعد پایه', excerpt: 'آشنایی با قواعد پایه‌ای تجوید برای شروع یادگیری تلاوت صحیح…', date: '۱۴۰۳/۰۴/۱۰', tag: 'تجوید' },
-  { title: 'تاریخچه مداحی در ایران', excerpt: 'نگاهی به سیر تطور مداحی و نقش آن در فرهنگ ایرانی-اسلامی…', date: '۱۴۰۳/۰۳/۲۸', tag: 'مداحی' },
+  { title: 'روش‌های مؤثر در حفظ قرآن کریم', excerpt: 'در این مقاله به بررسی روش‌های نوین و مؤثر در حفظ قرآن می‌پردازیم…', date: '۱۴۰۳/۰۴/۱۵', tag: 'حفظ', icon: 'quran' as const },
+  { title: 'تجوید قرآن؛ قواعد پایه', excerpt: 'آشنایی با قواعد پایه‌ای تجوید برای شروع یادگیری تلاوت صحیح…', date: '۱۴۰۳/۰۴/۱۰', tag: 'تجوید', icon: 'book' as const },
+  { title: 'تاریخچه مداحی در ایران', excerpt: 'نگاهی به سیر تطور مداحی و نقش آن در فرهنگ ایرانی-اسلامی…', date: '۱۴۰۳/۰۳/۲۸', tag: 'مداحی', icon: 'mic' as const },
 ];
 
 export default function BlogPage() {
   return (
     <div style={{ background: 'var(--sand-50)', minHeight: '100vh' }}>
       <Nav />
-      <div style={{ maxWidth: 860, margin: '0 auto', padding: '40px 20px 80px' }}>
-        <SectionTitle kicker="وبلاگ" title="مقالات و مطالب آموزشی" sub="جدیدترین مطالب درباره آموزش قرآن، تجوید و مداحی را اینجا بخوانید." />
+      <PublicPageHero
+        kicker="وبلاگ وُدّا"
+        title="مطالب آموزشی برای مسیر یادگیری"
+        description="مجموعه‌ای از مطالب درباره آموزش قرآن، تجوید، حفظ و مداحی."
+        icon="book"
+      />
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 18, marginTop: 36 }}>
-          {posts.map((p, i) => (
-            <div key={i} style={{ background: '#fff', borderRadius: 20, padding: 24, boxShadow: 'var(--sh-sm)', display: 'flex', gap: 20, alignItems: 'flex-start' }}>
-              <div style={{ width: 80, height: 80, borderRadius: 16, background: 'var(--olive-100)', color: 'var(--olive-600)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <Icon name="book" size={36} />
+      <main className="public-container public-content">
+        <div className="blog-featured">
+          <span className="blog-featured-icon"><Icon name="sparkle" size={23} /></span>
+          <div>
+            <small>یادداشت تحریریه</small>
+            <strong>محتوای آموزشی وُدّا در حال تکمیل است</strong>
+            <p>این بخش برای انتشار مطالب آموزشی و راهنماهای مرتبط با تجربهٔ محصول در نظر گرفته شده است.</p>
+          </div>
+        </div>
+
+        <div className="blog-grid">
+          {posts.map((post) => (
+            <article key={post.title} className="blog-card">
+              <div className="blog-card-visual">
+                <span><Icon name={post.icon} size={32} /></span>
               </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 8 }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--olive-600)', background: 'var(--olive-50)', padding: '3px 10px', borderRadius: 999 }}>{p.tag}</span>
-                  <span style={{ fontSize: 12, color: 'var(--ink-3)' }}>{p.date}</span>
+              <div className="blog-card-body">
+                <div className="blog-card-meta">
+                  <span>{post.tag}</span>
+                  <time>{post.date}</time>
                 </div>
-                <h3 style={{ fontSize: 17, fontWeight: 800, marginBottom: 8 }}>{p.title}</h3>
-                <p style={{ fontSize: 14, lineHeight: 1.9, color: 'var(--ink-3)' }}>{p.excerpt}</p>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 12, fontSize: 13, fontWeight: 700, color: 'var(--olive-600)', cursor: 'pointer' }}>
-                  ادامه مطلب <Icon name="arrowL" size={16} />
-                </span>
+                <h2>{post.title}</h2>
+                <p>{post.excerpt}</p>
+                <span className="blog-card-action">ادامه مطلب <Icon name="arrowL" size={15} /></span>
               </div>
-            </div>
+            </article>
           ))}
         </div>
-      </div>
+      </main>
       <Footer />
     </div>
   );
