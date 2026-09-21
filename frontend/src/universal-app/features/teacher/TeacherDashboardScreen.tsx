@@ -144,20 +144,10 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
     return confirmed[0] ?? null;
   }, [snapshot]);
 
-  if (loading) return <LoadingState label="در حال دریافت داشبورد استاد…" />;
-  if (error || !snapshot) {
-    return (
-      <ErrorState
-        title="دریافت داشبورد ناموفق بود"
-        description={error ?? "اطلاعات داشبورد دریافت نشد."}
-        action={<Button onClick={() => void load()}>تلاش دوباره</Button>}
-      />
-    );
-  }
-
-  const { teacher, pending } = snapshot;
-  const rating = teacher.reviews > 0 ? teacher.rating.toFixed(1) : "—";
-  const firstName = teacher.name.trim().split(/\s+/)[0] || "استاد";
+  const teacher = snapshot?.teacher ?? null;
+  const pending = snapshot?.pending ?? [];
+  const rating = teacher && teacher.reviews > 0 ? teacher.rating.toFixed(1) : "—";
+  const firstName = teacher?.name.trim().split(/\s+/)[0] || "";
 
   return (
     <section className="vodda-screen" style={{ display: "grid", gap: spacing.xl }}>
@@ -180,7 +170,7 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
           cursor: "pointer",
         }}
       >
-        <Avatar name={teacher.name} src={teacher.avatarUrl} size={46} ring />
+        <Avatar name={teacher?.name} src={teacher?.avatarUrl} size={46} ring />
         <span style={{ minWidth: 0, flex: 1 }}>
           <span style={{ ...typography.caption, display: "block", color: colors.inkMuted }}>پنل استاد · {firstName}</span>
           <strong style={{ ...typography.body, display: "inline-flex", alignItems: "center", gap: 5, color: colors.olive700 }}>
@@ -190,6 +180,16 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
         </span>
       </button>
 
+      {loading ? (
+        <LoadingState label="در حال دریافت داشبورد استاد…" style={{ minHeight: 180 }} />
+      ) : error || !snapshot || !teacher ? (
+        <ErrorState
+          title="دریافت داشبورد ناموفق بود"
+          description={error ?? "اطلاعات داشبورد دریافت نشد."}
+          action={<Button onClick={() => void load()}>تلاش دوباره</Button>}
+        />
+      ) : (
+        <>
       <div>
         <WalletHero label="موجودی قابل برداشت" amount={formatWalletAmount(teacher.wallet)}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1px 1fr 1px 1fr", alignItems: "center" }}>
@@ -315,6 +315,9 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
           ))}
         </div>
       </section>
+
+        </>
+      )}
 
       <RoleModeSheet
         open={roleSheetOpen}
