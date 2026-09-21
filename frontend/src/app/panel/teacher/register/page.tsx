@@ -6,6 +6,7 @@ import { Icon } from '@/components/Icon';
 import { getToken } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { digitsOnly, toFaDigits } from '@/lib/persian';
 
 const fields = [
   { id: 'quran', label: 'آموزش قرآن کریم' },
@@ -129,7 +130,7 @@ export default function TeacherRegisterPage() {
           </div>
           <div>
             <label htmlFor="teacher-price" style={labelStyle}>هزینه ۳۰ دقیقه (تومان)</label>
-            <input id="teacher-price" type="number" min="1000" inputMode="numeric" value={price30} onChange={(event) => setPrice30(event.target.value)} placeholder="مثلاً ۱۵۰۰۰۰" style={inputStyle} />
+            <input id="teacher-price" type="text" inputMode="numeric" value={toFaDigits(price30)} onChange={(event) => setPrice30(digitsOnly(event.target.value))} placeholder="مثلاً ۱۵۰۰۰۰" style={inputStyle} />
           </div>
         </div>
 
