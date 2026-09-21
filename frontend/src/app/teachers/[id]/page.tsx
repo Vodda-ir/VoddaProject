@@ -1,13 +1,11 @@
 import { api } from '@/lib/api';
 import { Icon } from '@/components/Icon';
-import { Avatar, Stars } from '@/components/web/ui';
+import { Avatar, PublicSurface, Stars, WebBtn } from '@/components/web/ui';
 import { Nav, Footer } from '@/components/web/sections';
 import { fullUrl } from '@/lib/auth';
+import { formatFaNumber, toFaDigits } from '@/lib/persian';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-
-const fa = (n: number | string) => String(n).replace(/[0-9]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[+d]);
-const toman = (n: number) => fa(new Intl.NumberFormat('fa-IR').format(n));
 
 export default async function TeacherDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -23,59 +21,164 @@ export default async function TeacherDetailPage({ params }: { params: Promise<{ 
     notFound();
   }
 
+  const name = teacher.user?.name || 'استاد وُدّا';
+  const services = teacher.services || [];
+  const startingPrice = services.length
+    ? Math.min(...services.map((service) => Math.max(0, service.price)))
+    : Math.max(0, teacher.price30 || 0);
+
   return (
     <div style={{ background: 'var(--sand-50)', minHeight: '100vh' }}>
       <Nav />
-      <div style={{ maxWidth: 960, margin: '0 auto', padding: '32px 20px 60px' }}>
-        <Link href="/search" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 14, fontWeight: 600, color: 'var(--ink-3)', marginBottom: 24, textDecoration: 'none' }}>
-          <Icon name="arrowL" size={18} /> بازگشت به جستجو
+
+      <main className="public-container teacher-public-page">
+        <Link href="/search" className="teacher-back-link">
+          <Icon name="arrowL" size={17} />
+          بازگشت به جستجو
         </Link>
 
-        <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', marginBottom: 32 }}>
-          <div style={{ background: '#fff', borderRadius: 24, padding: 32, flex: '1 1 320px', boxShadow: 'var(--sh-md)' }}>
-            <div style={{ display: 'flex', gap: 18, alignItems: 'center', marginBottom: 20 }}>
-              <Avatar size={88} ring verified={teacher.verified} imageUrl={fullUrl(teacher.user?.avatar_url)} />
-              <div>
-                <h1 style={{ fontSize: 24, fontWeight: 800, marginBottom: 4 }}>{teacher.user?.name || 'استاد'}</h1>
-                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--olive-600)', marginBottom: 6 }}>{teacher.tag}</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--ink-3)' }}><Icon name="pin" size={15} /> {teacher.city || 'شهر ثبت نشده'}</div>
+        <section className="teacher-public-hero">
+          <div className="teacher-public-profile">
+            <Avatar size={92} ring verified={teacher.verified} imageUrl={fullUrl(teacher.user?.avatar_url)} />
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <div className="teacher-public-name-row">
+                <h1>{name}</h1>
+                {teacher.verified && <span><Icon name="checkCircle" size={14} />تأییدشده</span>}
+              </div>
+              <strong className="teacher-public-tag">{teacher.tag || teacher.field || 'استاد وُدّا'}</strong>
+              <div className="teacher-public-location">
+                <Icon name="pin" size={15} />
+                {teacher.city || 'شهر ثبت نشده'}
               </div>
             </div>
+          </div>
 
-            <div style={{ display: 'flex', gap: 16, justifyContent: 'space-around', paddingTop: 20, borderTop: '1px solid var(--sand-100)' }}>
-              <Stat icon="star" value={teacher.reviews > 0 ? fa(teacher.rating.toFixed(1)) : '—'} label="امتیاز" />
-              <Stat icon="message" value={fa(teacher.reviews)} label="نظر ثبت‌شده" />
-              <Stat icon="calendar" value={fa(teacher.sessions)} label="جلسهٔ تکمیل‌شده" />
-            </div>
+          <div className="teacher-public-stats">
+            <TeacherStat icon="star" value={teacher.reviews > 0 ? toFaDigits(teacher.rating.toFixed(1)) : '—'} label="امتیاز" />
+            <TeacherStat icon="message" value={toFaDigits(teacher.reviews)} label="نظر" />
+            <TeacherStat icon="calendar" value={toFaDigits(teacher.sessions)} label="جلسه" />
+          </div>
+        </section>
 
-            {teacher.services?.length ? (
-              <Link href={`/panel/user/book?teacher=${teacher.id}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 24, padding: '14px 24px', borderRadius: 999, background: 'var(--olive-600)', color: '#fff', fontSize: 16, fontWeight: 700, textDecoration: 'none', boxShadow: 'var(--sh-olive)' }}>
-                <Icon name="calendar" size={20} /> رزرو جلسه
-              </Link>
-            ) : (
-              <div style={{ marginTop: 24, padding: 14, borderRadius: 14, background: 'var(--sand-100)', color: 'var(--ink-3)', textAlign: 'center', fontSize: 14 }}>این استاد فعلاً خدمت قابل رزروی ندارد.</div>
+        <div className="teacher-public-layout">
+          <div className="teacher-public-main">
+            <section>
+              <div className="teacher-public-section-title">
+                <span><Icon name="user" size={18} /></span>
+                <h2>دربارهٔ استاد</h2>
+              </div>
+              <p className="teacher-public-bio">{teacher.bio || 'اطلاعاتی ثبت نشده است.'}</p>
+            </section>
+
+            <section>
+              <div className="teacher-public-section-title">
+                <span><Icon name="book" size={18} /></span>
+                <h2>خدمات تأییدشده</h2>
+              </div>
+
+              {services.length ? (
+                <div className="teacher-service-list">
+                  {services.map((service) => (
+                    <PublicSurface key={service.id} style={{ padding: 15 }}>
+                      <div className="teacher-service-row">
+                        <span className="teacher-service-icon"><Icon name="book" size={20} /></span>
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                          <strong>{service.title}</strong>
+                          <span>{toFaDigits(service.duration)} دقیقه</span>
+                        </div>
+                        <div className="teacher-service-price">
+                          <strong>{formatFaNumber(service.price)}</strong>
+                          <span>تومان</span>
+                        </div>
+                      </div>
+                    </PublicSurface>
+                  ))}
+                </div>
+              ) : (
+                <div className="teacher-public-empty">
+                  <Icon name="book" size={24} />
+                  <span>خدمت تأییدشده‌ای ثبت نشده است.</span>
+                </div>
+              )}
+            </section>
+
+            {reviews.length > 0 && (
+              <section>
+                <div className="teacher-public-section-title">
+                  <span><Icon name="message" size={18} /></span>
+                  <h2>نظرهای پس از جلسه</h2>
+                </div>
+
+                <div className="teacher-review-grid">
+                  {reviews.map((review) => (
+                    <PublicSurface key={review.id} style={{ padding: 17 }}>
+                      <div className="teacher-review-head">
+                        <span>
+                          <strong>{review.learner?.name || 'قرآن‌آموز وُدّا'}</strong>
+                          <small>نظر ثبت‌شده پس از جلسه</small>
+                        </span>
+                        <Stars value={review.rating} size={13} />
+                      </div>
+                      {review.text && <p>{review.text}</p>}
+                    </PublicSurface>
+                  ))}
+                </div>
+              </section>
             )}
           </div>
 
-          <div style={{ flex: '1 1 320px', display: 'flex', flexDirection: 'column', gap: 20 }}>
-            <div style={{ background: '#fff', borderRadius: 24, padding: 24, boxShadow: 'var(--sh-md)' }}>
-              <h2 style={{ fontSize: 17, fontWeight: 800, marginBottom: 12 }}>دربارهٔ استاد</h2>
-              <p style={{ fontSize: 14.5, lineHeight: 2, color: 'var(--ink-3)' }}>{teacher.bio || 'اطلاعاتی ثبت نشده است.'}</p>
-            </div>
-            <div style={{ background: '#fff', borderRadius: 24, padding: 24, boxShadow: 'var(--sh-md)' }}>
-              <h2 style={{ fontSize: 17, fontWeight: 800, marginBottom: 16 }}>خدمات تأییدشده</h2>
-              {teacher.services?.length ? <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>{teacher.services.map((service) => <div key={service.id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: 14, borderRadius: 16, background: 'var(--sand-50)' }}><Icon name="book" size={22} style={{ color: 'var(--olive-600)' }} /><div style={{ flex: 1 }}><div style={{ fontSize: 14.5, fontWeight: 700 }}>{service.title}</div><div style={{ fontSize: 12.5, color: 'var(--ink-3)', marginTop: 2 }}>{fa(service.duration)} دقیقه</div></div><div style={{ fontSize: 15, fontWeight: 800, color: 'var(--olive-700)' }}>{toman(service.price)} <span style={{ fontSize: 12 }}>تومان</span></div></div>)}</div> : <p style={{ fontSize: 14, color: 'var(--ink-4)' }}>خدمت تأییدشده‌ای ثبت نشده است.</p>}
-            </div>
-          </div>
-        </div>
+          <aside className="teacher-booking-card">
+            <span className="teacher-booking-icon"><Icon name="calendar" size={23} /></span>
+            <small>رزرو جلسه</small>
+            <strong>{services.length ? 'یک خدمت و زمان مناسب انتخاب کنید' : 'فعلاً خدمت قابل رزروی وجود ندارد'}</strong>
+            <p>
+              {services.length
+                ? 'در مرحله بعد، خدمات تأییدشده و زمان‌های آزاد واقعی استاد را می‌بینید.'
+                : 'پس از فعال‌شدن خدمت تأییدشده، امکان رزرو از همین صفحه فراهم می‌شود.'}
+            </p>
 
-        {reviews.length > 0 && <div style={{ background: '#fff', borderRadius: 24, padding: 28, boxShadow: 'var(--sh-md)' }}><h2 style={{ fontSize: 17, fontWeight: 800, marginBottom: 20 }}>نظرهای پس از جلسه</h2><div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>{reviews.map((review) => <div key={review.id} style={{ paddingBottom: 18, borderBottom: '1px solid var(--sand-100)' }}><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}><span style={{ fontSize: 14, fontWeight: 700 }}>{review.learner?.name || 'قرآن‌آموز وُدّا'}</span><Stars value={review.rating} size={14} /></div>{review.text && <p style={{ fontSize: 14, lineHeight: 1.9, color: 'var(--ink-3)' }}>{review.text}</p>}</div>)}</div></div>}
-      </div>
+            {startingPrice > 0 && (
+              <div className="teacher-booking-price">
+                <span>شروع از</span>
+                <strong>{formatFaNumber(startingPrice)} تومان</strong>
+              </div>
+            )}
+
+            {services.length ? (
+              <WebBtn href={`/panel/user/book?teacher=${teacher.id}`} size="lg" icon="calendar" style={{ width: '100%' }}>
+                رزرو جلسه
+              </WebBtn>
+            ) : (
+              <span className="teacher-booking-disabled">رزرو غیرفعال است</span>
+            )}
+
+            <div className="teacher-booking-note">
+              <Icon name="shield" size={16} />
+              رزرو فقط بر اساس خدمات تأییدشده و بازه‌های معتبر انجام می‌شود.
+            </div>
+          </aside>
+        </div>
+      </main>
+
       <Footer />
     </div>
   );
 }
 
-function Stat({ icon, value, label }: { icon: Parameters<typeof Icon>[0]['name']; value: string; label: string }) {
-  return <div style={{ textAlign: 'center' }}><Icon name={icon} size={22} style={{ color: 'var(--olive-500)' }} /><div style={{ fontSize: 20, fontWeight: 800, marginTop: 6 }}>{value}</div><div style={{ fontSize: 12, color: 'var(--ink-3)' }}>{label}</div></div>;
+function TeacherStat({
+  icon,
+  value,
+  label,
+}: {
+  icon: Parameters<typeof Icon>[0]['name'];
+  value: string;
+  label: string;
+}) {
+  return (
+    <div>
+      <Icon name={icon} size={19} />
+      <strong>{value}</strong>
+      <span>{label}</span>
+    </div>
+  );
 }
