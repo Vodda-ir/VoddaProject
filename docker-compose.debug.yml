@@ -13,6 +13,12 @@ services:
     networks:
       - vodda-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p\"$${MYSQL_ROOT_PASSWORD}\" --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
 
   backend:
     platform: ${DOCKER_PLATFORM:-linux/amd64}
@@ -21,7 +27,8 @@ services:
       dockerfile: Dockerfile.dev
     image: vodda-backend:dev
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
     environment:
       - SERVER_HOST=0.0.0.0
       - SERVER_PORT=3420

@@ -118,7 +118,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Validate shell scripts
-        run: sh -n ops/mysql-backup.sh ops/mysql-restore.sh docker-deploy.sh docker-debug.sh
+        run: sh -n ops/mysql-backup.sh ops/mysql-restore.sh deploy.sh debug.sh
       - name: Validate production compose
         env:
           MYSQL_ROOT_PASSWORD: test-root-password

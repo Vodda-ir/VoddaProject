@@ -16,7 +16,12 @@ export function isSameOriginMutation(request: NextRequest): boolean {
   if (!origin) return true;
 
   try {
-    return new URL(origin).origin === request.nextUrl.origin;
+    const forwardedHost = request.headers.get('x-forwarded-host')?.split(',')[0].trim();
+    const host = forwardedHost || request.headers.get('host');
+    const forwardedProto = request.headers.get('x-forwarded-proto')?.split(',')[0].trim();
+    const protocol = forwardedProto || request.nextUrl.protocol.replace(':', '');
+    const expected = host ? new URL(`${protocol}://${host}`).origin : request.nextUrl.origin;
+    return new URL(origin).origin === expected;
   } catch {
     return false;
   }

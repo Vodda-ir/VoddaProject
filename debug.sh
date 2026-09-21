@@ -1,7 +1,7 @@
 #!/bin/bash
 # Run the Vodda backend + frontend locally in debug mode.
 #
-# usage: ./docker-debug.sh [up|up-d|down|logs|build|test|restart|reset]
+# usage: ./debug.sh [up|up-d|down|logs|build|test|restart|reset]
 
 set -e
 
@@ -34,9 +34,9 @@ case "${1:-up}" in
         ;;
     up-d)
         echo "▶ starting Vodda services in background..."
-        docker_compose_cmd up -d --build
+        docker_compose_cmd up -d --build --wait
         print_services
-        echo "logs: ./docker-debug.sh logs"
+        echo "logs: ./debug.sh logs"
         ;;
     down)
         echo "▶ stopping services..."
@@ -45,14 +45,14 @@ case "${1:-up}" in
     restart)
         echo "▶ restarting services..."
         docker_compose_cmd down
-        docker_compose_cmd up -d --build
+        docker_compose_cmd up -d --build --wait
         print_services
         ;;
     reset)
         echo "▶ resetting debug containers and volumes..."
         docker_compose_cmd down -v
         rm -rf ./data/mysql
-        docker_compose_cmd up -d --build
+        docker_compose_cmd up -d --build --wait
         print_services
         ;;
     logs)

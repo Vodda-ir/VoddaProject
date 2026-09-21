@@ -11,8 +11,8 @@
 
 | فایل | کاربرد |
 | --- | --- |
-| `.env.local` | اجرای محلی دیباگ (`docker-debug.sh`) |
-| `.env.production` | مقادیر تولید (`docker-deploy.sh`) — **محرمانه، در git نیست** |
+| `.env.local` | اجرای محلی دیباگ (`debug.sh`) |
+| `.env.production` | مقادیر تولید (`deploy.sh`) — **محرمانه، در git نیست** |
 | `deploy.json` | اطلاعات اتصال SSH سرور — **محرمانه، در git نیست** |
 
 ساخت از روی نمونه‌ها:
@@ -45,9 +45,9 @@ cp deploy.example.json deploy.json
 ## دستورها
 
 ```bash
-./docker-deploy.sh build     # فقط build ایمیج‌های تولید + ساخت bundle فشرده
-./docker-deploy.sh deploy    # build + انتقال به سرور + اجرا  (پیش‌فرض)
-./docker-deploy.sh server    # فقط انتقال bundle موجود + اجرا روی سرور
+./deploy.sh build     # فقط build ایمیج‌های تولید + ساخت bundle فشرده
+./deploy.sh deploy    # build + انتقال به سرور + اجرا  (پیش‌فرض)
+./deploy.sh server    # فقط انتقال bundle موجود + اجرا روی سرور
 ```
 
 ### مراحل `deploy`
@@ -77,7 +77,7 @@ flutter build appbundle --release --dart-define=API_BASE_URL=https://api.vodda.i
 ## نکات نگه‌داری
 
 - دادهٔ MySQL در `./data/mysql` روی سرور persist می‌شود.
-- `docker-debug.sh reset` کانتینرها و volume محلی را پاک می‌کند (دادهٔ محلی از بین می‌رود).
+- `debug.sh reset` کانتینرها و volume محلی را پاک می‌کند (دادهٔ محلی از بین می‌رود).
 - پشتیبان‌گیری: از پوشهٔ `data/mysql` یا با `mysqldump` از کانتینر MySQL.
 
 </div>

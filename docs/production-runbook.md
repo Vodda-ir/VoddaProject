@@ -37,9 +37,9 @@ DEV_WALLET_CHARGE_ENABLED=false
 ## استقرار
 
 ```bash
-chmod +x docker-deploy.sh ops/*.sh
+chmod +x deploy.sh ops/*.sh
 docker compose -f docker-compose.deploy.yml config
-./docker-deploy.sh
+./deploy.sh
 ```
 
 پس از استقرار:

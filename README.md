@@ -60,10 +60,12 @@ VoddaProject/
 ## اجرای محلی
 
 ```bash
-cp .env.example .env
+cp .env.example .env.local
 # مقادیر توسعه را تنظیم کنید
-docker compose up --build
+./debug.sh up
 ```
+
+برای اجرای پس‌زمینه: `./debug.sh up-d` و برای مشاهدهٔ لاگ‌ها: `./debug.sh logs`.
 
 | سرویس | آدرس |
 |---|---|

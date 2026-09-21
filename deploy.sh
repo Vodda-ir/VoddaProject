@@ -2,7 +2,7 @@
 # Build Vodda production images locally and deploy them to a remote server
 # over SSH (password-based), loading the image bundle and starting compose.
 #
-# usage: ./docker-deploy.sh [deploy|build|server]
+# usage: ./deploy.sh [deploy|build|server]
 
 set -e
 
