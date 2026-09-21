@@ -64,7 +64,7 @@ function SessionCard({
   onRate: () => void;
 }) {
   return (
-    <Card className="vodda-card--interactive vodda-enter" style={{ display: "grid", gap: spacing.md, borderRadius: radii.lg, padding: spacing.lg }}>
+    <Card className="vodda-card--interactive" style={{ display: "grid", gap: 13, borderRadius: 24, padding: 15, boxShadow: "0 0 6px rgba(46,54,34,.04)" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: spacing.md }}>
         <StatusPill status={session.status} label={statusLabels[session.status] ?? session.status} />
         <span style={{ ...typography.caption, color: colors.inkMuted }}>
@@ -84,16 +84,15 @@ function SessionCard({
         style={{
           display: "flex",
           alignItems: "center",
-          gap: spacing.sm,
-          padding: `${spacing.sm}px ${spacing.md}px`,
-          borderRadius: radii.md,
-          background: colors.olive50,
-          color: colors.olive800,
-          ...typography.bodySmall,
-          fontWeight: 700,
+          gap: 6,
+          padding: "11px 14px",
+          borderRadius: 13,
+          background: colors.sand50,
+          color: colors.inkSecondary,
+          fontSize: 12.5,
         }}
       >
-        <Icon name="clock" size={17} stroke={1.9} />
+        <Icon name="calendar" size={16} style={{ flex: "0 0 auto", color: colors.olive500 }} />
         {officialTime(session)}
       </div>
 
@@ -111,7 +110,8 @@ function SessionCard({
               : "در انتظار تأیید استاد"}
           </span>
           {canCancel(session) ? (
-            <Button variant="danger" fullWidth loading={busy} onClick={onCancel}>
+            <Button variant="secondary" fullWidth loading={busy} onClick={onCancel}>
+              <Icon name="x" size={17} />
               لغو جلسه
             </Button>
           ) : null}
@@ -124,9 +124,6 @@ function SessionCard({
         </Button>
       ) : null}
 
-      {session.status === "done" && session.rated ? (
-        <span style={{ ...typography.caption, color: colors.olive600 }}>امتیاز این جلسه ثبت شده است.</span>
-      ) : null}
     </Card>
   );
 }
@@ -276,7 +273,7 @@ export function LearnerSessionsScreen() {
         }}
       >
         <p style={{ ...typography.body, marginTop: 0, color: colors.inkSecondary }}>
-          لغو فقط پیش از زمان شروع مجاز است. در صورت موفقیت، مبلغ طبق policy بک‌اند به کیف پول بازمی‌گردد.
+          لغو فقط پیش از زمان شروع مجاز است. در صورت موفقیت، مبلغ به کیف پول بازمی‌گردد.
         </p>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: spacing.sm }}>
           <Button variant="secondary" onClick={() => setCancelTarget(null)} disabled={busyId !== null}>
