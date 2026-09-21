@@ -14,7 +14,6 @@ import {
   Icon,
   Input,
   LoadingState,
-  MetricTile,
   SectionHeader,
   StatusPill,
   colors,
