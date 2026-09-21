@@ -5,12 +5,11 @@ import Link from 'next/link';
 import type { Teacher } from '@/lib/api';
 import { Icon } from '@/components/Icon';
 import { Nav, Footer } from '@/components/web/sections';
-import { Avatar, Stars } from '@/components/web/ui';
+import { Avatar, PublicPageHero } from '@/components/web/ui';
 import { fullUrl } from '@/lib/auth';
+import { formatFaNumber, toFaDigits } from '@/lib/persian';
 
 const LIMIT = 20;
-const fa = (value: number | string) => String(value).replace(/[0-9]/g, (digit) => '۰۱۲۳۴۵۶۷۸۹'[+digit]);
-const toman = (value: number) => fa(new Intl.NumberFormat('fa-IR').format(value));
 
 const fields = [
   { id: '', label: 'همه' },
@@ -62,6 +61,7 @@ export default function SearchPage() {
         const response = await fetch(`/api/backend/teachers?${params}`, { cache: 'no-store', signal: controller.signal });
         const body = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(body.error || 'جستجوی استاد انجام نشد.');
+
         setResults(body.data || []);
         setTotal(body.total || 0);
 
@@ -90,61 +90,111 @@ export default function SearchPage() {
   }, [query, city, field, female, page, initialized]);
 
   const totalPages = Math.ceil(total / LIMIT);
-  const resetPage = (update: () => void) => { setPage(0); update(); };
+  const resetPage = (update: () => void) => {
+    setPage(0);
+    update();
+  };
+  const hasFilter = Boolean(query.trim() || city.trim() || field || female);
+
+  function clearFilters() {
+    setPage(0);
+    setQuery('');
+    setCity('');
+    setField('');
+    setFemale(false);
+  }
 
   return (
     <div style={{ background: 'var(--sand-50)', minHeight: '100vh' }}>
       <Nav />
-      <main style={{ maxWidth: 900, margin: '0 auto', padding: '24px 20px 60px' }}>
-        <h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 6 }}>جستجوی استاد</h1>
-        <p style={{ color: 'var(--ink-3)', marginBottom: 20, fontSize: 13.5 }}>فقط استادان فعال و تأییدشده در نتایج نمایش داده می‌شوند.</p>
+      <PublicPageHero
+        kicker="جستجوی استاد"
+        title="استادی را پیدا کنید که با مسیر شما هماهنگ است"
+        description="فقط پروفایل استادان فعال و تأییدشده در نتایج عمومی نمایش داده می‌شود."
+        icon="search"
+      />
 
-        <section style={{ background: '#fff', borderRadius: 20, padding: 16, boxShadow: 'var(--sh-sm)', marginBottom: 20 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 10 }} className="search-grid">
-            <label style={inputWrapStyle}>
-              <Icon name="search" size={22} style={{ color: 'var(--ink-3)' }} />
-              <input type="search" value={query} onChange={(event) => resetPage(() => setQuery(event.target.value))} placeholder="نام یا تخصص استاد…" aria-label="نام یا تخصص استاد" style={inputStyle} />
+      <main className="public-container public-content">
+        <section className="web-search-panel">
+          <div className="web-search-fields">
+            <label>
+              <Icon name="search" size={19} />
+              <input
+                type="search"
+                value={query}
+                onChange={(event) => resetPage(() => setQuery(event.target.value))}
+                placeholder="نام یا تخصص استاد"
+                aria-label="نام یا تخصص استاد"
+              />
             </label>
-            <label style={inputWrapStyle}>
-              <Icon name="pin" size={20} style={{ color: 'var(--ink-3)' }} />
-              <input type="search" value={city} onChange={(event) => resetPage(() => setCity(event.target.value))} placeholder="شهر" aria-label="شهر" style={inputStyle} />
+            <label>
+              <Icon name="pin" size={18} />
+              <input
+                type="search"
+                value={city}
+                onChange={(event) => resetPage(() => setCity(event.target.value))}
+                placeholder="شهر"
+                aria-label="شهر"
+              />
             </label>
           </div>
 
-          <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
+          <div className="web-search-filters">
+            <span className="web-search-filter-label"><Icon name="filter" size={16} />فیلترها</span>
             {fields.map((item) => (
-              <button type="button" key={item.id} onClick={() => resetPage(() => setField(item.id))} style={filterStyle(field === item.id)}>{item.label}</button>
+              <button type="button" key={item.id} onClick={() => resetPage(() => setField(item.id))} className={field === item.id ? 'active' : undefined}>
+                {item.label}
+              </button>
             ))}
-            <button type="button" onClick={() => resetPage(() => setFemale((value) => !value))} style={filterStyle(female)}>اساتید بانو</button>
+            <button type="button" onClick={() => resetPage(() => setFemale((value) => !value))} className={female ? 'active' : undefined}>
+              اساتید بانو
+            </button>
+            {hasFilter && <button type="button" className="clear" onClick={clearFilters}><Icon name="x" size={14} />پاک کردن</button>}
           </div>
         </section>
 
+        <div className="web-results-head">
+          <div>
+            <small>نتایج جستجو</small>
+            <strong>{loading ? 'در حال دریافت استادان…' : `${toFaDigits(total)} استاد یافت شد`}</strong>
+          </div>
+          {!loading && total > 0 && <span>صفحه {toFaDigits(page + 1)} از {toFaDigits(Math.max(totalPages, 1))}</span>}
+        </div>
+
         {loading ? (
-          <div style={{ textAlign: 'center', padding: 60, color: 'var(--ink-3)' }}>در حال جستجو…</div>
+          <div className="web-search-loading">
+            {[0, 1, 2, 3].map((item) => <div key={item} />)}
+          </div>
         ) : error ? (
-          <div role="alert" style={{ textAlign: 'center', padding: 60, color: 'var(--rose)' }}>{error}</div>
+          <div className="web-search-state error" role="alert">
+            <span><Icon name="info" size={25} /></span>
+            <strong>جستجو انجام نشد</strong>
+            <p>{error}</p>
+          </div>
         ) : results.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: 60 }}><Icon name="search" size={40} style={{ color: 'var(--ink-4)', marginBottom: 12 }} /><div style={{ fontSize: 16, color: 'var(--ink-3)' }}>نتیجه‌ای یافت نشد.</div></div>
+          <div className="web-search-state">
+            <span><Icon name="search" size={28} /></span>
+            <strong>نتیجه‌ای با این فیلترها پیدا نشد</strong>
+            <p>عبارت جستجو یا فیلترها را تغییر دهید.</p>
+            {hasFilter && <button type="button" onClick={clearFilters}>پاک کردن فیلترها</button>}
+          </div>
         ) : (
           <>
-            <div style={{ fontSize: 14, color: 'var(--ink-3)', marginBottom: 14 }}>{fa(total)} استاد یافت شد</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              {results.map((teacher) => (
-                <Link key={teacher.id} href={`/teachers/${teacher.id}`} style={{ display: 'flex', gap: 16, alignItems: 'center', padding: 18, borderRadius: 20, background: '#fff', boxShadow: 'var(--sh-sm)', color: 'inherit', flexWrap: 'wrap' }}>
-                  <Avatar size={60} ring verified={teacher.verified} imageUrl={fullUrl(teacher.user?.avatar_url)} />
-                  <div style={{ flex: '1 1 250px', minWidth: 0 }}>
-                    <div style={{ fontSize: 16, fontWeight: 800 }}>{teacher.user?.name || 'استاد وُدّا'}</div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--olive-600)', marginTop: 3 }}>{teacher.tag}{teacher.city ? ` · ${teacher.city}` : ''}</div>
-                    <div style={{ display: 'flex', gap: 14, marginTop: 8, fontSize: 12, color: 'var(--ink-3)', flexWrap: 'wrap' }}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Stars value={Math.round(teacher.rating)} size={12} /> {teacher.rating > 0 ? fa(teacher.rating.toFixed(1)) : 'بدون امتیاز'}</span>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Icon name="calendar" size={14} /> {fa(teacher.sessions)} جلسه</span>
-                    </div>
-                  </div>
-                  <div style={{ textAlign: 'left' }}><div style={{ fontSize: 16, fontWeight: 800, color: 'var(--olive-700)' }}>{toman(teacher.price30)}</div><div style={{ fontSize: 11, color: 'var(--ink-3)' }}>تومان · ۳۰ دقیقه</div></div>
-                </Link>
-              ))}
+            <div className="web-teacher-results">
+              {results.map((teacher) => <SearchTeacherCard key={teacher.id} teacher={teacher} />)}
             </div>
-            {totalPages > 1 && <nav aria-label="صفحه‌بندی نتایج" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginTop: 24 }}><button type="button" disabled={page === 0} onClick={() => setPage((value) => Math.max(0, value - 1))} style={pageButton(page === 0)}>قبلی</button><span style={{ color: 'var(--ink-3)', fontSize: 13 }}>صفحه {fa(page + 1)} از {fa(totalPages)}</span><button type="button" disabled={page >= totalPages - 1} onClick={() => setPage((value) => Math.min(totalPages - 1, value + 1))} style={pageButton(page >= totalPages - 1)}>بعدی</button></nav>}
+
+            {totalPages > 1 && (
+              <nav aria-label="صفحه‌بندی نتایج" className="web-pagination">
+                <button type="button" disabled={page === 0} onClick={() => setPage((value) => Math.max(0, value - 1))}>
+                  قبلی
+                </button>
+                <span>{toFaDigits(page + 1)} / {toFaDigits(totalPages)}</span>
+                <button type="button" disabled={page >= totalPages - 1} onClick={() => setPage((value) => Math.min(totalPages - 1, value + 1))}>
+                  بعدی
+                </button>
+              </nav>
+            )}
           </>
         )}
       </main>
@@ -153,7 +203,38 @@ export default function SearchPage() {
   );
 }
 
-const inputWrapStyle: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderRadius: 14, background: 'var(--sand-50)' };
-const inputStyle: React.CSSProperties = { flex: 1, minWidth: 0, border: 'none', background: 'transparent', outline: 'none', fontSize: 15, fontFamily: 'inherit' };
-const filterStyle = (selected: boolean): React.CSSProperties => ({ padding: '8px 16px', borderRadius: 999, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 700, background: selected ? 'var(--olive-600)' : 'var(--sand-100)', color: selected ? '#fff' : 'var(--ink-2s)' });
-const pageButton = (disabled: boolean): React.CSSProperties => ({ padding: '8px 18px', borderRadius: 12, border: '1px solid var(--sand-200)', background: '#fff', cursor: disabled ? 'default' : 'pointer', color: disabled ? 'var(--ink-4)' : 'var(--ink)', opacity: disabled ? .5 : 1 });
+function SearchTeacherCard({ teacher }: { teacher: Teacher }) {
+  const name = teacher.user?.name || 'استاد وُدّا';
+  const price = Math.max(0, teacher.price30 || teacher.services?.[0]?.price || 0);
+
+  return (
+    <Link href={`/teachers/${teacher.id}`} className="web-search-teacher-card">
+      <div className="web-search-teacher-top">
+        <Avatar size={58} ring verified={teacher.verified} imageUrl={fullUrl(teacher.user?.avatar_url)} />
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <strong>{name}</strong>
+          <span>{teacher.tag || teacher.field}</span>
+        </div>
+        {teacher.rating > 0 && (
+          <span className="web-search-rating"><Icon name="star" size={14} fill />{toFaDigits(teacher.rating.toFixed(1))}</span>
+        )}
+      </div>
+
+      <div className="web-search-teacher-meta">
+        {teacher.city && <span><Icon name="pin" size={14} />{teacher.city}</span>}
+        <span><Icon name="calendar" size={14} />{toFaDigits(teacher.sessions || 0)} جلسه</span>
+        <span><Icon name="message" size={14} />{toFaDigits(teacher.reviews || 0)} نظر</span>
+      </div>
+
+      {teacher.bio && <p>{teacher.bio}</p>}
+
+      <div className="web-search-teacher-footer">
+        <span>
+          <small>شروع جلسه از</small>
+          <strong>{price > 0 ? `${formatFaNumber(price)} تومان` : 'مشاهده خدمات'}</strong>
+        </span>
+        <span className="web-search-card-cta">پروفایل و رزرو <Icon name="arrowL" size={15} /></span>
+      </div>
+    </Link>
+  );
+}
