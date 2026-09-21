@@ -20,7 +20,7 @@ function PanelLink({ href, icon, label }: { href: string; icon: 'shield' | 'awar
   );
 }
 
-function UserMenu({ name, role, avatar }: { name: string; role: string; avatar?: string }) {
+function UserMenu({ name, role, avatar, hasTeacherProfile }: { name: string; role: string; avatar?: string; hasTeacherProfile: boolean }) {
   const [open, setOpen] = useState(false);
   const roleLabel = role === 'admin' ? 'ادمین' : role === 'teacher' ? 'استاد' : 'قرآن‌آموز';
 
@@ -42,7 +42,7 @@ function UserMenu({ name, role, avatar }: { name: string; role: string; avatar?:
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               {role === 'admin' && <PanelLink href="/panel/admin" icon="shield" label="پنل مدیریت" />}
-              {(role === 'teacher' || role === 'admin') && <PanelLink href="/panel/teacher" icon="award" label="پنل استاد" />}
+              {hasTeacherProfile && <PanelLink href="/panel/teacher" icon="award" label="پنل استاد" />}
               <PanelLink href="/panel/user" icon="user" label="پنل کاربری" />
             </div>
             <div style={{ borderTop: '1px solid var(--sand-100)', marginTop: 8, paddingTop: 8 }}>
@@ -65,7 +65,7 @@ function UserMenu({ name, role, avatar }: { name: string; role: string; avatar?:
 }
 
 export function Nav() {
-  const [user, setUser] = useState<{ name: string; role: string; avatar_url?: string } | null>(null);
+  const [user, setUser] = useState<{ name: string; role: string; avatar_url?: string; hasTeacherProfile: boolean } | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
@@ -78,6 +78,7 @@ export function Nav() {
             name: body.data.name || 'کاربر',
             role: body.data.role || 'learner',
             avatar_url: body.data.avatar_url,
+            hasTeacherProfile: Boolean(body.data.teacher?.id),
           });
         }
       })
@@ -115,7 +116,7 @@ export function Nav() {
             <Icon name="grid" size={17} />
             ورود به اپ
           </Link>
-          {user ? <UserMenu name={user.name} role={user.role} avatar={user.avatar_url} /> : <WebBtn size="sm" href="/panel/login">ورود</WebBtn>}
+          {user ? <UserMenu name={user.name} role={user.role} avatar={user.avatar_url} hasTeacherProfile={user.hasTeacherProfile} /> : <WebBtn size="sm" href="/panel/login">ورود</WebBtn>}
           <button
             type="button"
             className="mobile-nav-toggle"
@@ -138,9 +139,9 @@ export function Nav() {
                 <Icon name="chevronL" size={16} />
               </Link>
             ))}
-            <Link href="/panel/teacher/register" onClick={() => setMobileOpen(false)} className="mobile-menu-teacher">
+            <Link href={user?.hasTeacherProfile ? "/panel/teacher" : "/panel/teacher/register"} onClick={() => setMobileOpen(false)} className="mobile-menu-teacher">
               <Icon name="award" size={18} />
-              ثبت درخواست استادی
+              {user?.hasTeacherProfile ? 'پنل استاد' : 'ثبت درخواست استادی'}
             </Link>
           </div>
         </>
