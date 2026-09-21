@@ -34,9 +34,9 @@ export default function UserTeachersPage() {
                 <div style={{ fontSize: 14, fontWeight: 700 }}>{((t.user as Record<string, string>)?.name || t.name || 'استاد') as string}</div>
                 <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 3 }}>{(t.field as string) || ''} · {(t.city as string) || ''}</div>
                 <div style={{ display: 'flex', gap: 16, marginTop: 6, fontSize: 12, color: 'var(--ink-2s)' }}>
-                  <span><Icon name="star" size={13} style={{ color: 'var(--gold)' }} /> {(t.rating as number)?.toFixed(1) || '—'}</span>
-                  <span>{(t.reviews as number) || 0} نظر</span>
-                  <span>{(t.sessions as number) || 0} جلسه</span>
+                  <span><Icon name="star" size={13} style={{ color: 'var(--gold)' }} /> {(t.rating as number) ? faDigits((t.rating as number).toFixed(1)) : '—'}</span>
+                  <span>{faDigits((t.reviews as number) || 0)} نظر</span>
+                  <span>{faDigits((t.sessions as number) || 0)} جلسه</span>
                 </div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
