@@ -16,20 +16,12 @@ export function UniversalVisualStyles() {
       [data-app-shell] a {
         -webkit-tap-highlight-color: transparent;
       }
-      .vodda-button:not(:disabled):active,
-      .vodda-tappable:active {
-        transform: scale(.975);
-      }
       .vodda-button:not(:disabled):hover {
         filter: brightness(.985);
-      }
-      .vodda-button--primary:not(:disabled):hover {
-        box-shadow: 0 8px 22px rgba(76,90,54,.2);
       }
       .vodda-input:focus,
       .vodda-textarea:focus {
         border-color: #728350 !important;
-        box-shadow: 0 0 0 3px rgba(114,131,80,.12) !important;
       }
       .vodda-input::placeholder,
       .vodda-textarea::placeholder {
@@ -37,12 +29,6 @@ export function UniversalVisualStyles() {
       }
       .vodda-card {
         transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
-      }
-      button.vodda-card:hover,
-      a.vodda-card:hover,
-      .vodda-card--interactive:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 10px 28px rgba(46,54,34,.08) !important;
       }
       .vodda-scroll-rail {
         scrollbar-width: none;
@@ -56,9 +42,6 @@ export function UniversalVisualStyles() {
       }
       .vodda-bottom-nav a {
         transition: color 150ms ease, background 150ms ease, transform 150ms ease;
-      }
-      .vodda-bottom-nav a:active {
-        transform: scale(.94);
       }
       .vodda-spinner {
         width: 16px;
@@ -85,12 +68,6 @@ export function UniversalVisualStyles() {
       .vodda-sheet {
         animation: vodda-sheet-in 190ms ease-out;
       }
-      .vodda-enter {
-        animation: vodda-rise-in 220ms ease-out both;
-      }
-      .vodda-enter-delay-1 { animation-delay: 35ms; }
-      .vodda-enter-delay-2 { animation-delay: 70ms; }
-      .vodda-enter-delay-3 { animation-delay: 105ms; }
       @keyframes vodda-spin { to { transform: rotate(360deg); } }
       @keyframes vodda-fade-in { from { opacity: 0; } to { opacity: 1; } }
       @keyframes vodda-dialog-in {
@@ -100,10 +77,6 @@ export function UniversalVisualStyles() {
       @keyframes vodda-sheet-in {
         from { transform: translateY(24px); opacity: .5; }
         to { transform: none; opacity: 1; }
-      }
-      @keyframes vodda-rise-in {
-        from { opacity: 0; transform: translateY(7px); }
-        to { opacity: 1; transform: none; }
       }
       @media (prefers-reduced-motion: reduce) {
         .vodda-button,
