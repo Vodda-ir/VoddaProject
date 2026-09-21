@@ -22,27 +22,56 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
   const pathname = usePathname();
   const [userOpen, setUserOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [user, setUser] = useState({ name: '...', role: 'teacher', avatarUrl: '' });
+  const [user, setUser] = useState({ name: '...', role: 'teacher', avatarUrl: '', hasTeacherProfile: false });
+  const [access, setAccess] = useState<'checking' | 'allowed' | 'missing' | 'unauthorized' | 'error'>('checking');
   const token = getToken();
 
   useEffect(() => {
-    if (!token) return;
+    if (!token) {
+      setAccess('unauthorized');
+      return;
+    }
+
     const controller = new AbortController();
-    fetch('/api/backend/me', { cache: 'no-store', signal: controller.signal })
-      .then((response) => response.ok ? response.json() : null)
-      .then((payload) => payload?.data ? setUser({
-        name: payload.data.name || 'استاد',
-        role: payload.data.role || 'teacher',
-        avatarUrl: fullUrl(payload.data.avatar_url) || '',
-      }) : null)
-      .catch(() => undefined);
+    setAccess('checking');
+    fetch('/api/backend/me', { cache: 'no-store', credentials: 'same-origin', signal: controller.signal })
+      .then(async (response) => {
+        if (response.status === 401) {
+          setAccess('unauthorized');
+          return null;
+        }
+        if (!response.ok) {
+          setAccess('error');
+          return null;
+        }
+        return response.json();
+      })
+      .then((payload) => {
+        if (!payload?.data) return;
+        const hasTeacherProfile = Boolean(payload.data.teacher?.id);
+        setUser({
+          name: payload.data.name || 'کاربر',
+          role: payload.data.role || 'learner',
+          avatarUrl: fullUrl(payload.data.avatar_url) || '',
+          hasTeacherProfile,
+        });
+        setAccess(hasTeacherProfile ? 'allowed' : 'missing');
+      })
+      .catch((cause) => {
+        if (cause instanceof DOMException && cause.name === 'AbortError') return;
+        setAccess('error');
+      });
     return () => controller.abort();
   }, [token]);
+
+  if (access !== 'allowed') {
+    return <TeacherPanelAccessState access={access} role={user.role} />;
+  }
 
   const activeId = NAV.find((item) => item.id === 'dash' ? pathname === '/panel/teacher' : pathname.startsWith(item.href))?.id || 'dash';
   const allPanels = [
     ...(user.role === 'admin' ? [{ href: '/panel/admin', label: 'پنل مدیریت', icon: 'shield' as const, bg: 'rgba(255,255,255,.1)', fg: '#fff' }] : []),
-    { href: '/panel/teacher', label: 'پنل استاد', icon: 'award' as const, bg: 'rgba(255,255,255,.08)', fg: 'rgba(255,255,255,.8)' },
+    ...(user.hasTeacherProfile ? [{ href: '/panel/teacher', label: 'پنل استاد', icon: 'award' as const, bg: 'rgba(255,255,255,.08)', fg: 'rgba(255,255,255,.8)' }] : []),
     { href: '/panel/user', label: 'پنل کاربری', icon: 'user' as const, bg: 'rgba(255,255,255,.06)', fg: 'rgba(255,255,255,.6)' },
   ];
 
@@ -86,3 +115,112 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
     </div>
   );
 }
+
+function TeacherPanelAccessState({
+  access,
+  role,
+}: {
+  access: 'checking' | 'missing' | 'unauthorized' | 'error';
+  role: string;
+}) {
+  const isChecking = access === 'checking';
+  const isUnauthorized = access === 'unauthorized';
+  const isMissing = access === 'missing';
+
+  return (
+    <main style={{
+      minHeight: '100vh',
+      display: 'grid',
+      placeItems: 'center',
+      padding: 24,
+      background: 'var(--sand-50)',
+    }}>
+      <section style={{
+        width: 'min(520px, 100%)',
+        padding: 26,
+        border: '1px solid var(--sand-150)',
+        borderRadius: 22,
+        background: '#fff',
+        boxShadow: 'var(--sh-md)',
+        textAlign: 'center',
+      }}>
+        <span style={{
+          width: 56,
+          height: 56,
+          display: 'grid',
+          placeItems: 'center',
+          margin: '0 auto 14px',
+          borderRadius: 17,
+          color: isMissing ? 'var(--gold)' : 'var(--olive-700)',
+          background: isMissing ? 'var(--gold-bg)' : 'var(--olive-100)',
+        }}>
+          <Icon name={isChecking ? 'refresh' : isUnauthorized ? 'shield' : isMissing ? 'award' : 'info'} size={26} />
+        </span>
+
+        <h1 style={{ margin: 0, fontSize: 19, fontWeight: 800 }}>
+          {isChecking
+            ? 'در حال بررسی دسترسی پنل استاد…'
+            : isUnauthorized
+              ? 'برای ورود به پنل استاد ابتدا وارد حساب شوید'
+              : isMissing
+                ? 'برای این حساب پروفایل استاد فعال نیست'
+                : 'بررسی دسترسی پنل استاد انجام نشد'}
+        </h1>
+
+        <p style={{ margin: '9px 0 20px', color: 'var(--ink-3)', fontSize: 12.5, lineHeight: 1.9 }}>
+          {isChecking
+            ? 'اطلاعات حساب و پروفایل استاد بررسی می‌شود.'
+            : isUnauthorized
+              ? 'پس از ورود، دسترسی استاد بر اساس پروفایل واقعی حساب بررسی می‌شود.'
+              : isMissing
+                ? role === 'admin'
+                  ? 'حساب مدیر فقط زمانی می‌تواند وارد پنل استاد شود که برای همان حساب Teacher profile وجود داشته باشد.'
+                  : 'برای استفاده از امکانات استاد باید ابتدا درخواست استادی و پروفایل مربوط ثبت شود.'
+                : 'ارتباط با اطلاعات حساب برقرار نشد. صفحه را دوباره بارگذاری کنید.'}
+        </p>
+
+        {!isChecking && (
+          <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 9 }}>
+            {isUnauthorized ? (
+              <Link href="/panel/login" style={accessPrimaryButton}>ورود به حساب</Link>
+            ) : isMissing && role === 'admin' ? (
+              <>
+                <Link href="/panel/admin" style={accessPrimaryButton}>بازگشت به پنل مدیریت</Link>
+                <Link href="/panel/user" style={accessSecondaryButton}>پنل کاربری</Link>
+              </>
+            ) : isMissing ? (
+              <>
+                <Link href="/panel/teacher/register" style={accessPrimaryButton}>ثبت درخواست استادی</Link>
+                <Link href="/panel/user" style={accessSecondaryButton}>پنل کاربری</Link>
+              </>
+            ) : (
+              <button type="button" onClick={() => window.location.reload()} style={accessPrimaryButton}>تلاش دوباره</button>
+            )}
+          </div>
+        )}
+      </section>
+    </main>
+  );
+}
+
+const accessPrimaryButton: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  minHeight: 42,
+  padding: '9px 15px',
+  border: 0,
+  borderRadius: 12,
+  color: '#fff',
+  background: 'var(--olive-600)',
+  fontSize: 12,
+  fontWeight: 700,
+  cursor: 'pointer',
+};
+
+const accessSecondaryButton: React.CSSProperties = {
+  ...accessPrimaryButton,
+  border: '1px solid var(--sand-200)',
+  color: 'var(--ink-2s)',
+  background: '#fff',
+};
