@@ -6,7 +6,6 @@ import { usePlatform } from "../../platform/context";
 import type { AuthUser } from "../../platform/types";
 import { navigateApp } from "../../router";
 import {
-  ActionTile,
   Avatar,
   Button,
   Card,
@@ -19,7 +18,6 @@ import {
   typography,
 } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
-import { formatWalletAmount } from "../wallet/WalletTransactionCard";
 
 export type LearnerProfileScreenProps = {
   config: UniversalAppConfig;
@@ -90,128 +88,70 @@ export function LearnerProfileScreen({ config }: LearnerProfileScreenProps) {
   const canUseTeacherMode = user.role === "teacher" || user.role === "admin";
 
   return (
-    <div className="vodda-screen" style={{ display: "grid", gap: spacing.xl }}>
-      <Card elevated className="vodda-enter" style={{ padding: spacing.xl }}>
-        <div style={{ display: "flex", alignItems: "center", gap: spacing.lg }}>
-          <Avatar name={user.name} src={user.avatar_url} size={68} ring />
+    <div className="vodda-screen" style={{ display: "grid", gap: 18 }}>
+      <h1 style={{ fontSize: 24, fontWeight: 800, margin: 0, color: colors.ink }}>پروفایل</h1>
+
+      <Card elevated className="vodda-enter" style={{ padding: 16, borderRadius: 24 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <Avatar name={user.name} src={user.avatar_url} size={62} ring />
           <div style={{ minWidth: 0, flex: 1 }}>
-            <h1
-              style={{
-                ...typography.title,
-                margin: 0,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-                color: colors.ink,
-              }}
-            >
+            <strong style={{ fontSize: 17, fontWeight: 800, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: colors.ink }}>
               {user.name.trim() || "کاربر وُدّا"}
-            </h1>
-            <p style={{ ...typography.caption, display: "flex", alignItems: "center", gap: 4, margin: "4px 0 0", color: colors.inkMuted }}>
+            </strong>
+            <span style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 3, fontSize: 12.5, color: colors.inkMuted }}>
               <Icon name="pin" size={13} />
-              {user.city.trim() || "شهر ثبت نشده"}
-            </p>
-            <p dir="ltr" style={{ ...typography.caption, margin: "2px 0 0", color: colors.inkFaint, textAlign: "right" }}>
-              {user.mobile}
-            </p>
+              {user.city.trim() || "—"}
+            </span>
           </div>
-          <button
-            type="button"
-            aria-label="ویرایش پروفایل"
-            onClick={() => navigateApp("/profile/edit", config)}
-            className="vodda-tappable"
-            style={{
-              width: 42,
-              height: 42,
-              display: "grid",
-              placeItems: "center",
-              flex: "0 0 42px",
-              padding: 0,
-              border: 0,
-              borderRadius: 14,
-              color: colors.olive700,
-              background: colors.olive50,
-              cursor: "pointer",
-            }}
-          >
+          <button type="button" aria-label="ویرایش پروفایل" onClick={() => navigateApp("/profile/edit", config)} className="vodda-tappable"
+            style={{ width: 40, height: 40, display: "grid", placeItems: "center", flex: "0 0 40px", padding: 0, border: 0, borderRadius: 12, color: colors.olive700, background: colors.olive50, cursor: "pointer" }}>
             <Icon name="edit" size={19} />
           </button>
         </div>
-
-        {user.bio.trim() ? (
-          <div
-            style={{
-              marginTop: spacing.lg,
-              padding: spacing.md,
-              borderRadius: radii.md,
-              background: colors.sand50,
-              color: colors.inkSecondary,
-              ...typography.bodySmall,
-              lineHeight: 1.9,
-            }}
-          >
-            {user.bio}
-          </div>
-        ) : null}
       </Card>
 
       {canUseTeacherMode ? (
-        <ActionTile
-          icon="award"
-          title="ورود به فضای استاد"
-          description="جلسات، خدمات و درآمدتان را مدیریت کنید."
-          onClick={() => navigateApp("/t", config)}
-          tone="olive"
-        />
+        <button type="button" onClick={() => navigateApp("/t", config)} className="vodda-tappable vodda-enter vodda-enter-delay-1"
+          style={{ width: "100%", display: "flex", alignItems: "center", gap: 13, padding: 16, textAlign: "right", border: `1px solid ${colors.olive100}`, borderRadius: 24, color: colors.ink, background: colors.olive50, fontFamily: typography.fontFamily, cursor: "pointer" }}>
+          <span style={{ width: 46, height: 46, display: "grid", placeItems: "center", flex: "0 0 46px", borderRadius: 14, color: colors.surface, background: colors.olive600 }}>
+            <Icon name="award" size={22} />
+          </span>
+          <span style={{ minWidth: 0, flex: 1 }}>
+            <strong style={{ ...typography.body, display: "block", fontWeight: 800 }}>ورود به حساب استاد</strong>
+            <span style={{ ...typography.caption, display: "block", marginTop: 3, color: colors.inkSecondary }}>جلسات و درآمدتان را مدیریت کنید.</span>
+          </span>
+          <Icon name="refresh" size={20} style={{ color: colors.olive600 }} />
+        </button>
       ) : null}
 
-      <div style={{ display: "grid", gap: spacing.sm }}>
-        <ActionTile
-          icon="wallet"
-          title="کیف پول و تراکنش‌ها"
-          description="موجودی و گردش مالی حساب"
-          onClick={() => navigateApp("/wallet", config)}
-          trailing={
-            <strong dir="ltr" style={{ ...typography.bodySmall, color: colors.olive800, whiteSpace: "nowrap" }}>
-              {formatWalletAmount(user.wallet)} تومان
-            </strong>
-          }
-        />
-        <ActionTile
-          icon="edit"
-          title="ویرایش اطلاعات حساب"
-          description="نام، شهر، درباره من و تصویر پروفایل"
-          onClick={() => navigateApp("/profile/edit", config)}
-          tone="info"
-        />
-      </div>
+      <Card className="vodda-enter vodda-enter-delay-2" style={{ padding: 0, overflow: "hidden", borderRadius: 24 }}>
+        {[
+          { icon: "user" as const, label: "ویرایش پروفایل", path: "/profile/edit" },
+          { icon: "wallet" as const, label: "کیف پول و تراکنش‌ها", path: "/wallet" },
+        ].map((row, index, rows) => (
+          <button key={row.path} type="button" onClick={() => navigateApp(row.path, config)} className="vodda-tappable"
+            style={{ width: "100%", minHeight: 58, display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", textAlign: "right", border: 0, borderBottom: index < rows.length - 1 ? `1px solid ${colors.sand100}` : 0, color: colors.ink, background: colors.surface, fontFamily: typography.fontFamily, cursor: "pointer" }}>
+            <Icon name={row.icon} size={21} style={{ color: colors.olive600 }} />
+            <span style={{ flex: 1, fontSize: 14.5, fontWeight: 600 }}>{row.label}</span>
+            <Icon name="chevronL" size={18} style={{ color: colors.inkFaint }} />
+          </button>
+        ))}
+      </Card>
 
       {error ? (
-        <div
-          role="alert"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: spacing.sm,
-            padding: spacing.md,
-            borderRadius: radii.md,
-            background: colors.dangerBackground,
-            color: colors.danger,
-            ...typography.bodySmall,
-          }}
-        >
-          <Icon name="shield" size={18} />
+        <div role="alert" style={{ display: "flex", alignItems: "center", gap: spacing.sm, padding: spacing.md, borderRadius: radii.md, background: colors.dangerBackground, color: colors.danger, ...typography.bodySmall }}>
+          <Icon name="info" size={18} />
           {error}
         </div>
       ) : null}
 
-      <Button variant="danger" fullWidth loading={loggingOut} onClick={() => void logout()}>
-        <Icon name="logout" size={18} />
+      <Button variant="danger" fullWidth loading={loggingOut} onClick={() => void logout()} style={{ minHeight: 48, borderRadius: 14 }}>
+        <Icon name="logout" size={19} />
         خروج از حساب
       </Button>
 
-      <p style={{ ...typography.caption, margin: 0, textAlign: "center", color: colors.inkFaint }}>
-        وُدّا · حساب کاربری
+      <p style={{ fontSize: 11, margin: "4px 0 0", textAlign: "center", color: colors.inkFaint }}>
+        وُدّا · نسخهٔ ۱٫۰٫۰
       </p>
     </div>
   );
