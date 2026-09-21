@@ -1,9 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Icon } from '@/components/Icon';
 import { Avatar } from '@/components/web/ui';
-import { getToken, clearToken, fullUrl } from '@/lib/auth';
+import { getToken, fullUrl } from '@/lib/auth';
 import Link from 'next/link';
 import { toFaDigits } from '@/lib/persian';
 
