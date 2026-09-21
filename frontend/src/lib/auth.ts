@@ -17,6 +17,12 @@ export type AuthUser = {
   bio: string;
   wallet: number;
   avatar_url?: string;
+  teacher?: {
+    id: number;
+    status?: 'pending' | 'approved' | 'rejected';
+    verified?: boolean;
+    available?: boolean;
+  } | null;
 };
 
 async function authFetch(path: string, body: unknown) {
