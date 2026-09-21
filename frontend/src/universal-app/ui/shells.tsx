@@ -2,7 +2,7 @@ import type { CSSProperties, MouseEvent, ReactNode } from "react";
 import type { UniversalAppConfig } from "../config";
 import { appRouteUrl, navigateAppRoute, type AppRouteName } from "../router";
 import { Icon } from "./Icon";
-import { colors, gradients, radii, shadows, spacing, typography } from "./theme";
+import { colors, radii, shadows, spacing, typography } from "./theme";
 
 type IconName = Parameters<typeof Icon>[0]["name"];
 
