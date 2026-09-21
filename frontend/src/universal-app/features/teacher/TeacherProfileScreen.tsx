@@ -9,16 +9,13 @@ import {
   Avatar,
   Button,
   Card,
-  ActionTile,
   ErrorState,
   Icon,
   Input,
   LoadingState,
-  SectionHeader,
-  StatusPill,
   colors,
-  gradients,
   radii,
+  Sheet,
   shadows,
   spacing,
   typography,
@@ -151,6 +148,7 @@ export function TeacherProfileScreen({ config }: { config: UniversalAppConfig })
   const [availabilitySaving, setAvailabilitySaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [editorOpen, setEditorOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -217,6 +215,7 @@ export function TeacherProfileScreen({ config }: { config: UniversalAppConfig })
       setTeacher(updated);
       setForm(toForm(updated));
       setNotice("اطلاعات حرفه‌ای استاد ذخیره شد.");
+      setEditorOpen(false);
     } catch (saveError) {
       setNotice(messageOf(saveError));
     } finally {
@@ -258,58 +257,209 @@ export function TeacherProfileScreen({ config }: { config: UniversalAppConfig })
   const rating = teacher.reviews > 0 ? teacher.rating.toFixed(1) : "—";
 
   return (
-    <section className="vodda-screen" style={{ display: "grid", gap: spacing.xl }}>
-      <Card elevated className="vodda-enter" style={{ display: "grid", gap: spacing.md, padding: spacing.xl, color: colors.surface, background: gradients.deep, borderColor: "transparent", boxShadow: shadows.olive }}>
-        <div style={{ display: "flex", alignItems: "center", gap: spacing.md }}>
-          <Avatar name={user.name} src={user.avatarUrl} size={68} ring />
-          <div style={{ minWidth: 0, flex: 1 }}>
-            <h1 style={{ ...typography.heading, margin: 0, color: colors.surface }}>{user.name}</h1>
-            <p style={{ ...typography.bodySmall, margin: "4px 0 0", color: colors.goldSoft, fontWeight: 700 }}>
-              {teacher.tag || teacher.field || "پروفایل مدرس"}
-            </p>
-            <div style={{ marginTop: spacing.sm }}><StatusPill status={teacher.status} label={statusLabel(teacher.status)} /></div>
-          </div>
-          <button type="button" className="vodda-tappable" onClick={() => navigateApp("/profile/edit", config)} aria-label="ویرایش حساب" style={{ width: 42, height: 42, display: "grid", placeItems: "center", border: "1px solid rgba(255,255,255,.18)", borderRadius: 14, color: colors.surface, background: "rgba(255,255,255,.1)", cursor: "pointer" }}><Icon name="edit" size={18} /></button>
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: spacing.sm }}>
-          {[["امتیاز", `${rating} ★`], ["نظرها", toFaDigits(teacher.reviews)], ["جلسات", toFaDigits(teacher.sessions)]].map(([label, value]) => (
-            <div key={label} style={{ textAlign: "center", padding: spacing.sm, borderRadius: radii.md, background: "rgba(255,255,255,.08)" }}>
-              <strong style={{ ...typography.body, display: "block", color: colors.surface }}>{value}</strong>
-              <span style={{ ...typography.caption, display: "block", color: "rgba(255,255,255,.6)" }}>{label}</span>
-            </div>
-          ))}
-        </div>
-      </Card>
+    <section className="vodda-screen" style={{ display: "grid", gap: 18 }}>
+      <h1 style={{ fontSize: 24, fontWeight: 800, margin: 0, color: colors.ink }}>پروفایل استاد</h1>
 
-      <Card className="vodda-enter vodda-enter-delay-1" style={{ display: "grid", gap: spacing.md, background: teacher.available ? colors.successBackground : colors.surface }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: spacing.md }}>
-          <div>
-            <strong style={{ ...typography.body, display: "block" }}>دسترس‌پذیری برای رزرو</strong>
-            <span style={{ ...typography.caption, color: colors.inkMuted }}>
-              {teacher.available ? "در حال حاضر کاربران می‌توانند زمان آزاد شما را رزرو کنند." : "رزرو جدید برای شما غیرفعال است."}
+      <Card elevated className="vodda-enter" style={{ padding: 16, borderRadius: 24 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <div style={{ position: "relative", flex: "0 0 auto" }}>
+            <Avatar name={user.name} src={user.avatarUrl} size={62} ring />
+            {teacher.verified ? (
+              <span
+                aria-label="استاد تأییدشده"
+                style={{
+                  position: "absolute",
+                  insetInlineEnd: -2,
+                  bottom: 1,
+                  width: 24,
+                  height: 24,
+                  display: "grid",
+                  placeItems: "center",
+                  border: "3px solid " + colors.surface,
+                  borderRadius: "50%",
+                  color: colors.surface,
+                  background: colors.olive600,
+                }}
+              >
+                <Icon name="check" size={12} stroke={2.4} />
+              </span>
+            ) : null}
+          </div>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <strong style={{ fontSize: 16.5, fontWeight: 800, display: "block", color: colors.ink }}>
+              {user.name}
+            </strong>
+            <span style={{ fontSize: 12.5, color: colors.olive600, fontWeight: 600 }}>
+              {teacher.tag || teacher.field || "مدرس"}
+            </span>
+            <span style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 7, fontSize: 12, color: colors.goldDark }}>
+              <Icon name="star" size={14} fill style={{ color: colors.gold }} />
+              <strong>{rating}</strong>
+              <span style={{ color: colors.inkFaint }}>({toFaDigits(teacher.reviews)} نظر)</span>
             </span>
           </div>
-          <Button
-            variant={teacher.available ? "secondary" : "primary"}
+          <button
+            type="button"
+            className="vodda-tappable"
+            onClick={() => navigateApp("/profile/edit", config)}
+            aria-label="ویرایش حساب"
+            style={{
+              width: 40,
+              height: 40,
+              display: "grid",
+              placeItems: "center",
+              flex: "0 0 40px",
+              padding: 0,
+              border: 0,
+              borderRadius: 12,
+              color: colors.olive700,
+              background: colors.olive50,
+              cursor: "pointer",
+            }}
+          >
+            <Icon name="edit" size={19} />
+          </button>
+        </div>
+
+        <div style={{ height: 1, margin: "15px 0", background: colors.sand100 }} />
+
+        <div style={{ display: "flex", alignItems: "center", gap: spacing.md }}>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <strong style={{ fontSize: 13.5, fontWeight: 700, display: "block", color: colors.ink }}>
+              وضعیت پذیرش جلسه
+            </strong>
+            <span style={{ fontSize: 11.5, lineHeight: 1.6, color: colors.inkMuted }}>
+              {teacher.available ? "آماده دریافت درخواست جدید" : "موقتاً غیرفعال"}
+            </span>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={teacher.available}
+            aria-label="وضعیت پذیرش جلسه"
             disabled={availabilitySaving}
             onClick={() => void setAvailability(!teacher.available)}
+            style={{
+              width: 46,
+              height: 28,
+              position: "relative",
+              flex: "0 0 46px",
+              padding: 3,
+              border: 0,
+              borderRadius: radii.pill,
+              background: teacher.available ? colors.olive600 : colors.sand200,
+              opacity: availabilitySaving ? 0.6 : 1,
+              cursor: availabilitySaving ? "wait" : "pointer",
+              transition: "background 180ms ease",
+            }}
           >
-            {availabilitySaving ? "در حال ذخیره…" : teacher.available ? "غیرفعال کردن" : "فعال کردن"}
-          </Button>
+            <span
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                top: 3,
+                insetInlineEnd: teacher.available ? 3 : 21,
+                width: 22,
+                height: 22,
+                borderRadius: "50%",
+                background: colors.surface,
+                boxShadow: "0 1px 3px rgba(0,0,0,.2)",
+                transition: "inset-inline-end 180ms ease",
+              }}
+            />
+          </button>
         </div>
       </Card>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: spacing.sm }}>
-        <ActionTile icon="book" title="خدمات من" description={`${toFaDigits(activeServices)} خدمت فعال`} onClick={() => navigateApp("/t/services", config)} />
-        <ActionTile icon="star" title="نظرها" description={`${toFaDigits(teacher.reviews)} نظر ثبت‌شده`} onClick={() => navigateApp("/t/reviews", config)} tone="gold" />
-      </div>
+      {notice ? (
+        <div
+          role="status"
+          style={{
+            padding: "10px 14px",
+            borderRadius: 14,
+            color: colors.inkSecondary,
+            background: colors.olive50,
+            ...typography.bodySmall,
+          }}
+        >
+          {notice}
+        </div>
+      ) : null}
 
-      <Card>
+      <Card className="vodda-enter vodda-enter-delay-1" style={{ padding: 0, overflow: "hidden", borderRadius: 24 }}>
+        {[
+          { icon: "book" as const, title: "خدمات من", meta: `${toFaDigits(activeServices)} خدمت فعال`, action: () => navigateApp("/t/services", config) },
+          { icon: "clock" as const, title: "زمان کاری", meta: "مدیریت برنامه هفتگی", action: () => navigateApp("/t/work-times", config) },
+          { icon: "star" as const, title: "نظرات", meta: `${toFaDigits(teacher.reviews)} نظر`, action: () => navigateApp("/t/reviews", config) },
+          { icon: "edit" as const, title: "اطلاعات حرفه‌ای", meta: "تخصص، مهارت و تعرفه", action: () => setEditorOpen(true) },
+        ].map((row, index, rows) => (
+          <button
+            key={row.title}
+            type="button"
+            className="vodda-tappable"
+            onClick={row.action}
+            style={{
+              width: "100%",
+              minHeight: 62,
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              padding: "12px 16px",
+              textAlign: "right",
+              border: 0,
+              borderBottom: index < rows.length - 1 ? `1px solid ${colors.sand100}` : 0,
+              color: colors.ink,
+              background: colors.surface,
+              fontFamily: typography.fontFamily,
+              cursor: "pointer",
+            }}
+          >
+            <Icon name={row.icon} size={21} style={{ color: colors.olive600 }} />
+            <span style={{ minWidth: 0, flex: 1 }}>
+              <strong style={{ fontSize: 14.5, fontWeight: 600, display: "block" }}>{row.title}</strong>
+            </span>
+            <span style={{ fontSize: 12, color: colors.inkFaint, whiteSpace: "nowrap" }}>{row.meta}</span>
+            <Icon name="chevronL" size={18} style={{ color: colors.inkFaint }} />
+          </button>
+        ))}
+      </Card>
+
+      <button
+        type="button"
+        onClick={() => navigateApp("/", config)}
+        className="vodda-tappable vodda-enter vodda-enter-delay-2"
+        style={{
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          gap: 13,
+          padding: 16,
+          textAlign: "right",
+          border: `1px solid ${colors.olive100}`,
+          borderRadius: 24,
+          color: colors.ink,
+          background: colors.olive50,
+          fontFamily: typography.fontFamily,
+          cursor: "pointer",
+        }}
+      >
+        <span style={{ width: 46, height: 46, display: "grid", placeItems: "center", flex: "0 0 46px", borderRadius: 14, color: colors.olive700, background: colors.surface }}>
+          <Icon name="refresh" size={22} />
+        </span>
+        <span style={{ minWidth: 0, flex: 1 }}>
+          <strong style={{ ...typography.body, display: "block", fontWeight: 800 }}>بازگشت به حساب قرآن‌آموز</strong>
+          <span style={{ ...typography.caption, display: "block", marginTop: 3, color: colors.inkSecondary }}>
+            به‌عنوان قرآن‌آموز جلسه رزرو کنید
+          </span>
+        </span>
+        <Icon name="chevronL" size={20} style={{ color: colors.olive500 }} />
+      </button>
+
+      <Sheet open={editorOpen} title="اطلاعات حرفه‌ای" onClose={() => { if (!saving) setEditorOpen(false); }}>
         <form onSubmit={saveProfile} style={{ display: "grid", gap: spacing.lg }}>
-          <SectionHeader title="اطلاعات حرفه‌ای" description="اطلاعاتی که قرآن‌آموزان در پروفایل شما می‌بینند" />
           <p style={{ ...typography.caption, margin: 0, color: colors.inkMuted }}>
-              فقط فیلدهای مجاز پروفایل استاد بروزرسانی می‌شوند؛ وضعیت تأیید و احراز هویت قابل تغییر نیست.
-            </p>
+            فقط فیلدهای مجاز پروفایل استاد بروزرسانی می‌شوند؛ وضعیت تأیید و احراز هویت قابل تغییر نیست.
+          </p>
           <Input label="حوزه تخصص" value={form.field} maxLength={60} onChange={(event) => setForm({ ...form, field: event.target.value })} />
           <Input label="عنوان استاد" value={form.tag} maxLength={60} onChange={(event) => setForm({ ...form, tag: event.target.value })} />
           <Input label="سطح" value={form.level} maxLength={30} onChange={(event) => setForm({ ...form, level: event.target.value })} />
@@ -321,7 +471,8 @@ export function TeacherProfileScreen({ config }: { config: UniversalAppConfig })
               maxLength={1000}
               rows={5}
               onChange={(event) => setForm({ ...form, bio: event.target.value })}
-              className="vodda-textarea" style={{ width: "100%", resize: "vertical", padding: spacing.md, borderRadius: radii.md, border: `1px solid ${colors.line}`, outline: "none", boxShadow: shadows.xs, font: "inherit", background: colors.surface, color: colors.ink }}
+              className="vodda-textarea"
+              style={{ width: "100%", resize: "vertical", padding: spacing.md, borderRadius: radii.md, border: `1px solid ${colors.line}`, outline: "none", boxShadow: shadows.xs, font: "inherit", background: colors.surface, color: colors.ink }}
             />
           </label>
           <Input label="مهارت‌ها" hint="با ویرگول جدا کنید؛ حداکثر ۲۰ مورد" value={form.skills} onChange={(event) => setForm({ ...form, skills: event.target.value })} />
@@ -334,12 +485,9 @@ export function TeacherProfileScreen({ config }: { config: UniversalAppConfig })
               تعرفه فعلی: ۳۰ دقیقه {formatWalletAmount(teacher.price30)} تومان · ۶۰ دقیقه {formatWalletAmount(teacher.price60)} تومان
             </p>
           ) : null}
-          {notice ? <p role="status" style={{ ...typography.bodySmall, margin: 0, color: colors.inkSecondary }}>{notice}</p> : null}
-          <Button type="submit" fullWidth disabled={saving}>{saving ? "در حال ذخیره…" : "ذخیره اطلاعات حرفه‌ای"}</Button>
+          <Button type="submit" fullWidth loading={saving} disabled={saving}>ذخیره اطلاعات حرفه‌ای</Button>
         </form>
-      </Card>
-
-      <ActionTile icon="user" title="بازگشت به فضای قرآن‌آموز" description="جستجو و رزرو را مثل یک کاربر عادی ادامه دهید." onClick={() => navigateApp("/", config)} tone="info" />
+      </Sheet>
     </section>
   );
 }
