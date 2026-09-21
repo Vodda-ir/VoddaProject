@@ -1,4 +1,4 @@
-import { Card, colors, radii, spacing, typography } from "../../ui";
+import { Card, Icon, colors, radii, spacing, typography } from "../../ui";
 import type { WalletTransaction } from "./types";
 
 export function toFaDigits(value: string | number): string {
@@ -25,36 +25,66 @@ export function WalletTransactionCard({
   const credit = transaction.amount > 0;
 
   return (
-    <Card style={{ display: "flex", alignItems: "center", gap: spacing.md, borderRadius: radii.md }}>
+    <Card
+      className="vodda-card--interactive"
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: spacing.md,
+        padding: spacing.lg,
+        borderRadius: radii.lg,
+      }}
+    >
       <div
         aria-hidden="true"
         style={{
-          width: 42,
-          height: 42,
-          flex: "0 0 42px",
+          width: 46,
+          height: 46,
+          flex: "0 0 46px",
           display: "grid",
           placeItems: "center",
-          borderRadius: radii.sm,
-          background: credit ? colors.olive100 : colors.clayBackground,
+          borderRadius: 15,
+          background: credit ? colors.successBackground : colors.clayBackground,
           color: credit ? colors.olive700 : colors.clay,
-          fontSize: 18,
-          fontWeight: 800,
         }}
       >
-        {credit ? "↙" : "↗"}
+        <Icon name={credit ? "download" : "trending"} size={21} stroke={1.9} />
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <strong style={{ ...typography.body, display: "block" }}>
+        <strong
+          style={{
+            ...typography.body,
+            display: "block",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+            color: colors.ink,
+            fontWeight: 800,
+          }}
+        >
           {transaction.title || transaction.type || "تراکنش"}
         </strong>
         {transaction.createdAt ? (
-          <span style={{ ...typography.caption, color: colors.inkMuted }}>{transactionDate(transaction.createdAt)}</span>
+          <span style={{ ...typography.caption, display: "block", marginTop: 2, color: colors.inkMuted }}>
+            {transactionDate(transaction.createdAt)}
+          </span>
         ) : null}
       </div>
-      <strong style={{ ...typography.body, color: credit ? colors.olive700 : colors.ink, whiteSpace: "nowrap" }}>
-        {credit ? "+" : "−"}
-        {formatAmount(Math.abs(transaction.amount))}
-      </strong>
+      <div style={{ flex: "0 0 auto", textAlign: "left" }}>
+        <strong
+          dir="ltr"
+          style={{
+            ...typography.body,
+            display: "block",
+            color: credit ? colors.olive700 : colors.ink,
+            whiteSpace: "nowrap",
+            fontWeight: 900,
+          }}
+        >
+          {credit ? "+" : "−"}{formatAmount(Math.abs(transaction.amount))}
+        </strong>
+        <span style={{ ...typography.caption, color: colors.inkFaint }}>تومان</span>
+      </div>
     </Card>
   );
 }
