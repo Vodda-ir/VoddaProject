@@ -6,10 +6,12 @@ import { usePlatform } from "../../platform/context";
 import type { AuthUser } from "../../platform/types";
 import { navigateApp } from "../../router";
 import {
+  ActionTile,
   Avatar,
   Button,
   Card,
   ErrorState,
+  Icon,
   LoadingState,
   colors,
   radii,
@@ -55,7 +57,6 @@ export function LearnerProfileScreen({ config }: LearnerProfileScreenProps) {
 
   useEffect(() => {
     let cancelled = false;
-
     void loadProfile(() => cancelled);
     return () => {
       cancelled = true;
@@ -86,16 +87,13 @@ export function LearnerProfileScreen({ config }: LearnerProfileScreenProps) {
   }
   if (!user) return null;
 
+  const canUseTeacherMode = user.role === "teacher" || user.role === "admin";
+
   return (
-    <div style={{ display: "grid", gap: spacing.lg }}>
-      <Card elevated style={{ display: "grid", gap: spacing.lg }}>
+    <div className="vodda-screen" style={{ display: "grid", gap: spacing.xl }}>
+      <Card elevated className="vodda-enter" style={{ padding: spacing.xl }}>
         <div style={{ display: "flex", alignItems: "center", gap: spacing.lg }}>
-          <Avatar
-            name={user.name}
-            src={user.avatar_url}
-            size={72}
-            style={{ border: `3px solid ${colors.olive100}` }}
-          />
+          <Avatar name={user.name} src={user.avatar_url} size={68} ring />
           <div style={{ minWidth: 0, flex: 1 }}>
             <h1
               style={{
@@ -109,27 +107,43 @@ export function LearnerProfileScreen({ config }: LearnerProfileScreenProps) {
             >
               {user.name.trim() || "کاربر وُدّا"}
             </h1>
-            <p dir="ltr" style={{ ...typography.bodySmall, margin: `${spacing.xs}px 0 0`, color: colors.inkMuted, textAlign: "right" }}>
-              {user.mobile}
-            </p>
-            <p style={{ ...typography.bodySmall, margin: `${spacing.xs}px 0 0`, color: colors.inkSecondary }}>
+            <p style={{ ...typography.caption, display: "flex", alignItems: "center", gap: 4, margin: "4px 0 0", color: colors.inkMuted }}>
+              <Icon name="pin" size={13} />
               {user.city.trim() || "شهر ثبت نشده"}
             </p>
+            <p dir="ltr" style={{ ...typography.caption, margin: "2px 0 0", color: colors.inkFaint, textAlign: "right" }}>
+              {user.mobile}
+            </p>
           </div>
-          <Button
-            variant="secondary"
+          <button
+            type="button"
+            aria-label="ویرایش پروفایل"
             onClick={() => navigateApp("/profile/edit", config)}
-            style={{ flex: "0 0 auto", paddingInline: spacing.md }}
+            className="vodda-tappable"
+            style={{
+              width: 42,
+              height: 42,
+              display: "grid",
+              placeItems: "center",
+              flex: "0 0 42px",
+              padding: 0,
+              border: 0,
+              borderRadius: 14,
+              color: colors.olive700,
+              background: colors.olive50,
+              cursor: "pointer",
+            }}
           >
-            ویرایش
-          </Button>
+            <Icon name="edit" size={19} />
+          </button>
         </div>
 
         {user.bio.trim() ? (
           <div
             style={{
+              marginTop: spacing.lg,
               padding: spacing.md,
-              borderRadius: radii.sm,
+              borderRadius: radii.md,
               background: colors.sand50,
               color: colors.inkSecondary,
               ...typography.bodySmall,
@@ -141,56 +155,62 @@ export function LearnerProfileScreen({ config }: LearnerProfileScreenProps) {
         ) : null}
       </Card>
 
-      <Card style={{ display: "grid", gap: spacing.md }}>
-        <button
-          type="button"
+      {canUseTeacherMode ? (
+        <ActionTile
+          icon="award"
+          title="ورود به فضای استاد"
+          description="جلسات، خدمات و درآمدتان را مدیریت کنید."
+          onClick={() => navigateApp("/t", config)}
+          tone="olive"
+        />
+      ) : null}
+
+      <div style={{ display: "grid", gap: spacing.sm }}>
+        <ActionTile
+          icon="wallet"
+          title="کیف پول و تراکنش‌ها"
+          description="موجودی و گردش مالی حساب"
           onClick={() => navigateApp("/wallet", config)}
-          style={{
-            width: "100%",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: spacing.md,
-            padding: spacing.md,
-            textAlign: "right",
-            color: colors.ink,
-            background: colors.olive50,
-            border: `1px solid ${colors.olive100}`,
-            borderRadius: radii.sm,
-            cursor: "pointer",
-            fontFamily: typography.fontFamily,
-          }}
-        >
-          <span>
-            <strong style={{ ...typography.body, display: "block" }}>کیف پول و تراکنش‌ها</strong>
-            <span style={{ ...typography.caption, color: colors.inkMuted }}>مشاهده موجودی و گردش حساب</span>
-          </span>
-          <strong dir="ltr" style={{ ...typography.bodySmall, color: colors.olive800 }}>
-            {formatWalletAmount(user.wallet)} تومان
-          </strong>
-        </button>
-      </Card>
+          trailing={
+            <strong dir="ltr" style={{ ...typography.bodySmall, color: colors.olive800, whiteSpace: "nowrap" }}>
+              {formatWalletAmount(user.wallet)} تومان
+            </strong>
+          }
+        />
+        <ActionTile
+          icon="edit"
+          title="ویرایش اطلاعات حساب"
+          description="نام، شهر، درباره من و تصویر پروفایل"
+          onClick={() => navigateApp("/profile/edit", config)}
+          tone="info"
+        />
+      </div>
 
       {error ? (
         <div
           role="alert"
           style={{
-            padding: `${spacing.sm}px ${spacing.md}px`,
-            borderRadius: radii.sm,
-            background: "rgba(166, 81, 81, 0.08)",
+            display: "flex",
+            alignItems: "center",
+            gap: spacing.sm,
+            padding: spacing.md,
+            borderRadius: radii.md,
+            background: colors.dangerBackground,
             color: colors.danger,
             ...typography.bodySmall,
           }}
         >
+          <Icon name="shield" size={18} />
           {error}
         </div>
       ) : null}
 
       <Button variant="danger" fullWidth loading={loggingOut} onClick={() => void logout()}>
+        <Icon name="logout" size={18} />
         خروج از حساب
       </Button>
 
-      <p style={{ ...typography.caption, margin: 0, textAlign: "center", color: colors.inkMuted }}>
+      <p style={{ ...typography.caption, margin: 0, textAlign: "center", color: colors.inkFaint }}>
         وُدّا · حساب کاربری
       </p>
     </div>
