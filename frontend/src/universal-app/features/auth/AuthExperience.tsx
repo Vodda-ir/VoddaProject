@@ -6,7 +6,7 @@ import type { UniversalAppConfig } from "../../config";
 import { usePlatform } from "../../platform/context";
 import type { AuthUser } from "../../platform/types";
 import { navigateApp, type AppRouteName } from "../../router";
-import { Button, Card, Icon, colors, radii, shadows, spacing, typography } from "../../ui";
+import { Button, Card, Icon, colors, shadows, spacing, typography } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
 
 function normalizeDigits(value: string) {
