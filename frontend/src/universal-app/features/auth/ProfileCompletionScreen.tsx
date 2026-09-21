@@ -6,7 +6,7 @@ import type { UniversalAppConfig } from "../../config";
 import { usePlatform } from "../../platform/context";
 import type { AuthUser } from "../../platform/types";
 import { navigateApp } from "../../router";
-import { Avatar, Button, Card, Input, colors, radii, spacing, typography } from "../../ui";
+import { Avatar, Button, Card, Icon, Input, colors, gradients, radii, shadows, spacing, typography } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
 import { defaultRouteForUser } from "./AuthExperience";
 
@@ -152,7 +152,7 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
       dir="rtl"
       data-universal-app="vodda"
       data-platform={platform.kind}
-      style={{ minHeight: "100dvh", background: colors.sand50, color: colors.ink }}
+      style={{ minHeight: "100dvh", background: `radial-gradient(circle at 50% 0%, ${colors.olive100}, ${colors.sand50} 42%, ${colors.sand100})`, color: colors.ink }}
     >
       <section
         style={{
@@ -165,7 +165,7 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
           fontFamily: typography.fontFamily,
         }}
       >
-        <header style={{ marginBottom: spacing.xl }}>
+        <header className="vodda-enter" style={{ marginBottom: spacing.xl }}>
           {!onboarding ? (
             <Button
               variant="ghost"
@@ -188,7 +188,7 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
           </p>
         </header>
 
-        <Card elevated>
+        <Card elevated className="vodda-enter vodda-enter-delay-1" style={{ padding: spacing.xl }}>
           {loading ? (
             <div aria-live="polite" style={{ ...typography.body, color: colors.inkMuted }}>
               در حال دریافت اطلاعات حساب…
@@ -199,8 +199,9 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
                 <Avatar
                   name={name || user?.name}
                   src={avatarPreview ?? user?.avatar_url}
-                  size={88}
-                  style={{ border: `3px solid ${colors.olive100}` }}
+                  size={92}
+                  ring
+                  style={{ boxShadow: shadows.md }}
                 />
                 <label
                   style={{
@@ -211,7 +212,7 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
                     color: colors.olive800,
                     background: colors.olive50,
                     border: `1px solid ${colors.olive200}`,
-                    borderRadius: radii.sm,
+                    borderRadius: radii.pill,
                     cursor: saving ? "not-allowed" : "pointer",
                     opacity: saving ? 0.6 : 1,
                     ...typography.bodySmall,
@@ -268,8 +269,9 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
                     resize: "vertical",
                     boxSizing: "border-box",
                     border: `1px solid ${colors.border}`,
-                    borderRadius: radii.sm,
-                    padding: `${spacing.sm}px ${spacing.md}px`,
+                    borderRadius: radii.md,
+                    padding: `${spacing.md}px ${spacing.lg}px`,
+                    boxShadow: shadows.xs,
                     background: colors.surface,
                     color: colors.ink,
                     font: "inherit",
@@ -286,7 +288,7 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
                 <div
                   style={{
                     padding: `${spacing.sm}px ${spacing.md}px`,
-                    borderRadius: radii.sm,
+                    borderRadius: radii.md,
                     background: colors.sand100,
                     ...typography.bodySmall,
                     color: colors.inkMuted,
@@ -311,9 +313,7 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
                 </div>
               ) : null}
 
-              <Button type="submit" fullWidth loading={saving} disabled={!canSubmit}>
-                {onboarding ? "ذخیره و ادامه" : "ذخیره تغییرات"}
-              </Button>
+              <Button type="submit" fullWidth loading={saving} disabled={!canSubmit}><Icon name="checkCircle" size={18} />{onboarding ? "ذخیره و ادامه" : "ذخیره تغییرات"}</Button>
             </form>
           )}
         </Card>
