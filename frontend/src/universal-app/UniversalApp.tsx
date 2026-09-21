@@ -24,7 +24,7 @@ import { PlatformProvider } from "./platform/context";
 import type { PlatformRuntime } from "./platform/types";
 import { createWebPlatformRuntime } from "./platform/web";
 import { navigateApp, useAppRoute, type AppRouteName } from "./router";
-import { MobileAppShell, TeacherAppShell, Card, colors, spacing, typography } from "./ui";
+import { MobileAppShell, TeacherAppShell, Card, UniversalVisualStyles, colors, spacing, typography } from "./ui";
 
 export type UniversalAppProps = {
   config?: Partial<UniversalAppConfig>;
@@ -88,7 +88,7 @@ function RoutePlaceholder({
   return (
     <Card>
       <p style={{ ...typography.body, margin: 0, color: colors.inkSecondary }}>
-        محتوای این مسیر در فازهای parity بعدی جایگزین می‌شود.
+        این مسیر در نسخه فعلی وُدّا محتوای قابل نمایش ندارد.
       </p>
       <p dir="ltr" style={{ ...typography.caption, margin: "8px 0 0", color: colors.inkMuted, textAlign: "right" }}>
         {pathname}
