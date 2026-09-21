@@ -37,3 +37,5 @@ export {
   typography,
   type AppTheme,
 } from "./theme";
+
+export { digitsOnly, toFaDigits, toLatinDigits } from "./persian";
