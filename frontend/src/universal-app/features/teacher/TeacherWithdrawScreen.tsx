@@ -6,7 +6,7 @@ import { asArray, asNumber, asRecord, asString, type ApiEnvelope } from "../../p
 import { usePlatform } from "../../platform/context";
 import type { PlatformRuntime } from "../../platform/types";
 import { navigateApp } from "../../router";
-import { Button, Card, EmptyState, ErrorState, Icon, LoadingState, SectionHeader, StatusPill, WalletHero, colors, radii, spacing, typography } from "../../ui";
+import { Button, Card, EmptyState, ErrorState, Icon, LoadingState, SectionHeader, StatusPill, colors, radii, spacing, typography } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
 import { getWalletSnapshot } from "../wallet/api";
 import { formatWalletAmount, toFaDigits } from "../wallet/WalletTransactionCard";
@@ -174,10 +174,25 @@ export function TeacherWithdrawScreen({ config }: { config: UniversalAppConfig }
     }
   };
 
+  if (success) {
+    return (
+      <section className="vodda-screen" style={{ minHeight: "62dvh", display: "grid", placeItems: "center" }}>
+        <div style={{ width: "100%", display: "grid", justifyItems: "center", gap: spacing.lg, padding: 32, textAlign: "center" }}>
+          <span style={{ width: 92, height: 92, display: "grid", placeItems: "center", borderRadius: "50%", color: colors.olive600, background: colors.olive100 }}>
+            <Icon name="checkCircle" size={52} stroke={1.8} />
+          </span>
+          <div>
+            <h2 style={{ fontSize: 22, fontWeight: 800, margin: 0, color: colors.ink }}>درخواست برداشت ثبت شد</h2>
+            <p style={{ ...typography.body, maxWidth: 420, margin: "10px 0 0", color: colors.inkSecondary, lineHeight: 2 }}>{success}</p>
+          </div>
+          <Button fullWidth onClick={() => navigateApp("/t/wallet", config)} style={{ minHeight: 52 }}>بازگشت به کیف پول</Button>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="vodda-screen" style={{ display: "grid", gap: spacing.xl }}>
-      <SectionHeader title="برداشت وجه" description="درخواست برداشت و وضعیت پرداخت‌های شما" action="کیف پول" onAction={() => navigateApp("/t/wallet", config)} />
-
       {loading ? <LoadingState label="در حال دریافت وضعیت برداشت‌ها…" /> : null}
       {!loading && error ? (
         <ErrorState title="دریافت برداشت‌ها ناموفق بود" description={error} action={<Button onClick={() => void load()}>تلاش دوباره</Button>} />
@@ -185,17 +200,22 @@ export function TeacherWithdrawScreen({ config }: { config: UniversalAppConfig }
 
       {!loading && !error ? (
         <>
-          <div style={{ display: "grid", gap: spacing.lg }}>
-            <WalletHero label="موجودی قابل برداشت" amount={balance === null ? "—" : formatWalletAmount(balance)} />
-            <Card style={{ display: "grid", gap: spacing.md }}>
+          <div style={{ display: "grid", gap: 22 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: spacing.md, padding: 16, borderRadius: 18, background: colors.olive50 }}>
+              <span style={{ fontSize: 13, color: colors.inkSecondary }}>موجودی قابل برداشت</span>
+              <strong style={{ fontSize: 16, fontWeight: 800, color: colors.olive700 }}>
+                {balance === null ? "—" : `${formatWalletAmount(balance)} تومان`}
+              </strong>
+            </div>
 
+            <div style={{ display: "grid", gap: spacing.md }}>
             <label style={{ display: "grid", gap: spacing.xs }}>
               <span style={{ ...typography.bodySmall, fontWeight: 700 }}>مبلغ برداشت</span>
               <input value={amount} onChange={(event) => setAmount(event.target.value)} inputMode="numeric" placeholder="مثلاً ۵۰۰۰۰۰" style={inputStyle} />
             </label>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: spacing.xs }}>
               {[500000, 1000000, 2000000].map((quickAmount) => (
-                <Button key={quickAmount} variant="secondary" onClick={() => setAmount(String(quickAmount))}>{formatWalletAmount(quickAmount)}</Button>
+                <Button key={quickAmount} variant="secondary" onClick={() => setAmount(String(quickAmount))}>{quickAmount >= 1000000 ? `${formatWalletAmount(quickAmount / 1000000)} میلیون` : `${formatWalletAmount(quickAmount / 1000)} هزار`}</Button>
               ))}
             </div>
 
@@ -218,9 +238,8 @@ export function TeacherWithdrawScreen({ config }: { config: UniversalAppConfig }
               </p>
             </Card>
             {formError ? <p role="alert" style={{ ...typography.bodySmall, margin: 0, color: colors.clay }}>{formError}</p> : null}
-            {success ? <p role="status" style={{ ...typography.bodySmall, margin: 0, color: colors.olive700 }}>{success}</p> : null}
             <Button fullWidth loading={busy} disabled={busy} onClick={() => void submit()}><Icon name="download" size={18} />ثبت درخواست برداشت</Button>
-            </Card>
+            </div>
           </div>
 
           <SectionHeader title="تاریخچه برداشت" action="به‌روزرسانی" onAction={() => void load()} />
