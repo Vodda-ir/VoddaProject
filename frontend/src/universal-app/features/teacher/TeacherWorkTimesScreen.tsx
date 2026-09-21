@@ -309,7 +309,7 @@ export function TeacherWorkTimesScreen() {
               value={toFaDigits(draft.from)}
               disabled={busyId !== null}
               placeholder="۰۸:۰۰"
-              onChange={(event) => setDraft((current) => ({ ...current, from: toLatinDigits(event.target.value).replace(/[^0-9:]/g, "").slice(0, 5) }))}
+              onChange={(event) => setDraft((current) => ({ ...current, from: normalizeTimeInput(event.target.value) }))}
               style={{ width: "100%", padding: spacing.md, border: `1px solid ${colors.sand200}`, borderRadius: radii.md, background: colors.surface, color: colors.ink, boxShadow: "none", fontFamily: typography.fontFamily }}
             />
           </label>
@@ -321,7 +321,7 @@ export function TeacherWorkTimesScreen() {
               value={toFaDigits(draft.to)}
               disabled={busyId !== null}
               placeholder="۱۲:۰۰"
-              onChange={(event) => setDraft((current) => ({ ...current, to: toLatinDigits(event.target.value).replace(/[^0-9:]/g, "").slice(0, 5) }))}
+              onChange={(event) => setDraft((current) => ({ ...current, to: normalizeTimeInput(event.target.value) }))}
               style={{ width: "100%", padding: spacing.md, border: `1px solid ${colors.sand200}`, borderRadius: radii.md, background: colors.surface, color: colors.ink, boxShadow: "none", fontFamily: typography.fontFamily }}
             />
           </label>
