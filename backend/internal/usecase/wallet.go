@@ -144,6 +144,11 @@ func (uc *WalletUsecase) RequestWithdrawal(ctx context.Context, userID uint, in 
 
 // MyWithdrawals lists a teacher's payout requests.
 func (uc *WalletUsecase) MyWithdrawals(ctx context.Context, userID uint) ([]domain.Withdrawal, error) {
+	if _, err := uc.teachers.ByUserID(ctx, userID); errors.Is(err, domain.ErrNotFound) {
+		return nil, domain.ErrTeacherProfileRequired
+	} else if err != nil {
+		return nil, err
+	}
 	return uc.wallet.WithdrawalsForUser(ctx, userID)
 }
 
