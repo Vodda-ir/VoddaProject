@@ -16,5 +16,24 @@ export {
   type OverlayProps,
   type StateProps,
 } from "./primitives";
+export {
+  ActionTile,
+  HeroPanel,
+  IconBadge,
+  MetricTile,
+  SectionHeader,
+  StatusPill,
+  WalletHero,
+} from "./patterns";
+export { UniversalVisualStyles } from "./UniversalVisualStyles";
 export { MobileAppShell, TeacherAppShell } from "./shells";
-export { appTheme, colors, radii, shadows, spacing, typography, type AppTheme } from "./theme";
+export {
+  appTheme,
+  colors,
+  gradients,
+  radii,
+  shadows,
+  spacing,
+  typography,
+  type AppTheme,
+} from "./theme";
