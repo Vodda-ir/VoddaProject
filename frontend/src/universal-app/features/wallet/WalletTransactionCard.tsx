@@ -1,12 +1,10 @@
-import { Card, Icon, colors, spacing, typography } from "../../ui";
+import { Card, Icon, colors, spacing, toFaDigits, typography } from "../../ui";
 import type { WalletTransaction } from "./types";
 
-export function toFaDigits(value: string | number): string {
-  return String(value).replace(/\d/g, (digit) => "۰۱۲۳۴۵۶۷۸۹"[Number(digit)] ?? digit);
-}
+export { toFaDigits } from "../../ui";
 
 export function formatWalletAmount(value: number): string {
-  return toFaDigits(new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(value));
+  return new Intl.NumberFormat("fa-IR", { maximumFractionDigits: 0 }).format(value);
 }
 
 function transactionDate(value: string): string {
