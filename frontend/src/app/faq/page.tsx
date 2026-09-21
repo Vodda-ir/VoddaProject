@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Nav, Footer } from '@/components/web/sections';
 import { Icon } from '@/components/Icon';
-import { SectionTitle } from '@/components/web/ui';
+import { PublicPageHero, WebBtn } from '@/components/web/ui';
 
 const faqs = [
   {
@@ -38,40 +38,50 @@ export default function FAQPage() {
   return (
     <div style={{ background: 'var(--sand-50)', minHeight: '100vh' }}>
       <Nav />
-      <main style={{ maxWidth: 760, margin: '0 auto', padding: '40px 20px 80px' }}>
-        <SectionTitle kicker="سؤالات متداول" title="پاسخ پرسش‌های شما" sub="پاسخ‌ها بر اساس قابلیت‌های فعال نسخهٔ فعلی وُدّا نوشته شده‌اند." />
+      <PublicPageHero
+        kicker="سؤالات متداول"
+        title="پاسخ کوتاه و روشن به پرسش‌های رایج"
+        description="پاسخ‌ها بر اساس قابلیت‌های فعال نسخهٔ فعلی وُدّا نوشته شده‌اند و از وعده‌دادن قابلیت‌های هنوز متصل‌نشده پرهیز می‌کنند."
+        icon="message"
+      />
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 36 }}>
-          {faqs.map((item, index) => {
-            const expanded = open === index;
-            const panelId = `faq-panel-${index}`;
-            return (
-              <section key={item.q} style={{ background: '#fff', borderRadius: 18, overflow: 'hidden', boxShadow: 'var(--sh-sm)' }}>
-                <button
-                  type="button"
-                  aria-expanded={expanded}
-                  aria-controls={panelId}
-                  onClick={() => setOpen(expanded ? -1 : index)}
-                  style={{
-                    width: '100%', padding: '18px 20px', border: 'none', cursor: 'pointer',
-                    background: 'transparent', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    fontFamily: 'inherit', fontSize: 15, fontWeight: 700, textAlign: 'right',
-                  }}
-                >
-                  {item.q}
-                  <Icon name="chevronUp" size={20} style={{ transform: expanded ? 'none' : 'rotate(180deg)', transition: 'transform .2s', color: 'var(--ink-3)', flexShrink: 0 }} />
-                </button>
-                {expanded && (
-                  <div id={panelId} style={{ padding: '0 20px 18px', fontSize: 14, lineHeight: 2, color: 'var(--ink-3)' }}>
-                    {item.a}
-                  </div>
-                )}
-              </section>
-            );
-          })}
+      <main className="public-container public-content">
+        <div className="faq-layout">
+          <aside className="faq-side-card">
+            <span className="public-principle-icon"><Icon name="info" size={22} /></span>
+            <strong>پاسخ را پیدا نکردید؟</strong>
+            <p>پیام شما داخل سامانه ثبت می‌شود تا تیم وُدّا بتواند آن را پیگیری کند.</p>
+            <WebBtn href="/contact" variant="soft" icon="message" style={{ width: '100%' }}>تماس با ما</WebBtn>
+          </aside>
+
+          <div className="faq-list">
+            {faqs.map((item, index) => {
+              const expanded = open === index;
+              const panelId = `faq-panel-${index}`;
+              return (
+                <section key={item.q} className={`faq-item ${expanded ? 'open' : ''}`}>
+                  <button
+                    type="button"
+                    aria-expanded={expanded}
+                    aria-controls={panelId}
+                    onClick={() => setOpen(expanded ? -1 : index)}
+                  >
+                    <span className="faq-question-index">{toPersianIndex(index + 1)}</span>
+                    <span style={{ minWidth: 0, flex: 1 }}>{item.q}</span>
+                    <span className="faq-chevron"><Icon name="chevronUp" size={18} /></span>
+                  </button>
+                  {expanded && <div id={panelId} className="faq-answer">{item.a}</div>}
+                </section>
+              );
+            })}
+          </div>
         </div>
       </main>
       <Footer />
     </div>
   );
+}
+
+function toPersianIndex(value: number) {
+  return String(value).replace(/[0-9]/g, (digit) => '۰۱۲۳۴۵۶۷۸۹'[Number(digit)]);
 }
