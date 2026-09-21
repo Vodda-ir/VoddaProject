@@ -7,12 +7,11 @@ import { navigateApp } from "../../router";
 import {
   Avatar,
   Button,
-  Card,
   EmptyState,
   ErrorState,
   Icon,
   LoadingState,
-  SectionHeader,
+  Sheet,
   colors,
   radii,
   shadows,
@@ -30,7 +29,13 @@ type SearchFilters = {
   female: "all" | "female" | "male";
 };
 
-const fieldPresets = ["", "قرآن کریم", "مداحی اهل‌بیت"] as const;
+type AdvancedDraft = Pick<SearchFilters, "city" | "female">;
+
+const fieldPresets = [
+  ["", "همه"],
+  ["آموزش قرآن کریم", "آموزش قرآن"],
+  ["مداحی اهل‌بیت", "مداحی"],
+] as const;
 
 function readInitialFilters(): SearchFilters {
   if (typeof window === "undefined") return { query: "", field: "", city: "", female: "all" };
@@ -44,13 +49,6 @@ function readInitialFilters(): SearchFilters {
   };
 }
 
-function fieldLabel(field: string) {
-  if (!field) return "همه";
-  if (field === "قرآن کریم") return "آموزش قرآن";
-  if (field === "مداحی اهل‌بیت") return "مداحی";
-  return field;
-}
-
 function chipStyle(active: boolean) {
   return {
     minHeight: 36,
@@ -59,12 +57,13 @@ function chipStyle(active: boolean) {
     borderRadius: radii.pill,
     color: active ? colors.surface : colors.inkSecondary,
     background: active ? colors.olive600 : colors.surface,
-    boxShadow: active ? "0 5px 14px rgba(94,110,67,.18)" : shadows.xs,
+    boxShadow: active ? "0 5px 14px rgba(94,110,67,.14)" : shadows.xs,
     fontFamily: typography.fontFamily,
     fontSize: 12,
     fontWeight: 800,
     cursor: "pointer",
-  } as const;
+    whiteSpace: "nowrap" as const,
+  };
 }
 
 function TeacherResultCard({ teacher, config }: { teacher: Teacher; config: UniversalAppConfig }) {
@@ -78,10 +77,10 @@ function TeacherResultCard({ teacher, config }: { teacher: Teacher; config: Univ
         width: "100%",
         display: "grid",
         gap: spacing.md,
-        padding: spacing.lg,
+        padding: 15,
         textAlign: "right",
-        border: "1px solid " + colors.sand150,
-        borderRadius: radii.lg,
+        border: 0,
+        borderRadius: 24,
         color: colors.ink,
         background: colors.surface,
         boxShadow: shadows.sm,
@@ -89,44 +88,30 @@ function TeacherResultCard({ teacher, config }: { teacher: Teacher; config: Univ
         fontFamily: typography.fontFamily,
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: spacing.md }}>
-        <Avatar name={teacher.name} size={58} ring />
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <Avatar name={teacher.name} size={56} ring />
         <div style={{ minWidth: 0, flex: 1 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
-            <h3
+          <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+            <strong
               style={{
-                ...typography.title,
-                minWidth: 0,
-                margin: 0,
+                fontSize: 14.5,
+                fontWeight: 800,
                 overflow: "hidden",
                 textOverflow: "ellipsis",
                 whiteSpace: "nowrap",
-                color: colors.ink,
               }}
             >
               {teacher.name}
-            </h3>
+            </strong>
             {teacher.verified ? <Icon name="checkCircle" size={15} stroke={2} style={{ color: colors.olive600 }} /> : null}
           </div>
-          <p style={{ ...typography.bodySmall, margin: "3px 0 0", color: colors.inkMuted }}>
+          <span style={{ ...typography.bodySmall, display: "block", marginTop: 3, color: colors.inkSecondary }}>
             {subtitle || "استاد وُدّا"}
-          </p>
+          </span>
         </div>
         {teacher.rating > 0 ? (
-          <span
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 3,
-              padding: "6px 8px",
-              borderRadius: radii.pill,
-              color: colors.goldDark,
-              background: colors.goldBackground,
-              ...typography.caption,
-              fontWeight: 900,
-            }}
-          >
-            <Icon name="star" size={13} fill style={{ color: colors.gold }} />
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 3, color: colors.goldDark, ...typography.caption, fontWeight: 800 }}>
+            <Icon name="star" size={14} fill style={{ color: colors.gold }} />
             {teacher.rating.toFixed(1)}
           </span>
         ) : null}
@@ -141,8 +126,8 @@ function TeacherResultCard({ teacher, config }: { teacher: Teacher; config: Univ
             WebkitLineClamp: 2,
             WebkitBoxOrient: "vertical",
             margin: 0,
-            color: colors.inkSecondary,
-            lineHeight: 1.9,
+            color: colors.inkMuted,
+            lineHeight: 1.8,
           }}
         >
           {teacher.bio}
@@ -150,22 +135,19 @@ function TeacherResultCard({ teacher, config }: { teacher: Teacher; config: Univ
       ) : null}
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: spacing.sm }}>
-        <div style={{ display: "flex", alignItems: "center", gap: spacing.sm, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           {teacher.services.length > 0 ? (
-            <span style={{ ...typography.caption, padding: "5px 8px", borderRadius: radii.pill, color: colors.olive700, background: colors.olive50 }}>
+            <span style={{ ...typography.caption, padding: "4px 8px", borderRadius: radii.pill, color: colors.olive700, background: colors.olive50 }}>
               {teacher.services.length.toLocaleString("fa-IR")} خدمت
             </span>
           ) : null}
           {teacher.sessions > 0 ? (
-            <span style={{ ...typography.caption, padding: "5px 8px", borderRadius: radii.pill, color: colors.inkMuted, background: colors.sand100 }}>
+            <span style={{ ...typography.caption, padding: "4px 8px", borderRadius: radii.pill, color: colors.inkMuted, background: colors.sand100 }}>
               {teacher.sessions.toLocaleString("fa-IR")} جلسه
             </span>
           ) : null}
         </div>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 3, color: colors.olive700, ...typography.caption, fontWeight: 800 }}>
-          مشاهده
-          <Icon name="chevronL" size={14} stroke={2} />
-        </span>
+        <Icon name="chevronL" size={18} stroke={1.8} style={{ color: colors.inkFaint }} />
       </div>
     </button>
   );
@@ -180,6 +162,11 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [advancedDraft, setAdvancedDraft] = useState<AdvancedDraft>({
+    city: initial.city,
+    female: initial.female,
+  });
 
   useEffect(() => {
     const timer = window.setTimeout(() => setDebouncedQuery(filters.query.trim()), 350);
@@ -225,33 +212,61 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
     };
   }, [runtime, debouncedQuery, filters.field, filters.city, filters.female, reloadKey]);
 
-  const hasFilters = Boolean(filters.query || filters.field || filters.city || filters.female !== "all");
+  const hasAdvancedFilter = Boolean(filters.city || filters.female !== "all");
+  const hasAnyFilter = Boolean(filters.query || filters.field || hasAdvancedFilter);
 
-  function clearFilters() {
+  function openFilters() {
+    setAdvancedDraft({ city: filters.city, female: filters.female });
+    setFiltersOpen(true);
+  }
+
+  function applyAdvancedFilters() {
+    setFilters((current) => ({
+      ...current,
+      city: advancedDraft.city.trim(),
+      female: advancedDraft.female,
+    }));
+    setFiltersOpen(false);
+  }
+
+  function clearAdvancedFilters() {
+    setAdvancedDraft({ city: "", female: "all" });
+    setFilters((current) => ({ ...current, city: "", female: "all" }));
+    setFiltersOpen(false);
+  }
+
+  function clearAllFilters() {
     setFilters({ query: "", field: "", city: "", female: "all" });
   }
 
   return (
-    <section style={{ display: "grid", gap: spacing.xl }}>
-      <div className="vodda-enter" style={{ display: "grid", gap: spacing.md }}>
-        <div style={{ position: "relative" }}>
+    <section style={{ display: "grid", gap: 14 }}>
+      <header className="vodda-enter" style={{ paddingTop: 2 }}>
+        <h1 style={{ fontSize: 24, fontWeight: 800, margin: 0, color: colors.ink }}>جستجوی استاد</h1>
+        <p style={{ fontSize: 12.5, margin: "5px 0 0", color: colors.inkMuted }}>
+          نام، تخصص، شهر و جنسیت استاد را جستجو کنید.
+        </p>
+      </header>
+
+      <div className="vodda-enter" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ position: "relative", minWidth: 0, flex: 1 }}>
           <Icon
             name="search"
             size={20}
-            stroke={1.9}
-            style={{ position: "absolute", zIndex: 1, insetInlineStart: 16, top: "50%", transform: "translateY(-50%)", color: colors.inkMuted }}
+            stroke={1.8}
+            style={{ position: "absolute", zIndex: 1, insetInlineStart: 14, top: "50%", transform: "translateY(-50%)", color: colors.inkMuted }}
           />
           <input
             value={filters.query}
             onChange={(event) => setFilters((current) => ({ ...current, query: event.target.value }))}
-            placeholder="نام استاد، مهارت یا عبارت جستجو"
+            placeholder="نام استاد یا تخصص…"
             className="vodda-input"
             style={{
               width: "100%",
-              minHeight: 54,
-              padding: "12px 46px 12px 16px",
-              border: "1px solid " + colors.sand200,
-              borderRadius: radii.lg,
+              minHeight: 50,
+              padding: "11px 42px 11px 44px",
+              border: 0,
+              borderRadius: 16,
               outline: "none",
               color: colors.ink,
               background: colors.surface,
@@ -260,82 +275,118 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
               ...typography.body,
             }}
           />
-        </div>
-
-        <div className="vodda-scroll-rail" style={{ display: "flex", gap: spacing.sm, overflowX: "auto", paddingBottom: 2 }}>
-          {fieldPresets.map((field) => (
+          {filters.query ? (
             <button
-              key={field || "all"}
               type="button"
-              className="vodda-tappable"
-              onClick={() => setFilters((current) => ({ ...current, field }))}
-              style={chipStyle(filters.field === field)}
+              aria-label="پاک کردن جستجو"
+              onClick={() => setFilters((current) => ({ ...current, query: "" }))}
+              style={{
+                position: "absolute",
+                insetInlineEnd: 10,
+                top: "50%",
+                transform: "translateY(-50%)",
+                width: 32,
+                height: 32,
+                display: "grid",
+                placeItems: "center",
+                padding: 0,
+                border: 0,
+                borderRadius: "50%",
+                color: colors.inkMuted,
+                background: "transparent",
+                cursor: "pointer",
+              }}
             >
-              {fieldLabel(field)}
+              <Icon name="x" size={17} />
             </button>
-          ))}
+          ) : null}
         </div>
 
-        <Card style={{ padding: spacing.md, borderRadius: radii.lg }}>
-          <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", gap: spacing.sm, alignItems: "end" }}>
-            <label style={{ display: "grid", gap: 5 }}>
-              <span style={{ ...typography.caption, color: colors.inkMuted, fontWeight: 700 }}>شهر</span>
-              <div style={{ position: "relative" }}>
-                <Icon
-                  name="pin"
-                  size={17}
-                  style={{ position: "absolute", insetInlineStart: 12, top: "50%", transform: "translateY(-50%)", color: colors.inkMuted }}
-                />
-                <input
-                  value={filters.city}
-                  onChange={(event) => setFilters((current) => ({ ...current, city: event.target.value }))}
-                  placeholder="مثلاً کرمان"
-                  className="vodda-input"
-                  style={{
-                    width: "100%",
-                    minHeight: 44,
-                    padding: "8px 38px 8px 12px",
-                    border: "1px solid " + colors.sand200,
-                    borderRadius: radii.md,
-                    outline: "none",
-                    color: colors.ink,
-                    background: colors.surfaceWarm,
-                    fontFamily: typography.fontFamily,
-                  }}
-                />
-              </div>
-            </label>
-            {hasFilters ? (
-              <Button variant="ghost" onClick={clearFilters} style={{ minHeight: 44, paddingInline: spacing.md }}>
-                پاک کردن
-              </Button>
-            ) : null}
-          </div>
-
-          <div style={{ display: "flex", gap: spacing.sm, marginTop: spacing.md }}>
-            {[
-              ["all", "همه"],
-              ["female", "بانو"],
-              ["male", "آقا"],
-            ].map(([value, label]) => (
-              <button
-                key={value}
-                type="button"
-                className="vodda-tappable"
-                onClick={() => setFilters((current) => ({ ...current, female: value as SearchFilters["female"] }))}
-                style={chipStyle(filters.female === value)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </Card>
+        <div style={{ position: "relative", flex: "0 0 auto" }}>
+          <button
+            type="button"
+            aria-label="فیلتر شهر و جنسیت"
+            onClick={openFilters}
+            className="vodda-tappable"
+            style={{
+              width: 50,
+              height: 50,
+              display: "grid",
+              placeItems: "center",
+              padding: 0,
+              border: 0,
+              borderRadius: 16,
+              color: colors.surface,
+              background: colors.olive600,
+              boxShadow: shadows.sm,
+              cursor: "pointer",
+            }}
+          >
+            <Icon name="filter" size={21} stroke={1.9} />
+          </button>
+          {hasAdvancedFilter ? (
+            <span
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                top: -2,
+                insetInlineEnd: -2,
+                width: 10,
+                height: 10,
+                border: "2px solid " + colors.sand50,
+                borderRadius: "50%",
+                background: colors.gold,
+              }}
+            />
+          ) : null}
+        </div>
       </div>
 
-      <SectionHeader
-        title={loading ? "در حال جستجو…" : teachers.length.toLocaleString("fa-IR") + " استاد"}
-        description="فقط پروفایل‌های منتشرشده و قابل جستجو نمایش داده می‌شوند"
-      />
+      <div
+        className="vodda-scroll-rail"
+        style={{ display: "flex", gap: 8, overflowX: "auto", marginInline: -spacing.xl, paddingInline: spacing.xl, minHeight: 40 }}
+      >
+        {fieldPresets.map(([field, label]) => (
+          <button
+            key={field || "all"}
+            type="button"
+            className="vodda-tappable"
+            onClick={() => setFilters((current) => ({ ...current, field }))}
+            style={chipStyle(filters.field === field)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {hasAdvancedFilter ? (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          {filters.city ? (
+            <button
+              type="button"
+              className="vodda-tappable"
+              onClick={() => setFilters((current) => ({ ...current, city: "" }))}
+              style={{ ...chipStyle(false), display: "inline-flex", alignItems: "center", gap: 6, background: colors.sand100 }}
+            >
+              شهر: {filters.city}
+              <Icon name="x" size={14} />
+            </button>
+          ) : null}
+          {filters.female !== "all" ? (
+            <button
+              type="button"
+              className="vodda-tappable"
+              onClick={() => setFilters((current) => ({ ...current, female: "all" }))}
+              style={{ ...chipStyle(false), display: "inline-flex", alignItems: "center", gap: 6, background: colors.sand100 }}
+            >
+              {filters.female === "female" ? "استاد خانم" : "استاد آقا"}
+              <Icon name="x" size={14} />
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+
+      <div style={{ height: 2 }} />
 
       {loading ? <LoadingState label="در حال جستجوی استادان…" /> : null}
       {!loading && error ? (
@@ -345,19 +396,77 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
           action={<Button variant="secondary" onClick={() => setReloadKey((value) => value + 1)}>تلاش دوباره</Button>}
         />
       ) : null}
-      {!loading && !error && teachers.length === 0 ? (
-        <EmptyState
-          icon={<Icon name="search" size={30} />}
-          title="استادی پیدا نشد"
-          description="عبارت جستجو یا فیلترها را تغییر بده."
-          action={hasFilters ? <Button variant="secondary" onClick={clearFilters}>حذف فیلترها</Button> : undefined}
-        />
+      {!loading && !error ? (
+        <>
+          <div style={{ ...typography.bodySmall, color: colors.inkMuted }}>
+            {teachers.length.toLocaleString("fa-IR")} استاد یافت شد
+          </div>
+          {teachers.length === 0 ? (
+            <EmptyState
+              icon={<Icon name="search" size={30} />}
+              title="نتیجه‌ای یافت نشد"
+              description="نتیجه‌ای با این فیلترها یافت نشد."
+              action={hasAnyFilter ? <Button variant="secondary" onClick={clearAllFilters}>پاک کردن فیلترها</Button> : undefined}
+            />
+          ) : (
+            <div style={{ display: "grid", gap: 14, paddingBottom: spacing.md }}>
+              {teachers.map((teacher) => <TeacherResultCard key={teacher.id} teacher={teacher} config={config} />)}
+            </div>
+          )}
+        </>
       ) : null}
-      {!loading && !error && teachers.length > 0 ? (
-        <div style={{ display: "grid", gap: spacing.md }}>
-          {teachers.map((teacher) => <TeacherResultCard key={teacher.id} teacher={teacher} config={config} />)}
+
+      <Sheet open={filtersOpen} title="فیلترهای جستجو" onClose={() => setFiltersOpen(false)}>
+        <div style={{ display: "grid", gap: spacing.lg }}>
+          <label style={{ display: "grid", gap: 8, ...typography.bodySmall }}>
+            <span style={{ fontWeight: 700 }}>شهر</span>
+            <div style={{ position: "relative" }}>
+              <Icon name="pin" size={18} style={{ position: "absolute", insetInlineStart: 14, top: "50%", transform: "translateY(-50%)", color: colors.inkMuted }} />
+              <input
+                value={advancedDraft.city}
+                onChange={(event) => setAdvancedDraft((current) => ({ ...current, city: event.target.value }))}
+                placeholder="مثلاً کرمان"
+                className="vodda-input"
+                style={{
+                  width: "100%",
+                  minHeight: 50,
+                  padding: "10px 42px 10px 14px",
+                  border: "1px solid " + colors.sand200,
+                  borderRadius: 18,
+                  outline: "none",
+                  color: colors.ink,
+                  background: colors.surface,
+                  fontFamily: typography.fontFamily,
+                }}
+              />
+            </div>
+          </label>
+
+          <div style={{ display: "grid", gap: 8 }}>
+            <strong style={{ ...typography.bodySmall }}>جنسیت استاد</strong>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {[
+                ["all", "فرقی ندارد"],
+                ["male", "آقا"],
+                ["female", "خانم"],
+              ].map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  className="vodda-tappable"
+                  onClick={() => setAdvancedDraft((current) => ({ ...current, female: value as SearchFilters["female"] }))}
+                  style={chipStyle(advancedDraft.female === value)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <Button fullWidth onClick={applyAdvancedFilters}>اعمال فیلتر</Button>
+          <Button fullWidth variant="ghost" onClick={clearAdvancedFilters}>پاک کردن فیلترها</Button>
         </div>
-      ) : null}
+      </Sheet>
     </section>
   );
 }
