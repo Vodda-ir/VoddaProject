@@ -6,21 +6,15 @@ import type { UniversalAppConfig } from "../../config";
 import { usePlatform } from "../../platform/context";
 import type { AuthUser } from "../../platform/types";
 import { navigateApp, type AppRouteName } from "../../router";
-import { Button, Card, Icon, colors, shadows, spacing, typography } from "../../ui";
+import { Button, Card, Icon, colors, digitsOnly, shadows, spacing, toFaDigits, typography } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
 
-function normalizeDigits(value: string) {
-  return value
-    .replace(/[۰-۹]/g, (digit) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit)))
-    .replace(/[٠-٩]/g, (digit) => String("٠١٢٣٤٥٦٧٨٩".indexOf(digit)));
-}
-
 function normalizedMobile(value: string) {
-  return normalizeDigits(value).replace(/\D/g, "").slice(0, 11);
+  return digitsOnly(value, 11);
 }
 
 function normalizedOtp(value: string) {
-  return normalizeDigits(value).replace(/\D/g, "").slice(0, 5);
+  return digitsOnly(value, 5);
 }
 
 const teacherOnlyRoutes = new Set<AppRouteName>([
@@ -318,7 +312,7 @@ export function LoginScreen({ config }: LoginScreenProps) {
                 inputMode="numeric"
                 autoComplete="tel"
                 dir="ltr"
-                value={mobile}
+                value={toFaDigits(mobile)}
                 disabled={codeSent || loading !== null}
                 placeholder="۰۹××× ××× ×××"
                 onChange={(event) => {
@@ -352,7 +346,7 @@ export function LoginScreen({ config }: LoginScreenProps) {
           ) : (
             <div style={{ display: "grid", gap: 20 }}>
               <p style={{ ...typography.bodySmall, margin: "0 0 -2px", color: colors.inkMuted, textAlign: "center" }}>
-                کد پیامک‌شده به <span dir="ltr">{mobile}</span> را وارد کنید
+                کد پیامک‌شده به <span dir="ltr">{toFaDigits(mobile)}</span> را وارد کنید
               </p>
 
               <div
@@ -389,13 +383,13 @@ export function LoginScreen({ config }: LoginScreenProps) {
                         fontWeight: 800,
                       }}
                     >
-                      {digit}
+                      {toFaDigits(digit)}
                     </span>
                   );
                 })}
                 <input
                   ref={otpRef}
-                  value={code}
+                  value={toFaDigits(code)}
                   inputMode="numeric"
                   autoComplete="one-time-code"
                   disabled={loading !== null}
