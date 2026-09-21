@@ -170,49 +170,20 @@ export function WalletHero({
 }) {
   return (
     <div
-      className="vodda-enter"
       style={{
-        position: "relative",
-        overflow: "hidden",
-        padding: spacing.xxl,
-        borderRadius: radii.xl,
+        padding: 22,
+        borderRadius: 30,
         color: colors.surface,
-        background: gradients.deep,
-        boxShadow: shadows.olive,
+        background: "linear-gradient(145deg, #3c472b 0%, #5e6e43 100%)",
+        boxShadow: "0 10px 28px rgba(94,110,67,.28)",
       }}
     >
-      <span
-        aria-hidden="true"
-        style={{
-          position: "absolute",
-          width: 180,
-          height: 180,
-          insetInlineEnd: -68,
-          top: -86,
-          borderRadius: "50%",
-          background: "rgba(255,255,255,.07)",
-        }}
-      />
-      <span
-        aria-hidden="true"
-        style={{
-          position: "absolute",
-          width: 120,
-          height: 120,
-          insetInlineStart: -58,
-          bottom: -74,
-          borderRadius: "50%",
-          background: "rgba(231,213,168,.08)",
-        }}
-      />
-      <div style={{ position: "relative" }}>
-        <span style={{ ...typography.bodySmall, color: "rgba(255,255,255,.7)" }}>{label}</span>
-        <div style={{ display: "flex", alignItems: "baseline", flexWrap: "wrap", gap: spacing.sm, marginTop: 5 }}>
-          <strong style={{ ...typography.number, color: colors.surface }}>{amount}</strong>
-          <span style={{ ...typography.bodySmall, color: "rgba(255,255,255,.68)", fontWeight: 700 }}>{suffix}</span>
-        </div>
-        {children ? <div style={{ marginTop: spacing.lg }}>{children}</div> : null}
+      <span style={{ fontSize: 13, lineHeight: 1.7, color: "rgba(255,255,255,.70)" }}>{label}</span>
+      <div style={{ display: "flex", alignItems: "baseline", flexWrap: "wrap", gap: 6, marginTop: 7 }}>
+        <strong style={{ fontSize: 30, lineHeight: 1.35, fontWeight: 800, color: colors.surface }}>{amount}</strong>
+        <span style={{ fontSize: 14.5, lineHeight: 1.6, color: "rgba(255,255,255,.65)", fontWeight: 600 }}>{suffix}</span>
       </div>
+      {children ? <div style={{ marginTop: 18 }}>{children}</div> : null}
     </div>
   );
 }
