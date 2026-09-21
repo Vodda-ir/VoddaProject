@@ -19,17 +19,18 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
   const pathname = usePathname();
   const [userOpen, setUserOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [user, setUser] = useState({ name: '...', role: 'learner', avatarUrl: '' });
+  const [user, setUser] = useState({ name: '...', role: 'learner', avatarUrl: '', hasTeacherProfile: false });
   const token = getToken();
 
   useEffect(() => {
     if (!token) return;
-    fetch('/api/v1/me', { headers: { Authorization: `Bearer ${token}` } })
+    fetch('/api/backend/me', { cache: 'no-store', credentials: 'same-origin' })
       .then((response) => response.ok ? response.json() : null)
       .then((payload) => payload?.data ? setUser({
         name: payload.data.name || 'کاربر',
         role: payload.data.role || 'learner',
         avatarUrl: fullUrl(payload.data.avatar_url) || '',
+        hasTeacherProfile: Boolean(payload.data.teacher?.id),
       }) : null)
       .catch(() => {});
   }, [token]);
@@ -41,7 +42,7 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
 
   const allPanels = [
     ...(user.role === 'admin' ? [{ href: '/panel/admin', label: 'پنل مدیریت', icon: 'shield' as const, bg: 'rgba(255,255,255,.1)', fg: '#fff' }] : []),
-    ...(['teacher', 'admin'].includes(user.role) ? [{ href: '/panel/teacher', label: 'پنل استاد', icon: 'award' as const, bg: 'rgba(255,255,255,.08)', fg: 'rgba(255,255,255,.7)' }] : []),
+    ...(user.hasTeacherProfile ? [{ href: '/panel/teacher', label: 'پنل استاد', icon: 'award' as const, bg: 'rgba(255,255,255,.08)', fg: 'rgba(255,255,255,.7)' }] : []),
     { href: '/panel/user', label: 'پنل کاربری', icon: 'user' as const, bg: 'rgba(255,255,255,.06)', fg: 'rgba(255,255,255,.6)' },
   ];
 
