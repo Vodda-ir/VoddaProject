@@ -13,7 +13,6 @@ import {
   Icon,
   IconBadge,
   LoadingState,
-  MetricTile,
   SectionHeader,
   colors,
   spacing,
@@ -166,9 +165,17 @@ export function LearnerTeacherProfileScreen({
       </div>
 
       <div className="vodda-enter vodda-enter-delay-1" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
-        <MetricTile icon="star" tone="gold" label="امتیاز" value={ratingLabel} style={{ padding: "14px 8px", textAlign: "center", borderRadius: 18, boxShadow: "none" }} />
-        <MetricTile icon="message" tone="info" label="نظر" value={formatWalletAmount(teacher.reviews)} style={{ padding: "14px 8px", textAlign: "center", borderRadius: 18, boxShadow: "none" }} />
-        <MetricTile icon="calendar" label="جلسه" value={formatWalletAmount(teacher.sessions)} style={{ padding: "14px 8px", textAlign: "center", borderRadius: 18, boxShadow: "none" }} />
+        {[
+          ["star" as const, ratingLabel, "امتیاز"],
+          ["message" as const, formatWalletAmount(teacher.reviews), "نظر"],
+          ["calendar" as const, formatWalletAmount(teacher.sessions), "جلسه"],
+        ].map(([icon, value, label]) => (
+          <div key={label} style={{ minWidth: 0, padding: "14px 8px", textAlign: "center", borderRadius: 18, background: colors.surface }}>
+            <Icon name={icon} size={22} style={{ color: colors.olive500 }} />
+            <strong style={{ display: "block", marginTop: 6, fontSize: 18, fontWeight: 800, color: colors.ink }}>{value}</strong>
+            <span style={{ fontSize: 12, color: colors.inkMuted }}>{label}</span>
+          </div>
+        ))}
       </div>
 
       <section>
