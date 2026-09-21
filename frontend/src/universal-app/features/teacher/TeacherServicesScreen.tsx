@@ -10,10 +10,15 @@ import {
   Dialog,
   EmptyState,
   ErrorState,
+  Icon,
+  IconBadge,
   LoadingState,
+  SectionHeader,
   Sheet,
+  StatusPill,
   colors,
   radii,
+  shadows,
   spacing,
   typography,
 } from "../../ui";
@@ -197,15 +202,10 @@ export function TeacherServicesScreen() {
   }
 
   return (
-    <section style={{ display: "grid", gap: spacing.lg }}>
-      <header>
-        <h1 style={{ ...typography.heading, margin: 0 }}>خدمات من</h1>
-        <p style={{ ...typography.bodySmall, margin: `${spacing.xs}px 0 0`, color: colors.inkMuted, lineHeight: 1.9 }}>
-          خدمت جدید یا ویرایش‌شده تا تأیید مدیر قابل رزرو نیست. استاد می‌تواند خدمت فعال را غیرفعال کند، اما فعال‌سازی مجدد فقط از مسیر moderation مدیریت انجام می‌شود.
-        </p>
-      </header>
+    <section className="vodda-screen" style={{ display: "grid", gap: spacing.xl }}>
+      <SectionHeader title="خدمات من" description="خدمت جدید یا ویرایش‌شده تا تأیید مدیر قابل رزرو نیست." />
 
-      <Button fullWidth onClick={() => openEditor()}>افزودن خدمت جدید</Button>
+      <Button fullWidth onClick={() => openEditor()}><Icon name="book" size={18} />افزودن خدمت جدید</Button>
 
       {loading ? <LoadingState label="در حال دریافت خدمات…" /> : null}
       {!loading && error ? (
@@ -216,7 +216,7 @@ export function TeacherServicesScreen() {
         />
       ) : null}
       {!loading && !error && services.length === 0 ? (
-        <EmptyState title="هنوز خدمتی تعریف نشده است" description="برای شروع، اولین خدمت خود را ثبت کنید." />
+        <EmptyState icon={<Icon name="book" size={30} />} title="هنوز خدمتی تعریف نشده است" description="برای شروع، اولین خدمت خود را ثبت کنید." />
       ) : null}
 
       {!loading && !error && services.length > 0 ? (
@@ -224,14 +224,14 @@ export function TeacherServicesScreen() {
           {services.map((service) => {
             const busy = busyId === service.id;
             return (
-              <Card key={service.id} elevated style={{ display: "grid", gap: spacing.md, opacity: busy ? 0.55 : 1 }}>
+              <Card key={service.id} className="vodda-card--interactive vodda-enter" style={{ display: "grid", gap: spacing.md, padding: spacing.lg, opacity: busy ? 0.55 : 1 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: spacing.md, alignItems: "flex-start" }}>
-                  <div style={{ minWidth: 0 }}>
+                  <div style={{ minWidth: 0, flex: 1, display: "flex", alignItems: "center", gap: spacing.md }}><IconBadge icon="book" tone={service.active ? "olive" : "info"} size={42} /><div style={{ minWidth: 0 }}>
                     <strong style={{ ...typography.body, display: "block" }}>{service.title}</strong>
                     <span style={{ ...typography.caption, color: colors.inkMuted }}>
                       {toFaDigits(service.duration)} دقیقه · {formatWalletAmount(service.price)} تومان
                     </span>
-                  </div>
+                  </div></div>
                   <span
                     style={{
                       ...typography.caption,
@@ -269,7 +269,7 @@ export function TeacherServicesScreen() {
               maxLength={160}
               disabled={busyId !== null}
               onChange={(event) => setDraft((current) => ({ ...current, title: event.target.value }))}
-              style={{ width: "100%", padding: spacing.md, border: `1px solid ${colors.sand200}`, borderRadius: radii.sm, background: colors.surface, color: colors.ink, fontFamily: typography.fontFamily }}
+              style={{ width: "100%", padding: spacing.md, border: `1px solid ${colors.sand200}`, borderRadius: radii.md, background: colors.surface, color: colors.ink, boxShadow: shadows.xs, fontFamily: typography.fontFamily }}
             />
           </label>
           <label style={{ display: "grid", gap: spacing.xs, ...typography.bodySmall }}>
@@ -279,7 +279,7 @@ export function TeacherServicesScreen() {
               value={draft.duration}
               disabled={busyId !== null}
               onChange={(event) => setDraft((current) => ({ ...current, duration: event.target.value.replace(/\D/g, "") }))}
-              style={{ width: "100%", padding: spacing.md, border: `1px solid ${colors.sand200}`, borderRadius: radii.sm, background: colors.surface, color: colors.ink, fontFamily: typography.fontFamily }}
+              style={{ width: "100%", padding: spacing.md, border: `1px solid ${colors.sand200}`, borderRadius: radii.md, background: colors.surface, color: colors.ink, boxShadow: shadows.xs, fontFamily: typography.fontFamily }}
             />
           </label>
           <label style={{ display: "grid", gap: spacing.xs, ...typography.bodySmall }}>
@@ -289,7 +289,7 @@ export function TeacherServicesScreen() {
               value={draft.price}
               disabled={busyId !== null}
               onChange={(event) => setDraft((current) => ({ ...current, price: event.target.value.replace(/\D/g, "") }))}
-              style={{ width: "100%", padding: spacing.md, border: `1px solid ${colors.sand200}`, borderRadius: radii.sm, background: colors.surface, color: colors.ink, fontFamily: typography.fontFamily }}
+              style={{ width: "100%", padding: spacing.md, border: `1px solid ${colors.sand200}`, borderRadius: radii.md, background: colors.surface, color: colors.ink, boxShadow: shadows.xs, fontFamily: typography.fontFamily }}
             />
           </label>
           {formError ? <span role="alert" style={{ ...typography.caption, color: colors.danger }}>{formError}</span> : null}
