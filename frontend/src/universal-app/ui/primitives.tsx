@@ -6,7 +6,7 @@ import type {
   InputHTMLAttributes,
   ReactNode,
 } from "react";
-import { colors, radii, shadows, spacing, typography } from "./theme";
+import { colors, gradients, radii, shadows, spacing, typography } from "./theme";
 
 function mergeStyle(base: CSSProperties, style?: CSSProperties): CSSProperties {
   return style ? { ...base, ...style } : base;
@@ -27,29 +27,31 @@ export function Button({
   disabled,
   children,
   style,
+  className,
   ...props
 }: ButtonProps) {
   const variants: Record<ButtonVariant, CSSProperties> = {
     primary: {
       color: colors.surface,
-      background: colors.olive700,
-      borderColor: colors.olive700,
+      background: colors.olive600,
+      borderColor: colors.olive600,
       boxShadow: shadows.sm,
     },
     secondary: {
       color: colors.olive800,
-      background: colors.olive50,
+      background: colors.surface,
       borderColor: colors.olive200,
+      boxShadow: shadows.xs,
     },
     ghost: {
-      color: colors.inkSecondary,
+      color: colors.olive700,
       background: "transparent",
       borderColor: "transparent",
     },
     danger: {
       color: colors.danger,
-      background: colors.surface,
-      borderColor: "rgba(166, 81, 81, 0.28)",
+      background: colors.dangerBackground,
+      borderColor: "rgba(166,81,81,.16)",
     },
   };
 
@@ -58,28 +60,38 @@ export function Button({
   return (
     <button
       type="button"
+      className={["vodda-button", `vodda-button--${variant}`, className].filter(Boolean).join(" ")}
       disabled={isDisabled}
       aria-busy={loading || undefined}
       style={mergeStyle(
         {
-          ...typography.body,
-          minHeight: 44,
+          ...typography.label,
+          minHeight: 46,
           width: fullWidth ? "100%" : undefined,
-          padding: `9px ${spacing.lg}px`,
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: spacing.sm,
+          padding: `10px ${spacing.xl}px`,
           border: "1px solid",
-          borderRadius: radii.sm,
+          borderRadius: radii.pill,
           fontFamily: typography.fontFamily,
-          fontWeight: 700,
           cursor: isDisabled ? "not-allowed" : "pointer",
-          opacity: isDisabled ? 0.58 : 1,
-          transition: "opacity 160ms ease, transform 160ms ease",
+          opacity: isDisabled ? 0.56 : 1,
+          transition: "transform 150ms ease, box-shadow 150ms ease, background 150ms ease, opacity 150ms ease",
+          WebkitTapHighlightColor: "transparent",
           ...variants[variant],
         },
         style,
       )}
       {...props}
     >
-      {loading ? "در حال انجام…" : children}
+      {loading ? (
+        <>
+          <span className="vodda-spinner" aria-hidden="true" />
+          <span>در حال انجام…</span>
+        </>
+      ) : children}
     </button>
   );
 }
@@ -91,7 +103,7 @@ export type InputProps = InputHTMLAttributes<HTMLInputElement> & {
   containerStyle?: CSSProperties;
 };
 
-export function Input({ label, hint, error, containerStyle, style, id, ...props }: InputProps) {
+export function Input({ label, hint, error, containerStyle, style, id, className, ...props }: InputProps) {
   const inputId = id ?? props.name;
   return (
     <label
@@ -99,7 +111,7 @@ export function Input({ label, hint, error, containerStyle, style, id, ...props 
       style={mergeStyle(
         {
           display: "grid",
-          gap: spacing.sm,
+          gap: 7,
           color: colors.ink,
           fontFamily: typography.fontFamily,
           ...typography.bodySmall,
@@ -107,22 +119,26 @@ export function Input({ label, hint, error, containerStyle, style, id, ...props 
         containerStyle,
       )}
     >
-      {label ? <span style={{ fontWeight: 700 }}>{label}</span> : null}
+      {label ? <span style={{ fontWeight: 800, color: colors.inkSecondary }}>{label}</span> : null}
       <input
         id={inputId}
+        className={["vodda-input", className].filter(Boolean).join(" ")}
         aria-invalid={Boolean(error) || undefined}
         style={mergeStyle(
           {
-            minHeight: 46,
+            minHeight: 50,
             width: "100%",
-            padding: `9px ${spacing.md}px`,
+            boxSizing: "border-box",
+            padding: `11px ${spacing.lg}px`,
             color: colors.ink,
             background: colors.surface,
             border: `1px solid ${error ? "rgba(166, 81, 81, 0.55)" : colors.sand200}`,
-            borderRadius: radii.sm,
+            borderRadius: radii.md,
             outline: "none",
+            boxShadow: shadows.xs,
             fontFamily: typography.fontFamily,
             ...typography.body,
+            transition: "border-color 150ms ease, box-shadow 150ms ease, background 150ms ease",
           },
           style,
         )}
@@ -143,17 +159,18 @@ export type CardProps = HTMLAttributes<HTMLDivElement> & {
   elevated?: boolean;
 };
 
-export function Card({ elevated = false, children, style, ...props }: CardProps) {
+export function Card({ elevated = false, children, style, className, ...props }: CardProps) {
   return (
     <div
+      className={["vodda-card", elevated ? "vodda-card--elevated" : "", className].filter(Boolean).join(" ")}
       style={mergeStyle(
         {
-          padding: spacing.lg,
+          padding: spacing.xl,
           color: colors.ink,
           background: colors.surface,
-          border: `1px solid ${colors.sand200}`,
-          borderRadius: radii.md,
-          boxShadow: elevated ? shadows.md : shadows.sm,
+          border: `1px solid ${colors.sand150}`,
+          borderRadius: radii.lg,
+          boxShadow: elevated ? shadows.md : shadows.xs,
           fontFamily: typography.fontFamily,
         },
         style,
@@ -168,6 +185,7 @@ export function Card({ elevated = false, children, style, ...props }: CardProps)
 export type AvatarProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "children"> & {
   name?: string;
   size?: number;
+  ring?: boolean;
 };
 
 function initials(name?: string) {
@@ -176,7 +194,25 @@ function initials(name?: string) {
   return `${parts[0]?.[0] ?? ""}${parts.length > 1 ? parts.at(-1)?.[0] ?? "" : ""}`;
 }
 
-export function Avatar({ name, size = 48, src, alt, style, ...props }: AvatarProps) {
+function avatarFrame(size: number, ring: boolean, style?: CSSProperties): CSSProperties {
+  return mergeStyle(
+    {
+      display: "inline-grid",
+      placeItems: "center",
+      flex: `0 0 ${size}px`,
+      width: size,
+      height: size,
+      boxSizing: "border-box",
+      borderRadius: "50%",
+      border: ring ? `3px solid ${colors.surface}` : undefined,
+      outline: ring ? `2px solid ${colors.olive200}` : undefined,
+      boxShadow: ring ? shadows.sm : undefined,
+    },
+    style,
+  );
+}
+
+export function Avatar({ name, size = 48, ring = true, src, alt, style, ...props }: AvatarProps) {
   if (src) {
     return (
       <img
@@ -184,17 +220,11 @@ export function Avatar({ name, size = 48, src, alt, style, ...props }: AvatarPro
         alt={alt ?? name ?? "تصویر کاربر"}
         width={size}
         height={size}
-        style={mergeStyle(
-          {
-            display: "block",
-            width: size,
-            height: size,
-            objectFit: "cover",
-            borderRadius: "50%",
-            background: colors.olive50,
-          },
-          style,
-        )}
+        style={{
+          ...avatarFrame(size, ring, style),
+          objectFit: "cover",
+          background: colors.olive50,
+        }}
         {...props}
       />
     );
@@ -204,22 +234,14 @@ export function Avatar({ name, size = 48, src, alt, style, ...props }: AvatarPro
     <span
       role="img"
       aria-label={alt ?? name ?? "کاربر"}
-      style={mergeStyle(
-        {
-          display: "inline-grid",
-          placeItems: "center",
-          flex: `0 0 ${size}px`,
-          width: size,
-          height: size,
-          color: colors.olive800,
-          background: colors.olive100,
-          borderRadius: "50%",
-          fontFamily: typography.fontFamily,
-          fontSize: Math.max(12, Math.round(size * 0.3)),
-          fontWeight: 800,
-        },
-        style,
-      )}
+      style={{
+        ...avatarFrame(size, ring, style),
+        color: colors.olive800,
+        background: gradients.soft,
+        fontFamily: typography.fontFamily,
+        fontSize: Math.max(12, Math.round(size * 0.29)),
+        fontWeight: 900,
+      }}
     >
       {initials(name)}
     </span>
@@ -230,10 +252,11 @@ export type StateProps = {
   title: ReactNode;
   description?: ReactNode;
   action?: ReactNode;
+  icon?: ReactNode;
   style?: CSSProperties;
 };
 
-function StateView({ title, description, action, style }: StateProps) {
+function StateView({ title, description, action, icon, style }: StateProps) {
   return (
     <div
       style={mergeStyle(
@@ -241,7 +264,7 @@ function StateView({ title, description, action, style }: StateProps) {
           display: "grid",
           justifyItems: "center",
           gap: spacing.sm,
-          padding: `${spacing.xxxl}px ${spacing.xl}px`,
+          padding: `${spacing.huge}px ${spacing.xl}px`,
           color: colors.ink,
           textAlign: "center",
           fontFamily: typography.fontFamily,
@@ -249,9 +272,27 @@ function StateView({ title, description, action, style }: StateProps) {
         style,
       )}
     >
+      <div
+        aria-hidden={!icon}
+        style={{
+          width: 72,
+          height: 72,
+          display: "grid",
+          placeItems: "center",
+          marginBottom: spacing.xs,
+          borderRadius: "50%",
+          color: colors.olive500,
+          background: colors.olive50,
+          boxShadow: `inset 0 0 0 1px ${colors.olive100}`,
+          fontSize: 26,
+          fontWeight: 900,
+        }}
+      >
+        {icon ?? "و"}
+      </div>
       <strong style={typography.title}>{title}</strong>
-      {description ? <span style={{ color: colors.inkMuted, ...typography.body }}>{description}</span> : null}
-      {action ? <div style={{ marginTop: spacing.sm }}>{action}</div> : null}
+      {description ? <span style={{ maxWidth: 380, color: colors.inkMuted, ...typography.body }}>{description}</span> : null}
+      {action ? <div style={{ marginTop: spacing.md }}>{action}</div> : null}
     </div>
   );
 }
@@ -261,7 +302,17 @@ export function EmptyState(props: StateProps) {
 }
 
 export function ErrorState(props: StateProps) {
-  return <StateView {...props} style={{ color: colors.danger, ...props.style }} />;
+  return (
+    <StateView
+      {...props}
+      style={{
+        ...props.style,
+      }}
+      icon={
+        <span style={{ color: colors.danger, fontSize: 24, fontWeight: 900 }}>!</span>
+      }
+    />
+  );
 }
 
 export function LoadingState({ label = "در حال بارگذاری…", style }: { label?: ReactNode; style?: CSSProperties }) {
@@ -273,7 +324,9 @@ export function LoadingState({ label = "در حال بارگذاری…", style 
         {
           display: "grid",
           placeItems: "center",
-          minHeight: 120,
+          alignContent: "center",
+          gap: spacing.md,
+          minHeight: 170,
           padding: spacing.xl,
           color: colors.inkMuted,
           textAlign: "center",
@@ -283,7 +336,8 @@ export function LoadingState({ label = "در حال بارگذاری…", style 
         style,
       )}
     >
-      {label}
+      <span className="vodda-loader-orbit" aria-hidden="true" />
+      <span>{label}</span>
     </div>
   );
 }
@@ -301,6 +355,7 @@ export function Dialog({ open, title, children, onClose, closeLabel = "بستن"
   return (
     <div
       role="presentation"
+      className="vodda-overlay"
       onMouseDown={(event) => {
         if (event.currentTarget === event.target) onClose();
       }}
@@ -311,28 +366,31 @@ export function Dialog({ open, title, children, onClose, closeLabel = "بستن"
         display: "grid",
         placeItems: "center",
         padding: spacing.lg,
-        background: "rgba(42, 40, 32, 0.42)",
+        background: "rgba(32, 35, 27, 0.56)",
+        backdropFilter: "blur(8px)",
       }}
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-label={typeof title === "string" ? title : undefined}
+        className="vodda-dialog"
         style={{
-          width: "min(100%, 440px)",
+          width: "min(100%, 460px)",
           maxHeight: "min(82dvh, 720px)",
           overflowY: "auto",
           padding: spacing.xl,
           color: colors.ink,
           background: colors.surface,
-          borderRadius: radii.lg,
+          border: `1px solid ${colors.sand150}`,
+          borderRadius: radii.xl,
           boxShadow: shadows.lg,
           fontFamily: typography.fontFamily,
         }}
       >
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: spacing.md }}>
           {title ? <strong style={typography.title}>{title}</strong> : <span />}
-          <Button variant="ghost" onClick={onClose} aria-label={closeLabel} style={{ minHeight: 36, padding: "5px 10px" }}>
+          <Button variant="ghost" onClick={onClose} aria-label={closeLabel} style={{ width: 40, minHeight: 40, padding: 0 }}>
             ×
           </Button>
         </div>
@@ -347,6 +405,7 @@ export function Sheet({ open, title, children, onClose, closeLabel = "بستن" 
   return (
     <div
       role="presentation"
+      className="vodda-overlay"
       onMouseDown={(event) => {
         if (event.currentTarget === event.target) onClose();
       }}
@@ -356,29 +415,32 @@ export function Sheet({ open, title, children, onClose, closeLabel = "بستن" 
         zIndex: 100,
         display: "flex",
         alignItems: "flex-end",
-        background: "rgba(42, 40, 32, 0.42)",
+        background: "rgba(32, 35, 27, 0.5)",
+        backdropFilter: "blur(7px)",
       }}
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-label={typeof title === "string" ? title : undefined}
+        className="vodda-sheet"
         style={{
-          width: "100%",
+          width: "min(100%, 640px)",
           maxHeight: "88dvh",
+          marginInline: "auto",
           overflowY: "auto",
-          padding: `${spacing.md}px ${spacing.xl}px calc(${spacing.xl}px + env(safe-area-inset-bottom))`,
+          padding: `${spacing.md}px ${spacing.xl}px calc(${spacing.xxl}px + env(safe-area-inset-bottom))`,
           color: colors.ink,
           background: colors.surface,
-          borderRadius: `${radii.lg}px ${radii.lg}px 0 0`,
+          borderRadius: `${radii.xl}px ${radii.xl}px 0 0`,
           boxShadow: shadows.lg,
           fontFamily: typography.fontFamily,
         }}
       >
-        <div style={{ width: 40, height: 4, margin: "0 auto 12px", borderRadius: radii.pill, background: colors.sand200 }} />
+        <div style={{ width: 42, height: 5, margin: "2px auto 14px", borderRadius: radii.pill, background: colors.sand200 }} />
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: spacing.md }}>
           {title ? <strong style={typography.title}>{title}</strong> : <span />}
-          <Button variant="ghost" onClick={onClose} aria-label={closeLabel} style={{ minHeight: 36, padding: "5px 10px" }}>
+          <Button variant="ghost" onClick={onClose} aria-label={closeLabel} style={{ width: 40, minHeight: 40, padding: 0 }}>
             ×
           </Button>
         </div>
