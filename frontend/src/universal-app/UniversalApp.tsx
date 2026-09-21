@@ -180,6 +180,7 @@ export function UniversalApp({ config: configOverrides, platform }: UniversalApp
 
   return (
     <PlatformProvider runtime={runtime}>
+      <UniversalVisualStyles />
       <UniversalAppContent config={config} runtime={runtime} />
     </PlatformProvider>
   );
