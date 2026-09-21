@@ -9,10 +9,14 @@ import {
   Dialog,
   EmptyState,
   ErrorState,
+  Icon,
   LoadingState,
+  SectionHeader,
   Sheet,
+  StatusPill,
   colors,
   radii,
+  shadows,
   spacing,
   typography,
 } from "../../ui";
@@ -60,27 +64,16 @@ function SessionCard({
   onRate: () => void;
 }) {
   return (
-    <Card elevated style={{ display: "grid", gap: spacing.md, borderRadius: radii.lg }}>
+    <Card className="vodda-card--interactive vodda-enter" style={{ display: "grid", gap: spacing.md, borderRadius: radii.lg, padding: spacing.lg }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: spacing.md }}>
-        <span
-          style={{
-            ...typography.caption,
-            padding: "4px 10px",
-            borderRadius: radii.pill,
-            color: session.status === "canceled" ? colors.danger : colors.olive800,
-            background: session.status === "canceled" ? colors.clayBackground : colors.olive50,
-            fontWeight: 700,
-          }}
-        >
-          {statusLabels[session.status] ?? session.status}
-        </span>
+        <StatusPill status={session.status} label={statusLabels[session.status] ?? session.status} />
         <span style={{ ...typography.caption, color: colors.inkMuted }}>
           {toFaDigits(session.duration)} دقیقه
         </span>
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: spacing.md }}>
-        <Avatar name={session.teacherName} size={46} />
+        <Avatar name={session.teacherName} size={50} ring />
         <div style={{ minWidth: 0 }}>
           <strong style={{ ...typography.body, display: "block" }}>{session.teacherName}</strong>
           <span style={{ ...typography.bodySmall, color: colors.inkSecondary }}>{session.service}</span>
@@ -89,13 +82,18 @@ function SessionCard({
 
       <div
         style={{
+          display: "flex",
+          alignItems: "center",
+          gap: spacing.sm,
           padding: `${spacing.sm}px ${spacing.md}px`,
-          borderRadius: radii.sm,
-          background: colors.sand50,
-          color: colors.inkSecondary,
+          borderRadius: radii.md,
+          background: colors.olive50,
+          color: colors.olive800,
           ...typography.bodySmall,
+          fontWeight: 700,
         }}
       >
+        <Icon name="clock" size={17} stroke={1.9} />
         {officialTime(session)}
       </div>
 
@@ -213,26 +211,44 @@ export function LearnerSessionsScreen() {
   }
 
   return (
-    <section style={{ display: "grid", gap: spacing.lg }}>
-      <header>
-        <h1 style={{ ...typography.heading, margin: 0 }}>جلسات من</h1>
-        <p style={{ ...typography.bodySmall, margin: `${spacing.xs}px 0 0`, color: colors.inkMuted }}>
-          زمان‌ها فقط بر اساس ساعت رسمی سامانه نمایش داده می‌شوند.
-        </p>
-      </header>
+    <section className="vodda-screen" style={{ display: "grid", gap: spacing.xl }}>
+      <SectionHeader title="جلسات من" description="زمان‌ها بر اساس ساعت رسمی سامانه نمایش داده می‌شوند" />
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: spacing.sm }}>
+      <div
+        className="vodda-enter"
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: 4,
+          padding: 4,
+          border: `1px solid ${colors.sand200}`,
+          borderRadius: radii.pill,
+          background: colors.surface,
+          boxShadow: shadows.xs,
+        }}
+      >
         {(["upcoming", "past"] as const).map((tab) => {
           const selected = tab === when;
           return (
-            <Button
+            <button
               key={tab}
-              variant={selected ? "primary" : "secondary"}
+              type="button"
+              className="vodda-tappable"
               onClick={() => setWhen(tab)}
               aria-pressed={selected}
+              style={{
+                minHeight: 42,
+                border: 0,
+                borderRadius: radii.pill,
+                color: selected ? colors.surface : colors.inkMuted,
+                background: selected ? colors.olive600 : "transparent",
+                fontFamily: typography.fontFamily,
+                fontWeight: 800,
+                cursor: "pointer",
+              }}
             >
               {tab === "upcoming" ? "پیش‌رو" : "گذشته"}
-            </Button>
+            </button>
           );
         })}
       </div>
@@ -246,7 +262,7 @@ export function LearnerSessionsScreen() {
         />
       ) : null}
       {!loading && !error && sessions.length === 0 ? (
-        <EmptyState title="جلسه‌ای نیست" description="هنوز جلسه‌ای در این بخش ندارید." />
+        <EmptyState icon={<Icon name="calendar" size={30} />} title="جلسه‌ای نیست" description="هنوز جلسه‌ای در این بخش ندارید." />
       ) : null}
       {!loading && !error && sessions.length > 0 ? (
         <div style={{ display: "grid", gap: spacing.md }}>
@@ -327,9 +343,10 @@ export function LearnerSessionsScreen() {
                 resize: "vertical",
                 padding: spacing.md,
                 border: `1px solid ${colors.sand200}`,
-                borderRadius: radii.sm,
+                borderRadius: radii.md,
                 color: colors.ink,
                 background: colors.surface,
+                boxShadow: shadows.xs,
                 fontFamily: typography.fontFamily,
                 ...typography.body,
               }}
