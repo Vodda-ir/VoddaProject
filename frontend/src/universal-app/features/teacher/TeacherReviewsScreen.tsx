@@ -13,7 +13,6 @@ import {
   Icon,
   LoadingState,
   MetricTile,
-  SectionHeader,
   colors,
   spacing,
   typography,
@@ -104,7 +103,6 @@ export function TeacherReviewsScreen() {
 
   return (
     <section className="vodda-screen" style={{ display: "grid", gap: spacing.xl }}>
-      <SectionHeader title="نظر قرآن‌آموزان" description="بازخوردهای ثبت‌شده پس از جلسات تکمیل‌شده" />
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: spacing.sm }}>
         <MetricTile icon="star" tone="gold" label="میانگین امتیاز" value={toFaDigits(average.toFixed(1)) + " ★"} />
         <MetricTile icon="message" tone="info" label="تعداد نظرها" value={toFaDigits(reviews.length)} />
