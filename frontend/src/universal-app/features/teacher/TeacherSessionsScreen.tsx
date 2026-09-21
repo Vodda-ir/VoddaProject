@@ -122,14 +122,14 @@ function SessionCard({
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: spacing.md }}>
-        <Avatar name={session.learnerName} size={50} ring />
+        <Avatar name={session.learnerName} size={46} ring />
         <div style={{ minWidth: 0 }}>
           <strong style={{ ...typography.body, display: "block" }}>{session.learnerName}</strong>
           <span style={{ ...typography.bodySmall, color: colors.inkSecondary }}>{session.service}</span>
         </div>
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: spacing.sm, padding: `${spacing.sm}px ${spacing.md}px`, borderRadius: radii.md, background: colors.olive50, color: colors.olive800, ...typography.bodySmall, fontWeight: 700 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: spacing.sm, padding: `${spacing.sm}px ${spacing.md}px`, borderRadius: 13, background: colors.sand50, color: colors.inkSecondary, ...typography.bodySmall, fontWeight: 700 }}>
         <Icon name="clock" size={17} />
         {officialTime(session)}
       </div>
@@ -253,11 +253,11 @@ export function TeacherSessionsScreen({ mode }: { mode: TeacherSessionsMode }) {
       <SectionHeader title={heading} description="تاریخ و ساعت از زمان رسمی سامانه نمایش داده می‌شوند" />
 
       {mode === "sessions" ? (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4, padding: 4, border: `1px solid ${colors.sand200}`, borderRadius: radii.pill, background: colors.surface, boxShadow: shadows.xs }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
           {(["upcoming", "past"] as const).map((tab) => {
             const selected = when === tab;
             return (
-              <button key={tab} type="button" className="vodda-tappable" aria-pressed={selected} onClick={() => setWhen(tab)} style={{ minHeight: 42, border: 0, borderRadius: radii.pill, color: selected ? colors.surface : colors.inkMuted, background: selected ? colors.olive600 : "transparent", fontFamily: typography.fontFamily, fontWeight: 800, cursor: "pointer" }}>
+              <button key={tab} type="button" className="vodda-tappable" aria-pressed={selected} onClick={() => setWhen(tab)} style={{ minHeight: 44, border: 0, borderRadius: 14, color: selected ? colors.surface : colors.inkMuted, background: selected ? colors.olive600 : colors.surface, boxShadow: shadows.xs, fontFamily: typography.fontFamily, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
                 {tab === "upcoming" ? "پیش‌رو" : "گذشته"}
               </button>
             );
