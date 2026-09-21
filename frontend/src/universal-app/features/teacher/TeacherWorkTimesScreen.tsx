@@ -11,7 +11,6 @@ import {
   ErrorState,
   Icon,
   LoadingState,
-  Sheet,
   colors,
   radii,
   shadows,
@@ -209,7 +208,7 @@ export function TeacherWorkTimesScreen() {
           {days.map((day, weekday) => {
             const slots = grouped.get(weekday) ?? [];
             return (
-              <Card key={day} className="vodda-card--interactive vodda-enter" style={{ display: "grid", gap: spacing.md, padding: 14, borderRadius: 18 }}>
+              <Card key={day} className="vodda-card--interactive" style={{ display: "grid", gap: spacing.md, padding: 14, borderRadius: 18, boxShadow: "0 0 4px rgba(46,54,34,.04)" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: spacing.md }}>
                   <strong style={{ fontSize: 14.5, fontWeight: 700, color: slots.length ? colors.ink : colors.inkFaint }}>{day}</strong>
                   <button
@@ -237,44 +236,68 @@ export function TeacherWorkTimesScreen() {
                 </div>
 
                 {slots.length ? (
-                  <div style={{ display: "grid", gap: spacing.sm }}>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                     {slots.map((slot) => {
                       const busy = busyId === slot.id;
                       return (
                         <div
                           key={slot.id}
                           style={{
-                            display: "flex",
+                            display: "inline-flex",
                             alignItems: "center",
-                            justifyContent: "space-between",
-                            gap: spacing.sm,
-                            padding: "10px 12px",
-                            borderRadius: 13,
+                            gap: 6,
+                            padding: "7px 12px",
+                            borderRadius: radii.pill,
                             background: colors.olive50,
                             opacity: busy ? 0.55 : 1,
                           }}
                         >
-                          <strong dir="ltr" style={{ ...typography.bodySmall, color: colors.olive800 }}>
-                            {toFaDigits(slot.from)} — {toFaDigits(slot.to)}
-                          </strong>
-                          <div style={{ display: "flex", gap: spacing.xs }}>
-                            <Button variant="secondary" disabled={busy} onClick={() => openEditor(weekday, slot)}>ویرایش</Button>
-                            <Button variant="danger" disabled={busy} onClick={() => setDeleteTarget(slot)}>حذف</Button>
-                          </div>
+                          <button
+                            type="button"
+                            disabled={busy}
+                            onClick={() => openEditor(weekday, slot)}
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 6,
+                              padding: 0,
+                              border: 0,
+                              color: colors.olive700,
+                              background: "transparent",
+                              fontFamily: typography.fontFamily,
+                              fontSize: 12,
+                              fontWeight: 600,
+                              cursor: busy ? "not-allowed" : "pointer",
+                            }}
+                          >
+                            <Icon name="clock" size={14} />
+                            <span dir="ltr">{toFaDigits(slot.from)} تا {toFaDigits(slot.to)}</span>
+                          </button>
+                          <button
+                            type="button"
+                            aria-label="حذف بازه"
+                            disabled={busy}
+                            onClick={() => setDeleteTarget(slot)}
+                            style={{ display: "grid", placeItems: "center", padding: 0, border: 0, color: colors.inkMuted, background: "transparent", cursor: busy ? "not-allowed" : "pointer" }}
+                          >
+                            <Icon name="x" size={14} />
+                          </button>
                         </div>
                       );
                     })}
                   </div>
-                ) : null}
+                ) : (
+                  <span style={{ paddingTop: 2, fontSize: 12.5, color: colors.inkFaint }}>تعطیل</span>
+                )}
               </Card>
             );
           })}
         </div>
       ) : null}
 
-      <Sheet
+      <Dialog
         open={editor !== null}
-        title={editor?.slot ? `ویرایش بازهٔ ${editor ? days[editor.weekday] : ""}` : `افزودن بازهٔ ${editor ? days[editor.weekday] : ""}`}
+        title={editor ? `${editor.slot ? "ویرایش" : "افزودن"} بازه - ${days[editor.weekday]}` : "بازهٔ کاری"}
         onClose={closeEditor}
       >
         <div style={{ display: "grid", gap: spacing.md }}>
@@ -285,7 +308,7 @@ export function TeacherWorkTimesScreen() {
               value={draft.from}
               disabled={busyId !== null}
               onChange={(event) => setDraft((current) => ({ ...current, from: event.target.value }))}
-              style={{ width: "100%", padding: spacing.md, border: `1px solid ${colors.sand200}`, borderRadius: radii.md, background: colors.surface, color: colors.ink, boxShadow: shadows.xs, fontFamily: typography.fontFamily }}
+              style={{ width: "100%", padding: spacing.md, border: `1px solid ${colors.sand200}`, borderRadius: radii.md, background: colors.surface, color: colors.ink, boxShadow: "none", fontFamily: typography.fontFamily }}
             />
           </label>
           <label style={{ display: "grid", gap: spacing.xs, ...typography.bodySmall }}>
@@ -295,13 +318,16 @@ export function TeacherWorkTimesScreen() {
               value={draft.to}
               disabled={busyId !== null}
               onChange={(event) => setDraft((current) => ({ ...current, to: event.target.value }))}
-              style={{ width: "100%", padding: spacing.md, border: `1px solid ${colors.sand200}`, borderRadius: radii.md, background: colors.surface, color: colors.ink, boxShadow: shadows.xs, fontFamily: typography.fontFamily }}
+              style={{ width: "100%", padding: spacing.md, border: `1px solid ${colors.sand200}`, borderRadius: radii.md, background: colors.surface, color: colors.ink, boxShadow: "none", fontFamily: typography.fontFamily }}
             />
           </label>
           {formError ? <span role="alert" style={{ ...typography.caption, color: colors.danger }}>{formError}</span> : null}
-          <Button fullWidth loading={busyId !== null} onClick={() => void save()}>ذخیره بازه</Button>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: spacing.sm }}>
+            <Button variant="ghost" disabled={busyId !== null} onClick={closeEditor}>انصراف</Button>
+            <Button loading={busyId !== null} onClick={() => void save()}>ذخیره</Button>
+          </div>
         </div>
-      </Sheet>
+      </Dialog>
 
       <Dialog
         open={deleteTarget !== null}
