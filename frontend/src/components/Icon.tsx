@@ -2,7 +2,7 @@ import type { CSSProperties } from 'react';
 
 // Line icon set ported from docs/design/vodda-icons.jsx (24×24, stroke=currentColor).
 type IconName =
-  | 'home' | 'search' | 'calendar' | 'wallet' | 'user' | 'phone' | 'video'
+  | 'home' | 'search' | 'calendar' | 'wallet' | 'user' | 'phone' | 'video' | 'camera'
   | 'book' | 'mic' | 'star' | 'heart' | 'chevronL' | 'chevronUp' | 'arrowL' | 'play'
   | 'check' | 'checkCircle' | 'bell' | 'message' | 'pin' | 'clock' | 'info' | 'shield'
   | 'award' | 'users' | 'sparkle' | 'download' | 'quran' | 'headphones'
@@ -36,6 +36,7 @@ export function Icon({
     user: <><circle {...p} cx="12" cy="8" r="4" /><path {...p} d="M4.5 20c0-3.6 3.4-6 7.5-6s7.5 2.4 7.5 6" /></>,
     phone: <path {...p} d="M6.5 4h3l1.5 4-2 1.5a11 11 0 0 0 5 5l1.5-2 4 1.5v3c0 1.1-.9 2-2 2A15 15 0 0 1 4.5 6c0-1.1.9-2 2-2Z" />,
     video: <><rect {...p} x="3" y="6" width="12.5" height="12" rx="3" /><path {...p} d="m15.5 10 5-3v10l-5-3" /></>,
+    camera: <><path {...p} d="M5 7.5h3l1.2-2h5.6l1.2 2h3c1.1 0 2 .9 2 2v8c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2v-8c0-1.1.9-2 2-2Z" /><circle {...p} cx="12" cy="13" r="3.5" /></>,
     book: <><path {...p} d="M12 6.5C12 6.5 10 4.5 4.5 4.5V18c5.5 0 7.5 2 7.5 2s2-2 7.5-2V4.5C14 4.5 12 6.5 12 6.5Z" /><path {...p} d="M12 6.5v13.5" /></>,
     mic: <><rect {...p} x="9" y="3" width="6" height="11" rx="3" /><path {...p} d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3M9 21h6" /></>,
     star: fill
