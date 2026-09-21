@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { authApi, setToken } from '@/lib/auth';
+import { digitsOnly, toFaDigits } from '@/lib/persian';
 
 /* ── Fully controlled 5-digit OTP input ── */
 function OtpInput({
@@ -50,7 +51,7 @@ function OtpInput({
   }, [length]);
 
   const handleChange = useCallback((i: number, raw: string) => {
-    const chars = raw.replace(/\D/g, '');
+    const chars = digitsOnly(raw);
     if (chars.length === 0) return;
 
     // distribute characters starting from i
@@ -97,7 +98,7 @@ function OtpInput({
   }, [values, clearFrom, length]);
 
   const handlePaste = useCallback((e: React.ClipboardEvent) => {
-    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, length);
+    const pasted = digitsOnly(e.clipboardData.getData('text'), length);
     if (pasted.length === 0) return;
     e.preventDefault();
     setValues(prev => {
@@ -124,7 +125,7 @@ function OtpInput({
         <input
           key={i}
           ref={el => { refs.current[i] = el; }}
-          value={values[i]}
+          value={toFaDigits(values[i])}
           onChange={e => handleChange(i, e.target.value)}
           onKeyDown={e => handleKeyDown(i, e)}
           onFocus={() => {
@@ -216,8 +217,8 @@ export default function PanelLogin() {
           )}
           <input
             ref={mobileRef}
-            value={mobile}
-            onChange={e => setMobile(e.target.value.replace(/\D/g, '').slice(0, 11))}
+            value={toFaDigits(mobile)}
+            onChange={e => setMobile(digitsOnly(e.target.value, 11))}
             onKeyDown={e => e.key === 'Enter' && sendOTP()}
             placeholder="۰۹۱۲۳۴۵۶۷۸۹"
             disabled={codeSent}
@@ -249,7 +250,7 @@ export default function PanelLogin() {
           marginTop: codeSent ? 0 : -8,
         }}>
           <div style={{ fontSize: 13, color: 'var(--ink-3)', textAlign: 'center', marginBottom: 18 }}>
-            کد تأیید ۵ رقمی به {mobile} پیامک شد
+            کد تأیید ۵ رقمی به <span dir="ltr">{toFaDigits(mobile)}</span> پیامک شد
           </div>
 
           <OtpInput length={5} disabled={loading} onComplete={handleVerify} />
