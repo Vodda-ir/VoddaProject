@@ -47,6 +47,7 @@
 - [x] پنل مدیر: کاربران، استادان، خدمات، جلسات، برداشت، پشتیبانی و audit
 - [x] جدول‌ها و کارت‌های responsive و عملیات حساس دارای confirmation/busy state
 - [x] FAQ، قوانین و حریم خصوصی هماهنگ با قابلیت‌های فعال
+- [x] redesign کامل Public Website بر اساس زبان بصری Universal App: Landing، header/mobile menu، Search، Teacher Profile، About/FAQ/Contact/Privacy/Terms/Blog و stateهای عمومی در [`docs/public-web-redesign.md`](docs/public-web-redesign.md) مستند و بازطراحی شدند.
 - [x] visual parity کامل Universal App با Flutter: design system، shell/navigation، auth/onboarding، تمام screenهای learner و teacher، stateها، heroها، statusها و interaction hierarchy بازطراحی شدند.
 
 ## مهاجرت Universal App + Capacitor
