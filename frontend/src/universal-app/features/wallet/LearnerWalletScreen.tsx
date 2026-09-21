@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from "react";
 import { usePlatform } from "../../platform/context";
 import {
   Button,
-  Card,
   EmptyState,
   ErrorState,
   Icon,
@@ -52,42 +51,24 @@ export function LearnerWalletScreen() {
       <h1 style={{ ...typography.heading, fontSize: 24, margin: 0, color: colors.ink }}>کیف پول</h1>
       <WalletHero amount={balance === null ? "—" : formatWalletAmount(balance)} />
 
-      <Card
-        className="vodda-enter vodda-enter-delay-1"
+      <div
         style={{
           display: "flex",
           alignItems: "flex-start",
-          gap: spacing.md,
+          gap: 10,
+          padding: 14,
+          border: "1px solid rgba(191,149,64,.25)",
+          borderRadius: 16,
           background: colors.goldBackground,
-          borderColor: colors.goldSoft,
         }}
       >
-        <span
-          aria-hidden="true"
-          style={{
-            width: 42,
-            height: 42,
-            flex: "0 0 42px",
-            display: "grid",
-            placeItems: "center",
-            borderRadius: 14,
-            color: colors.goldDark,
-            background: "rgba(255,255,255,.55)",
-          }}
-        >
-          <Icon name="info" size={20} />
-        </span>
+        <Icon name="info" size={19} style={{ flex: "0 0 auto", marginTop: 1, color: colors.gold }} />
         <p style={{ ...typography.bodySmall, margin: 0, color: colors.inkSecondary }}>
-          شارژ اینترنتی پس از اتصال و تأیید درگاه پرداخت فعال می‌شود. تا آن زمان هیچ مسیر شارژ آزمایشی در اپ نمایش داده نمی‌شود.
+          شارژ اینترنتی کیف پول پس از اتصال و تأیید درگاه پرداخت فعال می‌شود. دکمهٔ شارژ آزمایشی در نسخهٔ production نمایش داده نمی‌شود.
         </p>
-      </Card>
+      </div>
 
-      <SectionHeader
-        title="تراکنش‌ها"
-        description={transactions.length ? `${transactions.length.toLocaleString("fa-IR")} گردش مالی ثبت‌شده` : undefined}
-        action={!loading ? "به‌روزرسانی" : undefined}
-        onAction={() => void load()}
-      />
+      <SectionHeader title="تراکنش‌ها" />
 
       {loading ? <LoadingState label="در حال دریافت کیف پول…" /> : null}
       {!loading && error ? (
