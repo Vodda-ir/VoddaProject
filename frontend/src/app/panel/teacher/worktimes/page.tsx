@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Icon } from '@/components/Icon';
+import { PanelButton, PanelMetric, PanelPageHeader } from '@/components/panel/PanelUI';
 import { api, type WorkTime } from '@/lib/api';
 import { getToken } from '@/lib/auth';
 import { toFaDigits, toLatinDigits } from '@/lib/persian';
@@ -78,22 +79,35 @@ export default function TeacherWorkTimesPage() {
     }
   }
 
+  const activeDays = grouped.size;
+  const totalRanges = items.length;
+
   return (
-    <main style={{ padding: 28 }}>
-      <h1 style={{ fontSize: 21, fontWeight: 800, marginBottom: 4 }}>زمان‌های کاری</h1>
-      <p style={{ fontSize: 13, color: 'var(--ink-3)', marginBottom: 22 }}>بازه‌های رسمی قابل رزرو؛ هم‌پوشانی و ساعت نامعتبر توسط Backend رد می‌شود.</p>
-      {error && <div role="alert" style={{ padding: 14, marginBottom: 16, borderRadius: 14, background: 'var(--clay-bg)', color: 'var(--rose)' }}>{error}<button type="button" onClick={load} style={{ display: 'block', marginTop: 10, border: 0, borderRadius: 10, padding: '7px 12px', background: 'var(--rose)', color: '#fff', cursor: 'pointer' }}>تلاش دوباره</button></div>}
+    <main className="ops-page">
+      <PanelPageHeader
+        eyebrow="تقویم دسترس‌پذیری"
+        title="زمان‌های کاری"
+        description="بازه‌های رسمی قابل رزرو را مدیریت کنید؛ هم‌پوشانی و ساعت نامعتبر توسط backend رد می‌شود."
+        actions={<PanelButton icon="refresh" onClick={() => void load()}>به‌روزرسانی</PanelButton>}
+      />
+
+      <div className="ops-metric-grid" style={{ gridTemplateColumns: 'repeat(2,minmax(0,1fr))' }}>
+        <PanelMetric icon="calendar" label="روزهای فعال" value={toFaDigits(activeDays)} hint="روز دارای حداقل یک بازه" tone="info" />
+        <PanelMetric icon="clock" label="کل بازه‌های کاری" value={toFaDigits(totalRanges)} hint="بازه ثبت‌شده" />
+      </div>
+
+      {error && <div className="ops-error" role="alert"><span>{error}</span><PanelButton onClick={() => void load()}>تلاش دوباره</PanelButton></div>}
 
       {loading ? <div style={{ padding: 28, color: 'var(--ink-3)' }}>در حال بارگذاری…</div> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {DAYS.map((day, weekday) => {
             const ranges = grouped.get(weekday) || [];
             return (
-              <section key={day} style={{ background: '#fff', borderRadius: 16, padding: 16, border: '1px solid var(--sand-150)', boxShadow: 'var(--sh-sm)' }}>
+              <section key={day} className="ops-section-card" style={{ padding: 16 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
                   <div style={{ width: 44, height: 44, borderRadius: 13, background: ranges.length ? 'var(--olive-100)' : 'var(--sand-100)', color: ranges.length ? 'var(--olive-700)' : 'var(--ink-3)', display: 'grid', placeItems: 'center' }}><Icon name="clock" size={22} /></div>
                   <div style={{ flex: '1 1 160px' }}><strong style={{ fontSize: 14 }}>{day}</strong><div style={{ fontSize: 12, color: 'var(--ink-4)', marginTop: 3 }}>{ranges.length ? `${toFaDigits(ranges.length)} بازه ثبت شده` : 'تعطیل'}</div></div>
-                  <button type="button" onClick={() => setDialog({ weekday })} style={addButton}><span style={{ fontSize: 16 }}>+</span> افزودن بازه</button>
+                  <PanelButton icon="clock" onClick={() => setDialog({ weekday })}>افزودن بازه</PanelButton>
                 </div>
                 {ranges.length > 0 && <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 13 }}>
                   {ranges.map((slot) => <div key={slot.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '7px 11px', borderRadius: 999, background: 'var(--olive-50)', color: 'var(--olive-700)', opacity: busyId === slot.id ? .5 : 1 }}>
