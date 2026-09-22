@@ -225,7 +225,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <small>پنل عملیاتی وُدّا</small>
           </div>
           <div className="panel-top-links">
-            {Number(user.hasTeacherProfile) > 0 && <Link href="/panel/teacher" className="ops-button"><Icon name="award" size={15} /> پنل استاد</Link>}
+            {user.hasTeacherProfile && <Link href="/panel/teacher" className="ops-button"><Icon name="award" size={15} /> پنل استاد</Link>}
             <Link href="/panel/user" className="ops-button"><Icon name="user" size={15} /> پنل کاربری</Link>
           </div>
         </div>
