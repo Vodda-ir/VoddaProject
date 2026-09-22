@@ -44,7 +44,24 @@ func (h *Handler) AdminSetUserActive(c *gin.Context) {
 }
 
 func (h *Handler) AdminTeachers(c *gin.Context) {
-	teachers, total, err := h.Admin.ListTeachers(c, domain.TeacherStatus(c.Query("status")), queryInt(c, "limit", 30), queryInt(c, "offset", 0))
+	filter := domain.TeacherFilter{
+		Status: domain.TeacherStatus(c.Query("status")),
+		Query:  c.Query("q"),
+		Field:  c.Query("field"),
+		City:   c.Query("city"),
+		Limit:  queryInt(c, "limit", 30),
+		Offset: queryInt(c, "offset", 0),
+	}
+	if value := c.Query("female"); value != "" {
+		if value != "true" && value != "false" && value != "1" && value != "0" {
+			fail(c, domain.ErrValidation)
+			return
+		}
+		female := value == "true" || value == "1"
+		filter.Female = &female
+	}
+
+	teachers, total, err := h.Admin.ListTeachersFiltered(c, filter)
 	if err != nil {
 		fail(c, err)
 		return
