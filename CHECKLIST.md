@@ -47,6 +47,7 @@
 - [x] پنل استاد کامل: داشبورد واقعی، درخواست‌ها، جلسات، خدمات، برنامهٔ کاری، کیف پول، برداشت و نظرها
 - [x] جلوگیری از فعال‌سازی خدمت توسط استاد؛ فعال‌سازی فقط در moderation مدیر
 - [x] پنل مدیر: کاربران، استادان، خدمات، جلسات، برداشت، پشتیبانی و audit
+- [x] redesign عملیاتی پنل مدیر و استاد: shell و navigation گروه‌بندی‌شده، guardهای دسترسی، مدیریت همهٔ استادان با فیلتر/status/search/pagination واقعی، و workflowهای حرفه‌ای جلسات/خدمات/مالی در [`docs/admin-teacher-panel-redesign.md`](docs/admin-teacher-panel-redesign.md)
 - [x] جدول‌ها و کارت‌های responsive و عملیات حساس دارای confirmation/busy state
 - [x] FAQ، قوانین و حریم خصوصی هماهنگ با قابلیت‌های فعال
 - [x] redesign کامل Public Website بر اساس زبان بصری Universal App: Landing، header/mobile menu، Search، Teacher Profile، About/FAQ/Contact/Privacy/Terms/Blog و stateهای عمومی در [`docs/public-web-redesign.md`](docs/public-web-redesign.md) مستند و بازطراحی شدند.
