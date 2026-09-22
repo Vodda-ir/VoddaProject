@@ -24,6 +24,7 @@ func NewTeacherUsecase(t domain.TeacherRepository, r domain.ReviewRepository, u 
 // Search returns approved, verified and available teachers matching the public filter.
 func (uc *TeacherUsecase) Search(ctx context.Context, f domain.TeacherFilter) ([]domain.Teacher, int64, error) {
 	f.Status = domain.TeacherApproved
+	f.PublicOnly = true
 	return uc.teachers.List(ctx, f)
 }
 
