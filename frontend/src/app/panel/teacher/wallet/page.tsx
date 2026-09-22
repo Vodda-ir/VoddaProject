@@ -1,11 +1,17 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
-import { faDigits } from '@/components/PanelShell';
+import Link from 'next/link';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Icon } from '@/components/Icon';
+import {
+  PanelButton,
+  PanelEmpty,
+  PanelMetric,
+  PanelPageHeader,
+} from '@/components/panel/PanelUI';
 import { api, type Transaction } from '@/lib/api';
 import { getToken } from '@/lib/auth';
-import Link from 'next/link';
+import { formatFaNumber, toFaDigits } from '@/lib/persian';
 
 export default function TeacherWalletPage() {
   const [wallet, setWallet] = useState(0);
@@ -32,30 +38,73 @@ export default function TeacherWalletPage() {
 
   useEffect(() => { void load(); }, [load]);
 
-  return (
-    <main style={{ padding: 28 }}>
-      <h1 style={{ fontSize: 21, fontWeight: 800, marginBottom: 22 }}>کیف پول استاد</h1>
-      <section style={{ background: 'linear-gradient(135deg,var(--olive-800),var(--olive-600))', borderRadius: 24, padding: 24, color: '#fff', marginBottom: 22, boxShadow: 'var(--sh-olive)' }}>
-        <div style={{ fontSize: 13, opacity: .8, marginBottom: 6 }}>موجودی قابل برداشت</div>
-        <div style={{ fontSize: 32, fontWeight: 800, marginBottom: 18 }}>{faDigits(wallet)} <span style={{ fontSize: 15, fontWeight: 600, opacity: .75 }}>تومان</span></div>
-        <Link href="/panel/teacher/withdrawals" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 14, background: '#fff', color: 'var(--olive-700)', fontSize: 14, fontWeight: 700 }}><Icon name="download" size={18} /> ثبت درخواست برداشت</Link>
-      </section>
+  const ledger = useMemo(() => {
+    let credit = 0;
+    let debit = 0;
+    for (const transaction of transactions) {
+      if (transaction.amount >= 0) credit += transaction.amount;
+      else debit += Math.abs(transaction.amount);
+    }
+    return { credit, debit };
+  }, [transactions]);
 
-      {error && <div role="alert" style={{ padding: 14, marginBottom: 16, borderRadius: 14, background: 'var(--clay-bg)', color: 'var(--rose)' }}>{error}<button type="button" onClick={load} style={{ display: 'block', marginTop: 10, border: 0, borderRadius: 10, padding: '7px 12px', background: 'var(--rose)', color: '#fff', cursor: 'pointer' }}>تلاش دوباره</button></div>}
-      <h2 style={{ fontSize: 16, fontWeight: 800, marginBottom: 14 }}>تراکنش‌ها</h2>
-      {loading ? <div style={{ color: 'var(--ink-3)', padding: 20 }}>در حال بارگذاری…</div> : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {transactions.map((transaction) => {
-            const credit = transaction.amount > 0;
-            return <article key={transaction.id} style={{ background: '#fff', borderRadius: 14, padding: 14, display: 'flex', alignItems: 'center', gap: 12, border: '1px solid var(--sand-150)', boxShadow: 'var(--sh-sm)', flexWrap: 'wrap' }}>
-              <div style={{ width: 40, height: 40, borderRadius: 11, background: credit ? 'var(--olive-100)' : 'var(--gold-bg)', color: credit ? 'var(--olive-700)' : '#9A7426', display: 'grid', placeItems: 'center' }}><Icon name={credit ? 'coins' : 'download'} size={19} /></div>
-              <div style={{ flex: '1 1 200px', minWidth: 0 }}><div style={{ fontSize: 13.5, fontWeight: 700 }}>{transaction.title || 'تراکنش کیف پول'}</div><time dateTime={transaction.created_at} style={{ display: 'block', fontSize: 11.5, color: 'var(--ink-4)', marginTop: 3 }}>{formatDate(transaction.created_at)}</time></div>
-              <strong style={{ fontSize: 14, color: credit ? 'var(--olive-700)' : 'var(--ink)' }}>{credit ? '+' : '−'}{faDigits(Math.abs(transaction.amount))} تومان</strong>
-            </article>;
-          })}
-          {transactions.length === 0 && <div style={{ textAlign: 'center', padding: 40, color: 'var(--ink-3)' }}>هنوز تراکنشی ثبت نشده است.</div>}
+  return (
+    <main className="ops-page">
+      <PanelPageHeader
+        eyebrow="مالی"
+        title="کیف پول"
+        description="موجودی قابل برداشت و دفتر تراکنش‌های ثبت‌شده را مشاهده کنید."
+        actions={
+          <>
+            <PanelButton icon="refresh" onClick={() => void load()}>به‌روزرسانی</PanelButton>
+            <Link href="/panel/teacher/withdrawals" className="ops-button" data-tone="primary"><Icon name="download" size={16} />درخواست برداشت</Link>
+          </>
+        }
+      />
+
+      <div className="ops-metric-grid" style={{ gridTemplateColumns: 'repeat(3,minmax(0,1fr))' }}>
+        <PanelMetric icon="wallet" label="موجودی قابل برداشت" value={loading ? '—' : `${formatFaNumber(wallet)} ت`} hint="موجودی فعلی" />
+        <PanelMetric icon="trending" label="جمع ورودی این فهرست" value={loading ? '—' : `${formatFaNumber(ledger.credit)} ت`} hint="بر اساس تراکنش‌های دریافت‌شده" tone="info" />
+        <PanelMetric icon="download" label="جمع خروجی این فهرست" value={loading ? '—' : `${formatFaNumber(ledger.debit)} ت`} hint="برداشت/کسورات ثبت‌شده" tone="clay" />
+      </div>
+
+      {error && <div className="ops-error" role="alert"><span>{error}</span><PanelButton onClick={() => void load()}>تلاش دوباره</PanelButton></div>}
+
+      <section className="ops-data-surface">
+        <div className="ops-data-head">
+          <div>
+            <strong>دفتر تراکنش‌ها</strong>
+            <span style={{ display: 'block', marginTop: 2 }}>{loading ? 'در حال دریافت…' : `${toFaDigits(transactions.length)} تراکنش آخر`}</span>
+          </div>
         </div>
-      )}
+
+        {loading ? (
+          <div style={{ padding: 42, textAlign: 'center', color: 'var(--ink-3)', fontSize: 12 }}>در حال بارگذاری تراکنش‌ها…</div>
+        ) : transactions.length === 0 ? (
+          <PanelEmpty icon="wallet" title="هنوز تراکنشی ثبت نشده" />
+        ) : (
+          transactions.map((transaction) => {
+            const credit = transaction.amount >= 0;
+            return (
+              <article className="ops-row" key={transaction.id}>
+                <span style={{ width: 42, height: 42, display: 'grid', placeItems: 'center', flex: '0 0 42px', borderRadius: 12, color: credit ? 'var(--olive-700)' : 'var(--clay)', background: credit ? 'var(--olive-100)' : 'var(--clay-bg)' }}>
+                  <Icon name={credit ? 'coins' : 'download'} size={19} />
+                </span>
+                <div className="ops-row-main">
+                  <div className="ops-row-title"><strong>{transaction.title || 'تراکنش کیف پول'}</strong></div>
+                  <div className="ops-row-meta">
+                    <span>{formatDate(transaction.created_at)}</span>
+                    {transaction.ref_id && <span>مرجع #{toFaDigits(transaction.ref_id)}</span>}
+                  </div>
+                </div>
+                <strong style={{ color: credit ? 'var(--olive-700)' : 'var(--clay)', fontSize: 13.5 }}>
+                  {credit ? '+' : '−'}{formatFaNumber(Math.abs(transaction.amount))} تومان
+                </strong>
+              </article>
+            );
+          })
+        )}
+      </section>
     </main>
   );
 }
