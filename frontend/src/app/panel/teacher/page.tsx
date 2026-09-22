@@ -1,11 +1,20 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
-import { StatCard, Panel, faDigits } from '@/components/PanelShell';
+import Link from 'next/link';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Avatar } from '@/components/web/ui';
 import { Icon } from '@/components/Icon';
+import {
+  PanelButton,
+  PanelEmpty,
+  PanelMetric,
+  PanelPageHeader,
+  PanelSection,
+  PanelStatus,
+} from '@/components/panel/PanelUI';
 import { api, type SessionListItem, type Teacher } from '@/lib/api';
 import { fullUrl, getToken } from '@/lib/auth';
+import { formatFaNumber, toFaDigits } from '@/lib/persian';
 
 export default function TeacherDashboard() {
   const [teacher, setTeacher] = useState<Teacher | null>(null);
@@ -50,10 +59,7 @@ export default function TeacherDashboard() {
     try {
       if (approve) await api.teacherAcceptSession(token, session.id);
       else await api.teacherRejectSession(token, session.id);
-      setPending((items) => items.filter((item) => item.id !== session.id));
-      setUpcoming((items) => approve
-        ? items.map((item) => item.id === session.id ? { ...item, status: 'confirmed' } : item)
-        : items.filter((item) => item.id !== session.id));
+      await load();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : `${action} جلسه انجام نشد.`);
     } finally {
@@ -61,56 +67,173 @@ export default function TeacherDashboard() {
     }
   }
 
-  if (loading) return <div style={{ padding: 28, textAlign: 'center', color: 'var(--ink-3)' }}>در حال بارگذاری…</div>;
+  const confirmedUpcoming = useMemo(
+    () => upcoming.filter((session) => session.status === 'confirmed'),
+    [upcoming],
+  );
+
+  const profileStatus = teacher?.status || 'pending';
+  const servicesCount = teacher?.services?.length || 0;
 
   return (
-    <main style={{ padding: 28 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap', marginBottom: 22 }}>
-        <div><h1 style={{ fontSize: 21, fontWeight: 800, marginBottom: 4 }}>داشبورد استاد</h1><p style={{ fontSize: 13, color: 'var(--ink-3)' }}>درخواست‌ها، جلسات و موجودی ثبت‌شدهٔ واقعی</p></div>
-        <button type="button" onClick={load} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, border: '1px solid var(--sand-200)', background: '#fff', padding: '9px 14px', borderRadius: 12, cursor: 'pointer' }}><Icon name="trending" size={17} /> به‌روزرسانی</button>
+    <main className="ops-page">
+      <PanelPageHeader
+        eyebrow="فضای کاری استاد"
+        title="داشبورد استاد"
+        description="درخواست‌های جدید، جلسه‌های پیش‌رو، وضعیت پروفایل و درآمد قابل برداشت را از یک نمای متمرکز مدیریت کنید."
+        actions={<PanelButton icon="refresh" onClick={() => void load()}>به‌روزرسانی</PanelButton>}
+      />
+
+      {error && (
+        <div className="ops-error" role="alert">
+          <span>{error}</span>
+          <PanelButton onClick={() => void load()}>تلاش دوباره</PanelButton>
+        </div>
+      )}
+
+      <section style={{
+        display: 'grid',
+        gridTemplateColumns: 'minmax(0,1fr) auto',
+        gap: 18,
+        alignItems: 'center',
+        marginBottom: 18,
+        padding: '20px 22px',
+        border: '1px solid var(--sand-150)',
+        borderRadius: 20,
+        background: 'linear-gradient(120deg,#fff,var(--olive-50))',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
+          <Avatar size={58} ring verified={Boolean(teacher?.verified)} imageUrl={fullUrl(teacher?.user?.avatar_url)} />
+          <div style={{ minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap' }}>
+              <strong style={{ fontSize: 16 }}>{teacher?.user?.name || 'استاد وُدّا'}</strong>
+              <PanelStatus status={profileTone(profileStatus)}>{profileLabel(profileStatus)}</PanelStatus>
+            </div>
+            <div style={{ marginTop: 4, color: 'var(--olive-700)', fontSize: 11.5, fontWeight: 700 }}>
+              {teacher?.tag || teacher?.field || 'پروفایل استادی'}
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 12px', marginTop: 7, color: 'var(--ink-3)', fontSize: 10 }}>
+              {teacher?.city && <span><Icon name="pin" size={12} /> {teacher.city}</span>}
+              <span>{servicesCount > 0 ? `${toFaDigits(servicesCount)} خدمت` : 'بدون خدمت ثبت‌شده'}</span>
+              <span>{teacher?.available ? 'رزرو فعال' : 'رزرو غیرفعال'}</span>
+            </div>
+          </div>
+        </div>
+        {teacher?.status === 'approved' && (
+          <Link href={`/teachers/${teacher.id}`} target="_blank" className="ops-button">
+            <Icon name="user" size={16} /> پروفایل عمومی
+          </Link>
+        )}
+      </section>
+
+      <div className="ops-metric-grid">
+        <PanelMetric icon="wallet" label="موجودی قابل برداشت" value={loading ? '—' : `${formatFaNumber(wallet)} ت`} hint="موجودی فعلی حساب" />
+        <PanelMetric icon="message" label="درخواست جدید" value={loading ? '—' : toFaDigits(pending.length)} hint="نیازمند پاسخ شما" tone={pending.length ? 'clay' : 'olive'} />
+        <PanelMetric icon="calendar" label="جلسات تأییدشده پیش‌رو" value={loading ? '—' : toFaDigits(confirmedUpcoming.length)} hint="بدون احتساب pending" tone="info" />
+        <PanelMetric icon="star" label="امتیاز" value={teacher && teacher.reviews > 0 ? toFaDigits(teacher.rating.toFixed(1)) : '—'} hint={`${toFaDigits(teacher?.reviews || 0)} نظر ثبت‌شده`} tone="gold" />
       </div>
 
-      {error && <div role="alert" style={{ padding: 14, borderRadius: 14, background: 'var(--clay-bg)', color: 'var(--rose)', marginBottom: 18 }}>{error}</div>}
+      <div className="ops-two-column">
+        <PanelSection
+          title="درخواست‌های نیازمند پاسخ"
+          description="درخواست‌های pending را تأیید یا رد کنید تا وضعیت جلسه مشخص شود."
+          action={<Link href="/panel/teacher/requests" className="ops-button">مشاهده همه</Link>}
+        >
+          {loading ? (
+            <div style={{ padding: 34, textAlign: 'center', color: 'var(--ink-3)', fontSize: 12 }}>در حال دریافت درخواست‌ها…</div>
+          ) : pending.length === 0 ? (
+            <PanelEmpty icon="checkCircle" title="درخواستی در انتظار نیست" description="در حال حاضر همه درخواست‌ها تعیین تکلیف شده‌اند." />
+          ) : (
+            pending.slice(0, 5).map((session) => {
+              const busy = busyId === session.id;
+              return (
+                <article className="ops-row" key={session.id} style={{ opacity: busy ? .55 : 1 }}>
+                  <Avatar size={42} imageUrl={fullUrl(session.learner?.avatar_url)} />
+                  <div className="ops-row-main">
+                    <div className="ops-row-title">
+                      <strong>{session.learner?.name || 'قرآن‌آموز'}</strong>
+                      <PanelStatus status="pending">در انتظار</PanelStatus>
+                    </div>
+                    <div className="ops-row-sub">
+                      <span>{session.service}</span>
+                      <span>· {session.local_date}</span>
+                      <span>· {toFaDigits(session.local_start)}</span>
+                    </div>
+                    <div className="ops-row-meta">
+                      <span>{toFaDigits(session.duration)} دقیقه</span>
+                      <span>{formatFaNumber(session.price)} تومان</span>
+                    </div>
+                  </div>
+                  <div className="ops-row-actions">
+                    <PanelButton tone="danger" icon="x" disabled={busy} onClick={() => void respond(session, false)}>رد</PanelButton>
+                    <PanelButton tone="success" icon="check" disabled={busy} onClick={() => void respond(session, true)}>
+                      {busy ? 'در حال ثبت…' : 'تأیید'}
+                    </PanelButton>
+                  </div>
+                </article>
+              );
+            })
+          )}
+        </PanelSection>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(175px,1fr))', gap: 16, marginBottom: 22 }}>
-        <StatCard icon="coins" label="موجودی قابل برداشت" value={`${faDigits(wallet)} ت`} tone="olive" />
-        <StatCard icon="message" label="درخواست در انتظار" value={faDigits(pending.length)} tone="clay" />
-        <StatCard icon="calendar" label="جلسات پیش‌رو" value={faDigits(upcoming.length)} tone="info" />
-        <StatCard icon="star" label="میانگین امتیاز" value={teacher && teacher.reviews > 0 ? faDigits(teacher.rating.toFixed(1)) : '—'} tone="gold" />
-        <StatCard icon="users" label="نظر ثبت‌شده" value={faDigits(teacher?.reviews || 0)} tone="info" />
-        <StatCard icon="checkCircle" label="جلسات تکمیل‌شده" value={faDigits(teacher?.sessions || 0)} tone="olive" />
-      </div>
+        <div style={{ display: 'grid', gap: 16, alignContent: 'start' }}>
+          <PanelSection title="دسترسی سریع" description="کارهای پرتکرار مدیریت آموزش.">
+            <div className="ops-quick-actions">
+              <TeacherQuickAction href="/panel/teacher/services" icon="book" label="مدیریت خدمات" />
+              <TeacherQuickAction href="/panel/teacher/worktimes" icon="clock" label="زمان‌های کاری" />
+              <TeacherQuickAction href="/panel/teacher/sessions" icon="calendar" label="جلسات" />
+              <TeacherQuickAction href="/panel/teacher/wallet" icon="wallet" label="کیف پول" />
+            </div>
+          </PanelSection>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: 18 }}>
-        <Panel title="درخواست‌های در انتظار پاسخ" pad={false}>
-          {pending.length === 0 ? <div style={{ padding: 28, color: 'var(--ink-3)', textAlign: 'center' }}>درخواستی در انتظار نیست.</div> : pending.slice(0, 6).map((session, index) => (
-            <article key={session.id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 20px', borderBottom: index < Math.min(pending.length, 6) - 1 ? '1px solid var(--sand-100)' : 'none', flexWrap: 'wrap' }}>
-              <Avatar size={42} imageUrl={fullUrl(session.learner?.avatar_url)} />
-              <div style={{ flex: '1 1 170px', minWidth: 0 }}>
-                <div style={{ fontSize: 13.5, fontWeight: 700 }}>{session.learner?.name || 'قرآن‌آموز'}</div>
-                <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 2 }}>{session.service} · {session.local_date} · {session.local_start}</div>
-              </div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button type="button" aria-label="رد درخواست" disabled={busyId === session.id} onClick={() => respond(session, false)} style={actionButton(false, busyId === session.id)}><Icon name="x" size={17} /></button>
-                <button type="button" aria-label="تأیید درخواست" disabled={busyId === session.id} onClick={() => respond(session, true)} style={actionButton(true, busyId === session.id)}><Icon name="check" size={18} /></button>
-              </div>
-            </article>
-          ))}
-        </Panel>
-
-        <Panel title="وضعیت حساب و پروفایل">
-          <Metric label="موجودی فعلی" value={`${faDigits(wallet)} تومان`} />
-          <Metric label="وضعیت پروفایل" value={teacher?.status === 'approved' ? 'تأییدشده' : teacher?.status === 'rejected' ? 'ردشده' : 'در انتظار بررسی'} />
-          <Metric label="امکان رزرو" value={teacher?.available ? 'فعال' : 'غیرفعال'} />
-          <p style={{ marginTop: 18, paddingTop: 14, borderTop: '1px solid var(--sand-100)', color: 'var(--ink-3)', fontSize: 12.5, lineHeight: 1.9 }}>نمودار درآمد تا زمان وجود گزارش دوره‌ای واقعی نمایش داده نمی‌شود؛ این بخش فقط داده‌های ثبت‌شده را نشان می‌دهد.</p>
-        </Panel>
+          <PanelSection title="خلاصه عملکرد">
+            <div style={{ padding: 16, display: 'grid', gap: 11 }}>
+              <SummaryRow label="جلسات تکمیل‌شده" value={toFaDigits(teacher?.sessions || 0)} />
+              <SummaryRow label="نظر ثبت‌شده" value={toFaDigits(teacher?.reviews || 0)} />
+              <SummaryRow label="خدمات ثبت‌شده" value={toFaDigits(servicesCount)} />
+              <SummaryRow label="وضعیت رزرو" value={teacher?.available ? 'فعال' : 'غیرفعال'} />
+            </div>
+          </PanelSection>
+        </div>
       </div>
     </main>
   );
 }
 
-function Metric({ label, value }: { label: string; value: string }) {
-  return <div style={{ display: 'flex', justifyContent: 'space-between', gap: 14, paddingBlock: 8 }}><span style={{ color: 'var(--ink-3)', fontSize: 13 }}>{label}</span><strong style={{ fontSize: 13.5 }}>{value}</strong></div>;
+function TeacherQuickAction({
+  href,
+  icon,
+  label,
+}: {
+  href: string;
+  icon: Parameters<typeof Icon>[0]['name'];
+  label: string;
+}) {
+  return (
+    <Link href={href} className="ops-quick-action">
+      <span><Icon name={icon} size={17} /></span>
+      <strong>{label}</strong>
+    </Link>
+  );
 }
 
-const actionButton = (approve: boolean, busy: boolean): React.CSSProperties => ({ width: 38, height: 38, borderRadius: 11, border: 0, display: 'grid', placeItems: 'center', cursor: busy ? 'wait' : 'pointer', background: approve ? 'var(--olive-600)' : 'var(--clay-bg)', color: approve ? '#fff' : 'var(--clay)', opacity: busy ? .55 : 1 });
+function SummaryRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 }}>
+      <span style={{ color: 'var(--ink-3)', fontSize: 11 }}>{label}</span>
+      <strong style={{ fontSize: 12.5 }}>{value}</strong>
+    </div>
+  );
+}
+
+function profileLabel(status: string) {
+  if (status === 'approved') return 'تأییدشده';
+  if (status === 'rejected') return 'ردشده';
+  return 'در انتظار بررسی';
+}
+
+function profileTone(status: string): 'approved' | 'pending' | 'rejected' {
+  if (status === 'approved') return 'approved';
+  if (status === 'rejected') return 'rejected';
+  return 'pending';
+}
