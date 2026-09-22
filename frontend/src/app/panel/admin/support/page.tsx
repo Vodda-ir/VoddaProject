@@ -1,23 +1,35 @@
 'use client';
 
-import { toFaDigits } from '@/lib/persian';
 import { useCallback, useEffect, useState } from 'react';
 import { Icon } from '@/components/Icon';
+import {
+  PanelButton,
+  PanelEmpty,
+  PanelPageHeader,
+  PanelStatus,
+} from '@/components/panel/PanelUI';
 import { getToken } from '@/lib/auth';
+import { toFaDigits } from '@/lib/persian';
+
+type SupportStatus = 'new' | 'resolved';
 
 type SupportMessage = {
   id: number;
   name: string;
   contact: string;
   message: string;
-  status: 'new' | 'resolved';
+  status: SupportStatus;
   created_at: string;
   resolved_at?: string;
 };
 
+const PAGE_SIZE = 30;
+
 export default function AdminSupportPage() {
-  const [status, setStatus] = useState<'new' | 'resolved'>('new');
+  const [status, setStatus] = useState<SupportStatus>('new');
   const [messages, setMessages] = useState<SupportMessage[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [busyId, setBusyId] = useState<number | null>(null);
@@ -28,17 +40,24 @@ export default function AdminSupportPage() {
     setLoading(true);
     setError('');
     try {
-      const response = await fetch(`/api/backend/admin/support/messages?status=${status}&limit=100`, { cache: 'no-store' });
+      const sp = new URLSearchParams({
+        status,
+        limit: String(PAGE_SIZE),
+        offset: String(page * PAGE_SIZE),
+      });
+      const response = await fetch(`/api/backend/admin/support/messages?${sp.toString()}`, { cache: 'no-store' });
       const body = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(body.error || 'پیام‌های پشتیبانی دریافت نشدند.');
       setMessages(body.data || []);
+      setTotal(Number(body.total || 0));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'پیام‌های پشتیبانی دریافت نشدند.');
       setMessages([]);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
-  }, [status, token]);
+  }, [status, page, token]);
 
   useEffect(() => { void load(); }, [load]);
 
@@ -51,7 +70,7 @@ export default function AdminSupportPage() {
       const response = await fetch(`/api/backend/admin/support/messages/${message.id}/resolve`, { method: 'PATCH' });
       const body = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(body.error || 'ثبت رسیدگی انجام نشد.');
-      setMessages((previous) => previous.filter((item) => item.id !== message.id));
+      await load();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'ثبت رسیدگی انجام نشد.');
     } finally {
@@ -59,39 +78,80 @@ export default function AdminSupportPage() {
     }
   }
 
-  return (
-    <main style={{ padding: 28 }}>
-      <h1 style={{ fontSize: 21, fontWeight: 800, marginBottom: 4 }}>پیام‌های پشتیبانی</h1>
-      <p style={{ fontSize: 13, color: 'var(--ink-3)', marginBottom: 18 }}>پیام‌های ثبت‌شده از فرم تماس عمومی</p>
+  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
-      <div role="tablist" aria-label="وضعیت پیام‌ها" style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-        {(['new', 'resolved'] as const).map((value) => (
-          <button key={value} role="tab" aria-selected={status === value} onClick={() => setStatus(value)} style={{ padding: '9px 18px', border: 0, borderRadius: 12, background: status === value ? 'var(--olive-600)' : '#fff', color: status === value ? '#fff' : 'var(--ink-3)', fontWeight: 700, cursor: 'pointer', boxShadow: 'var(--sh-sm)' }}>
-            {value === 'new' ? 'جدید' : 'رسیدگی‌شده'}
-          </button>
-        ))}
+  return (
+    <main className="ops-page">
+      <PanelPageHeader
+        eyebrow="ارتباط با کاربران"
+        title="پیام‌های پشتیبانی"
+        description="پیام‌های فرم تماس عمومی را بررسی و پس از پیگیری واقعی به‌عنوان رسیدگی‌شده ثبت کنید."
+        actions={<PanelButton icon="refresh" onClick={() => void load()}>به‌روزرسانی</PanelButton>}
+      />
+
+      <div className="ops-filter-tabs" role="tablist" aria-label="وضعیت پیام‌ها" style={{ marginBottom: 14 }}>
+        <button type="button" role="tab" aria-selected={status === 'new'} onClick={() => { setStatus('new'); setPage(0); }}>جدید</button>
+        <button type="button" role="tab" aria-selected={status === 'resolved'} onClick={() => { setStatus('resolved'); setPage(0); }}>رسیدگی‌شده</button>
       </div>
 
-      {error && <div role="alert" style={{ padding: 14, borderRadius: 14, background: 'var(--clay-bg)', color: 'var(--rose)', marginBottom: 16 }}>{error}</div>}
-      {loading ? <div style={{ padding: 28, color: 'var(--ink-3)' }}>در حال بارگذاری…</div> : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {messages.map((item) => (
-            <article key={item.id} style={{ background: '#fff', borderRadius: 18, padding: 18, border: '1px solid var(--sand-150)', boxShadow: 'var(--sh-sm)' }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
-                <div style={{ width: 42, height: 42, borderRadius: 12, background: 'var(--olive-100)', color: 'var(--olive-700)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="message" size={21} /></div>
-                <div style={{ flex: '1 1 220px' }}>
-                  <h2 style={{ fontSize: 15, fontWeight: 800, margin: 0 }}>{item.name}</h2>
-                  <div dir="ltr" style={{ fontSize: 12.5, color: 'var(--ink-3)', marginTop: 3, textAlign: 'right' }}>{toFaDigits(item.contact)}</div>
-                </div>
-                <time dateTime={item.created_at} style={{ fontSize: 12, color: 'var(--ink-4)' }}>{new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(item.created_at))}</time>
-              </div>
-              <p style={{ margin: '16px 0 0', padding: 14, borderRadius: 14, background: 'var(--sand-50)', color: 'var(--ink-2s)', lineHeight: 2, whiteSpace: 'pre-wrap' }}>{item.message}</p>
-              {item.status === 'new' && <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 14 }}><button type="button" disabled={busyId === item.id} onClick={() => resolve(item)} style={{ padding: '9px 16px', border: 0, borderRadius: 12, background: 'var(--olive-600)', color: '#fff', fontWeight: 700, cursor: busyId === item.id ? 'wait' : 'pointer' }}>{busyId === item.id ? 'در حال ثبت…' : 'ثبت رسیدگی'}</button></div>}
-            </article>
-          ))}
-          {messages.length === 0 && <div style={{ textAlign: 'center', padding: 50, color: 'var(--ink-3)' }}>پیامی در این وضعیت وجود ندارد.</div>}
+      {error && <div className="ops-error" role="alert"><span>{error}</span><PanelButton onClick={() => void load()}>تلاش دوباره</PanelButton></div>}
+
+      <section className="ops-data-surface">
+        <div className="ops-data-head">
+          <div>
+            <strong>{status === 'new' ? 'پیام‌های جدید' : 'پیام‌های رسیدگی‌شده'}</strong>
+            <span style={{ display: 'block', marginTop: 2 }}>{loading ? 'در حال دریافت…' : `${toFaDigits(total)} پیام`}</span>
+          </div>
         </div>
-      )}
+
+        {loading ? (
+          <div style={{ padding: 42, textAlign: 'center', color: 'var(--ink-3)', fontSize: 12 }}>در حال بارگذاری پیام‌ها…</div>
+        ) : messages.length === 0 ? (
+          <PanelEmpty icon="message" title="پیامی در این وضعیت وجود ندارد" />
+        ) : (
+          messages.map((item) => {
+            const busy = busyId === item.id;
+            return (
+              <article className="ops-row" key={item.id} style={{ alignItems: 'flex-start', opacity: busy ? .55 : 1 }}>
+                <span style={{ width: 42, height: 42, display: 'grid', placeItems: 'center', flex: '0 0 42px', borderRadius: 12, color: 'var(--olive-700)', background: 'var(--olive-100)' }}>
+                  <Icon name="message" size={19} />
+                </span>
+                <div className="ops-row-main">
+                  <div className="ops-row-title">
+                    <strong>{item.name}</strong>
+                    <PanelStatus status={item.status === 'new' ? 'pending' : 'done'}>{item.status === 'new' ? 'جدید' : 'رسیدگی‌شده'}</PanelStatus>
+                  </div>
+                  <div className="ops-row-sub">
+                    <span dir="ltr">{toFaDigits(item.contact)}</span>
+                    <span>· {formatDate(item.created_at)}</span>
+                  </div>
+                  <p style={{ margin: '9px 0 0', padding: '10px 12px', borderRadius: 11, color: 'var(--ink-2s)', background: 'var(--sand-50)', fontSize: 11.5, lineHeight: 1.9, whiteSpace: 'pre-wrap' }}>{item.message}</p>
+                </div>
+                {item.status === 'new' && (
+                  <div className="ops-row-actions">
+                    <PanelButton tone="success" icon="check" disabled={busy} onClick={() => void resolve(item)}>
+                      {busy ? 'در حال ثبت…' : 'ثبت رسیدگی'}
+                    </PanelButton>
+                  </div>
+                )}
+              </article>
+            );
+          })
+        )}
+
+        {!loading && total > PAGE_SIZE && (
+          <div className="ops-pagination">
+            <PanelButton disabled={page === 0} onClick={() => setPage((value) => Math.max(0, value - 1))}>صفحه قبل</PanelButton>
+            <span>{toFaDigits(page * PAGE_SIZE + 1)} تا {toFaDigits(Math.min((page + 1) * PAGE_SIZE, total))} از {toFaDigits(total)}</span>
+            <PanelButton disabled={page + 1 >= pageCount} onClick={() => setPage((value) => value + 1)}>صفحه بعد</PanelButton>
+          </div>
+        )}
+      </section>
     </main>
   );
+}
+
+function formatDate(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? '—' : new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium', timeStyle: 'short' }).format(date);
 }
