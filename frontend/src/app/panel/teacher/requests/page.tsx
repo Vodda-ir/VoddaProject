@@ -1,10 +1,17 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { faDigits } from '@/components/PanelShell';
 import { Avatar } from '@/components/web/ui';
+import { Icon } from '@/components/Icon';
+import {
+  PanelButton,
+  PanelEmpty,
+  PanelPageHeader,
+  PanelStatus,
+} from '@/components/panel/PanelUI';
 import { api, type SessionListItem } from '@/lib/api';
 import { fullUrl, getToken } from '@/lib/auth';
+import { formatFaNumber, toFaDigits } from '@/lib/persian';
 
 export default function TeacherRequests() {
   const [requests, setRequests] = useState<SessionListItem[]>([]);
@@ -48,38 +55,71 @@ export default function TeacherRequests() {
   }
 
   return (
-    <main style={{ padding: 28 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', marginBottom: 22 }}>
-        <div><h1 style={{ fontSize: 21, fontWeight: 800, marginBottom: 4 }}>درخواست‌های دریافتی</h1><p style={{ fontSize: 13, color: 'var(--ink-3)' }}>{faDigits(requests.length)} درخواست در انتظار پاسخ</p></div>
-        <button type="button" onClick={load} style={{ border: '1px solid var(--sand-200)', background: '#fff', borderRadius: 12, padding: '9px 14px', cursor: 'pointer' }}>به‌روزرسانی</button>
+    <main className="ops-page">
+      <PanelPageHeader
+        eyebrow="صف پاسخ"
+        title="درخواست‌های جلسه"
+        description="درخواست‌های جدید را با زمان، خدمت و مبلغ کامل بررسی کنید و فقط پس از اطمینان از امکان برگزاری پاسخ دهید."
+        actions={<PanelButton icon="refresh" onClick={() => void load()}>به‌روزرسانی</PanelButton>}
+      />
+
+      <div className="ops-inline-note" style={{ marginBottom: 14 }}>
+        <Icon name="info" size={16} />
+        <span>{loading ? 'در حال دریافت درخواست‌ها…' : `${toFaDigits(requests.length)} درخواست در انتظار پاسخ شماست.`}</span>
       </div>
 
-      {error && <div role="alert" style={{ padding: 14, marginBottom: 16, borderRadius: 14, background: 'var(--clay-bg)', color: 'var(--rose)' }}>{error}</div>}
-      {loading ? <div style={{ padding: 28, color: 'var(--ink-3)' }}>در حال بارگذاری…</div> : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {requests.map((session) => (
-            <article key={session.id} style={{ background: '#fff', borderRadius: 16, padding: 16, display: 'flex', alignItems: 'center', gap: 14, border: '1px solid var(--sand-150)', boxShadow: 'var(--sh-sm)', flexWrap: 'wrap' }}>
-              <Avatar size={46} imageUrl={fullUrl(session.learner?.avatar_url)} />
-              <div style={{ flex: '1 1 240px', minWidth: 0 }}>
-                <div style={{ fontSize: 14, fontWeight: 700 }}>{session.learner?.name || 'قرآن‌آموز'}</div>
-                <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 3 }}>{session.service} · {faDigits(session.duration)} دقیقه</div>
-                <div style={{ display: 'flex', gap: 14, marginTop: 7, fontSize: 12, color: 'var(--ink-2s)', flexWrap: 'wrap' }}>
-                  <span>{session.local_date} · {faDigits(session.local_start)} تا {faDigits(session.local_end)}</span>
-                  <span style={{ fontWeight: 700, color: 'var(--olive-700)' }}>{faDigits(session.price)} تومان</span>
-                </div>
-                {session.note && <p style={{ margin: '8px 0 0', fontSize: 12.5, color: 'var(--ink-3)', lineHeight: 1.8 }}>یادداشت: {session.note}</p>}
-              </div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button type="button" disabled={busyId === session.id} onClick={() => respond(session, false)} style={responseButton(false, busyId === session.id)}>رد</button>
-                <button type="button" disabled={busyId === session.id} onClick={() => respond(session, true)} style={responseButton(true, busyId === session.id)}>{busyId === session.id ? 'در حال ثبت…' : 'تأیید'}</button>
-              </div>
-            </article>
-          ))}
-          {requests.length === 0 && <div style={{ textAlign: 'center', padding: 40, color: 'var(--ink-3)' }}>درخواستی در انتظار پاسخ نیست.</div>}
+      {error && <div className="ops-error" role="alert"><span>{error}</span><PanelButton onClick={() => void load()}>تلاش دوباره</PanelButton></div>}
+
+      <section className="ops-data-surface">
+        <div className="ops-data-head">
+          <div>
+            <strong>درخواست‌های pending</strong>
+            <span style={{ display: 'block', marginTop: 2 }}>تأیید، جلسه را وارد برنامه پیش‌رو می‌کند.</span>
+          </div>
+          <PanelStatus status={requests.length ? 'pending' : 'approved'}>{requests.length ? 'نیازمند پاسخ' : 'صف خالی'}</PanelStatus>
         </div>
-      )}
+
+        {loading ? (
+          <div style={{ padding: 42, textAlign: 'center', color: 'var(--ink-3)', fontSize: 12 }}>در حال بارگذاری درخواست‌ها…</div>
+        ) : requests.length === 0 ? (
+          <PanelEmpty icon="checkCircle" title="درخواستی در انتظار نیست" description="در حال حاضر همه درخواست‌های جلسه تعیین تکلیف شده‌اند." />
+        ) : (
+          requests.map((session) => {
+            const busy = busyId === session.id;
+            return (
+              <article className="ops-row" key={session.id} style={{ opacity: busy ? .55 : 1 }}>
+                <Avatar size={46} imageUrl={fullUrl(session.learner?.avatar_url)} />
+                <div className="ops-row-main">
+                  <div className="ops-row-title">
+                    <strong>{session.learner?.name || 'قرآن‌آموز'}</strong>
+                    <PanelStatus status="pending">در انتظار پاسخ</PanelStatus>
+                  </div>
+                  <div className="ops-row-sub">
+                    <span>{session.service || 'خدمت'}</span>
+                    <span>· {toFaDigits(session.duration)} دقیقه</span>
+                  </div>
+                  <div className="ops-row-meta">
+                    <span><Icon name="calendar" size={13} />{session.local_date}</span>
+                    <span><Icon name="clock" size={13} />{toFaDigits(session.local_start)} تا {toFaDigits(session.local_end)}</span>
+                    <span>{formatFaNumber(session.price)} تومان</span>
+                  </div>
+                  {session.note && (
+                    <div className="ops-inline-note" style={{ marginTop: 9, width: 'fit-content', maxWidth: '100%' }}>
+                      <Icon name="message" size={14} /><span>{session.note}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="ops-row-actions">
+                  <PanelButton tone="danger" icon="x" disabled={busy} onClick={() => void respond(session, false)}>رد درخواست</PanelButton>
+                  <PanelButton tone="success" icon="check" disabled={busy} onClick={() => void respond(session, true)}>
+                    {busy ? 'در حال ثبت…' : 'تأیید جلسه'}
+                  </PanelButton>
+                </div>
+              </article>
+            );
+          })
+        )}
+      </section>
     </main>
   );
 }
-
-const responseButton = (approve: boolean, busy: boolean): React.CSSProperties => ({ padding: '10px 20px', borderRadius: 999, border: 'none', cursor: busy ? 'wait' : 'pointer', background: approve ? 'var(--olive-600)' : 'var(--clay-bg)', color: approve ? '#fff' : 'var(--clay)', fontSize: 13, fontWeight: 700, opacity: busy ? .55 : 1 });
