@@ -82,7 +82,14 @@ func (uc *AdminUsecase) SetUserActive(ctx context.Context, id uint, active bool)
 
 // ListTeachers returns teachers filtered by status.
 func (uc *AdminUsecase) ListTeachers(ctx context.Context, status domain.TeacherStatus, limit, offset int) ([]domain.Teacher, int64, error) {
-	return uc.teachers.List(ctx, domain.TeacherFilter{Status: status, Limit: limit, Offset: offset})
+	return uc.ListTeachersFiltered(ctx, domain.TeacherFilter{Status: status, Limit: limit, Offset: offset})
+}
+
+// ListTeachersFiltered powers the operational teacher directory in the admin
+// panel. It deliberately reuses the repository filter contract so search,
+// city, field, gender and moderation status are applied server-side.
+func (uc *AdminUsecase) ListTeachersFiltered(ctx context.Context, filter domain.TeacherFilter) ([]domain.Teacher, int64, error) {
+	return uc.teachers.List(ctx, filter)
 }
 
 // ReviewTeacher approves or rejects a pending teacher profile.
