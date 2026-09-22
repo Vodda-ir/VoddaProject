@@ -1,12 +1,17 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { faDigits } from '@/components/PanelShell';
+import {
+  PanelButton,
+  PanelEmpty,
+  PanelMetric,
+  PanelPageHeader,
+  PanelStatus,
+  panelInputStyle,
+} from '@/components/panel/PanelUI';
 import { api, type Withdrawal } from '@/lib/api';
 import { getToken } from '@/lib/auth';
-import { digitsOnly, toFaDigits, toLatinDigits } from '@/lib/persian';
-
-const statusLabel: Record<Withdrawal['status'], string> = { pending: 'در انتظار', paid: 'پرداخت‌شده', rejected: 'ردشده' };
+import { digitsOnly, formatFaNumber, toFaDigits, toLatinDigits } from '@/lib/persian';
 
 export default function TeacherWithdrawalsPage() {
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
@@ -47,7 +52,7 @@ export default function TeacherWithdrawalsPage() {
     if (!normalizedCard && !normalizedSheba) return setError('حداقل شماره کارت یا شبا را وارد کنید.');
     if (normalizedCard && normalizedCard.length !== 16) return setError('شماره کارت باید ۱۶ رقم باشد.');
     if (normalizedSheba && !/^IR\d{24}$/.test(normalizedSheba)) return setError('شماره شبا باید با IR شروع شود و ۲۴ رقم داشته باشد.');
-    if (!window.confirm(`${faDigits(numericAmount)} تومان برای برداشت رزرو شود؟`)) return;
+    if (!window.confirm(`${formatFaNumber(numericAmount)} تومان برای برداشت رزرو شود؟`)) return;
 
     setSaving(true);
     setError('');
@@ -71,39 +76,104 @@ export default function TeacherWithdrawalsPage() {
     }
   }
 
+  const pendingCount = withdrawals.filter((item) => item.status === 'pending').length;
+
   return (
-    <main style={{ padding: 28 }}>
-      <h1 style={{ fontSize: 21, fontWeight: 800, marginBottom: 4 }}>برداشت وجه</h1>
-      <p style={{ fontSize: 13, color: 'var(--ink-3)', marginBottom: 20 }}>موجودی قابل برداشت: <strong style={{ color: 'var(--olive-700)' }}>{faDigits(wallet)} تومان</strong></p>
+    <main className="ops-page">
+      <PanelPageHeader
+        eyebrow="تسویه درآمد"
+        title="برداشت وجه"
+        description="درخواست برداشت را ثبت کنید و وضعیت بررسی و پرداخت درخواست‌های قبلی را پیگیری کنید."
+        actions={<PanelButton icon="refresh" onClick={() => void load()}>به‌روزرسانی</PanelButton>}
+      />
 
-      <section style={{ background: '#fff', borderRadius: 18, padding: 20, border: '1px solid var(--sand-150)', boxShadow: 'var(--sh-sm)', marginBottom: 24 }}>
-        <h2 style={{ fontSize: 16, marginBottom: 15 }}>درخواست جدید</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(210px,1fr))', gap: 12 }}>
-          <label style={labelStyle}>مبلغ (تومان)<input inputMode="numeric" value={toFaDigits(amount)} onChange={(event) => setAmount(digitsOnly(event.target.value))} placeholder="مثلاً ۵۰۰۰۰۰" style={inputStyle} /></label>
-          <label style={labelStyle}>شماره کارت<input inputMode="numeric" value={toFaDigits(card)} maxLength={16} onChange={(event) => setCard(digitsOnly(event.target.value, 16))} placeholder="۱۶ رقم، اختیاری" style={inputStyle} /></label>
-          <label style={labelStyle}>شماره شبا<input dir="ltr" value={toFaDigits(sheba)} maxLength={26} onChange={(event) => setSheba(toLatinDigits(event.target.value).replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 26))} placeholder="IR۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰" style={{ ...inputStyle, textAlign: 'left' }} /></label>
-        </div>
-        <p style={{ fontSize: 12, color: 'var(--ink-3)', lineHeight: 1.8, marginBottom: 14 }}>حداقل یکی از شماره کارت یا شبا الزامی است. ثبت درخواست به معنی انتقال بانکی نیست و مبلغ تا بررسی مدیر از موجودی کسر می‌شود.</p>
-        {error && <div role="alert" style={{ padding: 11, borderRadius: 11, color: 'var(--rose)', background: 'var(--clay-bg)', marginBottom: 12 }}>{error}</div>}
-        {success && <div role="status" style={{ padding: 11, borderRadius: 11, color: 'var(--olive-700)', background: 'var(--olive-100)', marginBottom: 12 }}>{success}</div>}
-        <button type="button" disabled={saving || loading} onClick={submit} style={{ border: 0, borderRadius: 999, padding: '10px 20px', background: 'var(--olive-600)', color: '#fff', fontWeight: 700, cursor: saving ? 'wait' : 'pointer', opacity: saving || loading ? .6 : 1 }}>{saving ? 'در حال ثبت…' : 'ثبت درخواست برداشت'}</button>
-      </section>
+      <div className="ops-metric-grid" style={{ gridTemplateColumns: 'repeat(2,minmax(0,1fr))' }}>
+        <PanelMetric icon="wallet" label="موجودی قابل برداشت" value={loading ? '—' : `${formatFaNumber(wallet)} ت`} hint="موجودی فعلی" />
+        <PanelMetric icon="clock" label="درخواست در انتظار" value={toFaDigits(pendingCount)} hint="هنوز تعیین تکلیف نشده" tone={pendingCount ? 'gold' : 'olive'} />
+      </div>
 
-      <h2 style={{ fontSize: 16, marginBottom: 14 }}>تاریخچهٔ درخواست‌ها</h2>
-      {loading ? <div style={{ padding: 28, color: 'var(--ink-3)' }}>در حال بارگذاری…</div> : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {withdrawals.map((withdrawal) => <article key={withdrawal.id} style={{ background: '#fff', borderRadius: 16, padding: 16, display: 'flex', alignItems: 'center', gap: 14, border: '1px solid var(--sand-150)', boxShadow: 'var(--sh-sm)', flexWrap: 'wrap' }}>
-            <div style={{ flex: '1 1 230px' }}><strong>{faDigits(withdrawal.amount)} تومان</strong><div dir="ltr" style={{ fontSize: 12, color: 'var(--ink-3)', textAlign: 'right', marginTop: 4 }}>{toFaDigits(withdrawal.sheba || withdrawal.card || '—')}</div><time dateTime={withdrawal.created_at} style={{ display: 'block', fontSize: 12, color: 'var(--ink-4)', marginTop: 3 }}>{formatDate(withdrawal.created_at)}</time></div>
-            <span style={statusStyle(withdrawal.status)}>{statusLabel[withdrawal.status]}</span>
-          </article>)}
-          {withdrawals.length === 0 && <div style={{ textAlign: 'center', padding: 40, color: 'var(--ink-3)' }}>هنوز درخواست برداشتی ثبت نشده است.</div>}
-        </div>
-      )}
+      <div className="ops-two-column" style={{ alignItems: 'start' }}>
+        <section className="ops-section-card">
+          <div className="ops-section-head">
+            <div>
+              <h2>درخواست جدید</h2>
+              <p>حداقل شماره کارت یا شبا لازم است. مبلغ تا زمان تعیین وضعیت رزرو می‌شود.</p>
+            </div>
+          </div>
+          <div style={{ padding: 17 }}>
+            <div style={{ display: 'grid', gap: 12 }}>
+              <label style={labelStyle}>مبلغ (تومان)<input inputMode="numeric" value={toFaDigits(amount)} onChange={(event) => setAmount(digitsOnly(event.target.value))} placeholder="مثلاً ۵۰۰۰۰۰" style={panelInputStyle} /></label>
+              <label style={labelStyle}>شماره کارت<input inputMode="numeric" value={toFaDigits(card)} maxLength={16} onChange={(event) => setCard(digitsOnly(event.target.value, 16))} placeholder="۱۶ رقم، اختیاری" style={panelInputStyle} /></label>
+              <label style={labelStyle}>شماره شبا<input dir="ltr" value={toFaDigits(sheba)} maxLength={26} onChange={(event) => setSheba(toLatinDigits(event.target.value).replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 26))} placeholder="IR۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰" style={{ ...panelInputStyle, textAlign: 'left' }} /></label>
+            </div>
+
+            <div className="ops-inline-note" style={{ marginTop: 12 }}>
+              ثبت درخواست به معنی انتقال بانکی نیست؛ درخواست پس از بررسی مدیر تعیین وضعیت می‌شود.
+            </div>
+
+            {error && <div className="ops-error" role="alert" style={{ marginTop: 12, marginBottom: 0 }}><span>{error}</span></div>}
+            {success && <div role="status" style={{ marginTop: 12, padding: '11px 13px', borderRadius: 12, color: 'var(--olive-700)', background: 'var(--olive-100)', fontSize: 11.5 }}>{success}</div>}
+
+            <div style={{ marginTop: 14 }}>
+              <PanelButton tone="primary" disabled={saving || loading} onClick={() => void submit()}>
+                {saving ? 'در حال ثبت…' : 'ثبت درخواست برداشت'}
+              </PanelButton>
+            </div>
+          </div>
+        </section>
+
+        <section className="ops-data-surface">
+          <div className="ops-data-head">
+            <div>
+              <strong>تاریخچه درخواست‌ها</strong>
+              <span style={{ display: 'block', marginTop: 2 }}>{loading ? 'در حال دریافت…' : `${toFaDigits(withdrawals.length)} درخواست`}</span>
+            </div>
+          </div>
+
+          {loading ? (
+            <div style={{ padding: 42, textAlign: 'center', color: 'var(--ink-3)', fontSize: 12 }}>در حال بارگذاری درخواست‌ها…</div>
+          ) : withdrawals.length === 0 ? (
+            <PanelEmpty icon="download" title="هنوز درخواست برداشتی ثبت نشده" />
+          ) : (
+            withdrawals.map((withdrawal) => (
+              <article className="ops-row" key={withdrawal.id}>
+                <div className="ops-row-main">
+                  <div className="ops-row-title">
+                    <strong>{formatFaNumber(withdrawal.amount)} تومان</strong>
+                    <PanelStatus status={withdrawalTone(withdrawal.status)}>{withdrawalLabel(withdrawal.status)}</PanelStatus>
+                  </div>
+                  <div className="ops-row-sub">
+                    <span dir="ltr">{toFaDigits(withdrawal.sheba || withdrawal.card || '—')}</span>
+                  </div>
+                  <div className="ops-row-meta">
+                    <span>{formatDate(withdrawal.created_at)}</span>
+                    <span>#{toFaDigits(withdrawal.id)}</span>
+                  </div>
+                </div>
+              </article>
+            ))
+          )}
+        </section>
+      </div>
     </main>
   );
 }
 
-function formatDate(value: string) { const date = new Date(value); return Number.isNaN(date.getTime()) ? '—' : new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium', timeStyle: 'short' }).format(date); }
-const labelStyle: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12.5, fontWeight: 700, color: 'var(--ink-3)' };
-const inputStyle: React.CSSProperties = { width: '100%', padding: '11px 13px', borderRadius: 12, border: '1px solid var(--sand-200)', color: 'var(--ink)', background: '#fff' };
-const statusStyle = (status: Withdrawal['status']): React.CSSProperties => ({ fontSize: 12, fontWeight: 700, padding: '5px 12px', borderRadius: 999, background: status === 'paid' ? 'var(--olive-100)' : status === 'rejected' ? 'var(--clay-bg)' : 'var(--gold-bg)', color: status === 'paid' ? 'var(--olive-700)' : status === 'rejected' ? 'var(--clay)' : 'var(--gold)' });
+function withdrawalLabel(status: Withdrawal['status']) {
+  if (status === 'paid') return 'پرداخت‌شده';
+  if (status === 'rejected') return 'ردشده';
+  return 'در انتظار';
+}
+
+function withdrawalTone(status: Withdrawal['status']): 'paid' | 'rejected' | 'pending' {
+  if (status === 'paid') return 'paid';
+  if (status === 'rejected') return 'rejected';
+  return 'pending';
+}
+
+function formatDate(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? '—' : new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium', timeStyle: 'short' }).format(date);
+}
+
+const labelStyle: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: 6, color: 'var(--ink-3)', fontSize: 11.5, fontWeight: 700 };
