@@ -63,9 +63,6 @@ func (uc *TeacherUsecase) Mine(ctx context.Context, userID uint) (*domain.Teache
 func (uc *TeacherUsecase) MyWorkTimes(ctx context.Context, userID uint) ([]domain.WorkTime, error) {
 	t, err := uc.teacherForUser(ctx, userID)
 	if err != nil {
-		if errors.Is(err, domain.ErrNotFound) {
-			return []domain.WorkTime{}, nil
-		}
 		return nil, err
 	}
 	return uc.teachers.WorkTimes(ctx, t.ID)
