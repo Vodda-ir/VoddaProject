@@ -4,13 +4,14 @@ import "context"
 
 // TeacherFilter narrows teacher listing/search queries.
 type TeacherFilter struct {
-	Query  string
-	Field  string
-	City   string
-	Female *bool
-	Status TeacherStatus
-	Limit  int
-	Offset int
+	Query      string
+	Field      string
+	City       string
+	Female     *bool
+	Status     TeacherStatus
+	PublicOnly bool
+	Limit      int
+	Offset     int
 }
 
 // UserRepository persists accounts.
