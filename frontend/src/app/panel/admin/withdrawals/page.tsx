@@ -1,21 +1,42 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { faDigits } from '@/components/PanelShell';
 import { Avatar } from '@/components/web/ui';
+import { Icon } from '@/components/Icon';
+import {
+  PanelButton,
+  PanelEmpty,
+  PanelPageHeader,
+  PanelStatus,
+} from '@/components/panel/PanelUI';
 import { fullUrl, getToken } from '@/lib/auth';
+import { formatFaNumber, toFaDigits } from '@/lib/persian';
+
+type WithdrawalStatus = '' | 'pending' | 'paid' | 'rejected';
 
 type Withdrawal = {
   id: number;
   amount?: number;
+  card?: string;
   sheba?: string;
-  status?: string;
+  status?: Exclude<WithdrawalStatus, ''>;
   created_at?: string;
   user?: { name?: string; avatar_url?: string };
 };
 
+const PAGE_SIZE = 30;
+const FILTERS: Array<{ value: WithdrawalStatus; label: string }> = [
+  { value: '', label: 'همه' },
+  { value: 'pending', label: 'در انتظار' },
+  { value: 'paid', label: 'پرداخت‌شده' },
+  { value: 'rejected', label: 'ردشده' },
+];
+
 export default function AdminWithdrawals() {
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
+  const [status, setStatus] = useState<WithdrawalStatus>('pending');
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [busyId, setBusyId] = useState<number | null>(null);
@@ -26,24 +47,30 @@ export default function AdminWithdrawals() {
     setLoading(true);
     setError('');
     try {
-      const response = await fetch('/api/backend/admin/withdrawals?limit=100', { cache: 'no-store' });
+      const sp = new URLSearchParams({
+        limit: String(PAGE_SIZE),
+        offset: String(page * PAGE_SIZE),
+      });
+      if (status) sp.set('status', status);
+      const response = await fetch(`/api/backend/admin/withdrawals?${sp.toString()}`, { cache: 'no-store' });
       const body = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(body.error || 'درخواست‌های برداشت دریافت نشدند.');
       setWithdrawals(body.data || []);
+      setTotal(Number(body.total || 0));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'درخواست‌های برداشت دریافت نشدند.');
       setWithdrawals([]);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [token, page, status]);
 
   useEffect(() => { void fetchData(); }, [fetchData]);
 
-  async function processWithdrawal(withdrawal: Withdrawal, action: 'paid' | 'rejected') {
-    if (!token || busyId !== null) return;
-    const label = action === 'paid' ? 'پرداخت‌شده' : 'ردشده';
-    const warning = action === 'paid'
+  async function processWithdrawal(withdrawal: Withdrawal, paid: boolean) {
+    if (!token || busyId !== null || withdrawal.status !== 'pending') return;
+    const warning = paid
       ? 'فقط پس از انجام واقعی انتقال بانکی، وضعیت را پرداخت‌شده کنید. ادامه می‌دهید؟'
       : 'با رد درخواست، مبلغ رزروشده به کیف پول استاد بازمی‌گردد. ادامه می‌دهید؟';
     if (!window.confirm(warning)) return;
@@ -54,56 +81,120 @@ export default function AdminWithdrawals() {
       const response = await fetch(`/api/backend/admin/withdrawals/${withdrawal.id}/process`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action }),
+        body: JSON.stringify({ paid }),
       });
       const body = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(body.error || `ثبت وضعیت ${label} انجام نشد.`);
-      setWithdrawals((previous) => previous.map((item) => item.id === withdrawal.id ? { ...item, status: action } : item));
+      if (!response.ok) throw new Error(body.error || 'ثبت وضعیت برداشت انجام نشد.');
+      await fetchData();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : `ثبت وضعیت ${label} انجام نشد.`);
+      setError(cause instanceof Error ? cause.message : 'ثبت وضعیت برداشت انجام نشد.');
     } finally {
       setBusyId(null);
     }
   }
 
+  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
   return (
-    <main style={{ padding: 28 }}>
-      <h1 style={{ fontSize: 21, fontWeight: 800, marginBottom: 4 }}>برداشت‌ها</h1>
-      <p style={{ fontSize: 13, color: 'var(--ink-3)', marginBottom: 22 }}>مدیریت درخواست‌های برداشت وجه استادان</p>
+    <main className="ops-page">
+      <PanelPageHeader
+        eyebrow="عملیات مالی"
+        title="برداشت‌ها"
+        description="درخواست‌های برداشت استادان را بررسی کنید. پرداخت‌شده فقط پس از انتقال واقعی بانکی ثبت شود."
+        actions={<PanelButton icon="refresh" onClick={() => void fetchData()}>به‌روزرسانی</PanelButton>}
+      />
 
-      <div role="note" style={{ padding: 14, borderRadius: 14, background: 'var(--gold-bg)', color: '#765918', fontSize: 13, lineHeight: 1.9, marginBottom: 16 }}>
-        ثبت «پرداخت‌شده» در وُدّا جایگزین انتقال بانکی نیست؛ ابتدا انتقال واقعی را انجام دهید و سپس وضعیت را ثبت کنید.
+      <div className="ops-inline-note" style={{ marginBottom: 14, color: '#765918', background: 'var(--gold-bg)' }}>
+        <Icon name="info" size={16} />
+        <span>تغییر وضعیت در وُدّا جایگزین انتقال بانکی نیست. ابتدا انتقال واقعی را انجام دهید، سپس درخواست را پرداخت‌شده کنید.</span>
       </div>
-      {error && <div role="alert" style={{ padding: 14, borderRadius: 14, background: 'var(--clay-bg)', color: 'var(--rose)', marginBottom: 16 }}>{error}</div>}
 
-      {loading ? (
-        <div style={{ padding: 28, color: 'var(--ink-3)' }}>در حال بارگذاری…</div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {withdrawals.map((withdrawal) => (
-            <article key={withdrawal.id} style={{ background: '#fff', borderRadius: 16, padding: 16, display: 'flex', alignItems: 'center', gap: 14, border: '1px solid var(--sand-150)', boxShadow: 'var(--sh-sm)', flexWrap: 'wrap' }}>
-              <Avatar size={46} imageUrl={fullUrl(withdrawal.user?.avatar_url)} />
-              <div style={{ flex: '1 1 230px', minWidth: 0 }}>
-                <div style={{ fontSize: 14, fontWeight: 700 }}>{withdrawal.user?.name || '—'}</div>
-                <div dir="ltr" style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 3, textAlign: 'right' }}>{withdrawal.sheba ? faDigits(withdrawal.sheba) : 'شماره شبا ثبت نشده'}</div>
-                {withdrawal.created_at && <time dateTime={withdrawal.created_at} style={{ display: 'block', fontSize: 12, color: 'var(--ink-4)', marginTop: 3 }}>{new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(withdrawal.created_at))}</time>}
-              </div>
-              <span style={{ fontSize: 16, fontWeight: 800, color: 'var(--olive-700)' }}>{faDigits(Number(withdrawal.amount) || 0)} تومان</span>
-              {withdrawal.status === 'pending' ? (
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button type="button" disabled={busyId === withdrawal.id} onClick={() => processWithdrawal(withdrawal, 'rejected')} style={{ padding: '8px 16px', borderRadius: 999, border: 'none', cursor: busyId === withdrawal.id ? 'wait' : 'pointer', background: 'var(--clay-bg)', color: 'var(--clay)', fontSize: 13, fontWeight: 700 }}>رد</button>
-                  <button type="button" disabled={busyId === withdrawal.id} onClick={() => processWithdrawal(withdrawal, 'paid')} style={{ padding: '8px 16px', borderRadius: 999, border: 'none', cursor: busyId === withdrawal.id ? 'wait' : 'pointer', background: 'var(--olive-600)', color: '#fff', fontSize: 13, fontWeight: 700 }}>{busyId === withdrawal.id ? 'در حال ثبت…' : 'ثبت پرداخت'}</button>
-                </div>
-              ) : (
-                <span style={{ fontSize: 12, fontWeight: 700, padding: '4px 12px', borderRadius: 999, background: withdrawal.status === 'paid' ? 'var(--olive-100)' : 'var(--clay-bg)', color: withdrawal.status === 'paid' ? 'var(--olive-700)' : 'var(--clay)' }}>
-                  {withdrawal.status === 'paid' ? 'پرداخت‌شده' : 'ردشده'}
-                </span>
-              )}
-            </article>
-          ))}
-          {withdrawals.length === 0 && <div style={{ textAlign: 'center', padding: 40, color: 'var(--ink-3)' }}>درخواست برداشتی یافت نشد.</div>}
+      <div className="ops-filter-tabs" role="tablist" aria-label="وضعیت برداشت‌ها" style={{ marginBottom: 14 }}>
+        {FILTERS.map((item) => (
+          <button key={item.value || 'all'} type="button" role="tab" aria-selected={status === item.value} onClick={() => { setStatus(item.value); setPage(0); }}>
+            {item.label}
+          </button>
+        ))}
+      </div>
+
+      {error && (
+        <div className="ops-error" role="alert">
+          <span>{error}</span>
+          <PanelButton onClick={() => void fetchData()}>تلاش دوباره</PanelButton>
         </div>
       )}
+
+      <section className="ops-data-surface">
+        <div className="ops-data-head">
+          <div>
+            <strong>{status ? FILTERS.find((item) => item.value === status)?.label : 'همه درخواست‌ها'}</strong>
+            <span style={{ display: 'block', marginTop: 2 }}>{loading ? 'در حال دریافت…' : `${toFaDigits(total)} درخواست`}</span>
+          </div>
+          {!loading && total > 0 && <span>صفحه {toFaDigits(page + 1)} از {toFaDigits(pageCount)}</span>}
+        </div>
+
+        {loading ? (
+          <div style={{ padding: 42, textAlign: 'center', color: 'var(--ink-3)', fontSize: 12 }}>در حال بارگذاری درخواست‌های برداشت…</div>
+        ) : withdrawals.length === 0 ? (
+          <PanelEmpty icon="wallet" title="درخواستی در این وضعیت وجود ندارد" />
+        ) : (
+          withdrawals.map((withdrawal) => {
+            const currentStatus = withdrawal.status || 'pending';
+            const busy = busyId === withdrawal.id;
+            return (
+              <article className="ops-row" key={withdrawal.id} style={{ opacity: busy ? .55 : 1 }}>
+                <Avatar size={44} imageUrl={fullUrl(withdrawal.user?.avatar_url)} />
+                <div className="ops-row-main">
+                  <div className="ops-row-title">
+                    <strong>{withdrawal.user?.name || 'استاد'}</strong>
+                    <PanelStatus status={currentStatus}>{withdrawalStatusLabel(currentStatus)}</PanelStatus>
+                  </div>
+                  <div className="ops-row-sub">
+                    {withdrawal.sheba && <span dir="ltr">{toFaDigits(withdrawal.sheba)}</span>}
+                    {!withdrawal.sheba && withdrawal.card && <span dir="ltr">{toFaDigits(withdrawal.card)}</span>}
+                    {!withdrawal.sheba && !withdrawal.card && <span>اطلاعات بانکی نمایش‌پذیر نیست</span>}
+                  </div>
+                  <div className="ops-row-meta">
+                    <span style={{ color: 'var(--olive-700)', fontWeight: 800 }}>{formatFaNumber(Number(withdrawal.amount) || 0)} تومان</span>
+                    {withdrawal.created_at && <span><Icon name="clock" size={13} />{formatDate(withdrawal.created_at)}</span>}
+                    <span>#{toFaDigits(withdrawal.id)}</span>
+                  </div>
+                </div>
+
+                {currentStatus === 'pending' && (
+                  <div className="ops-row-actions">
+                    <PanelButton tone="danger" icon="x" disabled={busy} onClick={() => void processWithdrawal(withdrawal, false)}>رد و بازگشت وجه</PanelButton>
+                    <PanelButton tone="success" icon="check" disabled={busy} onClick={() => void processWithdrawal(withdrawal, true)}>
+                      {busy ? 'در حال ثبت…' : 'ثبت پرداخت'}
+                    </PanelButton>
+                  </div>
+                )}
+              </article>
+            );
+          })
+        )}
+
+        {!loading && total > PAGE_SIZE && (
+          <div className="ops-pagination">
+            <PanelButton disabled={page === 0} onClick={() => setPage((value) => Math.max(0, value - 1))}>صفحه قبل</PanelButton>
+            <span>{toFaDigits(page * PAGE_SIZE + 1)} تا {toFaDigits(Math.min((page + 1) * PAGE_SIZE, total))} از {toFaDigits(total)}</span>
+            <PanelButton disabled={page + 1 >= pageCount} onClick={() => setPage((value) => value + 1)}>صفحه بعد</PanelButton>
+          </div>
+        )}
+      </section>
     </main>
   );
+}
+
+function withdrawalStatusLabel(status: Exclude<WithdrawalStatus, ''>) {
+  if (status === 'paid') return 'پرداخت‌شده';
+  if (status === 'rejected') return 'ردشده';
+  return 'در انتظار پرداخت';
+}
+
+function formatDate(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? '—'
+    : new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium', timeStyle: 'short' }).format(date);
 }
