@@ -1,11 +1,17 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Avatar } from '@/components/web/ui';
 import { Icon } from '@/components/Icon';
-import { faDigits } from '@/components/PanelShell';
+import {
+  PanelButton,
+  PanelEmpty,
+  PanelMetric,
+  PanelPageHeader,
+} from '@/components/panel/PanelUI';
 import { api, type Review } from '@/lib/api';
 import { fullUrl, getToken } from '@/lib/auth';
+import { toFaDigits } from '@/lib/persian';
 
 export default function TeacherReviewsPage() {
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -30,29 +36,70 @@ export default function TeacherReviewsPage() {
 
   useEffect(() => { void load(); }, [load]);
 
-  const average = reviews.length ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length : 0;
+  const average = useMemo(
+    () => reviews.length ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length : 0,
+    [reviews],
+  );
+  const fiveStarCount = reviews.filter((review) => review.rating === 5).length;
+  const fiveStarPercent = reviews.length ? Math.round((fiveStarCount / reviews.length) * 100) : 0;
 
   return (
-    <main style={{ padding: 28 }}>
-      <h1 style={{ fontSize: 21, fontWeight: 800, marginBottom: 4 }}>نظرهای قرآن‌آموزان</h1>
-      <p style={{ fontSize: 13, color: 'var(--ink-3)', marginBottom: 18 }}>فقط بازخوردهای ثبت‌شده پس از جلسهٔ تکمیل‌شده</p>
-      {reviews.length > 0 && <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '9px 14px', borderRadius: 14, background: 'var(--gold-bg)', color: '#765918', marginBottom: 18 }}><Icon name="star" size={17} fill /> میانگین {faDigits(average.toFixed(1))} از {faDigits(reviews.length)} نظر</div>}
-      {error && <div role="alert" style={{ padding: 14, marginBottom: 16, borderRadius: 14, background: 'var(--clay-bg)', color: 'var(--rose)' }}>{error}<button type="button" onClick={load} style={{ display: 'block', marginTop: 10, border: 0, borderRadius: 10, padding: '7px 12px', background: 'var(--rose)', color: '#fff', cursor: 'pointer' }}>تلاش دوباره</button></div>}
-      {loading ? <div style={{ padding: 28, color: 'var(--ink-3)' }}>در حال بارگذاری…</div> : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {reviews.map((review) => <article key={review.id} style={{ background: '#fff', borderRadius: 16, padding: 16, border: '1px solid var(--sand-150)', boxShadow: 'var(--sh-sm)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: review.text ? 10 : 0 }}>
-              <Avatar size={40} imageUrl={fullUrl(review.learner?.avatar_url)} />
-              <div style={{ flex: 1 }}><strong style={{ fontSize: 13.5 }}>{review.learner?.name || 'قرآن‌آموز'}</strong><div aria-label={`${review.rating} از ۵`} style={{ display: 'flex', gap: 3, marginTop: 4 }}>{Array.from({ length: 5 }, (_, index) => <Icon key={index} name="star" size={14} fill={index < review.rating} style={{ color: index < review.rating ? 'var(--gold)' : 'var(--sand-200)' }} />)}</div></div>
-              <time dateTime={review.created_at} style={{ fontSize: 12, color: 'var(--ink-4)' }}>{formatDate(review.created_at)}</time>
-            </div>
-            {review.text && <p style={{ fontSize: 13, lineHeight: 1.9, color: 'var(--ink-2s)', margin: 0 }}>{review.text}</p>}
-          </article>)}
-          {reviews.length === 0 && <div style={{ textAlign: 'center', padding: 40, color: 'var(--ink-3)' }}>هنوز نظری ثبت نشده است.</div>}
+    <main className="ops-page">
+      <PanelPageHeader
+        eyebrow="اعتبار و بازخورد"
+        title="نظرهای قرآن‌آموزان"
+        description="بازخوردهایی که فقط پس از جلسه تکمیل‌شده ثبت شده‌اند؛ برای ارزیابی کیفیت خدمات و تجربه قرآن‌آموز."
+        actions={<PanelButton icon="refresh" onClick={() => void load()}>به‌روزرسانی</PanelButton>}
+      />
+
+      <div className="ops-metric-grid" style={{ gridTemplateColumns: 'repeat(3,minmax(0,1fr))' }}>
+        <PanelMetric icon="star" label="میانگین امتیاز" value={reviews.length ? toFaDigits(average.toFixed(1)) : '—'} hint="از ۵" tone="gold" />
+        <PanelMetric icon="message" label="کل نظرها" value={toFaDigits(reviews.length)} hint="بازخورد ثبت‌شده" tone="info" />
+        <PanelMetric icon="checkCircle" label="امتیاز پنج‌ستاره" value={reviews.length ? `${toFaDigits(fiveStarPercent)}٪` : '—'} hint={`${toFaDigits(fiveStarCount)} نظر`} />
+      </div>
+
+      {error && <div className="ops-error" role="alert"><span>{error}</span><PanelButton onClick={() => void load()}>تلاش دوباره</PanelButton></div>}
+
+      <section className="ops-data-surface">
+        <div className="ops-data-head">
+          <div>
+            <strong>بازخوردهای ثبت‌شده</strong>
+            <span style={{ display: 'block', marginTop: 2 }}>جدیدترین نظرها در همین فهرست نمایش داده می‌شوند.</span>
+          </div>
         </div>
-      )}
+
+        {loading ? (
+          <div style={{ padding: 42, textAlign: 'center', color: 'var(--ink-3)', fontSize: 12 }}>در حال بارگذاری نظرها…</div>
+        ) : reviews.length === 0 ? (
+          <PanelEmpty icon="star" title="هنوز نظری ثبت نشده" description="پس از برگزاری جلسه و ثبت امتیاز توسط قرآن‌آموز، نظرها اینجا دیده می‌شوند." />
+        ) : (
+          reviews.map((review) => (
+            <article className="ops-row" key={review.id} style={{ alignItems: 'flex-start' }}>
+              <Avatar size={43} imageUrl={fullUrl(review.learner?.avatar_url)} />
+              <div className="ops-row-main">
+                <div className="ops-row-title">
+                  <strong>{review.learner?.name || 'قرآن‌آموز'}</strong>
+                  <span aria-label={`${review.rating} از ۵`} style={{ display: 'inline-flex', gap: 2 }}>
+                    {Array.from({ length: 5 }, (_, index) => (
+                      <Icon key={index} name="star" size={13} fill={index < review.rating} style={{ color: index < review.rating ? 'var(--gold)' : 'var(--sand-200)' }} />
+                    ))}
+                  </span>
+                </div>
+                {review.text && <p style={{ margin: '7px 0 0', color: 'var(--ink-2s)', fontSize: 11.5, lineHeight: 1.95 }}>{review.text}</p>}
+                <div className="ops-row-meta">
+                  <span>{formatDate(review.created_at)}</span>
+                  {review.session_id && <span>جلسه #{toFaDigits(review.session_id)}</span>}
+                </div>
+              </div>
+            </article>
+          ))
+        )}
+      </section>
     </main>
   );
 }
 
-function formatDate(value: string) { const date = new Date(value); return Number.isNaN(date.getTime()) ? '—' : new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium' }).format(date); }
+function formatDate(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? '—' : new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium' }).format(date);
+}
