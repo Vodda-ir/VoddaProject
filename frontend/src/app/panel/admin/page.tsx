@@ -144,7 +144,7 @@ export default function AdminDashboard() {
         <PanelSection
           title="صف بررسی استادان"
           description="درخواست‌هایی که هنوز تصمیم مدیریتی برایشان ثبت نشده است."
-          action={<Link href="/panel/admin/teachers?status=pending" className="ops-button">مشاهده همه</Link>}
+          action={<Link href="/panel/admin/teachers" className="ops-button">مدیریت صف</Link>}
         >
           {loading ? (
             <div style={{ padding: 34, textAlign: 'center', color: 'var(--ink-3)', fontSize: 12 }}>در حال دریافت صف بررسی…</div>
