@@ -58,9 +58,10 @@ func (r *teacherRepo) List(ctx context.Context, f domain.TeacherFilter) ([]domai
 
 	if f.Status != "" {
 		q = q.Where("teachers.status = ?", f.Status)
-		if f.Status == domain.TeacherApproved {
-			q = q.Where("teachers.verified = ? AND teachers.available = ? AND users.active = ?", true, true, true)
-		}
+	}
+	if f.PublicOnly {
+		q = q.Where("teachers.status = ? AND teachers.verified = ? AND teachers.available = ? AND users.active = ?",
+			domain.TeacherApproved, true, true, true)
 	}
 	if f.Field != "" {
 		q = q.Where("teachers.field = ?", f.Field)
