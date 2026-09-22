@@ -1,10 +1,16 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { faDigits } from '@/components/PanelShell';
 import { Avatar } from '@/components/web/ui';
 import { Icon } from '@/components/Icon';
+import {
+  PanelButton,
+  PanelEmpty,
+  PanelPageHeader,
+  PanelStatus,
+} from '@/components/panel/PanelUI';
 import { fullUrl, getToken } from '@/lib/auth';
+import { formatFaNumber, toFaDigits } from '@/lib/persian';
 
 type PendingService = {
   id: number;
@@ -14,6 +20,7 @@ type PendingService = {
   teacher?: {
     city?: string;
     field?: string;
+    tag?: string;
     user?: { name?: string; avatar_url?: string };
   };
 };
@@ -46,7 +53,7 @@ export default function AdminServices() {
 
   async function moderate(service: PendingService, approve: boolean) {
     if (!token || busyId !== null) return;
-    const action = approve ? 'تأیید' : 'رد و حذف';
+    const action = approve ? 'تأیید و انتشار' : 'رد و حذف';
     if (!window.confirm(`خدمت «${service.title || 'بدون عنوان'}» ${action} شود؟`)) return;
 
     setBusyId(service.id);
@@ -64,47 +71,68 @@ export default function AdminServices() {
   }
 
   return (
-    <main style={{ padding: 28 }}>
-      <h1 style={{ fontSize: 21, fontWeight: 800, marginBottom: 4 }}>خدمات استادان</h1>
-      <p style={{ fontSize: 13, color: 'var(--ink-3)', marginBottom: 22 }}>هر خدمت تازه یا ویرایش‌شده پیش از انتشار باید بررسی شود.</p>
+    <main className="ops-page">
+      <PanelPageHeader
+        eyebrow="کنترل کیفیت خدمات"
+        title="بررسی خدمات استادان"
+        description="خدمت تازه یا ویرایش‌شده فقط بعد از بررسی مدیر قابل رزرو می‌شود."
+        actions={<PanelButton icon="refresh" onClick={() => void fetchData()}>به‌روزرسانی</PanelButton>}
+      />
 
-      {error && <div role="alert" style={{ padding: 14, borderRadius: 14, background: 'var(--clay-bg)', color: 'var(--rose)', marginBottom: 16 }}>{error}</div>}
+      {error && <div className="ops-error" role="alert"><span>{error}</span><PanelButton onClick={() => void fetchData()}>تلاش دوباره</PanelButton></div>}
 
-      {loading ? (
-        <div style={{ padding: 28, color: 'var(--ink-3)' }}>در حال بارگذاری…</div>
-      ) : services.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: 60, color: 'var(--ink-3)', fontSize: 14 }}>خدمت در انتظار بررسی وجود ندارد.</div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {services.map((service) => {
+      <section className="ops-data-surface">
+        <div className="ops-data-head">
+          <div>
+            <strong>صف بررسی خدمات</strong>
+            <span style={{ display: 'block', marginTop: 2 }}>{loading ? 'در حال دریافت…' : `${toFaDigits(services.length)} خدمت در انتظار`}</span>
+          </div>
+          <PanelStatus status={services.length ? 'pending' : 'approved'}>{services.length ? 'نیازمند اقدام' : 'صف خالی'}</PanelStatus>
+        </div>
+
+        {loading ? (
+          <div style={{ padding: 42, textAlign: 'center', color: 'var(--ink-3)', fontSize: 12 }}>در حال بارگذاری خدمات…</div>
+        ) : services.length === 0 ? (
+          <PanelEmpty icon="checkCircle" title="خدمت در انتظار بررسی وجود ندارد" description="همه خدمات جدید تعیین تکلیف شده‌اند." />
+        ) : (
+          services.map((service) => {
             const teacher = service.teacher || {};
             const user = teacher.user || {};
+            const busy = busyId === service.id;
             return (
-              <article key={service.id} style={{ background: '#fff', borderRadius: 16, padding: 16, border: '1px solid var(--sand-150)', boxShadow: 'var(--sh-sm)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
-                  <div style={{ width: 46, height: 46, borderRadius: 13, background: 'var(--olive-100)', color: 'var(--olive-700)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="book" size={23} /></div>
-                  <div style={{ flex: '1 1 180px', minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 700 }}>{service.title || 'خدمت بدون عنوان'}</div>
-                    <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 3 }}>{faDigits(Number(service.duration) || 0)} دقیقه · {faDigits(Number(service.price) || 0)} تومان</div>
+              <article className="ops-row" key={service.id} style={{ opacity: busy ? .55 : 1 }}>
+                <span style={{ width: 44, height: 44, display: 'grid', placeItems: 'center', flex: '0 0 44px', borderRadius: 13, color: 'var(--olive-700)', background: 'var(--olive-100)' }}>
+                  <Icon name="book" size={20} />
+                </span>
+                <div className="ops-row-main">
+                  <div className="ops-row-title">
+                    <strong>{service.title || 'خدمت بدون عنوان'}</strong>
+                    <PanelStatus status="pending">در انتظار تأیید</PanelStatus>
                   </div>
-                  <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 9px', borderRadius: 999, background: 'var(--gold-bg)', color: 'var(--gold)' }}>در انتظار تأیید</span>
+                  <div className="ops-row-sub">
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                      <Avatar size={23} imageUrl={fullUrl(user.avatar_url)} />{user.name || 'استاد'}
+                    </span>
+                    {teacher.tag && <span>· {teacher.tag}</span>}
+                    {teacher.city && <span>· {teacher.city}</span>}
+                  </div>
+                  <div className="ops-row-meta">
+                    <span><Icon name="clock" size={13} />{toFaDigits(Number(service.duration) || 0)} دقیقه</span>
+                    <span>{formatFaNumber(Number(service.price) || 0)} تومان</span>
+                    <span>#{toFaDigits(service.id)}</span>
+                  </div>
                 </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 12, padding: '10px 14px', background: 'var(--sand-50)', borderRadius: 12, flexWrap: 'wrap' }}>
-                  <Avatar size={30} imageUrl={fullUrl(user.avatar_url)} />
-                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink-2s)' }}>{user.name || '—'}</span>
-                  <span style={{ fontSize: 12, color: 'var(--ink-3)' }}>{[teacher.city, teacher.field].filter(Boolean).join(' · ') || 'اطلاعات استاد ثبت نشده'}</span>
-                </div>
-
-                <div style={{ display: 'flex', gap: 8, marginTop: 12, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-                  <button type="button" disabled={busyId === service.id} onClick={() => moderate(service, false)} style={{ padding: '8px 18px', borderRadius: 12, border: '1.5px solid var(--sand-200)', background: '#fff', color: 'var(--clay)', fontSize: 13, fontWeight: 700, cursor: busyId === service.id ? 'wait' : 'pointer' }}>رد و حذف</button>
-                  <button type="button" disabled={busyId === service.id} onClick={() => moderate(service, true)} style={{ padding: '8px 20px', borderRadius: 12, border: 'none', background: 'var(--olive-600)', color: '#fff', fontSize: 13, fontWeight: 700, cursor: busyId === service.id ? 'wait' : 'pointer' }}>{busyId === service.id ? 'در حال ثبت…' : 'تأیید و انتشار'}</button>
+                <div className="ops-row-actions">
+                  <PanelButton tone="danger" icon="x" disabled={busy} onClick={() => void moderate(service, false)}>رد و حذف</PanelButton>
+                  <PanelButton tone="success" icon="check" disabled={busy} onClick={() => void moderate(service, true)}>
+                    {busy ? 'در حال ثبت…' : 'تأیید و انتشار'}
+                  </PanelButton>
                 </div>
               </article>
             );
-          })}
-        </div>
-      )}
+          })
+        )}
+      </section>
     </main>
   );
 }
