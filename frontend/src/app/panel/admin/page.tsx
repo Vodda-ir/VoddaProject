@@ -1,10 +1,19 @@
 'use client';
 
+import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
-import { StatCard, Panel, faDigits } from '@/components/PanelShell';
 import { Avatar } from '@/components/web/ui';
 import { Icon } from '@/components/Icon';
+import {
+  PanelButton,
+  PanelEmpty,
+  PanelMetric,
+  PanelPageHeader,
+  PanelSection,
+  PanelStatus,
+} from '@/components/panel/PanelUI';
 import { fullUrl, getToken } from '@/lib/auth';
+import { formatFaNumber, toFaDigits } from '@/lib/persian';
 
 type DashboardData = {
   learners?: number;
@@ -19,6 +28,7 @@ type DashboardData = {
 type PendingTeacher = {
   id: number;
   field?: string;
+  tag?: string;
   city?: string;
   user?: { name?: string; avatar_url?: string };
 };
@@ -38,7 +48,7 @@ export default function AdminDashboard() {
     try {
       const [dashboardResponse, teachersResponse] = await Promise.all([
         fetch('/api/backend/admin/dashboard', { cache: 'no-store' }),
-        fetch('/api/backend/admin/teachers?status=pending&limit=10', { cache: 'no-store' }),
+        fetch('/api/backend/admin/teachers?status=pending&limit=6', { cache: 'no-store' }),
       ]);
       const [dashboardBody, teachersBody] = await Promise.all([
         dashboardResponse.json().catch(() => ({})),
@@ -72,11 +82,7 @@ export default function AdminDashboard() {
       });
       const body = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(body.error || `${action} استاد انجام نشد.`);
-      setPendingTeachers((previous) => previous.filter((teacher) => teacher.id !== id));
-      setDashboard((previous) => ({
-        ...previous,
-        pending_teachers: Math.max(0, Number(previous.pending_teachers || 0) - 1),
-      }));
+      await load();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : `${action} استاد انجام نشد.`);
     } finally {
@@ -84,64 +90,148 @@ export default function AdminDashboard() {
     }
   }
 
-  if (loading) return <div style={{ padding: 28, textAlign: 'center', color: 'var(--ink-3)' }}>در حال بارگذاری…</div>;
+  const sessions = Number(dashboard.sessions || 0);
+  const doneSessions = Number(dashboard.done_sessions || 0);
+  const completionRate = sessions > 0 ? Math.round((doneSessions / sessions) * 100) : 0;
 
   return (
-    <main style={{ padding: 28 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap', marginBottom: 22 }}>
-        <div>
-          <h1 style={{ fontSize: 21, fontWeight: 800, marginBottom: 4 }}>داشبورد مدیریت</h1>
-          <p style={{ fontSize: 13, color: 'var(--ink-3)' }}>آمار واقعی ثبت‌شده در Backend و موارد نیازمند اقدام</p>
+    <main className="ops-page">
+      <PanelPageHeader
+        eyebrow="مرکز عملیات"
+        title="داشبورد مدیریت"
+        description="نمای متمرکز از وضعیت کاربران، استادان، جلسات و مواردی که نیاز به اقدام مدیریتی دارند."
+        actions={<PanelButton icon="refresh" onClick={() => void load()}>به‌روزرسانی</PanelButton>}
+      />
+
+      {error && (
+        <div className="ops-error" role="alert">
+          <span>{error}</span>
+          <PanelButton onClick={() => void load()}>تلاش دوباره</PanelButton>
         </div>
-        <button type="button" onClick={load} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, border: '1px solid var(--sand-200)', background: '#fff', padding: '9px 14px', borderRadius: 12, cursor: 'pointer', color: 'var(--ink-2s)' }}>
-          <Icon name="trending" size={17} /> به‌روزرسانی
-        </button>
+      )}
+
+      <div className="ops-metric-grid">
+        <PanelMetric
+          icon="users"
+          label="قرآن‌آموزان"
+          value={loading ? '—' : toFaDigits(Number(dashboard.learners || 0))}
+          hint="حساب‌های learner"
+          tone="info"
+        />
+        <PanelMetric
+          icon="award"
+          label="کل استادان"
+          value={loading ? '—' : toFaDigits(Number(dashboard.teachers || 0))}
+          hint={`${toFaDigits(Number(dashboard.pending_teachers || 0))} در انتظار بررسی`}
+        />
+        <PanelMetric
+          icon="calendar"
+          label="جلسات"
+          value={loading ? '—' : toFaDigits(sessions)}
+          hint={sessions > 0 ? `${toFaDigits(completionRate)}٪ تکمیل‌شده` : 'هنوز جلسه‌ای ثبت نشده'}
+          tone="info"
+        />
+        <PanelMetric
+          icon="coins"
+          label="کارمزد ثبت‌شده"
+          value={loading ? '—' : `${formatFaNumber(Number(dashboard.commission || 0))} ت`}
+          hint="بر اساس ledger واقعی"
+          tone="clay"
+        />
       </div>
 
-      {error && <div role="alert" style={{ padding: 14, borderRadius: 14, background: 'var(--clay-bg)', color: 'var(--rose)', marginBottom: 18 }}>{error}</div>}
+      <div className="ops-two-column">
+        <PanelSection
+          title="صف بررسی استادان"
+          description="درخواست‌هایی که هنوز تصمیم مدیریتی برایشان ثبت نشده است."
+          action={<Link href="/panel/admin/teachers?status=pending" className="ops-button">مشاهده همه</Link>}
+        >
+          {loading ? (
+            <div style={{ padding: 34, textAlign: 'center', color: 'var(--ink-3)', fontSize: 12 }}>در حال دریافت صف بررسی…</div>
+          ) : pendingTeachers.length === 0 ? (
+            <PanelEmpty
+              icon="checkCircle"
+              title="صف بررسی خالی است"
+              description="در حال حاضر درخواست استادی در انتظار تصمیم وجود ندارد."
+            />
+          ) : (
+            pendingTeachers.map((teacher) => {
+              const busy = busyId === teacher.id;
+              return (
+                <article className="ops-row" key={teacher.id} style={{ opacity: busy ? .55 : 1 }}>
+                  <Avatar size={44} imageUrl={fullUrl(teacher.user?.avatar_url)} />
+                  <div className="ops-row-main">
+                    <div className="ops-row-title">
+                      <strong>{teacher.user?.name || 'استاد بدون نام'}</strong>
+                      <PanelStatus status="pending">در انتظار</PanelStatus>
+                    </div>
+                    <div className="ops-row-sub">
+                      <span>{teacher.tag || teacher.field || 'حوزه ثبت نشده'}</span>
+                      {teacher.city && <span>· {teacher.city}</span>}
+                    </div>
+                  </div>
+                  <div className="ops-row-actions">
+                    <PanelButton tone="danger" icon="x" disabled={busy} onClick={() => void reviewTeacher(teacher.id, false)}>رد</PanelButton>
+                    <PanelButton tone="success" icon="check" disabled={busy} onClick={() => void reviewTeacher(teacher.id, true)}>
+                      {busy ? 'در حال ثبت…' : 'تأیید'}
+                    </PanelButton>
+                  </div>
+                </article>
+              );
+            })
+          )}
+        </PanelSection>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(175px,1fr))', gap: 16, marginBottom: 22 }}>
-        <StatCard icon="users" label="قرآن‌آموزان" value={faDigits(Number(dashboard.learners || 0))} tone="info" />
-        <StatCard icon="award" label="کل استادان" value={faDigits(Number(dashboard.teachers || 0))} tone="olive" />
-        <StatCard icon="clock" label="در انتظار بررسی" value={faDigits(Number(dashboard.pending_teachers || 0))} tone="gold" />
-        <StatCard icon="calendar" label="کل جلسات" value={faDigits(Number(dashboard.sessions || 0))} tone="info" />
-        <StatCard icon="checkCircle" label="جلسات تکمیل‌شده" value={faDigits(Number(dashboard.done_sessions || 0))} tone="olive" />
-        <StatCard icon="coins" label="کارمزد ثبت‌شده" value={`${faDigits(Number(dashboard.commission || 0))} ت`} tone="clay" />
-      </div>
+        <div style={{ display: 'grid', gap: 16, alignContent: 'start' }}>
+          <PanelSection title="دسترسی سریع" description="مسیرهای پرتکرار مدیریت و کنترل روزانه.">
+            <div className="ops-quick-actions">
+              <QuickAction href="/panel/admin/teachers" icon="award" label="اساتید" />
+              <QuickAction href="/panel/admin/services" icon="book" label="خدمات" />
+              <QuickAction href="/panel/admin/withdrawals" icon="download" label="برداشت‌ها" />
+              <QuickAction href="/panel/admin/support" icon="message" label="پشتیبانی" />
+              <QuickAction href="/panel/admin/sessions" icon="calendar" label="جلسات" />
+              <QuickAction href="/panel/admin/audit" icon="shield" label="گزارش عملیات" />
+            </div>
+          </PanelSection>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: 18 }}>
-        <Panel title="استادان در انتظار تأیید" pad={false}>
-          {pendingTeachers.length === 0 ? (
-            <div style={{ padding: 28, color: 'var(--ink-3)', textAlign: 'center' }}>موردی در انتظار تأیید نیست.</div>
-          ) : pendingTeachers.map((teacher, index) => (
-            <article key={teacher.id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 20px', borderBottom: index < pendingTeachers.length - 1 ? '1px solid var(--sand-100)' : 'none', flexWrap: 'wrap' }}>
-              <Avatar size={42} imageUrl={fullUrl(teacher.user?.avatar_url)} />
-              <div style={{ flex: '1 1 150px', minWidth: 0 }}>
-                <div style={{ fontSize: 13.5, fontWeight: 700 }}>{teacher.user?.name || 'استاد'}</div>
-                <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 2 }}>{[teacher.field, teacher.city].filter(Boolean).join(' · ') || 'اطلاعات تکمیلی ثبت نشده'}</div>
+          <PanelSection title="وضعیت مالی" description="اعداد ثبت‌شده در دفتر مالی سامانه.">
+            <div style={{ padding: 16, display: 'grid', gap: 11 }}>
+              <FinanceRow label="حجم شارژ ثبت‌شده" value={Number(dashboard.charge_volume || 0)} />
+              <FinanceRow label="کارمزد سامانه" value={Number(dashboard.commission || 0)} />
+              <div className="ops-inline-note">
+                <Icon name="info" size={16} />
+                <span>فقط داده واقعی backend نمایش داده می‌شود؛ نمودار تاریخی تا زمان وجود endpoint گزارش دوره‌ای اضافه نمی‌شود.</span>
               </div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button type="button" disabled={busyId === teacher.id} onClick={() => reviewTeacher(teacher.id, false)} style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--clay)', background: 'var(--clay-bg)', padding: '7px 14px', borderRadius: 999, border: 'none', cursor: busyId === teacher.id ? 'wait' : 'pointer' }}>رد</button>
-                <button type="button" disabled={busyId === teacher.id} onClick={() => reviewTeacher(teacher.id, true)} style={{ fontSize: 12.5, fontWeight: 700, color: '#fff', background: 'var(--olive-600)', padding: '7px 14px', borderRadius: 999, border: 'none', cursor: busyId === teacher.id ? 'wait' : 'pointer' }}>{busyId === teacher.id ? 'در حال ثبت…' : 'تأیید'}</button>
-              </div>
-            </article>
-          ))}
-        </Panel>
-
-        <Panel title="وضعیت مالی ثبت‌شده">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <Metric label="حجم شارژ ثبت‌شده" value={Number(dashboard.charge_volume || 0)} />
-            <Metric label="کارمزد سامانه" value={Number(dashboard.commission || 0)} />
-          </div>
-          <p style={{ marginTop: 18, paddingTop: 14, borderTop: '1px solid var(--sand-100)', color: 'var(--ink-3)', fontSize: 12.5, lineHeight: 1.9 }}>
-            نمودار تاریخی تا زمان وجود endpoint گزارش دوره‌ای نمایش داده نمی‌شود؛ اعداد ساختگی از داشبورد حذف شده‌اند.
-          </p>
-        </Panel>
+            </div>
+          </PanelSection>
+        </div>
       </div>
     </main>
   );
 }
 
-function Metric({ label, value }: { label: string; value: number }) {
-  return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}><span style={{ color: 'var(--ink-3)', fontSize: 13 }}>{label}</span><strong style={{ color: 'var(--olive-700)', fontSize: 15 }}>{faDigits(value)} تومان</strong></div>;
+function QuickAction({
+  href,
+  icon,
+  label,
+}: {
+  href: string;
+  icon: Parameters<typeof Icon>[0]['name'];
+  label: string;
+}) {
+  return (
+    <Link href={href} className="ops-quick-action">
+      <span><Icon name={icon} size={17} /></span>
+      <strong>{label}</strong>
+    </Link>
+  );
+}
+
+function FinanceRow({ label, value }: { label: string; value: number }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 }}>
+      <span style={{ color: 'var(--ink-3)', fontSize: 11 }}>{label}</span>
+      <strong style={{ color: 'var(--olive-700)', fontSize: 13 }}>{formatFaNumber(value)} تومان</strong>
+    </div>
+  );
 }
