@@ -1,11 +1,16 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { faDigits } from '@/components/PanelShell';
 import { Icon } from '@/components/Icon';
+import {
+  PanelButton,
+  PanelEmpty,
+  PanelPageHeader,
+  PanelStatus,
+} from '@/components/panel/PanelUI';
 import { api, type TeacherService } from '@/lib/api';
 import { getToken } from '@/lib/auth';
-import { digitsOnly, toFaDigits } from '@/lib/persian';
+import { digitsOnly, formatFaNumber, toFaDigits } from '@/lib/persian';
 
 export default function TeacherServicesPage() {
   const [services, setServices] = useState<TeacherService[]>([]);
@@ -65,50 +70,105 @@ export default function TeacherServicesPage() {
   async function save(data: { title: string; duration: number; price: number }) {
     if (!token || !dialog) return;
     setError('');
-    if (dialog.mode === 'add') {
-      await api.createTeacherService(token, data);
-    } else {
-      await api.updateTeacherService(token, dialog.service.id, data);
-    }
+    if (dialog.mode === 'add') await api.createTeacherService(token, data);
+    else await api.updateTeacherService(token, dialog.service.id, data);
     setDialog(null);
     await load();
   }
 
+  const activeCount = services.filter((service) => service.active).length;
+  const pendingCount = services.length - activeCount;
+
   return (
-    <main style={{ padding: 28 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap', marginBottom: 4 }}>
-        <h1 style={{ fontSize: 21, fontWeight: 800 }}>خدمات من</h1>
-        <button type="button" onClick={() => setDialog({ mode: 'add' })} style={primaryButton}><span style={{ fontSize: 17 }}>+</span> خدمت جدید</button>
+    <main className="ops-page">
+      <PanelPageHeader
+        eyebrow="کاتالوگ خدمات"
+        title="خدمات من"
+        description="خدمت‌های قابل رزرو، قیمت و مدت را مدیریت کنید. هر خدمت تازه یا ویرایش‌شده تا تأیید مدیر قابل رزرو نیست."
+        actions={<PanelButton tone="primary" icon="book" onClick={() => setDialog({ mode: 'add' })}>خدمت جدید</PanelButton>}
+      />
+
+      <div className="ops-metric-grid" style={{ gridTemplateColumns: 'repeat(2,minmax(0,1fr))' }}>
+        <article className="ops-metric-card">
+          <span className="ops-metric-icon"><Icon name="checkCircle" size={20} /></span>
+          <div><small>قابل رزرو</small><strong>{toFaDigits(activeCount)}</strong><span>خدمت تأییدشده و فعال</span></div>
+        </article>
+        <article className="ops-metric-card" data-tone="gold">
+          <span className="ops-metric-icon"><Icon name="clock" size={20} /></span>
+          <div><small>غیرفعال / در انتظار بررسی</small><strong>{toFaDigits(pendingCount)}</strong><span>نیازمند تأیید مدیر برای انتشار</span></div>
+        </article>
       </div>
-      <p style={{ fontSize: 13, color: 'var(--ink-3)', marginBottom: 22 }}>خدمت جدید یا ویرایش‌شده تا تأیید مدیر قابل رزرو نیست.</p>
 
-      {error && <div role="alert" style={{ padding: 14, marginBottom: 16, borderRadius: 14, background: 'var(--clay-bg)', color: 'var(--rose)' }}>{error}<button type="button" onClick={load} style={{ display: 'block', marginTop: 10, border: 0, borderRadius: 10, padding: '7px 12px', background: 'var(--rose)', color: '#fff', cursor: 'pointer' }}>تلاش دوباره</button></div>}
-      {loading ? <div style={{ padding: 28, color: 'var(--ink-3)' }}>در حال بارگذاری…</div> : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {services.map((service) => (
-            <article key={service.id} style={{ background: '#fff', borderRadius: 16, padding: 16, display: 'flex', alignItems: 'center', gap: 14, border: '1px solid var(--sand-150)', boxShadow: 'var(--sh-sm)', flexWrap: 'wrap', opacity: busyId === service.id ? .58 : 1 }}>
-              <div style={{ width: 46, height: 46, borderRadius: 13, background: 'var(--olive-100)', color: 'var(--olive-700)', display: 'grid', placeItems: 'center' }}><Icon name="book" size={23} /></div>
-              <div style={{ flex: '1 1 230px', minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}><strong style={{ fontSize: 14 }}>{service.title}</strong><span style={statusPill(Boolean(service.active))}>{service.active ? 'فعال و قابل رزرو' : 'غیرفعال / در انتظار تأیید'}</span></div>
-                <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 4 }}>{faDigits(service.duration)} دقیقه · {faDigits(service.price)} تومان</div>
-              </div>
-              <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
-                <button type="button" disabled={busyId === service.id} onClick={() => setDialog({ mode: 'edit', service })} style={secondaryButton}><Icon name="edit" size={14} /> ویرایش</button>
-                {service.active && <button type="button" disabled={busyId === service.id} onClick={() => deactivate(service)} style={secondaryButton}>غیرفعال‌کردن</button>}
-                <button type="button" aria-label="حذف خدمت" disabled={busyId === service.id} onClick={() => remove(service)} style={{ ...secondaryButton, color: 'var(--rose)', background: 'var(--clay-bg)' }}><Icon name="trash" size={14} /></button>
-              </div>
-            </article>
-          ))}
-          {services.length === 0 && <div style={{ textAlign: 'center', padding: 40, color: 'var(--ink-3)' }}>هنوز خدمتی تعریف نشده است.</div>}
+      {error && <div className="ops-error" role="alert"><span>{error}</span><PanelButton onClick={() => void load()}>تلاش دوباره</PanelButton></div>}
+
+      <section className="ops-data-surface">
+        <div className="ops-data-head">
+          <div>
+            <strong>فهرست خدمات</strong>
+            <span style={{ display: 'block', marginTop: 2 }}>{loading ? 'در حال دریافت…' : `${toFaDigits(services.length)} خدمت ثبت‌شده`}</span>
+          </div>
+          <PanelButton icon="refresh" onClick={() => void load()}>به‌روزرسانی</PanelButton>
         </div>
-      )}
 
-      {dialog && <ServiceDialog service={dialog.mode === 'edit' ? dialog.service : undefined} onSave={save} onClose={() => setDialog(null)} />}
+        {loading ? (
+          <div style={{ padding: 42, textAlign: 'center', color: 'var(--ink-3)', fontSize: 12 }}>در حال بارگذاری خدمات…</div>
+        ) : services.length === 0 ? (
+          <PanelEmpty
+            icon="book"
+            title="هنوز خدمتی تعریف نشده"
+            description="اولین خدمت را با عنوان، مدت و قیمت واقعی ایجاد کنید."
+            action={<PanelButton tone="primary" onClick={() => setDialog({ mode: 'add' })}>ایجاد خدمت</PanelButton>}
+          />
+        ) : (
+          services.map((service) => {
+            const busy = busyId === service.id;
+            return (
+              <article className="ops-row" key={service.id} style={{ opacity: busy ? .55 : 1 }}>
+                <span style={{ width: 44, height: 44, display: 'grid', placeItems: 'center', flex: '0 0 44px', borderRadius: 13, color: 'var(--olive-700)', background: 'var(--olive-100)' }}>
+                  <Icon name="book" size={20} />
+                </span>
+                <div className="ops-row-main">
+                  <div className="ops-row-title">
+                    <strong>{service.title}</strong>
+                    <PanelStatus status={service.active ? 'active' : 'pending'}>{service.active ? 'فعال و قابل رزرو' : 'در انتظار تأیید'}</PanelStatus>
+                  </div>
+                  <div className="ops-row-meta">
+                    <span><Icon name="clock" size={13} />{toFaDigits(service.duration)} دقیقه</span>
+                    <span>{formatFaNumber(service.price)} تومان</span>
+                    <span>#{toFaDigits(service.id)}</span>
+                  </div>
+                </div>
+                <div className="ops-row-actions">
+                  <PanelButton icon="edit" disabled={busy} onClick={() => setDialog({ mode: 'edit', service })}>ویرایش</PanelButton>
+                  {service.active && <PanelButton disabled={busy} onClick={() => void deactivate(service)}>غیرفعال‌کردن</PanelButton>}
+                  <PanelButton tone="danger" icon="trash" disabled={busy} onClick={() => void remove(service)}>حذف</PanelButton>
+                </div>
+              </article>
+            );
+          })
+        )}
+      </section>
+
+      {dialog && (
+        <ServiceDialog
+          service={dialog.mode === 'edit' ? dialog.service : undefined}
+          onSave={save}
+          onClose={() => setDialog(null)}
+        />
+      )}
     </main>
   );
 }
 
-function ServiceDialog({ service, onSave, onClose }: { service?: TeacherService; onSave: (data: { title: string; duration: number; price: number }) => Promise<void>; onClose: () => void }) {
+function ServiceDialog({
+  service,
+  onSave,
+  onClose,
+}: {
+  service?: TeacherService;
+  onSave: (data: { title: string; duration: number; price: number }) => Promise<void>;
+  onClose: () => void;
+}) {
   const [title, setTitle] = useState(service?.title || '');
   const [duration, setDuration] = useState(String(service?.duration || 30));
   const [price, setPrice] = useState(String(service?.price || ''));
@@ -134,21 +194,29 @@ function ServiceDialog({ service, onSave, onClose }: { service?: TeacherService;
   return (
     <div role="presentation" style={overlayStyle} onClick={onClose}>
       <section role="dialog" aria-modal="true" aria-labelledby="service-dialog-title" onClick={(event) => event.stopPropagation()} style={dialogStyle}>
-        <h2 id="service-dialog-title" style={{ fontSize: 17, marginBottom: 18 }}>{service ? 'ویرایش خدمت' : 'خدمت جدید'}</h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
+          <span style={{ width: 40, height: 40, display: 'grid', placeItems: 'center', borderRadius: 12, color: 'var(--olive-700)', background: 'var(--olive-100)' }}><Icon name="book" size={19} /></span>
+          <div>
+            <h2 id="service-dialog-title" style={{ margin: 0, fontSize: 16 }}>{service ? 'ویرایش خدمت' : 'خدمت جدید'}</h2>
+            <p style={{ margin: '2px 0 0', color: 'var(--ink-3)', fontSize: 10.5 }}>ذخیرهٔ تغییرات نیازمند بررسی مجدد مدیر است.</p>
+          </div>
+        </div>
         <label style={labelStyle}>عنوان<input value={title} maxLength={160} onChange={(event) => setTitle(event.target.value)} style={inputStyle} /></label>
-        <label style={labelStyle}>مدت (دقیقه)<input type="text" inputMode="numeric" value={toFaDigits(duration)} onChange={(event) => setDuration(digitsOnly(event.target.value))} style={inputStyle} /></label>
-        <label style={labelStyle}>قیمت (تومان)<input type="text" inputMode="numeric" value={toFaDigits(price)} onChange={(event) => setPrice(digitsOnly(event.target.value))} style={inputStyle} /></label>
-        {error && <div role="alert" style={{ color: 'var(--rose)', background: 'var(--clay-bg)', padding: 10, borderRadius: 10, fontSize: 13 }}>{error}</div>}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 20 }}><button type="button" disabled={saving} onClick={onClose} style={secondaryButton}>انصراف</button><button type="button" disabled={saving} onClick={submit} style={{ ...primaryButton, opacity: saving ? .6 : 1 }}>{saving ? 'در حال ذخیره…' : 'ذخیره'}</button></div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          <label style={labelStyle}>مدت (دقیقه)<input type="text" inputMode="numeric" value={toFaDigits(duration)} onChange={(event) => setDuration(digitsOnly(event.target.value))} style={inputStyle} /></label>
+          <label style={labelStyle}>قیمت (تومان)<input type="text" inputMode="numeric" value={toFaDigits(price)} onChange={(event) => setPrice(digitsOnly(event.target.value))} style={inputStyle} /></label>
+        </div>
+        {error && <div role="alert" style={{ marginTop: 4, color: 'var(--rose)', background: 'var(--clay-bg)', padding: 10, borderRadius: 10, fontSize: 12 }}>{error}</div>}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 18 }}>
+          <PanelButton disabled={saving} onClick={onClose}>انصراف</PanelButton>
+          <PanelButton tone="primary" disabled={saving} onClick={() => void submit()}>{saving ? 'در حال ذخیره…' : 'ذخیره'}</PanelButton>
+        </div>
       </section>
     </div>
   );
 }
 
-const primaryButton: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', gap: 6, padding: '9px 16px', borderRadius: 999, border: 0, background: 'var(--olive-600)', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' };
-const secondaryButton: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 12px', borderRadius: 999, border: 0, background: 'var(--sand-100)', color: 'var(--ink-2s)', fontSize: 12, fontWeight: 700, cursor: 'pointer' };
-const statusPill = (active: boolean): React.CSSProperties => ({ fontSize: 10.5, fontWeight: 700, padding: '3px 9px', borderRadius: 999, background: active ? 'var(--olive-100)' : 'var(--gold-bg)', color: active ? 'var(--olive-700)' : 'var(--gold)' });
 const overlayStyle: React.CSSProperties = { position: 'fixed', inset: 0, zIndex: 1000, display: 'grid', placeItems: 'center', padding: 16, background: 'rgba(0,0,0,.42)' };
-const dialogStyle: React.CSSProperties = { width: 420, maxWidth: '100%', background: '#fff', borderRadius: 20, padding: 24, boxShadow: 'var(--sh-lg)' };
-const labelStyle: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14, fontSize: 12.5, fontWeight: 700, color: 'var(--ink-3)' };
-const inputStyle: React.CSSProperties = { width: '100%', padding: '11px 13px', borderRadius: 12, border: '1px solid var(--sand-200)', color: 'var(--ink)', background: '#fff' };
+const dialogStyle: React.CSSProperties = { width: 460, maxWidth: '100%', background: '#fff', borderRadius: 20, padding: 22, boxShadow: 'var(--sh-lg)' };
+const labelStyle: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12, fontSize: 11.5, fontWeight: 700, color: 'var(--ink-3)' };
+const inputStyle: React.CSSProperties = { width: '100%', padding: '10px 12px', borderRadius: 11, border: '1px solid var(--sand-200)', color: 'var(--ink)', background: '#fff', fontFamily: 'inherit' };
