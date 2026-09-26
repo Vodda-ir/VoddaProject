@@ -73,6 +73,7 @@ cp .env.example .env.local
 | Frontend | `http://localhost:3421` |
 | Universal App | `http://localhost:3421/app` |
 | MySQL | `localhost:3422` |
+| منافسه | `http://localhost:3423` |
 | Health | `http://localhost:3420/health` |
 | Readiness | `http://localhost:3420/ready` |
 

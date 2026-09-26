@@ -25,6 +25,21 @@ frontend/out/
 frontend/.turbo/
 node_modules/
 
+# Monafaseh (Next.js + SQLite)
+monafaseh/.env
+monafaseh/.env.*
+!monafaseh/.env.example
+monafaseh/node_modules/
+monafaseh/.next/
+monafaseh/out/
+monafaseh/build/
+monafaseh/dist/
+monafaseh/db/
+monafaseh/public/uploads/*
+!monafaseh/public/uploads/.gitkeep
+monafaseh/*.log
+monafaseh/coverage/
+
 # flutter
 app/.dart_tool/
 app/build/

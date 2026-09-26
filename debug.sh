@@ -1,5 +1,5 @@
 #!/bin/bash
-# Run the Vodda backend + frontend locally in debug mode.
+# Run Vodda and Monafaseh together locally in debug mode.
 #
 # usage: ./debug.sh [up|up-d|down|logs|build|test|restart|reset]
 
@@ -24,16 +24,17 @@ print_services() {
     echo "  Backend:  http://localhost:3420   (health: /health)"
     echo "  Frontend: http://localhost:3421"
     echo "  MySQL:    localhost:3422"
+    echo "  Monafaseh: http://localhost:${MONAFASEH_PORT:-3423}"
     echo ""
 }
 
 case "${1:-up}" in
     up)
-        echo "▶ starting Vodda services in debug mode..."
+        echo "▶ starting Vodda + Monafaseh services in debug mode..."
         docker_compose_cmd up --build
         ;;
     up-d)
-        echo "▶ starting Vodda services in background..."
+        echo "▶ starting Vodda + Monafaseh services in background..."
         docker_compose_cmd up -d --build --wait
         print_services
         echo "logs: ./debug.sh logs"
@@ -49,8 +50,8 @@ case "${1:-up}" in
         print_services
         ;;
     reset)
-        echo "▶ resetting debug containers and volumes..."
-        docker_compose_cmd down -v
+        echo "▶ resetting Vodda MySQL data (Monafaseh SQLite and uploads are preserved)..."
+        docker_compose_cmd down
         rm -rf ./data/mysql
         docker_compose_cmd up -d --build --wait
         print_services

@@ -78,6 +78,44 @@ services:
       - vodda-network
     restart: unless-stopped
 
+  monafaseh:
+    platform: ${DOCKER_PLATFORM:-linux/amd64}
+    build:
+      context: ./monafaseh
+      dockerfile: Dockerfile
+    image: vodda-monafaseh:prod
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+      - DATABASE_URL=file:/app/db/custom.db
+      - NEXTAUTH_SECRET=${MONAFASEH_NEXTAUTH_SECRET:-${JWT_SECRET:?JWT_SECRET is required}}
+      - NEXTAUTH_URL=${MONAFASEH_NEXTAUTH_URL:-https://monafaseh.ir}
+      - SITE_URL=${MONAFASEH_SITE_URL:-https://monafaseh.ir}
+      - BOT_TOKEN=${MONAFASEH_BOT_TOKEN:-}
+    ports:
+      - "${MONAFASEH_PORT:-3423}:3000"
+    volumes:
+      - monafaseh_db:/app/db
+      - monafaseh_uploads:/app/public/uploads
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
+    networks:
+      - vodda-network
+    restart: unless-stopped
+
+volumes:
+  monafaseh_db:
+    name: monafaseh_monafaseh-db
+    driver: local
+  monafaseh_uploads:
+    name: monafaseh_monafaseh-uploads
+    driver: local
+
 networks:
   vodda-network:
     driver: bridge

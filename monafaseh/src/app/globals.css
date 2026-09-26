@@ -1,0 +1,467 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* NoorCraft local font definitions — loaded inline because @import needs relative paths */
+@font-face {
+  font-family: 'Lalezar';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/lalezar.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Baloo Bhaijaan 2';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/baloo-bhaijaan-2-400.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Baloo Bhaijaan 2';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/baloo-bhaijaan-2-700.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Baloo Bhaijaan 2';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url('/fonts/baloo-bhaijaan-2-800.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Amiri Quran';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/amiri-quran.ttf') format('truetype');
+}
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-vazirmatn);
+  --font-display: "Lalezar", var(--font-vazirmatn), system-ui, sans-serif;
+  --font-rounded: "Baloo Bhaijaan 2", var(--font-vazirmatn), system-ui, sans-serif;
+  --font-quran: "Amiri Quran", "Baloo Bhaijaan 2", serif;
+  --font-mono: var(--font-geist-mono);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+
+  /* NoorCraft brand colors */
+  --color-noor-sky: #87CEEB;
+  --color-noor-yellow: #FFD700;
+  --color-noor-coral: #FF7F7F;
+  --color-noor-green: #7CFC00;
+  --color-noor-white: #FFFFFF;
+  --color-noor-navy: #191970;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root {
+  --radius: 0.875rem;
+  --background: #e8edf5;
+  --foreground: #1a1f3a;
+  --card: #f5f7fa;
+  --card-foreground: #1a1f3a;
+  --popover: #f5f7fa;
+  --popover-foreground: #1a1f3a;
+  --primary: #FFD700;
+  --primary-foreground: #191970;
+  --secondary: #dfe6ef;
+  --secondary-foreground: #191970;
+  --muted: #dde4ed;
+  --muted-foreground: #4a5570;
+  --accent: #87CEEB;
+  --accent-foreground: #191970;
+  --destructive: #FF7F7F;
+  --border: #c8d2e0;
+  --input: #c8d2e0;
+  --ring: #87CEEB;
+  --chart-1: #87CEEB;
+  --chart-2: #FFD700;
+  --chart-3: #FF7F7F;
+  --chart-4: #7CFC00;
+  --chart-5: #191970;
+  --sidebar: #f5f7fa;
+  --sidebar-foreground: #1a1f3a;
+  --sidebar-primary: #FFD700;
+  --sidebar-primary-foreground: #191970;
+  --sidebar-accent: #dfe6ef;
+  --sidebar-accent-foreground: #191970;
+  --sidebar-border: #c8d2e0;
+  --sidebar-ring: #87CEEB;
+}
+
+.dark {
+  --background: #0d1230;
+  --foreground: #f5f8ff;
+  --card: #181d44;
+  --card-foreground: #f5f8ff;
+  --popover: #181d44;
+  --popover-foreground: #f5f8ff;
+  --primary: #FFD700;
+  --primary-foreground: #0d1230;
+  --secondary: #232855;
+  --secondary-foreground: #f5f8ff;
+  --muted: #232855;
+  --muted-foreground: #a8b3d6;
+  --accent: #87CEEB;
+  --accent-foreground: #0d1230;
+  --destructive: #FF7F7F;
+  --border: rgba(255, 255, 255, 0.1);
+  --input: rgba(255, 255, 255, 0.15);
+  --ring: #87CEEB;
+  --chart-1: #87CEEB;
+  --chart-2: #FFD700;
+  --chart-3: #FF7F7F;
+  --chart-4: #7CFC00;
+  --chart-5: #f5f8ff;
+  --sidebar: #181d44;
+  --sidebar-foreground: #f5f8ff;
+  --sidebar-primary: #FFD700;
+  --sidebar-primary-foreground: #0d1230;
+  --sidebar-accent: #232855;
+  --sidebar-accent-foreground: #f5f8ff;
+  --sidebar-border: rgba(255, 255, 255, 0.1);
+  --sidebar-ring: #87CEEB;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    direction: rtl;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-vazirmatn), system-ui, sans-serif;
+    font-feature-settings: "ss01", "cv01";
+    letter-spacing: -0.005em;
+  }
+
+  /* Headings automatically use the display font (Lalezar) for that chunky, friendly game look.
+     Use !important to override Tailwind's font-extrabold which sets font-family on body. */
+  h1, h2, h3 {
+    font-family: "Lalezar", var(--font-vazirmatn), system-ui, sans-serif !important;
+    font-weight: 400 !important;
+    letter-spacing: 0;
+    line-height: 1.15;
+  }
+  h4, h5, h6 {
+    font-family: "Baloo Bhaijaan 2", var(--font-vazirmatn), system-ui, sans-serif !important;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+}
+
+/* NoorCraft custom utilities */
+@layer utilities {
+  .font-display {
+    font-family: "Lalezar", var(--font-vazirmatn), system-ui, sans-serif !important;
+    font-weight: 400 !important;
+    letter-spacing: 0;
+  }
+  .font-rounded {
+    font-family: "Baloo Bhaijaan 2", var(--font-vazirmatn), system-ui, sans-serif !important;
+  }
+  .font-quran {
+    font-family: "Amiri Quran", "Baloo Bhaijaan 2", serif !important;
+    line-height: 2.2;
+  }
+  .font-body {
+    font-family: var(--font-vazirmatn), system-ui, sans-serif !important;
+  }
+  /* Numeric display — large, chunky numbers for stats */
+  .tabular-display {
+    font-family: var(--font-geist-mono), "Vazirmatn", monospace;
+    font-variant-numeric: tabular-nums;
+    font-weight: 800;
+  }
+
+  .bg-noor-gradient {
+    background: linear-gradient(135deg, #87CEEB 0%, #e7f4fc 50%, #ffffff 100%);
+  }
+  .dark .bg-noor-gradient {
+    background: linear-gradient(135deg, #0d1230 0%, #181d44 50%, #232855 100%);
+  }
+
+  /* === Colorful graphic cards for headings & texts (light-mode-friendly) === */
+  .noor-card-sky {
+    background: linear-gradient(135deg, rgba(135, 206, 235, 0.18), rgba(135, 206, 235, 0.06));
+    border: 2px solid rgba(135, 206, 235, 0.45);
+    box-shadow: 0 6px 0 0 rgba(74, 155, 191, 0.18), 0 14px 28px -10px rgba(135, 206, 235, 0.35);
+  }
+  .dark .noor-card-sky {
+    background: linear-gradient(135deg, rgba(135, 206, 235, 0.15), rgba(135, 206, 235, 0.04));
+    border-color: rgba(135, 206, 235, 0.3);
+  }
+
+  .noor-card-yellow {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.22), rgba(255, 215, 0, 0.06));
+    border: 2px solid rgba(255, 215, 0, 0.5);
+    box-shadow: 0 6px 0 0 rgba(201, 168, 0, 0.2), 0 14px 28px -10px rgba(255, 215, 0, 0.4);
+  }
+  .dark .noor-card-yellow {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 215, 0, 0.04));
+    border-color: rgba(255, 215, 0, 0.3);
+  }
+
+  .noor-card-coral {
+    background: linear-gradient(135deg, rgba(255, 127, 127, 0.2), rgba(255, 127, 127, 0.06));
+    border: 2px solid rgba(255, 127, 127, 0.5);
+    box-shadow: 0 6px 0 0 rgba(196, 77, 77, 0.2), 0 14px 28px -10px rgba(255, 127, 127, 0.4);
+  }
+  .dark .noor-card-coral {
+    background: linear-gradient(135deg, rgba(255, 127, 127, 0.15), rgba(255, 127, 127, 0.04));
+    border-color: rgba(255, 127, 127, 0.3);
+  }
+
+  .noor-card-green {
+    background: linear-gradient(135deg, rgba(124, 252, 0, 0.18), rgba(124, 252, 0, 0.05));
+    border: 2px solid rgba(124, 252, 0, 0.5);
+    box-shadow: 0 6px 0 0 rgba(92, 184, 0, 0.2), 0 14px 28px -10px rgba(124, 252, 0, 0.35);
+  }
+  .dark .noor-card-green {
+    background: linear-gradient(135deg, rgba(124, 252, 0, 0.12), rgba(124, 252, 0, 0.03));
+    border-color: rgba(124, 252, 0, 0.3);
+  }
+
+  .noor-card-rainbow {
+    background:
+      linear-gradient(135deg, rgba(255, 215, 0, 0.18), rgba(255, 127, 127, 0.14) 40%, rgba(124, 252, 0, 0.14) 75%, rgba(135, 206, 235, 0.16));
+    border: 2px solid rgba(255, 215, 0, 0.4);
+    box-shadow: 0 6px 0 0 rgba(25, 25, 112, 0.12), 0 16px 30px -12px rgba(25, 25, 112, 0.3);
+  }
+  .dark .noor-card-rainbow {
+    background:
+      linear-gradient(135deg, rgba(255, 215, 0, 0.13), rgba(255, 127, 127, 0.1) 40%, rgba(124, 252, 0, 0.1) 75%, rgba(135, 206, 235, 0.12));
+    border-color: rgba(255, 215, 0, 0.25);
+  }
+
+  /* Gradient pill — for short text highlights / numbers */
+  .noor-pill-sky {
+    background: linear-gradient(135deg, rgba(135, 206, 235, 0.2), rgba(135, 206, 235, 0.08));
+    border: 1.5px solid rgba(135, 206, 235, 0.5);
+  }
+  .noor-pill-yellow {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.25), rgba(255, 215, 0, 0.08));
+    border: 1.5px solid rgba(255, 215, 0, 0.55);
+  }
+  .noor-pill-coral {
+    background: linear-gradient(135deg, rgba(255, 127, 127, 0.22), rgba(255, 127, 127, 0.07));
+    border: 1.5px solid rgba(255, 127, 127, 0.5);
+  }
+  .noor-pill-green {
+    background: linear-gradient(135deg, rgba(124, 252, 0, 0.2), rgba(124, 252, 0, 0.06));
+    border: 1.5px solid rgba(124, 252, 0, 0.5);
+  }
+
+  .bg-noor-hero {
+    background:
+      radial-gradient(circle at 20% 20%, rgba(135, 206, 235, 0.3), transparent 50%),
+      radial-gradient(circle at 80% 30%, rgba(255, 215, 0, 0.2), transparent 50%),
+      radial-gradient(circle at 50% 80%, rgba(124, 252, 0, 0.15), transparent 50%),
+      linear-gradient(135deg, #e8edf5 0%, #dde4ed 100%);
+  }
+  .dark .bg-noor-hero {
+    background:
+      radial-gradient(circle at 20% 20%, rgba(135, 206, 235, 0.25), transparent 50%),
+      radial-gradient(circle at 80% 30%, rgba(255, 215, 0, 0.18), transparent 50%),
+      radial-gradient(circle at 50% 80%, rgba(124, 252, 0, 0.12), transparent 50%),
+      linear-gradient(135deg, #0d1230 0%, #181d44 100%);
+  }
+
+  .text-shadow-soft {
+    text-shadow: 0 2px 8px rgba(25, 25, 112, 0.18);
+  }
+
+  .shadow-chunky {
+    box-shadow: 0 6px 0 0 var(--color-noor-navy), 0 10px 20px -6px rgba(25, 25, 112, 0.35);
+  }
+  .shadow-chunky-yellow {
+    box-shadow: 0 6px 0 0 #c9a800, 0 10px 20px -6px rgba(255, 215, 0, 0.45);
+  }
+  .shadow-chunky-coral {
+    box-shadow: 0 6px 0 0 #c44d4d, 0 10px 20px -6px rgba(255, 127, 127, 0.45);
+  }
+  .shadow-chunky-green {
+    box-shadow: 0 6px 0 0 #5cb800, 0 10px 20px -6px rgba(124, 252, 0, 0.45);
+  }
+  .shadow-chunky-sky {
+    box-shadow: 0 6px 0 0 #4a9bbf, 0 10px 20px -6px rgba(135, 206, 235, 0.45);
+  }
+
+  .glass-panel {
+    backdrop-filter: blur(14px);
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+  }
+  .dark .glass-panel {
+    background: rgba(24, 29, 68, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .animate-float {
+    animation: floaty 6s ease-in-out infinite;
+  }
+  .animate-float-slow {
+    animation: floaty 9s ease-in-out infinite;
+  }
+  .animate-pulse-glow {
+    animation: pulseGlow 2.4s ease-in-out infinite;
+  }
+  .animate-spin-slow {
+    animation: spin 18s linear infinite;
+  }
+  .animate-twinkle {
+    animation: twinkle 3s ease-in-out infinite;
+  }
+  .animate-bob {
+    animation: bob 2.6s ease-in-out infinite;
+  }
+}
+
+@keyframes floaty {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-18px) rotate(2deg); }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.45); }
+  50% { box-shadow: 0 0 0 16px rgba(255, 215, 0, 0); }
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.3; transform: scale(0.85); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
+
+@keyframes bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+/* ============================================================
+   Online Users Marquee — vertical infinite scroll
+   The track contains two stacked copies of the same list.
+   We translate from 0% to -50% so that when copy #1 has fully
+   scrolled out of view, copy #2 is exactly in its place — creating
+   a seamless infinite loop. Duration is set inline per-instance
+   (15s for medium speed) so different pages can pick different speeds.
+   ============================================================ */
+@keyframes noor-marquee-up {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-50%);
+  }
+}
+
+.noor-marquee-track {
+  animation: noor-marquee-up var(--marquee-duration, 15s) linear infinite;
+  will-change: transform;
+}
+
+/* Pause on hover (desktop only — touch devices keep animating).
+   The :hover pseudo-class does not fire on tap, so mobile users
+   continue to see motion, as requested. */
+.noor-marquee-container:hover .noor-marquee-track,
+.noor-marquee-container:focus-within .noor-marquee-track {
+  animation-play-state: paused;
+}
+
+/* When the user has reduced-motion preference, disable the marquee
+   entirely and let them scroll normally. */
+@media (prefers-reduced-motion: reduce) {
+  .noor-marquee-track {
+    animation: none;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(135, 206, 235, 0.5);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(135, 206, 235, 0.8);
+}
+
+/* === Mobile WebRTC fixes === */
+/* iOS Safari: ensure video elements don't get native controls overlay */
+video::-webkit-media-controls {
+  display: none !important;
+}
+video::-webkit-media-controls-enclosure {
+  display: none !important;
+}
+video::-webkit-media-controls-panel {
+  display: none !important;
+}
+
+/* Prevent tap highlight on touch controls (buttons) */
+button {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+
+/* iOS safe-area insets for notched phones */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
+/* Prevent overscroll/bounce on mobile when in session view */
+html, body {
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+}

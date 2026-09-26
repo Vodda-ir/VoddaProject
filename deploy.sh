@@ -80,16 +80,16 @@ build_images() {
     local deploy_platform; deploy_platform=$(get_deploy_platform)
 
     print_step "[1/3] Pulling base images for $deploy_platform if needed..."
-    BASE_IMAGES=("golang:1.24-bullseye" "alpine:3.21" "node:24-alpine3.21" "mysql:8.0")
+    BASE_IMAGES=("golang:1.24-bullseye" "alpine:3.21" "node:24-alpine3.21" "node:22-alpine" "oven/bun:1.3.4-alpine" "mysql:8.0")
     for img in "${BASE_IMAGES[@]}"; do
         if [ "$(image_platform "$img")" = "$deploy_platform" ]; then echo "  ✓ $img"; else docker pull --platform "$deploy_platform" "$img"; fi
     done
 
-    print_step "[2/3] Building backend and frontend..."
-    DOCKER_BUILDKIT=1 docker_compose_cmd -f docker-compose.yml --env-file "$ENV_PRODUCTION" build backend frontend
+    print_step "[2/3] Building backend, frontend, and Monafaseh..."
+    DOCKER_BUILDKIT=1 docker_compose_cmd -f docker-compose.yml --env-file "$ENV_PRODUCTION" build backend frontend monafaseh
 
     print_step "[3/3] Saving images..."
-    docker save --platform "$deploy_platform" vodda-backend:prod vodda-frontend:prod mysql:8.0 | gzip > "$BUNDLE_FILE"
+    docker save --platform "$deploy_platform" vodda-backend:prod vodda-frontend:prod vodda-monafaseh:prod mysql:8.0 | gzip > "$BUNDLE_FILE"
 }
 
 deploy_to_server() {
@@ -113,12 +113,13 @@ deploy_to_server() {
     ssh_cmd "$SERVER_USER@$SERVER_IP" "cd '$SERVER_PATH' && docker load < vodda-docker-bundle.tar.gz"
 
     print_step "[5/5] Starting services..."
-    ssh_cmd "$SERVER_USER@$SERVER_IP" "cd '$SERVER_PATH' && docker image inspect vodda-backend:prod vodda-frontend:prod mysql:8.0 >/dev/null && docker compose -f docker-compose.deploy.yml --env-file .env.production up -d --pull never"
+    ssh_cmd "$SERVER_USER@$SERVER_IP" "cd '$SERVER_PATH' && docker image inspect vodda-backend:prod vodda-frontend:prod vodda-monafaseh:prod mysql:8.0 >/dev/null && legacy_running=\$(docker inspect -f '{{.State.Running}}' monafaseh 2>/dev/null || true) && (docker stop monafaseh >/dev/null 2>&1 || true) && if docker compose -f docker-compose.deploy.yml --env-file .env.production up -d --pull never --wait; then docker rm monafaseh >/dev/null 2>&1 || true; else if [ \"\$legacy_running\" = true ]; then docker start monafaseh >/dev/null; fi; exit 1; fi"
 
     echo ""
     echo -e "${GREEN}✓ Deploy finished${NC}"
     echo "Backend:  http://$SERVER_IP:3420"
     echo "Frontend: http://$SERVER_IP:3421"
+    echo "Monafaseh upstream: 127.0.0.1:${MONAFASEH_PORT:-3423} (configure the domain reverse proxy)"
 }
 
 case "${1:-deploy}" in
