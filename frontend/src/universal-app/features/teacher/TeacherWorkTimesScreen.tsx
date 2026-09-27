@@ -78,6 +78,11 @@ function minutes(value: string): number {
   return hour * 60 + minute;
 }
 
+function normalizeTimeInput(value: string): string {
+  const digits = toLatinDigits(value).replace(/\D/g, "").slice(0, 4);
+  return digits.length > 2 ? `${digits.slice(0, 2)}:${digits.slice(2)}` : digits;
+}
+
 function overlaps(items: WorkTime[], draft: WorkTimeDraft, editingId?: number): boolean {
   const from = minutes(draft.from);
   const to = minutes(draft.to);

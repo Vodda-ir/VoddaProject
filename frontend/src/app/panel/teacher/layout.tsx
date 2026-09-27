@@ -8,7 +8,19 @@ import { Avatar } from '@/components/web/ui';
 import { PanelButton } from '@/components/panel/PanelUI';
 import { clearToken, fullUrl, getToken } from '@/lib/auth';
 
-const NAV_GROUPS = [
+type TeacherNavigationItem = {
+  id: string;
+  icon: React.ComponentProps<typeof Icon>['name'];
+  label: string;
+  href: string;
+};
+
+type TeacherNavigationGroup = {
+  label: string;
+  items: TeacherNavigationItem[];
+};
+
+const NAV_GROUPS: TeacherNavigationGroup[] = [
   {
     label: 'امروز',
     items: [

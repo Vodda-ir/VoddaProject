@@ -42,12 +42,12 @@ export default function AboutPage() {
               </div>
             </div>
             <div className="about-scope-list">
-              {[
-                ['user' as const, 'پروفایل قرآن‌آموز و استاد'],
-                ['calendar' as const, 'رزرو و مدیریت وضعیت جلسه'],
-                ['wallet' as const, 'کیف پول، درآمد و برداشت'],
-                ['star' as const, 'نظر و امتیاز پس از جلسه'],
-              ].map(([icon, label]) => (
+              {([
+                ['user', 'پروفایل قرآن‌آموز و استاد'],
+                ['calendar', 'رزرو و مدیریت وضعیت جلسه'],
+                ['wallet', 'کیف پول، درآمد و برداشت'],
+                ['star', 'نظر و امتیاز پس از جلسه'],
+              ] as const).map(([icon, label]) => (
                 <span key={label}><Icon name={icon} size={17} />{label}</span>
               ))}
             </div>

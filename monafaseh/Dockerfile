@@ -2,7 +2,7 @@
 # Monafaseh — Production Dockerfile (multi-stage build)
 # ============================================================
 # سه مرحله:
-#   1. deps — نصب نسخه‌های قفل‌شده با Bun
+#   1. deps — نصب نسخه‌های قفل‌شده با Bun که از npm دریافت می‌شود
 #   2. builder — build کردن Next.js + Prisma client با Node 22
 #   3. runner — اجرای Next.js با Node 22 و فقط فایل‌های لازم
 #
@@ -15,7 +15,10 @@
 # ============================================================
 
 # ─── Stage 1: deps ────────────────────────────────────────────
-FROM oven/bun:1.3.4-alpine AS deps
+FROM node:22-alpine AS deps
+
+# دریافت نسخه‌ی دقیق Bun از npm registry؛ این مرحله فقط برای نصب dependencyها است.
+RUN npm install --global --no-audit --no-fund bun@1.3.4
 
 WORKDIR /app
 
@@ -75,26 +78,19 @@ ENV DATABASE_URL="file:/app/db/custom.db"
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
-# کپی فایل‌های ضروری از builder
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
-COPY --from=builder /app/prisma-cli-deps/node_modules/ ./node_modules/
-COPY --from=builder /app/node_modules/sharp ./node_modules/sharp
-COPY --from=builder /app/scripts/seed-ads.ts ./scripts/seed-ads.ts
-COPY --from=builder /app/scripts/seed-ad-slots.ts ./scripts/seed-ad-slots.ts
+# npm run build places public and .next/static under standalone, so copying the
+# standalone output is sufficient and avoids storing those files twice.
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma/client ./node_modules/@prisma/client
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/sharp ./node_modules/sharp
 
 # کپی entrypoint script
-COPY docker-entrypoint.sh /app/docker-entrypoint.sh
-RUN chmod +x /app/docker-entrypoint.sh
+COPY --chown=nextjs:nodejs --chmod=755 docker-entrypoint.sh /app/docker-entrypoint.sh
 
 # ایجاد پوشه‌ی دیتابیس و uploads با ownership درست
 RUN mkdir -p /app/db /app/public/uploads/ads /app/public/uploads/avatars /app/public/uploads/blog && \
-    chown -R nextjs:nodejs /app
+    chown nextjs:nodejs /app/db /app/public/uploads /app/public/uploads/ads /app/public/uploads/avatars /app/public/uploads/blog
 
 # Volume برای persistence دیتابیس و uploads
 VOLUME ["/app/db", "/app/public/uploads"]
@@ -111,3 +107,25 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 
 # Entry point
 CMD ["/app/docker-entrypoint.sh"]
+
+# ─── Stage 4: one-shot schema migrator ────────────────────────
+# Keep Prisma CLI and its schema-engine dependencies out of the long-running
+# Next.js image. deploy.sh runs this small utility image once, then removes it.
+FROM node:22-alpine AS migrator
+
+RUN apk add --no-cache libc6-compat && \
+    addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
+
+WORKDIR /app
+ENV NODE_ENV=production
+ENV DATABASE_URL="file:/app/db/custom.db"
+
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
+COPY --from=builder /app/prisma-cli-deps/node_modules/ ./node_modules/
+
+USER nextjs
+CMD ["node", "./node_modules/prisma/build/index.js", "db", "push", "--accept-data-loss"]

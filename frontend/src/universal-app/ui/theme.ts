@@ -1,5 +1,3 @@
-import type { CSSProperties } from "react";
-
 /**
  * Vodda universal design tokens.
  * Kept framework-neutral so the exact same visual language is shared by
@@ -94,7 +92,7 @@ export const typography = {
   heading: { fontSize: 23, lineHeight: 1.5, fontWeight: 900 },
   display: { fontSize: 28, lineHeight: 1.42, fontWeight: 900 },
   number: { fontSize: 30, lineHeight: 1.35, fontWeight: 900 },
-} satisfies Record<string, CSSProperties>;
+};
 
 export const appTheme = {
   colors,

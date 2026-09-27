@@ -63,12 +63,14 @@ function TeacherRail({
   if (teachers.length === 0) return null;
 
   return (
-    <section aria-label={title} className="vodda-enter">
+    <section aria-label={title} className="vodda-enter" style={{ minWidth: 0 }}>
       <SectionHeader title={title} action="مشاهدهٔ همه" onAction={() => navigateApp("/search", config)} />
       <div
         className="vodda-scroll-rail"
         style={{
           display: "flex",
+          width: "100%",
+          minWidth: 0,
           gap: spacing.md,
           overflowX: "auto",
           marginInline: -spacing.xl,
@@ -209,7 +211,7 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
   const canUseTeacherMode = user?.role === "teacher" || user?.role === "admin";
 
   return (
-    <div style={{ display: "grid", gap: 26 }}>
+    <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", minWidth: 0, gap: 26 }}>
       <header
         className="vodda-enter"
         style={{

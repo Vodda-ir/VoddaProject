@@ -48,6 +48,8 @@ export function Icon({
     chevronL: <path {...p} d="m14 6-6 6 6 6" />,
     chevronUp: <path {...p} d="m6 14 6-6 6 6" />,
     arrowL: <><path {...p} d="M19 12H5" /><path {...p} d="m11 6-6 6 6 6" /></>,
+    arrowDownLeft: <><path {...p} d="M17 7 7 17" /><path {...p} d="M7 7v10h10" /></>,
+    arrowUpRight: <><path {...p} d="M7 17 17 7" /><path {...p} d="M7 7h10v10" /></>,
     play: <path d="M8 5.5v13l11-6.5-11-6.5Z" fill="currentColor" stroke="currentColor" strokeWidth={stroke} strokeLinejoin="round" />,
     check: <path {...p} d="m5 12.5 4.5 4.5L19 7" />,
     checkCircle: <><circle {...p} cx="12" cy="12" r="8.5" /><path {...p} d="m8.5 12 2.4 2.4 4.6-4.8" /></>,

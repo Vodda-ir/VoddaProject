@@ -280,12 +280,12 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
       <section>
         <SectionHeader title="مدیریت سریع" />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12, marginTop: spacing.md }}>
-          {[
+          {([
             ["book" as const, "خدمات من", "/t/services"],
             ["clock" as const, "زمان‌های کاری", "/t/work-times"],
             ["wallet" as const, "کیف پول", "/t/wallet"],
             ["calendar" as const, "همهٔ جلسات", "/t/sessions"],
-          ].map(([icon, label, path]) => (
+          ] as const).map(([icon, label, path]) => (
             <button
               key={path}
               type="button"

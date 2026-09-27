@@ -5,7 +5,7 @@
 ## پیش‌نیازها
 
 - روی ماشین محلی: Docker + Docker Compose، Node.js (برای خواندن `deploy.json`)، و برای دیپلوی از راه دور `sshpass` (و در صورت وجود `rsync`).
-- روی سرور: Docker + Docker Compose.
+- روی سرور تازه: Ubuntu 26.04 amd64 و دسترسی SSH با root؛ `deploy.sh` پیش از deploy، Docker و Compose را از بسته‌های رسمی Ubuntu نصب و سرویس Docker را فعال می‌کند.
 
 ## فایل‌های پیکربندی
 
@@ -50,21 +50,24 @@ cp deploy.example.json deploy.json
 ./deploy.sh build     # فقط build ایمیج‌های تولید + ساخت bundle فشرده
 ./deploy.sh deploy    # build + انتقال به سرور + اجرا  (پیش‌فرض)
 ./deploy.sh server    # فقط انتقال bundle موجود + اجرا روی سرور
+./deploy.sh setup     # فقط نصب Docker و Compose روی سرور
 ```
+
+برای سرور ایران، نصب اولیه به‌طور پیش‌فرض از mirror رسمی کشوری Ubuntu (`ir.archive.ubuntu.com`) استفاده می‌کند و مخزن امنیتی Ubuntu را دست‌نخورده می‌گذارد. برای mirror دیگری می‌توان `UBUNTU_APT_MIRROR` را به URL مخزن Ubuntu تنظیم کرد. bundle فقط imageهای backend و frontend را دارد؛ MySQL و Node base از mirror عمومی Google روی خود سرور دریافت می‌شوند (با fallback به Docker Hub), و imageهای runtime و migration منافسه از source همان‌جا build می‌شوند. Prisma CLI فقط در image موقت migration است؛ بعد از به‌روزرسانی SQLite، این image حذف می‌شود تا وارد runtime یا bundle نشود. فایل `deploy.json` را با دسترسی محدود نگه دارید (`chmod 600 deploy.json`)؛ روش بهتر برای استفاده‌های بعدی، جایگزینی SSH password با کلید SSH است.
 
 ### مراحل `deploy`
 
-1. **Build:** ایمیج‌های `vodda-backend:prod`، `vodda-frontend:prod` و `vodda-monafaseh:prod` ساخته و همراه `mysql:8.0` در `vodda-docker-bundle.tar.gz` ذخیره می‌شوند.
-2. **Transfer:** فایل‌های `docker-compose.deploy.yml`، `.env.production` و bundle با scp/rsync به سرور منتقل می‌شوند.
-3. **Run:** روی سرور imageها load می‌شوند و Compose ودا سرویس‌های برنامه و MySQL را با readiness بالا می‌آورد. اگر container قدیمی مستقل منافسه با نام `monafaseh` وجود داشته باشد، پیش از اتصال SQLite متوقف می‌شود؛ پس از سلامت سرویس جدید حذف می‌شود و در صورت شکست startup دوباره اجرا می‌شود. volumeهای داده با همان نام قبلی حفظ می‌شوند.
+1. **Build:** ایمیج‌های `vodda-backend:prod` و `vodda-frontend:prod` روی میزبان build ساخته و در bundle فشرده ذخیره می‌شوند.
+2. **Transfer:** compose، `.env.production`، context کوچک منافسه و bundle با scp/rsync به سرور منتقل می‌شوند.
+3. **Run:** روی سرور MySQL فقط در صورت نبود image از registry دریافت می‌شود، منافسه از source build می‌شود و imageهای برنامه load می‌شوند. پیش از start، image موقت Prisma schema را در volume موجود SQLite به‌روز می‌کند و سپس حذف می‌شود. Compose سرویس‌ها را با readiness بالا می‌آورد. اگر container قدیمی مستقل منافسه با نام `monafaseh` وجود داشته باشد، پیش از اتصال SQLite متوقف می‌شود؛ پس از سلامت سرویس جدید حذف می‌شود و در صورت شکست migration یا startup دوباره اجرا می‌شود. volumeهای داده با همان نام قبلی حفظ می‌شوند.
 
-پس از دیپلوی:
+پس از دیپلوی، سرویس‌ها فقط روی loopback سرور در دسترس‌اند:
 
-- Backend: `http://SERVER_IP:3420`
-- Frontend: `http://SERVER_IP:3421`
-- Monafaseh upstream: `127.0.0.1:3423` (روی سرور فقط روی loopback منتشر می‌شود و برای دسترسی عمومی reverse proxy لازم است)
+- Backend: `127.0.0.1:3420`
+- Frontend: `127.0.0.1:3421`
+- Monafaseh: `127.0.0.1:3423`
 
-> توصیه می‌شود جلوی سرویس‌ها یک reverse-proxy (مثل Nginx) با TLS قرار دهید؛ `/api/v1` به ۳۴۲۰، سایت ودا به ۳۴۲۱ و دامنهٔ منافسه به `127.0.0.1:3423` پراکسی شود.
+برای دسترسی عمومی، reverse-proxy با TLS لازم است؛ میزبان `vodda.ir` به frontend در ۳۴۲۱، میزبان API (برای مثال `api.vodda.ir`) به backend در ۳۴۲۰، و میزبان منافسه به `127.0.0.1:3423` پراکسی شود. DNS دامنه‌ها باید به IP همین سرور اشاره کند.
 
 ## اپ Flutter
 

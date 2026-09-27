@@ -165,11 +165,11 @@ export function LearnerTeacherProfileScreen({
       </div>
 
       <div className="vodda-enter vodda-enter-delay-1" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
-        {[
+        {([
           ["star" as const, ratingLabel, "امتیاز"],
           ["message" as const, formatWalletAmount(teacher.reviews), "نظر"],
           ["calendar" as const, formatWalletAmount(teacher.sessions), "جلسه"],
-        ].map(([icon, value, label]) => (
+        ] as const).map(([icon, value, label]) => (
           <div key={label} style={{ minWidth: 0, padding: "14px 8px", textAlign: "center", borderRadius: 18, background: colors.surface }}>
             <Icon name={icon} size={22} style={{ color: colors.olive500 }} />
             <strong style={{ display: "block", marginTop: 6, fontSize: 18, fontWeight: 800, color: colors.ink }}>{value}</strong>

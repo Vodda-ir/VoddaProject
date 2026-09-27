@@ -3,21 +3,14 @@
 # docker-entrypoint.sh — اسکریپت راه‌اندازی container
 # ============================================================
 # وظایف:
-#   ۱. اجرای Prisma migrations (ایجاد/به‌روزرسانی جداول)
-#   ۲. اجرای seed (در صورت خالی بودن دیتابیس)
-#   ۳. استارت Next.js standalone server
+#   ۱. اجرای seed (در صورت خالی بودن دیتابیس)
+#   ۲. استارت Next.js standalone server
 # ============================================================
 set -e
 
 echo "🚀 Starting Monafaseh container..."
 
-# ─── ۱. Prisma migrations ────────────────────────────────────
-echo "📦 Running database migrations..."
-node ./node_modules/prisma/build/index.js db push --accept-data-loss || {
-    echo "⚠️ Migration failed, continuing anyway..."
-}
-
-# ─── ۲. Seed (فقط اگر دیتابیس خالی است) ─────────────────────
+# ─── ۱. Seed (فقط اگر دیتابیس خالی است) ─────────────────────
 echo "🌱 Checking if seed is needed..."
 
 # بررسی اینکه آیا کاربری وجود دارد یا نه

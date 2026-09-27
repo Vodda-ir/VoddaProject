@@ -202,13 +202,13 @@ function AppPreview() {
         </div>
 
         <div className="landing-mini-bottom-nav">
-          {[
-            ['home' as const, 'خانه'],
-            ['search' as const, 'جستجو'],
-            ['calendar' as const, 'جلسات'],
-            ['wallet' as const, 'کیف پول'],
-            ['user' as const, 'پروفایل'],
-          ].map(([icon, label], index) => (
+          {([
+            ['home', 'خانه'],
+            ['search', 'جستجو'],
+            ['calendar', 'جلسات'],
+            ['wallet', 'کیف پول'],
+            ['user', 'پروفایل'],
+          ] as const).map(([icon, label], index) => (
             <span key={label} className={index === 0 ? 'active' : undefined}>
               <Icon name={icon} size={15} />
               <small>{label}</small>
@@ -329,7 +329,7 @@ export function HowItWorks() {
     ['search' as const, 'استاد را پیدا کن', 'نام، تخصص، شهر یا جنسیت استاد را جستجو و پروفایل منتشرشده را بررسی کن.'],
     ['calendar' as const, 'خدمت و زمان را انتخاب کن', 'سرویس تأییدشده و بازهٔ آزاد واقعی از برنامهٔ کاری استاد را انتخاب کن.'],
     ['checkCircle' as const, 'درخواست را پیگیری کن', 'وضعیت رزرو، جلسه و گردش مالی را از فضای کاربری وُدّا دنبال کن.'],
-  ];
+  ] as const;
 
   return (
     <section id="how" className="landing-section landing-how">
@@ -417,7 +417,7 @@ export function WhyVodda() {
     ['calendar' as const, 'زمان واقعی رزرو', 'بازه‌ها از برنامهٔ کاری استاد و تداخل جلسات فعال محاسبه می‌شوند.'],
     ['wallet' as const, 'جریان مالی شفاف', 'کسر، بازگشت وجه، درآمد و برداشت در دفتر تراکنش‌ها ثبت می‌شوند.'],
     ['star' as const, 'بازخورد معتبرتر', 'امتیاز فقط برای قرآن‌آموز همان جلسه و پس از تکمیل جلسه ثبت می‌شود.'],
-  ];
+  ] as const;
 
   return (
     <section className="landing-proof">

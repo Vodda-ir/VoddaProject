@@ -8,7 +8,19 @@ import { Avatar } from '@/components/web/ui';
 import { PanelButton } from '@/components/panel/PanelUI';
 import { clearToken, fullUrl, getToken } from '@/lib/auth';
 
-const NAV_GROUPS = [
+type AdminNavigationItem = {
+  id: string;
+  icon: React.ComponentProps<typeof Icon>['name'];
+  label: string;
+  href: string;
+};
+
+type AdminNavigationGroup = {
+  label: string;
+  items: AdminNavigationItem[];
+};
+
+const NAV_GROUPS: AdminNavigationGroup[] = [
   {
     label: 'نمای کلی',
     items: [
@@ -143,7 +155,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <nav aria-label="ناوبری مدیریت" style={{ display: 'grid', gap: 15, flex: 1 }}>
           {NAV_GROUPS.map((group) => (
             <div key={group.label}>
-              <div style={{ padding: '0 10px 6px', color: 'rgba(255,255,255,.33)', fontSize: 9px, fontWeight: 700 }}>{group.label}</div>
+              <div style={{ padding: '0 10px 6px', color: 'rgba(255,255,255,.33)', fontSize: 9, fontWeight: 700 }}>{group.label}</div>
               <div style={{ display: 'grid', gap: 3 }}>
                 {group.items.map((item) => {
                   const selected = item.id === 'dash' ? pathname === '/panel/admin' : pathname.startsWith(item.href);
