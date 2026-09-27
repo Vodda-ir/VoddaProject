@@ -92,7 +92,7 @@ services:
       NODE_ENV: production
       SERVER_API_URL: ${SERVER_API_URL:-http://backend:3420/api/v1}
     ports:
-      - "127.0.0.1:${FRONTEND_PORT:-3421}:${FRONTEND_INTERNAL_PORT:-3421}"
+      - "0.0.0.0:${FRONTEND_PORT:-3421}:${FRONTEND_INTERNAL_PORT:-3421}"
     healthcheck:
       test:
         - CMD-SHELL
@@ -121,7 +121,7 @@ services:
       SITE_URL: ${MONAFASEH_SITE_URL:-https://monafaseh.ir}
       BOT_TOKEN: ${MONAFASEH_BOT_TOKEN:-}
     ports:
-      - "127.0.0.1:${MONAFASEH_PORT:-3423}:3000"
+      - "0.0.0.0:${MONAFASEH_PORT:-3423}:3000"
     volumes:
       - monafaseh_db:/app/db
       - monafaseh_uploads:/app/public/uploads

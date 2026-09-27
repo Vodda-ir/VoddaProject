@@ -61,13 +61,14 @@ cp deploy.example.json deploy.json
 2. **Transfer:** compose، `.env.production`، context کوچک منافسه و bundle با scp/rsync به سرور منتقل می‌شوند.
 3. **Run:** روی سرور MySQL فقط در صورت نبود image از registry دریافت می‌شود، منافسه از source build می‌شود و imageهای برنامه load می‌شوند. پیش از start، image موقت Prisma schema را در volume موجود SQLite به‌روز می‌کند و سپس حذف می‌شود. Compose سرویس‌ها را با readiness بالا می‌آورد. اگر container قدیمی مستقل منافسه با نام `monafaseh` وجود داشته باشد، پیش از اتصال SQLite متوقف می‌شود؛ پس از سلامت سرویس جدید حذف می‌شود و در صورت شکست migration یا startup دوباره اجرا می‌شود. volumeهای داده با همان نام قبلی حفظ می‌شوند.
 
-پس از دیپلوی، سرویس‌ها فقط روی loopback سرور در دسترس‌اند:
+پس از دیپلوی، دو frontend وب برای دسترسی مستقیم با IP سرور روی پورت‌های ۳۴۲۱ و ۳۴۲۳ منتشر می‌شوند. Backend و MySQL فقط روی loopback باقی می‌مانند:
 
 - Backend: `127.0.0.1:3420`
-- Frontend: `127.0.0.1:3421`
-- Monafaseh: `127.0.0.1:3423`
+- Frontend: `0.0.0.0:3421`
+- MySQL: `127.0.0.1:3422`
+- Monafaseh: `0.0.0.0:3423`
 
-برای دسترسی عمومی، reverse-proxy با TLS لازم است؛ میزبان `vodda.ir` به frontend در ۳۴۲۱، میزبان API (برای مثال `api.vodda.ir`) به backend در ۳۴۲۰، و میزبان منافسه به `127.0.0.1:3423` پراکسی شود. DNS دامنه‌ها باید به IP همین سرور اشاره کند.
+پورت‌های ۳۴۲۱ و ۳۴۲۳ با HTTP مستقیماً از IP سرور قابل بازدیدند. برای استفادهٔ production، reverse-proxy با TLS توصیه می‌شود؛ میزبان `vodda.ir` به frontend در ۳۴۲۱، میزبان API (برای مثال `api.vodda.ir`) به backend در ۳۴۲۰، و میزبان منافسه به `127.0.0.1:3423` پراکسی شود. DNS دامنه‌ها باید به IP همین سرور اشاره کند.
 
 ## اپ Flutter
 
