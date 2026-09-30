@@ -79,7 +79,7 @@ function TeacherRail({
         }}
       >
         {teachers.map((teacher) => (
-          <div key={teacher.id} style={{ scrollSnapAlign: "start" }}>
+          <div key={teacher.id} style={{ flex: "0 0 auto", scrollSnapAlign: "start" }}>
             <TeacherCard teacher={teacher} config={config} />
           </div>
         ))}
