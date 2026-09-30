@@ -13,7 +13,7 @@
 | --- | --- |
 | `.env.local` | اجرای محلی دیباگ (`debug.sh`) |
 | `.env.production` | مقادیر تولید (`deploy.sh`) — **محرمانه، در git نیست** |
-| `deploy.json` | اطلاعات اتصال SSH سرور — **محرمانه، در git نیست** |
+| `deploy.json` | اطلاعات اتصال SSH و نگاشت دامنه‌ها — **محرمانه، در git نیست** |
 
 ساخت از روی نمونه‌ها:
 
@@ -32,6 +32,8 @@ cp deploy.example.json deploy.json
 - `FRONTEND_BASE_URL`، `DOCKER_PLATFORM` (مثلاً `linux/amd64`)
 - `MONAFASEH_NEXTAUTH_SECRET` (در صورت خالی بودن از `JWT_SECRET` استفاده می‌شود)، `MONAFASEH_NEXTAUTH_URL`، `MONAFASEH_SITE_URL` و در صورت نیاز `MONAFASEH_BOT_TOKEN`
 - `MONAFASEH_PORT` (پیش‌فرض `3423`)
+- `CORS_ALLOWED_ORIGINS` شامل وب و WebView بومی؛ مقادیر فعلی `.env.production` شامل `vodda.ir`، `app.vodda.ir`، `https://localhost` و `capacitor://localhost` است.
+- `UNIVERSAL_APP_ROOT_HOST=app.vodda.ir` برای mount همزمان Universal App در ریشهٔ ساب‌دامین و زیر `/app` سایت اصلی.
 
 ساختار `deploy.json`:
 
@@ -40,7 +42,13 @@ cp deploy.example.json deploy.json
   "ip": "SERVER_IP",
   "username": "root",
   "password": "SSH_PASSWORD",
-  "path": "/www/wwwroot/vodda"
+  "path": "/www/wwwroot/vodda",
+  "domains": {
+    "site": "vodda.ir",
+    "app": "app.vodda.ir",
+    "api": "api.vodda.ir",
+    "monafaseh": "monafeseh.ir"
+  }
 }
 ```
 
@@ -51,7 +59,11 @@ cp deploy.example.json deploy.json
 ./deploy.sh deploy    # build + انتقال به سرور + اجرا  (پیش‌فرض)
 ./deploy.sh server    # فقط انتقال bundle موجود + اجرا روی سرور
 ./deploy.sh setup     # فقط نصب Docker و Compose روی سرور
+./deploy.sh domains   # build Backend/Frontend و اعمال دامنه‌ها، بدون schema migration
+./deploy.sh proxy     # بازاعمال Nginx بدون build یا restart اپ‌ها
 ```
+
+برای تغییر دامنه و BFF از `domains` استفاده کنید؛ این مسیر فقط سرویس‌های backend، frontend و منافسه را با image/config جدید بالا می‌آورد و Prisma migrator را اجرا نمی‌کند. volume دیتابیس‌ها حفظ می‌شوند.
 
 برای سرور ایران، نصب اولیه به‌طور پیش‌فرض از mirror رسمی کشوری Ubuntu (`ir.archive.ubuntu.com`) استفاده می‌کند و مخزن امنیتی Ubuntu را دست‌نخورده می‌گذارد. برای mirror دیگری می‌توان `UBUNTU_APT_MIRROR` را به URL مخزن Ubuntu تنظیم کرد. bundle فقط imageهای backend و frontend را دارد؛ MySQL و Node base از mirror عمومی Google روی خود سرور دریافت می‌شوند (با fallback به Docker Hub), و imageهای runtime و migration منافسه از source همان‌جا build می‌شوند. Prisma CLI فقط در image موقت migration است؛ بعد از به‌روزرسانی SQLite، این image حذف می‌شود تا وارد runtime یا bundle نشود. فایل `deploy.json` را با دسترسی محدود نگه دارید (`chmod 600 deploy.json`)؛ روش بهتر برای استفاده‌های بعدی، جایگزینی SSH password با کلید SSH است.
 
@@ -59,27 +71,28 @@ cp deploy.example.json deploy.json
 
 1. **Build:** ایمیج‌های `vodda-backend:prod` و `vodda-frontend:prod` روی میزبان build ساخته و در bundle فشرده ذخیره می‌شوند.
 2. **Transfer:** compose، `.env.production`، context کوچک منافسه و bundle با scp/rsync به سرور منتقل می‌شوند.
-3. **Run:** روی سرور MySQL فقط در صورت نبود image از registry دریافت می‌شود، منافسه از source build می‌شود و imageهای برنامه load می‌شوند. پیش از start، image موقت Prisma schema را در volume موجود SQLite به‌روز می‌کند و سپس حذف می‌شود. Compose سرویس‌ها را با readiness بالا می‌آورد. اگر container قدیمی مستقل منافسه با نام `monafaseh` وجود داشته باشد، پیش از اتصال SQLite متوقف می‌شود؛ پس از سلامت سرویس جدید حذف می‌شود و در صورت شکست migration یا startup دوباره اجرا می‌شود. volumeهای داده با همان نام قبلی حفظ می‌شوند.
+3. **Run:** deploy کامل runtime منافسه را از source می‌سازد و پیش از start، migrator Prisma schema SQLite را sync می‌کند. مسیر `domains` image موجود منافسه را با همان volume اجرا می‌کند و هیچ schema migration دیتابیس ودا یا منافسه ندارد. هر دو مسیر readiness سرویس‌ها را بررسی می‌کنند.
 
-پس از دیپلوی، دو frontend وب برای دسترسی مستقیم با IP سرور روی پورت‌های ۳۴۲۱ و ۳۴۲۳ منتشر می‌شوند. Backend و MySQL فقط روی loopback باقی می‌مانند:
+پس از deploy، Nginx روی سرور براساس hostname درخواست را مسیریابی می‌کند. در Arvan، origin هر hostname باید IP همین سرور باشد، TLS و اجبار HTTPS در لبه فعال باشد، و ارتباط Arvan با origin روی HTTP پورت ۸۰ انجام شود. Compose پورت‌های سرویس را فقط روی loopback نگه می‌دارد:
 
 - Backend: `127.0.0.1:3420`
-- Frontend: `0.0.0.0:3421`
+- Frontend: `127.0.0.1:3421`
 - MySQL: `127.0.0.1:3422`
-- Monafaseh: `0.0.0.0:3423`
+- Monafaseh: `127.0.0.1:3423`
 
-پورت‌های ۳۴۲۱ و ۳۴۲۳ با HTTP مستقیماً از IP سرور قابل بازدیدند. برای استفادهٔ production، reverse-proxy با TLS توصیه می‌شود؛ میزبان `vodda.ir` به frontend در ۳۴۲۱، میزبان API (برای مثال `api.vodda.ir`) به backend در ۳۴۲۰، و میزبان منافسه به `127.0.0.1:3423` پراکسی شود. DNS دامنه‌ها باید به IP همین سرور اشاره کند.
+نگاشت hostnameها: `vodda.ir` به frontend، `app.vodda.ir` به همان frontend با rewrite داخلی `/` به `/app`، `api.vodda.ir` به backend، و `monafeseh.ir` به منافسه. پورت‌های ۳۴۲۰ تا ۳۴۲۳ برای دسترسی عمومی منتشر نمی‌شوند.
 
-## اپ Flutter
+## اپ Capacitor
 
-اپ موبایل داکرایز نمی‌شود. برای انتشار:
+اپ موبایل داکرایز نمی‌شود و `frontend/native/.env.production` آدرس API تولید را دارد. برای build و sync:
 
 ```bash
-cd app
-flutter build apk --release --dart-define=API_BASE_URL=https://api.vodda.ir/api/v1
-# یا appbundle برای Google Play
-flutter build appbundle --release --dart-define=API_BASE_URL=https://api.vodda.ir/api/v1
+cd frontend/native
+npm run build
+npx cap sync
 ```
+
+Flutter deprecated reference است؛ build محصول جدید از wrapper Capacitor و Universal App استفاده می‌کند.
 
 ## نکات نگه‌داری
 

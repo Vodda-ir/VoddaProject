@@ -42,7 +42,7 @@ services:
       APP_ENV: production
       APP_TIMEZONE: ${APP_TIMEZONE:-Asia/Tehran}
       FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-https://vodda.ir}
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://vodda.ir}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://vodda.ir,https://app.vodda.ir,https://localhost,capacitor://localhost}
       TRUSTED_PROXIES: ${TRUSTED_PROXIES:-127.0.0.1,::1,172.16.0.0/12}
       DB_HOST: ${DB_HOST:-mysql}
       DB_PORT: ${DB_PORT:-3306}
@@ -91,8 +91,9 @@ services:
       HOSTNAME: 0.0.0.0
       NODE_ENV: production
       SERVER_API_URL: ${SERVER_API_URL:-http://backend:3420/api/v1}
+      UNIVERSAL_APP_ROOT_HOST: ${UNIVERSAL_APP_ROOT_HOST:-app.vodda.ir}
     ports:
-      - "0.0.0.0:${FRONTEND_PORT:-3421}:${FRONTEND_INTERNAL_PORT:-3421}"
+      - "127.0.0.1:${FRONTEND_PORT:-3421}:${FRONTEND_INTERNAL_PORT:-3421}"
     healthcheck:
       test:
         - CMD-SHELL
@@ -121,7 +122,7 @@ services:
       SITE_URL: ${MONAFASEH_SITE_URL:-https://monafaseh.ir}
       BOT_TOKEN: ${MONAFASEH_BOT_TOKEN:-}
     ports:
-      - "0.0.0.0:${MONAFASEH_PORT:-3423}:3000"
+      - "127.0.0.1:${MONAFASEH_PORT:-3423}:3000"
     volumes:
       - monafaseh_db:/app/db
       - monafaseh_uploads:/app/public/uploads

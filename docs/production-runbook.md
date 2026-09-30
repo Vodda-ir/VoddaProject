@@ -23,7 +23,8 @@ JWT_SECRET=<random-at-least-32-characters>
 SMS_API_KEY=...
 SMS_BODY_ID=...
 FRONTEND_BASE_URL=https://vodda.ir
-CORS_ALLOWED_ORIGINS=https://vodda.ir
+CORS_ALLOWED_ORIGINS=https://vodda.ir,https://app.vodda.ir,https://localhost,capacitor://localhost
+UNIVERSAL_APP_ROOT_HOST=app.vodda.ir
 ```
 
 در production این مقادیر باید همیشه خاموش باشند:
@@ -52,12 +53,14 @@ curl --fail http://127.0.0.1:3421/
 
 `/live` فقط زنده‌بودن process را گزارش می‌کند. `/ready` علاوه بر process، اتصال MySQL را نیز بررسی می‌کند و باید مبنای health check باشد.
 
-## reverse proxy
+## domain reverse proxy
 
-- فقط frontend باید از اینترنت قابل دسترس باشد.
-- مسیرهای `/api/backend/*` و `/api/auth/*` متعلق به BFF در Next.js هستند.
-- Backend و MySQL نباید مستقیماً از اینترنت منتشر شوند.
-- هدرهای `X-Forwarded-For` و `X-Forwarded-Proto` فقط از proxyهای تعریف‌شده در `TRUSTED_PROXIES` پذیرفته شوند.
+- Nginx در deploy، `vodda.ir` و `app.vodda.ir` را به frontend، `api.vodda.ir` را به backend، و `monafeseh.ir` را به منافسه هدایت می‌کند.
+- TLS و اجبار HTTPS در لبهٔ Arvan فعال باشد؛ origin روی HTTP پورت ۸۰ سرور تنظیم شود.
+- `app.vodda.ir` مسیرها را به catch-all فعلی Next زیر `/app` rewrite می‌کند و API، static و assetها را بدون rewrite عبور می‌دهد.
+- مسیرهای وب `/api/backend/*` و `/api/auth/*` متعلق به BFF same-origin هستند. `api.vodda.ir/api/v1` برای Native و integration مستقیم است.
+- Backend و MySQL فقط روی loopback هستند و Nginx به آن‌ها از همان میزبان وصل می‌شود.
+- Nginx هدر host و proto بیرونی HTTPS را برای BFF می‌گذارد تا بررسی same-origin و کوکی Secure درست کار کنند.
 - محدودیت دوم rate limit در reverse proxy یا Redis توصیه می‌شود؛ limiter داخلی از یک instance محافظت می‌کند.
 
 ## Backup روزانه

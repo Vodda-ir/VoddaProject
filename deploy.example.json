@@ -2,5 +2,11 @@
   "ip": "YOUR_SERVER_IP",
   "username": "YOUR_SERVER_USERNAME",
   "password": "YOUR_SSH_PASSWORD",
-  "path": "/www/wwwroot/vodda"
+  "path": "/www/wwwroot/vodda",
+  "domains": {
+    "site": "vodda.ir",
+    "app": "app.vodda.ir",
+    "api": "api.vodda.ir",
+    "monafaseh": "monafeseh.ir"
+  }
 }

@@ -230,7 +230,7 @@
 - [x] document deployment برای دو حالت `vodda.ir/app/...` و `app.vodda.ir/...`.
 - [x] هیچ business componentی hostname را hardcode نکند.
 
-> Next host اکنون `NEXT_PUBLIC_UNIVERSAL_APP_BASE_PATH`، `NEXT_PUBLIC_UNIVERSAL_APP_BFF_BASE_URL` و `NEXT_PUBLIC_UNIVERSAL_APP_AUTH_BASE_URL` را به Universal App/Web Platform تزریق می‌کند. Web runtime برای API و auth همچنان HttpOnly/BFF است و با `credentials: include` هم deployment هم‌origin و هم sibling same-site صریح را پوشش می‌دهد؛ Native runtime تغییری نکرده است. audit نهایی Universal Source هیچ asset محلی وابسته به `/app` و هیچ hostname بیزینسی hardcodeشده پیدا نکرد؛ asset base در wrapper بومی نیز `./` است. قرارداد و rewrite لازم برای هر دو حالت در `docs/universal-app-web-deployment.md` مستند شده‌اند.
+> Next host مقدار runtime `UNIVERSAL_APP_ROOT_HOST` را با Host درخواست مقایسه می‌کند و برای همان host base path خالی می‌فرستد؛ hostهای دیگر `/app` را حفظ می‌کنند. Web runtime برای API و auth همچنان HttpOnly/BFF same-origin است و Native runtime از API مستقیم/Bearer استفاده می‌کند. Nginx hostname routes و app-root rewrite در deployment config قرار دارند؛ پاسخ واقعی دامنه و flow ورود بعد از deploy باید runtime-verify شوند. audit نهایی Universal Source هیچ asset محلی وابسته به `/app` و هیچ hostname بیزینسی hardcodeشده پیدا کرد؛ asset base در wrapper بومی نیز `./` است. جزئیات در `docs/universal-app-web-deployment.md` است.
 
 ## فاز 9 — Cleanup کدنویسی و Documentation
 

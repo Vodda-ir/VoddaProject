@@ -38,7 +38,7 @@
 - **Web:** HttpOnly cookie + Next BFF؛ token نباید در JavaScript وب در دسترس قرار گیرد.
 - **Native:** secure token storage + درخواست مستقیم Go API با `Authorization: Bearer`.
 
-Routeهای اصلی Universal App شامل `/app`, `/app/login`, `/app/search`, `/app/teacher/:id`, `/app/book/:id`, `/app/sessions`, `/app/wallet`, `/app/profile` و namespace استاد زیر `/app/t/...` هستند. ساخت URL و base path در router مشترک متمرکز شده و برای استقرار آینده روی `app.vodda.ir` نیز قابل تنظیم است.
+Routeهای اصلی Universal App شامل `/app`, `/app/login`, `/app/search`, `/app/teacher/:id`, `/app/book/:id`, `/app/sessions`, `/app/wallet`, `/app/profile` و namespace استاد زیر `/app/t/...` هستند. همان routeها روی `vodda.ir/app/...` و root دامنهٔ `app.vodda.ir` میزبانی می‌شوند؛ BFF در هر دو حالت same-origin می‌ماند.
 
 جزئیات و وضعیت migration: [`docs/universal-app-migration-roadmap.md`](docs/universal-app-migration-roadmap.md)
 
@@ -210,12 +210,13 @@ docker compose -f docker-compose.deploy.yml up -d --build
 
 در production:
 
-- MySQL، Backend و Frontend فقط روی `127.0.0.1` publish می‌شوند.
-- Reverse proxy باید TLS را terminate کند.
+- MySQL، Backend، Frontend و منافسه فقط روی `127.0.0.1` publish می‌شوند.
+- Nginx با hostnameها روی پورت ۸۰ origin مسیریابی می‌کند و HTTPS در لبهٔ Arvan terminate می‌شود.
+- `vodda.ir` به سایت، `app.vodda.ir` به ریشهٔ Universal App، `api.vodda.ir/api/v1` به API و `monafeseh.ir` به منافسه می‌رود.
 - `APP_ENV=production` الزامی است.
 - bypass OTP، seed خودکار و شارژ مستقیم توسعه‌ای غیرفعال‌اند.
-- Universal Web App می‌تواند با base path `/app` یا در استقرار جداگانه روی root ساب‌دامین اجرا شود.
-- BFF/auth origin وب configurable است، ولی مدل auth همچنان HttpOnly cookie باقی می‌ماند.
+- Universal Web App هم‌زمان زیر `/app` سایت اصلی و روی root ساب‌دامین اجرا می‌شود.
+- وب از BFF same-origin و کوکی HttpOnly استفاده می‌کند؛ native به `https://api.vodda.ir/api/v1` با Bearer token وصل می‌شود.
 
 راهنمای دو حالت `vodda.ir/app/...` و `app.vodda.ir/...`: [`docs/universal-app-web-deployment.md`](docs/universal-app-web-deployment.md)
 

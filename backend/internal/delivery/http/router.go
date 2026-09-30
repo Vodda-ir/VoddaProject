@@ -42,6 +42,7 @@ func NewRouter(cfg *config.Config, h *Handler, tm *token.Manager, readiness func
 	corsCfg := cors.DefaultConfig()
 	if cfg.IsProduction() {
 		corsCfg.AllowOrigins = cfg.CORSAllowedOrigins
+		corsCfg.CustomSchemas = []string{"capacitor://"}
 	} else {
 		corsCfg.AllowAllOrigins = true
 	}

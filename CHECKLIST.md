@@ -84,7 +84,7 @@
 - [x] route contract مستقل از `/panel/...`؛ deep-link/refreshهای `/app/...` از catch-all مستقل Next به Universal App resolve می‌شوند و universal source routeهای `/panel` را hardcode نمی‌کند.
 - [x] Capacitor/Vite scaffold با `ir.vodda.vodda`، local `dist` bundle، بدون `server.url`، API base URL محیطی و secure token storage ایجاد شد.
 - [x] native capability hook مستقل از Universal Source با `PlatformRuntime.capabilities` ایجاد شد؛ wrapper بومی Camera/Photo Picker را با `@capacitor/camera` تزریق می‌کند و الگوی توسعه capabilityهای بعدی در `docs/native-capabilities.md` مستند است.
-- [x] deployment config وب برای base path و BFF/auth origin محیطی شد؛ Web adapter با HttpOnly/BFF و `credentials: include` برای same-origin یا same-site subdomain آماده است و قرارداد دو حالت `/app` و `app.vodda.ir` در `docs/universal-app-web-deployment.md` مستند شد.
+- [x] deployment وب همزمان `/app` و root ساب‌دامین را با انتخاب base path براساس `UNIVERSAL_APP_ROOT_HOST`، BFF/auth same-origin و rewrite Nginx hostname-based پشتیبانی می‌کند؛ اجرای production پس از deploy باید جداگانه بررسی شود.
 - [x] audit نهایی asset path/hostname: Universal Source هیچ asset محلی وابسته به `/app` و هیچ hostname بیزینسی hardcode نمی‌کند و native Vite از asset base نسبی `./` استفاده می‌کند؛ فاز ۸ آماده انتقال config/deployment است.
 - [x] `AGENTS.md` و `README.md` با معماری Universal App، مرزهای Next/Capacitor، route contract و مدل auth متفاوت web/native همگام شده‌اند و وضعیت فازهای ۰ تا ۸ در این checklist ثبت شده است.
 - [x] mapping دقیق Flutter → Universal React در [`docs/flutter-universal-mapping.md`](docs/flutter-universal-mapping.md) ثبت شده و route/componentهای learner/teacher، flowهای ادغام‌شده و تفاوت‌های عمدی migration را مشخص می‌کند.

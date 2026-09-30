@@ -135,7 +135,8 @@ func (c *Config) Validate() error {
 	}
 	for _, origin := range c.CORSAllowedOrigins {
 		u, err := url.Parse(origin)
-		if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+		isNativeCapacitorOrigin := err == nil && u.Scheme == "capacitor" && u.Host == "localhost" && u.Path == ""
+		if err != nil || ((u.Scheme != "http" && u.Scheme != "https") && !isNativeCapacitorOrigin) || u.Host == "" {
 			errs = append(errs, fmt.Errorf("invalid CORS origin %q", origin))
 		}
 	}

@@ -62,6 +62,8 @@ services:
       args:
         - PORT=${FRONTEND_INTERNAL_PORT:-3421}
         - NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL:-/api/v1}
+        - NEXT_PUBLIC_UNIVERSAL_APP_BFF_BASE_URL=${NEXT_PUBLIC_UNIVERSAL_APP_BFF_BASE_URL:-/api/backend}
+        - NEXT_PUBLIC_UNIVERSAL_APP_AUTH_BASE_URL=${NEXT_PUBLIC_UNIVERSAL_APP_AUTH_BASE_URL:-/api/auth}
         - SERVER_API_URL=${SERVER_API_URL:-http://backend:3420/api/v1}
     image: vodda-frontend:prod
     depends_on:

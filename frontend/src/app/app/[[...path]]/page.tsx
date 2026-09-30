@@ -1,17 +1,21 @@
-"use client";
+import { headers } from "next/headers";
+import { UniversalAppHost } from "./universal-app-host";
 
-import { useMemo } from "react";
-import { UniversalApp, createWebPlatformRuntime } from "../../../universal-app";
+function hostnameFromHeader(value: string | null): string {
+  const hostname = value?.split(",")[0].trim().replace(/:\d+$/, "").toLowerCase();
+  return hostname ?? "";
+}
 
-const appBasePath = process.env.NEXT_PUBLIC_UNIVERSAL_APP_BASE_PATH ?? "/app";
-const bffBaseUrl = process.env.NEXT_PUBLIC_UNIVERSAL_APP_BFF_BASE_URL ?? "/api/backend";
-const authBaseUrl = process.env.NEXT_PUBLIC_UNIVERSAL_APP_AUTH_BASE_URL ?? "/api/auth";
-
-export default function UniversalAppPage() {
-  const platform = useMemo(
-    () => createWebPlatformRuntime({ apiBaseUrl: bffBaseUrl, authBaseUrl }),
-    [],
+export default async function UniversalAppPage() {
+  const requestHeaders = await headers();
+  const requestHost = hostnameFromHeader(
+    requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host"),
   );
+  const appRootHost = process.env.UNIVERSAL_APP_ROOT_HOST?.trim().toLowerCase();
+  const configuredBasePath = process.env.NEXT_PUBLIC_UNIVERSAL_APP_BASE_PATH;
+  const basePath = requestHost && requestHost === appRootHost
+    ? ""
+    : configuredBasePath ?? "/app";
 
-  return <UniversalApp config={{ basePath: appBasePath }} platform={platform} />;
+  return <UniversalAppHost basePath={basePath} />;
 }

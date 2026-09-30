@@ -7,6 +7,7 @@ vodda-docker-bundle.tar.gz*
 .env
 .env.*
 !.env.example
+!frontend/native/.env.production
 
 # data (only root-level Docker volumes)
 /data/
