@@ -54,11 +54,17 @@ type DBConfig struct {
 	Name     string
 }
 
-// SMSConfig holds the SMS gateway (sms.ir) settings.
+// SMSConfig holds the SMS gateway settings for sms.ir and Faraz SMS.
 type SMSConfig struct {
+	Provider       string
 	APIURL         string
 	APIKey         string
 	BodyID         int
+	FarazAPIURL    string
+	FarazUsername  string
+	FarazPassword  string
+	FarazFrom      string
+	FarazPatternID string
 	RequestTimeout time.Duration
 }
 
@@ -72,6 +78,11 @@ type ZarinpalConfig struct {
 // Potentially dangerous development features are disabled unless explicitly enabled.
 func Load() *Config {
 	frontendBaseURL := getEnv("FRONTEND_BASE_URL", "http://localhost:3421")
+	smsProvider := getOptionalEnv("SMS_PROVIDER")
+	if smsProvider == "" {
+		// Keep existing deployments on sms.ir until they opt into Faraz explicitly.
+		smsProvider = "sms.ir"
+	}
 
 	return &Config{
 		AppEnv:             getEnv("APP_ENV", "development"),
@@ -92,9 +103,15 @@ func Load() *Config {
 		OTPExpiration:     getDuration("OTP_EXPIRATION", 2*time.Minute),
 		OTPResendCooldown: getDuration("OTP_RESEND_COOLDOWN", 2*time.Minute),
 		SMS: SMSConfig{
+			Provider:       smsProvider,
 			APIURL:         getEnv("SMS_API_URL", "https://api.sms.ir/v1/send/verify"),
 			APIKey:         getEnv("SMS_API_KEY", ""),
 			BodyID:         getInt("SMS_BODY_ID", 0),
+			FarazAPIURL:    getEnv("SMS_FARAZ_API_URL", "https://ippanel.com/patterns/pattern"),
+			FarazUsername:  getEnv("SMS_FARAZ_USERNAME", ""),
+			FarazPassword:  getEnv("SMS_FARAZ_PASSWORD", ""),
+			FarazFrom:      getEnv("SMS_FARAZ_FROM", "3000505"),
+			FarazPatternID: getEnv("SMS_FARAZ_PATTERN_CODE", "j4skcu7fjd1jjjz"),
 			RequestTimeout: getDuration("SMS_REQUEST_TIMEOUT", 20*time.Second),
 		},
 		OTPTestBypassEnabled: getBool("OTP_TEST_BYPASS_ENABLED", false),
@@ -154,8 +171,24 @@ func (c *Config) Validate() error {
 		if c.DevWalletChargeEnabled {
 			errs = append(errs, errors.New("DEV_WALLET_CHARGE_ENABLED must be false in production"))
 		}
-		if strings.TrimSpace(c.SMS.APIKey) == "" || c.SMS.BodyID <= 0 {
-			errs = append(errs, errors.New("SMS_API_KEY and a positive SMS_BODY_ID are required in production"))
+		switch strings.ToLower(strings.TrimSpace(c.SMS.Provider)) {
+		case "sms.ir", "smsir":
+			if strings.TrimSpace(c.SMS.APIKey) == "" || c.SMS.BodyID <= 0 {
+				errs = append(errs, errors.New("SMS_API_KEY and a positive SMS_BODY_ID are required for sms.ir in production"))
+			}
+		case "faraz", "ippanel":
+			if strings.TrimSpace(c.SMS.FarazUsername) == "" || strings.TrimSpace(c.SMS.FarazPassword) == "" {
+				errs = append(errs, errors.New("SMS_FARAZ_USERNAME and SMS_FARAZ_PASSWORD are required for Faraz SMS in production"))
+			}
+			if strings.TrimSpace(c.SMS.FarazFrom) == "" || strings.TrimSpace(c.SMS.FarazPatternID) == "" {
+				errs = append(errs, errors.New("SMS_FARAZ_FROM and SMS_FARAZ_PATTERN_CODE are required for Faraz SMS in production"))
+			}
+			u, err := url.Parse(c.SMS.FarazAPIURL)
+			if err != nil || u.Scheme != "https" || u.Host == "" {
+				errs = append(errs, errors.New("SMS_FARAZ_API_URL must be an absolute HTTPS URL in production"))
+			}
+		default:
+			errs = append(errs, errors.New("SMS_PROVIDER must be faraz or sms.ir in production"))
 		}
 	}
 

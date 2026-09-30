@@ -26,7 +26,8 @@ cp deploy.example.json deploy.json
 
 - `JWT_SECRET` — یک مقدار قوی و تصادفی
 - `DB_PASSWORD` — رمز قوی برای MySQL
-- `SMS_API_KEY` و `SMS_BODY_ID` — اعتبارنامهٔ sms.ir
+- `SMS_PROVIDER=faraz`، `SMS_FARAZ_USERNAME` و `SMS_FARAZ_PASSWORD` — تنظیمات ارسال OTP با فراز SMS
+- `SMS_FARAZ_FROM` و `SMS_FARAZ_PATTERN_CODE` — پیش‌فرض مطابق قالب کد تأیید Laravel (`3000505` و `j4skcu7fjd1jjjz`)
 - `ZARINPAL_MERCHANT_ID` و `ZARINPAL_SANDBOX=false`
 - `OTP_TEST_BYPASS_ENABLED=false` و `AUTO_SEED=false`
 - `FRONTEND_BASE_URL`، `DOCKER_PLATFORM` (مثلاً `linux/amd64`)
@@ -34,6 +35,8 @@ cp deploy.example.json deploy.json
 - `MONAFASEH_PORT` (پیش‌فرض `3423`)
 - `CORS_ALLOWED_ORIGINS` شامل وب و WebView بومی؛ مقادیر فعلی `.env.production` شامل `vodda.ir`، `app.vodda.ir`، `https://localhost` و `capacitor://localhost` است.
 - `UNIVERSAL_APP_ROOT_HOST=app.vodda.ir` برای mount همزمان Universal App در ریشهٔ ساب‌دامین و زیر `/app` سایت اصلی.
+
+اگر برای محیطی هنوز `SMS_PROVIDER` تنظیم نشده باشد، Backend برای سازگاری با تنظیمات قدیمی از `sms.ir` استفاده می‌کند. برای فعال‌کردن فراز در production، provider و نام کاربری/گذرواژهٔ معتبر فراز را در `.env.production` بگذارید؛ secrets را در سورس یا فایل نمونه قرار ندهید.
 
 ساختار `deploy.json`:
 
