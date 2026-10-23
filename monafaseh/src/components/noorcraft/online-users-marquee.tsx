@@ -305,7 +305,7 @@ export function OnlineUsersMarquee({
           فعلاً کسی آنلاین نیست
         </h3>
         <p className="mt-1 text-xs text-muted-foreground">
-          کمی بعد دوباره سر بزن — قاریان به‌زودی برمی‌گردند
+          کمی بعد دوباره بررسی کنید — قاریان به‌زودی برمی‌گردند
         </p>
       </div>
     );
@@ -425,8 +425,8 @@ export function OnlineUsersMarquee({
           )}
         >
           {/* Top & bottom fade masks for elegant entry/exit */}
-          <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-6 bg-gradient-to-b from-white/80 to-transparent dark:from-noor-navy/80" />
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-6 bg-gradient-to-t from-white/80 to-transparent dark:from-noor-navy/80" />
+          <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-6 bg-gradient-to-b from-white/80 to-transparent dark:from-[#0b0a08]/80" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-6 bg-gradient-to-t from-white/80 to-transparent dark:from-[#0b0a08]/80" />
 
           <div
             className="noor-marquee-track flex flex-col"
@@ -447,14 +447,7 @@ export function OnlineUsersMarquee({
                     theme.ring,
                     "hover:scale-[1.02] hover:shadow-lg",
                   )}
-                  style={{ ["--glow" as any]: theme.glow }}
                 >
-                  {/* Decorative glow blob in corner */}
-                  <div
-                    className="pointer-events-none absolute -left-6 -top-6 h-16 w-16 rounded-full opacity-20 blur-2xl"
-                    style={{ background: theme.glow }}
-                  />
-
                   {/* Avatar + status dot */}
                   <div className="relative shrink-0">
                     <NoorAvatar
@@ -537,7 +530,7 @@ export function OnlineUsersMarquee({
       {/* ─── Footer hint ──────────────────────────────────────────────── */}
       <div className="flex items-center justify-between gap-2 border-t border-white/10 bg-gradient-to-l from-transparent to-noor-yellow/5 px-4 py-2">
         <p className="text-[10px] text-muted-foreground">
-          برای توقف حرکت، موس را روی کارت‌ها نگه دار
+          برای توقف حرکت، نشانگر ماوس را روی کارت‌ها نگه دارید
         </p>
         {!activeSession && (
           <button

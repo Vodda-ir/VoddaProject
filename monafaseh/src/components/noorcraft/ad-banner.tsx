@@ -225,12 +225,6 @@ function AdLink({
       )}
       style={{ ["--ad-accent" as any]: accent }}
     >
-      {/* Decorative glow blob */}
-      <div
-        className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full opacity-25 blur-2xl transition-opacity group-hover:opacity-40"
-        style={{ background: accent }}
-      />
-
       {/* "تبلیغ" label — small, transparent, top-right corner */}
       <span className="pointer-events-none absolute right-2 top-2 rounded-full bg-black/20 px-2 py-0.5 text-[9px] font-bold text-white/70 backdrop-blur">
         تبلیغ

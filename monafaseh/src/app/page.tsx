@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useNoorStore } from "@/store/noor-store";
+import type { ViewName } from "@/lib/noorcraft/types";
 import { NoorHeader } from "@/components/noorcraft/noor-header";
 import { NoorFooter } from "@/components/noorcraft/noor-footer";
 import { ErrorBoundary } from "@/components/noorcraft/error-boundary";
@@ -18,12 +19,60 @@ import { LoungeRoomView } from "@/components/noorcraft/views/lounge-room-view";
 import { ChallengeView } from "@/components/noorcraft/views/challenge-view";
 import { BlogView } from "@/components/noorcraft/views/blog-view";
 import { AdminView } from "@/components/noorcraft/views/admin-view";
+import { VerificationView } from "@/components/noorcraft/views/verification-view";
+import { BuyCreditsView } from "@/components/noorcraft/views/buy-credits-view";
+import { MastersView } from "@/components/noorcraft/views/masters-view";
+import { BankInfoView } from "@/components/noorcraft/views/bank-info-view";
+import { DonateView } from "@/components/noorcraft/views/donate-view";
+import { EitaaMiniApp } from "@/components/noorcraft/eitaa-mini-app";
+import { BottomNav } from "@/components/noorcraft/bottom-nav";
 
 export default function Home() {
   const view = useNoorStore((s) => s.view);
   const user = useNoorStore((s) => s.user);
   const setView = useNoorStore((s) => s.setView);
   const signIn = useNoorStore((s) => s.signIn);
+  const setActiveSession = useNoorStore((s) => s.setActiveSession);
+
+  // ============================================================
+  // لینک‌های مستقیم (deep links) — برای پیام‌های کانال ایتا
+  //   /?view=sessions          → فهرست محافل
+  //   /?view=challenge         → صفحه چالش
+  //   /?view=masters           → فهرست استادان
+  //   /?session=<id>           → پیوستن مستقیم به یک محفل مشخص
+  // ============================================================
+  const deepLinkDone = useRef(false);
+
+  useEffect(() => {
+    try {
+      const sp = new URLSearchParams(window.location.search);
+      const requestedView = sp.get("view");
+      const requestedSession = sp.get("session");
+      const allowed: string[] = [
+        "sessions",
+        "challenge",
+        "masters",
+        "blog",
+        "buy-credits",
+        "donate",
+        "lounge",
+        "auth",
+        "dashboard",
+      ];
+
+      if (requestedView && allowed.includes(requestedView)) {
+        sessionStorage.setItem("monafaseh:pendingView", requestedView);
+        setView(requestedView as ViewName);
+      }
+
+      if (requestedSession) {
+        sessionStorage.setItem("monafaseh:pendingSession", requestedSession);
+        setView("sessions");
+      }
+    } catch {
+      // بدون دسترسی به URL — بی‌صدا رد شو
+    }
+  }, [setView]);
 
   // Auto-restore user from cookie on mount — so users stay logged in across reloads.
   useEffect(() => {
@@ -49,17 +98,76 @@ export default function Home() {
       view === "results" ||
       view === "lounge" ||
       view === "lounge-room" ||
-      view === "challenge";
+      view === "challenge" ||
+      view === "verification" ||
+      view === "buy-credits" ||
+      view === "masters" ||
+      view === "bank-info" ||
+      view === "donate";
     if (needsAuth && !user) {
       setView("auth");
     }
   }, [view, user, setView]);
 
+  // بعد از ورود کاربر: لینک مستقیم را اجرا کن (view درخواستی یا پیوستن به محفل)
+  useEffect(() => {
+    if (!user || deepLinkDone.current) return;
+    deepLinkDone.current = true;
+
+    let pendingView: string | null = null;
+    let pendingSession: string | null = null;
+    try {
+      pendingView = sessionStorage.getItem("monafaseh:pendingView");
+      pendingSession = sessionStorage.getItem("monafaseh:pendingSession");
+      sessionStorage.removeItem("monafaseh:pendingView");
+      sessionStorage.removeItem("monafaseh:pendingSession");
+    } catch {
+      return;
+    }
+
+    if (pendingSession) {
+      const sessionId = pendingSession;
+      (async () => {
+        try {
+          const joinRes = await fetch(`/api/sessions/${sessionId}/join`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: "{}",
+          });
+          const joinData = await joinRes.json();
+          if (!joinData?.ok) {
+            setView("sessions");
+            return;
+          }
+          const list = await fetch("/api/sessions", { cache: "no-store" }).then((r) => r.json());
+          const found = (list?.sessions ?? []).find((s: { id: string }) => s.id === sessionId);
+          if (!found) {
+            setView("sessions");
+            return;
+          }
+          setActiveSession({
+            ...found,
+            jitsiRoom: joinData.jitsiRoom ?? found.jitsiRoom,
+          } as never);
+          setView("session-room");
+        } catch {
+          setView("sessions");
+        }
+      })();
+      return;
+    }
+
+    if (pendingView) {
+      setView(pendingView as ViewName);
+    }
+  }, [user, setView, setActiveSession]);
+
   // Hide footer for immersive views
   const immersive = view === "session-room";
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col pb-16 lg:pb-0">
+      <EitaaMiniApp />
       <NoorHeader />
       <main className="flex-1">
         <ErrorBoundary>
@@ -84,11 +192,17 @@ export default function Home() {
               {view === "blog" && <BlogView />}
               {view === "blog-post" && <BlogView />}
               {view === "admin" && user && <AdminView />}
+              {view === "verification" && user && <VerificationView />}
+              {view === "buy-credits" && user && <BuyCreditsView />}
+              {view === "masters" && user && <MastersView />}
+              {view === "bank-info" && user && <BankInfoView />}
+              {view === "donate" && user && <DonateView />}
             </motion.div>
           </AnimatePresence>
         </ErrorBoundary>
       </main>
       {!immersive && <NoorFooter />}
+      {!immersive && <BottomNav />}
     </div>
   );
 }

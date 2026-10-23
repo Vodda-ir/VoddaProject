@@ -21,8 +21,8 @@ export const NoorCard = React.forwardRef<HTMLDivElement, NoorCardProps>(
           whileHover={{ y: -4, rotate: -0.4 }}
           transition={{ type: "spring", stiffness: 300, damping: 20 }}
           className={cn(
-            "relative rounded-3xl border-2 border-noor-navy/15 bg-card p-5 shadow-[0_8px_0_0_rgba(25,25,112,0.12),0_18px_30px_-12px_rgba(25,25,112,0.25)]",
-            glow && "ring-2 ring-noor-yellow/40",
+            "relative rounded-3xl border border-black/10 bg-card p-5 dark:border-white/10",
+            glow && "ring-1 ring-black/10 dark:ring-white/15",
             className,
           )}
           {...(rest as React.ComponentProps<typeof motion.div>)}
@@ -35,8 +35,8 @@ export const NoorCard = React.forwardRef<HTMLDivElement, NoorCardProps>(
       <div
         ref={ref}
         className={cn(
-          "relative rounded-3xl border-2 border-noor-navy/15 bg-card p-5 shadow-[0_6px_0_0_rgba(25,25,112,0.08),0_14px_24px_-12px_rgba(25,25,112,0.2)]",
-          glow && "ring-2 ring-noor-yellow/40",
+          "relative rounded-3xl border border-black/10 bg-card p-5 dark:border-white/10",
+          glow && "ring-1 ring-black/10 dark:ring-white/15",
           className,
         )}
         {...rest}

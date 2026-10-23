@@ -145,7 +145,7 @@ export function QuranDisplay({
   return (
     <div
       className={cn(
-        "relative flex flex-col overflow-hidden rounded-2xl border-2 border-noor-yellow/30 bg-gradient-to-br from-[#0d1230] to-[#181d44] text-white",
+        "relative flex flex-col overflow-hidden rounded-2xl border-2 border-noor-yellow/30 bg-gradient-to-br from-[#08080a] to-[#131317] text-white",
         expanded ? "h-[80vh]" : "h-[50vh]",
         className,
       )}

@@ -20,7 +20,9 @@ interface ParticleEffectProps {
   reduced?: boolean;
 }
 
-const DEFAULT_COLORS = ["#FFD700", "#87CEEB", "#FF7F7F", "#7CFC00"];
+const DARK_COLORS = ["#ffffff", "#c9c9d1", "#9a9aa5"];
+const LIGHT_COLORS = ["#8a7a55", "#a8946a", "#6f6349"];
+const DEFAULT_COLORS = DARK_COLORS;
 
 export function ParticleEffect({
   density = 36,
@@ -41,6 +43,14 @@ export function ParticleEffect({
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const count = reduced ? Math.floor(density / 3) : density;
 
+    // رنگ ذرات تابع تم است: سفید در حالت تیره، خاکستری-طلایی محو در حالت روشن
+    function palette(): string[] {
+      if (colors !== DEFAULT_COLORS) return colors;
+      return document.documentElement.classList.contains("dark")
+        ? DARK_COLORS
+        : LIGHT_COLORS;
+    }
+
     function resize() {
       if (!canvas || !ctx) return;
       const rect = canvas.getBoundingClientRect();
@@ -58,7 +68,7 @@ export function ParticleEffect({
         r: Math.random() * 3 + 1,
         vx: (Math.random() - 0.5) * 0.4,
         vy: -Math.random() * 0.5 - 0.1,
-        color: colors[Math.floor(Math.random() * colors.length)],
+        color: palette()[Math.floor(Math.random() * palette().length)],
         alpha: Math.random() * 0.6 + 0.2,
         twinkle: Math.random() * Math.PI * 2,
       }));
@@ -87,10 +97,10 @@ export function ParticleEffect({
         ctx.arc(p.x, p.y, p.r * (1 + tw * 0.4), 0, Math.PI * 2);
         ctx.fill();
 
-        // glow
-        ctx.globalAlpha = a * 0.3;
+        // subtle soft edge (no colored halo)
+        ctx.globalAlpha = a * 0.12;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r * 3, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, p.r * 2.2, 0, Math.PI * 2);
         ctx.fill();
       }
       ctx.globalAlpha = 1;
@@ -113,8 +123,16 @@ export function ParticleEffect({
     };
     window.addEventListener("resize", onResize);
 
+    // تم که عوض شود، رنگ ذرات هم هم‌رنگ همان تم می‌شود
+    const themeObserver = new MutationObserver(() => initParticles());
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+
     return () => {
       window.removeEventListener("resize", onResize);
+      themeObserver.disconnect();
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
   }, [density, colors, reduced]);

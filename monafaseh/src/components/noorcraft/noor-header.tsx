@@ -6,8 +6,10 @@ import { NoorLogo } from "./noor-logo";
 import { NoorButton } from "./noor-button";
 import { useNoorStore } from "@/store/noor-store";
 import { NoorAvatar } from "./noor-avatar";
+import { VerifiedName } from "./verified-badge";
 import { OnlineUsersBar } from "./online-users-bar";
 import { InvitationBell } from "./invitation-bell";
+import { ThemeToggle } from "./theme-toggle";
 
 export function NoorHeader() {
   const user = useNoorStore((s) => s.user);
@@ -60,6 +62,18 @@ export function NoorHeader() {
                 >
                   تالار گفتگو
                 </NavChip>
+                <NavChip
+                  active={view === "masters"}
+                  onClick={() => setView("masters")}
+                >
+                  استادان
+                </NavChip>
+                <NavChip
+                  active={view === "buy-credits"}
+                  onClick={() => setView("buy-credits")}
+                >
+                  خرید امتیاز
+                </NavChip>
               </>
             )}
           </nav>
@@ -72,6 +86,7 @@ export function NoorHeader() {
           )}
 
           <div className="flex items-center gap-2">
+            <ThemeToggle />
             {user && <InvitationBell />}
 
             {user ? (
@@ -80,11 +95,14 @@ export function NoorHeader() {
                   onClick={() => setView("dashboard")}
                   className="flex items-center gap-2 rounded-full bg-white/70 px-2 py-1 transition hover:bg-white dark:bg-white/10"
                 >
-                  <NoorAvatar name={user.fullName} color={user.avatarColor} avatarUrl={user.avatarUrl} gender={user.gender} size="sm" />
+                  <NoorAvatar name={user.fullName} color={user.avatarColor} avatarUrl={user.avatarUrl} gender={user.gender} size="sm" verified={user.verificationStatus === "approved"} />
                   <div className="hidden flex-col text-right sm:flex">
-                    <span className="text-xs font-bold leading-tight">
-                      {user.fullName}
-                    </span>
+                    <VerifiedName
+                      name={user.fullName}
+                      verified={user.verificationStatus === "approved"}
+                      size={13}
+                      className="text-xs font-bold leading-tight"
+                    />
                     <span className="text-[10px] text-muted-foreground">
                       {user.stats.noorPoints} نور
                     </span>

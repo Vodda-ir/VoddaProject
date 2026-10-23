@@ -20,7 +20,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "منافسه — محفل زنده تلاوت و رقابت قرآنی",
   description:
-    "منافسه پلتفرم آنلاین رقابت تلاوت قرآن با تصویر و صدای زنده، نمایش همزمان قرآن، تشویق‌های سنتی و امتیازدهی تخصصی. در محفلی واقعی شرکت کن، تلاوت کن و رقابت کن.",
+    "منافسه پلتفرم آنلاین رقابت تلاوت قرآن با تصویر و صدای زنده، نمایش همزمان قرآن، تشویق‌های سنتی و امتیازدهی تخصصی. در محفلی آنلاین شرکت کنید، تلاوت کنید و رقابت کنید.",
   keywords: [
     "منافسه",
     "Monafaseh",
@@ -54,8 +54,8 @@ export const viewport: Viewport = {
   userScalable: true,
   viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#e8edf5" },
-    { media: "(prefers-color-scheme: dark)", color: "#0d1230" },
+    { media: "(prefers-color-scheme: light)", color: "#fdf9ef" },
+    { media: "(prefers-color-scheme: dark)", color: "#08080a" },
   ],
 };
 
@@ -72,7 +72,6 @@ export default function RootLayout({
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"
-          forcedTheme="dark"
           enableSystem={false}
           disableTransitionOnChange
         >

@@ -94,71 +94,75 @@
 
 :root {
   --radius: 0.875rem;
-  --background: #e8edf5;
-  --foreground: #1a1f3a;
-  --card: #f5f7fa;
-  --card-foreground: #1a1f3a;
-  --popover: #f5f7fa;
-  --popover-foreground: #1a1f3a;
+  color-scheme: light;
+  /* تم روشن «کاغذ مصحف» — کرم گرم با طلایی سوخته */
+  --background: #fdf9ef;
+  --foreground: #2a2110;
+  --card: #fffdf7;
+  --card-foreground: #2a2110;
+  --popover: #fffdf7;
+  --popover-foreground: #2a2110;
   --primary: #FFD700;
-  --primary-foreground: #191970;
-  --secondary: #dfe6ef;
-  --secondary-foreground: #191970;
-  --muted: #dde4ed;
-  --muted-foreground: #4a5570;
+  --primary-foreground: #4a3400;
+  --secondary: #f3ead6;
+  --secondary-foreground: #5a4300;
+  --muted: #f3ead6;
+  --muted-foreground: #7a6a45;
   --accent: #87CEEB;
-  --accent-foreground: #191970;
-  --destructive: #FF7F7F;
-  --border: #c8d2e0;
-  --input: #c8d2e0;
-  --ring: #87CEEB;
+  --accent-foreground: #123243;
+  --destructive: #e05555;
+  --border: #d9c39a;
+  --input: #d9c39a;
+  --ring: #d9a900;
   --chart-1: #87CEEB;
   --chart-2: #FFD700;
   --chart-3: #FF7F7F;
   --chart-4: #7CFC00;
-  --chart-5: #191970;
-  --sidebar: #f5f7fa;
-  --sidebar-foreground: #1a1f3a;
+  --chart-5: #5a4300;
+  --sidebar: #fffdf7;
+  --sidebar-foreground: #2a2110;
   --sidebar-primary: #FFD700;
-  --sidebar-primary-foreground: #191970;
-  --sidebar-accent: #dfe6ef;
-  --sidebar-accent-foreground: #191970;
-  --sidebar-border: #c8d2e0;
-  --sidebar-ring: #87CEEB;
+  --sidebar-primary-foreground: #4a3400;
+  --sidebar-accent: #f3ead6;
+  --sidebar-accent-foreground: #5a4300;
+  --sidebar-border: #e5d9bd;
+  --sidebar-ring: #d9a900;
 }
 
 .dark {
-  --background: #0d1230;
-  --foreground: #f5f8ff;
-  --card: #181d44;
-  --card-foreground: #f5f8ff;
-  --popover: #181d44;
-  --popover-foreground: #f5f8ff;
-  --primary: #FFD700;
-  --primary-foreground: #0d1230;
-  --secondary: #232855;
-  --secondary-foreground: #f5f8ff;
-  --muted: #232855;
-  --muted-foreground: #a8b3d6;
-  --accent: #87CEEB;
-  --accent-foreground: #0d1230;
-  --destructive: #FF7F7F;
-  --border: rgba(255, 255, 255, 0.1);
-  --input: rgba(255, 255, 255, 0.15);
-  --ring: #87CEEB;
-  --chart-1: #87CEEB;
-  --chart-2: #FFD700;
-  --chart-3: #FF7F7F;
-  --chart-4: #7CFC00;
-  --chart-5: #f5f8ff;
-  --sidebar: #181d44;
-  --sidebar-foreground: #f5f8ff;
-  --sidebar-primary: #FFD700;
-  --sidebar-primary-foreground: #0d1230;
-  --sidebar-accent: #232855;
-  --sidebar-accent-foreground: #f5f8ff;
-  --sidebar-border: rgba(255, 255, 255, 0.1);
-  --sidebar-ring: #87CEEB;
+  /* تم تیره «شب محض» — خنثی و تخت، بدون هیچ هاله/درخشش طلایی */
+  color-scheme: dark;
+  --background: #08080a;
+  --foreground: #f4f4f6;
+  --card: #101013;
+  --card-foreground: #f4f4f6;
+  --popover: #101013;
+  --popover-foreground: #f4f4f6;
+  --primary: #e8c766;
+  --primary-foreground: #17130a;
+  --secondary: #17171b;
+  --secondary-foreground: #f4f4f6;
+  --muted: #17171b;
+  --muted-foreground: #9a9aa5;
+  --accent: #1e1e24;
+  --accent-foreground: #f4f4f6;
+  --destructive: #e56969;
+  --border: rgba(255, 255, 255, 0.10);
+  --input: rgba(255, 255, 255, 0.16);
+  --ring: #8f8f9c;
+  --chart-1: #e8c766;
+  --chart-2: #9a9aa5;
+  --chart-3: #e56969;
+  --chart-4: #7fd17f;
+  --chart-5: #f4f4f6;
+  --sidebar: #101013;
+  --sidebar-foreground: #f4f4f6;
+  --sidebar-primary: #e8c766;
+  --sidebar-primary-foreground: #17130a;
+  --sidebar-accent: #17171b;
+  --sidebar-accent-foreground: #f4f4f6;
+  --sidebar-border: rgba(255, 255, 255, 0.10);
+  --sidebar-ring: #8f8f9c;
 }
 
 @layer base {
@@ -218,7 +222,7 @@
     background: linear-gradient(135deg, #87CEEB 0%, #e7f4fc 50%, #ffffff 100%);
   }
   .dark .bg-noor-gradient {
-    background: linear-gradient(135deg, #0d1230 0%, #181d44 50%, #232855 100%);
+    background: linear-gradient(135deg, #0c0b09 0%, #17150f 50%, #221f18 100%);
   }
 
   /* === Colorful graphic cards for headings & texts (light-mode-friendly) === */
@@ -294,17 +298,17 @@
 
   .bg-noor-hero {
     background:
-      radial-gradient(circle at 20% 20%, rgba(135, 206, 235, 0.3), transparent 50%),
-      radial-gradient(circle at 80% 30%, rgba(255, 215, 0, 0.2), transparent 50%),
-      radial-gradient(circle at 50% 80%, rgba(124, 252, 0, 0.15), transparent 50%),
-      linear-gradient(135deg, #e8edf5 0%, #dde4ed 100%);
+      radial-gradient(circle at 20% 20%, rgba(255, 196, 0, 0.16), transparent 50%),
+      radial-gradient(circle at 80% 30%, rgba(135, 206, 235, 0.14), transparent 50%),
+      radial-gradient(circle at 50% 85%, rgba(124, 200, 60, 0.08), transparent 50%),
+      linear-gradient(135deg, #fdf9ef 0%, #f4ecda 100%);
   }
   .dark .bg-noor-hero {
     background:
-      radial-gradient(circle at 20% 20%, rgba(135, 206, 235, 0.25), transparent 50%),
-      radial-gradient(circle at 80% 30%, rgba(255, 215, 0, 0.18), transparent 50%),
-      radial-gradient(circle at 50% 80%, rgba(124, 252, 0, 0.12), transparent 50%),
-      linear-gradient(135deg, #0d1230 0%, #181d44 100%);
+      radial-gradient(circle at 20% 20%, rgba(255, 196, 0, 0.1), transparent 50%),
+      radial-gradient(circle at 80% 30%, rgba(255, 215, 0, 0.07), transparent 50%),
+      radial-gradient(circle at 50% 85%, rgba(217, 179, 106, 0.06), transparent 50%),
+      linear-gradient(135deg, #0c0b09 0%, #14120d 100%);
   }
 
   .text-shadow-soft {
@@ -329,12 +333,12 @@
 
   .glass-panel {
     backdrop-filter: blur(14px);
-    background: rgba(255, 255, 255, 0.72);
-    border: 1px solid rgba(255, 255, 255, 0.6);
+    background: rgba(255, 253, 247, 0.78);
+    border: 1px solid rgba(180, 140, 40, 0.18);
   }
   .dark .glass-panel {
-    background: rgba(24, 29, 68, 0.72);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(23, 21, 15, 0.78);
+    border: 1px solid rgba(255, 215, 0, 0.12);
   }
 
   .animate-float {
@@ -354,6 +358,128 @@
   }
   .animate-bob {
     animation: bob 2.6s ease-in-out infinite;
+  }
+
+  /* ============================================================
+     «نور و شب» — المان‌های سه‌بعدی (نسخه ۲ رابط کاربری)
+     ============================================================ */
+
+  /* آیکون خمیری سه‌بعدی (claymorphism) — روی هر رنگی می‌نشیند */
+  .clay-3d {
+    position: relative;
+    box-shadow:
+      inset 0 3px 5px rgba(255, 255, 255, 0.55),
+      inset 0 -4px 6px rgba(0, 0, 0, 0.22),
+      0 8px 16px rgba(0, 0, 0, 0.28);
+  }
+  .clay-3d::after {
+    content: "";
+    position: absolute;
+    top: 14%;
+    right: 18%;
+    width: 30%;
+    height: 18%;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.6);
+    filter: blur(1.5px);
+    transform: rotate(-18deg);
+    pointer-events: none;
+  }
+  .light .clay-3d,
+  :root:not(.dark) .clay-3d {
+    box-shadow:
+      inset 0 3px 5px rgba(255, 255, 255, 0.8),
+      inset 0 -4px 6px rgba(0, 0, 0, 0.14),
+      0 7px 14px rgba(120, 90, 20, 0.25);
+  }
+
+  /* دکمه سه‌بعدی طلایی — برجسته و فشارپذیر */
+  .btn-3d-gold {
+    background: linear-gradient(140deg, #FFE58A, #FFC400 55%, #e09e00);
+    box-shadow:
+      0 10px 22px rgba(255, 196, 0, 0.4),
+      inset 0 2px 3px rgba(255, 255, 255, 0.65),
+      inset 0 -3px 5px rgba(160, 110, 0, 0.35);
+  }
+  .btn-3d-gold:active {
+    transform: translateY(2px);
+    box-shadow:
+      0 5px 12px rgba(255, 196, 0, 0.4),
+      inset 0 2px 3px rgba(255, 255, 255, 0.65),
+      inset 0 -2px 3px rgba(160, 110, 0, 0.35);
+  }
+
+  /* برچسب سه‌بعدی (قیمت جلسه استاد و...) */
+  .tag-3d {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 10px;
+    font-weight: 800;
+    background: linear-gradient(140deg, #FFE58A, #FFC400);
+    color: #231a00;
+    box-shadow:
+      inset 0 1px 2px rgba(255, 255, 255, 0.6),
+      inset 0 -2px 3px rgba(150, 100, 0, 0.35),
+      0 4px 9px rgba(255, 196, 0, 0.35);
+  }
+
+  /* کتاب سه‌بعدی شناور */
+  .book3d {
+    width: 76px;
+    height: 58px;
+    position: relative;
+    transform-style: preserve-3d;
+    transform: rotateX(12deg) rotateY(-24deg) rotateZ(3deg);
+    animation: bookFloaty 5s ease-in-out infinite;
+  }
+  .book3d .cover {
+    position: absolute;
+    inset: 0;
+    border-radius: 6px 10px 10px 6px;
+    background: linear-gradient(135deg, #1e8f5e, #0f6b43);
+    box-shadow:
+      inset 0 2px 4px rgba(255, 255, 255, 0.35),
+      inset 0 -3px 5px rgba(0, 0, 0, 0.35),
+      0 14px 26px rgba(25, 25, 112, 0.35);
+    display: grid;
+    place-items: center;
+    color: #FFD700;
+    font-size: 22px;
+  }
+  .book3d .pages {
+    position: absolute;
+    top: 3px;
+    bottom: 3px;
+    right: -9px;
+    width: 12px;
+    background: repeating-linear-gradient(180deg, #fdf6e3 0 2px, #e8dcc0 2px 3px);
+    border-radius: 0 3px 3px 0;
+    transform: rotateY(38deg);
+    transform-origin: left center;
+    box-shadow: inset -2px 0 4px rgba(0, 0, 0, 0.2);
+  }
+  .book3d .back {
+    position: absolute;
+    inset: 0;
+    border-radius: 6px 10px 10px 6px;
+    background: #0b5236;
+    transform: translateZ(-10px);
+    box-shadow: 0 16px 30px rgba(25, 25, 112, 0.4);
+  }
+  @keyframes bookFloaty {
+    0%, 100% { transform: rotateX(12deg) rotateY(-24deg) translateZ(0); }
+    50% { transform: rotateX(14deg) rotateY(-18deg) translateZ(10px); }
+  }
+
+  /* نقش‌مایه هندسی محو پس‌زمینه (گره‌چینی) */
+  .noor-pattern {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.05;
+    background-image: url("data:image/svg+xml,%3Csvg width='44' height='44' viewBox='0 0 44 44' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23c9a800' stroke-width='1'%3E%3Cpath d='M22 0 L44 22 L22 44 L0 22 Z'/%3E%3Ccircle cx='22' cy='22' r='8'/%3E%3C/g%3E%3C/svg%3E");
   }
 }
 
@@ -415,6 +541,16 @@
   }
 }
 
+/* تم روشن «کاغذ مصحف» — جداکننده کاغذی برای همه سطوح کارت.
+   کارت‌های رنگی (noor-card-*) حاشیه و سایه اختصاصی خودشان را دارند
+   و مستثنی هستند. تم تیره کاملاً دست‌نخورده می‌ماند. */
+:root:not(.dark) .bg-card:not([class*="noor-card-"]) {
+  border: 1px solid #d9c39a;
+  box-shadow:
+    0 10px 22px -14px rgba(140, 105, 30, 0.3),
+    inset 0 1px 0 #ffffff;
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 10px;
@@ -464,4 +600,130 @@ button {
 html, body {
   overscroll-behavior: none;
   -webkit-overflow-scrolling: touch;
+}
+
+/* ============================================================
+   حالت تیره — «شب محض»
+   در این حالت تمام هاله/درخشش‌های طلایی و رنگی خنثی می‌شوند؛
+   حالت روشن «کاغذ مصحف» دقیقاً دست‌نخورده باقی می‌ماند.
+   ============================================================ */
+@layer utilities {
+  .dark .bg-noor-gradient {
+    background: linear-gradient(135deg, #0a0a0d 0%, #101014 50%, #141418 100%);
+  }
+
+  .dark .noor-card-sky {
+    background: rgba(135, 206, 235, 0.045);
+    border: 1px solid rgba(135, 206, 235, 0.16);
+    box-shadow: none;
+  }
+  .dark .noor-card-yellow {
+    background: rgba(232, 199, 102, 0.05);
+    border: 1px solid rgba(232, 199, 102, 0.18);
+    box-shadow: none;
+  }
+  .dark .noor-card-coral {
+    background: rgba(229, 105, 105, 0.05);
+    border: 1px solid rgba(229, 105, 105, 0.16);
+    box-shadow: none;
+  }
+  .dark .noor-card-green {
+    background: rgba(127, 209, 127, 0.045);
+    border: 1px solid rgba(127, 209, 127, 0.15);
+    box-shadow: none;
+  }
+  .dark .noor-card-rainbow {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.015));
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    box-shadow: none;
+  }
+
+  .dark .noor-pill-sky {
+    background: rgba(135, 206, 235, 0.07);
+    border: 1px solid rgba(135, 206, 235, 0.20);
+  }
+  .dark .noor-pill-yellow {
+    background: rgba(232, 199, 102, 0.07);
+    border: 1px solid rgba(232, 199, 102, 0.22);
+  }
+  .dark .noor-pill-coral {
+    background: rgba(229, 105, 105, 0.07);
+    border: 1px solid rgba(229, 105, 105, 0.20);
+  }
+  .dark .noor-pill-green {
+    background: rgba(127, 209, 127, 0.07);
+    border: 1px solid rgba(127, 209, 127, 0.20);
+  }
+
+  .dark .bg-noor-hero {
+    background: linear-gradient(180deg, #08080a 0%, #0b0b0e 55%, #08080a 100%);
+  }
+
+  .dark .shadow-chunky {
+    box-shadow: 0 4px 0 0 #000000;
+  }
+  .dark .shadow-chunky-yellow {
+    box-shadow: 0 4px 0 0 #8a6f16;
+  }
+  .dark .shadow-chunky-coral {
+    box-shadow: 0 4px 0 0 #7d3a3a;
+  }
+  .dark .shadow-chunky-green {
+    box-shadow: 0 4px 0 0 #3f6b3f;
+  }
+  .dark .shadow-chunky-sky {
+    box-shadow: 0 4px 0 0 #3b6779;
+  }
+
+  .dark .glass-panel {
+    background: rgba(8, 8, 10, 0.82);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .dark .btn-3d-gold {
+    box-shadow:
+      inset 0 2px 3px rgba(255, 255, 255, 0.65),
+      inset 0 -3px 5px rgba(160, 110, 0, 0.35);
+  }
+  .dark .btn-3d-gold:active {
+    box-shadow:
+      inset 0 2px 3px rgba(255, 255, 255, 0.65),
+      inset 0 -2px 3px rgba(160, 110, 0, 0.35);
+  }
+
+  .dark .tag-3d {
+    box-shadow:
+      inset 0 1px 2px rgba(255, 255, 255, 0.6),
+      inset 0 -2px 3px rgba(150, 100, 0, 0.35);
+  }
+
+  .dark .noor-pattern {
+    opacity: 0.025;
+    background-image: url("data:image/svg+xml,%3Csvg width='44' height='44' viewBox='0 0 44 44' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='1'%3E%3Cpath d='M22 0 L44 22 L22 44 L0 22 Z'/%3E%3Ccircle cx='22' cy='22' r='8'/%3E%3C/g%3E%3C/svg%3E");
+  }
+
+  .dark .clay-3d {
+    box-shadow:
+      inset 0 3px 5px rgba(255, 255, 255, 0.30),
+      inset 0 -4px 6px rgba(0, 0, 0, 0.28),
+      0 6px 12px rgba(0, 0, 0, 0.35);
+  }
+  .dark .clay-3d::after {
+    background: rgba(255, 255, 255, 0.35);
+  }
+
+  .dark .book3d .cover {
+    box-shadow:
+      inset 0 2px 4px rgba(255, 255, 255, 0.35),
+      inset 0 -3px 5px rgba(0, 0, 0, 0.35),
+      0 14px 26px rgba(0, 0, 0, 0.45);
+  }
+  .dark .book3d .back {
+    box-shadow: 0 16px 30px rgba(0, 0, 0, 0.5);
+  }
+
+  /* در حالت تیره هیچ پالس/هاله‌ای اجرا نمی‌شود */
+  .dark .animate-pulse-glow {
+    animation: none;
+  }
 }

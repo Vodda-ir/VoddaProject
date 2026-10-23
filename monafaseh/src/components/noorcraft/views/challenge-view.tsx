@@ -433,11 +433,11 @@ export function ChallengeView() {
             چالش زنده رقابت
           </NoorBadge>
           <h1 className="mt-3 font-display text-4xl text-noor-navy dark:text-white sm:text-5xl">
-            رقیب خودت رو پیدا کن!
+            رقیب خود را پیدا کنید!
           </h1>
           <p className="mx-auto mt-3 max-w-2xl text-sm text-muted-foreground sm:text-base">
-            اعلام آمادگی کن و منتظر باش تا یک قاری دیگر چالش تو رو قبول کنه. یا
-            خودت یکی از چالش‌های فعال رو قبول کن و فورا وارد محفل رقابت بشو!
+            اعلام آمادگی کنید و منتظر بمانید تا قاری دیگری چالش شما را بپذیرد؛ یا
+            خودتان یکی از چالش‌های فعال را بپذیرید و بی‌درنگ وارد محفل رقابت شوید.
           </p>
         </motion.div>
 
@@ -454,13 +454,6 @@ export function ChallengeView() {
             onClick={handleAnnounce}
             disabled={announcing}
             className="relative grid h-48 w-48 place-items-center rounded-full bg-gradient-to-br from-noor-yellow via-noor-coral to-noor-yellow shadow-chunky-yellow disabled:opacity-50"
-            animate={{
-              boxShadow: [
-                "0 0 0 0 rgba(255,215,0,0.4)",
-                "0 0 0 20px rgba(255,215,0,0)",
-              ],
-            }}
-            transition={{ duration: 1.5, repeat: Infinity }}
           >
             {announcing ? (
               <Loader2 className="h-16 w-16 animate-spin text-noor-navy" />
@@ -506,9 +499,9 @@ export function ChallengeView() {
                 فعلاً رقیبی در صف نیست
               </h3>
               <p className="mt-2 text-sm text-muted-foreground">
-                اولین نفر باش! دکمه «اعلام آمادگی» را بزن و منتظر رقیب بمان.
+                اولین نفر باشید! روی دکمه «اعلام آمادگی» کلیک کنید و منتظر رقیب بمانید.
                 <br />
-                به‌محض اینکه کسی چالش تو قبول کند، فوراً وارد محفل رقابت می‌شوی.
+                به‌محض اینکه کسی چالش شما را بپذیرد، بی‌درنگ وارد محفل رقابت می‌شوید.
               </p>
             </motion.div>
           ) : (
@@ -613,7 +606,7 @@ export function ChallengeView() {
               {
                 num: "۱",
                 title: "اعلام آمادگی",
-                desc: "دکمه بزرگ زرد را بزن و منتظر رقیب بمان",
+                desc: "روی دکمه «اعلام آمادگی» کلیک کنید و منتظر رقیب بمانید",
                 icon: <Flame className="h-6 w-6" />,
                 color: "#FFD700",
                 card: "noor-card-yellow",
@@ -621,7 +614,7 @@ export function ChallengeView() {
               {
                 num: "۲",
                 title: "قبول چالش",
-                desc: "یک قاری دیگر چالش تو قبول می‌کند — یا تو قبول کن",
+                desc: "یک قاری دیگر چالش شما را قبول می‌کند — یا خودتان چالش او را بپذیرید",
                 icon: <Check className="h-6 w-6" />,
                 color: "#FF7F7F",
                 card: "noor-card-coral",
@@ -681,10 +674,10 @@ export function ChallengeView() {
               قاریان آماده رقابت
             </NoorBadge>
             <h2 className="mt-2 font-display text-2xl text-noor-navy dark:text-white">
-              همین حالا دعوت کن
+              همین حالا دعوت کنید
             </h2>
             <p className="mt-1 text-xs text-muted-foreground">
-              قاریان آنلاین را به محفلت دعوت کن، بعد چالش رقابت رو با اونا شروع کن
+              قاریان آنلاین را به محفل خود دعوت کنید و سپس چالش رقابت را با آن‌ها آغاز کنید
             </p>
           </div>
           <OnlineUsersMarquee
