@@ -11,17 +11,23 @@ import {
   WEEKDAYS,
   JALALI_MONTHS,
   HIJRI_MONTHS,
+  HIJRI_OCCASIONS,
+  JALALI_OCCASION_META,
+  OCCASION_VERSES,
 } from "./content.mjs";
 
 // ---------- پیکربندی ----------
 const TOKEN_FILE = process.env.TOKEN_FILE || "/app/token";
 const STATE_FILE = process.env.STATE_FILE || "/app/state.json";
 const API_URL = process.env.API_URL || "http://127.0.0.1:3423/api/public/live-rooms";
+const WEEKLY_API = process.env.WEEKLY_API || "http://127.0.0.1:3423/api/public/weekly-report";
+const HIJRI_OFFSET_DAYS = Number(process.env.HIJRI_OFFSET_DAYS || 0) || 0;
 const CHAT_ID = process.env.CHAT_ID || "monafeseh";
 const EITAA_BASE = "https://eitaayar.ir/api";
 const SITE = "monafaseh.vodda.ir";
 
-const SLOTS = ["09:00", "12:30", "17:30", "21:00"];
+// ساعت‌های روزانه + گزارش هفته (شنبه‌ها ۲۰:۰۰)
+const SLOTS = ["09:00", "12:30", "17:30", "21:00", "20:00"];
 const EVENT_WINDOW = { start: 9 * 60, end: 23 * 60 }; // ۰۹:۰۰ تا ۲۳:۰۰
 const MAX_EVENTS_PER_DAY = 4;
 const ROOM_COOLDOWN_MS = 45 * 60 * 1000;
@@ -36,6 +42,10 @@ const DRY = has("--dry-run");
 const ONCE = has("--once");
 const TEST_SEND = has("--test-send");
 const FORCE_SLOT = argv.includes("--slot") ? argv[argv.indexOf("--slot") + 1] : null;
+// پیش‌نمایش برای یک تاریخ مشخص: --date 2026-10-24 (ساعت ۱۲ ظهر تهران)
+const FORCE_DATE = argv.includes("--date")
+  ? Date.parse(`${argv[argv.indexOf("--date") + 1]}T12:00:00+03:30`)
+  : null;
 
 // ---------- ابزار زمان (تهران = UTC+03:30) ----------
 const TEHRAN_OFFSET = 3.5 * 3600 * 1000;
@@ -106,12 +116,17 @@ function jalCal(jy) {
   if (mod(jump, 33) === 4 && jump - n === 4) leapJ += 1;
   const leapG = div(gy, 4) - div((div(gy, 100) + 1) * 3, 4) - 150;
   const march = 20 + leapJ - leapG;
-  return { gy, march };
+
+  if (jump - n < 6) n = n - jump + div(jump + 4, 33) * 33;
+  let leap = mod(mod(n + 1, 33) - 1, 4);
+  if (leap === -1) leap = 4;
+
+  return { leap, gy, march };
 }
 
 function toJalaali(gy, gm, gd) {
   const jdn = g2d(gy, gm, gd);
-  let gy2 = d2g(jdn).gy;
+  const gy2 = d2g(jdn).gy;
   let jy = gy2 - 621;
   const r = jalCal(jy);
   const jdn1f = g2d(gy2, 3, r.march);
@@ -128,9 +143,7 @@ function toJalaali(gy, gm, gd) {
   } else {
     jy -= 1;
     k += 179;
-    const prev = jalCal(jy);
-    const prevJdn = g2d(jy + 621, 3, prev.march);
-    k += jdn1f - prevJdn - 1;
+    if (r.leap === 1) k += 1;
   }
   jm = 7 + div(k, 30);
   jd = mod(k, 30) + 1;
@@ -161,19 +174,39 @@ function todayInfo(ts = Date.now()) {
   const gm = d.getUTCMonth() + 1;
   const gd = d.getUTCDate();
   const j = toJalaali(gy, gm, gd);
-  const h = toHijri(gy, gm, gd);
+
+  // تقویم قمری: با اختلاف قابل تنظیم (HIJRI_OFFSET_DAYS) برای تطبیق با تقویم رسمی
+  const dh = new Date(ts + HIJRI_OFFSET_DAYS * 86400000 + TEHRAN_OFFSET);
+  const h = toHijri(dh.getUTCFullYear(), dh.getUTCMonth() + 1, dh.getUTCDate());
+
   const weekday = WEEKDAYS[d.getUTCDay()];
-  const occasion = OCCASIONS[`${j.jm}/${j.jd}`] || null;
+  const hijriKey = `${h.hm}/${h.hd}`;
+  const jalaliKey = `${j.jm}/${j.jd}`;
+  const occasion =
+    HIJRI_OCCASIONS[hijriKey] ||
+    JALALI_OCCASION_META[jalaliKey] ||
+    (OCCASIONS[jalaliKey]
+      ? { title: OCCASIONS[jalaliKey], kind: "congrats", hashtag: "مناسبت", text: "", cta: "امروز هم در محافل زنده منافسه مهمان تلاوت باشید." }
+      : null);
+
   return {
     weekday,
     jalali: `${faDigits(j.jd)} ${JALALI_MONTHS[j.jm - 1]} ${faDigits(j.jy)}`,
     jalaliShort: `${faDigits(j.jy)}/${faDigits(j.jm)}/${faDigits(j.jd)}`,
     hijri: `${faDigits(h.hd)} ${HIJRI_MONTHS[Math.max(0, Math.min(11, h.hm - 1))]}`,
+    hijriKey,
+    jalaliKey,
     occasion,
     jy: j.jy,
     jm: j.jm,
     jd: j.jd,
   };
+}
+
+function formatJalali(ts) {
+  const d = tehranDate(ts);
+  const j = toJalaali(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate());
+  return `${faDigits(j.jd)} ${JALALI_MONTHS[j.jm - 1]}`;
 }
 
 // ---------- وضعیت ----------
@@ -198,6 +231,8 @@ function loadState() {
 let state = loadState();
 
 function saveState() {
+  // در حالت پیش‌نمایش هیچ چیز ذخیره نمی‌شود تا ارسال واقعی از دست نرود
+  if (DRY) return;
   try {
     mkdirSync(dirname(STATE_FILE), { recursive: true });
     writeFileSync(STATE_FILE, JSON.stringify(state, null, 2));
@@ -284,7 +319,7 @@ function fmtMorning(info, verse) {
     "🌙 «صبح بخیر، همراه منافسه»",
     "",
     `📅 امروز: ${info.weekday} ${info.jalali} — ${info.hijri} (قمری تقریبی)`,
-    `🕌 مناسبت امروز: ${info.occasion || "مناسبت خاصی نیست"}`,
+    `🕌 مناسبت امروز: ${info.occasion?.title || "مناسبت خاصی نیست"}`,
     "",
     "📖 «آیه امروز»",
     `«${verse.text}»`,
@@ -369,13 +404,62 @@ function fmtMasters(list) {
   ].join("\n");
 }
 
+function fmtOccasion(occ) {
+  const verse = OCCASION_VERSES[occ.kind] || OCCASION_VERSES.congrats;
+  const lines = [`🕌 «${occ.title}»`, ""];
+  if (occ.text) lines.push(occ.text, "");
+  lines.push("📖 «آیه مناسبتی»", `«${verse.text}»`, `— ${verse.surah}، آیه ${faDigits(verse.ayah)}`, "");
+  lines.push(`▶️ ${occ.cta}`, "");
+  lines.push(`🌐 ${SITE}`, `#منافسه #${occ.hashtag}`);
+  return lines.join("\n");
+}
+
+function fmtWeekly(report) {
+  const c = report?.counts || {};
+  const range = `${formatJalali(report.weekStart)} تا ${formatJalali(report.weekEnd - 86400000)}`;
+  return [
+    "📊 «گزارش هفته منافسه»",
+    "",
+    `این هفته در منافسه چه گذشت (${range}):`,
+    "",
+    `🎙 ${faDigits(c.sessions ?? 0)} محفل تلاوت`,
+    `⚔️ ${faDigits(c.competitions ?? 0)} رقابت ثبت‌شده`,
+    `👨‍🏫 ${faDigits(c.privateBookings ?? 0)} جلسه خصوصی`,
+    `👥 ${faDigits(c.newUsers ?? 0)} عضو جدید`,
+    `📖 ${faDigits(c.blogPosts ?? 0)} یادداشت بلاگ`,
+    `🤝 ${faDigits(c.tahmeeds ?? 0)} تشویق`,
+    "",
+    "▶️ هفته بعد هم منتظر شما هستیم.",
+    "",
+    `🌐 ${SITE}`,
+    "#منافسه #گزارش_هفتگی",
+  ].join("\n");
+}
+
+async function fetchWeekly() {
+  const res = await fetch(WEEKLY_API, { headers: { Accept: "application/json" } });
+  if (!res.ok) throw new Error(`weekly api ${res.status}`);
+  return res.json();
+}
+
+async function sendWeekly() {
+  try {
+    const report = await fetchWeekly();
+    if (!report?.ok) throw new Error("weekly report not ok");
+    return await sendMessage(fmtWeekly(report));
+  } catch (e) {
+    console.error("[weekly] failed:", e.message);
+    return false;
+  }
+}
+
 // ---------- زمان‌بندی روزانه ----------
 function dayIndex(ts = Date.now()) {
   return Math.floor((ts + TEHRAN_OFFSET) / 86400000);
 }
 
 async function runSlot(slot, info, liveCount) {
-  const day = dayIndex();
+  const day = dayIndex(FORCE_DATE ?? Date.now());
   const verse1 = VERSES[day % VERSES.length];
   const verse2 = VERSES[(day + 5) % VERSES.length];
 
@@ -383,10 +467,15 @@ async function runSlot(slot, info, liveCount) {
     return sendMessage(fmtMorning(info, verse1));
   }
   if (slot === "12:30") {
+    // مناسبت روز جایگزین وعده اول معرفی قابلیت می‌شود (طبق قاعده ضداسپم)
+    if (info.occasion) return sendMessage(fmtOccasion(info.occasion));
     return sendMessage(fmtFeature(FEATURES[(day * 2) % FEATURES.length]));
   }
   if (slot === "17:30") {
     return sendMessage(fmtFeature(FEATURES[(day * 2 + 1) % FEATURES.length]));
+  }
+  if (slot === "20:00") {
+    return sendWeekly();
   }
   if (slot === "21:00") {
     // جمعه‌ها پیام شب جایگزین پیام معمول می‌شود (بدون پیام تکراری)
@@ -396,7 +485,7 @@ async function runSlot(slot, info, liveCount) {
 }
 
 async function checkScheduler() {
-  const info = todayInfo();
+  const info = todayInfo(FORCE_DATE ?? Date.now());
   const now = Date.now();
   const current = clock(now);
 
@@ -404,6 +493,8 @@ async function checkScheduler() {
   for (const slot of slotsToRun) {
     const key = `${dateKey(now)}:${slot}`;
     if (state.slots[key]) continue;
+    // گزارش هفته فقط شنبه‌ها
+    if (slot === "20:00" && !FORCE_SLOT && info.weekday !== "شنبه") continue;
     if (!FORCE_SLOT) {
       // پنجره ۵ دقیقه‌ای پس از زمان مقرر
       const target = Number(slot.slice(0, 2)) * 60 + Number(slot.slice(3));
