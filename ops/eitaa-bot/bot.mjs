@@ -15,6 +15,12 @@ import {
   JALALI_OCCASION_META,
   OCCASION_VERSES,
 } from "./content.mjs";
+import {
+  toJalaali,
+  gregorianToHijri as toHijri,
+  CALENDAR_SOURCE,
+  HIJRI_RANGE,
+} from "./calendar.mjs";
 
 // ---------- پیکربندی ----------
 const TOKEN_FILE = process.env.TOKEN_FILE || "/app/token";
@@ -71,101 +77,6 @@ function dateKey(ts = Date.now()) {
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
 }
 
-// ---------- تبدیل تقویم ----------
-const div = (a, b) => Math.trunc(a / b);
-const mod = (a, b) => a - Math.trunc(a / b) * b;
-
-function g2d(gy, gm, gd) {
-  let d =
-    div((gy + div(gm - 8, 6) + 100100) * 1461, 4) +
-    div(153 * mod(gm + 9, 12) + 2, 5) +
-    gd -
-    34840408;
-  d = d - div(div(gy + 100100 + div(gm - 8, 6), 100) * 3, 4) + 752;
-  return d;
-}
-
-function d2g(jdn) {
-  let j = 4 * jdn + 139361631;
-  j = j + div(div(4 * jdn + 183187720, 146097) * 3, 4) * 4 - 3908;
-  const i = div(mod(j, 1461), 4) * 5 + 308;
-  const gd = div(mod(i, 153), 5) + 1;
-  const gm = mod(div(i, 153), 12) + 1;
-  const gy = div(j, 1461) - 100100 + div(8 - gm, 6);
-  return { gy, gm, gd };
-}
-
-function jalCal(jy) {
-  const breaks = [
-    -61, 9, 38, 199, 426, 686, 756, 818, 1111, 1181, 1210, 1635, 2060, 2097,
-    2192, 2262, 2324, 2394, 2456, 3178,
-  ];
-  const gy = jy + 621;
-  let leapJ = -14;
-  let jp = breaks[0];
-  let jump = 0;
-  for (let i = 1; i < breaks.length; i += 1) {
-    const jm = breaks[i];
-    jump = jm - jp;
-    if (jy < jm) break;
-    leapJ = leapJ + div(jump, 33) * 8 + div(mod(jump, 33), 4);
-    jp = jm;
-  }
-  let n = jy - jp;
-  leapJ = leapJ + div(n, 33) * 8 + div(mod(n, 33) + 3, 4);
-  if (mod(jump, 33) === 4 && jump - n === 4) leapJ += 1;
-  const leapG = div(gy, 4) - div((div(gy, 100) + 1) * 3, 4) - 150;
-  const march = 20 + leapJ - leapG;
-
-  if (jump - n < 6) n = n - jump + div(jump + 4, 33) * 33;
-  let leap = mod(mod(n + 1, 33) - 1, 4);
-  if (leap === -1) leap = 4;
-
-  return { leap, gy, march };
-}
-
-function toJalaali(gy, gm, gd) {
-  const jdn = g2d(gy, gm, gd);
-  const gy2 = d2g(jdn).gy;
-  let jy = gy2 - 621;
-  const r = jalCal(jy);
-  const jdn1f = g2d(gy2, 3, r.march);
-  let k = jdn - jdn1f;
-  let jm;
-  let jd;
-  if (k >= 0) {
-    if (k <= 185) {
-      jm = 1 + div(k, 31);
-      jd = mod(k, 31) + 1;
-      return { jy, jm, jd };
-    }
-    k -= 186;
-  } else {
-    jy -= 1;
-    k += 179;
-    if (r.leap === 1) k += 1;
-  }
-  jm = 7 + div(k, 30);
-  jd = mod(k, 30) + 1;
-  return { jy, jm, jd };
-}
-
-// تقویم قمری تقریبی (الگوریتم کویتی) — ممکن است یک روز با تقویم رسمی اختلاف داشته باشد
-function toHijri(gy, gm, gd) {
-  const jd = g2d(gy, gm, gd);
-  let l = jd - 1948440 + 10632;
-  const n = div(l - 1, 10631);
-  l = l - 10631 * n + 354;
-  const j =
-    div(10985 - l, 5316) * div(50 * l, 17719) +
-    div(l, 5670) * div(43 * l, 15238);
-  l = l - div(30 - j, 15) * div(17719 * j, 50) - div(j, 16) * div(15238 * j, 43) + 29;
-  const m = div(24 * l, 709);
-  const d = l - div(709 * m, 24);
-  const y = 30 * n + j - 30;
-  return { hy: y, hm: m, hd: d };
-}
-
 const faDigits = (s) => String(s).replace(/\d/g, (d) => "۰۱۲۳۴۵۶۷۸۹"[d]);
 
 function todayInfo(ts = Date.now()) {
@@ -194,6 +105,7 @@ function todayInfo(ts = Date.now()) {
     jalali: `${faDigits(j.jd)} ${JALALI_MONTHS[j.jm - 1]} ${faDigits(j.jy)}`,
     jalaliShort: `${faDigits(j.jy)}/${faDigits(j.jm)}/${faDigits(j.jd)}`,
     hijri: `${faDigits(h.hd)} ${HIJRI_MONTHS[Math.max(0, Math.min(11, h.hm - 1))]}`,
+    hijriApprox: h.approx === true,
     hijriKey,
     jalaliKey,
     occasion,
@@ -318,7 +230,7 @@ function fmtMorning(info, verse) {
   return [
     "🌙 «صبح بخیر، همراه منافسه»",
     "",
-    `📅 امروز: ${info.weekday} ${info.jalali} — ${info.hijri} (قمری تقریبی)`,
+    `📅 امروز: ${info.weekday} ${info.jalali} — ${info.hijri}${info.hijriApprox ? " (قمری تقریبی)" : " (قمری)"}`,
     `🕌 مناسبت امروز: ${info.occasion?.title || "مناسبت خاصی نیست"}`,
     "",
     "📖 «آیه امروز»",
@@ -588,6 +500,9 @@ async function pollEvents() {
 async function main() {
   console.log(
     `[boot] eitaa-bot started | dry=${DRY} | tz=Asia/Tehran | api=${API_URL} | now=${clock()} ${todayInfo().jalali}`,
+  );
+  console.log(
+    `[calendar] ${CALENDAR_SOURCE} | hijri data: ${HIJRI_RANGE.from} → ${HIJRI_RANGE.to}`,
   );
 
   if (TEST_SEND) {
