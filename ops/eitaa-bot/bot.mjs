@@ -34,6 +34,20 @@ const CHAT_ID = process.env.CHAT_ID || "monafeseh";
 const EITAA_BASE = "https://eitaayar.ir/api";
 const SITE = "monafaseh.vodda.ir";
 
+// مناسبت‌های رسمی هر روز (استخراج‌شده از تقویم رسمی)
+const OCCASIONS_FILE = process.env.OCCASIONS_FILE || "/app/occasions.json";
+let OFFICIAL_OCCASIONS = {};
+try {
+  const data = JSON.parse(readFileSync(OCCASIONS_FILE, "utf8"));
+  OFFICIAL_OCCASIONS = data.byDate || {};
+  console.log(`[occasions] ${Object.keys(OFFICIAL_OCCASIONS).length} روز مناسبت‌دار از تقویم رسمی`);
+} catch (e) {
+  console.error("[occasions] load failed:", e.message);
+}
+
+const shorten = (s, n = 120) =>
+  s.length <= n ? s : `${s.slice(0, s.lastIndexOf(" ", n))}…`;
+
 // آیات سجده واجب (عزائم) هرگز نمایش داده نمی‌شوند
 const isSajdahVerse = (surah, ayah) =>
   SAJDAH_VERSES.some((s) => s.surah === surah && s.ayah === ayah);
@@ -100,6 +114,8 @@ function todayInfo(ts = Date.now()) {
   const weekday = WEEKDAYS[d.getUTCDay()];
   const hijriKey = `${h.hm}/${h.hd}`;
   const jalaliKey = `${j.jm}/${j.jd}`;
+  const iso = `${gy}-${String(gm).padStart(2, "0")}-${String(gd).padStart(2, "0")}`;
+  const official = OFFICIAL_OCCASIONS[iso] || null;
   const occasion =
     HIJRI_OCCASIONS[hijriKey] ||
     JALALI_OCCASION_META[jalaliKey] ||
@@ -109,6 +125,8 @@ function todayInfo(ts = Date.now()) {
 
   return {
     weekday,
+    iso,
+    official,
     jalali: `${faDigits(j.jd)} ${JALALI_MONTHS[j.jm - 1]} ${faDigits(j.jy)}`,
     jalaliShort: `${faDigits(j.jy)}/${faDigits(j.jm)}/${faDigits(j.jd)}`,
     hijri: `${faDigits(h.hd)} ${HIJRI_MONTHS[Math.max(0, Math.min(11, h.hm - 1))]} ${faDigits(h.hy)}`,
@@ -243,7 +261,7 @@ function fmtMorning(info, verse) {
     `🌙 قمری: ${info.hijri}${info.hijriApprox ? " (تقریبی)" : ""}`,
     `📆 میلادی: ${info.gregorian}`,
     "",
-    `🕌 مناسبت امروز: ${info.occasion?.title || "مناسبت خاصی نیست"}`,
+    `🕌 مناسبت امروز: ${info.occasion?.title || (info.official ? shorten(info.official) : "مناسبت خاصی نیست")}`,
     "",
     "📖 «آیه امروز»",
     `«${verse.text}»`,

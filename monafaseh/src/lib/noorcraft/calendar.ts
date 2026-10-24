@@ -2,6 +2,7 @@
 // منبع داده: تقویم رسمی کشور (مرکز تقویم مؤسسه ژئوفیزیک دانشگاه تهران)
 // داده‌ها در calendar.json نگهداری می‌شود؛ برای سال جدید فقط همان فایل به‌روز می‌شود.
 import raw from "./calendar.json";
+import occasionsRaw from "./occasions.json";
 
 type HijriStart = { hy: number; hm: number; name: string; date: string };
 
@@ -10,6 +11,13 @@ const DATA = raw as unknown as {
   note: string;
   hijriMonthStarts: HijriStart[];
 };
+
+export const OFFICIAL_OCCASIONS = (occasionsRaw as unknown as {
+  source: string;
+  byDate: Record<string, string>;
+}).byDate;
+
+export const OCCASIONS_SOURCE = (occasionsRaw as unknown as { source: string }).source;
 
 export const CALENDAR_SOURCE = DATA.source;
 export const HIJRI_DATA_NOTE = DATA.note;
@@ -192,11 +200,13 @@ export function dayInfo(gy: number, gm: number, gd: number) {
   const j = toJalaali(gy, gm, gd);
   const h = gregorianToHijri(gy, gm, gd);
   const weekday = WEEKDAYS[new Date(Date.UTC(gy, gm - 1, gd)).getUTCDay()];
+  const iso = `${gy}-${String(gm).padStart(2, "0")}-${String(gd).padStart(2, "0")}`;
   return {
-    gregorian: { gy, gm, gd, iso: `${gy}-${String(gm).padStart(2, "0")}-${String(gd).padStart(2, "0")}` },
+    gregorian: { gy, gm, gd, iso },
     jalaali: { ...j, monthName: JALALI_MONTHS[j.jm - 1] },
     hijri: { ...h, monthName: HIJRI_MONTHS[Math.max(0, Math.min(11, h.hm - 1))] },
     weekday,
+    occasion: OFFICIAL_OCCASIONS[iso] ?? null,
   };
 }
 
@@ -205,6 +215,7 @@ export type CalendarDay = {
   hijri: HijriDate & { monthName: string };
   gregorian: { gy: number; gm: number; gd: number; iso: string };
   weekday: string;
+  occasion: string | null;
 };
 
 export function buildJalaaliYear(jy: number) {
