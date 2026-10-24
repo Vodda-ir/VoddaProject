@@ -29,6 +29,7 @@ const TOKEN_FILE = process.env.TOKEN_FILE || "/app/token";
 const STATE_FILE = process.env.STATE_FILE || "/app/state.json";
 const API_URL = process.env.API_URL || "http://127.0.0.1:3423/api/public/live-rooms";
 const WEEKLY_API = process.env.WEEKLY_API || "http://127.0.0.1:3423/api/public/weekly-report";
+const POSTER_URL = process.env.POSTER_URL || "http://127.0.0.1:3430/poster";
 const HIJRI_OFFSET_DAYS = Number(process.env.HIJRI_OFFSET_DAYS || 0) || 0;
 const CHAT_ID = process.env.CHAT_ID || "monafeseh";
 const EITAA_BASE = "https://eitaayar.ir/api";
@@ -68,6 +69,7 @@ const has = (f) => argv.includes(f);
 const DRY = has("--dry-run");
 const ONCE = has("--once");
 const TEST_SEND = has("--test-send");
+const TEST_PHOTO = has("--test-photo");
 const FORCE_SLOT = argv.includes("--slot") ? argv[argv.indexOf("--slot") + 1] : null;
 // پیش‌نمایش برای یک تاریخ مشخص: --date 2026-10-24 (ساعت ۱۲ ظهر تهران)
 const FORCE_DATE = argv.includes("--date")
@@ -163,6 +165,7 @@ function loadState() {
     lastRoomAt: 0,
     lastMasterAt: 0,
     sentToday: {},
+    photoDay: "",
   };
 }
 
@@ -228,6 +231,79 @@ async function sendMessage(text) {
     console.error(`[send] FAILED (${res.status}) ${body.slice(0, 300)}`);
   }
   return ok;
+}
+
+// ارسال عکس با caption (sendPhoto ایتایار)
+async function sendPhoto(imageBuffer, caption) {
+  if (DRY) {
+    console.log("\n[DRY-RUN PHOTO] ----------------------------------");
+    console.log(caption);
+    console.log("--------------------------------------------------\n");
+    return true;
+  }
+  const token = readToken();
+  const fd = new FormData();
+  fd.append("chat_id", CHAT_ID);
+  fd.append("file", new Blob([imageBuffer], { type: "image/png" }), "poster.png");
+  fd.append("caption", caption);
+  const res = await fetch(`${EITAA_BASE}/${token}/sendFile`, {
+    method: "POST",
+    body: fd,
+  });
+  const body = await res.text();
+  let json = null;
+  try {
+    json = JSON.parse(body);
+  } catch {}
+  const ok = res.ok && (!json || json.ok !== false);
+  if (ok) {
+    console.log(`[photo] ok (${res.status}) ${caption.split("\n")[0]}`);
+  } else {
+    console.error(`[photo] FAILED (${res.status}) ${body.slice(0, 300)}`);
+  }
+  return ok;
+}
+
+// آدرس پوستر با پارامترهای همان روز
+function posterUrl(info) {
+  const title = info.occasion?.title || (info.official ? shorten(info.official, 70) : "");
+  const qs = new URLSearchParams({
+    title,
+    wd: info.weekday,
+    j: info.jalali,
+    h: info.hijri,
+    g: info.gregorian,
+    tag: "#منافسه",
+  });
+  return `${POSTER_URL}?${qs.toString()}`;
+}
+
+// پیام صبح: اگر روز مناسبت مهم یا جمعه باشد، با پوستر ارسال می‌شود (حداکثر ۱ عکس در روز)
+async function sendMorning(info, verse) {
+  const text = fmtMorning(info, verse);
+  const eligible = Boolean(info.occasion) || info.weekday === "جمعه";
+  const already = state.photoDay === info.iso;
+
+  if (eligible && !already && !DRY) {
+    try {
+      const res = await fetch(posterUrl(info));
+      if (res.ok) {
+        const buf = Buffer.from(await res.arrayBuffer());
+        if (await sendPhoto(buf, text)) {
+          state.photoDay = info.iso;
+          saveState();
+          return true;
+        }
+        console.error("[poster] sendPhoto failed — falling back to text");
+      } else {
+        console.error(`[poster] http ${res.status}`);
+      }
+    } catch (e) {
+      console.error("[poster] fetch failed:", e.message);
+    }
+  }
+
+  return sendMessage(text);
 }
 
 // ---------- متن پیام‌ها ----------
@@ -408,7 +484,7 @@ async function runSlot(slot, info, liveCount) {
   const verse2 = SAFE_VERSES[(day + 5) % SAFE_VERSES.length];
 
   if (slot === "09:00") {
-    return sendMessage(fmtMorning(info, verse1));
+    return sendMorning(info, verse1);
   }
   if (slot === "12:30") {
     // مناسبت روز جایگزین وعده اول معرفی قابلیت می‌شود (طبق قاعده ضداسپم)
@@ -559,6 +635,29 @@ async function main() {
       ].join("\n"),
     );
     process.exit(ok ? 0 : 1);
+  }
+
+  if (TEST_PHOTO) {
+    const info = todayInfo();
+    try {
+      const res = await fetch(posterUrl(info));
+      if (!res.ok) throw new Error(`poster http ${res.status}`);
+      const buf = Buffer.from(await res.arrayBuffer());
+      const ok = await sendPhoto(
+        buf,
+        [
+          "🧪 «پیام آزمایشی — پوستر کانال»",
+          "",
+          "این پوستر به‌صورت خودکار فقط برای مناسبت‌های مهم و جمعه‌ها (حداکثر یک عکس در روز) با پیام صبح ارسال می‌شود.",
+          "",
+          `🌐 ${SITE}`,
+        ].join("\n"),
+      );
+      process.exit(ok ? 0 : 1);
+    } catch (e) {
+      console.error("[test-photo]", e.message);
+      process.exit(1);
+    }
   }
 
   pruneState(Date.now());
