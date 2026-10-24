@@ -11,6 +11,8 @@ import {
   WEEKDAYS,
   JALALI_MONTHS,
   HIJRI_MONTHS,
+  GREGORIAN_MONTHS,
+  SAJDAH_VERSES,
   HIJRI_OCCASIONS,
   JALALI_OCCASION_META,
   OCCASION_VERSES,
@@ -31,6 +33,11 @@ const HIJRI_OFFSET_DAYS = Number(process.env.HIJRI_OFFSET_DAYS || 0) || 0;
 const CHAT_ID = process.env.CHAT_ID || "monafeseh";
 const EITAA_BASE = "https://eitaayar.ir/api";
 const SITE = "monafaseh.vodda.ir";
+
+// آیات سجده واجب (عزائم) هرگز نمایش داده نمی‌شوند
+const isSajdahVerse = (surah, ayah) =>
+  SAJDAH_VERSES.some((s) => s.surah === surah && s.ayah === ayah);
+const SAFE_VERSES = VERSES.filter((v) => !isSajdahVerse(v.surah, v.ayah));
 
 // ساعت‌های روزانه + گزارش هفته (شنبه‌ها ۲۰:۰۰)
 const SLOTS = ["09:00", "12:30", "17:30", "21:00", "20:00"];
@@ -104,7 +111,8 @@ function todayInfo(ts = Date.now()) {
     weekday,
     jalali: `${faDigits(j.jd)} ${JALALI_MONTHS[j.jm - 1]} ${faDigits(j.jy)}`,
     jalaliShort: `${faDigits(j.jy)}/${faDigits(j.jm)}/${faDigits(j.jd)}`,
-    hijri: `${faDigits(h.hd)} ${HIJRI_MONTHS[Math.max(0, Math.min(11, h.hm - 1))]}`,
+    hijri: `${faDigits(h.hd)} ${HIJRI_MONTHS[Math.max(0, Math.min(11, h.hm - 1))]} ${faDigits(h.hy)}`,
+    gregorian: `${faDigits(gd)} ${GREGORIAN_MONTHS[gm - 1]} ${faDigits(gy)}`,
     hijriApprox: h.approx === true,
     hijriKey,
     jalaliKey,
@@ -230,7 +238,11 @@ function fmtMorning(info, verse) {
   return [
     "🌙 «صبح بخیر، همراه منافسه»",
     "",
-    `📅 امروز: ${info.weekday} ${info.jalali} — ${info.hijri}${info.hijriApprox ? " (قمری تقریبی)" : " (قمری)"}`,
+    `📅 ${info.weekday}`,
+    `🗓 شمسی: ${info.jalali}`,
+    `🌙 قمری: ${info.hijri}${info.hijriApprox ? " (تقریبی)" : ""}`,
+    `📆 میلادی: ${info.gregorian}`,
+    "",
     `🕌 مناسبت امروز: ${info.occasion?.title || "مناسبت خاصی نیست"}`,
     "",
     "📖 «آیه امروز»",
@@ -317,7 +329,9 @@ function fmtMasters(list) {
 }
 
 function fmtOccasion(occ) {
-  const verse = OCCASION_VERSES[occ.kind] || OCCASION_VERSES.congrats;
+  let verse = OCCASION_VERSES[occ.kind] || OCCASION_VERSES.congrats;
+  // اگر آیه مناسبتی سجده واجب بود، با یک آیه امن جایگزین می‌شود
+  if (isSajdahVerse(verse.surah, verse.ayah)) verse = SAFE_VERSES[0];
   const lines = [`🕌 «${occ.title}»`, ""];
   if (occ.text) lines.push(occ.text, "");
   lines.push("📖 «آیه مناسبتی»", `«${verse.text}»`, `— ${verse.surah}، آیه ${faDigits(verse.ayah)}`, "");
@@ -372,8 +386,8 @@ function dayIndex(ts = Date.now()) {
 
 async function runSlot(slot, info, liveCount) {
   const day = dayIndex(FORCE_DATE ?? Date.now());
-  const verse1 = VERSES[day % VERSES.length];
-  const verse2 = VERSES[(day + 5) % VERSES.length];
+  const verse1 = SAFE_VERSES[day % SAFE_VERSES.length];
+  const verse2 = SAFE_VERSES[(day + 5) % SAFE_VERSES.length];
 
   if (slot === "09:00") {
     return sendMessage(fmtMorning(info, verse1));
@@ -504,6 +518,14 @@ async function main() {
   console.log(
     `[calendar] ${CALENDAR_SOURCE} | hijri data: ${HIJRI_RANGE.from} → ${HIJRI_RANGE.to}`,
   );
+  console.log(
+    `[quran] ${SAFE_VERSES.length} آیه در چرخه | ${VERSES.length - SAFE_VERSES.length} آیه سجده‌واجب حذف شد`,
+  );
+  for (const [kind, v] of Object.entries(OCCASION_VERSES)) {
+    if (isSajdahVerse(v.surah, v.ayah)) {
+      console.error(`[quran] هشدار: آیه مناسبتی ${kind} سجده واجب است و نباید استفاده شود`);
+    }
+  }
 
   if (TEST_SEND) {
     const ok = await sendMessage(
