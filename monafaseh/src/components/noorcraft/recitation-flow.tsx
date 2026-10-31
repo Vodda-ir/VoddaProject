@@ -113,7 +113,7 @@ export function RecitationFlow({ currentUserName }: RecitationFlowProps) {
   // If competition hasn't started or ended
   if (status === "setup" || status === "ended") {
     return (
-      <div className="rounded-2xl bg-gradient-to-br from-noor-navy to-[#1a1f4a] p-6 text-center text-white">
+      <div className="rounded-2xl bg-gradient-to-br from-[#0b0a08] to-[#17150f] p-6 text-center text-white">
         <Trophy className="mx-auto mb-3 h-12 w-12 text-noor-yellow" />
         <h3 className="font-display text-xl">
           {status === "ended" ? "منافسه پایان یافت" : "منافسه آماده است"}
@@ -175,7 +175,7 @@ export function RecitationFlow({ currentUserName }: RecitationFlowProps) {
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
           transition={{ type: "spring", stiffness: 200 }}
-          className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-noor-navy to-[#1a1f4a] p-5"
+          className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0b0a08] to-[#17150f] p-5"
         >
           {/* Glow background */}
           <div

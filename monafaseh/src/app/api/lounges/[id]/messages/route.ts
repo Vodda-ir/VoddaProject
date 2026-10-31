@@ -9,6 +9,46 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+    const user = await getCurrentUser();
+
+    const lounge = await db.lounge.findUnique({
+      where: { id },
+      include: {
+        _count: { select: { members: true } },
+        members: { where: { isOnline: true }, select: { id: true } },
+      },
+    });
+    if (!lounge) {
+      return NextResponse.json({ ok: false, error: "تالار پیدا نشد" }, { status: 404 });
+    }
+    // جداسازی جنسیتی تالارها (طبق قوانین منافسه)
+    if (
+      lounge.genderRestriction !== "all" &&
+      user &&
+      user.gender &&
+      lounge.genderRestriction !== user.gender
+    ) {
+      return NextResponse.json(
+        { ok: false, error: "این تالار ویژه " + (lounge.genderRestriction === "male" ? "آقایان" : "بانوان") + " است" },
+        { status: 403 },
+      );
+    }
+
+    let pinned: { id: string; text: string; senderName: string } | null = null;
+    if (lounge.pinnedMessageId) {
+      const pm = await db.loungeMessage.findUnique({
+        where: { id: lounge.pinnedMessageId },
+        include: { user: { select: { fullName: true } } },
+      });
+      if (pm) {
+        pinned = {
+          id: pm.id,
+          text: pm.text,
+          senderName: pm.user?.fullName ?? "",
+        };
+      }
+    }
+
     const messages = await db.loungeMessage.findMany({
       where: { loungeId: id },
       include: {
@@ -40,7 +80,24 @@ export async function GET(
       inviteSessionTitle: m.inviteSessionTitle,
     }));
 
-    return NextResponse.json({ ok: true, messages: formatted });
+    return NextResponse.json({
+      ok: true,
+      messages: formatted,
+      pinned,
+      genderRestriction: lounge.genderRestriction,
+      loungeInfo: {
+        id: lounge.id,
+        name: lounge.name,
+        description: lounge.description,
+        category: lounge.category,
+        color: lounge.color,
+        memberCount: lounge._count.members,
+        onlineCount: lounge.members.length,
+        isPrivate: lounge.isPrivate,
+        genderRestriction: lounge.genderRestriction,
+        creatorId: lounge.creatorId,
+      },
+    });
   } catch (error) {
     console.error("Messages fetch error:", error);
     return NextResponse.json(
@@ -75,6 +132,20 @@ export async function POST(
       );
     }
 
+    // جداسازی جنسیتی
+    const loungeForGender = await db.lounge.findUnique({ where: { id } });
+    if (
+      loungeForGender &&
+      loungeForGender.genderRestriction !== "all" &&
+      user.gender &&
+      loungeForGender.genderRestriction !== user.gender
+    ) {
+      return NextResponse.json(
+        { ok: false, error: "این تالار ویژه " + (loungeForGender.genderRestriction === "male" ? "آقایان" : "بانوان") + " است" },
+        { status: 403 },
+      );
+    }
+
     // Check if user is a member
     const membership = await db.loungeMember.findUnique({
       where: {
@@ -84,6 +155,13 @@ export async function POST(
         },
       },
     });
+
+    if (membership && membership.role === "muted") {
+      return NextResponse.json(
+        { ok: false, error: "شما در این تالار سکوت شده‌اید" },
+        { status: 403 },
+      );
+    }
 
     if (!membership) {
       // Auto-join if not a member

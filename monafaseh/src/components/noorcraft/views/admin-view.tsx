@@ -7,7 +7,7 @@ import {
   Trash2, Crown, Search, RefreshCw, Shield, Plus, Minus, Star,
   Activity, TrendingUp, Download, Bell, Wifi, Award, UserCircle,
   Phone, MapPin, Calendar, ChevronLeft, Eye, Mail, Zap, Flame,
-  BookOpen, Loader2, Check,
+  BookOpen, Loader2, Check, BadgeCheck, Banknote,
   Megaphone, MousePointerClick, Image as ImageIcon, X, Pencil,
   ToggleLeft, ToggleRight, ExternalLink, Copy,
 } from "lucide-react";
@@ -19,9 +19,10 @@ import { AdBanner } from "../ad-banner";
 import { AdAnalytics } from "../ad-analytics";
 import { ImageCropper } from "../image-cropper";
 import { SlotsManager } from "../slots-manager";
+import { VerifyTab, FinanceTab } from "../admin-panels";
 import { useToast } from "@/hooks/use-toast";
 
-type AdminTab = "dashboard" | "users" | "ranking" | "online" | "sessions" | "lounges" | "crm" | "notify" | "blog" | "ads";
+type AdminTab = "dashboard" | "users" | "ranking" | "online" | "sessions" | "lounges" | "crm" | "verify" | "finance" | "notify" | "blog" | "ads";
 
 export function AdminView() {
   const { toast } = useToast();
@@ -62,6 +63,8 @@ export function AdminView() {
     { id: "sessions" as AdminTab, label: "محفل‌ها", icon: <Mic className="h-4 w-4" /> },
     { id: "lounges" as AdminTab, label: "تالارها", icon: <MessageCircle className="h-4 w-4" /> },
     { id: "crm" as AdminTab, label: "باشگاه مشتریان", icon: <UserCircle className="h-4 w-4" /> },
+    { id: "verify" as AdminTab, label: "احراز قاریان", icon: <BadgeCheck className="h-4 w-4" /> },
+    { id: "finance" as AdminTab, label: "مالی", icon: <Banknote className="h-4 w-4" /> },
     { id: "notify" as AdminTab, label: "اطلاع‌رسانی", icon: <Bell className="h-4 w-4" /> },
     { id: "blog" as AdminTab, label: "بلاگ", icon: <BookOpen className="h-4 w-4" /> },
     { id: "ads" as AdminTab, label: "تبلیغات", icon: <Megaphone className="h-4 w-4" /> },
@@ -93,6 +96,8 @@ export function AdminView() {
         {tab === "sessions" && <SessionsTab key="sessions" />}
         {tab === "lounges" && <LoungesTab key="lounges" />}
         {tab === "crm" && <CRMTab key="crm" />}
+        {tab === "verify" && <VerifyTab key="verify" />}
+        {tab === "finance" && <FinanceTab key="finance" />}
         {tab === "notify" && <NotifyTab key="notify" />}
         {tab === "blog" && <BlogTab key="blog" />}
         {tab === "ads" && <AdsTab key="ads" />}

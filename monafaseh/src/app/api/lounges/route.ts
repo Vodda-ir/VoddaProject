@@ -55,8 +55,20 @@ export async function GET(request: NextRequest) {
           where: { isOnline: true },
           select: { id: true },
         },
+        messages: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+          select: { text: true, type: true, createdAt: true, userId: true, user: { select: { fullName: true } } },
+        },
       },
       orderBy: { createdAt: "desc" },
+    });
+
+    // مرتب‌سازی بر اساس فعالیت: تالارهای دارای پیام اخیر اول (سبک تلگرام)
+    lounges.sort((a, b) => {
+      const ta = a.messages[0]?.createdAt?.getTime() ?? a.createdAt.getTime();
+      const tb = b.messages[0]?.createdAt?.getTime() ?? b.createdAt.getTime();
+      return tb - ta;
     });
 
     const formatted = lounges.map((l) => ({
@@ -70,11 +82,20 @@ export async function GET(request: NextRequest) {
       onlineCount: l.members.length,
       tags: l.tags ? JSON.parse(l.tags) : [],
       isPrivate: l.isPrivate,
+      genderRestriction: l.genderRestriction,
       relatedReciter: l.relatedReciter,
       relatedMaqam: l.relatedMaqam,
       relatedCity: l.relatedCity,
       creatorId: l.creatorId,
       createdAt: l.createdAt.getTime(),
+      lastMessage: l.messages[0]
+        ? {
+            text: l.messages[0].type === "voice" ? "🎤 پیام صوتی" : l.messages[0].text,
+            senderName: l.messages[0].user?.fullName ?? "",
+            senderId: l.messages[0].userId,
+            at: l.messages[0].createdAt.getTime(),
+          }
+        : null,
     }));
 
     return NextResponse.json({ ok: true, lounges: formatted });
@@ -118,11 +139,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const genderRaw = typeof body.genderRestriction === "string" ? body.genderRestriction : "all";
+    const genderRestriction = ["male", "female", "all"].includes(genderRaw) ? genderRaw : "all";
+
     const lounge = await db.lounge.create({
       data: {
         name,
         description,
         category,
+        genderRestriction,
         color: color || "#FFD700",
         tags: tags ? JSON.stringify(tags) : null,
         isPrivate: isPrivate || false,

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Vazirmatn, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { PwaRegister } from "@/components/noorcraft/pwa-register";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/noorcraft/theme-provider";
@@ -34,9 +35,18 @@ export const metadata: Metadata = {
     "قرآن زنده",
   ],
   authors: [{ name: "Monafaseh Team" }],
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: "منافسه",
+    statusBarStyle: "black-translucent",
+  },
   icons: {
-    icon: "/logo.png",
-    apple: "/logo.png",
+    icon: [
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: "/icons/apple-touch-icon.png",
   },
   openGraph: {
     title: "منافسه — محفل زنده تلاوت و رقابت قرآنی",
@@ -76,6 +86,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           {children}
+          <PwaRegister />
           <Toaster />
           <Sonner />
         </ThemeProvider>

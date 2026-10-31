@@ -65,6 +65,10 @@ export async function GET(request: NextRequest) {
         ? JSON.parse(user.recitationSkills)
         : [],
       interests: user.interests ? JSON.parse(user.interests) : [],
+      // تیک آبی + امتیاز
+      verificationStatus: user.verificationStatus ?? "none",
+      qariRank: user.qariRank ?? null,
+      creditBalance: user.creditBalance,
       stats: {
         noorPoints: user.noorPoints,
         sessionsAttended: user.sessionsAttended,

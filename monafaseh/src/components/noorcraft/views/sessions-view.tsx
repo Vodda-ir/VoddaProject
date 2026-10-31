@@ -23,6 +23,13 @@ import { NoorAvatar } from "../noor-avatar";
 import { OnlineUsersMarquee } from "../online-users-marquee";
 import { AdBanner } from "../ad-banner";
 import { BackButtons } from "../back-buttons";
+import {
+  FilterSearch,
+  FilterField,
+  FilterAdvancedToggle,
+  FilterResetButton,
+  FilterChip,
+} from "../noor-filters";
 import { useNoorStore } from "@/store/noor-store";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -71,6 +78,9 @@ export function SessionsView() {
   const [passwordError, setPasswordError] = useState("");
   const [joining, setJoining] = useState(false);
   const [endingId, setEndingId] = useState<string | null>(null);
+
+  // فیلترهای پیشرفته (استان/شهر/قاری/ملیت) به‌صورت جمع‌شونده
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   // Fetch sessions from API
   const [apiSessions, setApiSessions] = useState<SessionDetail[]>([]);
@@ -199,6 +209,53 @@ export function SessionsView() {
     allSessions,
     user,
   ]);
+
+  const statusLabels: Record<string, string> = {
+    live: "در حال برگزاری",
+    open: "باز",
+    private: "خصوصی",
+  };
+
+  const advancedCount = [filterNationality, filterReciter, filterProvince, filterCity].filter(
+    (v) => v !== "all",
+  ).length;
+
+  const activeChips = [
+    search && { key: "search", label: "جستجو", value: search, clear: () => setSearch("") },
+    filterRecitationType !== "all" && {
+      key: "type", label: "تلاوت", value: filterRecitationType,
+      clear: () => setFilterRecitationType("all"),
+    },
+    filterNationality !== "all" && {
+      key: "nat", label: "ملیت",
+      value: filterNationality === "iranian" ? "ایرانی" : "غیرایرانی",
+      clear: () => setFilterNationality("all"),
+    },
+    filterStatus !== "all" && {
+      key: "status", label: "وضعیت", value: statusLabels[filterStatus] ?? filterStatus,
+      clear: () => setFilterStatus("all"),
+    },
+    filterProvince !== "all" && {
+      key: "prov", label: "استان", value: filterProvince,
+      clear: () => { setFilterProvince("all"); setFilterCity("all"); },
+    },
+    filterCity !== "all" && {
+      key: "city", label: "شهر", value: filterCity, clear: () => setFilterCity("all"),
+    },
+    filterReciter !== "all" && {
+      key: "reciter", label: "قاری", value: filterReciter, clear: () => setFilterReciter("all"),
+    },
+  ].filter(Boolean) as { key: string; label: string; value: string; clear: () => void }[];
+
+  function resetFilters() {
+    setSearch("");
+    setFilterRecitationType("all");
+    setFilterNationality("all");
+    setFilterProvince("all");
+    setFilterCity("all");
+    setFilterStatus("all");
+    setFilterReciter("all");
+  }
 
   async function handleJoin(s: SessionDetail) {
     // Check gender restriction (client-side pre-check; server also enforces)
@@ -340,9 +397,9 @@ export function SessionsView() {
               انتخاب محفل تلاوت
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              به محفلی که با سلیقه‌ات هم‌خوان است بپیوند، یا خودت یکی بساز. محافلی که
-              میزبانی آن را بر عهده داری با نشان <span className="font-bold text-noor-yellow">★ میزبان شما</span> مشخص شده — با دکمه «پایان محفل» می‌توانی آن‌ها را ببندی.
-              لیست هر ۸ ثانیه به‌روزرسانی می‌شود.
+              محفلی که با سلیقه شما هماهنگ است انتخاب کنید یا خودتان محفل جدیدی بسازید. محافلی که
+              میزبانی آن‌ها با شماست با نشان <span className="font-bold text-noor-yellow">★ میزبان شما</span> مشخص شده — با دکمه «پایان محفل» می‌توانید آن‌ها را ببندید.
+              فهرست هر ۸ ثانیه به‌روزرسانی می‌شود.
             </p>
           </div>
           <NoorButton
@@ -355,159 +412,157 @@ export function SessionsView() {
           </NoorButton>
         </motion.div>
 
-        {/* Filters */}
+        {/* Filters — نوار فیلتر منسجم */}
         <NoorCard className="mb-6 noor-card-sky">
-          <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-4">
-            <div>
-              <label className="mb-1 flex items-center gap-1 text-xs font-bold text-muted-foreground">
-                <Search className="h-3 w-3" /> جستجو
-              </label>
-              <input
+          <div className="grid gap-3 md:grid-cols-12">
+            <div className="md:col-span-5">
+              <FilterSearch
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="عنوان، قاری، سوره..."
-                className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus:border-noor-sky focus:outline-none"
+                onChange={setSearch}
+                placeholder="جستجوی عنوان، قاری، سوره…"
               />
             </div>
-            <div>
-              <label className="mb-1 flex items-center gap-1 text-xs font-bold text-muted-foreground">
-                <Mic className="h-3 w-3" /> نوع تلاوت
-              </label>
-              <Select
-                value={filterRecitationType}
-                onValueChange={(v) =>
-                  setFilterRecitationType(v as RecitationType | "all")
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">همه انواع</SelectItem>
-                  <SelectItem value="تحقیق">تحقیق</SelectItem>
-                  <SelectItem value="ترتیل">ترتیل</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="md:col-span-3">
+              <FilterField label="نوع تلاوت" icon={<Mic className="h-3 w-3" />}>
+                <Select
+                  value={filterRecitationType}
+                  onValueChange={(v) =>
+                    setFilterRecitationType(v as RecitationType | "all")
+                  }
+                >
+                  <SelectTrigger className="h-10 rounded-xl"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">همه انواع</SelectItem>
+                    <SelectItem value="تحقیق">تحقیق</SelectItem>
+                    <SelectItem value="ترتیل">ترتیل</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FilterField>
             </div>
-            <div>
-              <label className="mb-1 flex items-center gap-1 text-xs font-bold text-muted-foreground">
-                <Globe2 className="h-3 w-3" /> ملیت قاری
-              </label>
-              <Select
-                value={filterNationality}
-                onValueChange={(v) =>
-                  setFilterNationality(v as ReciterNationality | "all")
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">همه</SelectItem>
-                  <SelectItem value="iranian">ایرانی</SelectItem>
-                  <SelectItem value="foreign">غیرایرانی</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="md:col-span-2">
+              <FilterField label="وضعیت" icon={<Filter className="h-3 w-3" />}>
+                <Select
+                  value={filterStatus}
+                  onValueChange={(v) => setFilterStatus(v as typeof filterStatus)}
+                >
+                  <SelectTrigger className="h-10 rounded-xl"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">همه</SelectItem>
+                    <SelectItem value="live">در حال برگزاری</SelectItem>
+                    <SelectItem value="open">باز</SelectItem>
+                    <SelectItem value="private">خصوصی</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FilterField>
             </div>
-            <div>
-              <label className="mb-1 flex items-center gap-1 text-xs font-bold text-muted-foreground">
-                <Filter className="h-3 w-3" /> وضعیت
-              </label>
-              <Select
-                value={filterStatus}
-                onValueChange={(v) =>
-                  setFilterStatus(v as typeof filterStatus)
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">همه</SelectItem>
-                  <SelectItem value="live">در حال برگزاری</SelectItem>
-                  <SelectItem value="open">باز</SelectItem>
-                  <SelectItem value="private">خصوصی</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <label className="mb-1 flex items-center gap-1 text-xs font-bold text-muted-foreground">
-                <MapPinIcon /> استان
-              </label>
-              <Select
-                value={filterProvince}
-                onValueChange={(v) => setFilterProvince(v)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="max-h-72">
-                  <SelectItem value="all">همه استان‌ها</SelectItem>
-                  {IRAN_PROVINCES.map((p) => (
-                    <SelectItem key={p.name} value={p.name}>
-                      {p.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <label className="mb-1 flex items-center gap-1 text-xs font-bold text-muted-foreground">
-                <MapPinIcon /> شهر
-              </label>
-              <Select
-                value={filterCity}
-                onValueChange={(v) => setFilterCity(v)}
-                disabled={filterProvince === "all"}
-              >
-                <SelectTrigger>
-                  <SelectValue
-                    placeholder={
-                      filterProvince === "all"
-                        ? "ابتدا استان را انتخاب کنید"
-                        : "همه شهرها"
-                    }
-                  />
-                </SelectTrigger>
-                <SelectContent className="max-h-72">
-                  <SelectItem value="all">همه شهرها</SelectItem>
-                  {availableFilterCities.map((c) => (
-                    <SelectItem key={c} value={c}>
-                      {c}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="md:col-span-2 lg:col-span-2">
-              <label className="mb-1 flex items-center gap-1 text-xs font-bold text-muted-foreground">
-                <Mic className="h-3 w-3" /> قاری مورد اقتدا
-              </label>
-              <Select
-                value={filterReciter}
-                onValueChange={(v) => setFilterReciter(v)}
-                disabled={availableFilterReciters.length === 0 && allReciterNames.length === 0}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="همه قاریان" />
-                </SelectTrigger>
-                <SelectContent className="max-h-72">
-                  <SelectItem value="all">همه قاریان</SelectItem>
-                  {(availableFilterReciters.length > 0
-                    ? availableFilterReciters
-                    : allReciterNames
-                  ).map((r) => (
-                    <SelectItem key={r} value={r}>
-                      {r}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="flex items-end justify-end md:col-span-2">
+              <FilterAdvancedToggle
+                open={showAdvanced}
+                count={[filterNationality, filterReciter, filterProvince, filterCity].filter((v) => v !== "all").length}
+                onClick={() => setShowAdvanced(!showAdvanced)}
+              />
             </div>
           </div>
+
+          {showAdvanced && (
+            <div className="mt-3 grid gap-3 border-t border-noor-navy/10 pt-3 dark:border-white/10 md:grid-cols-12">
+              <div className="md:col-span-3">
+                <FilterField label="ملیت قاری" icon={<Globe2 className="h-3 w-3" />}>
+                  <Select
+                    value={filterNationality}
+                    onValueChange={(v) =>
+                      setFilterNationality(v as ReciterNationality | "all")
+                    }
+                  >
+                    <SelectTrigger className="h-10 rounded-xl"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">همه</SelectItem>
+                      <SelectItem value="iranian">ایرانی</SelectItem>
+                      <SelectItem value="foreign">غیرایرانی</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FilterField>
+              </div>
+              <div className="md:col-span-3">
+                <FilterField label="قاری مورد اقتدا" icon={<Mic className="h-3 w-3" />}>
+                  <Select
+                    value={filterReciter}
+                    onValueChange={(v) => setFilterReciter(v)}
+                    disabled={availableFilterReciters.length === 0 && allReciterNames.length === 0}
+                  >
+                    <SelectTrigger className="h-10 rounded-xl">
+                      <SelectValue placeholder="همه قاریان" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-72">
+                      <SelectItem value="all">همه قاریان</SelectItem>
+                      {(availableFilterReciters.length > 0
+                        ? availableFilterReciters
+                        : allReciterNames
+                      ).map((r) => (
+                        <SelectItem key={r} value={r}>
+                          {r}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FilterField>
+              </div>
+              <div className="md:col-span-3">
+                <FilterField label="استان" icon={<span aria-hidden="true">📍</span>}>
+                  <Select value={filterProvince} onValueChange={(v) => setFilterProvince(v)}>
+                    <SelectTrigger className="h-10 rounded-xl"><SelectValue /></SelectTrigger>
+                    <SelectContent className="max-h-72">
+                      <SelectItem value="all">همه استان‌ها</SelectItem>
+                      {IRAN_PROVINCES.map((p) => (
+                        <SelectItem key={p.name} value={p.name}>
+                          {p.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FilterField>
+              </div>
+              <div className="md:col-span-3">
+                <FilterField label="شهر" icon={<span aria-hidden="true">📍</span>}>
+                  <Select
+                    value={filterCity}
+                    onValueChange={(v) => setFilterCity(v)}
+                    disabled={filterProvince === "all"}
+                  >
+                    <SelectTrigger className="h-10 rounded-xl">
+                      <SelectValue
+                        placeholder={
+                          filterProvince === "all"
+                            ? "ابتدا استان را انتخاب کنید"
+                            : "همه شهرها"
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-72">
+                      <SelectItem value="all">همه شهرها</SelectItem>
+                      {availableFilterCities.map((c) => (
+                        <SelectItem key={c} value={c}>
+                          {c}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FilterField>
+              </div>
+            </div>
+          )}
+
+          {activeChips.length > 0 && (
+            <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-noor-navy/10 pt-3 dark:border-white/10">
+              {activeChips.map((c) => (
+                <FilterChip key={c.key} label={c.label} value={c.value} onClear={c.clear} />
+              ))}
+              <FilterResetButton onClick={resetFilters} />
+            </div>
+          )}
         </NoorCard>
 
-        {/* Grid */}
+                {/* Grid */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <AnimatePresence mode="popLayout">
             {filtered.map((s, i) => (
@@ -542,7 +597,7 @@ export function SessionsView() {
               </div>
               <h3 className="text-lg font-bold">محفلی پیدا نشد</h3>
               <p className="mt-1 text-sm text-muted-foreground">
-                فیلترها رو تغییر بده یا خودت یک محفل جدید بساز.
+                فیلترها را تغییر دهید یا خودتان یک محفل جدید بسازید.
               </p>
               <NoorButton
                 variant="yellow"

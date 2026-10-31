@@ -124,9 +124,11 @@ services:
       HOSTNAME: 0.0.0.0
       DATABASE_URL: file:/app/db/custom.db
       NEXTAUTH_SECRET: ${MONAFASEH_NEXTAUTH_SECRET:-${JWT_SECRET:?JWT_SECRET is required}}
-      NEXTAUTH_URL: ${MONAFASEH_NEXTAUTH_URL:-https://monafaseh.ir}
-      SITE_URL: ${MONAFASEH_SITE_URL:-https://monafaseh.ir}
+      NEXTAUTH_URL: ${MONAFASEH_NEXTAUTH_URL:-https://monafeseh.ir}
+      SITE_URL: ${MONAFASEH_SITE_URL:-https://monafeseh.ir}
       BOT_TOKEN: ${MONAFASEH_BOT_TOKEN:-}
+      SAMAN_TERMINAL_ID: ${SAMAN_TERMINAL_ID:-}
+      SAMAN_MERCHANT_ID: ${SAMAN_MERCHANT_ID:-}
     ports:
       - "127.0.0.1:${MONAFASEH_PORT:-3423}:3000"
     volumes:

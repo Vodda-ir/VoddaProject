@@ -58,20 +58,21 @@ export function LandingView() {
     ? [
         { value: `+${formatNum(realStats.totalUsers)}`, label: "قاری فعال", icon: <Users className="h-5 w-5" /> },
         { value: formatNum(realStats.activeSessions), label: "محفل زنده", icon: <PlayCircle className="h-5 w-5" /> },
-        { value: `+${formatNum(realStats.totalRecitations)}`, label: "خوانش منافسه‌ای", icon: <Mic className="h-5 w-5" /> },
-        { value: `+${formatNum(realStats.totalTahmeeds)}`, label: "تشویق هم‌محفلی", icon: <Heart className="h-5 w-5" /> },
+        { value: `+${formatNum(realStats.totalRecitations)}`, label: "تلاوت ثبت‌شده", icon: <Mic className="h-5 w-5" /> },
+        { value: `+${formatNum(realStats.totalTahmeeds)}`, label: "تشویق دریافتی", icon: <Heart className="h-5 w-5" /> },
       ]
     : [
         { value: "...", label: "قاری فعال", icon: <Users className="h-5 w-5" /> },
         { value: "...", label: "محفل زنده", icon: <PlayCircle className="h-5 w-5" /> },
-        { value: "...", label: "خوانش منافسه‌ای", icon: <Mic className="h-5 w-5" /> },
-        { value: "...", label: "تشویق هم‌محفلی", icon: <Heart className="h-5 w-5" /> },
+        { value: "...", label: "تلاوت ثبت‌شده", icon: <Mic className="h-5 w-5" /> },
+        { value: "...", label: "تشویق دریافتی", icon: <Heart className="h-5 w-5" /> },
       ];
 
   return (
     <div className="relative">
       {/* === HERO — compact, fast-loading === */}
-      <section className="relative bg-noor-hero">
+      <section className="relative overflow-hidden bg-noor-hero">
+        <div className="noor-pattern" aria-hidden="true" />
         <div className="relative mx-auto max-w-7xl px-4 pb-8 pt-12 sm:px-6 sm:pt-16">
           <div className="text-center">
             <motion.div
@@ -82,9 +83,8 @@ export function LandingView() {
             >
               <span className="inline-flex items-center gap-1.5 rounded-full bg-noor-coral/20 px-4 py-1.5 text-sm font-bold text-noor-coral">
                 <Flame className="h-4 w-4" />
-                فرا رسیدن فصل تازه منافسه‌های قرآنی
-              </span>
-            </motion.div>
+                فصل تازه‌ای از منافسه‌های قرآنی آغاز شد
+              </span>            </motion.div>
 
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
@@ -104,8 +104,9 @@ export function LandingView() {
               transition={{ delay: 0.25 }}
               className="mx-auto mt-3 max-w-2xl text-base text-muted-foreground sm:text-lg"
             >
-              قاریان قرآن از سراسر جهان در محفلی زنده گرد هم می‌آیند؛ به‌نوبت تلاوت می‌کنند،
-              یکدیگر را تشویق می‌نمایند و با کلام وحی، دل‌ها را به نور می‌نشاند.
+              قاریان قرآن از سراسر جهان در محافل زنده جمع می‌شوند؛ به‌نوبت تلاوت
+              می‌کنند و یکدیگر را تشویق می‌کنند تا با کلام وحی لحظات خوشی را
+              تجربه کنند.
             </motion.p>
 
             {/* === MAIN ACTION BUTTONS — direct access === */}
@@ -242,10 +243,10 @@ export function LandingView() {
             className="mb-6 text-center"
           >
             <h2 className="font-display text-2xl text-noor-navy dark:text-white sm:text-3xl">
-              از اینجا شروع کن
+              از اینجا شروع کنید
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              هرچه می‌خواهی، یک گام دورتر است
+              همه امکانات مورد نیاز شما در یک‌جا جمع شده است
             </p>
           </motion.div>
 
@@ -254,7 +255,7 @@ export function LandingView() {
               {
                 icon: <Video className="h-6 w-6" />,
                 title: "تشکیل محفل",
-                desc: "محفلی بساز و دوستانت را به تلاوت فرابخوان",
+                desc: "محفلی بسازید و دوستانتان را به تلاوت دعوت کنید",
                 color: "#FFD700",
                 card: "noor-card-yellow",
                 action: () => setView(user ? "create-session" : "auth"),
@@ -263,7 +264,7 @@ export function LandingView() {
               {
                 icon: <Flame className="h-6 w-6" />,
                 title: "چالش منافسه",
-                desc: "رقیبی آنلاین بیاب و در گرم منافسه تلاوت درآی",
+                desc: "به‌صورت آنلاین رقیب پیدا کنید و در فضایی دوستانه تلاوت کنید",
                 color: "#FF7F7F",
                 card: "noor-card-coral",
                 action: () => setView(user ? "challenge" : "auth"),
@@ -273,7 +274,7 @@ export function LandingView() {
               {
                 icon: <PlayCircle className="h-6 w-6" />,
                 title: "محافل زنده",
-                desc: "به محفلی که در حال تلاوت است بپیوند",
+                desc: "به محفلی که در حال تلاوت است بپیوندید",
                 color: "#7CFC00",
                 card: "noor-card-green",
                 action: () => setView("sessions"),
@@ -282,7 +283,7 @@ export function LandingView() {
               {
                 icon: <MessageCircle className="h-6 w-6" />,
                 title: "تالار گفتگو",
-                desc: "با قاریان هم‌ذوق گفتگو کن و دعوت بفرست",
+                desc: "با قاریان هم‌علاقه گفتگو کنید و آن‌ها را دعوت کنید",
                 color: "#87CEEB",
                 card: "noor-card-sky",
                 action: () => setView(user ? "lounge" : "auth"),
@@ -291,7 +292,7 @@ export function LandingView() {
               {
                 icon: <BookOpen className="h-6 w-6" />,
                 title: "بلاگ",
-                desc: "ایده‌ها و اندیشه‌های سازنده منافسه",
+                desc: "یادداشت‌ها و تجربه‌های کاربران منافسه",
                 color: "#FF7F7F",
                 card: "noor-card-coral",
                 action: () => setView("blog"),
@@ -300,7 +301,7 @@ export function LandingView() {
               {
                 icon: <Trophy className="h-6 w-6" />,
                 title: "داشبورد",
-                desc: "امتیاز نور و نشان‌هایت را ببین",
+                desc: "امتیاز نور و نشان‌های خود را مشاهده کنید",
                 color: "#FFD700",
                 card: "noor-card-yellow",
                 action: () => setView(user ? "dashboard" : "auth"),
@@ -309,7 +310,7 @@ export function LandingView() {
               {
                 icon: <Sparkles className="h-6 w-6" />,
                 title: "ورود / ثبت‌نام",
-                desc: "در کمتر از یک دقیقه به محفل بپیوند",
+                desc: "در کمتر از یک دقیقه به جمع قاریان بپیوندید",
                 color: "#9d4edd",
                 card: "noor-card-rainbow",
                 action: () => setView("auth"),
@@ -339,7 +340,7 @@ export function LandingView() {
                     </motion.div>
                   )}
                   <div
-                    className="mb-3 grid h-12 w-12 place-items-center rounded-2xl text-noor-navy shadow-md"
+                    className="clay-3d mb-3 grid h-12 w-12 place-items-center rounded-2xl text-noor-navy"
                     style={{ background: f.color }}
                   >
                     {f.icon}

@@ -42,7 +42,7 @@ export default function AdminPage() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: email.trim(), password }),
       });
 
       const data = await res.json();
@@ -55,6 +55,20 @@ export default function AdminPage() {
 
       if (data.user?.role !== "admin") {
         setError("شما ادمین نیستید");
+        setLoggingIn(false);
+        return;
+      }
+
+      // تأیید دومرحله‌ای: کوکی نشست باید واقعاً ذخیره شده باشد.
+      // بعضی مرورگرهای داخلی موبایل کوکی‌ها را نگه نمی‌دارند — با این
+      // بررسی، پیام خطای دقیق به‌جای پنل نیمه‌باز نمایش داده می‌شود.
+      const meRes = await fetch("/api/auth/me", { cache: "no-store" });
+      const meData = await meRes.json();
+
+      if (!meData.ok || meData.user?.role !== "admin") {
+        setError(
+          "ورود انجام شد اما نشست ذخیره نشد. لطفاً کوکی‌های مرورگر را فعال کنید یا صفحه را در Chrome/Safari اصلی باز کنید.",
+        );
         setLoggingIn(false);
         return;
       }

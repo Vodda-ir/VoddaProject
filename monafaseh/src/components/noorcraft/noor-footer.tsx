@@ -42,7 +42,7 @@ export function NoorFooter() {
           <div className="flex flex-col items-center gap-2 md:items-start">
             <NoorLogo size={40} withText />
             <p className="max-w-xs text-center text-xs text-muted-foreground md:text-right">
-              منافسه — جایی که قاریان دور هم جمع می‌شوند و رقابت می‌کنند.
+              منافسه — پلتفرمی آنلاین برای گردهمایی قاریان قرآن و رقابتی دوستانه.
             </p>
           </div>
 
@@ -63,9 +63,9 @@ export function NoorFooter() {
               ))}
             </div>
             <p className="flex items-center gap-1 text-[11px] text-muted-foreground">
-              ساخته شده با
+              ساخته‌شده با
               <Heart className="h-3 w-3 fill-noor-coral text-noor-coral" />
-              برای عاشقان قرآن
+              برای دوست‌داران قرآن کریم
             </p>
             <p className="text-[10px] text-muted-foreground">
               ساخته شده توسط محمد حبیب‌زاده فرد

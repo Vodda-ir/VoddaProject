@@ -2,6 +2,7 @@
 
 export type ViewName =
   | "landing"
+  | "feed"
   | "auth"
   | "dashboard"
   | "sessions"
@@ -14,7 +15,16 @@ export type ViewName =
   | "challenge"
   | "blog"
   | "blog-post"
-  | "admin";
+  | "admin"
+  | "verification"
+  | "buy-credits"
+  | "masters"
+  | "bank-info"
+  | "donate";
+
+// نوع احراز (تیک آبی)
+export type VerificationStatus = "none" | "pending" | "approved" | "rejected" | string;
+export type VerificationType = "provincial" | "national" | "international" | string;
 
 // نوع تلاوت اصلی: تحقیق یا ترتیل
 export type RecitationType = "تحقیق" | "ترتیل";
@@ -55,6 +65,12 @@ export interface NoorUser {
   telegramId: string | null; // آیدی تلگرام
   bio: string | null; // معرفی کوتاه
   referredBy: string | null; // معرف
+  // --- تیک آبی (احراز) ---
+  verificationStatus: VerificationStatus; // none | pending | approved | rejected
+  verificationType?: VerificationType | null;
+  qariRank?: string | null; // برنزی | نقره‌ای | طلایی | null
+  // --- سیستم امتیاز ---
+  creditBalance: number; // موجودی امتیاز
   // --- شناسه جلسه Jitsi ---
   avatarColor: string;
   joinedAt: number;
@@ -222,6 +238,8 @@ export interface Lounge {
   tags: string[];
   isPrivate: boolean;
   genderRestriction: string; // male | female | all
+  lastMessage?: { text: string; senderName: string; senderId: string; at: number } | null;
+  creatorId?: string | null;
   // برای تالارهای هواداران قاری
   relatedReciter?: string;
   // برای تالارهای مقام

@@ -47,7 +47,9 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV DATABASE_URL="file:/app/db/custom.db"
 
 # تولید Prisma client
-RUN npx prisma generate
+# میرور داخلی برای دانلود موتور (در ایران binaries.prisma.sh گاهی SSL نمی‌دهد)
+ENV PRISMA_ENGINES_MIRROR=https://binaries.prisma.sh
+RUN npx prisma generate || (npx prisma generate --no-engine && npx prisma generate)
 
 # وابستگی‌های ترانزیتی Prisma CLI برای اجرای db push در image نهایی
 RUN mkdir -p /app/prisma-cli-deps/node_modules/@standard-schema && \

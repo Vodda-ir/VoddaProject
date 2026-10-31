@@ -202,13 +202,13 @@ export function CreateSessionView() {
           className="mb-6 text-center"
         >
           <NoorBadge variant="green" icon={<Sparkles className="h-3 w-3" />}>
-            محفل خودت رو بساز
+            محفل شخصی خود را بسازید
           </NoorBadge>
           <h1 className="mt-3 text-3xl font-extrabold text-noor-navy dark:text-white">
             تشکیل محفل تلاوت
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            یک محفل جدید بساز و دعوت‌نامه بفرست
+            محفلی تازه بسازید و از قاریان دعوت کنید
           </p>
         </motion.div>
 
@@ -226,7 +226,7 @@ export function CreateSessionView() {
               error={form.formState.errors.title?.message}
             >
               <Input
-                placeholder="مثال: محفل ترتیل آیات نور — اگر خالی بگذاری، خودکار نام‌گذاری می‌شود"
+                placeholder="مثال: محفل ترتیل آیات نور — اگر خالی بگذارید، نام‌گذاری خودکار انجام می‌شود"
                 {...form.register("title")}
                 autoFocus
               />

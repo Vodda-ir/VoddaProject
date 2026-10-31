@@ -27,12 +27,17 @@ export interface OnlineUser {
   recitationType: string | null;
   status: "reciting" | "listening" | "waiting" | "idle" | string;
   lastSeen: number;
+  qariRank?: string | null;
 }
 
 interface NoorState {
   // Navigation
   view: ViewName;
   setView: (v: ViewName) => void;
+
+  // پروفایل عمومی — کاربری که باید نمایش داده شود
+  profileUserId: string | null;
+  setProfileUserId: (id: string | null) => void;
 
   // Auth
   user: NoorUser | null;
@@ -75,6 +80,12 @@ interface NoorState {
   // Settings
   reducedMotion: boolean;
   toggleReducedMotion: () => void;
+
+  // برنامک ایتا
+  eitaaAvailable: boolean;
+  setEitaaAvailable: (v: boolean) => void;
+  eitaaUser: { id: string; firstName: string; lastName: string } | null;
+  setEitaaUser: (u: NoorState["eitaaUser"]) => void;
 
   // Last recitation result (for results screen)
   lastResult: {
@@ -170,6 +181,8 @@ export const useNoorStore = create<NoorState>((set) => ({
   setFilterStatus: (s) => set({ filterStatus: s }),
   setFilterReciter: (r) => set({ filterReciter: r }),
 
+  profileUserId: null,
+  setProfileUserId: (id) => set({ profileUserId: id }),
   activeSession: null,
   setActiveSession: (s) => set({ activeSession: s }),
   messages: [],
@@ -196,6 +209,11 @@ export const useNoorStore = create<NoorState>((set) => ({
   reducedMotion: false,
   toggleReducedMotion: () =>
     set((s) => ({ reducedMotion: !s.reducedMotion })),
+
+  eitaaAvailable: false,
+  setEitaaAvailable: (v) => set({ eitaaAvailable: v }),
+  eitaaUser: null,
+  setEitaaUser: (u) => set({ eitaaUser: u }),
 
   lastResult: null,
   setLastResult: (r) => set({ lastResult: r }),
@@ -309,6 +327,8 @@ export function makeStarterUser(input: {
     telegramId: input.telegramId,
     bio: input.bio,
     referredBy: input.referredBy,
+    verificationStatus: "none",
+    creditBalance: 0,
     avatarColor: AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)],
     joinedAt: Date.now(),
     stats: {

@@ -1,8 +1,11 @@
-FROM node:24-alpine3.21
+# node:24-alpine روی WSL2 این سیستم segfault می‌دهد؛ node:22-alpine پایدار است
+# و Next.js 15 کاملاً با آن سازگار است.
+FROM node:22-alpine
 WORKDIR /app
-RUN corepack enable
+# corepack در node:24-alpine روی برخی سیستم‌ها segfault می‌دهد (exit 139)؛
+# این پروژه از npm استفاده می‌کند، پس corepack لازم نیست.
 COPY package.json pnpm-lock.yaml* package-lock.json* ./
-RUN if [ -f pnpm-lock.yaml ]; then corepack pnpm i; \
+RUN if [ -f pnpm-lock.yaml ]; then npm i -g pnpm && pnpm i; \
     elif [ -f package-lock.json ]; then npm install; \
     else npm install; fi
 COPY . .

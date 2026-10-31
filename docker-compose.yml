@@ -92,6 +92,7 @@ services:
     build:
       context: ./monafaseh
       dockerfile: Dockerfile
+      target: runner
     image: vodda-monafaseh:prod
     environment:
       - NODE_ENV=production
@@ -102,6 +103,8 @@ services:
       - NEXTAUTH_URL=${MONAFASEH_NEXTAUTH_URL:-https://monafaseh.ir}
       - SITE_URL=${MONAFASEH_SITE_URL:-https://monafaseh.ir}
       - BOT_TOKEN=${MONAFASEH_BOT_TOKEN:-}
+      - SAMAN_TERMINAL_ID=${SAMAN_TERMINAL_ID:-}
+      - SAMAN_MERCHANT_ID=${SAMAN_MERCHANT_ID:-}
     ports:
       - "${MONAFASEH_PORT:-3423}:3000"
     volumes:

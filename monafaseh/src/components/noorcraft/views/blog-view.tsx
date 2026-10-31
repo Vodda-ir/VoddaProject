@@ -25,6 +25,7 @@ import { NoorCard } from "../noor-card";
 import { NoorBadge } from "../noor-badge";
 import { NoorAvatar } from "../noor-avatar";
 import { BackButtons } from "../back-buttons";
+import { FilterSearch } from "../noor-filters";
 import { AdBanner } from "../ad-banner";
 import { useNoorStore } from "@/store/noor-store";
 import { useToast } from "@/hooks/use-toast";
@@ -56,8 +57,8 @@ interface Comment {
 }
 
 const CATEGORY_META: Record<string, { label: string; icon: React.ReactNode; color: string; card: string; desc: string }> = {
-  general: { label: "عمومی", icon: <Sparkles className="h-5 w-5" />, color: "#FFD700", card: "noor-card-yellow", desc: "گفتارهای سازنده" },
-  idea: { label: "ایده", icon: <Lightbulb className="h-5 w-5" />, color: "#87CEEB", card: "noor-card-sky", desc: "اندیشه‌های نو" },
+  general: { label: "عمومی", icon: <Sparkles className="h-5 w-5" />, color: "#FFD700", card: "noor-card-yellow", desc: "موضوعات مختلف" },
+  idea: { label: "ایده", icon: <Lightbulb className="h-5 w-5" />, color: "#87CEEB", card: "noor-card-sky", desc: "ایده‌های نو" },
   story: { label: "سرگذشت", icon: <BookOpen className="h-5 w-5" />, color: "#FF7F7F", card: "noor-card-coral", desc: "داستان‌ها و خاطرات" },
   innovation: { label: "ابتکار", icon: <Flame className="h-5 w-5" />, color: "#7CFC00", card: "noor-card-green", desc: "نوآوری و خلاقیت" },
 };
@@ -350,7 +351,7 @@ export function BlogView() {
                     <textarea
                       value={commentText}
                       onChange={(e) => setCommentText(e.target.value)}
-                      placeholder="نظر خود را بنویس..."
+                      placeholder="نظر خود را بنویسید..."
                       rows={2}
                       className="w-full rounded-2xl border border-input bg-background px-4 py-2.5 text-sm focus:border-noor-sky focus:outline-none resize-none"
                     />
@@ -422,63 +423,56 @@ export function BlogView() {
           className="mb-6 text-center"
         >
           <NoorBadge variant="coral" icon={<Sparkles className="h-3 w-3" />}>
-            اندیشه‌های سازنده منافسه
+            یادداشت‌ها و تجربه‌های منافسه
           </NoorBadge>
           <h1 className="mt-3 text-3xl font-extrabold text-noor-navy dark:text-white">
             بلاگ منافسه
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            ایده‌ها، اندیشه‌ها، ابتکارات و سرگذشت‌های سازنده — همراه با شما
+            ایده‌ها، تجربه‌ها و داستان‌های کاربران — همراه با شما
           </p>
         </motion.div>
 
-        {/* Search */}
-        <div className="mb-4 relative">
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="جستجو در بلاگ..."
-            className="w-full rounded-full border border-input bg-background py-2.5 pr-4 pl-10 text-sm focus:border-noor-sky focus:outline-none"
-          />
-          {search && (
-            <button
-              onClick={() => setSearch("")}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-            >
-              ✕
-            </button>
-          )}
-        </div>
+        {/* Search + category — نوار منسجم */}
+        <NoorCard className="mb-6 noor-card-sky">
+          <div className="grid gap-3 md:grid-cols-12">
+            <div className="md:col-span-5">
+              <FilterSearch
+                value={search}
+                onChange={setSearch}
+                placeholder="جستجو در بلاگ…"
+              />
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5 md:col-span-7 md:justify-end">
+              <button
+                onClick={() => setFilter("all")}
+                className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
+                  filter === "all"
+                    ? "bg-noor-navy text-white"
+                    : "bg-white/70 text-noor-navy hover:bg-white dark:bg-white/10 dark:text-white"
+                }`}
+              >
+                همه
+              </button>
+              {Object.entries(CATEGORY_META).map(([key, meta]) => (
+                <button
+                  key={key}
+                  onClick={() => setFilter(key)}
+                  className={`flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-bold transition ${
+                    filter === key
+                      ? "bg-noor-navy text-white"
+                      : "bg-white/70 text-noor-navy hover:bg-white dark:bg-white/10 dark:text-white"
+                  }`}
+                >
+                  <span style={{ color: filter === key ? meta.color : undefined }}>{meta.icon}</span>
+                  {meta.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </NoorCard>
 
-        {/* Category filter pills */}
-        <div className="mb-6 flex flex-wrap justify-center gap-2">
-          <button
-            onClick={() => setFilter("all")}
-            className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
-              filter === "all"
-                ? "bg-noor-navy text-white"
-                : "bg-white/70 text-noor-navy hover:bg-white dark:bg-white/10 dark:text-white"
-            }`}
-          >
-            همه
-          </button>
-          {Object.entries(CATEGORY_META).map(([key, meta]) => (
-            <button
-              key={key}
-              onClick={() => setFilter(key)}
-              className={`flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-bold transition ${
-                filter === key
-                  ? "bg-noor-navy text-white"
-                  : "bg-white/70 text-noor-navy hover:bg-white dark:bg-white/10 dark:text-white"
-              }`}
-            >
-              <span style={{ color: filter === key ? meta.color : undefined }}>{meta.icon}</span>
-              {meta.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Posts */}
+                {/* Posts */}
         {loading ? (
           <div className="grid place-items-center py-20">
             <Loader2 className="h-8 w-8 animate-spin text-noor-yellow" />
@@ -496,7 +490,7 @@ export function BlogView() {
               هنوز پستی منتشر نشده
             </h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              به‌زودی ایده‌ها و اندیشه‌های سازنده در اینجا منتشر خواهد شد
+              به‌زودی مطالب جدید در این بخش منتشر می‌شود
             </p>
           </div>
         ) : (

@@ -59,7 +59,7 @@ export async function GET() {
         select: {
           id: true,
           fullName: true,
-          verificationType: true,
+          qariRank: true,
           recitationType: true,
           privateSessionPrice: true,
           lastVisit: true,
@@ -98,7 +98,7 @@ export async function GET() {
     const onlineMasters = masters.map((m) => ({
       id: m.id,
       fullName: m.fullName,
-      verificationType: m.verificationType,
+      qariRank: m.qariRank,
       recitationType: m.recitationType,
       privateSessionPrice: m.privateSessionPrice,
       lastVisit: m.lastVisit.getTime(),

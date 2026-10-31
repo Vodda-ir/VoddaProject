@@ -69,6 +69,13 @@ model User {
   bio               String?
   referredBy        String?
   education         String?
+  honors            String?  // مدارج و افتخارات متنی (نمایش در پروفایل عمومی)
+  socialLinks       String?  // JSON: { eitaa, telegram, instagram, youtube, website }
+  gallery           String?  // JSON آرایه تصاویر پروفایل: [{ url, thumb }] — حداکثر ۱۰
+
+  // ── اتصال به برنامک ایتا ──
+  eitaaId           String?  @unique
+  eitaaUsername     String?
 
   // اطلاعات تلاوت
   recitationType    String?  // تحقیق | ترتیل
@@ -84,6 +91,24 @@ model User {
   streak            Int      @default(1)
   lastVisit         DateTime @default(now())
 
+  // ── تیک آبی (احراز قاری/استاد) ──
+  verificationStatus String?  @default("none") // none | pending | approved | rejected
+  qariRank           String?  // provincial | national | international (تیک رنگی قاری)
+  verifiedAt         DateTime?
+  verificationNote   String?
+
+  // ── اطلاعات بانکی (برای درآمدزایی قاریان) ──
+  iban               String?  // IR + 24 رقم
+  cardNumber         String?  // 16 رقم
+  accountNumber      String?
+  accountHolder      String?
+  bankName           String?
+  isOfferingPrivateSessions Boolean @default(false)
+  privateSessionPrice       Int     @default(1) // قیمت هر جلسه خصوصی به امتیاز — توسط استاد تعیین می‌شود (۱ تا ۵۰)
+
+  // ── سیستم امتیاز (Credits) ──
+  creditBalance      Int      @default(0)
+
   // Relations
   accounts          Account[]
   sessions          Session[]
@@ -95,6 +120,12 @@ model User {
   tahmeeds          Tahmeed[]
   badges            UserBadge[]
   blogComments      BlogComment[]
+  verificationRequests VerificationRequest[]
+  creditTransactions CreditTransaction[]
+  payments          Payment[]
+  masterBookings    MasterBooking[] @relation("MasterBookings")
+  studentBookings   MasterBooking[] @relation("StudentBookings")
+  settlements       Settlement[]
 
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
@@ -102,6 +133,7 @@ model User {
   @@index([email])
   @@index([province])
   @@index([recitationType])
+  @@index([verificationStatus])
 }
 
 // ============================================================
@@ -151,9 +183,23 @@ model RecitationSession {
   startedAt          DateTime @default(now())
   endedAt            DateTime?
 
+  // ── WebRTC signaling (جایگزین PeerJS — مستقیم روی دیتابیس) ──
+  // هر سه فیلد JSON هستند و برای پشتیبانی از چند مهمان، به‌صورت
+  // map با کلید connId ذخیره می‌شوند:
+  //   signalOffer:        { [connId]: RTCSessionDescription }
+  //   signalAnswer:       { [connId]: RTCSessionDescription }
+  //   signalIceCandidates:{ [connId]: ICECandidate[] }  (میزبان)
+  //   guestIceCandidates: { [connId]: ICECandidate[] }  (مهمان)
+  signalOffer        String?
+  signalAnswer       String?
+  signalIceCandidates String?
+  guestIceCandidates String?
+  signalUpdatedAt    DateTime?
+
   host               User     @relation(fields: [hostId], references: [id])
   participants       SessionParticipant[]
   competitions       Competition[]
+  masterBookings     MasterBooking[]
 
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
@@ -281,6 +327,7 @@ model Lounge {
   relatedCity     String?
   creatorId       String?
   isActive        Boolean  @default(true) // تالارهای غیرفعال از لیست خارج می‌شوند
+  pinnedMessageId String?  // پیام سنجاق‌شده تالار (سبک تلگرام)
 
   members         LoungeMember[]
   messages        LoungeMessage[]
@@ -458,4 +505,130 @@ model AdDailyStat {
   @@unique([adId, date])
   @@index([adId])
   @@index([date])
+}
+
+// ============================================================
+// تیک آبی — درخواست‌های احراز قاری/استاد/عالم
+// ============================================================
+model VerificationRequest {
+  id              String    @id @default(cuid())
+  userId          String
+  requestType     String    // bronze | silver | gold (تصمیم داور)
+  auditionUrl     String?   // تلاوت آزمونی (فایل ضبط/آپلودشده یا لینک)
+  skills          String?   // JSON آرایه مهارت‌های اعلامی
+  pledge          Boolean   @default(false) // پذیرش تعهد اخلاقی
+  competitionId   String?   // شناسه مسابقه از فهرست معتبر (trusted-competitions)
+  competitionYear String?   // سال کسب مقام
+  fullName        String
+  bio             String
+  recitationVideoUrl String?
+  socialLinks     String?
+  achievements    String?
+  status          String    @default("pending") // pending | approved | rejected
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  adminNote       String?
+
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+// ============================================================
+// سیستم امتیاز — تراکنش‌ها (خرید/مصرف/بازگشت/هدیه/درآمد)
+// ============================================================
+model CreditTransaction {
+  id          String   @id @default(cuid())
+  userId      String
+  type        String   // purchase | spend | refund | bonus | earning
+  amount      Int      // امتیاز (برای earning: تومان)
+  balanceAfter Int     // موجودی امتیاز بعد از تراکنش
+  description String
+  paymentId   String?  @unique
+  bookingId   String?
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([type])
+}
+
+// ============================================================
+// پرداخت‌های درگاه سپ بانک سامان
+// ============================================================
+model Payment {
+  id           String   @id @default(cuid())
+  userId       String
+  amount       Int      // مبلغ (تومان)
+  credits      Int      // امتیاز خریداری‌شده
+  plan         String   // شناسه پلن
+  status       String   @default("pending") // pending | paid | failed
+  samanResNum  String   @unique // شماره پیگیری ما (ResNum)
+  samanRefNum  String?  @unique // یک رسید بانکی فقط برای یک سفارش
+  samanToken   String?  @unique // توکن صادرشده برای همین سفارش
+  samanTraceNo String?  // شماره پیگیری بانک (TraceNo)
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+// ============================================================
+// رزرو جلسات خصوصی با استاد (قاری تأییدشده)
+// ============================================================
+model MasterBooking {
+  id            String   @id @default(cuid())
+  masterId      String
+  studentId     String
+  sessionId     String?
+  creditsSpent  Int      @default(1)
+  creditsValue  Int      // ارزش تومانی امتیاز مصرف‌شده
+  platformFee   Int      // کمیسون پلتفرم (تومان)
+  masterEarning Int      // سهم قاری (تومان)
+  status        String   @default("active") // active | completed | cancelled
+  rating        Int?
+  review        String?
+
+  master        User     @relation("MasterBookings", fields: [masterId], references: [id], onDelete: Cascade)
+  student       User     @relation("StudentBookings", fields: [studentId], references: [id], onDelete: Cascade)
+  session       RecitationSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([masterId])
+  @@index([studentId])
+  @@index([status])
+}
+
+// ============================================================
+// درخواست‌های تسویه قاریان
+// ============================================================
+model Settlement {
+  id            String   @id @default(cuid())
+  userId        String
+  amount        Int      // تومان
+  status        String   @default("pending") // pending | approved | paid | rejected
+  iban          String
+  accountHolder String
+  bankName      String
+  processedBy   String?
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
 }

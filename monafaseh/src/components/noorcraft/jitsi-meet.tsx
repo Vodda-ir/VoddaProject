@@ -261,7 +261,7 @@ export function JitsiMeet({
 
       {/* Loading overlay — only shown briefly, then removed */}
       {status === "loading" && (
-        <div className="pointer-events-none absolute inset-0 grid place-items-center bg-gradient-to-br from-noor-navy to-[#0d1230]">
+        <div className="pointer-events-none absolute inset-0 grid place-items-center bg-gradient-to-br from-[#0b0a08] to-[#080706]">
           <div className="flex flex-col items-center gap-3 text-white">
             <Loader2 className="h-10 w-10 animate-spin text-noor-yellow" />
             <div className="text-center">
@@ -276,7 +276,7 @@ export function JitsiMeet({
 
       {/* Error overlay */}
       {status === "error" && (
-        <div className="absolute inset-0 grid place-items-center bg-gradient-to-br from-noor-navy to-[#0d1230] p-6">
+        <div className="absolute inset-0 grid place-items-center bg-gradient-to-br from-[#0b0a08] to-[#080706] p-6">
           <div className="flex max-w-md flex-col items-center gap-3 text-center text-white">
             <AlertCircle className="h-12 w-12 text-noor-coral" />
             <div>

@@ -8,24 +8,49 @@ function generateToken(userId: string): string {
   return Buffer.from(payload).toString("base64");
 }
 
+// ============================================================
+// نرمال‌سازی نام کاربری/ایمیل ورودی
+// کیبورد موبایل اغلب فاصله انتهایی، نیم‌فاصله (ZWNJ)، علامت‌های
+// RTL یا ارقام فارسی/عربی اضافه می‌کند — همه پاک می‌شوند.
+// ============================================================
+function normalizeIdentifier(raw: string): string {
+  return raw
+    .trim()
+    // نیم‌فاصله و کاراکترهای نامرئی جهت متن
+    .replace(/[\u200b-\u200f\u202a-\u202e\u2066-\u2069\ufeff]/g, "")
+    // ارقام فارسی → لاتین
+    .replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
+    // ارقام عربی → لاتین
+    .replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
+}
+
 // POST /api/auth/login
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, password } = body;
+    const identifier = normalizeIdentifier(String(body?.email ?? ""));
+    const password = String(body?.password ?? "");
 
-    if (!email || !password) {
+    if (!identifier || !password) {
       return NextResponse.json(
         { ok: false, error: "ایمیل و رمز عبور الزامی است" },
         { status: 400 },
       );
     }
 
-    console.log("[Auth] Login attempt for:", email);
+    console.log("[Auth] Login attempt for:", identifier);
 
-    const user = await db.user.findUnique({
-      where: { email },
+    // ورود با ایمیل یا نام کاربری (شماره موبایل/تلگرام)
+    let user = await db.user.findUnique({
+      where: { email: identifier },
     });
+    if (!user) {
+      user = await db.user.findFirst({
+        where: {
+          OR: [{ phone: identifier }, { telegramId: identifier }],
+        },
+      });
+    }
 
     if (!user || !user.passwordHash) {
       return NextResponse.json(

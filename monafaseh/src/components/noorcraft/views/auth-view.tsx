@@ -113,7 +113,82 @@ export function AuthView() {
 
   const signIn = useNoorStore((s) => s.signIn);
   const setView = useNoorStore((s) => s.setView);
+  const eitaaAvailable = useNoorStore((s) => s.eitaaAvailable);
   const { toast } = useToast();
+
+  // ── برنامک ایتا: ورود یکپارچه ──────────────────────────────
+  const PENDING_EITAA_KEY = "monafaseh_eitaa_pending_init";
+
+  async function handleEitaaLogin() {
+    const initData = window.Eitaa?.WebApp?.initData;
+    if (!initData) {
+      toast({
+        title: "ایتا در دسترس نیست",
+        description: "برنامک باید از داخل پیام‌رسان ایتا باز شود.",
+        variant: "destructive",
+      });
+      return;
+    }
+    try {
+      const res = await fetch("/api/eitaa/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ initData }),
+      });
+      const d = await res.json();
+      if (d.ok && d.linked && d.user) {
+        signIn(d.user);
+        toast({ title: "ورود موفق ✓", description: "با حساب ایتا وارد شدید." });
+        setView("dashboard");
+      } else if (d.ok && !d.linked) {
+        // حساب ایتا معتبر است ولی هنوز به حساب منافسه متصل نیست؛
+        // بعد از ورود/ثبت‌نام معمولی، خودکار متصل می‌شود.
+        try {
+          sessionStorage.setItem(PENDING_EITAA_KEY, initData);
+        } catch {}
+        toast({
+          title: "حساب ایتا شناسایی شد",
+          description:
+            "برای اتصال، یک‌بار با ایمیل و رمز عبور وارد شوید یا ثبت‌نام کنید — بعد از آن برای همیشه با یک ضربه وارد می‌شوید.",
+        });
+        setMode("login");
+      } else {
+        throw new Error(d.error);
+      }
+    } catch (err: any) {
+      toast({
+        title: "خطا در ورود با ایتا",
+        description: err?.message || "لطفاً دوباره تلاش کنید",
+        variant: "destructive",
+      });
+    }
+  }
+
+  // بعد از ورود/ثبت‌نام معمولی — اتصال خودکار حساب ایتای در انتظار
+  async function linkPendingEitaa() {
+    let initData: string | null = null;
+    try {
+      initData = sessionStorage.getItem(PENDING_EITAA_KEY);
+    } catch {}
+    if (!initData) return;
+    try {
+      const res = await fetch("/api/eitaa/link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ initData }),
+      });
+      const d = await res.json();
+      if (d.ok) {
+        try {
+          sessionStorage.removeItem(PENDING_EITAA_KEY);
+        } catch {}
+        toast({
+          title: "حساب ایتا متصل شد ✅",
+          description: "از این پس از داخل ایتا بدون رمز عبور وارد می‌شوید.",
+        });
+      }
+    } catch {}
+  }
 
   const registerForm = useForm<RegisterForm>({
     resolver: zodResolver(registerSchema),
@@ -323,8 +398,9 @@ export function AuthView() {
 
       // Login is automatic — cookie is set by server
       signIn(data.user);
+      linkPendingEitaa();
       toast({
-        title: "خوش آمدی! ✨",
+        title: "خوش آمدید! ✨",
         description: `حساب کاربری ${values.fullName} با موفقیت ساخته شد.`,
       });
       setView("dashboard");
@@ -365,9 +441,10 @@ export function AuthView() {
       }
 
       signIn(data.user);
+      linkPendingEitaa();
       toast({
         title: "ورود موفق ✓",
-        description: "خوشحالیم که برگشتی!",
+        description: "خوشحالیم که بازگشتید!",
       });
       setView("dashboard");
     } catch (err) {
@@ -402,10 +479,10 @@ export function AuthView() {
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
             {isEditMode
-              ? "اطلاعات خود را به‌روز کنید و امتیاز نور بگیرید"
+              ? "اطلاعات خود را به‌روز کنید و امتیاز نور کسب کنید"
               : mode === "register"
-                ? "در سه گام ساده، عضو محفل منافسه شو"
-                : "ایمیل/موبایل و رمز عبورت رو وارد کن"}
+                ? "در سه گام ساده به جمع قاریان منافسه بپیوندید"
+                : "ایمیل یا شماره موبایل و رمز عبور خود را وارد کنید"}
           </p>
         </motion.div>
 
@@ -640,7 +717,7 @@ export function AuthView() {
                         >
                           <Textarea
                             rows={2}
-                            placeholder="چند کلمه درباره خودت و علاقه‌ات به قرآن..."
+                            placeholder="درباره خودتان و علاقه‌تان به قرآن چند خط بنویسید..."
                             {...registerForm.register("bio")}
                           />
                         </Field>
@@ -673,7 +750,7 @@ export function AuthView() {
                             📞 اطلاعات تماس
                           </p>
                           <p className="mt-1 text-xs text-muted-foreground">
-                            با تکمیل این اطلاعات، ۳۰ امتیاز نور دریافت می‌کنی!
+                            با تکمیل این اطلاعات، ۳۰ امتیاز نور دریافت می‌کنید!
                           </p>
                         </div>
 
@@ -867,7 +944,7 @@ export function AuthView() {
                             🎙️ اطلاعات تلاوت
                           </p>
                           <p className="mt-1 text-xs text-muted-foreground">
-                            اطلاعات تخصصی تلاوتت رو وارد کن تا با قاریان هم‌ذوق آشنا بشی
+                            اطلاعات تخصصی تلاوت خود را وارد کنید تا با قاریان هم‌علاقه آشنا شوید
                           </p>
                         </div>
 
@@ -1086,6 +1163,16 @@ export function AuthView() {
                   onSubmit={loginForm.handleSubmit(handleLogin)}
                   className="space-y-5"
                 >
+                  {eitaaAvailable && (
+                    <button
+                      type="button"
+                      onClick={handleEitaaLogin}
+                      className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-l from-noor-sky to-[#5ac8fa] px-4 py-3 text-sm font-bold text-white shadow-md transition hover:brightness-105"
+                    >
+                      <span className="text-base">💬</span>
+                      ورود سریع با ایتا
+                    </button>
+                  )}
                   <Field
                     label="ایمیل یا شماره موبایل"
                     icon={<Mail className="h-4 w-4" />}

@@ -22,14 +22,22 @@ import { cn } from "@/lib/utils";
 import { useNoorStore } from "@/store/noor-store";
 import { useRecitationStore } from "@/store/recitation-store";
 
-// Lazy load PeerJS on client side
-let Peer: any = null;
-async function loadPeer() {
-  if (Peer) return Peer;
-  const mod = await import("peerjs");
-  Peer = mod.Peer || mod.default?.Peer || mod.default;
-  return Peer;
-}
+// ============================================================
+// WebRTC مستقیم — بدون PeerJS و بدون broker خارجی
+// ------------------------------------------------------------
+// سیگنالینگ از طریق API خود پروژه انجام می‌شود:
+//   GET  /api/sessions/[sessionId]/signal   — خواندن وضعیت
+//   POST /api/sessions/[sessionId]/signal   — نوشتن offer/answer/candidates
+//
+// جریان اتصال:
+//   مهمان: createOffer → POST offer(connId) → POLL برای answer و
+//          کاندیدهای میزبان → setRemoteDescription → اتصال برقرار
+//   میزبان: POLL برای offerهای جدید → createAnswer → POST answer +
+//          کاندیدهای خود → اتصال برقرار
+//
+// همگام‌سازی وضعیت منافسه (آیات/نوبت/...) از طریق data channel
+// با نام "competition" بین میزبان و مهمان‌ها انجام می‌شود.
+// ============================================================
 
 interface Participant {
   id: string;
@@ -40,8 +48,13 @@ interface Participant {
 }
 
 interface WebRTCVideoChatProps {
+  /** شناسه جلسه در دیتابیس — برای API سیگنالینگ */
+  sessionId: string;
+  /** نام اتاق (jitsiRoom) — برای لینک دعوت */
   roomName: string;
   displayName: string;
+  /** آیا کاربر فعلی میزبان جلسه است؟ */
+  isHost?: boolean;
   onHangup?: () => void;
   /**
    * Called when a competition-state message is received from the host.
@@ -55,9 +68,46 @@ interface WebRTCVideoChatProps {
   onBroadcastReady?: (broadcast: () => void) => void;
 }
 
+// ICE servers — STUN + TURN.
+// TURN برای کاربران پشت symmetric NAT (رایج در اپراتورهای ایرانی) حیاتی است.
+// OpenRelay TURN رایگان: https://www.metered.ca/tools/openrelay/
+const ICE_SERVERS: RTCIceServer[] = [
+  { urls: "stun:stun.l.google.com:19302" },
+  { urls: "stun:stun1.l.google.com:19302" },
+  { urls: "stun:stun2.l.google.com:19302" },
+  { urls: "stun:global.stun.twilio.com:3478" },
+  {
+    urls: "turn:openrelay.metered.ca:80",
+    username: "openrelayproject",
+    credential: "openrelayproject",
+  },
+  {
+    urls: "turn:openrelay.metered.ca:443",
+    username: "openrelayproject",
+    credential: "openrelayproject",
+  },
+  {
+    urls: "turn:openrelay.metered.ca:443?transport=tcp",
+    username: "openrelayproject",
+    credential: "openrelayproject",
+  },
+];
+
+const POLL_INTERVAL_MS = 1500;
+
+interface SignalState {
+  offers: Record<string, any>;
+  answers: Record<string, any>;
+  hostCandidates: Record<string, any[]>;
+  guestCandidates: Record<string, any[]>;
+  updatedAt: number;
+}
+
 export function WebRTCVideoChat({
+  sessionId,
   roomName,
   displayName,
+  isHost = false,
   onHangup,
   onCompetitionStateReceived,
   onBroadcastReady,
@@ -71,15 +121,23 @@ export function WebRTCVideoChat({
   const [micOn, setMicOn] = useState(true);
   const [camOn, setCamOn] = useState(true);
   const [copied, setCopied] = useState(false);
-  const [peerId, setPeerId] = useState<string>("");
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
-  const peerRef = useRef<any>(null);
+  const pcsRef = useRef<Map<string, RTCPeerConnection>>(new Map());
+  const channelsRef = useRef<Map<string, RTCDataChannel>>(new Map());
   const streamsRef = useRef<Map<string, MediaStream>>(new Map());
   const remoteVideoRefs = useRef<Map<string, HTMLVideoElement>>(new Map());
-  const connectionsRef = useRef<Map<string, any>>(new Map());
   const localStreamRef = useRef<MediaStream | null>(null);
   const displayNameRef = useRef(displayName);
+  const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const handledOffersRef = useRef<Set<string>>(new Set());
+  const appliedCandidatesRef = useRef<Set<string>>(new Set());
+  const answeredRef = useRef<Set<string>>(new Set());
+  const disposedRef = useRef(false);
+  // شناسه اتصال مهمان — برای میزبان استفاده نمی‌شود
+  const myConnIdRef = useRef(
+    `c-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+  );
 
   // Pull store actions once — these will be called when remote
   // participants connect/disconnect so RecitationSetup can pick them up.
@@ -92,16 +150,342 @@ export function WebRTCVideoChat({
   const syncFromHost = useRecitationStore((s) => s.syncFromHost);
   const getSnapshot = useRecitationStore((s) => s.getSnapshot);
 
+  useEffect(() => {
+    displayNameRef.current = displayName;
+  }, [displayName]);
+
+  // ── ارسال/دریافت سیگنالینگ ────────────────────────────────
+
+  const fetchSignal = useCallback(async (): Promise<SignalState | null> => {
+    try {
+      const res = await fetch(`/api/sessions/${sessionId}/signal`, {
+        cache: "no-store",
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      if (!data.ok) return null;
+      return data.signal as SignalState;
+    } catch {
+      return null;
+    }
+  }, [sessionId]);
+
+  const postSignal = useCallback(
+    async (payload: Record<string, unknown>) => {
+      try {
+        await fetch(`/api/sessions/${sessionId}/signal`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+      } catch (err) {
+        console.warn("[WebRTC] postSignal failed:", err);
+      }
+    },
+    [sessionId],
+  );
+
+  // ── مدیریت مشارکت‌کننده‌ها ─────────────────────────────────
+
+  function upsertParticipant(id: string, name: string, stream: MediaStream | null) {
+    setParticipants((prev) => {
+      const next = new Map(prev);
+      const existing = next.get(id);
+      next.set(id, {
+        id,
+        name: name || existing?.name || `کاربر ${id.slice(-4)}`,
+        stream: stream ?? existing?.stream ?? null,
+        audioOn: existing?.audioOn ?? true,
+        videoOn: existing?.videoOn ?? true,
+      });
+      return next;
+    });
+    if (stream) {
+      streamsRef.current.set(id, stream);
+      setTimeout(() => {
+        const videoEl = remoteVideoRefs.current.get(id);
+        if (videoEl && videoEl.srcObject !== stream) {
+          videoEl.srcObject = stream;
+          videoEl.play().catch(() => {});
+        }
+      }, 100);
+    }
+  }
+
+  function removeParticipant(id: string) {
+    setParticipants((prev) => {
+      const next = new Map(prev);
+      next.delete(id);
+      return next;
+    });
+    const pc = pcsRef.current.get(id);
+    if (pc) {
+      try { pc.close(); } catch {}
+      pcsRef.current.delete(id);
+    }
+    channelsRef.current.delete(id);
+    streamsRef.current.delete(id);
+    remoteVideoRefs.current.delete(id);
+    removeSessionParticipant(id);
+  }
+
+  // ── پیام‌های data channel ──────────────────────────────────
+
+  function handleChannelMessage(connId: string, event: MessageEvent) {
+    try {
+      const data = JSON.parse(event.data);
+      if (data?.type === "name" && data?.name) {
+        upsertParticipant(connId, data.name, null);
+        upsertSessionParticipant({
+          id: connId,
+          name: data.name,
+          avatarColor: data.avatarColor ?? "#FFD700",
+          avatarUrl: data.avatarUrl ?? null,
+          order: 0,
+        });
+        // پاسخ با نام خودمان (اگر مقایل هنوز نام ما را ندارد)
+        const ch = channelsRef.current.get(connId);
+        if (ch && ch.readyState === "open") {
+          ch.send(
+            JSON.stringify({
+              type: "name",
+              name: displayNameRef.current,
+              avatarColor: data.reply ? undefined : undefined,
+              reply: true,
+            }),
+          );
+        }
+      } else if (data?.type === "competition-state" && data?.snapshot) {
+        syncFromHost(data.snapshot);
+        if (onCompetitionStateReceived) onCompetitionStateReceived();
+      }
+    } catch {
+      // پیام غیر-JSON — نادیده بگیر
+    }
+  }
+
+  // ── ساخت RTCPeerConnection ────────────────────────────────
+
+  function createPeerConnection(connId: string): RTCPeerConnection {
+    const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+
+    // ارسال کاندیدهای ICE خودمان به سم مقابل
+    pc.onicecandidate = (event) => {
+      if (event.candidate) {
+        postSignal({
+          type: isHost ? "host-candidates" : "guest-candidates",
+          connId,
+          candidates: [event.candidate.toJSON()],
+        });
+      }
+    };
+
+    // دریافت استریم مقابل
+    pc.ontrack = (event) => {
+      const [remoteStream] = event.streams;
+      if (remoteStream) {
+        upsertParticipant(connId, "", remoteStream);
+      }
+    };
+
+    pc.onconnectionstatechange = () => {
+      console.log(`[WebRTC] PC(${connId}) state:`, pc.connectionState);
+      if (
+        pc.connectionState === "failed" ||
+        pc.connectionState === "closed" ||
+        pc.connectionState === "disconnected"
+      ) {
+        // disconnected موقت است؛ failed/closed حذف می‌کنند
+        if (pc.connectionState !== "disconnected") {
+          removeParticipant(connId);
+        }
+      }
+    };
+
+    // استریم محلی را به اتصال اضافه کن
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach((track) => {
+        pc.addTrack(track, localStreamRef.current!);
+      });
+    }
+
+    pcsRef.current.set(connId, pc);
+    return pc;
+  }
+
+  function setupDataChannel(connId: string, channel: RTCDataChannel) {
+    channelsRef.current.set(connId, channel);
+    channel.onmessage = (event) => handleChannelMessage(connId, event);
+    channel.onopen = () => {
+      console.log(`[WebRTC] Data channel open: ${connId}`);
+      // معرفی خودمان به مقایل
+      try {
+        channel.send(JSON.stringify({ type: "name", name: displayNameRef.current }));
+      } catch {}
+      // اگر میزبان هستیم، وضعیت فعلی منافسه را هم بفرست
+      if (isHost) {
+        try {
+          channel.send(
+            JSON.stringify({ type: "competition-state", snapshot: getSnapshot() }),
+          );
+        } catch {}
+      }
+    };
+  }
+
+  // ── منتظر ماندن برای جمع‌آوری ICE ─────────────────────────
+
+  function waitForIceGathering(pc: RTCPeerConnection, timeoutMs = 2000): Promise<void> {
+    return new Promise((resolve) => {
+      if (pc.iceGatheringState === "complete") return resolve();
+      const check = () => {
+        if (pc.iceGatheringState === "complete") {
+          cleanup();
+          resolve();
+        }
+      };
+      pc.addEventListener("icegatheringstatechange", check);
+      const timer = setTimeout(() => {
+        cleanup();
+        resolve(); // timeout — با آنچه جمع شده ادامه بده
+      }, timeoutMs);
+      function cleanup() {
+        clearTimeout(timer);
+        pc.removeEventListener("icegatheringstatechange", check);
+      }
+    });
+  }
+
+  // ── سمت مهمان: ساخت و ارسال offer ─────────────────────────
+
+  const sendOffer = useCallback(async () => {
+    const connId = myConnIdRef.current;
+    if (pcsRef.current.has(connId)) return; // قبلاً ساخته شده
+
+    const pc = createPeerConnection(connId);
+
+    // مهمان — data channel را از میزبان دریافت می‌کند (ondatachannel)
+    pc.ondatachannel = (event) => {
+      setupDataChannel(connId, event.channel);
+    };
+
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    await waitForIceGathering(pc);
+    if (disposedRef.current) return;
+
+    await postSignal({
+      type: "offer",
+      connId,
+      sdp: pc.localDescription,
+    });
+    console.log("[WebRTC] Guest offer posted:", connId);
+  }, [postSignal]);
+
+  // ── سمت میزبان: پاسخ به offerهای جدید ─────────────────────
+
+  const handleOffers = useCallback(
+    async (signal: SignalState) => {
+      for (const connId of Object.keys(signal.offers)) {
+        if (handledOffersRef.current.has(connId)) continue;
+        handledOffersRef.current.add(connId);
+
+        console.log("[WebRTC] Host handling new offer:", connId);
+        const pc = createPeerConnection(connId);
+
+        // میزبان — data channel را خودش می‌سازد
+        setupDataChannel(connId, pc.createDataChannel("competition"));
+
+        try {
+          await pc.setRemoteDescription(
+            new RTCSessionDescription(signal.offers[connId]),
+          );
+          const answer = await pc.createAnswer();
+          await pc.setLocalDescription(answer);
+          await waitForIceGathering(pc);
+          if (disposedRef.current) return;
+
+          await postSignal({
+            type: "answer",
+            connId,
+            sdp: pc.localDescription,
+          });
+          console.log("[WebRTC] Host answer posted:", connId);
+        } catch (err) {
+          console.error("[WebRTC] Host answer failed:", err);
+          handledOffersRef.current.delete(connId);
+        }
+      }
+    },
+    [postSignal],
+  );
+
+  // ── سمت مهمان: اعمال answer و کاندیدهای میزبان ───────────
+
+  const applyAnswerAndCandidates = useCallback(async (signal: SignalState) => {
+    const connId = myConnIdRef.current;
+    const pc = pcsRef.current.get(connId);
+    if (!pc) return;
+
+    // اعمال answer میزبان
+    const answer = signal.answers[connId];
+    if (answer && !answeredRef.current.has(connId) && pc.signalingState === "have-local-offer") {
+      answeredRef.current.add(connId);
+      try {
+        await pc.setRemoteDescription(new RTCSessionDescription(answer));
+        console.log("[WebRTC] Guest applied host answer");
+      } catch (err) {
+        console.error("[WebRTC] apply answer failed:", err);
+      }
+    }
+
+    // اعمال کاندیدهای میزبان
+    const hostCands = signal.hostCandidates[connId] ?? [];
+    for (const cand of hostCands) {
+      const key = `${connId}:${cand?.candidate}`;
+      if (appliedCandidatesRef.current.has(key)) continue;
+      appliedCandidatesRef.current.add(key);
+      try {
+        await pc.addIceCandidate(new RTCIceCandidate(cand));
+      } catch {
+        // کاندید زودهنگام/تکراری — نادیده
+      }
+    }
+  }, []);
+
+  // ── حلقه polling سیگنالینگ ────────────────────────────────
+
+  const startSignalingPoll = useCallback(() => {
+    if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+
+    const tick = async () => {
+      if (disposedRef.current) return;
+      const signal = await fetchSignal();
+      if (!signal || disposedRef.current) return;
+
+      if (isHost) {
+        await handleOffers(signal);
+      } else {
+        await applyAnswerAndCandidates(signal);
+      }
+    };
+
+    tick();
+    pollTimerRef.current = setInterval(tick, POLL_INTERVAL_MS);
+  }, [isHost, fetchSignal, handleOffers, applyAnswerAndCandidates]);
+
   // Broadcast a competition state snapshot to all connected peers (data
   // channels). Called by session-room-view's host-side competition actions.
   const broadcastCompetitionState = useCallback(() => {
-    connectionsRef.current.forEach((conn) => {
+    channelsRef.current.forEach((ch) => {
       try {
-        if (conn.open) {
-          conn.send({
-            type: "competition-state",
-            snapshot: getSnapshot(),
-          });
+        if (ch.readyState === "open") {
+          ch.send(
+            JSON.stringify({
+              type: "competition-state",
+              snapshot: getSnapshot(),
+            }),
+          );
         }
       } catch (err) {
         console.warn("[WebRTC] Failed to broadcast competition state:", err);
@@ -117,38 +501,25 @@ export function WebRTCVideoChat({
     }
   }, [broadcastCompetitionState, onBroadcastReady]);
 
-  useEffect(() => {
-    displayNameRef.current = displayName;
-  }, [displayName]);
-
-  // The host peer ID is deterministic: `monafaseh-${roomName}`.
-  // The first user to register with this ID becomes the host.
-  // Subsequent users get an `unavailable-id` error from PeerJS (because the
-  // host already holds it) and fall back to a guest peer ID, then connect
-  // to the host.
-  const hostPeerId = useRef<string>(`monafaseh-${roomName}`).current;
-  const myPeerId = useRef<string>(
-    `monafaseh-${roomName}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
-  ).current;
-
   const cleanup = useCallback(() => {
+    disposedRef.current = true;
+    if (pollTimerRef.current) {
+      clearInterval(pollTimerRef.current);
+      pollTimerRef.current = null;
+    }
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach((t) => t.stop());
       localStreamRef.current = null;
     }
-    connectionsRef.current.forEach((conn) => {
-      try {
-        conn.close();
-      } catch {}
+    pcsRef.current.forEach((pc) => {
+      try { pc.close(); } catch {}
     });
-    connectionsRef.current.clear();
+    pcsRef.current.clear();
+    channelsRef.current.clear();
     streamsRef.current.clear();
-    if (peerRef.current) {
-      try {
-        peerRef.current.destroy();
-      } catch {}
-      peerRef.current = null;
-    }
+    handledOffersRef.current.clear();
+    appliedCandidatesRef.current.clear();
+    answeredRef.current.clear();
   }, []);
 
   // Detect in-app browsers (WebView) that block camera access
@@ -157,22 +528,20 @@ export function WebRTCVideoChat({
       return { isWebView: false, label: "", hint: "" };
     }
     const ua = navigator.userAgent || "";
-    // Instagram, Facebook, TikTok, Telegram, WhatsApp, Snap, etc.
     const inAppPatterns: Array<{ re: RegExp; label: string; hint: string }> = [
-      { re: /Instagram/i, label: "اینستاگرام", hint: "روی سه نقطه بالا کلیک کن و «باز کردن در مرورگر» را بزن" },
-      { re: /FBAN|FBAV|Facebook/i, label: "فیسبوک", hint: "روی سه نقطه بالا کلیک کن و «Open in browser» را بزن" },
-      { re: /TikTok/i, label: "تیک‌تاک", hint: "روی Share بزن و «Open in browser» را انتخاب کن" },
-      { re: /Telegram|TGBot/i, label: "تلگرام", hint: "روی سه نقطه بالا کلیک کن و «Open in external browser» را بزن" },
-      { re: /WhatsApp/i, label: "واتس‌اپ", hint: "لینک را در مرورگر گوشی باز کن" },
-      { re: /Snapchat/i, label: "اسنپ‌چت", hint: "روی Share بزن و «Open in browser» را انتخاب کن" },
-      { re: /MicroMessenger/i, label: "وی‌چت", hint: "روی سه نقطه بزن و «Open in browser» را انتخاب کن" },
+      { re: /Instagram/i, label: "اینستاگرام", hint: "روی سه‌نقطه‌ی بالای صفحه کلیک کنید و گزینه‌ی «باز کردن در مرورگر» را انتخاب کنید" },
+      { re: /FBAN|FBAV|Facebook/i, label: "فیسبوک", hint: "روی سه‌نقطه‌ی بالای صفحه کلیک کنید و «Open in browser» را انتخاب کنید" },
+      { re: /TikTok/i, label: "تیک‌تاک", hint: "دکمه‌ی Share را بزنید و «Open in browser» را انتخاب کنید" },
+      { re: /Telegram|TGBot/i, label: "تلگرام", hint: "روی سه‌نقطه‌ی بالای صفحه کلیک کنید و «Open in external browser» را انتخاب کنید" },
+      { re: /WhatsApp/i, label: "واتس‌اپ", hint: "لطفاً لینک را در مرورگر گوشی باز کنید" },
+      { re: /Snapchat/i, label: "اسنپ‌چت", hint: "دکمه‌ی Share را بزنید و «Open in browser» را انتخاب کنید" },
+      { re: /MicroMessenger/i, label: "وی‌چت", hint: "روی سه‌نقطه کلیک کنید و «Open in browser» را انتخاب کنید" },
     ];
     for (const p of inAppPatterns) {
       if (p.re.test(ua)) {
         return { isWebView: true, label: p.label, hint: p.hint };
       }
     }
-    // Detect generic WebView (no Chrome/Safari/Firefox marker but Android/iOS)
     const looksLikeMobile = /Android|iPhone|iPad|iPod/i.test(ua);
     const looksLikeBrowser =
       /Chrome|Safari|Firefox|CriOS|FxiOS|Edge|OPR/i.test(ua);
@@ -180,7 +549,7 @@ export function WebRTCVideoChat({
       return {
         isWebView: true,
         label: "مرورگر داخلی",
-        hint: "صفحه را در مرورگر اصلی گوشی (Chrome یا Safari) باز کن",
+        hint: "لطفاً صفحه را در مرورگر اصلی گوشی (Chrome یا Safari) باز کنید",
       };
     }
     return { isWebView: false, label: "", hint: "" };
@@ -209,7 +578,6 @@ export function WebRTCVideoChat({
   const requestMediaAccess = useCallback(async (): Promise<MediaStream | null> => {
     console.log("[WebRTC] Requesting camera + microphone access...");
 
-    // Check WebView first — common cause of mobile camera failure.
     const webview = detectWebView();
     if (webview.isWebView) {
       throw new Error(
@@ -217,20 +585,16 @@ export function WebRTCVideoChat({
       );
     }
 
-    // Check if mediaDevices API is available
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      // Try to polyfill for older mobile browsers
       const legacyGetUserMedia =
         (navigator as any).getUserMedia ||
         (navigator as any).webkitGetUserMedia ||
         (navigator as any).mozGetUserMedia;
       if (!legacyGetUserMedia) {
-        // iOS Safari older versions need https + mediaDevices
         throw new Error(
           "مرورگر شما از دوربین پشتیبانی نمی‌کند. لطفاً نسخه جدید Chrome یا Safari را نصب کنید و مطمئن شوید سایت روی https:// باز می‌شود.",
         );
       }
-      // Use legacy API as last resort
       return new Promise((resolve, reject) => {
         legacyGetUserMedia.call(
           navigator,
@@ -241,7 +605,6 @@ export function WebRTCVideoChat({
       });
     }
 
-    // Check if context is secure (HTTPS or localhost)
     if (
       typeof window !== "undefined" &&
       window.location.protocol !== "https:" &&
@@ -256,18 +619,13 @@ export function WebRTCVideoChat({
     const isMobile = isMobileDevice();
     const isIOS = isIOSSafari();
 
-    // Build a list of constraint attempts, from most-specific to most-permissive.
-    // We try each one in turn until something works.
     const attempts: Array<{ label: string; constraints: MediaStreamConstraints }> = [];
     if (isIOS) {
-      // iOS Safari prefers simpler constraints — specifying width/height/facingMode
-      // often triggers OverconstrainedError on iOS.
       attempts.push(
         { label: "iOS simple", constraints: { video: true, audio: true } },
         { label: "iOS audio-priority", constraints: { audio: true, video: false } },
       );
     } else if (isMobile) {
-      // Android / other mobile — try with facingMode first
       attempts.push(
         {
           label: "mobile facingMode",
@@ -282,7 +640,6 @@ export function WebRTCVideoChat({
         },
       );
     } else {
-      // Desktop — full HD with ideal constraints
       attempts.push(
         {
           label: "desktop HD",
@@ -318,7 +675,6 @@ export function WebRTCVideoChat({
       } catch (err: any) {
         console.warn(`[WebRTC] Attempt "${attempt.label}" failed:`, err.name, err.message);
         lastError = err;
-        // Don't retry on permission errors — user explicitly denied
         if (
           err.name === "NotAllowedError" ||
           err.name === "SecurityError" ||
@@ -329,11 +685,9 @@ export function WebRTCVideoChat({
         ) {
           break;
         }
-        // For OverconstrainedError, try the next attempt
       }
     }
 
-    // All attempts failed — translate the last error
     const err = lastError;
     console.error("[WebRTC] All attempts failed. Last error:", err?.name, err?.message);
 
@@ -344,16 +698,16 @@ export function WebRTCVideoChat({
     if (err.name === "NotAllowedError" || err.name === "SecurityError") {
       if (isIOS) {
         throw new Error(
-          "دسترسی به دوربین رد شد. روی آیفون: به Settings → Privacy → Camera برو و مطمئن شو Safari اجازه دارد. سپس مرورگر را ببند و دوباره باز کن. همچنین می‌توانی در Safari روی آیکون «AA» کنار آدرس بزنی و Website Settings → Camera → Allow را انتخاب کنی.",
+          "دسترسی به دوربین رد شد. در آیفون به Settings → Privacy → Camera بروید و مطمئن شوید Safari اجازه‌ی دسترسی دارد؛ سپس مرورگر را ببندید و دوباره باز کنید. همچنین می‌توانید در Safari روی آیکون «AA» کنار آدرس بزنید و Website Settings → Camera → Allow را انتخاب کنید.",
         );
       }
       if (isMobile) {
         throw new Error(
-          "دسترسی به دوربین رد شد. روی آیکون قفل یا سه نقطه کنار آدرس سایت در مرورگر بزن، دسترسی دوربین و میکروفون را «Allow» بگذار، سپس صفحه را رفرش کن. اگر باز هم نشد، به Settings گوشی → Apps → مرورگر → Permissions → Camera برو و اجازه بده.",
+          "دسترسی به دوربین رد شد. روی آیکون قفل یا سه‌نقطه‌ی کنار آدرس سایت در مرورگر بزنید، دسترسی دوربین و میکروفون را «Allow» قرار دهید و سپس صفحه را تازه‌سازی کنید. اگر مشکل ادامه داشت، در تنظیمات گوشی به Settings → Apps → مرورگر → Permissions → Camera بروید و دسترسی را فعال کنید.",
         );
       }
       throw new Error(
-        "دسترسی به دوربین رد شد. روی آیکون قفل کنار آدرس کلیک کن و دسترسی دوربین و میکروفون را «اجازه دهید» بگذارید، سپس دوباره تلاش کنید.",
+        "دسترسی به دوربین رد شد. روی آیکون قفل کنار آدرس کلیک کنید و دسترسی دوربین و میکروفون را «اجازه دهید» قرار دهید، سپس دوباره تلاش کنید.",
       );
     } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
       throw new Error(
@@ -384,14 +738,14 @@ export function WebRTCVideoChat({
     try {
       setStatus("loading");
       setErrorMsg("");
+      disposedRef.current = false;
 
-      console.log("[WebRTC] Initializing for room:", roomName);
+      console.log("[WebRTC] Initializing for session:", sessionId, "room:", roomName);
 
       // Step 1: Get camera + microphone (PRIORITY — must succeed)
       const stream = await requestMediaAccess();
 
       if (!stream) {
-        // This shouldn't happen, but just in case
         setStatus("permission");
         return;
       }
@@ -401,334 +755,38 @@ export function WebRTCVideoChat({
       setCamOn(true);
       setMicOn(true);
 
-      console.log("[WebRTC] Local stream set, will attach after render");
+      // Step 2: شروع حلقه سیگنالینگ
+      startSignalingPoll();
+      setStatus("ready");
 
-      // NOTE: We don't attach the stream here directly.
-      // The video element might not be mounted yet because React hasn't re-rendered.
-      // We use a useEffect below to attach the stream once both ref and stream are ready.
-
-      // Step 2: Load PeerJS
-      const PeerClass = await loadPeer();
-      if (!PeerClass) {
-        throw new Error("بارگذاری PeerJS ناموفق بود");
+      // Step 3: مهمان — ارسال فوری offer برای اتصال به میزبان
+      if (!isHost) {
+        await sendOffer();
       }
-
-      // Step 3: Try to register as the host first.
-      // If `monafaseh-${roomName}` is already taken, fall back to a guest peer
-      // ID and connect to the host. This way, when guest B joins a session
-      // hosted by A, B can find A's peer ID and call it.
-      console.log("[WebRTC] Trying to register as host:", hostPeerId);
-
-      // ICE servers config — STUN + TURN.
-      // TURN is critical for users behind symmetric NAT (common in Iran with
-      // mobile carriers and some ISPs). Without TURN, ~20% of peer connections
-      // fail because STUN alone can't traverse symmetric NAT.
-      // OpenRelay provides free TURN servers (https://www.metered.ca/tools/openrelay/).
-      const iceConfig = {
-        iceServers: [
-          { urls: "stun:stun.l.google.com:19302" },
-          { urls: "stun:stun1.l.google.com:19302" },
-          { urls: "stun:stun2.l.google.com:19302" },
-          { urls: "stun:global.stun.twilio.com:3478" },
-          // OpenRelay free TURN — relay traffic when direct P2P fails.
-          // These are public free TURN servers; safe to use for any app.
-          {
-            urls: "turn:openrelay.metered.ca:80",
-            username: "openrelayproject",
-            credential: "openrelayproject",
-          },
-          {
-            urls: "turn:openrelay.metered.ca:443",
-            username: "openrelayproject",
-            credential: "openrelayproject",
-          },
-          {
-            urls: "turn:openrelay.metered.ca:443?transport=tcp",
-            username: "openrelayproject",
-            credential: "openrelayproject",
-          },
-        ],
-      };
-
-      const peer = new PeerClass(hostPeerId, {
-        debug: 2,
-        config: iceConfig,
-      });
-
-      peerRef.current = peer;
-      setPeerId(hostPeerId);
-
-      let becameGuest = false;
-
-      // Step 4: When peer is open, decide role
-      peer.on("open", (id: string) => {
-        console.log("[WebRTC] Host peer opened with ID:", id);
-        // We successfully registered as the host. Wait for guests to connect.
-        setStatus("ready");
-      });
-
-      // Step 5: Handle incoming data connections (guests calling host)
-      peer.on("connection", (conn: any) => {
-        console.log("[WebRTC] Incoming connection from:", conn.peer);
-        setupDataConnection(conn);
-
-        conn.on("open", () => {
-          if (localStreamRef.current) {
-            console.log("[WebRTC] Calling new participant:", conn.peer);
-            const call = peer.call(conn.peer, localStreamRef.current, {
-              metadata: { name: displayNameRef.current },
-            });
-            setupCall(call);
-          }
-        });
-      });
-
-      // Step 6: Handle incoming calls (guests calling host)
-      peer.on("call", (call: any) => {
-        console.log("[WebRTC] Incoming call from:", call.peer);
-        if (localStreamRef.current) {
-          call.answer(localStreamRef.current);
-        } else {
-          call.answer();
-        }
-        setupCall(call);
-      });
-
-      peer.on("error", async (err: any) => {
-        console.error("[WebRTC] Peer error:", err.type, err.message);
-        if (err.type === "unavailable-id" && !becameGuest) {
-          // The host ID is taken — we are a guest. Switch to a guest peer ID
-          // and connect to the host.
-          becameGuest = true;
-          console.log("[WebRTC] Host already exists, becoming guest:", myPeerId);
-          try { peer.destroy(); } catch {}
-          peerRef.current = null;
-
-          const guestPeer = new PeerClass(myPeerId, {
-            debug: 2,
-            config: iceConfig,
-          });
-          peerRef.current = guestPeer;
-          setPeerId(myPeerId);
-
-          // Retry counter for "host not yet available" scenarios.
-          // When the رقیب (guest) connects before the host has registered,
-          // peer.connect() fails with "peer-unavailable". We retry up to 10
-          // times with 2s delay — total ~20s — which is enough for the host
-          // to click "شروع محفل تصویری" or for auto-start to fire.
-          let hostConnectRetries = 0;
-          const MAX_HOST_RETRIES = 10;
-
-          const tryConnectToHost = () => {
-            if (!peerRef.current || peerRef.current !== guestPeer) return;
-            if (hostConnectRetries >= MAX_HOST_RETRIES) {
-              console.warn("[WebRTC] Giving up after", MAX_HOST_RETRIES, "retries to reach host");
-              return;
-            }
-            hostConnectRetries++;
-            console.log(`[WebRTC] Guest connect attempt ${hostConnectRetries}/${MAX_HOST_RETRIES} to host:`, hostPeerId);
-            const conn = guestPeer.connect(hostPeerId, {
-              metadata: { name: displayNameRef.current },
-              reliable: true,
-            });
-            setupDataConnection(conn);
-
-            conn.on("open", () => {
-              // Call the host with our video stream
-              if (localStreamRef.current) {
-                console.log("[WebRTC] Calling host:", hostPeerId);
-                const call = guestPeer.call(hostPeerId, localStreamRef.current, {
-                  metadata: { name: displayNameRef.current },
-                });
-                setupCall(call);
-              }
-            });
-
-            // If the connection fails to open within 2s, retry.
-            // "peer-unavailable" error will fire on the peer, but we also
-            // add this timeout as a safety net.
-            setTimeout(() => {
-              if (!conn.open) {
-                try { conn.close(); } catch {}
-                tryConnectToHost();
-              }
-            }, 2000);
-          };
-
-          guestPeer.on("open", (gid: string) => {
-            console.log("[WebRTC] Guest peer opened with ID:", gid);
-            setStatus("ready");
-            // Connect to host (with retry on failure)
-            tryConnectToHost();
-          });
-
-          // Guest also handles incoming calls (host calls back)
-          guestPeer.on("call", (call: any) => {
-            console.log("[WebRTC] Guest received call from:", call.peer);
-            if (localStreamRef.current) {
-              call.answer(localStreamRef.current);
-            } else {
-              call.answer();
-            }
-            setupCall(call);
-          });
-
-          guestPeer.on("connection", (conn: any) => {
-            console.log("[WebRTC] Guest received connection from:", conn.peer);
-            setupDataConnection(conn);
-          });
-
-          guestPeer.on("error", (gerr: any) => {
-            console.error("[WebRTC] Guest peer error:", gerr.type, gerr.message);
-            if (gerr.type === "peer-unavailable") {
-              // Host not online yet — silently retry via tryConnectToHost.
-              // The setTimeout in tryConnectToHost will handle the next attempt.
-              console.log("[WebRTC] Host not available yet, retrying...");
-              // Reset the retry counter only if we've never connected — the
-              // setTimeout in tryConnectToHost will fire the next attempt.
-            } else {
-              setErrorMsg(`خطای اتصال: ${gerr.type || gerr.message}`);
-              setStatus("error");
-            }
-          });
-
-          guestPeer.on("disconnected", () => {
-            console.log("[WebRTC] Guest peer disconnected, attempting reconnect");
-            try { guestPeer.reconnect(); } catch {}
-          });
-        } else if (err.type === "peer-unavailable") {
-          // Host not available yet — silently ignore; the user can retry
-          console.log("[WebRTC] Host not available yet, will retry");
-        } else {
-          setErrorMsg(`خطای اتصال: ${err.type || err.message}`);
-          setStatus("error");
-        }
-      });
-
-      peer.on("disconnected", () => {
-        console.log("[WebRTC] Peer disconnected, attempting reconnect");
-        try {
-          peer.reconnect();
-        } catch {}
-      });
     } catch (err) {
       console.error("[WebRTC] Init error:", err);
       setErrorMsg(err instanceof Error ? err.message : "خطا در راه‌اندازی");
       setStatus("error");
     }
-  }, [roomName, myPeerId, requestMediaAccess]);
-
-  function setupDataConnection(conn: any) {
-    connectionsRef.current.set(conn.peer, conn);
-
-    conn.on("open", () => {
-      console.log("[WebRTC] Data connection opened with:", conn.peer);
-      // Send our name + avatar info so the remote side can list us as a participant
-      conn.send({
-        type: "name",
-        name: displayNameRef.current,
-        // We don't have access to user info here — the host/guest avatar will
-        // be derived from the local NoorUser if available; otherwise a default color.
-      });
-    });
-
-    conn.on("data", (data: any) => {
-      if (data?.type === "name" && data?.name) {
-        setParticipants((prev) => {
-          const next = new Map(prev);
-          const existing = next.get(conn.peer);
-          next.set(conn.peer, {
-            id: conn.peer,
-            name: data.name,
-            stream: existing?.stream ?? null,
-            audioOn: existing?.audioOn ?? true,
-            videoOn: existing?.videoOn ?? true,
-          });
-          return next;
-        });
-        // Also push to noor-store so RecitationSetup can include this participant
-        upsertSessionParticipant({
-          id: conn.peer,
-          name: data.name,
-          avatarColor: data.avatarColor ?? "#FFD700",
-          avatarUrl: data.avatarUrl ?? null,
-          order: 0, // RecitationSetup will re-order
-        });
-      } else if (data?.type === "competition-state" && data?.snapshot) {
-        // Host has broadcast the latest competition state. Apply it locally
-        // so the guest's recitation rotation matches the host's.
-        syncFromHost(data.snapshot);
-        if (onCompetitionStateReceived) onCompetitionStateReceived();
-      }
-    });
-
-    conn.on("close", () => {
-      console.log("[WebRTC] Data connection closed with:", conn.peer);
-      removeParticipant(conn.peer);
-      removeSessionParticipant(conn.peer);
-      connectionsRef.current.delete(conn.peer);
-    });
-
-    conn.on("error", (err: any) => {
-      console.error("[WebRTC] Data connection error:", err);
-    });
-  }
-
-  function setupCall(call: any) {
-    call.on("stream", (remoteStream: MediaStream) => {
-      console.log("[WebRTC] Got remote stream from:", call.peer);
-      streamsRef.current.set(call.peer, remoteStream);
-
-      setParticipants((prev) => {
-        const next = new Map(prev);
-        const name = call.metadata?.name || `کاربر ${call.peer.slice(-4)}`;
-        next.set(call.peer, {
-          id: call.peer,
-          name,
-          stream: remoteStream,
-          audioOn: true,
-          videoOn: true,
-        });
-        return next;
-      });
-
-      setTimeout(() => {
-        const videoEl = remoteVideoRefs.current.get(call.peer);
-        if (videoEl) {
-          videoEl.srcObject = remoteStream;
-          videoEl.play().catch((e) => {
-            console.warn("[WebRTC] Remote video play failed:", e);
-          });
-        }
-      }, 100);
-    });
-
-    call.on("close", () => {
-      console.log("[WebRTC] Call closed with:", call.peer);
-      removeParticipant(call.peer);
-    });
-
-    call.on("error", (err: any) => {
-      console.error("[WebRTC] Call error:", err);
-    });
-  }
-
-  function removeParticipant(peerId: string) {
-    setParticipants((prev) => {
-      const next = new Map(prev);
-      next.delete(peerId);
-      return next;
-    });
-    streamsRef.current.delete(peerId);
-    remoteVideoRefs.current.delete(peerId);
-  }
+  }, [sessionId, roomName, isHost, requestMediaAccess, startSignalingPoll, sendOffer]);
 
   // Initialize on mount
   useEffect(() => {
     initWebRTC();
     return () => {
+      // میزبان هنگام خروج، سیگنالینگ جلسه را پاک می‌کند تا جلسه‌های
+      // بعدی همین اتاق با وضعیت تمیز شروع شوند.
+      if (isHost) {
+        fetch(`/api/sessions/${sessionId}/signal`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "clear" }),
+        }).catch(() => {});
+      }
       cleanup();
+      clearSessionParticipants();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Attach local stream to video element when both are ready
@@ -736,24 +794,18 @@ export function WebRTCVideoChat({
     if (localStream && localVideoRef.current) {
       console.log("[WebRTC] Attaching local stream to video element");
       const videoEl = localVideoRef.current;
-      // Detach first to avoid race conditions on mobile
       try { videoEl.srcObject = null; } catch {}
       videoEl.srcObject = localStream;
       videoEl.muted = true; // avoid echo
       videoEl.setAttribute("playsinline", "true");
       videoEl.setAttribute("autoplay", "true");
-      // Force play — some mobile browsers require explicit play() AND a retry.
       const tryPlay = (retries: number) => {
         videoEl.play().then(() => {
           console.log("[WebRTC] ✓ Local video playing");
         }).catch((e: any) => {
           console.warn(`[WebRTC] Local video play failed (attempt ${3 - retries}/3):`, e.name);
-          if (retries > 0 && e.name === "AbortError") {
-            // iOS Safari often throws AbortError on the first try — retry after a short delay
-            setTimeout(() => tryPlay(retries - 1), 200);
-          } else if (retries > 0 && e.name === "NotAllowedError") {
-            // Wait for user gesture — retry once after 500ms
-            setTimeout(() => tryPlay(retries - 1), 500);
+          if (retries > 0 && (e.name === "AbortError" || e.name === "NotAllowedError")) {
+            setTimeout(() => tryPlay(retries - 1), e.name === "AbortError" ? 200 : 500);
           }
         });
       };
@@ -767,10 +819,7 @@ export function WebRTCVideoChat({
       const videoEl = remoteVideoRefs.current.get(id);
       if (videoEl && p.stream && videoEl.srcObject !== p.stream) {
         videoEl.srcObject = p.stream;
-        // On mobile, ensure play() succeeds after attach
-        videoEl.play().catch((e: any) => {
-          console.warn(`[WebRTC] Remote video play failed for ${p.name}:`, e.name);
-          // Retry after a short delay
+        videoEl.play().catch(() => {
           setTimeout(() => {
             videoEl.play().catch(() => {});
           }, 300);
@@ -815,10 +864,10 @@ export function WebRTCVideoChat({
   const totalParticipants = participantList.length + 1; // +1 for self
 
   return (
-    <div className="relative flex h-full w-full flex-col overflow-hidden rounded-xl bg-gradient-to-br from-[#0d1230] to-[#181d44]">
+    <div className="relative flex h-full w-full flex-col overflow-hidden rounded-xl bg-gradient-to-br from-[#0b0a08] to-[#17150f]">
       {/* Loading overlay — only shown BEFORE we get a local stream */}
       {status === "loading" && !localStream && (
-        <div className="absolute inset-0 z-20 grid place-items-center bg-gradient-to-br from-[#0d1230] to-[#181d44]">
+        <div className="absolute inset-0 z-20 grid place-items-center bg-gradient-to-br from-[#0b0a08] to-[#17150f]">
           <div className="flex flex-col items-center gap-4 text-white">
             <motion.div
               animate={{ scale: [1, 1.1, 1] }}
@@ -840,7 +889,7 @@ export function WebRTCVideoChat({
 
       {/* Permission needed overlay */}
       {status === "permission" && (
-        <div className="absolute inset-0 z-20 overflow-y-auto bg-gradient-to-br from-[#0d1230] to-[#181d44] p-4 sm:p-6">
+        <div className="absolute inset-0 z-20 overflow-y-auto bg-gradient-to-br from-[#0b0a08] to-[#17150f] p-4 sm:p-6">
           <div className="mx-auto flex max-w-md flex-col items-center gap-4 py-6 text-center text-white">
             <ShieldAlert className="h-12 w-12 text-noor-yellow" />
             <div>
@@ -862,7 +911,7 @@ export function WebRTCVideoChat({
 
       {/* Error overlay */}
       {status === "error" && (
-        <div className="absolute inset-0 z-20 overflow-y-auto bg-gradient-to-br from-[#0d1230] to-[#181d44] p-4 sm:p-6">
+        <div className="absolute inset-0 z-20 overflow-y-auto bg-gradient-to-br from-[#0b0a08] to-[#17150f] p-4 sm:p-6">
           <div className="mx-auto flex max-w-md flex-col items-center gap-4 py-6 text-center text-white">
             <AlertCircle className="h-12 w-12 text-noor-coral" />
             <div>
@@ -922,7 +971,7 @@ export function WebRTCVideoChat({
               />
               {/* Overlay when camera is off */}
               {!camOn && (
-                <div className="absolute inset-0 grid place-items-center bg-gradient-to-br from-noor-navy/80 to-[#0d1230]">
+                <div className="absolute inset-0 grid place-items-center bg-gradient-to-br from-[#0b0a08]/80 to-[#080706]">
                   <div className="flex flex-col items-center gap-2">
                     <div className="grid h-16 w-16 place-items-center rounded-full bg-noor-yellow/20 text-2xl font-bold text-noor-yellow">
                       {displayName.charAt(0)}
@@ -965,9 +1014,7 @@ export function WebRTCVideoChat({
               </div>
             ))}
 
-            {/* "Waiting for rival" placeholder — shown when no remote participants
-                are connected yet. Helps the user understand they're alone in the
-                room and the other person hasn't joined (or hasn't clicked start). */}
+            {/* "Waiting for rival" placeholder */}
             {participantList.length === 0 && (
               <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-white/5 to-white/0 ring-1 ring-dashed ring-white/20">
                 <div className="flex h-full min-h-[160px] flex-col items-center justify-center gap-3 p-4 text-center">
@@ -998,7 +1045,7 @@ export function WebRTCVideoChat({
         </div>
       )}
 
-      {/* Small "connecting" indicator — does NOT cover the video */}
+      {/* Small "connecting" indicator */}
       {status === "loading" && localStream && (
         <div className="absolute right-2 top-12 z-10 flex items-center gap-1.5 rounded-full bg-black/50 px-3 py-1 text-xs text-white backdrop-blur">
           <Loader2 className="h-3 w-3 animate-spin text-noor-yellow" />

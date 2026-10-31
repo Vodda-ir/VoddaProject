@@ -25,6 +25,7 @@ import { NoorButton } from "../noor-button";
 import { NoorCard } from "../noor-card";
 import { NoorBadge } from "../noor-badge";
 import { BackButtons } from "../back-buttons";
+import { FilterSearch } from "../noor-filters";
 import { useNoorStore } from "@/store/noor-store";
 import { useToast } from "@/hooks/use-toast";
 import type { Lounge, LoungeCategory } from "@/lib/noorcraft/types";
@@ -80,6 +81,7 @@ export function LoungeView() {
   const [newName, setNewName] = useState("");
   const [newDesc, setNewDesc] = useState("");
   const [newCategory, setNewCategory] = useState<LoungeCategory>("general");
+  const [newGender, setNewGender] = useState<"all" | "male" | "female">("all");
 
   async function refreshLounges() {
     try {
@@ -113,6 +115,7 @@ export function LoungeView() {
           name: newName.trim(),
           description: newDesc.trim(),
           category: newCategory,
+          genderRestriction: newGender,
           color: CATEGORY_COLORS[newCategory],
         }),
       });
@@ -153,7 +156,42 @@ export function LoungeView() {
   const totalOnline = apiLounges.reduce((sum, l) => sum + l.onlineCount, 0);
   const totalMembers = apiLounges.reduce((sum, l) => sum + l.memberCount, 0);
 
+  // شمارنده ناخوانده سمت کاربر — آخرین بازدید هر تالار در localStorage
+  const seenMap = (() => {
+    try {
+      return JSON.parse(localStorage.getItem("lounge-lastSeen") ?? "{}") as Record<string, number>;
+    } catch {
+      return {} as Record<string, number>;
+    }
+  })();
+  function hasUnread(l: Lounge): boolean {
+    if (!l.lastMessage) return false;
+    if (user && l.lastMessage.senderId === user.id) return false;
+    const seen = seenMap[l.id] ?? 0;
+    return l.lastMessage.at > seen;
+  }
+
   function handleJoinLounge(lounge: Lounge) {
+    // جداسازی جنسیتی تالارها (طبق قوانین منافسه)
+    if (
+      lounge.genderRestriction &&
+      lounge.genderRestriction !== "all" &&
+      user &&
+      user.gender &&
+      lounge.genderRestriction !== user.gender
+    ) {
+      toast({
+        title: "دسترسی محدود",
+        description: `این تالار ویژه ${lounge.genderRestriction === "male" ? "آقایان" : "بانوان"} است.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    try {
+      const map = JSON.parse(localStorage.getItem("lounge-lastSeen") ?? "{}");
+      map[lounge.id] = Date.now();
+      localStorage.setItem("lounge-lastSeen", JSON.stringify(map));
+    } catch {}
     setView("lounge-room");
     localStorage.setItem("currentLoungeId", lounge.id);
   }
@@ -175,13 +213,13 @@ export function LoungeView() {
           <div className="flex items-center justify-between gap-4">
             <div>
               <NoorBadge variant="yellow" icon={<Sparkles className="h-3 w-3" />}>
-                فضای هم‌نشینی قاریان
+                محل گفتگوی قاریان
               </NoorBadge>
               <h1 className="mt-3 text-3xl font-extrabold text-noor-navy dark:text-white">
                 تالار گفتگو
               </h1>
               <p className="mt-1 text-sm text-muted-foreground">
-                با قاریان هم‌ذوق گفتگو کن، دعوت بفرست و محفلی بساز
+                با قاریان هم‌علاقه گفت‌وگو کنید، آن‌ها را به محفل دعوت کنید و ارتباط بگیرید
               </p>
             </div>
             <NoorButton
@@ -212,62 +250,50 @@ export function LoungeView() {
           </div>
         </motion.div>
 
-        {/* === CATEGORY FILTER PILLS === */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="mb-4 flex flex-wrap gap-2"
-        >
-          <button
-            onClick={() => setFilter("all")}
-            className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition ${
-              filter === "all"
-                ? "bg-noor-navy text-white"
-                : "bg-white/70 text-noor-navy hover:bg-white dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
-            }`}
-          >
-            همه
-          </button>
-          {(Object.entries(CATEGORY_LABELS) as [LoungeCategory | "all", string][])
-            .filter(([k]) => k !== "all")
-            .map(([key, label]) => (
+        {/* === SEARCH + CATEGORY — نوار منسجم === */}
+        <NoorCard className="mb-4 noor-card-sky">
+          <div className="grid gap-3 md:grid-cols-12">
+            <div className="md:col-span-5">
+              <FilterSearch
+                value={search}
+                onChange={setSearch}
+                placeholder="جستجو در تالارها…"
+              />
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5 md:col-span-7 md:justify-end">
               <button
-                key={key}
-                onClick={() => setFilter(key)}
+                onClick={() => setFilter("all")}
                 className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition ${
-                  filter === key
+                  filter === "all"
                     ? "bg-noor-navy text-white"
                     : "bg-white/70 text-noor-navy hover:bg-white dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
                 }`}
               >
-                <span style={{ color: filter === key ? CATEGORY_COLORS[key] : undefined }}>
-                  {CATEGORY_ICONS[key]}
-                </span>
-                {label}
+                همه
               </button>
-            ))}
-        </motion.div>
-
-        {/* === SEARCH === */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          className="mb-4"
-        >
-          <div className="relative">
-            <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="جستجو در تالارها..."
-              className="w-full rounded-full border border-input bg-background py-2 pr-10 pl-4 text-sm focus:border-noor-sky focus:outline-none"
-            />
+              {(Object.entries(CATEGORY_LABELS) as [LoungeCategory | "all", string][])
+                .filter(([k]) => k !== "all")
+                .map(([key, label]) => (
+                  <button
+                    key={key}
+                    onClick={() => setFilter(key)}
+                    className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition ${
+                      filter === key
+                        ? "bg-noor-navy text-white"
+                        : "bg-white/70 text-noor-navy hover:bg-white dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
+                    }`}
+                  >
+                    <span style={{ color: filter === key ? CATEGORY_COLORS[key] : undefined }}>
+                      {CATEGORY_ICONS[key]}
+                    </span>
+                    {label}
+                  </button>
+                ))}
+            </div>
           </div>
-        </motion.div>
+        </NoorCard>
 
-        {/* === LOUNGES GRID === */}
+                {/* === LOUNGES GRID === */}
         {loading ? (
           <div className="grid place-items-center py-20">
             <Loader2 className="h-8 w-8 animate-spin text-noor-yellow" />
@@ -289,7 +315,7 @@ export function LoungeView() {
               هنوز تالاری ساخته نشده
             </h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              اولین تالار را تو بساز و قاریان را دور هم جمع کن
+              اولین تالار را شما بسازید و قاریان را دور هم جمع کنید
             </p>
             <NoorButton
               variant="green"
@@ -314,7 +340,11 @@ export function LoungeView() {
                   transition={{ delay: i * 0.05, type: "spring", stiffness: 300, damping: 25 }}
                   whileHover={{ y: -4 }}
                 >
-                  <LoungeCard lounge={lounge} onJoin={() => handleJoinLounge(lounge)} />
+                  <LoungeCard
+                    lounge={lounge}
+                    onJoin={() => handleJoinLounge(lounge)}
+                    hasUnread={hasUnread(lounge)}
+                  />
                 </motion.div>
               ))}
             </AnimatePresence>
@@ -330,7 +360,7 @@ export function LoungeView() {
         >
           <p>
             📢 تالارها فضایی برای گفتگوی قاریان است. در تالارها می‌توانید پیام بفرستید،
-            به محافل دعوت کنید و با هم‌فکران ارتباط برقرار کنید.
+            به محافل دعوت کنید و با کاربران هم‌علاقه ارتباط برقرار کنید.
           </p>
         </motion.div>
       </div>
@@ -407,7 +437,7 @@ export function LoungeView() {
                           <button
                             key={key}
                             type="button"
-                            onClick={() => setNewCategory(key)}
+                            onClick={() => setNewCategory(key as LoungeCategory)}
                             className={`flex items-center gap-1.5 rounded-xl border-2 p-2.5 text-xs font-bold transition ${
                               newCategory === key
                                 ? "border-noor-green bg-noor-green/15"
@@ -420,6 +450,29 @@ export function LoungeView() {
                             {label}
                           </button>
                         ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="flex items-center gap-1.5 text-sm font-bold">
+                      <Users className="h-4 w-4" />
+                      ویژه
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {([["all", "همگانی"], ["male", "آقایان"], ["female", "بانوان"]] as const).map(([val, lbl]) => (
+                        <button
+                          key={val}
+                          type="button"
+                          onClick={() => setNewGender(val)}
+                          className={`rounded-xl border-2 p-2 text-xs font-bold transition ${
+                            newGender === val
+                              ? "border-noor-green bg-noor-green/15"
+                              : "border-muted-foreground/20 hover:border-noor-sky"
+                          }`}
+                        >
+                          {lbl}
+                        </button>
+                      ))}
                     </div>
                   </div>
 
@@ -464,10 +517,19 @@ export function LoungeView() {
 function LoungeCard({
   lounge,
   onJoin,
+  hasUnread,
 }: {
   lounge: Lounge;
   onJoin: () => void;
+  hasUnread: boolean;
 }) {
+  const fmtTime = (at: number) => {
+    const d = new Date(at);
+    const now = new Date();
+    if (d.toDateString() === now.toDateString())
+      return d.toLocaleTimeString("fa-IR", { hour: "2-digit", minute: "2-digit" });
+    return d.toLocaleDateString("fa-IR", { month: "short", day: "numeric" });
+  };
   const cardClass = CATEGORY_CARD_CLASS[lounge.category];
   const color = CATEGORY_COLORS[lounge.category];
   const hasActivity = lounge.onlineCount > 0;
@@ -482,19 +544,26 @@ function LoungeCard({
         >
           {CATEGORY_ICONS[lounge.category]}
         </div>
-        {hasActivity ? (
-          <span className="flex items-center gap-1 rounded-full bg-noor-green/15 px-2 py-0.5 text-[10px] font-bold text-noor-green">
-            <span className="relative flex h-1.5 w-1.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-noor-green opacity-75" />
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-noor-green" />
+        <div className="flex items-center gap-1">
+          {lounge.genderRestriction && lounge.genderRestriction !== "all" && (
+            <span className="rounded-full bg-noor-sky/15 px-2 py-0.5 text-[9px] font-bold text-noor-navy dark:text-sky-300">
+              {lounge.genderRestriction === "male" ? "آقایان" : "بانوان"}
             </span>
-            فعال
-          </span>
-        ) : (
-          <span className="rounded-full bg-muted/30 px-2 py-0.5 text-[10px] font-bold text-muted-foreground">
-            آرام
-          </span>
-        )}
+          )}
+          {hasActivity ? (
+            <span className="flex items-center gap-1 rounded-full bg-noor-green/15 px-2 py-0.5 text-[10px] font-bold text-noor-green">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-noor-green opacity-75" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-noor-green" />
+              </span>
+              فعال
+            </span>
+          ) : (
+            <span className="rounded-full bg-muted/30 px-2 py-0.5 text-[10px] font-bold text-muted-foreground">
+              آرام
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Name */}
@@ -532,6 +601,24 @@ function LoungeCard({
           {lounge.onlineCount.toLocaleString("fa-IR")} آنلاین
         </span>
       </div>
+
+      {/* آخرین پیام + ناخوانده */}
+      {lounge.lastMessage && (
+        <div className="mb-2 flex items-center gap-2 rounded-xl bg-muted/30 px-2.5 py-1.5">
+          {hasUnread && (
+            <span className="h-2 w-2 shrink-0 rounded-full bg-noor-green shadow-[0_0_6px_var(--color-noor-green)]" />
+          )}
+          <p className="min-w-0 flex-1 truncate text-[11px] text-muted-foreground">
+            <span className="font-bold text-foreground">
+              {lounge.lastMessage.senderName.split(" ")[0]}:
+            </span>{" "}
+            {lounge.lastMessage.text}
+          </p>
+          <span className="shrink-0 text-[9px] text-muted-foreground">
+            {fmtTime(lounge.lastMessage.at)}
+          </span>
+        </div>
+      )}
 
       {/* Join button */}
       <button

@@ -19,11 +19,29 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        console.log("[Auth] Attempting login for:", credentials.email);
+        // نرمال‌سازی: حذف فاصله/نیم‌فاصله/علامت‌های نامرئی و تبدیل ارقام فارسی
+        const identifier = credentials.email
+          .trim()
+          .replace(/[\u200b-\u200f\u202a-\u202e\u2066-\u2069\ufeff]/g, "")
+          .replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
+          .replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
 
-        const user = await db.user.findUnique({
-          where: { email: credentials.email },
+        console.log("[Auth] Attempting login for:", identifier);
+
+        // ورود با ایمیل یا نام کاربری (شماره موبایل/تلگرام)
+        let user = await db.user.findUnique({
+          where: { email: identifier },
         });
+        if (!user) {
+          user = await db.user.findFirst({
+            where: {
+              OR: [
+                { phone: identifier },
+                { telegramId: identifier },
+              ],
+            },
+          });
+        }
 
         if (!user || !user.passwordHash) {
           console.log("[Auth] User not found or no password");

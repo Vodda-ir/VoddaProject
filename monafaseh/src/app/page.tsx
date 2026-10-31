@@ -26,11 +26,14 @@ import { BankInfoView } from "@/components/noorcraft/views/bank-info-view";
 import { DonateView } from "@/components/noorcraft/views/donate-view";
 import { EitaaMiniApp } from "@/components/noorcraft/eitaa-mini-app";
 import { BottomNav } from "@/components/noorcraft/bottom-nav";
+import { HomeFeedView } from "@/components/noorcraft/views/home-feed-view";
+import { ProfileView } from "@/components/noorcraft/views/profile-view";
 
 export default function Home() {
   const view = useNoorStore((s) => s.view);
   const user = useNoorStore((s) => s.user);
   const setView = useNoorStore((s) => s.setView);
+  const setProfileUserId = useNoorStore((s) => s.setProfileUserId);
   const signIn = useNoorStore((s) => s.signIn);
   const setActiveSession = useNoorStore((s) => s.setActiveSession);
 
@@ -42,6 +45,20 @@ export default function Home() {
   //   /?session=<id>           → پیوستن مستقیم به یک محفل مشخص
   // ============================================================
   const deepLinkDone = useRef(false);
+  const userLinkDone = useRef(false);
+
+  // لینک مستقیم پروفایل عمومی: /?user=ID — بدون نیاز به لاگین
+  useEffect(() => {
+    if (userLinkDone.current) return;
+    userLinkDone.current = true;
+    try {
+      const uid = new URLSearchParams(window.location.search).get("user");
+      if (uid) {
+        setProfileUserId(uid);
+        setView("profile");
+      }
+    } catch {}
+  }, [setProfileUserId, setView]);
 
   useEffect(() => {
     try {
@@ -92,6 +109,7 @@ export default function Home() {
   // Guard: protected views require a user
   useEffect(() => {
     const needsAuth =
+      view === "feed" ||
       view === "dashboard" ||
       view === "create-session" ||
       view === "session-room" ||
@@ -180,6 +198,8 @@ export default function Home() {
               transition={{ duration: 0.25 }}
             >
               {view === "landing" && <LandingView />}
+              {view === "feed" && user && <HomeFeedView />}
+              {view === "profile" && <ProfileView />}
               {view === "auth" && <AuthView />}
               {view === "dashboard" && user && <DashboardView />}
               {view === "sessions" && <SessionsView />}
@@ -201,8 +221,12 @@ export default function Home() {
           </AnimatePresence>
         </ErrorBoundary>
       </main>
-      {!immersive && <NoorFooter />}
-      {!immersive && <BottomNav />}
+      {!immersive && (
+        <div className="hidden md:block">
+          <NoorFooter />
+        </div>
+      )}
+      {user && !immersive && view !== "admin" && <BottomNav />}
     </div>
   );
 }

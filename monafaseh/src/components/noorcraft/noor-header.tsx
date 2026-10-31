@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Sparkles, Shield, Flame } from "lucide-react";
 import { NoorLogo } from "./noor-logo";
@@ -10,6 +11,40 @@ import { VerifiedName } from "./verified-badge";
 import { OnlineUsersBar } from "./online-users-bar";
 import { InvitationBell } from "./invitation-bell";
 import { ThemeToggle } from "./theme-toggle";
+
+// ── زنگ ادمین: آزمون‌های احراز منتظر داوری (وعده ۷۲ ساعته) ──
+function AdminBell() {
+  const [pending, setPending] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function poll() {
+      try {
+        const res = await fetch("/api/admin/verify", { cache: "no-store" });
+        if (!res.ok) return;
+        const d = await res.json();
+        if (!cancelled && d.ok) setPending(d.stats?.pending ?? 0);
+      } catch {}
+    }
+    poll();
+    const t = setInterval(poll, 60_000);
+    return () => { cancelled = true; clearInterval(t); };
+  }, []);
+
+  if (pending === 0) return null;
+  return (
+    <button
+      onClick={() => { window.location.href = "/admin"; }}
+      className="relative flex items-center gap-1.5 rounded-full bg-noor-coral/20 px-3 py-1.5 text-xs font-bold text-noor-coral transition hover:bg-noor-coral/30"
+      title={`${pending.toLocaleString("fa-IR")} آزمون احراز در انتظار داوری شماست`}
+    >
+      🎙 داوری
+      <span className="grid min-w-5 place-items-center rounded-full bg-noor-coral px-1 text-[10px] font-black text-white">
+        {pending.toLocaleString("fa-IR")}
+      </span>
+    </button>
+  );
+}
 
 export function NoorHeader() {
   const user = useNoorStore((s) => s.user);
@@ -35,7 +70,7 @@ export function NoorHeader() {
                   active={view === "dashboard"}
                   onClick={() => setView("dashboard")}
                 >
-                  داشبورد
+                  پنل کاربری
                 </NavChip>
                 <NavChip
                   active={view === "sessions"}
@@ -66,7 +101,7 @@ export function NoorHeader() {
                   active={view === "masters"}
                   onClick={() => setView("masters")}
                 >
-                  استادان
+                  قاریان
                 </NavChip>
                 <NavChip
                   active={view === "buy-credits"}
@@ -86,6 +121,7 @@ export function NoorHeader() {
           )}
 
           <div className="flex items-center gap-2">
+            {user?.role === "admin" && <AdminBell />}
             <ThemeToggle />
             {user && <InvitationBell />}
 
@@ -95,11 +131,20 @@ export function NoorHeader() {
                   onClick={() => setView("dashboard")}
                   className="flex items-center gap-2 rounded-full bg-white/70 px-2 py-1 transition hover:bg-white dark:bg-white/10"
                 >
-                  <NoorAvatar name={user.fullName} color={user.avatarColor} avatarUrl={user.avatarUrl} gender={user.gender} size="sm" verified={user.verificationStatus === "approved"} />
+                  <NoorAvatar
+                    name={user.fullName}
+                    color={user.avatarColor}
+                    avatarUrl={user.avatarUrl}
+                    gender={user.gender}
+                    size="sm"
+                    verified={user.verificationStatus === "approved"}
+                    rank={user.qariRank}
+                  />
                   <div className="hidden flex-col text-right sm:flex">
                     <VerifiedName
                       name={user.fullName}
                       verified={user.verificationStatus === "approved"}
+                      rank={user.qariRank}
                       size={13}
                       className="text-xs font-bold leading-tight"
                     />

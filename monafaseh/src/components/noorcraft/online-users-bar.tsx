@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, MapPin, Mic2, Globe2, UserPlus, X, Radio } from "lucide-react";
+import { Users, MapPin, Mic2, Globe2, UserPlus, X, Radio, UserRound } from "lucide-react";
 import { NoorAvatar } from "./noor-avatar";
 import { NoorBadge } from "./noor-badge";
 import { NoorButton } from "./noor-button";
+import { VerifiedName } from "./verified-badge";
 import { useToast } from "@/hooks/use-toast";
 import { useNoorStore } from "@/store/noor-store";
 
@@ -38,6 +39,8 @@ const statusConfig = {
 };
 
 export function OnlineUsersBar({ maxVisible = 8, compact = false }: OnlineUsersBarProps) {
+  const setView = useNoorStore((s) => s.setView);
+  const setProfileUserId = useNoorStore((s) => s.setProfileUserId);
   const [showAll, setShowAll] = useState(false);
   const [selectedUser, setSelectedUser] = useState<any | null>(null);
   const { toast } = useToast();
@@ -131,6 +134,7 @@ export function OnlineUsersBar({ maxVisible = 8, compact = false }: OnlineUsersB
                     color={user.avatarColor}
                     avatarUrl={user.avatarUrl}
                     size="sm"
+                    verified={user.verificationStatus === "approved"} rank={user.qariRank}
                   />
                   {/* Status dot */}
                   <span
@@ -239,6 +243,7 @@ export function OnlineUsersBar({ maxVisible = 8, compact = false }: OnlineUsersB
                       color={selectedUser.avatarColor}
                       avatarUrl={selectedUser.avatarUrl}
                       size="lg"
+                      verified={selectedUser.verificationStatus === "approved"}
                     />
                     <span
                       className={`absolute -bottom-1 -right-1 h-5 w-5 rounded-full ring-4 ring-card ${
@@ -248,7 +253,12 @@ export function OnlineUsersBar({ maxVisible = 8, compact = false }: OnlineUsersB
                     />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold">{selectedUser.fullName}</h3>
+                    <VerifiedName
+                      name={selectedUser.fullName}
+                      verified={selectedUser.verificationStatus === "approved"}
+                      size={18}
+                      className="text-xl font-bold"
+                    />
                     <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
                       <span
                         className="h-2 w-2 rounded-full"
@@ -301,15 +311,28 @@ export function OnlineUsersBar({ maxVisible = 8, compact = false }: OnlineUsersB
                 </div>
               </div>
 
-              <NoorButton
-                variant="green"
-                size="lg"
-                className="mt-4 w-full"
-                onClick={() => handleInvite(selectedUser)}
-                leftIcon={<UserPlus className="h-5 w-5" />}
-              >
-                دعوت به محفل من
-              </NoorButton>
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                <NoorButton
+                  variant="green"
+                  size="lg"
+                  onClick={() => handleInvite(selectedUser)}
+                  leftIcon={<UserPlus className="h-5 w-5" />}
+                >
+                  دعوت به محفل
+                </NoorButton>
+                <NoorButton
+                  variant="sky"
+                  size="lg"
+                  onClick={() => {
+                    setSelectedUser(null);
+                    setProfileUserId(selectedUser.id);
+                    setView("profile");
+                  }}
+                  leftIcon={<UserRound className="h-5 w-5" />}
+                >
+                  صفحه پروفایل
+                </NoorButton>
+              </div>
             </motion.div>
           </motion.div>
         )}
@@ -344,6 +367,7 @@ function OnlineUserCard({
             color={user.avatarColor}
             avatarUrl={user.avatarUrl}
             size="md"
+            verified={user.verificationStatus === "approved"} rank={user.qariRank}
           />
           <span
             className={`absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full ring-2 ring-card ${
@@ -353,7 +377,12 @@ function OnlineUserCard({
           />
         </div>
         <div className="flex-1">
-          <div className="text-sm font-bold">{user.fullName}</div>
+          <VerifiedName
+            name={user.fullName}
+            verified={user.verificationStatus === "approved"} rank={user.qariRank}
+            size={14}
+            className="text-sm font-bold"
+          />
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <MapPin className="h-3 w-3" />
             {user.city}

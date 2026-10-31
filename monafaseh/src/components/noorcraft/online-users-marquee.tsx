@@ -142,6 +142,7 @@ export function OnlineUsersMarquee({
             recitationType: u.recitationType,
             status: "idle",
             lastSeen: u.lastVisit || Date.now(),
+            qariRank: u.qariRank ?? null,
           }));
           setOnlineUsers(users);
         }

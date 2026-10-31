@@ -19,6 +19,12 @@ import {
   Crown,
   Zap,
   BookOpen,
+  Coins,
+  Heart,
+  UserCheck,
+  Wallet,
+  BadgeCheck,
+  Globe,
 } from "lucide-react";
 import { NoorButton } from "../noor-button";
 import { NoorCard } from "../noor-card";
@@ -26,10 +32,12 @@ import { NoorBadge } from "../noor-badge";
 import { NoorAvatar } from "../noor-avatar";
 import { OnlineUsersList } from "../online-users-list";
 import { AdBanner } from "../ad-banner";
+import { VerifiedName } from "../verified-badge";
 import { useNoorStore, getProfileFields } from "@/store/noor-store";
 
 export function DashboardView() {
   const user = useNoorStore((s) => s.user);
+  const setProfileUserId = useNoorStore((s) => s.setProfileUserId);
   const setView = useNoorStore((s) => s.setView);
 
   if (!user) return null;
@@ -52,7 +60,7 @@ export function DashboardView() {
     {
       icon: <Flame className="h-6 w-6" />,
       title: "چالش رقابت",
-      desc: "رقیب آنلاین پیدا کن",
+      desc: "رقیبی آنلاین پیدا کنید",
       color: "#FF7F7F",
       bg: "from-noor-coral/20 to-noor-coral/5",
       onClick: () => setView("challenge"),
@@ -61,7 +69,7 @@ export function DashboardView() {
     {
       icon: <PlusCircle className="h-6 w-6" />,
       title: "تشکیل محفل",
-      desc: "محفل تلاوت بساز",
+      desc: "محفل تلاوت بسازید",
       color: "#FFD700",
       bg: "from-noor-yellow/20 to-noor-yellow/5",
       onClick: () => setView("create-session"),
@@ -69,7 +77,7 @@ export function DashboardView() {
     {
       icon: <LogIn className="h-6 w-6" />,
       title: "محافل زنده",
-      desc: "به محفلی بپیوند",
+      desc: "به محفلی بپیوندید",
       color: "#7CFC00",
       bg: "from-noor-green/20 to-noor-green/5",
       onClick: () => setView("sessions"),
@@ -77,7 +85,7 @@ export function DashboardView() {
     {
       icon: <MessageCircle className="h-6 w-6" />,
       title: "تالار گفتگو",
-      desc: "با قاریان گفتگو کن",
+      desc: "با قاریان گفتگو کنید",
       color: "#87CEEB",
       bg: "from-noor-sky/20 to-noor-sky/5",
       onClick: () => setView("lounge"),
@@ -85,10 +93,58 @@ export function DashboardView() {
     {
       icon: <BookOpen className="h-6 w-6" />,
       title: "بلاگ",
-      desc: "ایده‌ها و اندیشه‌های سازنده",
+      desc: "یادداشت‌ها و تجربه‌های کاربران",
       color: "#FF7F7F",
       bg: "from-noor-coral/20 to-noor-coral/5",
       onClick: () => setView("blog"),
+    },
+    {
+      icon: <Coins className="h-6 w-6" />,
+      title: "خرید امتیاز",
+      desc: `موجودی: ${(user.creditBalance ?? 0).toLocaleString("fa-IR")}`,
+      color: "#FFD700",
+      bg: "from-noor-yellow/20 to-noor-yellow/5",
+      onClick: () => setView("buy-credits"),
+    },
+    {
+      icon: <Heart className="h-6 w-6" />,
+      title: "حمایت مالی",
+      desc: "کمک به رشد و توسعه منافسه",
+      color: "#ef476f",
+      bg: "from-[#ef476f]/20 to-[#ef476f]/5",
+      onClick: () => setView("donate"),
+    },
+    {
+      icon: <UserCheck className="h-6 w-6" />,
+      title: "قاریان آنلاین",
+      desc: "جلسه خصوصی با قاریان تأییدشده",
+      color: "#87CEEB",
+      bg: "from-noor-sky/20 to-noor-sky/5",
+      onClick: () => setView("masters"),
+    },
+    // درآمد و تسویه — فقط برای قاریان تأییدشده (تیک آبی)
+    ...(user.verificationStatus === "approved"
+      ? [{
+          icon: <Wallet className="h-6 w-6" />,
+          title: "درآمد و تسویه",
+          desc: "درآمد جلسات خصوصی شما",
+          color: "#7CFC00",
+          bg: "from-noor-green/20 to-noor-green/5",
+          onClick: () => setView("bank-info"),
+        }]
+      : []),
+    {
+      icon: <BadgeCheck className="h-6 w-6" />,
+      title: user.verificationStatus === "approved" ? "تأییدشده ✅" : "دریافت تیک آبی",
+      desc:
+        user.verificationStatus === "pending"
+          ? "درخواست شما در حال بررسی است"
+          : user.verificationStatus === "approved"
+          ? "پروفایل شما احراز شده است"
+          : "احراز به‌عنوان قاری رنک‌دار",
+      color: "#1D9BF0",
+      bg: "from-sky-400/20 to-sky-400/5",
+      onClick: () => setView("verification"),
     },
   ];
 
@@ -107,18 +163,32 @@ export function DashboardView() {
               avatarUrl={user.avatarUrl}
               size="lg"
               ring="good"
+              verified={user.verificationStatus === "approved"} rank={user.qariRank}
             />
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <h1 className="truncate text-xl font-extrabold text-noor-navy dark:text-white">
-                  {user.fullName}
-                </h1>
+                <VerifiedName
+                  name={user.fullName}
+                  verified={user.verificationStatus === "approved"} rank={user.qariRank}
+                  size={19}
+                  className="truncate text-xl font-extrabold text-noor-navy dark:text-white"
+                />
                 <button
                   onClick={() => setView("auth")}
                   className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-muted text-muted-foreground transition hover:bg-noor-sky/20"
                   title="ویرایش پروفایل"
                 >
                   <Edit3 className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  onClick={() => {
+                    setProfileUserId(null);
+                    setView("profile");
+                  }}
+                  className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-muted text-muted-foreground transition hover:bg-noor-yellow/20"
+                  title="صفحه عمومی من"
+                >
+                  <Globe className="h-3.5 w-3.5" />
                 </button>
               </div>
               <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
@@ -170,7 +240,7 @@ export function DashboardView() {
                 </motion.div>
               )}
               <div
-                className="mx-auto mb-2 grid h-12 w-12 place-items-center rounded-2xl text-noor-navy shadow-md"
+                className="clay-3d mx-auto mb-2 grid h-12 w-12 place-items-center rounded-2xl text-noor-navy"
                 style={{ background: t.color }}
               >
                 {t.icon}
@@ -284,7 +354,7 @@ export function DashboardView() {
               {[
                 { t: "قاری ماه", c: "#9d4edd" },
                 { t: "نور افروز", c: "#118ab2" },
-                { t: "استاد تجوید", c: "#ef476f" },
+                { t: "قاری تجوید", c: "#ef476f" },
                 { t: "محفل‌ساز", c: "#06d6a0" },
               ].map((b, i) => (
                 <div

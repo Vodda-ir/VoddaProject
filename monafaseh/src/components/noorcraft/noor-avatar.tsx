@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { VerifiedBadge } from "./verified-badge";
+import { qariBadgeColor, qariBadgeLabel } from "@/lib/noorcraft/constants";
 
 interface NoorAvatarProps {
   name: string;
@@ -10,21 +12,40 @@ interface NoorAvatarProps {
   gender?: string | null;
   size?: "sm" | "md" | "lg" | "xl";
   ring?: "none" | "active" | "muted" | "good";
+  /** احراز قاری — کادر رنگی رنک + تیک روی آواتار */
+  verified?: boolean;
+  /** رنک قاری — provincial | national | international | null (خاکستری) */
+  rank?: string | null;
   className?: string;
 }
 
 const sizeMap = {
-  sm: "h-9 w-9 text-xs",
-  md: "h-12 w-12 text-sm",
-  lg: "h-16 w-16 text-base",
-  xl: "h-24 w-24 text-2xl",
+  sm: "h-9 w-9 text-xs rounded-lg",
+  md: "h-12 w-12 text-sm rounded-xl",
+  lg: "h-16 w-16 text-base rounded-2xl",
+  xl: "h-24 w-24 text-2xl rounded-3xl",
 };
 
 const ringMap = {
-  none: "",
+  none: "ring-2 ring-white dark:ring-background",
   active: "ring-4 ring-noor-yellow ring-offset-2 ring-offset-background",
   muted: "ring-2 ring-muted-foreground/30",
   good: "ring-4 ring-noor-green ring-offset-2 ring-offset-background",
+};
+
+// کادر آبی احراز — فقط برای کاربران تأییدشده (مثل استوری اینستاگرام)
+const verifiedRingMap = {
+  sm: "ring-2",
+  md: "ring-2",
+  lg: "ring-[3px]",
+  xl: "ring-4",
+};
+
+const tickSizeMap = {
+  sm: 13,
+  md: 17,
+  lg: 22,
+  xl: 30,
 };
 
 function initials(name: string): string {
@@ -64,6 +85,8 @@ export function NoorAvatar({
   gender,
   size = "md",
   ring = "none",
+  verified = false,
+  rank,
   className,
 }: NoorAvatarProps) {
   const [imgError, setImgError] = useState(false);
@@ -73,30 +96,49 @@ export function NoorAvatar({
   return (
     <div
       className={cn(
-        "relative grid place-items-center overflow-hidden rounded-full font-bold text-white shadow-md select-none",
+        // مربع با گوشه‌های گرد + حاشیه‌ی سفید
+        "relative grid place-items-center overflow-visible rounded-xl font-bold text-white shadow-md select-none",
         sizeMap[size],
-        ringMap[ring],
+        verified ? "" : ringMap[ring],
         className,
       )}
-      style={
-        imgError
+      style={{
+        ...(imgError
           ? { background: `linear-gradient(135deg, ${color}, ${shade(color, -20)})` }
-          : undefined
-      }
+          : {}),
+        // کادر رنگی رنک برای قاریان تأییدشده (قرمز/سبز/آبی/خاکستری)
+        ...(verified
+          ? rank === undefined
+            ? { outline: "none", boxShadow: `0 0 0 2px #1D9BF0` }
+            : { outline: "none", boxShadow: `0 0 0 2px ${qariBadgeColor(rank)}` }
+          : {}),
+      }}
       aria-label={name}
       title={name}
     >
-      {effectiveAvatarUrl && !imgError ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={effectiveAvatarUrl}
-          alt={name}
-          className="h-full w-full object-cover"
-          onError={() => setImgError(true)}
-        />
-      ) : (
-        <span className="drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]">
-          {initials(name)}
+      <div className="grid h-full w-full place-items-center overflow-hidden rounded-[inherit]">
+        {effectiveAvatarUrl && !imgError ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={effectiveAvatarUrl}
+            alt={name}
+            className="h-full w-full object-cover"
+            onError={() => setImgError(true)}
+          />
+        ) : (
+          <span className="drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]">
+            {initials(name)}
+          </span>
+        )}
+      </div>
+
+      {/* تیک آبی روی آواتار */}
+      {verified && (
+        <span
+          className="absolute -bottom-1 -left-1 grid place-items-center rounded-full bg-card shadow"
+          style={{ padding: 1.5 }}
+        >
+          <VerifiedBadge size={tickSizeMap[size]} rank={rank === undefined ? undefined : rank} title={`${name} — ${rank === undefined ? "قاری تأییدشده" : qariBadgeLabel(rank)}`} />
         </span>
       )}
     </div>

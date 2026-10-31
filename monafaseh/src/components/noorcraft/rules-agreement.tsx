@@ -96,7 +96,7 @@ export function RulesAgreement({ open, onClose, onAgree }: RulesAgreementProps) 
           className="max-h-[90vh] w-full max-w-2xl overflow-hidden rounded-3xl bg-card shadow-2xl"
         >
           {/* Header */}
-          <div className="border-b border-muted/30 bg-gradient-to-br from-noor-navy to-[#1a1f4a] p-5 text-white">
+          <div className="border-b border-muted/30 bg-gradient-to-br from-[#0b0a08] to-[#17150f] p-5 text-white">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="grid h-12 w-12 place-items-center rounded-2xl bg-noor-yellow/20">

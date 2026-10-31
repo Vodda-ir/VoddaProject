@@ -47,7 +47,7 @@ export class ErrorBoundary extends React.Component<
               خطایی رخ داد
             </h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              لطفاً صفحه را رفرش کنید. اگر خطا ادامه داشت، اطلاعات زیر را به پشتیبانی بفرستید:
+              لطفاً صفحه را تازه‌سازی کنید. اگر خطا ادامه داشت، اطلاعات زیر را برای پشتیبانی ارسال کنید:
             </p>
             <details className="mt-3 rounded-xl bg-muted/30 p-3 text-right text-xs text-muted-foreground">
               <summary className="cursor-pointer font-bold">

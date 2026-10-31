@@ -269,34 +269,22 @@ export function SessionRoomView() {
   }, [toast]);
 
   // ─── Auto-start WebRTC video session for challenge matches ──────────────
-  // When a user enters session-room-view from a challenge match (either as the
-  // announcer or the رقیب / accepter), we automatically start the WebRTC video
-  // session without requiring them to click the "شروع محفل تصویری" button.
+  // When a user enters session-room-view we automatically start the WebRTC
+  // video session for ALL sessions (challenge matches and regular sessions
+  // alike) — without requiring them to click the "شروع محفل تصویری" button.
   //
-  // Why: The whole point of accepting a challenge is to immediately start a
-  // video session with the rival. Forcing both users to find and click a
-  // separate button causes confusion — most users think the video "doesn't
-  // connect" because they don't realize the other person also needs to click.
-  //
-  // Detection: The accept endpoint creates sessions with title
-  // "چالش رقابت: <announcer> vs <accepter>" — so we detect this prefix.
+  // Why: Forcing users to find and click a separate button causes confusion —
+  // most users think the video "doesn't connect" because they don't realize
+  // the other person also needs to click.
   //
   // The effect runs once per activeSession change. The `jitsiActive` check
   // prevents re-triggering if the user manually stops and restarts the video.
   useEffect(() => {
-    if (!activeSession) return;
-    if (jitsiActive) return; // already started
-    const isChallengeMatch =
-      typeof activeSession.title === "string" &&
-      activeSession.title.startsWith("چالش رقابت:");
-    if (!isChallengeMatch) return;
-    // Only auto-start if we have a valid jitsiRoom from the server
+    if (!activeSession || jitsiActive) return;
     const room = activeSession.jitsiRoom || generateJitsiRoomName("monafaseh");
     setJitsiRoom(room);
     setJitsiActive(true);
-    console.log("[SessionRoom] Auto-started WebRTC video for challenge match:", room);
-    // No toast here — the user already saw the "رقیب پیدا شد" toast on the
-    // challenge-view. Adding another would be noise.
+    console.log("[SessionRoom] Auto-started WebRTC video for session:", room);
   }, [activeSession, jitsiActive]);
 
   // خروج از محفل — فقط participant رکورد حذف می‌شود؛ محفل باز می‌ماند
@@ -427,7 +415,7 @@ export function SessionRoomView() {
   }
 
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] bg-gradient-to-br from-noor-navy via-[#1a1f4a] to-[#0d1230] text-white">
+    <div className="relative min-h-[calc(100vh-4rem)] bg-gradient-to-br from-[#0b0a08] via-[#12110d] to-[#080706] text-white">
       {/* Floating reactions */}
       <div className="pointer-events-none fixed inset-0 z-30 overflow-hidden">
         <AnimatePresence>
@@ -502,8 +490,10 @@ export function SessionRoomView() {
             >
               {jitsiActive && jitsiRoom ? (
                 <WebRTCVideoChat
+                  sessionId={activeSession.id}
                   roomName={jitsiRoom}
                   displayName={user?.fullName ?? "کاربر منافسه"}
+                  isHost={isHost}
                   onHangup={endJitsiSession}
                   onBroadcastReady={(broadcast) => {
                     broadcastCompetitionRef.current = broadcast;
@@ -603,22 +593,15 @@ export function SessionRoomView() {
             {/* Competition controls */}
             <div className="flex flex-wrap items-center gap-2 rounded-2xl bg-white/5 p-3 backdrop-blur-md">
               {competitionStatus === "setup" ? (
-                isHost ? (
-                  <NoorButton
-                    variant="yellow"
-                    size="lg"
-                    onClick={() => setShowSetup(true)}
-                    leftIcon={<Trophy className="h-5 w-5" />}
-                    className="animate-pulse-glow"
-                  >
-                    شروع منافسه
-                  </NoorButton>
-                ) : (
-                  <div className="flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-xs font-bold">
-                    <Loader2 className="h-4 w-4 animate-spin text-noor-yellow" />
-                    منتظر شروع منافسه توسط میزبان...
-                  </div>
-                )
+                <NoorButton
+                  variant="yellow"
+                  size="lg"
+                  onClick={() => setShowSetup(true)}
+                  leftIcon={<Trophy className="h-5 w-5" />}
+                  className="animate-pulse-glow"
+                >
+                  شروع منافسه
+                </NoorButton>
               ) : (
                 <NoorButton
                   variant="ghost"
@@ -699,7 +682,7 @@ function JitsiMock({
       <div className="grid h-full w-full place-items-center bg-noor-navy p-4 text-center">
         <div className="flex flex-col items-center gap-3 text-white/70">
           <Users className="h-10 w-10 text-noor-sky" />
-          <p className="text-sm font-bold">تنها در محفل</p>
+          <p className="text-sm font-bold">فعلاً تنها هستید</p>
           <p className="text-xs text-white/50">
             منتظر ورود دیگر قاریان — با کلیک روی «شروع محفل تصویری» می‌توانید لینک دعوت بفرستید.
           </p>

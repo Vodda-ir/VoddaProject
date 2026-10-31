@@ -84,7 +84,7 @@ export function ResultsView() {
             تلاوت شما به پایان رسید!
           </h1>
           <p className="mt-2 text-muted-foreground">
-            {user?.fullName} عزیز، خدا قوت. تلاوت زیبایتون الهام‌بخش بود.
+            {user?.fullName} عزیز، خدا قوت؛ تلاوت شما شنیدنی بود.
           </p>
         </motion.div>
 

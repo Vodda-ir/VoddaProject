@@ -18,7 +18,7 @@ export async function GET() {
     select: {
       id: true, fullName: true, avatarColor: true, avatarUrl: true,
       gender: true, city: true, recitationType: true, noorPoints: true,
-      lastVisit: true,
+      lastVisit: true, verificationStatus: true, qariRank: true,
     },
     orderBy: { lastVisit: "desc" },
   });

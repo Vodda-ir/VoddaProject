@@ -977,6 +977,60 @@ export const USER_LEVELS = [
   { value: "master", label: "استاد", color: "#9d4edd" },
 ];
 
+/* ============================================================
+   رنک‌های قاری — سطح‌بندی تیک بر اساس مدرک رسمی
+   قرمز=استانی · سبز=کشوری · آبی=بین‌المللی (خاکستری=تأییدشده بدون رنک)
+   ============================================================ */
+export interface QariRankDef {
+  id: "bronze" | "silver" | "gold";
+  label: string;
+  color: string;
+  maxPrice: number; // سقف قیمت جلسه خصوصی (امتیاز)
+  order: number; // برای مرتب‌سازی فهرست قاریان
+}
+
+export const QARI_RANKS: QariRankDef[] = [
+  { id: "bronze", label: "تیک قرمز (سطح برنزی)", color: "#FF7F7F", maxPrice: 10, order: 1 },
+  { id: "silver", label: "تیک سبز (سطح نقره‌ای)", color: "#7CFC00", maxPrice: 25, order: 2 },
+  { id: "gold", label: "تیک آبی (سطح طلایی)", color: "#1D9BF0", maxPrice: 50, order: 3 },
+];
+
+export const QARI_RANK_IDS = QARI_RANKS.map((r) => r.id);
+
+// رنگ نشان قاری بر اساس رنک — خاکستری برای تأییدشده بدون رنک
+export const BASE_VERIFIED_COLOR = "#9aa0a6";
+export const BASE_VERIFIED_LABEL = "قاری تأییدشده";
+
+// نگاشت مقادیر قدیمی (پیش از تغییر نام به فلزی)
+const LEGACY_RANK_MAP: Record<string, string> = {
+  provincial: "bronze",
+  national: "silver",
+  international: "gold",
+};
+
+export function normalizeRank(rank: string | null | undefined): string | null {
+  if (!rank) return null;
+  return LEGACY_RANK_MAP[rank] ?? rank;
+}
+
+export function qariRankDef(rank: string | null | undefined): QariRankDef | null {
+  const id = normalizeRank(rank);
+  return QARI_RANKS.find((r) => r.id === id) ?? null;
+}
+
+export function qariBadgeColor(rank: string | null | undefined): string {
+  return qariRankDef(rank)?.color ?? BASE_VERIFIED_COLOR;
+}
+
+export function qariBadgeLabel(rank: string | null | undefined): string {
+  return qariRankDef(rank)?.label ?? BASE_VERIFIED_LABEL;
+}
+
+// سقف قیمت جلسه خصوصی بر اساس رنک
+export function priceCapForRank(rank: string | null | undefined): number {
+  return qariRankDef(rank)?.maxPrice ?? 5;
+}
+
 export const MAX_AVATAR_SIZE = 5 * 1024 * 1024; // 5MB
 export const ALLOWED_AVATAR_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
