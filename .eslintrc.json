@@ -1,0 +1,25 @@
+{
+  "extends": "next/core-web-vitals",
+  "overrides": [
+    {
+      "files": ["src/universal-app/**/*.{ts,tsx}"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["next", "next/*"],
+                "message": "Universal App must stay framework-neutral; access Next.js only through the host layer."
+              },
+              {
+                "group": ["../app/*", "../../app/*", "../../../app/*"],
+                "message": "Universal App must not import Next App Router/server modules."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
