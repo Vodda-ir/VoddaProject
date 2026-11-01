@@ -60,3 +60,6 @@ app/android/key.properties
 *.log
 .idea/
 .vscode/
+
+# bashar (separate project with its own git repo — 1.6G)
+/bashar/

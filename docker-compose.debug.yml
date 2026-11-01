@@ -81,6 +81,7 @@ services:
     build:
       context: ./monafaseh
       dockerfile: Dockerfile
+      # بدون این، آخرین مرحله‌ی Dockerfile (migrator یک‌باره) به‌عنوان ایمیج ساخته می‌شود
       target: runner
     image: vodda-monafaseh:dev
     environment:
@@ -108,6 +109,37 @@ services:
     networks:
       - vodda-network
 
+  bashar:
+    platform: ${DOCKER_PLATFORM:-linux/amd64}
+    build:
+      context: ./bashar
+      dockerfile: Dockerfile
+      # بدون این، آخرین مرحله‌ی Dockerfile (migrator یک‌باره) به‌عنوان ایمیج ساخته می‌شود
+      target: runner
+    image: vodda-bashar:dev
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+      - DATABASE_URL=file:/app/db/custom.db
+      - BASHAR_EITAA_TOKEN=${BASHAR_EITAA_TOKEN:-}
+      - BASHAR_EITAA_CHANNEL=${BASHAR_EITAA_CHANNEL:-}
+    ports:
+      - "${BASHAR_PORT:-3424}:3000"
+    volumes:
+      - bashar_db:/app/db
+      - bashar_uploads:/app/public/uploads
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - "node -e \"fetch('http://127.0.0.1:3000/api/bootstrap').then(r=>{process.exit(r.ok?0:1)}).catch(()=>process.exit(1))\""
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
+    networks:
+      - vodda-network
+
 volumes:
   frontend_node_modules:
     driver: local
@@ -116,6 +148,12 @@ volumes:
     driver: local
   monafaseh_uploads:
     name: monafaseh_monafaseh-uploads
+    driver: local
+  bashar_db:
+    name: bashar_bashar-db
+    driver: local
+  bashar_uploads:
+    name: bashar_bashar-uploads
     driver: local
 
 networks:

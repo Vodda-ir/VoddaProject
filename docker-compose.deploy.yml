@@ -146,12 +146,48 @@ services:
     security_opt:
       - no-new-privileges:true
 
+  bashar:
+    platform: ${DOCKER_PLATFORM:-linux/amd64}
+    image: vodda-bashar:prod
+    pull_policy: never
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+      DATABASE_URL: file:/app/db/custom.db
+      BASHAR_EITAA_TOKEN: ${BASHAR_EITAA_TOKEN:-}
+      BASHAR_EITAA_CHANNEL: ${BASHAR_EITAA_CHANNEL:-}
+    ports:
+      - "127.0.0.1:${BASHAR_PORT:-3424}:3000"
+    volumes:
+      - bashar_db:/app/db
+      - bashar_uploads:/app/public/uploads
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - "node -e \"fetch('http://127.0.0.1:3000/api/bootstrap').then(r=>{process.exit(r.ok?0:1)}).catch(()=>process.exit(1))\""
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
+    networks:
+      - vodda-network
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+
 volumes:
   monafaseh_db:
     name: monafaseh_monafaseh-db
     driver: local
   monafaseh_uploads:
     name: monafaseh_monafaseh-uploads
+    driver: local
+  bashar_db:
+    name: bashar_bashar-db
+    driver: local
+  bashar_uploads:
+    name: bashar_bashar-uploads
     driver: local
 
 networks:

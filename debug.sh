@@ -25,6 +25,7 @@ print_services() {
     echo "  Frontend: http://localhost:3421"
     echo "  MySQL:    localhost:3422"
     echo "  Monafaseh: http://localhost:${MONAFASEH_PORT:-3423}"
+    echo "  Bashar:   http://localhost:${BASHAR_PORT:-3424}"
     echo ""
 }
 

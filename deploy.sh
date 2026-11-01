@@ -2,7 +2,8 @@
 # Build Vodda production images locally and deploy them to a remote server
 # over SSH (password-based), loading the image bundle and starting compose.
 #
-# usage: ./deploy.sh [deploy|build|server|setup|domains|proxy]
+# usage: ./deploy.sh [deploy|build|server|setup|domains|proxy|bashar]
+#   bashar — فقط خبرگزاری بشر را build و deploy می‌کند (بدون rebuild ودا)
 
 set -euo pipefail
 
@@ -44,11 +45,27 @@ image_platform() {
 
 json_get() {
     local key="$1"
-    node -e '
+    if command -v node &> /dev/null; then
+        node -e '
 const fs=require("fs");const file=process.argv[1];const key=process.argv[2];
 let d;try{d=JSON.parse(fs.readFileSync(file,"utf8"));}catch(e){console.error(e.message);process.exit(2);}
 const v=key.split(".").reduce((value,part)=>value?.[part],d);if(v===undefined||v===null||String(v).trim()===""){process.exit(3);}
 process.stdout.write(String(v));' "$DEPLOY_CONFIG_FILE" "$key"
+    else
+        python3 - "$DEPLOY_CONFIG_FILE" "$key" <<'PY'
+import json, sys
+with open(sys.argv[1], encoding="utf-8") as f:
+    data = json.load(f)
+value = data
+for part in sys.argv[2].split("."):
+    if not isinstance(value, dict) or part not in value:
+        sys.exit(3)
+    value = value[part]
+if value is None or str(value).strip() == "":
+    sys.exit(3)
+sys.stdout.write(str(value))
+PY
+    fi
 }
 
 validate_domain() {
@@ -59,15 +76,17 @@ validate_domain() {
 
 render_domain_proxy() {
     local output_file="$1"
-    node - "$PROJECT_DIR/ops/nginx/vodda.conf.template" "$DOMAIN_SITE" "$DOMAIN_APP" "$DOMAIN_API" "$DOMAIN_MONAFASEH" > "$output_file" <<'NODE'
+    if command -v node &> /dev/null; then
+        node - "$PROJECT_DIR/ops/nginx/vodda.conf.template" "$DOMAIN_SITE" "$DOMAIN_APP" "$DOMAIN_API" "$DOMAIN_MONAFASEH" "$BASHAR_HOST" > "$output_file" <<'NODE'
 const fs = require('fs');
-const [templateFile, site, app, api, monafaseh] = process.argv.slice(2);
+const [templateFile, site, app, api, monafaseh, bashar] = process.argv.slice(2);
 let template = fs.readFileSync(templateFile, 'utf8');
 const values = {
   __SITE_DOMAIN__: site,
   __APP_DOMAIN__: app,
   __API_DOMAIN__: api,
   __MONAFASEH_DOMAIN__: monafaseh,
+  __BASHAR_HOST__: bashar,
 };
 for (const [placeholder, value] of Object.entries(values)) {
   if (!template.includes(placeholder)) throw new Error(`Missing ${placeholder} in proxy template`);
@@ -75,11 +94,30 @@ for (const [placeholder, value] of Object.entries(values)) {
 }
 process.stdout.write(template);
 NODE
+    else
+        python3 - "$PROJECT_DIR/ops/nginx/vodda.conf.template" "$DOMAIN_SITE" "$DOMAIN_APP" "$DOMAIN_API" "$DOMAIN_MONAFASEH" "$BASHAR_HOST" > "$output_file" <<'PY'
+import sys
+template_file, site, app, api, monafaseh, bashar = sys.argv[1:7]
+with open(template_file, encoding="utf-8") as f:
+    template = f.read()
+for placeholder, value in {
+    "__SITE_DOMAIN__": site,
+    "__APP_DOMAIN__": app,
+    "__API_DOMAIN__": api,
+    "__MONAFASEH_DOMAIN__": monafaseh,
+    "__BASHAR_HOST__": bashar,
+}.items():
+    if placeholder not in template:
+        raise SystemExit("Missing %s in proxy template" % placeholder)
+    template = template.replace(placeholder, value)
+sys.stdout.write(template)
+PY
+    fi
 }
 
 load_deploy_config() {
     [ -f "$DEPLOY_CONFIG_FILE" ] || { print_error "deploy.json not found!"; print_warning "Create it from deploy.example.json."; exit 1; }
-    command -v node &> /dev/null || { print_error "Node.js is required to read deploy.json."; exit 1; }
+    command -v node &> /dev/null || command -v python3 &> /dev/null || { print_error "Node.js or Python 3 is required to read deploy.json."; exit 1; }
     SERVER_IP=$(json_get "ip")            || { print_error "deploy.json must include ip."; exit 1; }
     SERVER_USER=$(json_get "username")     || { print_error "deploy.json must include username."; exit 1; }
     SERVER_PATH=$(json_get "path")         || { print_error "deploy.json must include path."; exit 1; }
@@ -88,6 +126,9 @@ load_deploy_config() {
     DOMAIN_APP=$(json_get "domains.app") || { print_error "deploy.json must include domains.app."; exit 1; }
     DOMAIN_API=$(json_get "domains.api") || { print_error "deploy.json must include domains.api."; exit 1; }
     DOMAIN_MONAFASEH=$(json_get "domains.monafaseh") || { print_error "deploy.json must include domains.monafaseh."; exit 1; }
+    # خبرگزاری بشر: بدون دامنه — روی IP خود سرور سرو می‌شود.
+    # اگر بعداً دامنه خواستید، کلید domains.bashar را در deploy.json اضافه کنید.
+    BASHAR_HOST=$(json_get "domains.bashar" 2>/dev/null) || BASHAR_HOST="$SERVER_IP"
     validate_domain "$DOMAIN_SITE"
     validate_domain "$DOMAIN_APP"
     validate_domain "$DOMAIN_API"
@@ -163,7 +204,7 @@ configure_domain_proxy() {
     SSHPASS="$SSH_PASSWORD" sshpass -e scp -o StrictHostKeyChecking=accept-new \
         "$proxy_config" "$SERVER_USER@$SERVER_IP:/tmp/vodda-nginx.conf"
     rm -f "$proxy_config"
-    ssh_cmd "$SERVER_USER@$SERVER_IP" "set -euo pipefail; apt-get update; DEBIAN_FRONTEND=noninteractive apt-get install -y nginx curl; install -m 0644 /tmp/vodda-nginx.conf /etc/nginx/sites-available/vodda.conf; ln -sfn /etc/nginx/sites-available/vodda.conf /etc/nginx/sites-enabled/vodda.conf; rm -f /etc/nginx/sites-enabled/default; if command -v ufw >/dev/null 2>&1 && ufw status | grep -q 'Status: active'; then ufw allow 80/tcp; fi; nginx -t; systemctl enable --now nginx; systemctl reload nginx; test \$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' -H 'Host: $DOMAIN_SITE' http://127.0.0.1/) = 200; test \$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' -H 'Host: $DOMAIN_APP' http://127.0.0.1/) = 200; test \$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' -H 'Host: $DOMAIN_API' http://127.0.0.1/ready) = 200; test \$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' -H 'Host: $DOMAIN_MONAFASEH' http://127.0.0.1/api/health) = 200; rm -f /tmp/vodda-nginx.conf"
+    ssh_cmd "$SERVER_USER@$SERVER_IP" "set -euo pipefail; apt-get update; DEBIAN_FRONTEND=noninteractive apt-get install -y nginx curl; install -m 0644 /tmp/vodda-nginx.conf /etc/nginx/sites-available/vodda.conf; ln -sfn /etc/nginx/sites-available/vodda.conf /etc/nginx/sites-enabled/vodda.conf; rm -f /etc/nginx/sites-enabled/default; if command -v ufw >/dev/null 2>&1 && ufw status | grep -q 'Status: active'; then ufw allow 80/tcp; fi; nginx -t; systemctl enable --now nginx; systemctl reload nginx; test \$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' -H 'Host: $DOMAIN_SITE' http://127.0.0.1/) = 200; test \$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' -H 'Host: $DOMAIN_APP' http://127.0.0.1/) = 200; test \$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' -H 'Host: $DOMAIN_API' http://127.0.0.1/ready) = 200; test \$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' -H 'Host: $DOMAIN_MONAFASEH' http://127.0.0.1/api/health) = 200; test \$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' -H 'Host: $BASHAR_HOST' http://127.0.0.1/) = 200; rm -f /tmp/vodda-nginx.conf"
 }
 
 verify_public_domains() {
@@ -175,6 +216,7 @@ verify_public_domains() {
         "Universal App|https://$DOMAIN_APP/"
         "Vodda API|https://$DOMAIN_API/ready"
         "Monafaseh|https://$DOMAIN_MONAFASEH/api/health"
+        "Bashar|http://$BASHAR_HOST/"
     )
     for check in "${public_checks[@]}"; do
         label="${check%%|*}"
@@ -197,6 +239,7 @@ print_domain_endpoints() {
     echo "Universal App:     https://$DOMAIN_APP"
     echo "Backend API:       https://$DOMAIN_API/api/v1"
     echo "Monafaseh:         https://$DOMAIN_MONAFASEH"
+    echo "Bashar:            http://$BASHAR_HOST"
 }
 
 build_images() {
@@ -258,8 +301,12 @@ deploy_to_server() {
         -czf - . | ssh_cmd "$SERVER_USER@$SERVER_IP" "mkdir -p '$SERVER_PATH/monafaseh' && tar -xzf - -C '$SERVER_PATH/monafaseh'"
     ssh_cmd "$SERVER_USER@$SERVER_IP" "cd '$SERVER_PATH' && DOCKER_BUILDKIT=1 docker build --platform linux/amd64 --target runner --tag vodda-monafaseh:prod --file monafaseh/Dockerfile monafaseh && DOCKER_BUILDKIT=1 docker build --platform linux/amd64 --target migrator --tag vodda-monafaseh-migrator:prod --file monafaseh/Dockerfile monafaseh"
 
+    print_step "[6b/7] Building Bashar news agency runtime and one-shot migrator on the server..."
+    upload_bashar_source
+    ssh_cmd "$SERVER_USER@$SERVER_IP" "cd '$SERVER_PATH' && DOCKER_BUILDKIT=1 docker build --platform linux/amd64 --target runner --tag vodda-bashar:prod --file bashar/Dockerfile bashar && DOCKER_BUILDKIT=1 docker build --platform linux/amd64 --target migrator --tag vodda-bashar-migrator:prod --file bashar/Dockerfile bashar"
+
     print_step "[7/7] Starting services..."
-    ssh_cmd "$SERVER_USER@$SERVER_IP" "cd '$SERVER_PATH' && docker image inspect vodda-backend:prod vodda-frontend:prod vodda-monafaseh:prod vodda-monafaseh-migrator:prod mysql:8.0 >/dev/null && legacy_running=\$(docker inspect -f '{{.State.Running}}' monafaseh 2>/dev/null || true) && (docker stop monafaseh >/dev/null 2>&1 || true) && docker volume create monafaseh_monafaseh-db >/dev/null && if ! docker run --rm --user 0:0 --volume monafaseh_monafaseh-db:/app/db -e DATABASE_URL=file:/app/db/custom.db --entrypoint /bin/sh vodda-monafaseh-migrator:prod -c 'node ./node_modules/prisma/build/index.js db push --accept-data-loss && chown -R 1001:1001 /app/db'; then if [ \"\$legacy_running\" = true ]; then docker start monafaseh >/dev/null; fi; exit 1; fi && if docker compose -f docker-compose.deploy.yml --env-file .env.production up -d --pull never --wait; then docker rm monafaseh >/dev/null 2>&1 || true; docker image rm vodda-monafaseh-migrator:prod >/dev/null 2>&1 || true; else if [ \"\$legacy_running\" = true ]; then docker start monafaseh >/dev/null; fi; exit 1; fi"
+    ssh_cmd "$SERVER_USER@$SERVER_IP" "cd '$SERVER_PATH' && docker image inspect vodda-backend:prod vodda-frontend:prod vodda-monafaseh:prod vodda-monafaseh-migrator:prod vodda-bashar:prod mysql:8.0 >/dev/null && legacy_running=\$(docker inspect -f '{{.State.Running}}' monafaseh 2>/dev/null || true) && (docker stop monafaseh >/dev/null 2>&1 || true) && docker volume create monafaseh_monafaseh-db >/dev/null && if ! docker run --rm --user 0:0 --volume monafaseh_monafaseh-db:/app/db -e DATABASE_URL=file:/app/db/custom.db --entrypoint /bin/sh vodda-monafaseh-migrator:prod -c 'node ./node_modules/prisma/build/index.js db push --accept-data-loss && chown -R 1001:1001 /app/db'; then if [ \"\$legacy_running\" = true ]; then docker start monafaseh >/dev/null; fi; exit 1; fi && docker volume create bashar_bashar-db >/dev/null && if ! docker run --rm --user 0:0 --volume bashar_bashar-db:/app/db -e DATABASE_URL=file:/app/db/custom.db --entrypoint /bin/sh vodda-bashar-migrator:prod -c 'node ./node_modules/prisma/build/index.js db push --accept-data-loss && chown -R 1001:1001 /app/db'; then if [ \"\$legacy_running\" = true ]; then docker start monafaseh >/dev/null; fi; exit 1; fi && if docker compose -f docker-compose.deploy.yml --env-file .env.production up -d --pull never --wait; then docker rm monafaseh >/dev/null 2>&1 || true; docker image rm vodda-monafaseh-migrator:prod >/dev/null 2>&1 || true; docker image rm vodda-bashar-migrator:prod >/dev/null 2>&1 || true; else if [ \"\$legacy_running\" = true ]; then docker start monafaseh >/dev/null; fi; exit 1; fi"
 
     print_step "[8/8] Configuring Nginx domain routing..."
     configure_domain_proxy
@@ -268,6 +315,77 @@ deploy_to_server() {
     echo ""
     echo -e "${GREEN}✓ Deploy finished${NC}"
     print_domain_endpoints
+}
+
+upload_bashar_source() {
+    tar -C "$PROJECT_DIR/bashar" \
+        --exclude='node_modules' --exclude='.next' --exclude='out' --exclude='.git' \
+        --exclude='.env' --exclude='.env.*' --exclude='db/*' --exclude='public/uploads/*' \
+        --exclude='android' --exclude='apk' --exclude='scripts' --exclude='docs' \
+        -czf - . | ssh_cmd "$SERVER_USER@$SERVER_IP" "mkdir -p '$SERVER_PATH/bashar' && tar -xzf - -C '$SERVER_PATH/bashar'"
+}
+
+# استقرار فقط خبرگزاری بشر — بدون rebuild بک‌اند/فرانت ودا
+deploy_bashar_only() {
+    print_header "Deploying Bashar news agency only"
+    load_deploy_config
+    check_sshpass
+
+    print_step "[1/5] Uploading compose file and env..."
+    ssh_cmd "$SERVER_USER@$SERVER_IP" "mkdir -p '$SERVER_PATH'"
+    SSHPASS="$SSH_PASSWORD" sshpass -e scp -o StrictHostKeyChecking=accept-new \
+        docker-compose.deploy.yml .env.production \
+        "$SERVER_USER@$SERVER_IP:$SERVER_PATH/"
+    ssh_cmd "$SERVER_USER@$SERVER_IP" "chmod 600 '$SERVER_PATH/.env.production'"
+
+    print_step "[2/5] Uploading Bashar source..."
+    upload_bashar_source
+
+    print_step "[3/5] Building Bashar runtime and one-shot migrator on the server..."
+    ssh_cmd "$SERVER_USER@$SERVER_IP" "cd '$SERVER_PATH' && DOCKER_BUILDKIT=1 docker build --platform linux/amd64 --target runner --tag vodda-bashar:prod --file bashar/Dockerfile bashar && DOCKER_BUILDKIT=1 docker build --platform linux/amd64 --target migrator --tag vodda-bashar-migrator:prod --file bashar/Dockerfile bashar"
+
+    print_step "[4/5] Migrating Bashar database schema (SQLite volume)..."
+    ssh_cmd "$SERVER_USER@$SERVER_IP" "cd '$SERVER_PATH' && docker volume create bashar_bashar-db >/dev/null && docker run --rm --user 0:0 --volume bashar_bashar-db:/app/db -e DATABASE_URL=file:/app/db/custom.db --entrypoint /bin/sh vodda-bashar-migrator:prod -c 'node ./node_modules/prisma/build/index.js db push --accept-data-loss && chown -R 1001:1001 /app/db' && { docker image rm vodda-bashar-migrator:prod >/dev/null 2>&1 || true; }"
+
+    print_step "[5/5] Starting Bashar service..."
+    ssh_cmd "$SERVER_USER@$SERVER_IP" "cd '$SERVER_PATH' && docker image inspect vodda-bashar:prod >/dev/null && docker compose -f docker-compose.deploy.yml --env-file .env.production up -d --no-deps --pull never --wait bashar"
+
+    print_step "Publishing latest Android APK for direct download..."
+    local apk_file
+    apk_file=$(ls -t "$PROJECT_DIR/bashar/apk/"BasijNews*.apk 2>/dev/null | head -n 1)
+    if [ -n "${apk_file:-}" ]; then
+        ssh_cmd "$SERVER_USER@$SERVER_IP" "mkdir -p /var/www/bashar-download"
+        SSHPASS="$SSH_PASSWORD" sshpass -e scp -o StrictHostKeyChecking=accept-new \
+            "$apk_file" "$SERVER_USER@$SERVER_IP:/var/www/bashar-download/BasijNews.apk"
+        ssh_cmd "$SERVER_USER@$SERVER_IP" "cp -f /var/www/bashar-download/BasijNews.apk '/var/www/bashar-download/$(basename "$apk_file")'"
+        echo "  ✓ http://$BASHAR_HOST/download/BasijNews.apk"
+    else
+        print_warning "  No BasijNews*.apk found in bashar/apk — APK download not updated."
+    fi
+
+    configure_domain_proxy
+
+    print_step "Verifying public Bashar endpoint..."
+    command -v curl &> /dev/null || { print_error "curl is required for public checks."; exit 1; }
+    local attempt
+    for attempt in 1 2 3 4; do
+        if curl -fsSL --max-redirs 5 --max-time 20 -o /dev/null "http://$BASHAR_HOST/"; then
+            print_step "  ✓ Bashar"
+            break
+        fi
+        if [ "$attempt" -eq 4 ]; then
+            print_error "Public HTTP check failed for Bashar (http://$BASHAR_HOST/)."; exit 1
+        fi
+        sleep 2
+    done
+
+    echo ""
+    echo -e "${GREEN}✓ Bashar deployed${NC}"
+    print_domain_endpoints
+
+    # پاک‌سازی کش بیلد — دیسک سرور کوچک است؛ کش هر دپلوی چند گیگ فضا می‌گیرد
+    print_step "Cleaning build cache to keep server disk healthy..."
+    ssh_cmd "$SERVER_USER@$SERVER_IP" "docker builder prune --all -f >/dev/null 2>&1 || true"
 }
 
 deploy_domains_only() {
@@ -320,5 +438,6 @@ case "${1:-deploy}" in
     setup)  setup_server ;;
     domains) deploy_domains_only ;;
     proxy) deploy_proxy_only ;;
-    *) echo "Usage: $0 [deploy|build|server|setup|domains|proxy]"; exit 1 ;;
+    bashar) deploy_bashar_only ;;
+    *) echo "Usage: $0 [deploy|build|server|setup|domains|proxy|bashar]"; exit 1 ;;
 esac

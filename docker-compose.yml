@@ -92,6 +92,7 @@ services:
     build:
       context: ./monafaseh
       dockerfile: Dockerfile
+      # بدون این، آخرین مرحله‌ی Dockerfile (migrator یک‌باره) به‌عنوان ایمیج ساخته می‌شود
       target: runner
     image: vodda-monafaseh:prod
     environment:
