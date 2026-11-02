@@ -1,0 +1,1283 @@
+     1→<!doctype html>
+     2→<html lang="fa" dir="rtl">
+     3→<head>
+     4→<meta charset="utf-8">
+     5→<meta name="viewport" content="width=device-width, initial-scale=1">
+     6→<title>وُدّا — پنل مدیریت | پیش‌نمایش</title>
+     7→<link rel="icon" href="data:,">
+     8→<style>
+     9→/* ═══════════════════════════════════════════════════════════
+    10→   REA Preview Design System — vodda2/preview/assets/rea.css
+    11→   لایه ۱: توکن‌های برند وُدّا (از globals.css واقعی ریپو)
+    12→   لایه ۲: توکن‌های scoped کامپوننت‌ها (الگوی --otp-* اسنپ‌دکتر)
+    13→   ═══════════════════════════════════════════════════════════ */
+    14→@font-face{font-family:'IRANYekanXFaNum';src:url('fonts/IRANYekanXFaNum-Regular.ttf?XTransformPort=3500') format('truetype');font-weight:400;font-display:swap}
+    15→@font-face{font-family:'IRANYekanXFaNum';src:url('fonts/IRANYekanXFaNum-Medium.ttf?XTransformPort=3500') format('truetype');font-weight:500;font-display:swap}
+    16→@font-face{font-family:'IRANYekanXFaNum';src:url('fonts/IRANYekanXFaNum-DemiBold.ttf?XTransformPort=3500') format('truetype');font-weight:600;font-display:swap}
+    17→@font-face{font-family:'IRANYekanXFaNum';src:url('fonts/IRANYekanXFaNum-Bold.ttf?XTransformPort=3500') format('truetype');font-weight:700;font-display:swap}
+    18→@font-face{font-family:'IRANYekanXFaNum';src:url('fonts/IRANYekanXFaNum-ExtraBold.ttf?XTransformPort=3500') format('truetype');font-weight:800;font-display:swap}
+    19→
+    20→/* ─── لایه ۱ — پوسته نوترال اسنپ‌داکتر + سبز برند (یکدست با لندینگ) ─── */
+    21→:root{
+    22→  --sand-50:#f6f7f9;--sand-100:#ffffff;--sand-150:#f0f2f5;--sand-200:#e8ebf0;
+    23→  --surface:#ffffff;--surface-warm:#f9fafb;
+    24→  --olive-900:#2e3622;--olive-800:#22262b;--olive-700:#12b76a;--olive-600:#0e9f5c;--olive-500:#3fbf7f;--olive-400:#6fd6a3;--olive-300:#a5e7c6;--olive-200:#c9f0dc;--olive-100:#d9f4e6;--olive-50:#e9f9f1;
+    25→  --brand:#12b76a;--brand-700:#0e9f5c;--online:#21ba45;--olive-deep:#2e3622;
+    26→  --ink:#22262b;--ink-2:#5a6472;--ink-3:#98a1ad;--ink-4:#b3bac4;
+    27→  --gold:#bf9540;--gold-soft:#e7d5a8;--gold-bg:#f7efd9;
+    28→  --clay:#b0745a;--clay-bg:#f6e7df;--rose:#a65151;--info:#5e7e8c;
+    29→  --r-xs:10px;--r-sm:14px;--r-md:18px;--r-lg:24px;--r-xl:30px;
+    30→  --sh-sm:0 1px 3px rgba(16,24,40,.05),0 1px 2px rgba(16,24,40,.04);
+    31→  --sh-md:0 6px 22px rgba(16,24,40,.07),0 2px 6px rgba(16,24,40,.04);
+    32→  --sh-lg:0 14px 40px rgba(16,24,40,.1),0 4px 12px rgba(16,24,40,.05);
+    33→  --sh-olive:0 10px 28px rgba(18,183,106,.28);
+    34→  --font:'IRANYekanXFaNum',Tahoma,system-ui,sans-serif;
+    35→}
+    36→/* تم دوم — فقط override لایه ۱ */
+    37→html[data-theme="night"]{
+    38→  --sand-50:#151a12;--sand-100:#1c2318;--sand-150:#242c1e;--sand-200:#33402a;
+    39→  --surface:#212a1a;--surface-warm:#1a2115;
+    40→  --ink:#ece9dd;--ink-2:#c9c5b4;--ink-3:#98947f;--ink-4:#6f6c5c;
+    41→  --olive-900:#0f130a;--olive-800:#1a2115;--olive-700:#242c1e;--olive-600:#728350;--olive-200:#3a4a2e;--olive-100:#2e3a24;--olive-50:#26301d;
+    42→  --gold:#d4ab54;--gold-soft:#8a713a;--gold-bg:#2e2718;
+    43→}
+    44→
+    45→/* ─── پایه ─── */
+    46→*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    47→body{margin:0;font-family:var(--font);background:var(--sand-50);color:var(--ink);min-height:100vh;display:flex;flex-direction:column;line-height:1.7;font-size:14px}
+    48→a{color:inherit}
+    49→img{max-width:100%}
+    50→h1{font-size:22px;font-weight:800;color:var(--olive-800);margin:0 0 4px}
+    51→h2{font-size:16px;font-weight:700;color:var(--olive-800);margin:0 0 12px}
+    52→h3{font-size:15px;font-weight:700;color:var(--olive-900);margin:0 0 4px}
+    53→p{margin:0 0 10px}
+    54→.container{max-width:1080px;margin:0 auto;padding:0 16px;width:100%}
+    55→.container-narrow{max-width:760px;margin:0 auto;padding:0 16px;width:100%}
+    56→main{margin:26px 0}
+    57→.sub{font-size:13px;color:var(--ink-3);margin:0 0 20px}
+    58→.muted{color:var(--ink-3);font-size:12px}
+    59→.ltr{direction:ltr;text-align:left;unicode-bidi:isolate}
+    60→.gap{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    61→.mt{margin-top:14px}.mb{margin-bottom:14px}
+    62→
+    63→/* ─── نوار بالا — تیره، یکدست با نوار پیش‌نمایش لندینگ ─── */
+    64→.topbar{position:sticky;top:0;z-index:50;background:var(--olive-deep);border-bottom:1px solid #242c1e}
+    65→.topbar-in{display:flex;align-items:center;gap:12px;padding:9px 0;flex-wrap:wrap}
+    66→.brand{font-weight:800;color:#fff;font-size:17px;white-space:nowrap;text-decoration:none}
+    67→.brand small{display:block;font-size:10px;color:#9fb592;font-weight:500}
+    68→.mode-badge{background:rgba(255,255,255,.12);color:#e6efe0;border:1px solid rgba(255,255,255,.22);border-radius:999px;padding:2px 10px;font-size:11px;font-weight:600;white-space:nowrap}
+    69→.topnav{display:flex;gap:6px;overflow-x:auto;margin-inline-start:auto;max-width:100%;padding-bottom:2px;scrollbar-width:thin}
+    70→.topnav a{white-space:nowrap;text-decoration:none;font-size:12.5px;color:#cfd8c0;padding:8px 12px;border-radius:999px;min-height:36px;display:flex;align-items:center}
+    71→.topnav a:hover{background:rgba(255,255,255,.12);color:#fff}
+    72→.topnav a.on{background:var(--brand);color:#fff}
+    73→.anno-toggle{background:transparent;border:1px solid rgba(255,255,255,.3);border-radius:999px;padding:8px 12px;font-family:var(--font);font-size:12px;color:#fff;cursor:pointer;min-height:36px}
+    74→.anno-toggle[aria-pressed="true"]{background:#fff;color:var(--olive-deep);border-color:#fff}
+    75→
+    76→/* ─── کارت‌ها و سکشن‌ها ─── */
+    77→.card{background:var(--surface);border-radius:var(--r-md);box-shadow:var(--sh-sm);padding:20px;margin-bottom:14px}
+    78→.card-plain{box-shadow:none;border:1px solid var(--sand-200)}
+    79→.sec-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+    80→.sec-head h2{margin:0}
+    81→.sec-head span{font-size:12px;color:var(--ink-3)}
+    82→.grid{display:grid;gap:12px}
+    83→.grid>*{min-width:0}
+    84→.g-2{grid-template-columns:repeat(2,1fr)}
+    85→.g-3{grid-template-columns:repeat(3,1fr)}
+    86→.g-4{grid-template-columns:repeat(4,1fr)}
+    87→.grid2{display:grid;grid-template-columns:1.2fr .8fr;gap:16px;align-items:start}
+    88→.card-a{background:var(--surface);border-radius:var(--r-md);box-shadow:var(--sh-sm);padding:18px;text-decoration:none;display:block;transition:transform .15s,box-shadow .15s;overflow-wrap:anywhere}
+    89→.card-a:hover{transform:translateY(-2px);box-shadow:var(--sh-md)}
+    90→.card p,.card-a p{margin:0;font-size:12.5px;color:var(--ink-3)}
+    91→.t-card{display:flex;gap:12px;align-items:center}
+    92→.t-card>div{min-width:0}
+    93→.ico{width:44px;height:44px;border-radius:var(--r-xs);display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:10px}
+    94→.meta{margin-top:10px;font-size:11.5px;color:var(--ink-4);display:flex;gap:10px;flex-wrap:wrap}
+    95→.ellipsis{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    96→
+    97→/* ─── هیرو ─── */
+    98→.hero{background:linear-gradient(180deg,var(--olive-800),var(--olive-700));color:#fff;border-radius:var(--r-xl);margin-top:20px;padding:40px 28px;position:relative;overflow:hidden}
+    99→.hero::after{content:"﴾ ﴿";position:absolute;inset-inline-end:24px;top:-14px;font-size:120px;opacity:.08;line-height:1}
+   100→.hero h1{color:#fff;margin:0 0 10px;font-size:clamp(22px,4vw,34px);font-weight:800}
+   101→.hero p{margin:0 0 20px;color:var(--olive-200);max-width:560px;font-size:14.5px}
+   102→.hero-cta{display:flex;gap:10px;flex-wrap:wrap}
+   103→.hero-soft{background:var(--surface);color:var(--ink);box-shadow:var(--sh-sm)}
+   104→
+   105→/* ─── دکمه‌ها ─── */
+   106→.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:10px 20px;border-radius:var(--r-sm);font-family:var(--font);font-weight:600;font-size:14px;text-decoration:none;border:0;cursor:pointer;transition:background .15s}
+   107→.btn-primary{background:var(--olive-700);color:#fff;box-shadow:var(--sh-olive)}
+   108→.btn-primary:hover{background:var(--olive-800)}
+   109→.btn-gold{background:var(--gold);color:#fff;box-shadow:var(--sh-olive)}
+   110→.btn-gold:hover{background:#a98434}
+   111→.btn-ghost{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.25)}
+   112→.btn-line{background:var(--surface);border:1px solid var(--sand-200);color:var(--ink-2)}
+   113→.btn-line:hover{border-color:var(--olive-400);color:var(--olive-700)}
+   114→.btn-danger{background:var(--rose);color:#fff}
+   115→.btn-sm{min-height:36px;padding:6px 14px;font-size:12.5px}
+   116→.btn-block{width:100%}
+   117→.btn[disabled]{opacity:.45;cursor:not-allowed;box-shadow:none}
+   118→
+   119→/* ─── نشان‌ها و چیپ‌ها ─── */
+   120→.badge{border-radius:999px;padding:3px 12px;font-size:11.5px;font-weight:700;display:inline-flex;align-items:center;gap:4px;background:var(--olive-100);color:var(--olive-800)}
+   121→.b-olive{background:var(--olive-100);color:var(--olive-800)}
+   122→.b-gold{background:var(--gold-bg);color:var(--gold)}
+   123→.b-clay{background:var(--clay-bg);color:var(--clay)}
+   124→.b-rose{background:#f3dede;color:var(--rose)}
+   125→.b-info{background:#e3ecf0;color:var(--info)}
+   126→.b-green{background:var(--olive-50);color:var(--olive-700);border:1px solid var(--olive-200)}
+   127→.b-reserve{background:var(--olive-100);color:var(--olive-800)}
+   128→.b-instant{background:var(--clay-bg);color:var(--clay)}
+   129→.b-text{background:var(--gold-bg);color:var(--gold)}
+   130→.chips{display:flex;gap:8px;flex-wrap:wrap}
+   131→.chip{background:var(--surface);border:1px solid var(--sand-200);color:var(--ink-2);border-radius:999px;padding:9px 16px;font-size:13px;font-family:var(--font);cursor:pointer;min-height:40px;text-decoration:none;display:inline-flex;align-items:center}
+   132→.chip:hover{border-color:var(--olive-400);color:var(--olive-700)}
+   133→.chip.sel{border-color:var(--olive-600);background:var(--olive-50);color:var(--olive-700);font-weight:600}
+   134→.dot-u{width:8px;height:8px;border-radius:50%;display:inline-block;background:var(--olive-500)}
+   135→.stars{color:var(--gold);font-size:12px;letter-spacing:1px}
+   136→.avatar{width:52px;height:52px;border-radius:50%;background:var(--olive-100);color:var(--olive-700);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px;flex-shrink:0}
+   137→.avatar-lg{width:76px;height:76px;font-size:24px;border:3px solid var(--olive-100)}
+   138→
+   139→/* ─── URL بار و توضیح مسیر ─── */
+   140→.urlbar{direction:ltr;text-align:left;background:var(--olive-900);color:var(--olive-200);border-radius:var(--r-xs);padding:12px 14px;font-size:14px;letter-spacing:.3px;margin-bottom:14px;overflow-x:auto;white-space:nowrap}
+   141→.urlbar b{color:var(--gold)}
+   142→.types{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+   143→.type-chip{border:1.5px solid var(--sand-200);background:var(--surface-warm);border-radius:var(--r-xs);padding:10px 14px;font-family:var(--font);cursor:pointer;min-height:44px;text-align:right}
+   144→.type-chip b{display:block;font-size:13.5px;color:var(--olive-800);direction:ltr;text-align:right}
+   145→.type-chip span{font-size:11.5px;color:var(--ink-3)}
+   146→.type-chip.sel{border-color:var(--olive-600);background:var(--olive-50)}
+   147→.type-chip.sel b{color:var(--olive-700)}
+   148→.ord-head{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+   149→.oid{font-size:11.5px;color:var(--ink-4);direction:ltr}
+   150→.payhead{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+   151→.stepper-actions{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
+   152→.affected{font-size:12.5px;background:var(--surface-warm);border:1px solid var(--sand-200);border-radius:var(--r-xs);padding:12px 14px;margin-top:14px;color:var(--ink-2)}
+   153→.affected b{color:var(--olive-800)}
+   154→
+   155→/* ─── استپر ─── */
+   156→.steps{display:flex;gap:0;position:relative;margin:8px 0 6px}
+   157→.step{flex:1;text-align:center;position:relative}
+   158→.step::before{content:"";position:absolute;top:15px;inset-inline-start:0;width:100%;height:3px;background:var(--sand-200);z-index:0}
+   159→.step:first-child::before{inset-inline-start:50%}
+   160→.step:last-child::before{width:50%}
+   161→.step.done::before,.step.now::before{background:var(--olive-600)}
+   162→.dot{width:32px;height:32px;border-radius:50%;background:var(--surface);border:3px solid var(--sand-200);color:var(--ink-3);display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;position:relative;z-index:1}
+   163→.step.done .dot{background:var(--olive-600);border-color:var(--olive-600);color:#fff}
+   164→.step.now .dot{border-color:var(--olive-600);color:var(--olive-700);box-shadow:0 0 0 4px var(--olive-100)}
+   165→.step span{display:block;font-size:10.5px;color:var(--ink-3);margin-top:6px;line-height:1.4}
+   166→.step.done span,.step.now span{color:var(--olive-800);font-weight:600}
+   167→.state-line{margin-top:14px;font-size:12.5px;background:var(--surface-warm);border:1px solid var(--sand-200);border-radius:var(--r-xs);padding:10px 12px;color:var(--ink-2)}
+   168→.state-line b{color:var(--olive-800)}
+   169→
+   170→/* ─── ردیف‌ها و جدول‌ها ─── */
+   171→.rows{display:flex;flex-direction:column}
+   172→.row{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px dashed var(--sand-200);font-size:13.5px}
+   173→.row:last-child{border-bottom:0}
+   174→.row span{color:var(--ink-3)}
+   175→.row b{font-weight:600}
+   176→.total{background:var(--olive-50);border-radius:var(--r-xs);padding:14px;display:flex;justify-content:space-between;align-items:center;margin-top:8px}
+   177→.total b{font-size:19px;color:var(--olive-800)}
+   178→.tbl-wrap{overflow-x:auto}
+   179→.tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+   180→.tbl th{background:var(--sand-100);color:var(--ink-2);font-weight:600;text-align:right;padding:10px 12px;white-space:nowrap;border-bottom:1px solid var(--sand-200)}
+   181→.tbl td{padding:10px 12px;border-bottom:1px solid var(--sand-150);vertical-align:middle}
+   182→.tbl tr:last-child td{border-bottom:0}
+   183→.tbl tr:hover td{background:var(--surface-warm)}
+   184→
+   185→/* ─── لیست آیتم‌ها ─── */
+   186→.list{display:flex;flex-direction:column}
+   187→.li-item{display:flex;gap:12px;align-items:center;padding:13px 4px;border-bottom:1px dashed var(--sand-200);text-decoration:none}
+   188→.li-item:last-child{border-bottom:0}
+   189→.li-body{flex:1;min-width:0}
+   190→.li-body b{display:block;font-size:13.5px}
+   191→.li-body span{font-size:11.5px;color:var(--ink-3)}
+   192→.li-end{text-align:center;background:var(--olive-50);border-radius:var(--r-xs);padding:8px 12px;flex-shrink:0}
+   193→.li-end b{display:block;color:var(--olive-700);font-size:14px}
+   194→.li-end span{font-size:10.5px;color:var(--ink-4)}
+   195→.price{margin-inline-start:auto;text-align:center;background:var(--olive-50);border-radius:var(--r-xs);padding:8px 12px}
+   196→.price b{display:block;color:var(--olive-700);font-size:14px}
+   197→.price span{font-size:10.5px;color:var(--ink-4)}
+   198→
+   199→/* ─── آمار ─── */
+   200→.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+   201→.stat{background:var(--surface);border-radius:var(--r-md);box-shadow:var(--sh-sm);padding:16px;text-align:center}
+   202→.stat b{display:block;font-size:22px;color:var(--olive-800)}
+   203→.stat span{font-size:11.5px;color:var(--ink-3)}
+   204→.stat.gold b{color:var(--gold)}
+   205→.stat.rose b{color:var(--rose)}
+   206→
+   207→/* ─── فرم ─── */
+   208→.field{margin-bottom:14px}
+   209→.field label{display:block;font-size:12.5px;font-weight:600;color:var(--ink-2);margin-bottom:6px}
+   210→.input,.select,.textarea{width:100%;min-height:48px;border:1.5px solid var(--sand-200);border-radius:var(--r-sm);font-family:var(--font);font-size:14px;padding:10px 14px;background:var(--surface);color:var(--ink)}
+   211→.textarea{min-height:90px;resize:vertical}
+   212→.input:focus,.select:focus,.textarea:focus{outline:none;border-color:var(--olive-600);box-shadow:0 0 0 4px var(--olive-100)}
+   213→input[type=tel].input{direction:ltr;text-align:left}
+   214→input[type=tel]{min-height:48px;border:1.5px solid var(--sand-200);border-radius:var(--r-sm);font-family:var(--font);font-size:15px;padding:0 14px;background:var(--surface);color:var(--ink);direction:ltr;text-align:left}
+   215→input[type=tel]:focus{outline:none;border-color:var(--olive-600);box-shadow:0 0 0 4px var(--olive-100)}
+   216→.phone-row{display:flex;gap:8px}
+   217→.phone-row .input{flex:1}
+   218→.hint{font-size:11.5px;color:var(--ink-4);margin-top:10px}
+   219→
+   220→/* ─── OTP (توکن‌های scoped) ─── */
+   221→.otp-card,.otp{
+   222→  --otp-slot-size:52px;--otp-slot-border:var(--sand-200);--otp-slot-bg:var(--surface);
+   223→  --otp-slot-focus-border:var(--olive-600);--otp-slot-focus-ring:var(--olive-100);
+   224→  --otp-timer-color:var(--olive-700);--otp-error-color:var(--rose);--otp-error-border:var(--rose);
+   225→}
+   226→.otp-head{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+   227→.timer-ring{position:relative;width:56px;height:56px;flex-shrink:0}
+   228→.timer-ring svg{transform:rotate(-90deg)}
+   229→.timer-ring .num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--otp-timer-color)}
+   230→.slots{display:flex;gap:8px;direction:ltr;justify-content:center;margin:6px 0 4px}
+   231→.slot{width:var(--otp-slot-size);height:var(--otp-slot-size);border:2px solid var(--otp-slot-border);border-radius:var(--r-sm);background:var(--otp-slot-bg);text-align:center;font-family:var(--font);font-size:22px;font-weight:700;color:var(--ink);transition:border-color .15s,box-shadow .15s}
+   232→.slot:focus{outline:none;border-color:var(--otp-slot-focus-border);box-shadow:0 0 0 4px var(--otp-slot-focus-ring)}
+   233→.slot.filled{border-color:var(--olive-400)}
+   234→.otp-card.err .slot,.otp.err .slot{border-color:var(--otp-error-border);animation:shake .3s}
+   235→@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(4px)}75%{transform:translateX(-4px)}}
+   236→.err-msg{display:none;color:var(--otp-error-color,var(--rose));font-size:12.5px;text-align:center;margin-top:10px}
+   237→.otp-card.err .err-msg,.otp.err .err-msg{display:block}
+   238→.otp-actions{display:flex;justify-content:space-between;align-items:center;margin-top:16px;gap:10px;flex-wrap:wrap}
+   239→.resend{background:none;border:0;font-family:var(--font);font-size:13px;color:var(--ink-3);cursor:not-allowed;min-height:44px}
+   240→.resend.active{color:var(--olive-700);font-weight:700;cursor:pointer;text-decoration:underline}
+   241→.ok-panel{display:none;background:var(--olive-50);border:1px solid var(--olive-200);border-radius:var(--r-sm);padding:14px;text-align:center;font-size:13.5px;color:var(--olive-800);margin-top:14px}
+   242→
+   243→/* ─── روش پرداخت ─── */
+   244→.method{display:flex;gap:10px;border:1.5px solid var(--sand-200);border-radius:var(--r-sm);padding:14px;cursor:pointer;align-items:center;margin-bottom:10px;min-height:56px;background:var(--surface)}
+   245→.method:hover{border-color:var(--olive-400)}
+   246→.method.sel{border-color:var(--olive-600);background:var(--olive-50)}
+   247→.mradio{width:20px;height:20px;border-radius:50%;border:2px solid var(--sand-200);flex-shrink:0}
+   248→.method.sel .mradio{border-color:var(--olive-600);border-width:6px}
+   249→.m-body b{display:block;font-size:14px}
+   250→.m-body span{font-size:11.5px;color:var(--ink-3)}
+   251→.m-amount{margin-inline-start:auto;font-size:13px;font-weight:700;color:var(--olive-700)}
+   252→.note{font-size:11.5px;color:var(--ink-4);text-align:center;margin-top:10px}
+   253→.success{display:none;text-align:center;padding:26px 18px}
+   254→.success .tick{width:64px;height:64px;border-radius:50%;background:var(--olive-600);color:#fff;font-size:30px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
+   255→.success h2{margin-bottom:6px}
+   256→.success p{font-size:13px;color:var(--ink-3);margin:0 0 16px}
+   257→
+   258→/* ─── تب‌ها ─── */
+   259→.tabs{display:flex;gap:4px;border-bottom:2px solid var(--sand-200);margin-bottom:16px;overflow-x:auto}
+   260→.tab{background:none;border:0;font-family:var(--font);font-size:13.5px;font-weight:600;color:var(--ink-3);padding:10px 16px;cursor:pointer;min-height:44px;border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap}
+   261→.tab:hover{color:var(--olive-700)}
+   262→.tab.active{color:var(--olive-800);border-bottom-color:var(--olive-600)}
+   263→.tab-panel{display:none}
+   264→.tab-panel.active{display:block}
+   265→
+   266→/* ─── سایدبار (پنل‌ها) ─── */
+   267→.shell{display:grid;grid-template-columns:232px 1fr;gap:16px;align-items:start}
+   268→.sidebar{background:var(--surface);border-radius:var(--r-md);box-shadow:var(--sh-sm);padding:12px;position:sticky;top:76px}
+   269→.side-head{font-size:11px;color:var(--ink-4);font-weight:700;padding:8px 12px 4px}
+   270→.side-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--r-xs);font-size:13.5px;color:var(--ink-2);text-decoration:none;cursor:pointer;min-height:44px;border:0;background:none;width:100%;font-family:var(--font);text-align:right}
+   271→.side-item:hover{background:var(--olive-50)}
+   272→.side-item.active{background:var(--olive-700);color:#fff;font-weight:600}
+   273→.side-item .badge{margin-inline-start:auto}
+   274→
+   275→/* ─── چت ─── */
+   276→.chat-shell{display:grid;grid-template-columns:280px 1fr;gap:14px;align-items:stretch}
+   277→.chat-side{background:var(--surface);border-radius:var(--r-md);box-shadow:var(--sh-sm);padding:10px;max-height:560px;overflow-y:auto}
+   278→.chat-main{background:var(--surface);border-radius:var(--r-md);box-shadow:var(--sh-sm);display:flex;flex-direction:column;min-height:520px;max-height:560px}
+   279→.chat-top{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--sand-200)}
+   280→.chat-msgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;background:var(--surface-warm)}
+   281→.bubble{max-width:76%;padding:10px 14px;border-radius:var(--r-sm);font-size:13.5px;position:relative;background:var(--surface);border:1px solid var(--sand-200);box-shadow:var(--sh-sm);align-self:flex-start;border-start-start-radius:4px}
+   282→.bubble.me{align-self:flex-end;background:var(--olive-700);color:#fff;border-color:var(--olive-700);border-start-end-radius:4px}
+   283→.bubble .t{display:block;font-size:9.5px;opacity:.65;margin-top:4px}
+   284→.bubble.voice{display:flex;align-items:center;gap:8px;min-width:170px}
+   285→.wave{display:flex;align-items:center;gap:2px;height:20px}
+   286→.wave i{width:3px;background:currentColor;border-radius:2px;opacity:.7}
+   287→.chat-input{display:flex;gap:8px;padding:12px;border-top:1px solid var(--sand-200)}
+   288→.chat-input input{flex:1}
+   289→
+   290→/* ─── تقویم رزرو ─── */
+   291→.cal{background:var(--surface-warm);border:1px solid var(--sand-200);border-radius:var(--r-sm);padding:12px}
+   292→.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+   293→.day{aspect-ratio:1;border-radius:var(--r-xs);border:1px solid var(--sand-200);background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12.5px;cursor:pointer;min-height:44px;padding:2px}
+   294→.day small{font-size:9px;color:var(--ink-4)}
+   295→.day:hover{border-color:var(--olive-400)}
+   296→.day.sel{background:var(--olive-700);color:#fff;border-color:var(--olive-700)}
+   297→.day.sel small{color:var(--olive-200)}
+   298→.day.dis{opacity:.35;cursor:not-allowed}
+   299→.time-chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+   300→
+   301→/* ─── کوییز/سنجش ─── */
+   302→.progress{height:8px;background:var(--sand-200);border-radius:999px;overflow:hidden}
+   303→.progress i{display:block;height:100%;background:var(--olive-600);border-radius:999px;transition:width .3s}
+   304→.quiz-opt{display:flex;align-items:center;gap:10px;border:1.5px solid var(--sand-200);border-radius:var(--r-sm);padding:13px 14px;cursor:pointer;margin-bottom:10px;background:var(--surface);min-height:48px;font-size:13.5px;text-align:right;width:100%;font-family:var(--font);color:var(--ink)}
+   305→.quiz-opt:hover{border-color:var(--olive-400)}
+   306→.quiz-opt.sel{border-color:var(--olive-600);background:var(--olive-50)}
+   307→.quiz-opt.ok{border-color:var(--olive-600);background:var(--olive-50);color:var(--olive-800);font-weight:600}
+   308→.quiz-opt.bad{border-color:var(--rose);background:#f3dede}
+   309→.opt-key{width:26px;height:26px;border-radius:50%;background:var(--sand-100);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+   310→.ring-score{position:relative;width:120px;height:120px;margin:0 auto}
+   311→.ring-score svg{transform:rotate(-90deg)}
+   312→.ring-score .val{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+   313→.ring-score .val b{font-size:26px;color:var(--olive-800)}
+   314→.ring-score .val span{font-size:10.5px;color:var(--ink-3)}
+   315→
+   316→/* ─── آکاردئون/سوالات ─── */
+   317→details.faq{background:var(--surface-warm);border:1px solid var(--sand-200);border-radius:var(--r-sm);padding:0 16px;margin-bottom:10px}
+   318→details.faq summary{cursor:pointer;font-size:13.5px;font-weight:600;padding:14px 0;list-style:none;display:flex;justify-content:space-between;align-items:center;min-height:44px}
+   319→details.faq summary::-webkit-details-marker{display:none}
+   320→details.faq summary::after{content:"+";font-size:18px;color:var(--gold);font-weight:700}
+   321→details.faq[open] summary::after{content:"−"}
+   322→details.faq .a{font-size:12.5px;color:var(--ink-2);padding:0 0 14px;line-height:1.9}
+   323→
+   324→/* ─── کرامب و بنر ─── */
+   325→.crumbs{font-size:11.5px;color:var(--ink-4);display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+   326→.crumbs a{text-decoration:none;color:var(--ink-3)}
+   327→.crumbs a:hover{color:var(--olive-700)}
+   328→.countdown{display:flex;gap:8px;direction:ltr;justify-content:center}
+   329→.cd-box{background:var(--surface);border-radius:var(--r-xs);padding:8px 10px;min-width:56px;text-align:center;box-shadow:var(--sh-sm)}
+   330→.cd-box b{display:block;font-size:18px;color:var(--olive-800)}
+   331→.cd-box span{font-size:9.5px;color:var(--ink-4)}
+   332→
+   333→/* ─── سوئیچ ─── */
+   334→.switch{position:relative;width:52px;height:30px;flex-shrink:0;display:inline-block}
+   335→.switch input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer}
+   336→.knob{position:absolute;inset:0;background:var(--sand-200);border-radius:999px;transition:background .2s;pointer-events:none}
+   337→.knob::after{content:"";position:absolute;top:3px;inset-inline-start:3px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:var(--sh-sm);transition:transform .2s}
+   338→.switch input:checked+.knob{background:var(--olive-600)}
+   339→.switch input:checked+.knob::after{transform:translateX(-22px)}
+   340→.switch input:focus-visible+.knob{outline:2px solid var(--olive-600);outline-offset:2px}
+   341→.flag{display:flex;align-items:center;gap:14px;padding:14px 0;border-bottom:1px dashed var(--sand-200)}
+   342→.flag:last-child{border-bottom:0}
+   343→.f-body{flex:1;min-width:0}
+   344→.f-body b{display:block;font-size:14px;direction:ltr;text-align:right;font-weight:700}
+   345→.f-body span{font-size:12px;color:var(--ink-3)}
+   346→.env-tag{flex-shrink:0;font-size:10.5px;border-radius:999px;padding:3px 10px;font-weight:700}
+   347→.env{background:var(--clay-bg);color:var(--clay)}
+   348→.json{background:var(--olive-100);color:var(--olive-700)}
+   349→.static{background:var(--sand-200);color:var(--ink-2)}
+   350→
+   351→/* ─── توکن‌ها/نمایش کد ─── */
+   352→.tok-src,.state,.tok-list{direction:ltr;text-align:left;font-size:11.5px;line-height:1.9;background:var(--surface-warm);border:1px dashed var(--sand-200);border-radius:var(--r-xs);padding:12px 14px;color:var(--ink-2);white-space:pre;overflow-x:auto;margin:0;font-family:inherit}
+   353→.tok-src b,.tok-list b{color:var(--gold)}
+   354→.state{background:var(--olive-900);color:var(--olive-200);border:0}
+   355→.state b{color:var(--gold)}
+   356→.swatches{display:flex;gap:8px;flex-wrap:wrap}
+   357→.sw{width:86px;border-radius:var(--r-xs);overflow:hidden;border:1px solid var(--sand-200);background:var(--surface-warm)}
+   358→.sw .c{height:52px}
+   359→.sw .t{padding:6px 8px;font-size:10px;direction:ltr;text-align:left;color:var(--ink-3);line-height:1.5}
+   360→.sw .t b{display:block;color:var(--ink-2);font-size:10.5px}
+   361→.scale{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+   362→.sq{display:flex;align-items:center;justify-content:center;background:var(--olive-50);border:1px solid var(--olive-200);color:var(--olive-700);font-size:11px}
+   363→.sh-demo{padding:16px 22px;background:var(--surface);border-radius:var(--r-md);font-size:12px;color:var(--ink-3)}
+   364→.layer-tag{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:3px 12px;font-size:11px;font-weight:700}
+   365→.l1{background:var(--olive-100);color:var(--olive-700)}
+   366→.l2{background:var(--gold-bg);color:var(--gold)}
+   367→.theme-btns{display:flex;gap:10px;margin-bottom:6px;flex-wrap:wrap}
+   368→.tbtn{border:1.5px solid var(--sand-200);background:var(--surface);border-radius:var(--r-sm);padding:10px 18px;font-family:var(--font);font-size:13.5px;font-weight:600;color:var(--ink-2);cursor:pointer;min-height:44px}
+   369→.tbtn.sel{border-color:var(--olive-600);color:var(--olive-700);background:var(--olive-50)}
+   370→.demo-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+   371→.mini-otp{display:flex;gap:6px;direction:ltr;justify-content:center;margin-bottom:10px}
+   372→.mini-slot{width:38px;height:38px;border:2px solid var(--sand-200);border-radius:var(--r-xs);background:var(--surface);text-align:center;font-family:var(--font);font-size:17px;font-weight:700;color:var(--ink)}
+   373→.mini-slot:focus{outline:none;border-color:var(--olive-600);box-shadow:0 0 0 3px var(--olive-100)}
+   374→.dbtn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 18px;border-radius:var(--r-sm);font-family:var(--font);font-weight:700;font-size:13.5px;border:0;cursor:pointer;background:var(--gold);color:var(--surface)}
+   375→.dbtn2{background:var(--olive-700);color:#fff;margin-inline-start:8px}
+   376→.seo-map{background:var(--surface-warm);border:1px dashed var(--olive-300);border-radius:var(--r-md);padding:18px;font-size:13px}
+   377→.seo-tree{font-family:inherit;direction:ltr;text-align:left;white-space:pre;overflow-x:auto;color:var(--olive-800);font-size:12.5px;line-height:1.9;margin:10px 0 0}
+   378→
+   379→/* ─── خالی/توست ─── */
+   380→.empty{text-align:center;padding:40px 20px;color:var(--ink-3)}
+   381→.empty .ico{margin:0 auto 10px;opacity:.6}
+   382→.toast{position:fixed;bottom:22px;right:50%;transform:translate(50%,16px);background:var(--olive-900);color:#fff;padding:11px 20px;border-radius:999px;font-size:13px;box-shadow:var(--sh-lg);opacity:0;transition:all .25s;z-index:100;pointer-events:none;max-width:88vw;text-align:center}
+   383→.toast.show{opacity:1;transform:translate(50%,0)}
+   384→
+   385→/* ─── حاشیه‌نویسی ─── */
+   386→.ann-wrap{position:relative;display:inline-block}
+   387→.ann-btn{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--gold);background:var(--gold-bg);color:var(--gold);font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer;line-height:1;vertical-align:middle;padding:0}
+   388→.ann-pop{position:absolute;bottom:calc(100% + 8px);inset-inline-start:50%;transform:translateX(50%);background:var(--olive-900);color:#fff;font-size:11.5px;line-height:1.7;padding:10px 12px;border-radius:var(--r-xs);width:min(270px,74vw);z-index:60;display:none;box-shadow:var(--sh-md);font-weight:400}
+   389→.ann-wrap.open .ann-pop{display:block}
+   390→body.no-anno .ann-wrap{display:none}
+   391→.ann-pop::after{content:"";position:absolute;top:100%;inset-inline-start:50%;transform:translateX(50%);border:6px solid transparent;border-top-color:var(--olive-900)}
+   392→
+   393→/* ─── فوتر ─── */
+   394→.foot{margin-top:auto;background:var(--sand-100);border-top:1px solid var(--sand-200);padding:18px 0;margin-top:40px}
+   395→.foot .container{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;font-size:11.5px;color:var(--ink-3)}
+   396→
+   397→/* ─── اسکرول‌بار ─── */
+   398→.chat-msgs::-webkit-scrollbar,.chat-side::-webkit-scrollbar,.topnav::-webkit-scrollbar{height:6px;width:6px}
+   399→.chat-msgs::-webkit-scrollbar-thumb,.chat-side::-webkit-scrollbar-thumb,.topnav::-webkit-scrollbar-thumb{background:var(--sand-200);border-radius:999px}
+   400→
+   401→/* ─── ریسپانسیو ─── */
+   402→@media(max-width:960px){.g-4,.stat-grid{grid-template-columns:repeat(2,1fr)}.shell{grid-template-columns:1fr}.sidebar{position:static;display:flex;flex-wrap:wrap;gap:4px}.side-head{width:100%}.side-item{width:auto}.chat-shell{grid-template-columns:1fr}.chat-side{max-height:200px}}
+   403→@media(max-width:820px){.grid2{grid-template-columns:1fr}.g-3{grid-template-columns:repeat(2,1fr)}.demo-grid{grid-template-columns:1fr}}
+   404→@media(max-width:560px){.g-3,.g-4,.g-2,.stat-grid{grid-template-columns:1fr 1fr}.hero{padding:28px 20px}.otp-card,.otp{--otp-slot-size:46px}.sw{width:72px}.container,.container-narrow{padding:0 12px}.t-card{flex-wrap:wrap}.price{margin-inline-start:0}}
+   405→
+   406→/* ═════════ نسخه ۲ — کامپوننت‌های مشترک یکدست با لندینگ ═════════ */
+   407→
+   408→/* تصویر استاندارد */
+   409→.imgfit{width:100%;height:100%;object-fit:cover;display:block}
+   410→
+   411→/* آواتار */
+   412→.avatar{border-radius:50%;object-fit:cover;background:var(--olive-50);flex:none}
+   413→.av-xs{width:28px;height:28px}.av-sm{width:40px;height:40px}.av-md{width:56px;height:56px}.av-lg{width:88px;height:88px}.av-xl{width:120px;height:120px}
+   414→.av-fb{border-radius:50%;background:linear-gradient(135deg,var(--olive-50),var(--olive-100));color:var(--brand-700);display:grid;place-items:center;font-weight:800;flex:none}
+   415→.online-dot{width:10px;height:10px;border-radius:50%;background:var(--online);display:inline-block;flex:none;position:relative}
+   416→.online-dot.pulse::after{content:"";position:absolute;inset:0;border-radius:50%;background:var(--online);animation:opulse 1.8s ease-out infinite}
+   417→@keyframes opulse{0%{transform:scale(1);opacity:.7}100%{transform:scale(2.6);opacity:0}}
+   418→.badge-online{display:inline-flex;align-items:center;gap:5px;background:var(--olive-50);color:var(--brand-700);font-size:10.5px;font-weight:700;border-radius:999px;padding:2px 9px}
+   419→.badge-off{display:inline-flex;align-items:center;gap:5px;background:var(--sand-150);color:var(--ink-3);font-size:10.5px;font-weight:700;border-radius:999px;padding:2px 9px}
+   420→.badge-off i{width:8px;height:8px;border-radius:50%;background:var(--ink-4)}
+   421→
+   422→/* breadcrumb — الگوی اسنپ‌داکتر */
+   423→.crumb{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-3);flex-wrap:wrap;margin-bottom:14px}
+   424→.crumb a{color:var(--ink-3)}
+   425→.crumb a:hover{color:var(--brand-700)}
+   426→.crumb .sep{color:var(--ink-4)}
+   427→.crumb b{color:var(--ink);font-weight:600}
+   428→
+   429→/* کارت استاد عمودی — مثل کارت‌های لندینگ */
+   430→.tcard{background:var(--surface);border:1px solid var(--sand-200);border-radius:var(--r-md);padding:18px 14px 14px;text-align:center;transition:box-shadow .15s,transform .15s;position:relative;text-decoration:none;display:block;overflow:hidden}
+   431→.tcard:hover{box-shadow:var(--sh-md);transform:translateY(-2px)}
+   432→.tcard .av-wrap{position:relative;width:88px;margin:0 auto 10px}
+   433→.tcard .av-wrap .online-dot{position:absolute;bottom:4px;inset-inline-start:6px;width:16px;height:16px;border:3px solid var(--surface)}
+   434→.tcard h3{font-size:14.5px;font-weight:700;color:var(--ink);margin:0 0 2px}
+   435→.tcard .sp{font-size:12px;color:var(--ink-3);margin-bottom:6px}
+   436→.tcard .stars{font-size:12px;color:var(--gold);margin-bottom:4px}
+   437→.tcard .stars span{color:var(--ink-3)}
+   438→.tcard .price{font-size:13px;color:var(--ink-2);margin-bottom:12px}
+   439→.tcard .price b{color:var(--ink);font-weight:800}
+   440→.tcard .badge-online{position:absolute;top:12px;inset-inline-start:12px}
+   441→
+   442→/* ردیف استاد (لیست نتایج/تخصص) — الگوی لیست پزشکان اسنپ‌داکتر */
+   443→.trow{display:flex;gap:14px;align-items:center;background:var(--surface);border:1px solid var(--sand-200);border-radius:var(--r-md);padding:16px;margin-bottom:10px;text-decoration:none;transition:box-shadow .15s;flex-wrap:wrap}
+   444→.trow:hover{box-shadow:var(--sh-md)}
+   445→.trow .info{flex:1;min-width:180px}
+   446→.trow .info h3{margin:0 0 2px;font-size:15px;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+   447→.trow .info .sp{font-size:12.5px;color:var(--ink-3)}
+   448→.trow .meta{font-size:12px;color:var(--ink-3);display:flex;gap:12px;flex-wrap:wrap;margin-top:6px}
+   449→.trow .meta b{color:var(--ink-2)}
+   450→.trow .side{text-align:center;min-width:150px}
+   451→.trow .side .price{font-size:13px;color:var(--ink-2);margin-bottom:8px}
+   452→.trow .side .price b{font-size:15px;color:var(--ink);font-weight:800}
+   453→.trow .next{font-size:11px;color:var(--brand-700);background:var(--olive-50);border-radius:8px;padding:3px 8px;display:inline-block;margin-bottom:8px}
+   454→.stars{font-size:12.5px;color:var(--gold);letter-spacing:1px}
+   455→.stars span{color:var(--ink-3);letter-spacing:0}
+   456→
+   457→/* نمودار توزیع امتیاز */
+   458→.rate-bars{display:grid;gap:6px}
+   459→.rb{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--ink-3)}
+   460→.rb .track{flex:1;height:8px;border-radius:999px;background:var(--sand-150);overflow:hidden}
+   461→.rb .fill{height:100%;border-radius:999px;background:var(--gold)}
+   462→.rb b{min-width:44px;text-align:left;color:var(--ink-2)}
+   463→
+   464→/* کارت نظر */
+   465→.comment-card{background:var(--surface);border:1px solid var(--sand-200);border-radius:var(--r-md);padding:16px;margin-bottom:10px}
+   466→.comment-card .head{display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap}
+   467→.comment-card .head b{font-size:13.5px;color:var(--ink)}
+   468→.comment-card .head .date{font-size:11px;color:var(--ink-3);margin-inline-start:auto}
+   469→.comment-card p{margin:0;font-size:13px;color:var(--ink-2);line-height:1.9}
+   470→.comment-card .reply{margin-top:10px;background:var(--sand-150);border-radius:10px;padding:10px 12px;font-size:12.5px;color:var(--ink-2)}
+   471→.comment-card .reply b{color:var(--brand-700);font-size:12px;display:block;margin-bottom:2px}
+   472→
+   473→/* چت — حباب‌ها */
+   474→.thread{display:grid;gap:10px;padding:4px 0}
+   475→.msg{max-width:78%;padding:10px 14px;border-radius:16px;font-size:13px;line-height:1.9;position:relative}
+   476→.msg-in{background:var(--surface);border:1px solid var(--sand-200);border-start-start-radius:4px;justify-self:start;color:var(--ink)}
+   477→.msg-out{background:var(--brand);color:#fff;border-start-end-radius:4px;justify-self:end}
+   478→.msg .m-meta{font-size:10px;opacity:.75;margin-top:4px;display:block}
+   479→.msg .voice{display:flex;align-items:center;gap:8px;min-width:150px}
+   480→.msg .voice .wave{flex:1;height:24px;background:repeating-linear-gradient(90deg,currentColor 0 2px,transparent 2px 5px);opacity:.35;border-radius:2px}
+   481→.msg-card{background:var(--sand-150);border:1px solid var(--sand-200);border-radius:12px;padding:10px;margin-top:6px;font-size:12px}
+   482→
+   483→/* اسلات زمانی */
+   484→.slots{display:flex;gap:8px;flex-wrap:wrap}
+   485→.slot{border:1.5px solid var(--sand-200);background:var(--surface);border-radius:10px;padding:8px 14px;font-size:12.5px;color:var(--ink-2);cursor:pointer;transition:all .15s;font-family:var(--font)}
+   486→.slot:hover{border-color:var(--brand);color:var(--brand-700)}
+   487→.slot.sel{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:700}
+   488→.slot[disabled]{opacity:.4;cursor:not-allowed;text-decoration:line-through}
+   489→
+   490→/* تقویم */
+   491→.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+   492→.cal .dow{text-align:center;font-size:11px;color:var(--ink-3);padding:4px 0;font-weight:600}
+   493→.cal-d{aspect-ratio:1;border:1.5px solid var(--sand-200);border-radius:10px;display:grid;place-items:center;font-size:12.5px;color:var(--ink-2);cursor:pointer;position:relative;transition:all .15s;font-family:var(--font)}
+   494→.cal-d:hover{border-color:var(--brand)}
+   495→.cal-d.sel{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:700}
+   496→.cal-d.today{border-color:var(--brand-300,#a5e7c6)}
+   497→.cal-d .dotf{position:absolute;bottom:5px;width:4px;height:4px;border-radius:50%;background:var(--brand)}
+   498→.cal-d.dim{opacity:.35;cursor:default}
+   499→
+   500→/* FAQ آکاردئونی — الگوی صفحات تخصص اسنپ‌داکتر */
+   501→.faq{border:1px solid var(--sand-200);border-radius:var(--r-sm);margin-bottom:8px;background:var(--surface);overflow:hidden}
+   502→.faq summary{padding:13px 16px;font-size:13.5px;font-weight:600;color:var(--ink);cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px}
+   503→.faq summary::-webkit-details-marker{display:none}
+   504→.faq summary::after{content:"+";margin-inline-start:auto;color:var(--brand-700);font-size:16px;font-weight:700}
+   505→.faq[open] summary::after{content:"−"}
+   506→.faq .fa-body{padding:0 16px 14px;font-size:13px;color:var(--ink-2);line-height:1.9}
+   507→
+   508→/* ردیف کلید-مقدار */
+   509→.kv{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px dashed var(--sand-200);font-size:13px}
+   510→.kv:last-child{border-bottom:0}
+   511→.kv b{color:var(--ink);font-weight:600}
+   512→.kv span{color:var(--ink-3)}
+   513→
+   514→/* پیل‌ها و برچسب‌ها */
+   515→.pill{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--sand-200);background:var(--surface);border-radius:999px;padding:4px 12px;font-size:12px;color:var(--ink-2)}
+   516→.pill.green{background:var(--olive-50);border-color:var(--olive-200);color:var(--brand-700)}
+   517→
+   518→/* اسکرول افقی عمومی */
+   519→.hscroll{display:flex;gap:12px;overflow-x:auto;padding:4px 2px 12px;scroll-snap-type:x mandatory;scrollbar-width:none}
+   520→.hscroll::-webkit-scrollbar{display:none}
+   521→.hscroll>*{scroll-snap-align:start;flex:none}
+   522→
+   523→/* بنر معرفی صفحه تخصص (SEO) */
+   524→.spec-hero{background:linear-gradient(135deg,var(--olive-50),var(--surface));border:1px solid var(--olive-200);border-radius:20px;padding:22px;margin-bottom:16px}
+   525→.spec-hero h1{color:var(--olive-800)}
+   526→
+   527→/* آیکون دسته */
+   528→.cat-ic{width:52px;height:52px;border-radius:16px;background:var(--olive-50);display:grid;place-items:center;font-size:23px;flex:none;overflow:hidden}
+   529→.cat-ic .imgfit{border-radius:16px}
+   530→
+   531→</style>
+   532→<style>
+   533→/* ─── استایل اختصاصی پنل مدیریت ─── */
+   534→.vbars{display:flex;gap:8px;align-items:flex-end;height:190px;padding:8px 4px 0;border-bottom:1px solid var(--sand-200)}
+   535→.vbar{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;cursor:default}
+   536→.vbar i{display:block;width:100%;max-width:36px;background:linear-gradient(180deg,var(--olive-400),var(--olive-700));border-radius:8px 8px 0 0;min-height:6px}
+   537→.vbar:hover i{opacity:.72}
+   538→.vbar.cur i{background:linear-gradient(180deg,#f2c14e,var(--gold))}
+   539→.vbar b{font-size:10.5px;color:var(--ink-3);font-weight:600;margin-top:6px;white-space:nowrap}
+   540→.legend{display:flex;gap:14px;align-items:center;margin-top:10px;font-size:11.5px;color:var(--ink-3);flex-wrap:wrap}
+   541→.legend .sw{width:12px;height:12px;border-radius:4px;display:inline-block;margin-inline-end:5px;vertical-align:-2px}
+   542→
+   543→.duo{display:flex;align-items:center;flex-shrink:0}
+   544→.duo .avatar{width:34px;height:34px;font-size:13px;border:2px solid var(--surface)}
+   545→.duo .avatar+.avatar{margin-inline-start:-10px}
+   546→.live-dot{width:8px;height:8px;border-radius:50%;background:var(--online);display:inline-block;margin-inline-start:6px;flex-shrink:0;animation:vPulse 1.6s infinite}
+   547→@keyframes vPulse{0%{box-shadow:0 0 0 0 rgba(33,186,69,.45)}70%{box-shadow:0 0 0 8px rgba(33,186,69,0)}100%{box-shadow:0 0 0 0 rgba(33,186,69,0)}}
+   548→
+   549→.hb-row{display:grid;grid-template-columns:170px 1fr 48px;gap:12px;align-items:center;font-size:12.5px;padding:7px 0}
+   550→.hb-row>span:first-child{color:var(--ink-2)}
+   551→.hb-row>b{text-align:left;color:var(--olive-800);font-size:12px}
+   552→.hb-row .progress{height:10px}
+   553→
+   554→.prio{width:9px;height:9px;border-radius:50%;display:inline-block;margin-inline-end:7px;flex-shrink:0}
+   555→.prio.hot{background:var(--rose)}.prio.mid{background:var(--gold)}.prio.low{background:var(--olive-500)}
+   556→
+   557→.doc-chip{font-size:11px;border-radius:999px;padding:2px 9px;background:var(--surface-warm);border:1px solid var(--sand-200);color:var(--ink-2);white-space:nowrap}
+   558→.doc-chip.ok{background:var(--olive-50);border-color:var(--olive-200);color:var(--olive-700)}
+   559→.doc-chip.wait{background:var(--gold-bg);border-color:transparent;color:var(--gold)}
+   560→.doc-chip.bad{background:#f3dede;border-color:transparent;color:var(--rose)}
+   561→
+   562→.vcard{border:1px solid var(--sand-200);border-radius:var(--r-sm);padding:14px;display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap;margin-bottom:10px;background:var(--surface)}
+   563→.vcard .avatar-lg{width:60px;height:60px;font-size:20px}
+   564→.vcard .v-body{flex:1;min-width:220px}
+   565→.vcard .v-body .gap{margin:8px 0}
+   566→.vcard .req-actions{display:flex;gap:6px;flex-shrink:0;align-items:center;flex-wrap:wrap}
+   567→
+   568→.searchbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+   569→.searchbar .input{max-width:280px;min-height:42px}
+   570→.searchbar .chips{margin-bottom:0}
+   571→
+   572→.act-mini{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+   573→.pager{display:flex;gap:6px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap;align-items:center}
+   574→.pager button{min-width:36px;min-height:36px;border-radius:10px;border:1px solid var(--sand-200);background:var(--surface);font-family:var(--font);font-size:12.5px;color:var(--ink-2);cursor:pointer;padding:0 10px}
+   575→.pager button:hover{border-color:var(--olive-400);color:var(--olive-700)}
+   576→.pager button.on{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:700}
+   577→
+   578→.mini-bubble{background:var(--surface-warm);border:1px solid var(--sand-200);border-radius:14px 14px 14px 4px;padding:10px 14px;font-size:12.5px;color:var(--ink-2);max-width:92%}
+   579→.mini-bubble.out{background:var(--olive-50);border-color:var(--olive-200);border-radius:14px 14px 4px 14px;margin-inline-start:auto}
+   580→.ticket-msgs{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+   581→
+   582→@media(max-width:640px){
+   583→  .hb-row{grid-template-columns:110px 1fr 40px}
+   584→  .vbar b{display:none}
+   585→  .searchbar .input{max-width:100%}
+   586→}
+   587→</style>
+   588→</head>
+   589→<body class="on" data-page="panel-admin">
+   590→<header class="topbar">
+   591→  <div class="container topbar-in">
+   592→    <a class="brand" href="index.html?XTransformPort=3500">وُدّا<small>پیش‌نمایش ساختاری · فاز ۳ REA</small></a>
+   593→    <span class="mode-badge">ایزوله · پورت ۳۵۰۰</span>
+   594→    <nav class="topnav" aria-label="صفحات پیش‌نمایش">
+   595→      <a href="index.html?XTransformPort=3500" data-page="index">خانه</a>
+   596→      <a href="specialist.html?XTransformPort=3500" data-page="specialist">تخصص‌ها</a>
+   597→      <a href="teacher.html?XTransformPort=3500" data-page="teacher">استاد</a>
+   598→      <a href="store.html?XTransformPort=3500" data-page="store">فروشگاه</a>
+   599→      <a href="book.html?XTransformPort=3500" data-page="book">رزرو</a>
+   600→      <a href="ordercenter.html?XTransformPort=3500" data-page="ordercenter">سفارش‌ها</a>
+   601→      <a href="payment.html?XTransformPort=3500" data-page="payment">پرداخت</a>
+   602→      <a href="chat.html?XTransformPort=3500" data-page="chat">چت</a>
+   603→      <a href="session.html?XTransformPort=3500" data-page="session">جلسه زنده</a>
+   604→      <a href="assessment.html?XTransformPort=3500" data-page="assessment">سنجش</a>
+   605→      <a href="panel-teacher.html?XTransformPort=3500" data-page="panel-teacher">پنل استاد</a>
+   606→      <a href="panel-admin.html?XTransformPort=3500" data-page="panel-admin">پنل مدیریت</a>
+   607→      <a href="credit.html?XTransformPort=3500" data-page="credit">کیف پول</a>
+   608→      <a href="profile.html?XTransformPort=3500" data-page="profile">پروفایل</a>
+   609→      <a href="sitemap.html?XTransformPort=3500" data-page="sitemap">نقشه ساختار</a>
+   610→    </nav>
+   611→    <button class="anno-toggle" id="annoToggle" aria-pressed="true">حاشیه‌نویسی: روشن</button>
+   612→  </div>
+   613→</header>
+   614→
+   615→<main class="container">
+   616→  <h1>پنل مدیریت<span class="ann-wrap"><button class="ann-btn" aria-label="توضیح">؟</button><span class="ann-pop">در snapp.doctor پنل اپراتور/پشتیبانی روی زیردامنه جدا (panel.snapp.doctor) با داشبورد نوبت‌ها، پزشکان، تسویه مالی و تیکت‌ها اجرا می‌شود. معادل وُدّایی: /panel/admin/* در همان اپ — هر آیتم سایدبار = یک روت (dashboard، sessions، teachers، users، finance، support، reports، settings).</span></span></h1>
+   617→  <p class="sub">خوش آمدید، مدیر سیستم · دسترسی: کامل · کد پنل: <b dir="ltr">A-001</b> · آخرین ورود: امروز ۱۴:۲۰</p>
+   618→
+   619→  <div class="shell">
+   620→    <aside class="sidebar" aria-label="بخش‌های پنل مدیریت">
+   621→      <div class="side-head">پنل مدیریت</div>
+   622→      <button class="side-item active" type="button" data-panel="p-dash" aria-current="true">📊 داشبورد</button>
+   623→      <button class="side-item" type="button" data-panel="p-sessions">📅 جلسات<span class="badge">۱۲</span></button>
+   624→      <button class="side-item" type="button" data-panel="p-teachers">🧑‍🏫 استادان<span class="badge">۴</span></button>
+   625→      <button class="side-item" type="button" data-panel="p-users">👥 فراگیران</button>
+   626→      <button class="side-item" type="button" data-panel="p-finance">💳 مالی و تسویه<span class="badge">۵</span></button>
+   627→      <button class="side-item" type="button" data-panel="p-support">🎧 پشتیبانی<span class="badge">۲</span></button>
+   628→      <button class="side-item" type="button" data-panel="p-reports">📈 گزارش‌ها</button>
+   629→      <button class="side-item" type="button" data-panel="p-settings">⚙️ تنظیمات</button>
+   630→    </aside>
+   631→
+   632→    <div>
+   633→      <!-- ═══════════ داشبورد ═══════════ -->
+   634→      <section class="tab-panel active" id="p-dash" role="tabpanel" aria-label="داشبورد">
+   635→        <div class="sec-head">
+   636→          <h2>نمای کلی امروز<span class="ann-wrap"><button class="ann-btn" aria-label="توضیح">؟</button><span class="ann-pop">معادل داشبورد snapp.doctor: نوبت‌های امروز، درآمد، پزشکان آنلاین. اینجا aggregate از ledger بک‌اند Go خوانده می‌شود: sessions، ledger، users — بدون محاسبه سمت کلاینت.</span></span></h2>
+   637→          <span class="badge b-green"><span class="live-dot"></span>سیستم سالم</span>
+   638→          <span class="muted">به‌روزرسانی: همین حالا</span>
+   639→        </div>
+   640→
+   641→        <div class="stat-grid mb">
+   642→          <div class="stat gold"><b>۱۸٬۴۵۰٬۰۰۰</b><span>درآمد امروز (تومان)</span></div>
+   643→          <div class="stat"><b>۳۸</b><span>جلسات امروز</span></div>
+   644→          <div class="stat"><b>۸۶</b><span>استادان فعال</span></div>
+   645→          <div class="stat"><b>۱۲۴</b><span>فراگیر جدید (هفته)</span></div>
+   646→          <div class="stat rose"><b>۳٫۲٪</b><span>نرخ لغو (هفته)</span></div>
+   647→          <div class="stat"><b>۴٫۸</b><span>میانگین امتیاز</span></div>
+   648→          <div class="stat rose"><b>۵</b><span>تسویه در انتظار</span></div>
+   649→          <div class="stat"><b>۲</b><span>تیکت باز</span></div>
+   650→        </div>
+   651→
+   652→        <div class="card">
+   653→          <div class="sec-head">
+   654→            <h2>روند درآمد — ۱۲ هفته اخیر</h2>
+   655→            <button class="btn btn-line btn-sm" type="button" data-export>خروجی CSV</button>
+   656→          </div>
+   657→          <div class="vbars" role="img" aria-label="نمودار میله‌ای درآمد ۱۲ هفته">
+   658→            <div class="vbar" title="هفته ۱ — ۴۲ میلیون تومان"><i style="height:40%"></i><b>۴۲</b></div>
+   659→            <div class="vbar" title="هفته ۲ — ۵۵ میلیون تومان"><i style="height:53%"></i><b>۵۵</b></div>
+   660→            <div class="vbar" title="هفته ۳ — ۴۸ میلیون تومان"><i style="height:46%"></i><b>۴۸</b></div>
+   661→            <div class="vbar" title="هفته ۴ — ۶۱ میلیون تومان"><i style="height:59%"></i><b>۶۱</b></div>
+   662→            <div class="vbar" title="هفته ۵ — ۵۸ میلیون تومان"><i style="height:56%"></i><b>۵۸</b></div>
+   663→            <div class="vbar" title="هفته ۶ — ۷۲ میلیون تومان"><i style="height:69%"></i><b>۷۲</b></div>
+   664→            <div class="vbar" title="هفته ۷ — ۶۶ میلیون تومان"><i style="height:64%"></i><b>۶۶</b></div>
+   665→            <div class="vbar" title="هفته ۸ — ۸۰ میلیون تومان"><i style="height:77%"></i><b>۸۰</b></div>
+   666→            <div class="vbar" title="هفته ۹ — ۷۴ میلیون تومان"><i style="height:71%"></i><b>۷۴</b></div>
+   667→            <div class="vbar" title="هفته ۱۰ — ۸۸ میلیون تومان"><i style="height:85%"></i><b>۸۸</b></div>
+   668→            <div class="vbar" title="هفته ۱۱ — ۹۲ میلیون تومان"><i style="height:89%"></i><b>۹۲</b></div>
+   669→            <div class="vbar cur" title="هفته جاری — ۱۰۴ میلیون تومان"><i style="height:100%"></i><b>۱۰۴</b></div>
+   670→          </div>
+   671→          <div class="legend"><span><i class="sw" style="background:var(--olive-600)"></i>هفته‌های گذشته (میلیون تومان)</span><span><i class="sw" style="background:var(--gold)"></i>هفته جاری</span></div>
+   672→        </div>
+   673→
+   674→        <div class="g-2">
+   675→          <div class="card">
+   676→            <div class="sec-head"><h2>در حال برگزاری</h2><span class="badge b-green"><span class="live-dot"></span>۴ جلسه زنده</span></div>
+   677→            <div class="list">
+   678→              <div class="li-item">
+   679→                <div class="duo"><span class="avatar"><img class="imgfit" src="img/av-kobra.jpg?XTransformPort=3500" alt="استاد کبری مرتضوی"></span><span class="avatar">ز</span></div>
+   680→                <div class="li-body"><b>کبری مرتضوی ↔ زهرا احمدی</b><span class="muted">تجوید و صوت و لحن · شروع ۱۶:۳۰</span></div>
+   681→                <span class="badge b-green"><span class="live-dot"></span>زنده</span>
+   682→              </div>
+   683→              <div class="li-item">
+   684→                <div class="duo"><span class="avatar"><img class="imgfit" src="img/av-abdolrahman.jpg?XTransformPort=3500" alt="استاد عبدالرحمن حیدری"></span><span class="avatar">م</span></div>
+   685→                <div class="li-body"><b>عبدالرحمن حیدری ↔ محمد کریمی</b><span class="muted">حفظ قرآن · شروع ۱۶:۰۰</span></div>
+   686→                <span class="badge b-green"><span class="live-dot"></span>زنده</span>
+   687→              </div>
+   688→              <div class="li-item">
+   689→                <div class="duo"><span class="avatar"><img class="imgfit" src="img/av-yaser.jpg?XTransformPort=3500" alt="استاد یاسر رحمانی"></span><span class="avatar">ن</span></div>
+   690→                <div class="li-body"><b>یاسر رحمانی ↔ نرگس موسوی</b><span class="muted">حفظ قرآن · شروع ۱۵:۳۰</span></div>
+   691→                <span class="badge b-green"><span class="live-dot"></span>زنده</span>
+   692→              </div>
+   693→              <div class="li-item">
+   694→                <div class="duo"><span class="avatar"><img class="imgfit" src="img/av-sakine.jpg?XTransformPort=3500" alt="استاد سکینه موسوی"></span><span class="avatar">ر</span></div>
+   695→                <div class="li-body"><b>سکینه موسوی ↔ مریم رضایی</b><span class="muted">قرآن‌خوانی مداحان · شروع ۱۵:۰۰</span></div>
+   696→                <span class="badge b-green"><span class="live-dot"></span>زنده</span>
+   697→              </div>
+   698→            </div>
+   699→            <button class="btn btn-line btn-sm mt" type="button" data-goto="p-sessions">مشاهده همه جلسات</button>
+   700→          </div>
+   701→
+   702→          <div class="card">
+   703→            <div class="sec-head"><h2>آخرین رویدادهای سیستم</h2></div>
+   704→            <div class="list">
+   705→              <div class="li-item"><span class="dot-u"></span><div class="li-body"><b>تسویه حسین قاسمی پرداخت شد</b><span class="muted">۵٬۱۰۰٬۰۰۰ تومان · ۱۶:۲۴</span></div></div>
+   706→              <div class="li-item"><span class="dot-u"></span><div class="li-body"><b>مدرک جدید از مریم نجفی دریافت شد</b><span class="muted">مدرک حوزوی · ۱۶:۰۲</span></div></div>
+   707→              <div class="li-item"><span class="dot-u" style="background:var(--rose)"></span><div class="li-body"><b>تیکت فوری جدید — TKT-241</b><span class="muted">«پرداخت شد ولی جلسه ثبت نشد» · ۱۵:۵۱</span></div></div>
+   708→              <div class="li-item"><span class="dot-u"></span><div class="li-body"><b>جلسه <span dir="ltr">#S-10435</span> آغاز شد</b><span class="muted">کبری مرتضوی · ۱۵:۳۰</span></div></div>
+   709→              <div class="li-item"><span class="dot-u"></span><div class="li-body"><b>فراگیر جدید ثبت‌نام کرد</b><span class="muted">سارا جعفری · ۱۴:۴۰</span></div></div>
+   710→              <div class="li-item"><span class="dot-u" style="background:var(--gold)"></span><div class="li-body"><b>جلسه <span dir="ltr">#S-10431</span> لغو شد</b><span class="muted">توسط فراگیر · ۱۳:۱۵</span></div></div>
+   711→            </div>
+   712→          </div>
+   713→        </div>
+   714→      </section>
+   715→
+   716→      <!-- ═══════════ جلسات ═══════════ -->
+   717→      <section class="tab-panel" id="p-sessions" role="tabpanel" aria-label="جلسات">
+   718→        <div class="sec-head">
+   719→          <h2>مدیریت جلسات<span class="ann-wrap"><button class="ann-btn" aria-label="توضیح">؟</button><span class="ann-pop">چرخه وضعیت جلسه در وُدّا: pending → confirmed → live → done / cancelled (با سیاست لغو و بازگشت وجه از escrow). در snapp.doctor همین وضعیت‌ها برای نوبت‌ها در پنل اپراتور فیلترپذیر است.</span></span></h2>
+   720→          <span class="muted">نمایش ۱۰ از ۳۸ جلسه امروز</span>
+   721→        </div>
+   722→
+   723→        <div class="searchbar">
+   724→          <input class="input" type="search" id="sessSearch" placeholder="جستجوی نام استاد، فراگیر یا کد جلسه…" aria-label="جستجوی جلسات">
+   725→          <div class="chips" id="sessChips">
+   726→            <button class="chip sel" type="button" data-st="all" aria-pressed="true">همه</button>
+   727→            <button class="chip" type="button" data-st="live" aria-pressed="false">در حال برگزاری</button>
+   728→            <button class="chip" type="button" data-st="wait" aria-pressed="false">در انتظار</button>
+   729→            <button class="chip" type="button" data-st="done" aria-pressed="false">تکمیل شده</button>
+   730→            <button class="chip" type="button" data-st="cxl" aria-pressed="false">لغو شده</button>
+   731→          </div>
+   732→        </div>
+   733→
+   734→        <div class="card card-plain tbl-wrap">
+   735→          <table class="tbl" id="sessTbl">
+   736→            <thead><tr><th>کد</th><th>استاد</th><th>فراگیر</th><th>موضوع</th><th>زمان</th><th>مبلغ (تومان)</th><th>وضعیت</th><th>اقدام</th></tr></thead>
+   737→            <tbody>
+   738→              <tr data-st="live"><td dir="ltr">#S-10435</td><td><b>کبری مرتضوی</b></td><td>زهرا احمدی</td><td><span class="badge">تجوید</span></td><td>۱۶:۳۰–۱۷:۱۵</td><td>۲۲۰٬۰۰۰</td><td><span class="badge b-green"><span class="live-dot"></span>زنده</span></td><td><div class="act-mini"><button class="btn btn-line btn-sm" type="button" data-msg="ورود به اتاق جلسه فقط در سمت کاربران مجاز است — پیش‌نمایش">مشاهده</button></div></td></tr>
+   739→              <tr data-st="wait"><td dir="ltr">#S-10434</td><td><b>عبدالرحمن حیدری</b></td><td>محمد کریمی</td><td><span class="badge">حفظ</span></td><td>۱۸:۰۰–۱۸:۴۵</td><td>۲۵۰٬۰۰۰</td><td><span class="badge b-gold">در انتظار</span></td><td><div class="act-mini"><button class="btn btn-line btn-sm" type="button" data-msg="جلسه #S-10434 بررسی شد">بررسی</button></div></td></tr>
+   740→              <tr data-st="live"><td dir="ltr">#S-10433</td><td><b>یاسر رحمانی</b></td><td>نرگس موسوی</td><td><span class="badge">حفظ</span></td><td>۱۵:۳۰–۱۶:۱۵</td><td>۲۵۰٬۰۰۰</td><td><span class="badge b-green"><span class="live-dot"></span>زنده</span></td><td><div class="act-mini"><button class="btn btn-line btn-sm" type="button" data-msg="ورود به اتاق جلسه فقط در سمت کاربران مجاز است — پیش‌نمایش">مشاهده</button></div></td></tr>
+   741→              <tr data-st="done"><td dir="ltr">#S-10432</td><td><b>سکینه موسوی</b></td><td>مریم رضایی</td><td><span class="badge">قرآن‌خوانی</span></td><td>۱۵:۰۰–۱۵:۴۵</td><td>۱۶۰٬۰۰۰</td><td><span class="badge b-info">تکمیل شد ✓</span></td><td><div class="act-mini"><button class="btn btn-line btn-sm" type="button" data-msg="گزارش جلسه #S-10432 باز شد">گزارش</button></div></td></tr>
+   742→              <tr data-st="cxl"><td dir="ltr">#S-10431</td><td><b>فاطمه کریمی</b></td><td>سارا جعفری</td><td><span class="badge">روخوانی</span></td><td>۱۴:۳۰–۱۵:۱۵</td><td>۱۸۰٬۰۰۰</td><td><span class="badge b-rose">لغو — فراگیر</span></td><td><div class="act-mini"><button class="btn btn-line btn-sm" type="button" data-msg="بازگشت وجه ۱۸۰٬۰۰۰ تومانی به کیف پول فراگیر انجام شد ✓">بازگشت وجه</button></div></td></tr>
+   743→              <tr data-st="done"><td dir="ltr">#S-10430</td><td><b>معصومه محمدی</b></td><td>لیلا حیدری</td><td><span class="badge">تجوید</span></td><td>۱۴:۰۰–۱۴:۴۵</td><td>۲۲۰٬۰۰۰</td><td><span class="badge b-info">تکمیل شد ✓</span></td><td><div class="act-mini"><button class="btn btn-line btn-sm" type="button" data-msg="گزارش جلسه #S-10430 باز شد">گزارش</button></div></td></tr>
+   744→              <tr data-st="done"><td dir="ltr">#S-10429</td><td><b>احمد شریفی</b></td><td>ایمان صادقی</td><td><span class="badge">تفسیر</span></td><td>۱۳:۰۰–۱۳:۴۵</td><td>۲۸۰٬۰۰۰</td><td><span class="badge b-info">تکمیل شد ✓</span></td><td><div class="act-mini"><button class="btn btn-line btn-sm" type="button" data-msg="گزارش جلسه #S-10429 باز شد">گزارش</button></div></td></tr>
+   745→              <tr data-st="done"><td dir="ltr">#S-10428</td><td><b>حسین قاسمی</b></td><td>رضا قاسمی</td><td><span class="badge">صوت و لحن</span></td><td>۱۲:۰۰–۱۲:۴۵</td><td>۲۲۰٬۰۰۰</td><td><span class="badge b-info">تکمیل شد ✓</span></td><td><div class="act-mini"><button class="btn btn-line btn-sm" type="button" data-msg="گزارش جلسه #S-10428 باز شد">گزارش</button></div></td></tr>
+   746→              <tr data-st="cxl"><td dir="ltr">#S-10427</td><td><b>کبری مرتضوی</b></td><td>امیر توکلی</td><td><span class="badge">تجوید</span></td><td>۱۱:۰۰–۱۱:۴۵</td><td>۲۲۰٬۰۰۰</td><td><span class="badge b-rose">لغو — استاد</span></td><td><div class="act-mini"><button class="btn btn-line btn-sm" type="button" data-msg="بازگشت وجه ۲۲۰٬۰۰۰ تومانی انجام شد ✓">بازگشت وجه</button></div></td></tr>
+   747→              <tr data-st="wait"><td dir="ltr">#S-10426</td><td><b>فاطمه کریمی</b></td><td>زهرا احمدی</td><td><span class="badge">روخوانی</span></td><td>۱۹:۰۰–۱۹:۴۵</td><td>۱۸۰٬۰۰۰</td><td><span class="badge b-gold">در انتظار</span></td><td><div class="act-mini"><button class="btn btn-line btn-sm" type="button" data-msg="جلسه #S-10426 بررسی شد">بررسی</button></div></td></tr>
+   748→            </tbody>
+   749→          </table>
+   750→        </div>
+   751→        <div class="pager">
+   752→          <span class="muted">صفحه ۱ از ۴</span>
+   753→          <button type="button" class="on">۱</button><button type="button">۲</button><button type="button">۳</button><button type="button">۴</button><button type="button">بعدی ←</button>
+   754→        </div>
+   755→      </section>
+   756→
+   757→      <!-- ═══════════ استادان ═══════════ -->
+   758→      <section class="tab-panel" id="p-teachers" role="tabpanel" aria-label="استادان">
+   759→        <div class="sec-head">
+   760→          <h2>مدیریت استادان<span class="ann-wrap"><button class="ann-btn" aria-label="توضیح">؟</button><span class="ann-pop">معادل تأیید پزشکان در snapp.doctor (probation + verify documents): استاد در وُدّا سه مرحله دارد — ثبت مدارک (KYC)، آزمون داخلی موضوعی، فعال‌سازی. مسدودسازی فوری جلسه‌های آینده را تعلیق می‌کند.</span></span></h2>
+   761→        </div>
+   762→
+   763→        <div class="tabs" data-tabs data-scope="#p-teachers" role="tablist" aria-label="وضعیت استادان">
+   764→          <button class="tab active" type="button" data-target="t-active" aria-selected="true">فعال (۸۶)</button>
+   765→          <button class="tab" type="button" data-target="t-pending" aria-selected="false">در انتظار تأیید (۴)</button>
+   766→          <button class="tab" type="button" data-target="t-blocked" aria-selected="false">مسدود (۲)</button>
+   767→        </div>
+   768→
+   769→        <div class="tab-panel active" id="t-active" role="tabpanel" aria-label="استادان فعال">
+   770→          <div class="card card-plain tbl-wrap">
+   771→            <table class="tbl">
+   772→              <thead><tr><th>استاد</th><th>تخصص</th><th>جلسات (ماه)</th><th>امتیاز</th><th>درآمد ماه (تومان)</th><th>وضعیت</th><th>اقدام</th></tr></thead>
+   773→              <tbody>
+   774→                <tr><td><div class="li-body" style="flex-direction:row;align-items:center;gap:10px"><span class="avatar" style="width:38px;height:38px;font-size:14px"><img class="imgfit" src="img/av-kobra.jpg?XTransformPort=3500" alt="کبری مرتضوی"></span><b>کبری مرتضوی</b></div></td><td>تجوید و صوت و لحن</td><td>۵۲</td><td>۴٫۹ ★</td><td>۱۸٬۴۰۰٬۰۰۰</td><td><span class="badge b-green">تأییدشده</span></td><td><div class="act-mini"><a class="btn btn-line btn-sm" href="teacher.html?XTransformPort=3500">پروفایل</a><button class="btn btn-danger btn-sm" type="button" data-msg="مسدودسازی نیازمند تأیید دومین مدیر است — پیش‌نمایش">مسدودسازی</button></div></td></tr>
+   775→                <tr><td><div class="li-body" style="flex-direction:row;align-items:center;gap:10px"><span class="avatar" style="width:38px;height:38px;font-size:14px"><img class="imgfit" src="img/av-abdolrahman.jpg?XTransformPort=3500" alt="عبدالرحمن حیدری"></span><b>عبدالرحمن حیدری</b></div></td><td>حفظ قرآن</td><td>۴۷</td><td>۴٫۸ ★</td><td>۲۲٬۱۰۰٬۰۰۰</td><td><span class="badge b-green">تأییدشده</span></td><td><div class="act-mini"><a class="btn btn-line btn-sm" href="teacher.html?XTransformPort=3500">پروفایل</a><button class="btn btn-danger btn-sm" type="button" data-msg="مسدودسازی نیازمند تأیید دومین مدیر است — پیش‌نمایش">مسدودسازی</button></div></td></tr>
+   776→                <tr><td><div class="li-body" style="flex-direction:row;align-items:center;gap:10px"><span class="avatar" style="width:38px;height:38px;font-size:14px"><img class="imgfit" src="img/av-sakine.jpg?XTransformPort=3500" alt="سکینه موسوی"></span><b>سکینه موسوی</b></div></td><td>قرآن‌خوانی مداحان</td><td>۳۸</td><td>۴٫۷ ★</td><td>۱۶٬۵۰۰٬۰۰۰</td><td><span class="badge b-green">تأییدشده</span></td><td><div class="act-mini"><a class="btn btn-line btn-sm" href="teacher.html?XTransformPort=3500">پروفایل</a><button class="btn btn-danger btn-sm" type="button" data-msg="مسدودسازی نیازمند تأیید دومین مدیر است — پیش‌نمایش">مسدودسازی</button></div></td></tr>
+   777→                <tr><td><div class="li-body" style="flex-direction:row;align-items:center;gap:10px"><span class="avatar" style="width:38px;height:38px;font-size:14px"><img class="imgfit" src="img/av-fateme.jpg?XTransformPort=3500" alt="فاطمه کریمی"></span><b>فاطمه کریمی</b></div></td><td>روخوانی و تجوید</td><td>۳۵</td><td>۴٫۹ ★</td><td>۱۵٬۹۰۰٬۰۰۰</td><td><span class="badge b-green">تأییدشده</span></td><td><div class="act-mini"><a class="btn btn-line btn-sm" href="teacher.html?XTransformPort=3500">پروفایل</a><button class="btn btn-danger btn-sm" type="button" data-msg="مسدودسازی نیازمند تأیید دومین مدیر است — پیش‌نمایش">مسدودسازی</button></div></td></tr>
+   778→                <tr><td><div class="li-body" style="flex-direction:row;align-items:center;gap:10px"><span class="avatar" style="width:38px;height:38px;font-size:14px"><img class="imgfit" src="img/av-hossein.jpg?XTransformPort=3500" alt="حسین قاسمی"></span><b>حسین قاسمی</b></div></td><td>صوت و لحن</td><td>۳۳</td><td>۴٫۶ ★</td><td>۱۴٬۳۰۰٬۰۰۰</td><td><span class="badge b-green">تأییدشده</span></td><td><div class="act-mini"><a class="btn btn-line btn-sm" href="teacher.html?XTransformPort=3500">پروفایل</a><button class="btn btn-danger btn-sm" type="button" data-msg="مسدودسازی نیازمند تأیید دومین مدیر است — پیش‌نمایش">مسدودسازی</button></div></td></tr>
+   779→                <tr><td><div class="li-body" style="flex-direction:row;align-items:center;gap:10px"><span class="avatar" style="width:38px;height:38px;font-size:14px"><img class="imgfit" src="img/av-masoume.jpg?XTransformPort=3500" alt="معصومه محمدی"></span><b>معصومه محمدی</b></div></td><td>تجوید — مبتدی تا متوسط</td><td>۲۹</td><td>۴٫۸ ★</td><td>۹٬۸۰۰٬۰۰۰</td><td><span class="badge b-green">تأییدشده</span></td><td><div class="act-mini"><a class="btn btn-line btn-sm" href="teacher.html?XTransformPort=3500">پروفایل</a><button class="btn btn-danger btn-sm" type="button" data-msg="مسدودسازی نیازمند تأیید دومین مدیر است — پیش‌نمایش">مسدودسازی</button></div></td></tr>
+   780→                <tr><td><div class="li-body" style="flex-direction:row;align-items:center;gap:10px"><span class="avatar" style="width:38px;height:38px;font-size:14px"><img class="imgfit" src="img/av-yaser.jpg?XTransformPort=3500" alt="یاسر رحمانی"></span><b>یاسر رحمانی</b></div></td><td>حفظ جزء ۳۰</td><td>۲۶</td><td>۴٫۸ ★</td><td>۱۲٬۲۰۰٬۰۰۰</td><td><span class="badge b-green">تأییدشده</span></td><td><div class="act-mini"><a class="btn btn-line btn-sm" href="teacher.html?XTransformPort=3500">پروفایل</a><button class="btn btn-danger btn-sm" type="button" data-msg="مسدودسازی نیازمند تأیید دومین مدیر است — پیش‌نمایش">مسدودسازی</button></div></td></tr>
+   781→                <tr><td><div class="li-body" style="flex-direction:row;align-items:center;gap:10px"><span class="avatar" style="width:38px;height:38px;font-size:14px"><img class="imgfit" src="img/av-ahmad.jpg?XTransformPort=3500" alt="احمد شریفی"></span><b>احمد شریفی</b></div></td><td>تفسیر موضوعی</td><td>۲۱</td><td>۴٫۵ ★</td><td>۱۱٬۰۰۰٬۰۰۰</td><td><span class="badge b-gold">آزمونه‌محور</span></td><td><div class="act-mini"><a class="btn btn-line btn-sm" href="teacher.html?XTransformPort=3500">پروفایل</a><button class="btn btn-danger btn-sm" type="button" data-msg="مسدودسازی نیازمند تأیید دومین مدیر است — پیش‌نمایش">مسدودسازی</button></div></td></tr>
+   782→              </tbody>
+   783→            </table>
+   784→          </div>
+   785→        </div>
+   786→
+   787→        <div class="tab-panel" id="t-pending" role="tabpanel" aria-label="در انتظار تأیید">
+   788→          <div class="card">
+   789→            <div class="sec-head"><h2>صف تأیید مدارک</h2><span class="badge b-gold">۴ درخواست</span></div>
+   790→
+   791→            <div class="vcard">
+   792→              <span class="avatar avatar-lg">ی</span>
+   793→              <div class="v-body">
+   794→                <b>استاد یوسف کرامی</b> <span class="muted">— مداحی و اذان</span>
+   795→                <div class="gap"><span class="doc-chip ok">کارت ملی ✓</span><span class="doc-chip wait">مدرک حوزوی — در بررسی</span><span class="doc-chip ok">نمونه صوتی ✓</span></div>
+   796→                <div class="hb-row" style="grid-template-columns:90px 1fr 40px"><span>آزمون داخلی</span><span class="progress"><i style="width:82%"></i></span><b>۸۲</b></div>
+   797→              </div>
+   798→              <div class="req-actions">
+   799→                <button class="btn btn-primary btn-sm" type="button" data-ok data-msg="استاد یوسف کرامی فعال شد ✓">تأیید و فعال‌سازی</button>
+   800→                <button class="btn btn-line btn-sm" type="button" data-msg="درخواست تکمیل مدارک برای یوسف کرامی ارسال شد">درخواست تکمیل</button>
+   801→                <button class="btn btn-danger btn-sm" type="button" data-rej data-msg="درخواست یوسف کرامی رد شد">رد</button>
+   802→              </div>
+   803→            </div>
+   804→
+   805→            <div class="vcard">
+   806→              <span class="avatar avatar-lg"><img class="imgfit" src="img/av-sakine.jpg?XTransformPort=3500" alt="مریم نجفی"></span>
+   807→              <div class="v-body">
+   808→                <b>استاد مریم نجفی</b> <span class="muted">— تفسیر موضوعی</span>
+   809→                <div class="gap"><span class="doc-chip ok">کارت ملی ✓</span><span class="doc-chip ok">مدرک کارشناسی علوم قرآنی ✓</span><span class="doc-chip ok">نمونه کلاس ✓</span></div>
+   810→                <div class="hb-row" style="grid-template-columns:90px 1fr 40px"><span>آزمون داخلی</span><span class="progress"><i style="width:91%"></i></span><b>۹۱</b></div>
+   811→              </div>
+   812→              <div class="req-actions">
+   813→                <button class="btn btn-primary btn-sm" type="button" data-ok data-msg="استاد مریم نجفی فعال شد ✓">تأیید و فعال‌سازی</button>
+   814→                <button class="btn btn-line btn-sm" type="button" data-msg="درخواست تکمیل مدارک برای مریم نجفی ارسال شد">درخواست تکمیل</button>
+   815→                <button class="btn btn-danger btn-sm" type="button" data-rej data-msg="درخواست مریم نجفی رد شد">رد</button>
+   816→              </div>
+   817→            </div>
+   818→
+   819→            <div class="vcard">
+   820→              <span class="avatar avatar-lg">ا</span>
+   821→              <div class="v-body">
+   822→                <b>استاد ابوالفضل رحیمی</b> <span class="muted">— حفظ و مرور</span>
+   823→                <div class="gap"><span class="doc-chip ok">کارت ملی ✓</span><span class="doc-chip ok">سابقه تدریس ✓</span><span class="doc-chip bad">نمونه صوتی — نامعتبر</span></div>
+   824→                <div class="hb-row" style="grid-template-columns:90px 1fr 40px"><span>آزمون داخلی</span><span class="progress"><i style="width:76%"></i></span><b>۷۶</b></div>
+   825→              </div>
+   826→              <div class="req-actions">
+   827→                <button class="btn btn-primary btn-sm" type="button" data-ok data-msg="استاد ابوالفضل رحیمی فعال شد ✓">تأیید و فعال‌سازی</button>
+   828→                <button class="btn btn-line btn-sm" type="button" data-msg="درخواست تکمیل مدارک برای ابوالفضل رحیمی ارسال شد">درخواست تکمیل</button>
+   829→                <button class="btn btn-danger btn-sm" type="button" data-rej data-msg="درخواست ابوالفضل رحیمی رد شد">رد</button>
+   830→              </div>
+   831→            </div>
+   832→
+   833→            <div class="vcard">
+   834→              <span class="avatar avatar-lg">ن</span>
+   835→              <div class="v-body">
+   836→                <b>استاد نگار صالحی</b> <span class="muted">— تجوید کودکان</span>
+   837→                <div class="gap"><span class="doc-chip ok">کارت ملی ✓</span><span class="doc-chip bad">مدرک تحصیلی — ناقص</span></div>
+   838→                <div class="hb-row" style="grid-template-columns:90px 1fr 40px"><span>آزمون داخلی</span><span class="progress"><i style="width:68%"></i></span><b>۶۸</b></div>
+   839→              </div>
+   840→              <div class="req-actions">
+   841→                <button class="btn btn-primary btn-sm" type="button" data-ok data-msg="استاد نگار صالحی فعال شد ✓">تأیید و فعال‌سازی</button>
+   842→                <button class="btn btn-line btn-sm" type="button" data-msg="درخواست تکمیل مدارک برای نگار صالحی ارسال شد">درخواست تکمیل</button>
+   843→                <button class="btn btn-danger btn-sm" type="button" data-rej data-msg="درخواست نگار صالحی رد شد">رد</button>
+   844→              </div>
+   845→            </div>
+   846→            <p class="hint">فعال‌سازی پس از تأیید همه مدارک و نمره آزمون ≥ ۷۰ مجاز است (سیاست فعلی).</p>
+   847→          </div>
+   848→        </div>
+   849→
+   850→        <div class="tab-panel" id="t-blocked" role="tabpanel" aria-label="استادان مسدود">
+   851→          <div class="card">
+   852→            <div class="sec-head"><h2>استادان مسدود</h2></div>
+   853→            <div class="list">
+   854→              <div class="li-item">
+   855→                <span class="avatar">خ</span>
+   856→                <div class="li-body"><b>استاد خلیل عبدی</b><span class="muted">دلیل: تخلف زمانی مکرر (سه لغو پشت‌هم بدون هماهنگی) · از ۲۵ مهر</span></div>
+   857→                <button class="btn btn-line btn-sm" type="button" data-msg="حساب استاد خلیل عبدی فعال شد ✓">رفع مسدودی</button>
+   858→              </div>
+   859→              <div class="li-item">
+   860→                <span class="avatar">ش</span>
+   861→                <div class="li-body"><b>استاد شبنم آذری</b><span class="muted">دلیل: گزارش تخلف محتوایی — در بررسی کمیته · از ۲۰ مهر</span></div>
+   862→                <button class="btn btn-line btn-sm" type="button" data-msg="مسدودی شبنم آذری فقط با مصوبه کمیته رفع می‌شود">جزئیات پرونده</button>
+   863→              </div>
+   864→            </div>
+   865→          </div>
+   866→        </div>
+   867→      </section>
+   868→
+   869→      <!-- ═══════════ فراگیران ═══════════ -->
+   870→      <section class="tab-panel" id="p-users" role="tabpanel" aria-label="فراگیران">
+   871→        <div class="sec-head">
+   872→          <h2>مدیریت فراگیران<span class="ann-wrap"><button class="ann-btn" aria-label="توضیح">؟</button><span class="ann-pop">در snapp.doctor لیست مراجعین با فیلتر تعداد نوبت و مانده کیف پول مدیریت می‌شود. در وُدّا: users + wallet + sessionCount از بک‌اند؛ شماره موبایل فقط ماسک‌شده نمایش داده می‌شود (حریم خصوصی).</span></span></h2>
+   873→        </div>
+   874→
+   875→        <div class="searchbar">
+   876→          <input class="input" type="search" id="userSearch" placeholder="جستجوی نام یا موبایل…" aria-label="جستجوی فراگیران">
+   877→          <div class="chips" id="userChips">
+   878→            <button class="chip sel" type="button" data-us="all" aria-pressed="true">همه</button>
+   879→            <button class="chip" type="button" data-us="on" aria-pressed="false">فعال</button>
+   880→            <button class="chip" type="button" data-us="off" aria-pressed="false">غیرفعال</button>
+   881→          </div>
+   882→        </div>
+   883→
+   884→        <div class="card card-plain tbl-wrap">
+   885→          <table class="tbl" id="userTbl">
+   886→            <thead><tr><th>فراگیر</th><th>موبایل</th><th>جلسات</th><th>آخرین فعالیت</th><th>مانده کیف پول (تومان)</th><th>وضعیت</th><th>اقدام</th></tr></thead>
+   887→            <tbody>
+   888→              <tr data-us="on"><td><div class="li-body" style="flex-direction:row;align-items:center;gap:10px"><span class="avatar" style="width:34px;height:34px;font-size:13px">ز</span><b>زهرا احمدی</b></div></td><td dir="ltr">۰۹۱۲***۴۵۶۷</td><td>۱۴</td><td>۵ دقیقه پیش</td><td>۵۰۰٬۰۰۰</td><td><span class="badge b-green">فعال</span></td><td><a class="btn btn-line btn-sm" href="chat.html?XTransformPort=3500">پیام</a></td></tr>
+   889→              <tr data-us="on"><td><div class="li-body" style="flex-direction:row;align-items:center;gap:10px"><span class="avatar" style="width:34px;height:34px;font-size:13px">ن</span><b>نرگس موسوی</b></div></td><td dir="ltr">۰۹۱۹***۶۶۰۲</td><td>۷</td><td>۲ ساعت پیش</td><td>۲۴۰٬۰۰۰</td><td><span class="badge b-green">فعال</span></td><td><a class="btn btn-line btn-sm" href="chat.html?XTransformPort=3500">پیام</a></td></tr>
+   890→              <tr data-us="on"><td><div class="li-body" style="flex-direction:row;align-items:center;gap:10px"><span class="avatar" style="width:34px;height:34px;font-size:13px">ا</span><b>ایمان صادقی</b></div></td><td dir="ltr">۰۹۳۳***۵۵۲۱</td><td>۱۱</td><td>امروز ۱۳:۱۰</td><td>۳۵۰٬۰۰۰</td><td><span class="badge b-green">فعال</span></td><td><a class="btn btn-line btn-sm" href="chat.html?XTransformPort=3500">پیام</a></td></tr>
+   891→              <tr data-us="on"><td><div class="li-body" style="flex-direction:row;align-items:center;gap:10px"><span class="avatar" style="width:34px;height:34px;font-size:13px">م</span><b>مریم رضایی</b></div></td><td dir="ltr">۰۹۰۱***۸۸۹۰</td><td>۲۱</td><td>دیروز</td><td>۰</td><td><span class="badge b-green">فعال</span></td><td><a class="btn btn-line btn-sm" href="chat.html?XTransformPort=3500">پیام</a></td></tr>
+   892→              <tr data-us="on"><td><div class="li-body" style="flex-direction:row;align-items:center;gap:10px"><span class="avatar" style="width:34px;height:34px;font-size:13px">م</span><b>محمد کریمی</b></div></td><td dir="ltr">۰۹۳۵***۲۲۱۱</td><td>۹</td><td>۱ ساعت پیش</td><td>۱۲۰٬۰۰۰</td><td><span class="badge b-green">فعال</span></td><td><a class="btn btn-line btn-sm" href="chat.html?XTransformPort=3500">پیام</a></td></tr>
+   893→              <tr data-us="off"><td><div class="li-body" style="flex-direction:row;align-items:center;gap:10px"><span class="avatar" style="width:34px;height:34px;font-size:13px">ع</span><b>علی حسینی</b></div></td><td dir="ltr">۰۹۳۸***۷۳۴۵</td><td>۳</td><td>۳ روز پیش</td><td>۸۰٬۰۰۰</td><td><span class="badge b-info">غیرفعال</span></td><td><a class="btn btn-line btn-sm" href="chat.html?XTransformPort=3500">پیام</a></td></tr>
+   894→              <tr data-us="off"><td><div class="li-body" style="flex-direction:row;align-items:center;gap:10px"><span class="avatar" style="width:34px;height:34px;font-size:13px">س</span><b>سارا جعفری</b></div></td><td dir="ltr">۰۹۰۲***۱۹۸۴</td><td>۵</td><td>۱ هفته پیش</td><td>۰</td><td><span class="badge b-info">غیرفعال</span></td><td><a class="btn btn-line btn-sm" href="chat.html?XTransformPort=3500">پیام</a></td></tr>
+   895→              <tr data-us="off"><td><div class="li-body" style="flex-direction:row;align-items:center;gap:10px"><span class="avatar" style="width:34px;height:34px;font-size:13px">ل</span><b>لیلا حیدری</b></div></td><td dir="ltr">۰۹۱۲***۰۴۷۸</td><td>۲</td><td>۲ هفته پیش</td><td>۰</td><td><span class="badge b-info">غیرفعال</span></td><td><a class="btn btn-line btn-sm" href="chat.html?XTransformPort=3500">پیام</a></td></tr>
+   896→            </tbody>
+   897→          </table>
+   898→        </div>
+   899→        <p class="note">شماره موبایل‌ها طبق سیاست حریم خصوصی ماسک‌شده نمایش داده می‌شوند.</p>
+   900→      </section>
+   901→
+   902→      <!-- ═══════════ مالی و تسویه ═══════════ -->
+   903→      <section class="tab-panel" id="p-finance" role="tabpanel" aria-label="مالی و تسویه">
+   904→        <div class="sec-head">
+   905→          <h2>مالی و تسویه<span class="ann-wrap"><button class="ann-btn" aria-label="توضیح">؟</button><span class="ann-pop">پول فراگیر در escrow می‌ماند و پس از پایان جلسه، سهم استاد (بعد از کسر کمیسیون) به ledger او اضافه می‌شود. «تسویه» = انتقال از ledger به شبا با درخواست برداشت — معادل Settlements در پنل مالی snapp.doctor.</span></span></h2>
+   906→        </div>
+   907→
+   908→        <div class="stat-grid mb">
+   909→          <div class="stat"><b>۸۴٬۲۰۰٬۰۰۰</b><span>مانده escrow (تومان)</span></div>
+   910→          <div class="stat gold"><b>۱۹۶٬۸۰۰٬۰۰۰</b><span>پرداختی این ماه (تومان)</span></div>
+   911→          <div class="stat"><b>۲۹٬۵۲۰٬۰۰۰</b><span>کمیسیون این ماه (تومان)</span></div>
+   912→          <div class="stat rose"><b>۱۷٬۸۰۰٬۰۰۰</b><span>در انتظار تسویه (تومان)</span></div>
+   913→        </div>
+   914→
+   915→        <div class="tabs" data-tabs data-scope="#p-finance" role="tablist" aria-label="بخش‌های مالی">
+   916→          <button class="tab active" type="button" data-target="f-wd" aria-selected="true">درخواست‌های تسویه (۵)</button>
+   917→          <button class="tab" type="button" data-target="f-tx" aria-selected="false">تراکنش‌های اخیر</button>
+   918→        </div>
+   919→
+   920→        <div class="tab-panel active" id="f-wd" role="tabpanel" aria-label="درخواست‌های تسویه">
+   921→          <div class="card card-plain tbl-wrap">
+   922→            <table class="tbl" id="wdTbl">
+   923→              <thead><tr><th>استاد</th><th>شماره شبا</th><th>مبلغ (تومان)</th><th>تاریخ درخواست</th><th>وضعیت</th><th>اقدام</th></tr></thead>
+   924→              <tbody>
+   925→                <tr><td><b>کبری مرتضوی</b></td><td dir="ltr" class="ellipsis">IR82 0540 1026 8002 0817 9002</td><td><b>۴٬۸۰۰٬۰۰۰</b></td><td>امروز ۱۰:۱۲</td><td><span class="badge b-gold">در انتظار</span></td><td><div class="act-mini"><button class="btn btn-primary btn-sm" type="button" data-ok data-msg="تسویه کبری مرتضوی به صف پرداخت بانکی رفت ✓">تأیید و پرداخت</button><button class="btn btn-danger btn-sm" type="button" data-rej data-msg="درخواست تسویه کبری مرتضوی رد شد">رد</button></div></td></tr>
+   926→                <tr><td><b>عبدالرحمن حیدری</b></td><td dir="ltr" class="ellipsis">IR06 2900 0000 0012 3456 7890</td><td><b>۶٬۲۰۰٬۰۰۰</b></td><td>امروز ۰۹:۴۰</td><td><span class="badge b-gold">در انتظار</span></td><td><div class="act-mini"><button class="btn btn-primary btn-sm" type="button" data-ok data-msg="تسویه عبدالرحمن حیدری به صف پرداخت بانکی رفت ✓">تأیید و پرداخت</button><button class="btn btn-danger btn-sm" type="button" data-rej data-msg="درخواست تسویه عبدالرحمن حیدری رد شد">رد</button></div></td></tr>
+   927→                <tr><td><b>فاطمه کریمی</b></td><td dir="ltr" class="ellipsis">IR35 0170 0000 0033 9211 4400</td><td><b>۳٬۵۰۰٬۰۰۰</b></td><td>دیروز ۱۸:۰۵</td><td><span class="badge b-gold">در انتظار</span></td><td><div class="act-mini"><button class="btn btn-primary btn-sm" type="button" data-ok data-msg="تسویه فاطمه کریمی به صف پرداخت بانکی رفت ✓">تأیید و پرداخت</button><button class="btn btn-danger btn-sm" type="button" data-rej data-msg="درخواست تسویه فاطمه کریمی رد شد">رد</button></div></td></tr>
+   928→                <tr><td><b>معصومه محمدی</b></td><td dir="ltr" class="ellipsis">IR12 0190 0000 0044 5512 8800</td><td><b>۲٬۲۰۰٬۰۰۰</b></td><td>دیروز ۱۴:۳۰</td><td><span class="badge b-gold">در انتظار</span></td><td><div class="act-mini"><button class="btn btn-primary btn-sm" type="button" data-ok data-msg="تسویه معصومه محمدی به صف پرداخت بانکی رفت ✓">تأیید و پرداخت</button><button class="btn btn-danger btn-sm" type="button" data-rej data-msg="درخواست تسویه معصومه محمدی رد شد">رد</button></div></td></tr>
+   929→                <tr><td><b>سکینه موسوی</b></td><td dir="ltr" class="ellipsis">IR99 0123 4567 8912 3456 7891</td><td><b>۲٬۹۰۰٬۰۰۰</b></td><td>۳ روز پیش</td><td><span class="badge b-rose">رد شد — شبا نامعتبر</span></td><td><div class="act-mini"><button class="btn btn-line btn-sm" type="button" data-msg="پیام اصلاح شبا به سکینه موسوی ارسال شد ✓">اطلاع‌رسانی</button></div></td></tr>
+   930→              </tbody>
+   931→            </table>
+   932→          </div>
+   933→          <p class="hint">پرداخت‌ها به‌صورت دسته‌ای روزهای زوج از طریق پایگاه پیام رسان (پایا) انجام می‌شود.</p>
+   934→        </div>
+   935→
+   936→        <div class="tab-panel" id="f-tx" role="tabpanel" aria-label="تراکنش‌های اخیر">
+   937→          <div class="card card-plain tbl-wrap">
+   938→            <table class="tbl">
+   939→              <thead><tr><th>زمان</th><th>شرح</th><th>کاربر</th><th>مبلغ (تومان)</th><th>نوع</th></tr></thead>
+   940→              <tbody>
+   941→                <tr><td>۱۶:۲۴</td><td>تسویه استاد</td><td>حسین قاسمی</td><td class="b-text" style="color:var(--rose)">−۵٬۱۰۰٬۰۰۰</td><td><span class="badge b-info">تسویه</span></td></tr>
+   942→                <tr><td>۱۵:۴۸</td><td>کمیسیون جلسه <span dir="ltr">#S-10432</span></td><td>—</td><td style="color:var(--olive-700)">+۲۲٬۰۰۰</td><td><span class="badge b-green">کمیسیون</span></td></tr>
+   943→                <tr><td>۱۵:۱۲</td><td>شارژ کیف پول</td><td>زهرا احمدی</td><td style="color:var(--olive-700)">+۵۰۰٬۰۰۰</td><td><span class="badge b-green">شارژ</span></td></tr>
+   944→                <tr><td>۱۳:۱۶</td><td>بازگشت وجه جلسه لغوشده <span dir="ltr">#S-10431</span></td><td>سارا جعفری</td><td style="color:var(--rose)">−۱۸۰٬۰۰۰</td><td><span class="badge b-gold">بازگشت</span></td></tr>
+   945→                <tr><td>۱۲:۵۰</td><td>کمیسیون جلسه <span dir="ltr">#S-10428</span></td><td>—</td><td style="color:var(--olive-700)">+۳۱٬۰۰۰</td><td><span class="badge b-green">کمیسیون</span></td></tr>
+   946→                <tr><td>۱۱:۳۵</td><td>شارژ کیف پول</td><td>ایمان صادقی</td><td style="color:var(--olive-700)">+۳۵۰٬۰۰۰</td><td><span class="badge b-green">شارژ</span></td></tr>
+   947→              </tbody>
+   948→            </table>
+   949→          </div>
+   950→          <button class="btn btn-line btn-sm mt" type="button" data-export>خروجی کامل تراکنش‌ها (CSV)</button>
+   951→        </div>
+   952→      </section>
+   953→
+   954→      <!-- ═══════════ پشتیبانی ═══════════ -->
+   955→      <section class="tab-panel" id="p-support" role="tabpanel" aria-label="پشتیبانی">
+   956→        <div class="sec-head">
+   957→          <h2>تیکت‌های پشتیبانی<span class="ann-wrap"><button class="ann-btn" aria-label="توضیح">؟</button><span class="ann-pop">معادل ticketing در پنل پشتیبانی snapp.doctor: صف بر اساس اولویت (فوری/معمولی) + SLA پاسخ. ارجاع به فنی، بستن با تأیید کاربر.</span></span></h2>
+   958→          <span class="muted">میانگین زمان پاسخ: ۲ ساعت</span>
+   959→        </div>
+   960→
+   961→        <div class="card">
+   962→          <div class="sec-head"><h2><span class="prio hot"></span>TKT-241 — «پرداخت انجام شد ولی جلسه ثبت نشد»</h2><span class="badge b-rose">فوری</span></div>
+   963→          <p class="muted">زهرا احمدی · امروز ۱۵:۵۱ · جلسه مرتبط: <span dir="ltr">#S-10426</span></p>
+   964→          <div class="ticket-msgs">
+   965→            <div class="mini-bubble">سلام، ساعت ۱۰ صبح مبلغ ۱۸۰ هزار تومان از حسابم کم شد ولی جلسه رزرو نشده و به لیست جلساتم اضافه نشد. لطفاً بررسی کنید.</div>
+   966→            <div class="mini-bubble out">سلام وقت بخیر 🌹 مبلغ در escrow ثبت شده و جلسه در صف تأیید استاد است. تا نیم ساعت آینده وضعیت به «تأییدشده» تغییر می‌کند و کد ورود برای شما ارسال می‌شود.</div>
+   967→          </div>
+   968→          <div class="req-actions mt">
+   969→            <button class="btn btn-primary btn-sm" type="button" data-msg="پاسخ به TKT-241 ارسال شد ✓">ارسال پاسخ</button>
+   970→            <button class="btn btn-line btn-sm" type="button" data-msg="TKT-241 به تیم فنی ارجاع شد">ارجاع به فنی</button>
+   971→            <button class="btn btn-line btn-sm" type="button" data-ok data-msg="تیکت TKT-241 با تأیید کاربر بسته شد ✓">بستن تیکت</button>
+   972→          </div>
+   973→        </div>
+   974→
+   975→        <div class="card">
+   976→          <div class="sec-head"><h2><span class="prio mid"></span>TKT-239 — «ویدیوی جلسه چند بار هنگ می‌کند»</h2><span class="badge b-gold">معمولی</span></div>
+   977→          <p class="muted">علی حسینی · امروز ۱۲:۰۳ · جلسه مرتبط: <span dir="ltr">#S-10429</span></p>
+   978→          <div class="ticket-msgs">
+   979→            <div class="mini-bubble">تو جلسه ۱۳ صبح، تصویر استاد دو سه بار قطع و وصل شد. بقیه چیزها خوب بود.</div>
+   980→          </div>
+   981→          <div class="req-actions mt">
+   982→            <button class="btn btn-primary btn-sm" type="button" data-msg="پاسخ به TKT-239 ارسال شد ✓">ارسال پاسخ</button>
+   983→            <button class="btn btn-line btn-sm" type="button" data-msg="TKT-239 به تیم فنی ارجاع شد">ارجاع به فنی</button>
+   984→            <button class="btn btn-line btn-sm" type="button" data-ok data-msg="تیکت TKT-239 با تأیید کاربر بسته شد ✓">بستن تیکت</button>
+   985→          </div>
+   986→        </div>
+   987→
+   988→        <div class="card">
+   989→          <div class="sec-head"><h2><span class="prio low"></span>TKT-236 — «درخواست تغییر شماره موبایل»</h2><span class="badge b-info">پاسخ داده شد</span></div>
+   990→          <p class="muted">نرگس موسوی · دیروز ۲۰:۱۵</p>
+   991→          <div class="req-actions mt">
+   992→            <button class="btn btn-line btn-sm" type="button" data-msg="گفتگوی تیکت TKT-236 باز شد">مشاهده گفتگو</button>
+   993→            <button class="btn btn-line btn-sm" type="button" data-ok data-msg="تیکت TKT-236 بسته شد ✓">بستن تیکت</button>
+   994→          </div>
+   995→        </div>
+   996→      </section>
+   997→
+   998→      <!-- ═══════════ گزارش‌ها ═══════════ -->
+   999→      <section class="tab-panel" id="p-reports" role="tabpanel" aria-label="گزارش‌ها">
+  1000→        <div class="sec-head">
+  1001→          <h2>گزارش‌ها و تحلیل<span class="ann-wrap"><button class="ann-btn" aria-label="توضیح">؟</button><span class="ann-pop">منبع داده: انباشت لاگ جلسات و نظرات در بک‌اند. در snapp.doctor گزارش محبوبیت تخصص‌ها مبنای کمپین‌های جذب پزشک است؛ در وُدّا همین گزارش مبنای جذب استاد برای موضوعات کم‌عرضه است.</span></span></h2>
+  1002→          <button class="btn btn-line btn-sm" type="button" data-export>خروجی گزارش ماه (CSV)</button>
+  1003→        </div>
+  1004→
+  1005→        <div class="g-2">
+  1006→          <div class="card">
+  1007→            <h2>سهم موضوعات از جلسات (ماه جاری)</h2>
+  1008→            <div class="hb-row"><span>تلاوت و روخوانی</span><span class="progress"><i style="width:34%"></i></span><b>۳۴٪</b></div>
+  1009→            <div class="hb-row"><span>تجوید</span><span class="progress"><i style="width:26%"></i></span><b>۲۶٪</b></div>
+  1010→            <div class="hb-row"><span>حفظ قرآن</span><span class="progress"><i style="width:18%"></i></span><b>۱۸٪</b></div>
+  1011→            <div class="hb-row"><span>صوت و لحن</span><span class="progress"><i style="width:12%"></i></span><b>۱۲٪</b></div>
+  1012→            <div class="hb-row"><span>مداحی و قرآن‌خوانی</span><span class="progress"><i style="width:10%"></i></span><b>۱۰٪</b></div>
+  1013→          </div>
+  1014→          <div class="card">
+  1015→            <h2>توزیع امتیازات ثبت‌شده</h2>
+  1016→            <div class="hb-row"><span>۵ ★</span><span class="progress"><i style="width:78%"></i></span><b>۷۸٪</b></div>
+  1017→            <div class="hb-row"><span>۴ ★</span><span class="progress"><i style="width:16%"></i></span><b>۱۶٪</b></div>
+  1018→            <div class="hb-row"><span>۳ ★</span><span class="progress"><i style="width:4%"></i></span><b>۴٪</b></div>
+  1019→            <div class="hb-row"><span>۲ ★</span><span class="progress"><i style="width:1%"></i></span><b>۱٪</b></div>
+  1020→            <div class="hb-row"><span>۱ ★</span><span class="progress"><i style="width:1%"></i></span><b>۱٪</b></div>
+  1021→            <p class="hint">۴٬۲۱۴ نظر ثبت‌شده تا امروز</p>
+  1022→          </div>
+  1023→        </div>
+  1024→
+  1025→        <div class="card">
+  1026→          <h2>دلایل لغو جلسات (۳۰ روز اخیر)</h2>
+  1027→          <div class="chips">
+  1028→            <button class="chip" type="button" data-msg="فیلتر «تداخل برنامه» — ۴۲٪ از لغوها">تداخل برنامه — ۴۲٪</button>
+  1029→            <button class="chip" type="button" data-msg="فیلتر «انصراف فراگیر» — ۲۷٪ از لغوها">انصراف فراگیر — ۲۷٪</button>
+  1030→            <button class="chip" type="button" data-msg="فیلتر «عدم حضور استاد» — ۱۱٪ از لغوها">عدم حضور استاد — ۱۱٪</button>
+  1031→            <button class="chip" type="button" data-msg="فیلتر «مشکل فنی» — ۹٪ از لغوها">مشکل فنی — ۹٪</button>
+  1032→            <button class="chip" type="button" data-msg="فیلتر «سایر دلایل» — ۱۱٪ از لغوها">سایر — ۱۱٪</button>
+  1033→          </div>
+  1034→          <p class="hint">هدف سه‌ماهه: کاهش نرخ لغو به زیر ۲٫۵٪ با یادآورهای هوشمند قبل از جلسه.</p>
+  1035→        </div>
+  1036→      </section>
+  1037→
+  1038→      <!-- ═══════════ تنظیمات ═══════════ -->
+  1039→      <section class="tab-panel" id="p-settings" role="tabpanel" aria-label="تنظیمات">
+  1040→        <div class="sec-head">
+  1041→          <h2>تنظیمات پلتفرم<span class="ann-wrap"><button class="ann-btn" aria-label="توضیح">؟</button><span class="ann-pop">Feature flags و پارامترهای اقتصادی پلتفرم. در snapp.doctor درصد کمیسیون و سیاست لغو در پنل اپراتور قابل تغییر است؛ در وُدّا این مقادیر در جدول config سمت بک‌اند ذخیره و لاگ تغییر می‌شوند.</span></span></h2>
+  1042→        </div>
+  1043→
+  1044→        <div class="g-2">
+  1045→          <div class="card">
+  1046→            <h2>پارامترهای اقتصادی</h2>
+  1047→            <div class="field"><label for="cfgComm">کمیسیون پلتفرم (٪ از هر جلسه)</label><input class="input" id="cfgComm" type="text" value="۱۵" inputmode="numeric"></div>
+  1048→            <div class="field"><label for="cfgBase">قیمت پایه جلسه ۴۵ دقیقه‌ای (تومان)</label><input class="input" id="cfgBase" type="text" value="۱۵۰٬۰۰۰" inputmode="numeric"></div>
+  1049→            <div class="field"><label for="cfgCancel">مهلت لغو بدون جریمه (ساعت قبل از جلسه)</label><input class="input" id="cfgCancel" type="text" value="۶" inputmode="numeric"></div>
+  1050→          </div>
+  1051→          <div class="card">
+  1052→            <h2>کلیدهای ویژگی (Feature Flags)</h2>
+  1053→            <div class="flag">
+  1054→              <div class="f-body"><b style="direction:rtl">پذیرش خودکار استادان پس از آزمون</b><span>استادان با نمره آزمون بالای ۹۰ بدون بررسی دستی فعال شوند</span></div>
+  1055→              <label class="switch"><input type="checkbox" aria-label="پذیرش خودکار استادان"><span class="knob"></span></label>
+  1056→            </div>
+  1057→            <div class="flag">
+  1058→              <div class="f-body"><b style="direction:rtl">نمایش قیمت‌ها در لیست استادان</b><span>قیمت جلسه در کارت استادان آنلاین نمایش داده شود</span></div>
+  1059→              <label class="switch"><input type="checkbox" checked aria-label="نمایش قیمت‌ها"><span class="knob"></span></label>
+  1060→            </div>
+  1061→            <div class="flag">
+  1062→              <div class="f-body"><b style="direction:rtl">حالت تعمیرات</b><span>پذیرش رزرو جدید متوقف می‌شود؛ جلسات جاری برقرار می‌مانند</span></div>
+  1063→              <label class="switch"><input type="checkbox" aria-label="حالت تعمیرات"><span class="knob"></span></label>
+  1064→            </div>
+  1065→            <button class="btn btn-primary mt" type="button" id="saveCfg">ذخیره تنظیمات</button>
+  1066→            <p class="hint">تغییر کمیسیون فقط روی جلسات رزروِ بعد از اعمال اثر می‌گذارد.</p>
+  1067→          </div>
+  1068→        </div>
+  1069→      </section>
+  1070→    </div>
+  1071→  </div>
+  1072→</main>
+  1073→
+  1074→<footer class="foot">
+  1075→  <div class="container">
+  1076→    <span>وُدّا — پیش‌نمایش ایزوله فاز ۳ پروتکل REA · برنچ <b>rea/preview</b> · vodda2</span>
+  1077→    <span>ریپوی اصلی VoddaProject منجمد: 9b8d31e</span>
+  1078→  </div>
+  1079→</footer>
+  1080→<script>
+  1081→/* REA Preview shared runtime — vodda2/preview/assets/rea.js */
+  1082→(function(){
+  1083→  'use strict';
+  1084→
+  1085→  /* حاشیه‌نویسی‌ها */
+  1086→  var t=document.getElementById('annoToggle');
+  1087→  if(t){
+  1088→    t.addEventListener('click',function(){
+  1089→      var on=document.body.classList.toggle('no-anno');
+  1090→      t.setAttribute('aria-pressed',String(!on));
+  1091→      t.textContent='حاشیه‌نویسی: '+(on?'خاموش':'روشن');
+  1092→    });
+  1093→  }
+  1094→  document.addEventListener('click',function(e){
+  1095→    var b=e.target.closest?e.target.closest('.ann-btn'):null;
+  1096→    if(b){
+  1097→      e.stopPropagation();
+  1098→      var w=b.parentElement,open=w.classList.contains('open');
+  1099→      document.querySelectorAll('.ann-wrap.open').forEach(function(x){x.classList.remove('open')});
+  1100→      if(!open)w.classList.add('open');
+  1101→      return;
+  1102→    }
+  1103→    if(!(e.target.closest&&e.target.closest('.ann-pop'))){
+  1104→      document.querySelectorAll('.ann-wrap.open').forEach(function(x){x.classList.remove('open')});
+  1105→    }
+  1106→  });
+  1107→
+  1108→  /* ناوبری فعال بر اساس body[data-page] */
+  1109→  var page=document.body.getAttribute('data-page');
+  1110→  if(page){
+  1111→    document.querySelectorAll('.topnav a').forEach(function(a){
+  1112→      a.classList.toggle('on',a.getAttribute('data-page')===page);
+  1113→    });
+  1114→  }
+  1115→
+  1116→  /* تب‌ها: .tabs[data-tabs] > .tab[data-target] + .tab-panel#id */
+  1117→  document.querySelectorAll('[data-tabs]').forEach(function(group){
+  1118→    var tabs=group.querySelectorAll('.tab');
+  1119→    tabs.forEach(function(tab){
+  1120→      tab.addEventListener('click',function(){
+  1121→        tabs.forEach(function(x){x.classList.remove('active');x.setAttribute('aria-selected','false')});
+  1122→        tab.classList.add('active');
+  1123→        tab.setAttribute('aria-selected','true');
+  1124→        var target=tab.getAttribute('data-target');
+  1125→        if(target){
+  1126→          var scopeSel=group.getAttribute('data-scope');
+  1127→          var root=scopeSel?document.querySelector(scopeSel):document;
+  1128→          if(root){
+  1129→            root.querySelectorAll('.tab-panel').forEach(function(p){
+  1130→              p.classList.toggle('active',p.id===target);
+  1131→            });
+  1132→          }
+  1133→        }
+  1134→        var fn=tab.getAttribute('data-call');
+  1135→        if(fn&&typeof window[fn]==='function')window[fn](tab);
+  1136→      });
+  1137→    });
+  1138→  });
+  1139→
+  1140→  /* توست */
+  1141→  var toastTimer=null;
+  1142→  window.vToast=function(msg){
+  1143→    var el=document.querySelector('.toast');
+  1144→    if(!el){el=document.createElement('div');el.className='toast';document.body.appendChild(el);}
+  1145→    el.textContent=msg;
+  1146→    requestAnimationFrame(function(){el.classList.add('show')});
+  1147→    clearTimeout(toastTimer);
+  1148→    toastTimer=setTimeout(function(){el.classList.remove('show')},2400);
+  1149→  };
+  1150→
+  1151→  /* ارقام فارسی */
+  1152→  window.faNum=function(n){return String(n).replace(/\d/g,function(d){return '۰۱۲۳۴۵۶۷۸۹'[d]})};
+  1153→  window.faToEn=function(s){return String(s).replace(/[۰-۹]/g,function(d){return '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)})};
+  1154→})();
+  1155→
+  1156→</script>
+  1157→<script>
+  1158→(function(){
+  1159→  'use strict';
+  1160→
+  1161→  /* سایدبار پنل — تب‌های دستی (فقط پنل‌های ریشه‌ای؛ زیرتب‌ها دست‌نخورده می‌مانند) */
+  1162→  var items=document.querySelectorAll('.side-item[data-panel]');
+  1163→  var panels=document.querySelectorAll('.shell > div > .tab-panel');
+  1164→  items.forEach(function(it){
+  1165→    it.addEventListener('click',function(){
+  1166→      items.forEach(function(x){x.classList.remove('active');x.removeAttribute('aria-current')});
+  1167→      it.classList.add('active');
+  1168→      it.setAttribute('aria-current','true');
+  1169→      var id=it.getAttribute('data-panel');
+  1170→      panels.forEach(function(p){p.classList.toggle('active',p.id===id)});
+  1171→    });
+  1172→  });
+  1173→
+  1174→  /* دکمه‌های عمومی: پیام/پذیرش/رد/خروجی */
+  1175→  document.querySelectorAll('[data-msg]').forEach(function(b){
+  1176→    b.addEventListener('click',function(){window.vToast(b.getAttribute('data-msg'))});
+  1177→  });
+  1178→  document.querySelectorAll('[data-ok]').forEach(function(b){
+  1179→    b.addEventListener('click',function(){
+  1180→      var box=b.closest('.req-actions, .act-mini');
+  1181→      if(box){
+  1182→        box.innerHTML='<span class="badge b-green">انجام شد ✓</span>'+
+  1183→          '<button class="btn btn-line btn-sm" type="button" data-msg="بازگردانی وضعیت — پیش‌نمایش">بازگردانی</button>';
+  1184→        var rb=box.querySelector('[data-msg]');
+  1185→        if(rb)rb.addEventListener('click',function(){window.vToast(rb.getAttribute('data-msg'))});
+  1186→      }
+  1187→      window.vToast(b.getAttribute('data-msg')||'انجام شد ✓');
+  1188→    });
+  1189→  });
+  1190→  document.querySelectorAll('[data-rej]').forEach(function(b){
+  1191→    b.addEventListener('click',function(){
+  1192→      var box=b.closest('.req-actions, .act-mini');
+  1193→      if(box){
+  1194→        box.innerHTML='<span class="badge b-rose">رد شد</span>'+
+  1195→          '<button class="btn btn-line btn-sm" type="button" data-msg="بازگردانی وضعیت — پیش‌نمایش">بازگردانی</button>';
+  1196→        var rb=box.querySelector('[data-msg]');
+  1197→        if(rb)rb.addEventListener('click',function(){window.vToast(rb.getAttribute('data-msg'))});
+  1198→      }
+  1199→      window.vToast(b.getAttribute('data-msg')||'رد شد');
+  1200→    });
+  1201→  });
+  1202→  document.querySelectorAll('[data-export]').forEach(function(b){
+  1203→    b.addEventListener('click',function(){window.vToast('فایل CSV در پیش‌نمایش واقعی دانلود می‌شود')});
+  1204→  });
+  1205→
+  1206→  /* فیلتر وضعیت جلسات */
+  1207→  var sessChips=document.querySelectorAll('#sessChips .chip');
+  1208→  var sessRows=document.querySelectorAll('#sessTbl tbody tr');
+  1209→  var sessSearch=document.getElementById('sessSearch');
+  1210→  function applySessFilter(){
+  1211→    var st=document.querySelector('#sessChips .chip.sel');
+  1212→    st=st?st.getAttribute('data-st'):'all';
+  1213→    var q=(sessSearch&&sessSearch.value||'').trim();
+  1214→    sessRows.forEach(function(r){
+  1215→      var okSt=(st==='all'||r.getAttribute('data-st')===st);
+  1216→      var okQ=(!q||r.textContent.indexOf(q)>-1);
+  1217→      r.style.display=(okSt&&okQ)?'':'none';
+  1218→    });
+  1219→  }
+  1220→  sessChips.forEach(function(c){
+  1221→    c.addEventListener('click',function(){
+  1222→      sessChips.forEach(function(x){x.classList.remove('sel');x.setAttribute('aria-pressed','false')});
+  1223→      c.classList.add('sel');c.setAttribute('aria-pressed','true');
+  1224→      applySessFilter();
+  1225→    });
+  1226→  });
+  1227→  if(sessSearch)sessSearch.addEventListener('input',applySessFilter);
+  1228→
+  1229→  /* فیلتر فراگیران */
+  1230→  var userChips=document.querySelectorAll('#userChips .chip');
+  1231→  var userRows=document.querySelectorAll('#userTbl tbody tr');
+  1232→  var userSearch=document.getElementById('userSearch');
+  1233→  function applyUserFilter(){
+  1234→    var us=document.querySelector('#userChips .chip.sel');
+  1235→    us=us?us.getAttribute('data-us'):'all';
+  1236→    var q=(userSearch&&userSearch.value||'').trim();
+  1237→    userRows.forEach(function(r){
+  1238→      var okU=(us==='all'||r.getAttribute('data-us')===us);
+  1239→      var okQ=(!q||r.textContent.indexOf(q)>-1);
+  1240→      r.style.display=(okU&&okQ)?'':'none';
+  1241→    });
+  1242→  }
+  1243→  userChips.forEach(function(c){
+  1244→    c.addEventListener('click',function(){
+  1245→      userChips.forEach(function(x){x.classList.remove('sel');x.setAttribute('aria-pressed','false')});
+  1246→      c.classList.add('sel');c.setAttribute('aria-pressed','true');
+  1247→      applyUserFilter();
+  1248→    });
+  1249→  });
+  1250→  if(userSearch)userSearch.addEventListener('input',applyUserFilter);
+  1251→
+  1252→  /* دکمه «مشاهده همه جلسات» در داشبورد */
+  1253→  var gotoBtn=document.querySelector('[data-goto]');
+  1254→  if(gotoBtn)gotoBtn.addEventListener('click',function(){
+  1255→    var target=gotoBtn.getAttribute('data-goto');
+  1256→    items.forEach(function(x){x.classList.remove('active');x.removeAttribute('aria-current')});
+  1257→    var it=document.querySelector('.side-item[data-panel="'+target+'"]');
+  1258→    if(it){it.classList.add('active');it.setAttribute('aria-current','true')}
+  1259→    panels.forEach(function(p){p.classList.toggle('active',p.id===target)});
+  1260→    window.scrollTo({top:0,behavior:'smooth'});
+  1261→  });
+  1262→
+  1263→  /* صفحه‌بندی نمایشی */
+  1264→  document.querySelectorAll('.pager button').forEach(function(b){
+  1265→    if(b.textContent.indexOf('بعدی')<0){
+  1266→      b.addEventListener('click',function(){
+  1267→        b.parentElement.querySelectorAll('button').forEach(function(x){x.classList.remove('on')});
+  1268→        if(!isNaN(parseInt(b.textContent.replace(/[۰-۹]/g,function(d){return '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)}))))b.classList.add('on');
+  1269→        window.vToast('صفحه '+b.textContent+' — در نسخه واقعی داده‌ها صفحه‌بندی می‌شوند');
+  1270→      });
+  1271→    }else{
+  1272→      b.addEventListener('click',function(){window.vToast('صفحه بعد — در نسخه واقعی داده‌ها صفحه‌بندی می‌شوند')});
+  1273→    }
+  1274→  });
+  1275→
+  1276→  /* ذخیره تنظیمات */
+  1277→  var sc=document.getElementById('saveCfg');
+  1278→  if(sc)sc.addEventListener('click',function(){window.vToast('تنظیمات پلتفرم ذخیره شد ✓')});
+  1279→})();
+  1280→</script>
+  1281→</body>
+  1282→</html>
+  1283→

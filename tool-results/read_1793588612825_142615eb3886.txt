@@ -1,0 +1,402 @@
+   560→.doc-chip.bad{background:#f3dede;border-color:transparent;color:var(--rose)}
+   561→
+   562→.vcard{border:1px solid var(--sand-200);border-radius:var(--r-sm);padding:14px;display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap;margin-bottom:10px;background:var(--surface)}
+   563→.vcard .avatar-lg{width:60px;height:60px;font-size:20px}
+   564→.vcard .v-body{flex:1;min-width:220px}
+   565→.vcard .v-body .gap{margin:8px 0}
+   566→.vcard .req-actions{display:flex;gap:6px;flex-shrink:0;align-items:center;flex-wrap:wrap}
+   567→
+   568→.searchbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+   569→.searchbar .input{max-width:280px;min-height:42px}
+   570→.searchbar .chips{margin-bottom:0}
+   571→
+   572→.act-mini{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+   573→.pager{display:flex;gap:6px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap;align-items:center}
+   574→.pager button{min-width:36px;min-height:36px;border-radius:10px;border:1px solid var(--sand-200);background:var(--surface);font-family:var(--font);font-size:12.5px;color:var(--ink-2);cursor:pointer;padding:0 10px}
+   575→.pager button:hover{border-color:var(--olive-400);color:var(--olive-700)}
+   576→.pager button.on{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:700}
+   577→
+   578→.mini-bubble{background:var(--surface-warm);border:1px solid var(--sand-200);border-radius:14px 14px 14px 4px;padding:10px 14px;font-size:12.5px;color:var(--ink-2);max-width:92%}
+   579→.mini-bubble.out{background:var(--olive-50);border-color:var(--olive-200);border-radius:14px 14px 4px 14px;margin-inline-start:auto}
+   580→.ticket-msgs{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+   581→
+   582→@media(max-width:640px){
+   583→  .hb-row{grid-template-columns:110px 1fr 40px}
+   584→  .vbar b{display:none}
+   585→  .searchbar .input{max-width:100%}
+   586→}
+   587→</style>
+   588→</head>
+   589→<body class="on" data-page="panel-admin">
+   590→<header class="topbar">
+   591→  <div class="container topbar-in">
+   592→    <a class="brand" href="index.html?XTransformPort=3500">وُدّا<small>پیش‌نمایش ساختاری · فاز ۳ REA</small></a>
+   593→    <span class="mode-badge">ایزوله · پورت ۳۵۰۰</span>
+   594→    <nav class="topnav" aria-label="صفحات پیش‌نمایش">
+   595→      <a href="index.html?XTransformPort=3500" data-page="index">خانه</a>
+   596→      <a href="specialist.html?XTransformPort=3500" data-page="specialist">تخصص‌ها</a>
+   597→      <a href="teacher.html?XTransformPort=3500" data-page="teacher">استاد</a>
+   598→      <a href="store.html?XTransformPort=3500" data-page="store">فروشگاه</a>
+   599→      <a href="book.html?XTransformPort=3500" data-page="book">رزرو</a>
+   600→      <a href="ordercenter.html?XTransformPort=3500" data-page="ordercenter">سفارش‌ها</a>
+   601→      <a href="payment.html?XTransformPort=3500" data-page="payment">پرداخت</a>
+   602→      <a href="chat.html?XTransformPort=3500" data-page="chat">چت</a>
+   603→      <a href="session.html?XTransformPort=3500" data-page="session">جلسه زنده</a>
+   604→      <a href="assessment.html?XTransformPort=3500" data-page="assessment">سنجش</a>
+   605→      <a href="panel-teacher.html?XTransformPort=3500" data-page="panel-teacher">پنل استاد</a>
+   606→      <a href="panel-admin.html?XTransformPort=3500" data-page="panel-admin">پنل مدیریت</a>
+   607→      <a href="credit.html?XTransformPort=3500" data-page="credit">کیف پول</a>
+   608→      <a href="profile.html?XTransformPort=3500" data-page="profile">پروفایل</a>
+   609→      <a href="sitemap.html?XTransformPort=3500" data-page="sitemap">نقشه ساختار</a>
+   610→    </nav>
+   611→    <button class="anno-toggle" id="annoToggle" aria-pressed="true">حاشیه‌نویسی: روشن</button>
+   612→  </div>
+   613→</header>
+   614→
+   615→<main class="container">
+   616→  <h1>پنل مدیریت<span class="ann-wrap"><button class="ann-btn" aria-label="توضیح">؟</button><span class="ann-pop">در snapp.doctor پنل اپراتور/پشتیبانی روی زیردامنه جدا (panel.snapp.doctor) با داشبورد نوبت‌ها، پزشکان، تسویه مالی و تیکت‌ها اجرا می‌شود. معادل وُدّایی: /panel/admin/* در همان اپ — هر آیتم سایدبار = یک روت (dashboard، sessions، teachers، users، finance، support، reports، settings).</span></span></h1>
+   617→  <p class="sub">خوش آمدید، مدیر سیستم · دسترسی: کامل · کد پنل: <b dir="ltr">A-001</b> · آخرین ورود: امروز ۱۴:۲۰</p>
+   618→
+   619→  <div class="shell">
+   620→    <aside class="sidebar" aria-label="بخش‌های پنل مدیریت">
+   621→      <div class="side-head">پنل مدیریت</div>
+   622→      <button class="side-item active" type="button" data-panel="p-dash" aria-current="true">📊 داشبورد</button>
+   623→      <button class="side-item" type="button" data-panel="p-sessions">📅 جلسات<span class="badge">۱۲</span></button>
+   624→      <button class="side-item" type="button" data-panel="p-teachers">🧑‍🏫 استادان<span class="badge">۴</span></button>
+   625→      <button class="side-item" type="button" data-panel="p-users">👥 فراگیران</button>
+   626→      <button class="side-item" type="button" data-panel="p-finance">💳 مالی و تسویه<span class="badge">۵</span></button>
+   627→      <button class="side-item" type="button" data-panel="p-support">🎧 پشتیبانی<span class="badge">۲</span></button>
+   628→      <button class="side-item" type="button" data-panel="p-reports">📈 گزارش‌ها</button>
+   629→      <button class="side-item" type="button" data-panel="p-settings">⚙️ تنظیمات</button>
+   630→    </aside>
+   631→
+   632→    <div>
+   633→      <!-- ═══════════ داشبورد ═══════════ -->
+   634→      <section class="tab-panel active" id="p-dash" role="tabpanel" aria-label="داشبورد">
+   635→        <div class="sec-head">
+   636→          <h2>نمای کلی امروز<span class="ann-wrap"><button class="ann-btn" aria-label="توضیح">؟</button><span class="ann-pop">معادل داشبورد snapp.doctor: نوبت‌های امروز، درآمد، پزشکان آنلاین. اینجا aggregate از ledger بک‌اند Go خوانده می‌شود: sessions، ledger، users — بدون محاسبه سمت کلاینت.</span></span></h2>
+   637→          <span class="badge b-green"><span class="live-dot"></span>سیستم سالم</span>
+   638→          <span class="muted">به‌روزرسانی: همین حالا</span>
+   639→        </div>
+   640→
+   641→        <div class="stat-grid mb">
+   642→          <div class="stat gold"><b>۱۸٬۴۵۰٬۰۰۰</b><span>درآمد امروز (تومان)</span></div>
+   643→          <div class="stat"><b>۳۸</b><span>جلسات امروز</span></div>
+   644→          <div class="stat"><b>۸۶</b><span>استادان فعال</span></div>
+   645→          <div class="stat"><b>۱۲۴</b><span>فراگیر جدید (هفته)</span></div>
+   646→          <div class="stat rose"><b>۳٫۲٪</b><span>نرخ لغو (هفته)</span></div>
+   647→          <div class="stat"><b>۴٫۸</b><span>میانگین امتیاز</span></div>
+   648→          <div class="stat rose"><b>۵</b><span>تسویه در انتظار</span></div>
+   649→          <div class="stat"><b>۲</b><span>تیکت باز</span></div>
+   650→        </div>
+   651→
+   652→        <div class="card">
+   653→          <div class="sec-head">
+   654→            <h2>روند درآمد — ۱۲ هفته اخیر</h2>
+   655→            <button class="btn btn-line btn-sm" type="button" data-export>خروجی CSV</button>
+   656→          </div>
+   657→          <div class="vbars" role="img" aria-label="نمودار میله‌ای درآمد ۱۲ هفته">
+   658→            <div class="vbar" title="هفته ۱ — ۴۲ میلیون تومان"><i style="height:40%"></i><b>۴۲</b></div>
+   659→            <div class="vbar" title="هفته ۲ — ۵۵ میلیون تومان"><i style="height:53%"></i><b>۵۵</b></div>
+   660→            <div class="vbar" title="هفته ۳ — ۴۸ میلیون تومان"><i style="height:46%"></i><b>۴۸</b></div>
+   661→            <div class="vbar" title="هفته ۴ — ۶۱ میلیون تومان"><i style="height:59%"></i><b>۶۱</b></div>
+   662→            <div class="vbar" title="هفته ۵ — ۵۸ میلیون تومان"><i style="height:56%"></i><b>۵۸</b></div>
+   663→            <div class="vbar" title="هفته ۶ — ۷۲ میلیون تومان"><i style="height:69%"></i><b>۷۲</b></div>
+   664→            <div class="vbar" title="هفته ۷ — ۶۶ میلیون تومان"><i style="height:64%"></i><b>۶۶</b></div>
+   665→            <div class="vbar" title="هفته ۸ — ۸۰ میلیون تومان"><i style="height:77%"></i><b>۸۰</b></div>
+   666→            <div class="vbar" title="هفته ۹ — ۷۴ میلیون تومان"><i style="height:71%"></i><b>۷۴</b></div>
+   667→            <div class="vbar" title="هفته ۱۰ — ۸۸ میلیون تومان"><i style="height:85%"></i><b>۸۸</b></div>
+   668→            <div class="vbar" title="هفته ۱۱ — ۹۲ میلیون تومان"><i style="height:89%"></i><b>۹۲</b></div>
+   669→            <div class="vbar cur" title="هفته جاری — ۱۰۴ میلیون تومان"><i style="height:100%"></i><b>۱۰۴</b></div>
+   670→          </div>
+   671→          <div class="legend"><span><i class="sw" style="background:var(--olive-600)"></i>هفته‌های گذشته (میلیون تومان)</span><span><i class="sw" style="background:var(--gold)"></i>هفته جاری</span></div>
+   672→        </div>
+   673→
+   674→        <div class="g-2">
+   675→          <div class="card">
+   676→            <div class="sec-head"><h2>در حال برگزاری</h2><span class="badge b-green"><span class="live-dot"></span>۴ جلسه زنده</span></div>
+   677→            <div class="list">
+   678→              <div class="li-item">
+   679→                <div class="duo"><span class="avatar"><img class="imgfit" src="img/av-kobra.jpg?XTransformPort=3500" alt="استاد کبری مرتضوی"></span><span class="avatar">ز</span></div>
+   680→                <div class="li-body"><b>کبری مرتضوی ↔ زهرا احمدی</b><span class="muted">تجوید و صوت و لحن · شروع ۱۶:۳۰</span></div>
+   681→                <span class="badge b-green"><span class="live-dot"></span>زنده</span>
+   682→              </div>
+   683→              <div class="li-item">
+   684→                <div class="duo"><span class="avatar"><img class="imgfit" src="img/av-abdolrahman.jpg?XTransformPort=3500" alt="استاد عبدالرحمن حیدری"></span><span class="avatar">م</span></div>
+   685→                <div class="li-body"><b>عبدالرحمن حیدری ↔ محمد کریمی</b><span class="muted">حفظ قرآن · شروع ۱۶:۰۰</span></div>
+   686→                <span class="badge b-green"><span class="live-dot"></span>زنده</span>
+   687→              </div>
+   688→              <div class="li-item">
+   689→                <div class="duo"><span class="avatar"><img class="imgfit" src="img/av-yaser.jpg?XTransformPort=3500" alt="استاد یاسر رحمانی"></span><span class="avatar">ن</span></div>
+   690→                <div class="li-body"><b>یاسر رحمانی ↔ نرگس موسوی</b><span class="muted">حفظ قرآن · شروع ۱۵:۳۰</span></div>
+   691→                <span class="badge b-green"><span class="live-dot"></span>زنده</span>
+   692→              </div>
+   693→              <div class="li-item">
+   694→                <div class="duo"><span class="avatar"><img class="imgfit" src="img/av-sakine.jpg?XTransformPort=3500" alt="استاد سکینه موسوی"></span><span class="avatar">ر</span></div>
+   695→                <div class="li-body"><b>سکینه موسوی ↔ مریم رضایی</b><span class="muted">قرآن‌خوانی مداحان · شروع ۱۵:۰۰</span></div>
+   696→                <span class="badge b-green"><span class="live-dot"></span>زنده</span>
+   697→              </div>
+   698→            </div>
+   699→            <button class="btn btn-line btn-sm mt" type="button" data-goto="p-sessions">مشاهده همه جلسات</button>
+   700→          </div>
+   701→
+   702→          <div class="card">
+   703→            <div class="sec-head"><h2>آخرین رویدادهای سیستم</h2></div>
+   704→            <div class="list">
+   705→              <div class="li-item"><span class="dot-u"></span><div class="li-body"><b>تسویه حسین قاسمی پرداخت شد</b><span class="muted">۵٬۱۰۰٬۰۰۰ تومان · ۱۶:۲۴</span></div></div>
+   706→              <div class="li-item"><span class="dot-u"></span><div class="li-body"><b>مدرک جدید از مریم نجفی دریافت شد</b><span class="muted">مدرک حوزوی · ۱۶:۰۲</span></div></div>
+   707→              <div class="li-item"><span class="dot-u" style="background:var(--rose)"></span><div class="li-body"><b>تیکت فوری جدید — TKT-241</b><span class="muted">«پرداخت شد ولی جلسه ثبت نشد» · ۱۵:۵۱</span></div></div>
+   708→              <div class="li-item"><span class="dot-u"></span><div class="li-body"><b>جلسه <span dir="ltr">#S-10435</span> آغاز شد</b><span class="muted">کبری مرتضوی · ۱۵:۳۰</span></div></div>
+   709→              <div class="li-item"><span class="dot-u"></span><div class="li-body"><b>فراگیر جدید ثبت‌نام کرد</b><span class="muted">سارا جعفری · ۱۴:۴۰</span></div></div>
+   710→              <div class="li-item"><span class="dot-u" style="background:var(--gold)"></span><div class="li-body"><b>جلسه <span dir="ltr">#S-10431</span> لغو شد</b><span class="muted">توسط فراگیر · ۱۳:۱۵</span></div></div>
+   711→            </div>
+   712→          </div>
+   713→        </div>
+   714→      </section>
+   715→
+   716→      <!-- ═══════════ جلسات ═══════════ -->
+   717→      <section class="tab-panel" id="p-sessions" role="tabpanel" aria-label="جلسات">
+   718→        <div class="sec-head">
+   719→          <h2>مدیریت جلسات<span class="ann-wrap"><button class="ann-btn" aria-label="توضیح">؟</button><span class="ann-pop">چرخه وضعیت جلسه در وُدّا: pending → confirmed → live → done / cancelled (با سیاست لغو و بازگشت وجه از escrow). در snapp.doctor همین وضعیت‌ها برای نوبت‌ها در پنل اپراتور فیلترپذیر است.</span></span></h2>
+   720→          <span class="muted">نمایش ۱۰ از ۳۸ جلسه امروز</span>
+   721→        </div>
+   722→
+   723→        <div class="searchbar">
+   724→          <input class="input" type="search" id="sessSearch" placeholder="جستجوی نام استاد، فراگیر یا کد جلسه…" aria-label="جستجوی جلسات">
+   725→          <div class="chips" id="sessChips">
+   726→            <button class="chip sel" type="button" data-st="all" aria-pressed="true">همه</button>
+   727→            <button class="chip" type="button" data-st="live" aria-pressed="false">در حال برگزاری</button>
+   728→            <button class="chip" type="button" data-st="wait" aria-pressed="false">در انتظار</button>
+   729→            <button class="chip" type="button" data-st="done" aria-pressed="false">تکمیل شده</button>
+   730→            <button class="chip" type="button" data-st="cxl" aria-pressed="false">لغو شده</button>
+   731→          </div>
+   732→        </div>
+   733→
+   734→        <div class="card card-plain tbl-wrap">
+   735→          <table class="tbl" id="sessTbl">
+   736→            <thead><tr><th>کد</th><th>استاد</th><th>فراگیر</th><th>موضوع</th><th>زمان</th><th>مبلغ (تومان)</th><th>وضعیت</th><th>اقدام</th></tr></thead>
+   737→            <tbody>
+   738→              <tr data-st="live"><td dir="ltr">#S-10435</td><td><b>کبری مرتضوی</b></td><td>زهرا احمدی</td><td><span class="badge">تجوید</span></td><td>۱۶:۳۰–۱۷:۱۵</td><td>۲۲۰٬۰۰۰</td><td><span class="badge b-green"><span class="live-dot"></span>زنده</span></td><td><div class="act-mini"><button class="btn btn-line btn-sm" type="button" data-msg="ورود به اتاق جلسه فقط در سمت کاربران مجاز است — پیش‌نمایش">مشاهده</button></div></td></tr>
+   739→              <tr data-st="wait"><td dir="ltr">#S-10434</td><td><b>عبدالرحمن حیدری</b></td><td>محمد کریمی</td><td><span class="badge">حفظ</span></td><td>۱۸:۰۰–۱۸:۴۵</td><td>۲۵۰٬۰۰۰</td><td><span class="badge b-gold">در انتظار</span></td><td><div class="act-mini"><button class="btn btn-line btn-sm" type="button" data-msg="جلسه #S-10434 بررسی شد">بررسی</button></div></td></tr>
+   740→              <tr data-st="live"><td dir="ltr">#S-10433</td><td><b>یاسر رحمانی</b></td><td>نرگس موسوی</td><td><span class="badge">حفظ</span></td><td>۱۵:۳۰–۱۶:۱۵</td><td>۲۵۰٬۰۰۰</td><td><span class="badge b-green"><span class="live-dot"></span>زنده</span></td><td><div class="act-mini"><button class="btn btn-line btn-sm" type="button" data-msg="ورود به اتاق جلسه فقط در سمت کاربران مجاز است — پیش‌نمایش">مشاهده</button></div></td></tr>
+   741→              <tr data-st="done"><td dir="ltr">#S-10432</td><td><b>سکینه موسوی</b></td><td>مریم رضایی</td><td><span class="badge">قرآن‌خوانی</span></td><td>۱۵:۰۰–۱۵:۴۵</td><td>۱۶۰٬۰۰۰</td><td><span class="badge b-info">تکمیل شد ✓</span></td><td><div class="act-mini"><button class="btn btn-line btn-sm" type="button" data-msg="گزارش جلسه #S-10432 باز شد">گزارش</button></div></td></tr>
+   742→              <tr data-st="cxl"><td dir="ltr">#S-10431</td><td><b>فاطمه کریمی</b></td><td>سارا جعفری</td><td><span class="badge">روخوانی</span></td><td>۱۴:۳۰–۱۵:۱۵</td><td>۱۸۰٬۰۰۰</td><td><span class="badge b-rose">لغو — فراگیر</span></td><td><div class="act-mini"><button class="btn btn-line btn-sm" type="button" data-msg="بازگشت وجه ۱۸۰٬۰۰۰ تومانی به کیف پول فراگیر انجام شد ✓">بازگشت وجه</button></div></td></tr>
+   743→              <tr data-st="done"><td dir="ltr">#S-10430</td><td><b>معصومه محمدی</b></td><td>لیلا حیدری</td><td><span class="badge">تجوید</span></td><td>۱۴:۰۰–۱۴:۴۵</td><td>۲۲۰٬۰۰۰</td><td><span class="badge b-info">تکمیل شد ✓</span></td><td><div class="act-mini"><button class="btn btn-line btn-sm" type="button" data-msg="گزارش جلسه #S-10430 باز شد">گزارش</button></div></td></tr>
+   744→              <tr data-st="done"><td dir="ltr">#S-10429</td><td><b>احمد شریفی</b></td><td>ایمان صادقی</td><td><span class="badge">تفسیر</span></td><td>۱۳:۰۰–۱۳:۴۵</td><td>۲۸۰٬۰۰۰</td><td><span class="badge b-info">تکمیل شد ✓</span></td><td><div class="act-mini"><button class="btn btn-line btn-sm" type="button" data-msg="گزارش جلسه #S-10429 باز شد">گزارش</button></div></td></tr>
+   745→              <tr data-st="done"><td dir="ltr">#S-10428</td><td><b>حسین قاسمی</b></td><td>رضا قاسمی</td><td><span class="badge">صوت و لحن</span></td><td>۱۲:۰۰–۱۲:۴۵</td><td>۲۲۰٬۰۰۰</td><td><span class="badge b-info">تکمیل شد ✓</span></td><td><div class="act-mini"><button class="btn btn-line btn-sm" type="button" data-msg="گزارش جلسه #S-10428 باز شد">گزارش</button></div></td></tr>
+   746→              <tr data-st="cxl"><td dir="ltr">#S-10427</td><td><b>کبری مرتضوی</b></td><td>امیر توکلی</td><td><span class="badge">تجوید</span></td><td>۱۱:۰۰–۱۱:۴۵</td><td>۲۲۰٬۰۰۰</td><td><span class="badge b-rose">لغو — استاد</span></td><td><div class="act-mini"><button class="btn btn-line btn-sm" type="button" data-msg="بازگشت وجه ۲۲۰٬۰۰۰ تومانی انجام شد ✓">بازگشت وجه</button></div></td></tr>
+   747→              <tr data-st="wait"><td dir="ltr">#S-10426</td><td><b>فاطمه کریمی</b></td><td>زهرا احمدی</td><td><span class="badge">روخوانی</span></td><td>۱۹:۰۰–۱۹:۴۵</td><td>۱۸۰٬۰۰۰</td><td><span class="badge b-gold">در انتظار</span></td><td><div class="act-mini"><button class="btn btn-line btn-sm" type="button" data-msg="جلسه #S-10426 بررسی شد">بررسی</button></div></td></tr>
+   748→            </tbody>
+   749→          </table>
+   750→        </div>
+   751→        <div class="pager">
+   752→          <span class="muted">صفحه ۱ از ۴</span>
+   753→          <button type="button" class="on">۱</button><button type="button">۲</button><button type="button">۳</button><button type="button">۴</button><button type="button">بعدی ←</button>
+   754→        </div>
+   755→      </section>
+   756→
+   757→      <!-- ═══════════ استادان ═══════════ -->
+   758→      <section class="tab-panel" id="p-teachers" role="tabpanel" aria-label="استادان">
+   759→        <div class="sec-head">
+   760→          <h2>مدیریت استادان<span class="ann-wrap"><button class="ann-btn" aria-label="توضیح">؟</button><span class="ann-pop">معادل تأیید پزشکان در snapp.doctor (probation + verify documents): استاد در وُدّا سه مرحله دارد — ثبت مدارک (KYC)، آزمون داخلی موضوعی، فعال‌سازی. مسدودسازی فوری جلسه‌های آینده را تعلیق می‌کند.</span></span></h2>
+   761→        </div>
+   762→
+   763→        <div class="tabs" data-tabs data-scope="#p-teachers" role="tablist" aria-label="وضعیت استادان">
+   764→          <button class="tab active" type="button" data-target="t-active" aria-selected="true">فعال (۸۶)</button>
+   765→          <button class="tab" type="button" data-target="t-pending" aria-selected="false">در انتظار تأیید (۴)</button>
+   766→          <button class="tab" type="button" data-target="t-blocked" aria-selected="false">مسدود (۲)</button>
+   767→        </div>
+   768→
+   769→        <div class="tab-panel active" id="t-active" role="tabpanel" aria-label="استادان فعال">
+   770→          <div class="card card-plain tbl-wrap">
+   771→            <table class="tbl">
+   772→              <thead><tr><th>استاد</th><th>تخصص</th><th>جلسات (ماه)</th><th>امتیاز</th><th>درآمد ماه (تومان)</th><th>وضعیت</th><th>اقدام</th></tr></thead>
+   773→              <tbody>
+   774→                <tr><td><div class="li-body" style="flex-direction:row;align-items:center;gap:10px"><span class="avatar" style="width:38px;height:38px;font-size:14px"><img class="imgfit" src="img/av-kobra.jpg?XTransformPort=3500" alt="کبری مرتضوی"></span><b>کبری مرتضوی</b></div></td><td>تجوید و صوت و لحن</td><td>۵۲</td><td>۴٫۹ ★</td><td>۱۸٬۴۰۰٬۰۰۰</td><td><span class="badge b-green">تأییدشده</span></td><td><div class="act-mini"><a class="btn btn-line btn-sm" href="teacher.html?XTransformPort=3500">پروفایل</a><button class="btn btn-danger btn-sm" type="button" data-msg="مسدودسازی نیازمند تأیید دومین مدیر است — پیش‌نمایش">مسدودسازی</button></div></td></tr>
+   775→                <tr><td><div class="li-body" style="flex-direction:row;align-items:center;gap:10px"><span class="avatar" style="width:38px;height:38px;font-size:14px"><img class="imgfit" src="img/av-abdolrahman.jpg?XTransformPort=3500" alt="عبدالرحمن حیدری"></span><b>عبدالرحمن حیدری</b></div></td><td>حفظ قرآن</td><td>۴۷</td><td>۴٫۸ ★</td><td>۲۲٬۱۰۰٬۰۰۰</td><td><span class="badge b-green">تأییدشده</span></td><td><div class="act-mini"><a class="btn btn-line btn-sm" href="teacher.html?XTransformPort=3500">پروفایل</a><button class="btn btn-danger btn-sm" type="button" data-msg="مسدودسازی نیازمند تأیید دومین مدیر است — پیش‌نمایش">مسدودسازی</button></div></td></tr>
+   776→                <tr><td><div class="li-body" style="flex-direction:row;align-items:center;gap:10px"><span class="avatar" style="width:38px;height:38px;font-size:14px"><img class="imgfit" src="img/av-sakine.jpg?XTransformPort=3500" alt="سکینه موسوی"></span><b>سکینه موسوی</b></div></td><td>قرآن‌خوانی مداحان</td><td>۳۸</td><td>۴٫۷ ★</td><td>۱۶٬۵۰۰٬۰۰۰</td><td><span class="badge b-green">تأییدشده</span></td><td><div class="act-mini"><a class="btn btn-line btn-sm" href="teacher.html?XTransformPort=3500">پروفایل</a><button class="btn btn-danger btn-sm" type="button" data-msg="مسدودسازی نیازمند تأیید دومین مدیر است — پیش‌نمایش">مسدودسازی</button></div></td></tr>
+   777→                <tr><td><div class="li-body" style="flex-direction:row;align-items:center;gap:10px"><span class="avatar" style="width:38px;height:38px;font-size:14px"><img class="imgfit" src="img/av-fateme.jpg?XTransformPort=3500" alt="فاطمه کریمی"></span><b>فاطمه کریمی</b></div></td><td>روخوانی و تجوید</td><td>۳۵</td><td>۴٫۹ ★</td><td>۱۵٬۹۰۰٬۰۰۰</td><td><span class="badge b-green">تأییدشده</span></td><td><div class="act-mini"><a class="btn btn-line btn-sm" href="teacher.html?XTransformPort=3500">پروفایل</a><button class="btn btn-danger btn-sm" type="button" data-msg="مسدودسازی نیازمند تأیید دومین مدیر است — پیش‌نمایش">مسدودسازی</button></div></td></tr>
+   778→                <tr><td><div class="li-body" style="flex-direction:row;align-items:center;gap:10px"><span class="avatar" style="width:38px;height:38px;font-size:14px"><img class="imgfit" src="img/av-hossein.jpg?XTransformPort=3500" alt="حسین قاسمی"></span><b>حسین قاسمی</b></div></td><td>صوت و لحن</td><td>۳۳</td><td>۴٫۶ ★</td><td>۱۴٬۳۰۰٬۰۰۰</td><td><span class="badge b-green">تأییدشده</span></td><td><div class="act-mini"><a class="btn btn-line btn-sm" href="teacher.html?XTransformPort=3500">پروفایل</a><button class="btn btn-danger btn-sm" type="button" data-msg="مسدودسازی نیازمند تأیید دومین مدیر است — پیش‌نمایش">مسدودسازی</button></div></td></tr>
+   779→                <tr><td><div class="li-body" style="flex-direction:row;align-items:center;gap:10px"><span class="avatar" style="width:38px;height:38px;font-size:14px"><img class="imgfit" src="img/av-masoume.jpg?XTransformPort=3500" alt="معصومه محمدی"></span><b>معصومه محمدی</b></div></td><td>تجوید — مبتدی تا متوسط</td><td>۲۹</td><td>۴٫۸ ★</td><td>۹٬۸۰۰٬۰۰۰</td><td><span class="badge b-green">تأییدشده</span></td><td><div class="act-mini"><a class="btn btn-line btn-sm" href="teacher.html?XTransformPort=3500">پروفایل</a><button class="btn btn-danger btn-sm" type="button" data-msg="مسدودسازی نیازمند تأیید دومین مدیر است — پیش‌نمایش">مسدودسازی</button></div></td></tr>
+   780→                <tr><td><div class="li-body" style="flex-direction:row;align-items:center;gap:10px"><span class="avatar" style="width:38px;height:38px;font-size:14px"><img class="imgfit" src="img/av-yaser.jpg?XTransformPort=3500" alt="یاسر رحمانی"></span><b>یاسر رحمانی</b></div></td><td>حفظ جزء ۳۰</td><td>۲۶</td><td>۴٫۸ ★</td><td>۱۲٬۲۰۰٬۰۰۰</td><td><span class="badge b-green">تأییدشده</span></td><td><div class="act-mini"><a class="btn btn-line btn-sm" href="teacher.html?XTransformPort=3500">پروفایل</a><button class="btn btn-danger btn-sm" type="button" data-msg="مسدودسازی نیازمند تأیید دومین مدیر است — پیش‌نمایش">مسدودسازی</button></div></td></tr>
+   781→                <tr><td><div class="li-body" style="flex-direction:row;align-items:center;gap:10px"><span class="avatar" style="width:38px;height:38px;font-size:14px"><img class="imgfit" src="img/av-ahmad.jpg?XTransformPort=3500" alt="احمد شریفی"></span><b>احمد شریفی</b></div></td><td>تفسیر موضوعی</td><td>۲۱</td><td>۴٫۵ ★</td><td>۱۱٬۰۰۰٬۰۰۰</td><td><span class="badge b-gold">آزمونه‌محور</span></td><td><div class="act-mini"><a class="btn btn-line btn-sm" href="teacher.html?XTransformPort=3500">پروفایل</a><button class="btn btn-danger btn-sm" type="button" data-msg="مسدودسازی نیازمند تأیید دومین مدیر است — پیش‌نمایش">مسدودسازی</button></div></td></tr>
+   782→              </tbody>
+   783→            </table>
+   784→          </div>
+   785→        </div>
+   786→
+   787→        <div class="tab-panel" id="t-pending" role="tabpanel" aria-label="در انتظار تأیید">
+   788→          <div class="card">
+   789→            <div class="sec-head"><h2>صف تأیید مدارک</h2><span class="badge b-gold">۴ درخواست</span></div>
+   790→
+   791→            <div class="vcard">
+   792→              <span class="avatar avatar-lg">ی</span>
+   793→              <div class="v-body">
+   794→                <b>استاد یوسف کرامی</b> <span class="muted">— مداحی و اذان</span>
+   795→                <div class="gap"><span class="doc-chip ok">کارت ملی ✓</span><span class="doc-chip wait">مدرک حوزوی — در بررسی</span><span class="doc-chip ok">نمونه صوتی ✓</span></div>
+   796→                <div class="hb-row" style="grid-template-columns:90px 1fr 40px"><span>آزمون داخلی</span><span class="progress"><i style="width:82%"></i></span><b>۸۲</b></div>
+   797→              </div>
+   798→              <div class="req-actions">
+   799→                <button class="btn btn-primary btn-sm" type="button" data-ok data-msg="استاد یوسف کرامی فعال شد ✓">تأیید و فعال‌سازی</button>
+   800→                <button class="btn btn-line btn-sm" type="button" data-msg="درخواست تکمیل مدارک برای یوسف کرامی ارسال شد">درخواست تکمیل</button>
+   801→                <button class="btn btn-danger btn-sm" type="button" data-rej data-msg="درخواست یوسف کرامی رد شد">رد</button>
+   802→              </div>
+   803→            </div>
+   804→
+   805→            <div class="vcard">
+   806→              <span class="avatar avatar-lg"><img class="imgfit" src="img/av-sakine.jpg?XTransformPort=3500" alt="مریم نجفی"></span>
+   807→              <div class="v-body">
+   808→                <b>استاد مریم نجفی</b> <span class="muted">— تفسیر موضوعی</span>
+   809→                <div class="gap"><span class="doc-chip ok">کارت ملی ✓</span><span class="doc-chip ok">مدرک کارشناسی علوم قرآنی ✓</span><span class="doc-chip ok">نمونه کلاس ✓</span></div>
+   810→                <div class="hb-row" style="grid-template-columns:90px 1fr 40px"><span>آزمون داخلی</span><span class="progress"><i style="width:91%"></i></span><b>۹۱</b></div>
+   811→              </div>
+   812→              <div class="req-actions">
+   813→                <button class="btn btn-primary btn-sm" type="button" data-ok data-msg="استاد مریم نجفی فعال شد ✓">تأیید و فعال‌سازی</button>
+   814→                <button class="btn btn-line btn-sm" type="button" data-msg="درخواست تکمیل مدارک برای مریم نجفی ارسال شد">درخواست تکمیل</button>
+   815→                <button class="btn btn-danger btn-sm" type="button" data-rej data-msg="درخواست مریم نجفی رد شد">رد</button>
+   816→              </div>
+   817→            </div>
+   818→
+   819→            <div class="vcard">
+   820→              <span class="avatar avatar-lg">ا</span>
+   821→              <div class="v-body">
+   822→                <b>استاد ابوالفضل رحیمی</b> <span class="muted">— حفظ و مرور</span>
+   823→                <div class="gap"><span class="doc-chip ok">کارت ملی ✓</span><span class="doc-chip ok">سابقه تدریس ✓</span><span class="doc-chip bad">نمونه صوتی — نامعتبر</span></div>
+   824→                <div class="hb-row" style="grid-template-columns:90px 1fr 40px"><span>آزمون داخلی</span><span class="progress"><i style="width:76%"></i></span><b>۷۶</b></div>
+   825→              </div>
+   826→              <div class="req-actions">
+   827→                <button class="btn btn-primary btn-sm" type="button" data-ok data-msg="استاد ابوالفضل رحیمی فعال شد ✓">تأیید و فعال‌سازی</button>
+   828→                <button class="btn btn-line btn-sm" type="button" data-msg="درخواست تکمیل مدارک برای ابوالفضل رحیمی ارسال شد">درخواست تکمیل</button>
+   829→                <button class="btn btn-danger btn-sm" type="button" data-rej data-msg="درخواست ابوالفضل رحیمی رد شد">رد</button>
+   830→              </div>
+   831→            </div>
+   832→
+   833→            <div class="vcard">
+   834→              <span class="avatar avatar-lg">ن</span>
+   835→              <div class="v-body">
+   836→                <b>استاد نگار صالحی</b> <span class="muted">— تجوید کودکان</span>
+   837→                <div class="gap"><span class="doc-chip ok">کارت ملی ✓</span><span class="doc-chip bad">مدرک تحصیلی — ناقص</span></div>
+   838→                <div class="hb-row" style="grid-template-columns:90px 1fr 40px"><span>آزمون داخلی</span><span class="progress"><i style="width:68%"></i></span><b>۶۸</b></div>
+   839→              </div>
+   840→              <div class="req-actions">
+   841→                <button class="btn btn-primary btn-sm" type="button" data-ok data-msg="استاد نگار صالحی فعال شد ✓">تأیید و فعال‌سازی</button>
+   842→                <button class="btn btn-line btn-sm" type="button" data-msg="درخواست تکمیل مدارک برای نگار صالحی ارسال شد">درخواست تکمیل</button>
+   843→                <button class="btn btn-danger btn-sm" type="button" data-rej data-msg="درخواست نگار صالحی رد شد">رد</button>
+   844→              </div>
+   845→            </div>
+   846→            <p class="hint">فعال‌سازی پس از تأیید همه مدارک و نمره آزمون ≥ ۷۰ مجاز است (سیاست فعلی).</p>
+   847→          </div>
+   848→        </div>
+   849→
+   850→        <div class="tab-panel" id="t-blocked" role="tabpanel" aria-label="استادان مسدود">
+   851→          <div class="card">
+   852→            <div class="sec-head"><h2>استادان مسدود</h2></div>
+   853→            <div class="list">
+   854→              <div class="li-item">
+   855→                <span class="avatar">خ</span>
+   856→                <div class="li-body"><b>استاد خلیل عبدی</b><span class="muted">دلیل: تخلف زمانی مکرر (سه لغو پشت‌هم بدون هماهنگی) · از ۲۵ مهر</span></div>
+   857→                <button class="btn btn-line btn-sm" type="button" data-msg="حساب استاد خلیل عبدی فعال شد ✓">رفع مسدودی</button>
+   858→              </div>
+   859→              <div class="li-item">
+   860→                <span class="avatar">ش</span>
+   861→                <div class="li-body"><b>استاد شبنم آذری</b><span class="muted">دلیل: گزارش تخلف محتوایی — در بررسی کمیته · از ۲۰ مهر</span></div>
+   862→                <button class="btn btn-line btn-sm" type="button" data-msg="مسدودی شبنم آذری فقط با مصوبه کمیته رفع می‌شود">جزئیات پرونده</button>
+   863→              </div>
+   864→            </div>
+   865→          </div>
+   866→        </div>
+   867→      </section>
+   868→
+   869→      <!-- ═══════════ فراگیران ═══════════ -->
+   870→      <section class="tab-panel" id="p-users" role="tabpanel" aria-label="فراگیران">
+   871→        <div class="sec-head">
+   872→          <h2>مدیریت فراگیران<span class="ann-wrap"><button class="ann-btn" aria-label="توضیح">؟</button><span class="ann-pop">در snapp.doctor لیست مراجعین با فیلتر تعداد نوبت و مانده کیف پول مدیریت می‌شود. در وُدّا: users + wallet + sessionCount از بک‌اند؛ شماره موبایل فقط ماسک‌شده نمایش داده می‌شود (حریم خصوصی).</span></span></h2>
+   873→        </div>
+   874→
+   875→        <div class="searchbar">
+   876→          <input class="input" type="search" id="userSearch" placeholder="جستجوی نام یا موبایل…" aria-label="جستجوی فراگیران">
+   877→          <div class="chips" id="userChips">
+   878→            <button class="chip sel" type="button" data-us="all" aria-pressed="true">همه</button>
+   879→            <button class="chip" type="button" data-us="on" aria-pressed="false">فعال</button>
+   880→            <button class="chip" type="button" data-us="off" aria-pressed="false">غیرفعال</button>
+   881→          </div>
+   882→        </div>
+   883→
+   884→        <div class="card card-plain tbl-wrap">
+   885→          <table class="tbl" id="userTbl">
+   886→            <thead><tr><th>فراگیر</th><th>موبایل</th><th>جلسات</th><th>آخرین فعالیت</th><th>مانده کیف پول (تومان)</th><th>وضعیت</th><th>اقدام</th></tr></thead>
+   887→            <tbody>
+   888→              <tr data-us="on"><td><div class="li-body" style="flex-direction:row;align-items:center;gap:10px"><span class="avatar" style="width:34px;height:34px;font-size:13px">ز</span><b>زهرا احمدی</b></div></td><td dir="ltr">۰۹۱۲***۴۵۶۷</td><td>۱۴</td><td>۵ دقیقه پیش</td><td>۵۰۰٬۰۰۰</td><td><span class="badge b-green">فعال</span></td><td><a class="btn btn-line btn-sm" href="chat.html?XTransformPort=3500">پیام</a></td></tr>
+   889→              <tr data-us="on"><td><div class="li-body" style="flex-direction:row;align-items:center;gap:10px"><span class="avatar" style="width:34px;height:34px;font-size:13px">ن</span><b>نرگس موسوی</b></div></td><td dir="ltr">۰۹۱۹***۶۶۰۲</td><td>۷</td><td>۲ ساعت پیش</td><td>۲۴۰٬۰۰۰</td><td><span class="badge b-green">فعال</span></td><td><a class="btn btn-line btn-sm" href="chat.html?XTransformPort=3500">پیام</a></td></tr>
+   890→              <tr data-us="on"><td><div class="li-body" style="flex-direction:row;align-items:center;gap:10px"><span class="avatar" style="width:34px;height:34px;font-size:13px">ا</span><b>ایمان صادقی</b></div></td><td dir="ltr">۰۹۳۳***۵۵۲۱</td><td>۱۱</td><td>امروز ۱۳:۱۰</td><td>۳۵۰٬۰۰۰</td><td><span class="badge b-green">فعال</span></td><td><a class="btn btn-line btn-sm" href="chat.html?XTransformPort=3500">پیام</a></td></tr>
+   891→              <tr data-us="on"><td><div class="li-body" style="flex-direction:row;align-items:center;gap:10px"><span class="avatar" style="width:34px;height:34px;font-size:13px">م</span><b>مریم رضایی</b></div></td><td dir="ltr">۰۹۰۱***۸۸۹۰</td><td>۲۱</td><td>دیروز</td><td>۰</td><td><span class="badge b-green">فعال</span></td><td><a class="btn btn-line btn-sm" href="chat.html?XTransformPort=3500">پیام</a></td></tr>
+   892→              <tr data-us="on"><td><div class="li-body" style="flex-direction:row;align-items:center;gap:10px"><span class="avatar" style="width:34px;height:34px;font-size:13px">م</span><b>محمد کریمی</b></div></td><td dir="ltr">۰۹۳۵***۲۲۱۱</td><td>۹</td><td>۱ ساعت پیش</td><td>۱۲۰٬۰۰۰</td><td><span class="badge b-green">فعال</span></td><td><a class="btn btn-line btn-sm" href="chat.html?XTransformPort=3500">پیام</a></td></tr>
+   893→              <tr data-us="off"><td><div class="li-body" style="flex-direction:row;align-items:center;gap:10px"><span class="avatar" style="width:34px;height:34px;font-size:13px">ع</span><b>علی حسینی</b></div></td><td dir="ltr">۰۹۳۸***۷۳۴۵</td><td>۳</td><td>۳ روز پیش</td><td>۸۰٬۰۰۰</td><td><span class="badge b-info">غیرفعال</span></td><td><a class="btn btn-line btn-sm" href="chat.html?XTransformPort=3500">پیام</a></td></tr>
+   894→              <tr data-us="off"><td><div class="li-body" style="flex-direction:row;align-items:center;gap:10px"><span class="avatar" style="width:34px;height:34px;font-size:13px">س</span><b>سارا جعفری</b></div></td><td dir="ltr">۰۹۰۲***۱۹۸۴</td><td>۵</td><td>۱ هفته پیش</td><td>۰</td><td><span class="badge b-info">غیرفعال</span></td><td><a class="btn btn-line btn-sm" href="chat.html?XTransformPort=3500">پیام</a></td></tr>
+   895→              <tr data-us="off"><td><div class="li-body" style="flex-direction:row;align-items:center;gap:10px"><span class="avatar" style="width:34px;height:34px;font-size:13px">ل</span><b>لیلا حیدری</b></div></td><td dir="ltr">۰۹۱۲***۰۴۷۸</td><td>۲</td><td>۲ هفته پیش</td><td>۰</td><td><span class="badge b-info">غیرفعال</span></td><td><a class="btn btn-line btn-sm" href="chat.html?XTransformPort=3500">پیام</a></td></tr>
+   896→            </tbody>
+   897→          </table>
+   898→        </div>
+   899→        <p class="note">شماره موبایل‌ها طبق سیاست حریم خصوصی ماسک‌شده نمایش داده می‌شوند.</p>
+   900→      </section>
+   901→
+   902→      <!-- ═══════════ مالی و تسویه ═══════════ -->
+   903→      <section class="tab-panel" id="p-finance" role="tabpanel" aria-label="مالی و تسویه">
+   904→        <div class="sec-head">
+   905→          <h2>مالی و تسویه<span class="ann-wrap"><button class="ann-btn" aria-label="توضیح">؟</button><span class="ann-pop">پول فراگیر در escrow می‌ماند و پس از پایان جلسه، سهم استاد (بعد از کسر کمیسیون) به ledger او اضافه می‌شود. «تسویه» = انتقال از ledger به شبا با درخواست برداشت — معادل Settlements در پنل مالی snapp.doctor.</span></span></h2>
+   906→        </div>
+   907→
+   908→        <div class="stat-grid mb">
+   909→          <div class="stat"><b>۸۴٬۲۰۰٬۰۰۰</b><span>مانده escrow (تومان)</span></div>
+   910→          <div class="stat gold"><b>۱۹۶٬۸۰۰٬۰۰۰</b><span>پرداختی این ماه (تومان)</span></div>
+   911→          <div class="stat"><b>۲۹٬۵۲۰٬۰۰۰</b><span>کمیسیون این ماه (تومان)</span></div>
+   912→          <div class="stat rose"><b>۱۷٬۸۰۰٬۰۰۰</b><span>در انتظار تسویه (تومان)</span></div>
+   913→        </div>
+   914→
+   915→        <div class="tabs" data-tabs data-scope="#p-finance" role="tablist" aria-label="بخش‌های مالی">
+   916→          <button class="tab active" type="button" data-target="f-wd" aria-selected="true">درخواست‌های تسویه (۵)</button>
+   917→          <button class="tab" type="button" data-target="f-tx" aria-selected="false">تراکنش‌های اخیر</button>
+   918→        </div>
+   919→
+   920→        <div class="tab-panel active" id="f-wd" role="tabpanel" aria-label="درخواست‌های تسویه">
+   921→          <div class="card card-plain tbl-wrap">
+   922→            <table class="tbl" id="wdTbl">
+   923→              <thead><tr><th>استاد</th><th>شماره شبا</th><th>مبلغ (تومان)</th><th>تاریخ درخواست</th><th>وضعیت</th><th>اقدام</th></tr></thead>
+   924→              <tbody>
+   925→                <tr><td><b>کبری مرتضوی</b></td><td dir="ltr" class="ellipsis">IR82 0540 1026 8002 0817 9002</td><td><b>۴٬۸۰۰٬۰۰۰</b></td><td>امروز ۱۰:۱۲</td><td><span class="badge b-gold">در انتظار</span></td><td><div class="act-mini"><button class="btn btn-primary btn-sm" type="button" data-ok data-msg="تسویه کبری مرتضوی به صف پرداخت بانکی رفت ✓">تأیید و پرداخت</button><button class="btn btn-danger btn-sm" type="button" data-rej data-msg="درخواست تسویه کبری مرتضوی رد شد">رد</button></div></td></tr>
+   926→                <tr><td><b>عبدالرحمن حیدری</b></td><td dir="ltr" class="ellipsis">IR06 2900 0000 0012 3456 7890</td><td><b>۶٬۲۰۰٬۰۰۰</b></td><td>امروز ۰۹:۴۰</td><td><span class="badge b-gold">در انتظار</span></td><td><div class="act-mini"><button class="btn btn-primary btn-sm" type="button" data-ok data-msg="تسویه عبدالرحمن حیدری به صف پرداخت بانکی رفت ✓">تأیید و پرداخت</button><button class="btn btn-danger btn-sm" type="button" data-rej data-msg="درخواست تسویه عبدالرحمن حیدری رد شد">رد</button></div></td></tr>
+   927→                <tr><td><b>فاطمه کریمی</b></td><td dir="ltr" class="ellipsis">IR35 0170 0000 0033 9211 4400</td><td><b>۳٬۵۰۰٬۰۰۰</b></td><td>دیروز ۱۸:۰۵</td><td><span class="badge b-gold">در انتظار</span></td><td><div class="act-mini"><button class="btn btn-primary btn-sm" type="button" data-ok data-msg="تسویه فاطمه کریمی به صف پرداخت بانکی رفت ✓">تأیید و پرداخت</button><button class="btn btn-danger btn-sm" type="button" data-rej data-msg="درخواست تسویه فاطمه کریمی رد شد">رد</button></div></td></tr>
+   928→                <tr><td><b>معصومه محمدی</b></td><td dir="ltr" class="ellipsis">IR12 0190 0000 0044 5512 8800</td><td><b>۲٬۲۰۰٬۰۰۰</b></td><td>دیروز ۱۴:۳۰</td><td><span class="badge b-gold">در انتظار</span></td><td><div class="act-mini"><button class="btn btn-primary btn-sm" type="button" data-ok data-msg="تسویه معصومه محمدی به صف پرداخت بانکی رفت ✓">تأیید و پرداخت</button><button class="btn btn-danger btn-sm" type="button" data-rej data-msg="درخواست تسویه معصومه محمدی رد شد">رد</button></div></td></tr>
+   929→                <tr><td><b>سکینه موسوی</b></td><td dir="ltr" class="ellipsis">IR99 0123 4567 8912 3456 7891</td><td><b>۲٬۹۰۰٬۰۰۰</b></td><td>۳ روز پیش</td><td><span class="badge b-rose">رد شد — شبا نامعتبر</span></td><td><div class="act-mini"><button class="btn btn-line btn-sm" type="button" data-msg="پیام اصلاح شبا به سکینه موسوی ارسال شد ✓">اطلاع‌رسانی</button></div></td></tr>
+   930→              </tbody>
+   931→            </table>
+   932→          </div>
+   933→          <p class="hint">پرداخت‌ها به‌صورت دسته‌ای روزهای زوج از طریق پایگاه پیام رسان (پایا) انجام می‌شود.</p>
+   934→        </div>
+   935→
+   936→        <div class="tab-panel" id="f-tx" role="tabpanel" aria-label="تراکنش‌های اخیر">
+   937→          <div class="card card-plain tbl-wrap">
+   938→            <table class="tbl">
+   939→              <thead><tr><th>زمان</th><th>شرح</th><th>کاربر</th><th>مبلغ (تومان)</th><th>نوع</th></tr></thead>
+   940→              <tbody>
+   941→                <tr><td>۱۶:۲۴</td><td>تسویه استاد</td><td>حسین قاسمی</td><td class="b-text" style="color:var(--rose)">−۵٬۱۰۰٬۰۰۰</td><td><span class="badge b-info">تسویه</span></td></tr>
+   942→                <tr><td>۱۵:۴۸</td><td>کمیسیون جلسه <span dir="ltr">#S-10432</span></td><td>—</td><td style="color:var(--olive-700)">+۲۲٬۰۰۰</td><td><span class="badge b-green">کمیسیون</span></td></tr>
+   943→                <tr><td>۱۵:۱۲</td><td>شارژ کیف پول</td><td>زهرا احمدی</td><td style="color:var(--olive-700)">+۵۰۰٬۰۰۰</td><td><span class="badge b-green">شارژ</span></td></tr>
+   944→                <tr><td>۱۳:۱۶</td><td>بازگشت وجه جلسه لغوشده <span dir="ltr">#S-10431</span></td><td>سارا جعفری</td><td style="color:var(--rose)">−۱۸۰٬۰۰۰</td><td><span class="badge b-gold">بازگشت</span></td></tr>
+   945→                <tr><td>۱۲:۵۰</td><td>کمیسیون جلسه <span dir="ltr">#S-10428</span></td><td>—</td><td style="color:var(--olive-700)">+۳۱٬۰۰۰</td><td><span class="badge b-green">کمیسیون</span></td></tr>
+   946→                <tr><td>۱۱:۳۵</td><td>شارژ کیف پول</td><td>ایمان صادقی</td><td style="color:var(--olive-700)">+۳۵۰٬۰۰۰</td><td><span class="badge b-green">شارژ</span></td></tr>
+   947→              </tbody>
+   948→            </table>
+   949→          </div>
+   950→          <button class="btn btn-line btn-sm mt" type="button" data-export>خروجی کامل تراکنش‌ها (CSV)</button>
+   951→        </div>
+   952→      </section>
+   953→
+   954→      <!-- ═══════════ پشتیبانی ═══════════ -->
+   955→      <section class="tab-panel" id="p-support" role="tabpanel" aria-label="پشتیبانی">
+   956→        <div class="sec-head">
+   957→          <h2>تیکت‌های پشتیبانی<span class="ann-wrap"><button class="ann-btn" aria-label="توضیح">؟</button><span class="ann-pop">معادل ticketing در پنل پشتیبانی snapp.doctor: صف بر اساس اولویت (فوری/معمولی) + SLA پاسخ. ارجاع به فنی، بستن با تأیید کاربر.</span></span></h2>
+   958→          <span class="muted">میانگین زمان پاسخ: ۲ ساعت</span>
+   959→        </div>
+
+[showing lines 560-959 of 1283; use offset=960 with limit to continue reading]
