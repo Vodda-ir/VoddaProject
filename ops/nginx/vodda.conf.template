@@ -56,11 +56,12 @@ server {
     }
 
     location ^~ /uploads/ {
-        proxy_pass http://vodda_frontend;
+        proxy_pass http://vodda_backend;
     }
 
+    # نسخه تمیز URL: هر /page بدون پسوند → فایل page.html سایت استاتیک جدید
     location / {
-        try_files $uri $uri/ @vodda_frontend;
+        try_files $uri $uri.html $uri/ @vodda_frontend;
     }
 
     location @vodda_frontend {

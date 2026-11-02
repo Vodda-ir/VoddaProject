@@ -2,13 +2,55 @@
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="refresh" content="0; url=/panel/login">
-<link rel="canonical" href="/panel/login">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ورود | ثبت‌نام — وُدّا</title>
 <meta name="robots" content="noindex">
-<title>وُدّا — در حال انتقال</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="assets/vodda-ui.css?v=202611021500">
 </head>
-<body>
-<p style="font-family:IRANYekanXFaNum,Tahoma,sans-serif;padding:28px;text-align:center">در حال انتقال به وُدّا… <a href="/panel/login">ادامه</a></p>
-<script>location.replace('/panel/login');</script>
+<body data-page="login">
+<header class="vhdr"><div class="vhdr-in">
+  <a class="vlogo" href="/"><span class="mark">و</span>وُدّا</a>
+  <nav class="vnav" aria-label="ناوبری اصلی">
+    <a href="/search.html">جستجوی استاد</a>
+    <a href="/book.html">رزرو جلسه</a>
+    <a href="/curriculum.html">سرفصل‌ها</a>
+  </nav>
+  <div class="vauth" id="v-authbox"></div>
+</div></header>
+
+<main class="container-narrow">
+  <div class="phead center" style="padding-top:52px">
+    <h1>ورود | ثبت‌نام</h1>
+    <p>با شماره موبایل وارد شوید؛ کد تأیید برای شما پیامک می‌شود.</p>
+  </div>
+  <div class="card mt16" id="login-root" style="max-width:460px;margin:0 auto">
+    <form id="lg-form" novalidate>
+      <div class="field">
+        <label for="lg-mobile">شماره موبایل</label>
+        <input class="input input-lg" id="lg-mobile" type="tel" inputmode="tel" dir="ltr" placeholder="09123456789" autocomplete="tel" required>
+        <p class="hint">همه شماره‌های موبایل ایران پذیرفته می‌شود — با ثبت‌نام خودکار حساب شما ساخته می‌شود.</p>
+      </div>
+      <div class="ferr" id="lg-err" role="alert"></div>
+      <button class="btn btn-brand btn-lg btn-block" id="lg-btn" type="submit">دریافت کد تأیید</button>
+      <p class="hint center mt12">با ورود، <a href="legal.html" style="color:var(--brand-700)">قوانین و مقررات وُدّا</a> را می‌پذیرید.</p>
+    </form>
+  </div>
+</main>
+
+<footer class="foot"><div class="wrap">
+  <div class="foot-grid">
+    <div class="about">
+      <a class="logo" href="/"><span class="logo-mark">و</span>وُدّا</a>
+      <p>وُدّا؛ همراهِ یادگیری قرآن و مداحی — جلسه خصوصی آنلاین و حضوری با استادان تأییدشده.</p>
+    </div>
+    <div><h4>خدمات</h4><a href="/book.html">رزرو جلسه</a><a href="/session.html">جلسات من</a><a href="/assessment.html">سنجش و آزمون</a></div>
+    <div><h4>تخصص‌ها</h4><a href="/search.html">روخوانی قرآن</a><a href="/search.html">تجوید و صوت و لحن</a><a href="/search.html">حفظ قرآن</a><a href="/search.html">مداحی</a></div>
+    <div><h4>لینک‌های سریع</h4><a href="/credit.html">کیف پول</a><a href="/profile.html">پروفایل</a><a href="legal.html">قوانین و مقررات</a></div>
+  </div>
+  <div class="foot-bottom"><span>© ۱۴۰۵ وُدّا — تمامی حقوق محفوظ است.</span><span>جلسه آنلاین قرآن و مداحی</span></div>
+</div></footer>
+
+<script src="assets/vodda-api.js?v=202611021500"></script>
 </body>
 </html>

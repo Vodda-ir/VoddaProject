@@ -264,7 +264,7 @@ button{font-family:var(--font)}
 
 <!-- الگو: نوار تبلیغاتی بالای صفحه اسنپ‌داکتر (banner) -->
 <div class="promo"><div class="wrap promo-in">
-  🎁 اولین جلسه‌ات را با ۲۰٪ تخفیف شروع کن — <a href="/panel/user/book">همین حالا رزرو کن</a>
+  🎁 اولین جلسه‌ات را با ۲۰٪ تخفیف شروع کن — <a href="/book.html">همین حالا رزرو کن</a>
   <button class="promo-x" aria-label="بستن">✕</button>
 </div></div>
 
@@ -273,16 +273,16 @@ button{font-family:var(--font)}
   <a class="logo" href="/"><span class="logo-mark">و</span>وُدّا</a>
   <nav>
     <a href="/curriculum.html">سرفصل‌ها</a>
-    <a href="/panel/teacher/register">تخصص‌ها</a>
-    <a href="/panel/user/sessions">جلسه آنلاین</a>
-    <a href="/panel/user/book">رزرو جلسه</a>
+    <a href="/search.html">تخصص‌ها</a>
+    <a href="/session.html">جلسه آنلاین</a>
+    <a href="/book.html">رزرو جلسه</a>
     <a href="/search.html">فروشگاه</a>
     <a href="assessment.html">سنجش</a>
   </nav>
   <button class="loc" id="locBtn" aria-label="انتخاب نوع جلسه">📍 <span id="locTxt">تهران</span></button>
   <div class="auth">
-    <a class="btn btn-ghost" href="/panel/user/wallet">کیف پول</a>
-    <a class="btn btn-brand" href="/panel/login">ورود | ثبت‌نام</a>
+    <a class="btn btn-ghost" href="/credit.html">کیف پول</a>
+    <a class="btn btn-brand" href="/login.html">ورود | ثبت‌نام</a>
   </div>
 </div></header>
 
@@ -298,25 +298,22 @@ button{font-family:var(--font)}
         <button class="go" type="submit">جستجو</button>
       </form>
       <div class="pop">جستجوهای پرطرفدار:
-        <a href="/panel/teacher/register">روخوانی</a>
-        <a href="/panel/teacher/register">تجوید</a>
-        <a href="/panel/teacher/register">حفظ جزء ۳۰</a>
-        <a href="/panel/teacher/register">مداحی</a>
-        <a href="/panel/teacher/register">قرآن کودکان</a>
+        <a href="/search.html">روخوانی</a>
+        <a href="/search.html">تجوید</a>
+        <a href="/search.html">حفظ جزء ۳۰</a>
+        <a href="/search.html">مداحی</a>
+        <a href="/search.html">قرآن کودکان</a>
       </div>
     </div>
     <div class="phone-wrap">
-      <div class="phone" aria-hidden="true"><div class="scr">
+      <div class="phone" aria-hidden="true"><div class="scr" id="phoneMock">
         <div class="scr-h"><b>وُدّا</b><span>🔔</span></div>
-        <div class="scr-t">استادان آنلاین — آماده جلسه</div>
-        <div class="scr-teacher"><span class="scr-av"><img src="img/av-kobra.jpg" alt=""></span><div><b>استاد کبری مرتضوی</b><span>تجوید و صوت و لحن</span></div><span class="scr-price">۲۲۰٬۰۰۰</span></div>
-        <div class="scr-teacher"><span class="scr-av"><img src="img/av-abdolrahman.jpg" alt=""></span><div><b>استاد عبدالرحمن حیدری</b><span>حفظ قرآن</span></div><span class="scr-price">۲۵۰٬۰۰۰</span></div>
-        <div class="scr-teacher"><span class="scr-av"><img src="img/av-sakine.jpg" alt=""></span><div><b>استاد سکینه موسوی</b><span>قرآن کودکان</span></div><span class="scr-price">۱۶۰٬۰۰۰</span></div>
-        <div class="scr-cta">رزرو جلسه</div>
+        <div class="scr-t">استادان آنلاین — آماده جلسه</div><div id="phoneMockList"></div>
+                                <div class="scr-cta">رزرو جلسه</div>
         <div class="scr-tabs"><span class="on">خانه</span><span>جلسات</span><span>چت‌ها</span><span>پروفایل</span></div>
       </div></div>
-      <div class="float-chip fc1"><span class="dot"></span> ۳۸ استاد آنلاین</div>
-      <div class="float-chip fc2">⭐ ۴٫۸ رضایت کاربران</div>
+      <div class="float-chip fc1"><span class="dot"></span> استادان آنلاین وُدّا</div>
+      <div class="float-chip fc2">⭐ رضایت کاربران</div>
     </div>
   </div></section>
 
@@ -325,10 +322,10 @@ button{font-family:var(--font)}
     <section class="sec">
       <div class="sec-head"><h2>خدمات وُدّا</h2></div>
       <div class="svcs" id="svcs">
-        <a class="svc" href="/panel/user/sessions"><span class="ic"><img src="img/sv-video.jpg" alt="جلسه آنلاین تصویری"></span><b>جلسه آنلاین تصویری</b><span>از خانه، با هر استادی</span></a>
-        <a class="svc" href="/panel/user/book"><span class="ic"><img src="img/sv-reserve.jpg" alt="رزرو جلسه حضوری"></span><b>رزرو جلسه حضوری</b><span>نوبت‌دهی در محل استاد</span></a>
-        <a class="svc" href="/panel/user/sessions"><span class="ic"><img src="img/sv-instant.jpg" alt="پرسش فوری متنی"></span><b>پرسش فوری متنی</b><span>پاسخ در چند دقیقه</span></a>
-        <a class="svc" href="/panel/user/sessions"><span class="ic"><img src="img/sv-text.jpg" alt="تصحیح تلاوت"></span><b>تصحیح تلاوت</b><span>ارسال صوت، بازخورد مکتوب</span></a>
+        <a class="svc" href="/search.html"><span class="ic"><img src="img/sv-video.jpg" alt="جلسه آنلاین تصویری"></span><b>جلسه آنلاین تصویری</b><span>از خانه، با هر استادی</span></a>
+        <a class="svc" href="/book.html"><span class="ic"><img src="img/sv-reserve.jpg" alt="رزرو جلسه حضوری"></span><b>رزرو جلسه حضوری</b><span>نوبت‌دهی در محل استاد</span></a>
+        <a class="svc" href="/search.html"><span class="ic"><img src="img/sv-instant.jpg" alt="پرسش فوری متنی"></span><b>پرسش فوری متنی</b><span>پاسخ در چند دقیقه</span></a>
+        <a class="svc" href="/search.html"><span class="ic"><img src="img/sv-text.jpg" alt="تصحیح تلاوت"></span><b>تصحیح تلاوت</b><span>ارسال صوت، بازخورد مکتوب</span></a>
         <a class="svc" href="assessment.html"><span class="ic"><img src="img/sv-assess.jpg" alt="سنجش و آزمون"></span><b>سنجش و آزمون</b><span>سطح‌سنجی و گواهی</span></a>
       </div>
     </section>
@@ -343,15 +340,7 @@ button{font-family:var(--font)}
       <div class="car-pos">
         <button class="car-arrow n" data-car="onlineCar" data-dir="1" aria-label="بعدی">‹</button>
         <button class="car-arrow p" data-car="onlineCar" data-dir="-1" aria-label="قبلی">›</button>
-        <div class="car" id="onlineCar">
-          <a class="t-card" href="/teacher.html"><span class="online-badge"><span class="dot"></span>آنلاین</span><div class="t-av pulse"><img src="img/av-kobra.jpg" alt="استاد کبری مرتضوی"></div><h3>استاد کبری مرتضوی</h3><div class="sp">تجوید و صوت و لحن · ۹ سال سابقه</div><div class="stars">★★★★★ <span>۴٫۹ (۲۱۴ نظر)</span></div><div class="price">از <b>۲۲۰٬۰۰۰</b> تومان / جلسه</div><div class="t-acts"><button class="btn btn-ghost" data-chat>💬 چت</button><button class="btn btn-brand" data-video>🎥 جلسه تصویری</button></div></a>
-          <a class="t-card" href="/teacher.html"><span class="online-badge"><span class="dot"></span>آنلاین</span><div class="t-av pulse"><img src="img/av-abdolrahman.jpg" alt="استاد عبدالرحمن حیدری"></div><h3>استاد عبدالرحمن حیدری</h3><div class="sp">حفظ قرآن · مربی مسابقات</div><div class="stars">★★★★★ <span>۴٫۸ (۱۶۸ نظر)</span></div><div class="price">از <b>۲۵۰٬۰۰۰</b> تومان / جلسه</div><div class="t-acts"><button class="btn btn-ghost" data-chat>💬 چت</button><button class="btn btn-brand" data-video>🎥 جلسه تصویری</button></div></a>
-          <a class="t-card" href="/teacher.html"><span class="online-badge"><span class="dot"></span>آنلاین</span><div class="t-av pulse"><img src="img/av-sakine.jpg" alt="استاد سکینه موسوی"></div><h3>استاد سکینه موسوی</h3><div class="sp">قرآن کودکان · بازی‌محور</div><div class="stars">★★★★☆ <span>۴٫۷ (۹۹ نظر)</span></div><div class="price">از <b>۱۶۰٬۰۰۰</b> تومان / جلسه</div><div class="t-acts"><button class="btn btn-ghost" data-chat>💬 چت</button><button class="btn btn-brand" data-video>🎥 جلسه تصویری</button></div></a>
-          <a class="t-card" href="/teacher.html"><span class="online-badge"><span class="dot"></span>آنلاین</span><div class="t-av pulse"><img src="img/av-yaser.jpg" alt="استاد یاسر رحمانی"></div><h3>استاد یاسر رحمانی</h3><div class="sp">روخوانی و روان‌خوانی</div><div class="stars">★★★★★ <span>۴٫۹ (۲۴۰ نظر)</span></div><div class="price">از <b>۱۸۰٬۰۰۰</b> تومان / جلسه</div><div class="t-acts"><button class="btn btn-ghost" data-chat>💬 چت</button><button class="btn btn-brand" data-video>🎥 جلسه تصویری</button></div></a>
-          <a class="t-card" href="/teacher.html"><span class="online-badge"><span class="dot"></span>آنلاین</span><div class="t-av pulse"><img src="img/av-masoume.jpg" alt="استاد معصومه محمدی"></div><h3>استاد معصومه محمدی</h3><div class="sp">مفاهیم و تفسیر · دانشگاه</div><div class="stars">★★★★★ <span>۴٫۸ (۱۳۰ نظر)</span></div><div class="price">از <b>۲۰۰٬۰۰۰</b> تومان / جلسه</div><div class="t-acts"><button class="btn btn-ghost" data-chat>💬 چت</button><button class="btn btn-brand" data-video>🎥 جلسه تصویری</button></div></a>
-          <a class="t-card" href="/teacher.html"><span class="online-badge"><span class="dot"></span>آنلاین</span><div class="t-av pulse"><img src="img/av-hossein.jpg" alt="استاد حسین قاسمی"></div><h3>استاد حسین قاسمی</h3><div class="sp">مداحی و آوای مجلسی</div><div class="stars">★★★★★ <span>۴٫۹ (۱۹۰ نظر)</span></div><div class="price">از <b>۲۳۰٬۰۰۰</b> تومان / جلسه</div><div class="t-acts"><button class="btn btn-ghost" data-chat>💬 چت</button><button class="btn btn-brand" data-video>🎥 جلسه تصویری</button></div></a>
-          <a class="t-card" href="/teacher.html"><span class="online-badge"><span class="dot"></span>آنلاین</span><div class="t-av pulse"><img src="img/av-fateme.jpg" alt="استاد فاطمه کریمی"></div><h3>استاد فاطمه کریمی</h3><div class="sp">روخوانی نوجوانان</div><div class="stars">★★★★☆ <span>۴٫۶ (۸۷ نظر)</span></div><div class="price">از <b>۱۵۰٬۰۰۰</b> تومان / جلسه</div><div class="t-acts"><button class="btn btn-ghost" data-chat>💬 چت</button><button class="btn btn-brand" data-video>🎥 جلسه تصویری</button></div></a>
-          <a class="t-card" href="/teacher.html"><span class="online-badge"><span class="dot"></span>آنلاین</span><div class="t-av pulse"><img src="img/av-ahmad.jpg" alt="استاد احمد شریفی"></div><h3>استاد احمد شریفی</h3><div class="sp">تجوید · مصحح قرآن</div><div class="stars">★★★★★ <span>۴٫۸ (۱۵۵ نظر)</span></div><div class="price">از <b>۲۱۰٬۰۰۰</b> تومان / جلسه</div><div class="t-acts"><button class="btn btn-ghost" data-chat>💬 چت</button><button class="btn btn-brand" data-video>🎥 جلسه تصویری</button></div></a>
+        <div class="car" id="onlineCar"><div class="v-state" id="onlineCarPh">در حال دریافت استادان…</div>
         </div>
       </div>
     </section>
@@ -366,18 +355,18 @@ button{font-family:var(--font)}
         <button class="car-arrow n" data-car="specCar" data-dir="1" aria-label="بعدی">‹</button>
         <button class="car-arrow p" data-car="specCar" data-dir="-1" aria-label="قبلی">›</button>
         <div class="car" id="specCar">
-          <a class="spec-card" href="/panel/teacher/register"><span class="ic"><img src="img/sp-telavat.jpg" alt="تلاوت تحقیق"></span><b>تلاوت تحقیق</b><span>۳۸ استاد</span></a>
-          <a class="spec-card" href="/panel/teacher/register"><span class="ic"><img src="img/sp-tajvid.jpg" alt="ترتیل و تجوید"></span><b>ترتیل و تجوید</b><span>۲۴ استاد</span></a>
-          <a class="spec-card" href="/panel/teacher/register"><span class="ic"><img src="img/sp-hifz.jpg" alt="حفظ قرآن"></span><b>حفظ قرآن</b><span>۱۷ استاد</span></a>
-          <a class="spec-card" href="/panel/teacher/register"><span class="ic"><img src="img/sp-azan.jpg" alt="اذان و مکبری"></span><b>اذان و مکبری</b><span>۶ استاد</span></a>
-          <a class="spec-card" href="/panel/teacher/register"><span class="ic"><img src="img/sp-dua.jpg" alt="دعاخوانی"></span><b>دعاخوانی</b><span>۸ استاد</span></a>
-          <a class="spec-card" href="/panel/teacher/register"><span class="ic"><img src="img/sp-tavashih.jpg" alt="تواشیح و همخوانی"></span><b>تواشیح و همخوانی</b><span>۵ گروه</span></a>
-          <a class="spec-card" href="/panel/teacher/register"><span class="ic"><img src="img/sp-ibtihal.jpg" alt="ابتهال"></span><b>ابتهال</b><span>۷ استاد</span></a>
-          <a class="spec-card" href="/panel/teacher/register"><span class="ic"><img src="img/sp-monajat.jpg" alt="مناجات‌خوانی"></span><b>مناجات‌خوانی</b><span>۶ استاد</span></a>
-          <a class="spec-card" href="/panel/teacher/register"><span class="ic"><img src="img/sp-tafsir.jpg" alt="مفاهیم و تفسیر"></span><b>مفاهیم و تفسیر</b><span>۱۲ استاد</span></a>
-          <a class="spec-card" href="/panel/teacher/register"><span class="ic"><img src="img/sp-kids.jpg" alt="قرآن کودکان"></span><b>قرآن کودکان</b><span>۹ استاد</span></a>
-          <a class="spec-card" href="/panel/teacher/register"><span class="ic"><img src="img/sp-madahi.jpg" alt="مداحی"></span><b>مداحی</b><span>۱۱ استاد</span></a>
-          <a class="spec-card" href="/panel/teacher/register"><span class="ic"><img src="img/sp-correct.jpg" alt="تصحیح تلاوت"></span><b>تصحیح تلاوت</b><span>۳۱ استاد</span></a>
+          <a class="spec-card" href="/search.html"><span class="ic"><img src="img/sp-telavat.jpg" alt="تلاوت تحقیق"></span><b>تلاوت تحقیق</b><span>مشاهده استادان</span></a>
+          <a class="spec-card" href="/search.html"><span class="ic"><img src="img/sp-tajvid.jpg" alt="ترتیل و تجوید"></span><b>ترتیل و تجوید</b><span>مشاهده استادان</span></a>
+          <a class="spec-card" href="/search.html"><span class="ic"><img src="img/sp-hifz.jpg" alt="حفظ قرآن"></span><b>حفظ قرآن</b><span>مشاهده استادان</span></a>
+          <a class="spec-card" href="/search.html"><span class="ic"><img src="img/sp-azan.jpg" alt="اذان و مکبری"></span><b>اذان و مکبری</b><span>مشاهده استادان</span></a>
+          <a class="spec-card" href="/search.html"><span class="ic"><img src="img/sp-dua.jpg" alt="دعاخوانی"></span><b>دعاخوانی</b><span>مشاهده استادان</span></a>
+          <a class="spec-card" href="/search.html"><span class="ic"><img src="img/sp-tavashih.jpg" alt="تواشیح و همخوانی"></span><b>تواشیح و همخوانی</b><span>مشاهده استادان</span></a>
+          <a class="spec-card" href="/search.html"><span class="ic"><img src="img/sp-ibtihal.jpg" alt="ابتهال"></span><b>ابتهال</b><span>مشاهده استادان</span></a>
+          <a class="spec-card" href="/search.html"><span class="ic"><img src="img/sp-monajat.jpg" alt="مناجات‌خوانی"></span><b>مناجات‌خوانی</b><span>مشاهده استادان</span></a>
+          <a class="spec-card" href="/search.html"><span class="ic"><img src="img/sp-tafsir.jpg" alt="مفاهیم و تفسیر"></span><b>مفاهیم و تفسیر</b><span>مشاهده استادان</span></a>
+          <a class="spec-card" href="/search.html"><span class="ic"><img src="img/sp-kids.jpg" alt="قرآن کودکان"></span><b>قرآن کودکان</b><span>مشاهده استادان</span></a>
+          <a class="spec-card" href="/search.html"><span class="ic"><img src="img/sp-madahi.jpg" alt="مداحی"></span><b>مداحی</b><span>مشاهده استادان</span></a>
+          <a class="spec-card" href="/search.html"><span class="ic"><img src="img/sp-correct.jpg" alt="تصحیح تلاوت"></span><b>تصحیح تلاوت</b><span>مشاهده استادان</span></a>
         </div>
       </div>
     </section>
@@ -412,9 +401,9 @@ button{font-family:var(--font)}
     <section class="sec">
       <div class="sec-head"><h2>مجله وُدّا</h2></div>
       <div class="blog">
-        <div class="b-card" data-toast="در نسخه واقعی: /blog/tajvid-makharij — مقاله از CMS"><div class="b-img"><img src="img/bl-tajvid.jpg" alt="تمرین تلفظ حروف"></div><div class="b-body"><span class="b-cat">تجوید</span><h3>چگونه مخارج حروف را درست تمرین کنیم؟</h3><span class="meta">۷ دقیقه مطالعه · ۱۲ آبان</span></div></div>
-        <div class="b-card" data-toast="در نسخه واقعی: /blog/hifz-plan-j30 — مقاله از CMS"><div class="b-img"><img src="img/bl-hifz.jpg" alt="برنامه حفظ هفتگی"></div><div class="b-body"><span class="b-cat">حفظ</span><h3>برنامه هفتگی حفظ جزء ۳۰ با مرور جایگاه‌دار</h3><span class="meta">۵ دقیقه مطالعه · ۸ آبان</span></div></div>
-        <div class="b-card" data-toast="در نسخه واقعی: /blog/madahi-breath — مقاله از CMS"><div class="b-img"><img src="img/bl-madahi.jpg" alt="تمرین تنفس مداحی"></div><div class="b-body"><span class="b-cat">مداحی</span><h3>تنفس دیافراگمی برای آوای مجلسی؛ ۳ تمرین پایه</h3><span class="meta">۶ دقیقه مطالعه · ۳ آبان</span></div></div>
+        <div class="b-card"><div class="b-img"><img src="img/bl-tajvid.jpg" alt="تمرین تلفظ حروف"></div><div class="b-body"><span class="b-cat">تجوید</span><h3>چگونه مخارج حروف را درست تمرین کنیم؟</h3><span class="meta">۷ دقیقه مطالعه · ۱۲ آبان</span></div></div>
+        <div class="b-card"><div class="b-img"><img src="img/bl-hifz.jpg" alt="برنامه حفظ هفتگی"></div><div class="b-body"><span class="b-cat">حفظ</span><h3>برنامه هفتگی حفظ جزء ۳۰ با مرور جایگاه‌دار</h3><span class="meta">۵ دقیقه مطالعه · ۸ آبان</span></div></div>
+        <div class="b-card"><div class="b-img"><img src="img/bl-madahi.jpg" alt="تمرین تنفس مداحی"></div><div class="b-body"><span class="b-cat">مداحی</span><h3>تنفس دیافراگمی برای آوای مجلسی؛ ۳ تمرین پایه</h3><span class="meta">۶ دقیقه مطالعه · ۳ آبان</span></div></div>
       </div>
     </section>
   </div>
@@ -430,9 +419,9 @@ button{font-family:var(--font)}
         <li>پرداخت امن با کیف پول وُدّا</li>
       </ul>
       <div class="badges">
-        <div class="badge" data-toast="در نسخه واقعی: لینک گوگل‌پلی / کافه‌بازار"><span>▶</span><div><span>دریافت از</span><b>گوگل‌پلی</b></div></div>
-        <div class="badge" data-toast="در نسخه واقعی: لینک سیب‌اپ / اپ‌استور"><span></span><div><span>دریافت از</span><b>سیب‌اپ</b></div></div>
-        <div class="badge" data-toast="PWA: از خود مرورگر نصب می‌شود (manifest.json)"><span>🌐</span><div><span>یا</span><b>نصب PWA</b></div></div>
+        <div class="badge"><span>▶</span><div><span>دریافت از</span><b>گوگل‌پلی</b></div></div>
+        <div class="badge"><span></span><div><span>دریافت از</span><b>سیب‌اپ</b></div></div>
+        <div class="badge"><span>🌐</span><div><span>یا</span><b>نصب PWA</b></div></div>
       </div>
     </div>
     <div class="app-phone" aria-hidden="true"><div class="app-scr">
@@ -452,39 +441,39 @@ button{font-family:var(--font)}
       <a class="logo" href="/"><span class="logo-mark">و</span>وُدّا</a>
       <p>وُدّا؛ همراهِ یادگیری قرآن و مداحی — جلسه خصوصی آنلاین و حضوری با استادان تأییدشده، از روخوانی مقدماتی تا حفظ و آوای مجلسی.</p>
       <div class="socials">
-        <span class="soc" data-toast="در نسخه واقعی: اینستاگرام وُدّا">in</span>
-        <span class="soc" data-toast="در نسخه واقعی: تلگرام وُدّا">tg</span>
-        <span class="soc" data-toast="در نسخه واقعی: یوتیوب وُدّا">yt</span>
+        <span class="soc">in</span>
+        <span class="soc">tg</span>
+        <span class="soc">yt</span>
       </div>
     </div>
     <div>
       <h4>خدمات</h4>
-      <a href="/panel/user/sessions">جلسه آنلاین تصویری</a>
-      <a href="/panel/user/book">رزرو جلسه حضوری</a>
-      <a href="/panel/user/sessions">پرسش فوری متنی</a>
-      <a href="/panel/user/sessions">تصحیح تلاوت</a>
+      <a href="/session.html">جلسه آنلاین تصویری</a>
+      <a href="/book.html">رزرو جلسه حضوری</a>
+      <a href="/session.html">پرسش فوری متنی</a>
+      <a href="/session.html">تصحیح تلاوت</a>
       <a href="assessment.html">سنجش و آزمون</a>
     </div>
     <div>
       <h4>تخصص‌ها</h4>
-      <a href="/panel/teacher/register">روخوانی قرآن</a>
-      <a href="/panel/teacher/register">تجوید و صوت و لحن</a>
-      <a href="/panel/teacher/register">حفظ قرآن</a>
-      <a href="/panel/teacher/register">مفاهیم و تفسیر</a>
-      <a href="/panel/teacher/register">مداحی</a>
+      <a href="/search.html">روخوانی قرآن</a>
+      <a href="/search.html">تجوید و صوت و لحن</a>
+      <a href="/search.html">حفظ قرآن</a>
+      <a href="/search.html">مفاهیم و تفسیر</a>
+      <a href="/search.html">مداحی</a>
     </div>
     <div>
       <h4>لینک‌های سریع</h4>
       <a href="sitemap.html">نقشه ساختار</a>
       <a href="/search.html">فروشگاه</a>
-      <a href="/panel/user/wallet">کیف پول</a>
-      <a href="/panel/user/settings">پروفایل</a>
+      <a href="/credit.html">کیف پول</a>
+      <a href="/profile.html">پروفایل</a>
       <a href="legal.html">قوانین و مقررات</a>
     </div>
     <div>
       <h4>پشتیبانی</h4>
-      <a href="#" data-toast="پشتیبانی ۲۴ ساعته: ۰۲۱-۹۱۰۰۰۰۰۰ (نمونه)">☎ ۰۲۱-۹۱۰۰۰۰۰۰</a>
-      <a href="#" data-toast="در نسخه واقعی: mailto:support@vodda.ir">✉ support@vodda.ir</a>
+      <a href="#">☎ ۰۲۱-۹۱۰۰۰۰۰۰</a>
+      <a href="#">✉ support@vodda.ir</a>
       <a href="corporate.html">سازمان‌ها (B2B)</a>
       <a href="/search.html">پرچم‌های قابلیت</a>
     </div>

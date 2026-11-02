@@ -193,3 +193,7 @@ volumes:
 networks:
   vodda-network:
     driver: bridge
+    driver_opts:
+      # مسیر خروجی سرور MTU محدود دارد (VMware)؛ بدون این، TLS خروجی کانتینرها
+      # به‌صورت intermittent fail می‌شود (مثلاً ارسال SMS به ippanel).
+      com.docker.network.driver.mtu: "1400"

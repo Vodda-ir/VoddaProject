@@ -557,19 +557,19 @@ details.faq .a{font-size:12.5px;color:var(--ink-2);padding:0 0 14px;line-height:
   <nav class="topnav">
     <a href="/" data-page="index">خانه</a>
     <a href="/curriculum.html" data-page="curriculum">سرفصل‌ها</a>
-      <a href="/panel/teacher/register" data-page="specialist">تخصص‌ها</a>
+      <a href="/search.html" data-page="specialist">تخصص‌ها</a>
     <a href="/teacher.html" data-page="teacher">استاد</a>
     <a href="/search.html" data-page="store">فروشگاه</a>
-    <a href="/panel/user/book" data-page="book">رزرو</a>
-    <a href="/panel/user" data-page="ordercenter">سفارش‌ها</a>
-    <a href="/panel/user/wallet" data-page="payment">پرداخت</a>
+    <a href="/book.html" data-page="book">رزرو</a>
+    <a href="/orders.html" data-page="ordercenter">سفارش‌ها</a>
+    <a href="/orders.html" data-page="payment">پرداخت</a>
     <a href="/panel/user" data-page="chat">چت</a>
-    <a href="/panel/user/sessions" data-page="session">جلسه زنده</a>
+    <a href="/session.html" data-page="session">جلسه زنده</a>
     <a href="assessment.html" data-page="assessment">سنجش</a>
     <a href="/panel/teacher" data-page="panel-teacher">پنل استاد</a>
       <a href="/panel/admin" data-page="panel-admin">پنل مدیریت</a>
-    <a href="/panel/user/wallet" data-page="credit">کیف پول</a>
-    <a href="/panel/user/settings" data-page="profile">پروفایل</a>
+    <a href="/credit.html" data-page="credit">کیف پول</a>
+    <a href="/profile.html" data-page="profile">پروفایل</a>
     <a href="sitemap.html" data-page="sitemap">نقشه ساختار</a>
   </nav>
   
@@ -584,7 +584,7 @@ details.faq .a{font-size:12.5px;color:var(--ink-2);padding:0 0 14px;line-height:
   <!-- الگوی جستجوی سراسری snapp.doctor: باکس بزرگ + کوئری در URL + نتایج SSR -->
   <h1 class="s-title">جستجو در وُدّا</h1>
   <form class="sbox" id="searchForm" role="search">
-    <input id="q" type="search" value="تجوید" placeholder="استاد، رشته مصوب، خدمت یا مسیر یادگیری را جستجو کنید…" aria-label="عبارت جستجو">
+    <input id="q" type="search" placeholder="استاد، رشته مصوب، خدمت یا مسیر یادگیری را جستجو کنید…" aria-label="عبارت جستجو">
     <button class="btn btn-primary" type="submit">🔍 جستجو</button>
   </form>
 
@@ -617,161 +617,14 @@ details.faq .a{font-size:12.5px;color:var(--ink-2);padding:0 0 14px;line-height:
 
   <!-- الگوی سربرگ نتیجه با شمارنده -->
   <div class="res-head">
-    <h2>نتیجه برای: «تجوید»</h2>
-    <span class="count">۲۴ نتیجه</span>
+    <h2>نتایج جست‌وجوی استادان</h2>
+    <span class="count"></span>
     
   </div>
 
-  <section class="grp">
-    <div class="sec-head"><h2>استادان</h2><span>۵ نتیجه</span></div>
+  
 
-    <div class="trow">
-      <img class="avatar av-lg" src="img/av-ahmad.jpg" alt="استاد احمد شریفی">
-      <div class="info">
-        <h3><a href="/teacher.html">استاد احمد شریفی</a></h3>
-        <div class="sp">تجوید · مصحح قرآن کریم</div>
-        <div class="stars">★★★★★ <span>۴٫۸ (۱۵۵ نظر)</span></div>
-        <div class="meta"><span>سابقه: <b>۱۱ سال</b></span><span>جلسه موفق: <b>+۵۰۰</b></span><span>زبان: <b>فارسی، عربی</b></span></div>
-      </div>
-      <span class="badge-online"><span class="online-dot pulse"></span>آنلاین</span>
-      <div class="side">
-        <div class="price">از <b>۲۱۰٬۰۰۰</b> تومان</div>
-        <span class="next">زودترین نوبت: امروز ۱۵:۰۰</span>
-        <a class="btn btn-primary btn-sm" href="/panel/user/book">رزرو</a>
-      </div>
-    </div>
 
-    <div class="trow">
-      <img class="avatar av-lg" src="img/av-kobra.jpg" alt="استاد کبری مرتضوی">
-      <div class="info">
-        <h3><a href="/teacher.html">استاد کبری مرتضوی</a></h3>
-        <div class="sp">تجوید و صوت و لحن · مربی بین‌المللی تلاوت</div>
-        <div class="stars">★★★★★ <span>۴٫۹ (۲۱۴ نظر)</span></div>
-        <div class="meta"><span>سابقه: <b>۹ سال</b></span><span>جلسه موفق: <b>+۴۵۰</b></span><span>زبان: <b>فارسی، عربی</b></span></div>
-      </div>
-      <span class="badge-online"><span class="online-dot"></span>آنلاین</span>
-      <div class="side">
-        <div class="price">از <b>۲۴۵٬۰۰۰</b> تومان</div>
-        <span class="next">زودترین نوبت: امروز ۱۸:۰۰</span>
-        <a class="btn btn-primary btn-sm" href="/panel/user/book">رزرو</a>
-      </div>
-    </div>
-
-    <div class="trow">
-      <img class="avatar av-lg" src="img/av-abdolrahman.jpg" alt="استاد عبدالرحمن حیدری">
-      <div class="info">
-        <h3><a href="/teacher.html">استاد عبدالرحمن حیدری</a></h3>
-        <div class="sp">تجوید و حفظ · مربی مسابقات بین‌المللی</div>
-        <div class="stars">★★★★★ <span>۴٫۸ (۱۶۸ نظر)</span></div>
-        <div class="meta"><span>سابقه: <b>۱۲ سال</b></span><span>جلسه موفق: <b>+۶۲۰</b></span><span>زبان: <b>فارسی، عربی</b></span></div>
-      </div>
-      <span class="badge-off"><i></i>آفلاین</span>
-      <div class="side">
-        <div class="price">از <b>۲۶۵٬۰۰۰</b> تومان</div>
-        <span class="next">زودترین نوبت: فردا ۱۱:۰۰</span>
-        <a class="btn btn-primary btn-sm" href="/panel/user/book">رزرو</a>
-      </div>
-    </div>
-
-    <div class="trow">
-      <img class="avatar av-lg" src="img/av-sakine.jpg" alt="استاد سکینه موسوی">
-      <div class="info">
-        <h3><a href="/teacher.html">استاد سکینه موسوی</a></h3>
-        <div class="sp">تجوید و روان‌خوانی · مدرس مؤسسات قرآنی</div>
-        <div class="stars">★★★★☆ <span>۴٫۷ (۹۶ نظر)</span></div>
-        <div class="meta"><span>سابقه: <b>۷ سال</b></span><span>جلسه موفق: <b>+۳۱۰</b></span><span>زبان: <b>فارسی</b></span></div>
-      </div>
-      <span class="badge-online"><span class="online-dot"></span>آنلاین</span>
-      <div class="side">
-        <div class="price">از <b>۱۹۵٬۰۰۰</b> تومان</div>
-        <span class="next">زودترین نوبت: امروز ۲۰:۳۰</span>
-        <a class="btn btn-primary btn-sm" href="/panel/user/book">رزرو</a>
-      </div>
-    </div>
-
-    <div class="trow">
-      <img class="avatar av-lg" src="img/av-yaser.jpg" alt="استاد یاسر رحمانی">
-      <div class="info">
-        <h3><a href="/teacher.html">استاد یاسر رحمانی</a></h3>
-        <div class="sp">روخوانی و تجوید · قاری برگزیدهٔ کشوری</div>
-        <div class="stars">★★★★★ <span>۴٫۹ (۲۴۰ نظر)</span></div>
-        <div class="meta"><span>سابقه: <b>۱۰ سال</b></span><span>جلسه موفق: <b>+۵۸۰</b></span><span>زبان: <b>فارسی، عربی</b></span></div>
-      </div>
-      <span class="badge-off"><i></i>آفلاین</span>
-      <div class="side">
-        <div class="price">از <b>۲۰۵٬۰۰۰</b> تومان</div>
-        <span class="next">زودترین نوبت: فردا ۰۸:۳۰</span>
-        <a class="btn btn-primary btn-sm" href="/panel/user/book">رزرو</a>
-      </div>
-    </div>
-  </section>
-
-  <section class="grp">
-    <div class="sec-head"><h2>خدمت‌ها</h2><span>۲ نتیجه</span></div>
-    <a class="svc" href="/panel/user/sessions">
-      <span class="cat-ic"><img class="imgfit" src="img/sp-correct.jpg" alt="سرویس تصحیح تلاوت"></span>
-      <div class="info">
-        <h3>تصحیح تلاوت (متن‌محور)</h3>
-        <div class="sp">ارسال صوت تلاوت، دریافت بازخورد مکتوب از مصحح — بدون نیاز به جلسه زنده</div>
-      </div>
-      <span class="pill green">خدمت</span>
-      <div class="pr"><b>از ۹۰٬۰۰۰</b>تومان</div>
-    </a>
-    <a class="svc" href="/panel/user/sessions">
-      <span class="cat-ic"><img class="imgfit" src="img/sv-text.jpg" alt="سرویس گزارش اصلاحی متنی"></span>
-      <div class="info">
-        <h3>پکیج تصحیح + بازخورد صوتی</h3>
-        <div class="sp">علاوه بر گزارش مکتوب، فایل صوتی راهنمای استاد نیز دریافت می‌کنید</div>
-      </div>
-      <span class="pill green">خدمت</span>
-      <div class="pr"><b>از ۱۴۰٬۰۰۰</b>تومان</div>
-    </a>
-  </section>
-
-  <section class="grp">
-    <div class="sec-head"><h2>تخصص‌ها</h2><span>۱ نتیجه</span></div>
-    <a class="svc" href="/panel/teacher/register">
-      <span class="cat-ic"><img class="imgfit" src="img/sp-tajvid.jpg" alt="تخصص تجوید و صوت و لحن"></span>
-      <div class="info">
-        <h3>تخصص: تجوید و صوت و لحن</h3>
-        <div class="sp">۷ استاد تأییدشده · از ۱۵۰٬۰۰۰ تومان · جلسه تصویری و حضوری</div>
-      </div>
-      <span class="pill green">صفحه تخصص</span>
-      <div class="pr"><b>مشاهده</b>تخصص</div>
-    </a>
-  </section>
-
-  <section class="grp">
-    <div class="sec-head"><h2>مسیرهای یادگیری</h2><span>۲ نتیجه</span></div>
-    <a class="svc" href="assessment.html">
-      <span class="cat-ic">🧭</span>
-      <div class="info">
-        <h3>مسیر «صفر تا تلاوت متمکن»</h3>
-        <div class="sp">۴ مرحله · ۲۴ جلسه · با تعیین سطح در ابتدای مسیر</div>
-      </div>
-      <span class="pill green">مسیر یادگیری</span>
-      <div class="pr"><b>۲۴ جلسه</b>گام‌به‌گام</div>
-    </a>
-    <a class="svc" href="assessment.html">
-      <span class="cat-ic">🏅</span>
-      <div class="info">
-        <h3>مسیر «آمادگی محافل و مسابقات قرآنی»</h3>
-        <div class="sp">۳ مرحله · ۱۶ جلسه · همراهی مربی مسابقات</div>
-      </div>
-      <span class="pill green">مسیر یادگیری</span>
-      <div class="pr"><b>۱۶ جلسه</b>تمرکزدار</div>
-    </a>
-  </section>
-
-  <!-- الگوی صفحه‌بندی نتایج snapp.doctor -->
-  <nav class="pager" aria-label="صفحه‌بندی">
-    
-    <button class="pnum sel">۱</button>
-    <button class="pnum">۲</button>
-    <button class="pnum">۳</button>
-    <span class="pnum dots">…</span>
-    <button class="pnum">۸</button>
-  </nav>
 </main>
 
 <footer class="foot"><div class="container">
