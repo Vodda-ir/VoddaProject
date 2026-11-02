@@ -5,6 +5,19 @@ const nextConfig = {
   poweredByHeader: false,
   compress: true,
 
+  async redirects() {
+    // Root entry goes straight to the REA static preview (vodda2, branch
+    // rea/preview). Caddy :81 forwards any request carrying the
+    // XTransformPort query to the static server on localhost:3500.
+    return [
+      {
+        source: '/',
+        destination: '/index.html?XTransformPort=3500',
+        permanent: false,
+      },
+    ];
+  },
+
   async rewrites() {
     // Public media is proxied directly. API traffic must pass through the
     // /api/auth and /api/backend route handlers so JWTs remain HttpOnly.
