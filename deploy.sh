@@ -196,6 +196,28 @@ echo "Docker service is active."
 REMOTE
 }
 
+# بارگذاری سایت استاتیک جدید (وب نسخه ۲) روی ریشه nginx سرور
+upload_web_root() {
+    print_step "Uploading vodda v2 static web (web/ → /var/www/vodda-web) ..."
+    [ -d "$PROJECT_DIR/web" ] || { print_error "web/ directory not found. Run: git pull"; exit 1; }
+    tar -C "$PROJECT_DIR/web" -czf - . | ssh_cmd "$SERVER_USER@$SERVER_IP" \
+        "rm -rf /var/www/vodda-web && mkdir -p /var/www/vodda-web && tar -xzf - -C /var/www/vodda-web && chmod -R a+rX /var/www/vodda-web && test -f /var/www/vodda-web/index.html"
+}
+
+# استقرار فقط سایت استاتیک جدید — بدون rebuild داکر (سریع‌ترین مسیر)
+deploy_web_only() {
+    print_header "Deploying vodda v2 static web (fast path)"
+    load_deploy_config
+    check_sshpass
+    upload_web_root
+    configure_domain_proxy
+    verify_public_domains
+
+    echo ""
+    echo -e "${GREEN}✓ Web deploy finished${NC}"
+    print_domain_endpoints
+}
+
 configure_domain_proxy() {
     print_step "Configuring Nginx domain routing..."
     local proxy_config
@@ -307,6 +329,9 @@ deploy_to_server() {
 
     print_step "[7/7] Starting services..."
     ssh_cmd "$SERVER_USER@$SERVER_IP" "cd '$SERVER_PATH' && docker image inspect vodda-backend:prod vodda-frontend:prod vodda-monafaseh:prod vodda-monafaseh-migrator:prod vodda-bashar:prod mysql:8.0 >/dev/null && legacy_running=\$(docker inspect -f '{{.State.Running}}' monafaseh 2>/dev/null || true) && (docker stop monafaseh >/dev/null 2>&1 || true) && docker volume create monafaseh_monafaseh-db >/dev/null && if ! docker run --rm --user 0:0 --volume monafaseh_monafaseh-db:/app/db -e DATABASE_URL=file:/app/db/custom.db --entrypoint /bin/sh vodda-monafaseh-migrator:prod -c 'node ./node_modules/prisma/build/index.js db push --accept-data-loss && chown -R 1001:1001 /app/db'; then if [ \"\$legacy_running\" = true ]; then docker start monafaseh >/dev/null; fi; exit 1; fi && docker volume create bashar_bashar-db >/dev/null && if ! docker run --rm --user 0:0 --volume bashar_bashar-db:/app/db -e DATABASE_URL=file:/app/db/custom.db --entrypoint /bin/sh vodda-bashar-migrator:prod -c 'node ./node_modules/prisma/build/index.js db push --accept-data-loss && chown -R 1001:1001 /app/db'; then if [ \"\$legacy_running\" = true ]; then docker start monafaseh >/dev/null; fi; exit 1; fi && if docker compose -f docker-compose.deploy.yml --env-file .env.production up -d --pull never --wait; then docker rm monafaseh >/dev/null 2>&1 || true; docker image rm vodda-monafaseh-migrator:prod >/dev/null 2>&1 || true; docker image rm vodda-bashar-migrator:prod >/dev/null 2>&1 || true; else if [ \"\$legacy_running\" = true ]; then docker start monafaseh >/dev/null; fi; exit 1; fi"
+
+    print_step "[7b/8] Uploading vodda v2 static web..."
+    upload_web_root
 
     print_step "[8/8] Configuring Nginx domain routing..."
     configure_domain_proxy
@@ -436,8 +461,9 @@ case "${1:-deploy}" in
     deploy) setup_server; build_images; deploy_to_server ;;
     server) setup_server; deploy_to_server ;;
     setup)  setup_server ;;
+    web)    deploy_web_only ;;
     domains) deploy_domains_only ;;
     proxy) deploy_proxy_only ;;
     bashar) deploy_bashar_only ;;
-    *) echo "Usage: $0 [deploy|build|server|setup|domains|proxy|bashar]"; exit 1 ;;
+    *) echo "Usage: $0 [deploy|build|server|setup|web|domains|proxy|bashar]"; exit 1 ;;
 esac

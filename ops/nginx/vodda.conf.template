@@ -34,6 +34,12 @@ server {
     server_name __SITE_DOMAIN__;
     client_max_body_size 10m;
 
+    # ── وودّا نسخه ۲: سایت استاتیک جدید (web/) روی ریشه دامنه اصلی ──
+    # اول فایل استاتیک جدید سرو می‌شود؛ هر مسیری که فایل استاتیکی نداشته باشد
+    # به فرانت‌اند قبلی پروکسی می‌شود تا هیچ کارکردی از دست نرود.
+    index index.html;
+    root /var/www/vodda-web;
+
     proxy_http_version 1.1;
     proxy_set_header Host $host;
     proxy_set_header X-Forwarded-Host $host;
@@ -44,7 +50,20 @@ server {
     proxy_set_header Connection $connection_upgrade;
     proxy_read_timeout 120s;
 
+    # assetهای اپ کاربردی (Next.js) همیشه از فرانت‌اند قبلی
+    location ^~ /_next/ {
+        proxy_pass http://vodda_frontend;
+    }
+
+    location ^~ /uploads/ {
+        proxy_pass http://vodda_frontend;
+    }
+
     location / {
+        try_files $uri $uri/ @vodda_frontend;
+    }
+
+    location @vodda_frontend {
         proxy_pass http://vodda_frontend;
     }
 }
