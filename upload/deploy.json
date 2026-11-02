@@ -1,0 +1,12 @@
+{
+  "ip": "80.91.208.240",
+  "username": "root",
+  "path": "/www/wwwroot/vodda",
+  "password": "JSiB0e975u",
+  "domains": {
+    "site": "vodda.ir",
+    "app": "app.vodda.ir",
+    "api": "api.vodda.ir",
+    "monafaseh": "monafeseh.ir"
+  }
+}
