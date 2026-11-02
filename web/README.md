@@ -1,44 +1,26 @@
-# Vodda Web v2 — Static Site (REA Build)
+# وُدّا Web v2 — نسخه تولیدی (تمیز)
 
-نسخه جدید سایت وودّا (front-of-site) — خروجی بازسازی REA که از مخزن
-`Vodda-ir/vodda2` (برنچ `rea/preview`) برداشت شده است.
+سایت معرفی وُدّا روی ریشه `vodda.ir` — خروجی تمیزِ بازسازی REA (بدون هیچ مصنوع پیش‌نمایش).
 
-## محتوا
-- ۲۵ صفحه استاتیک کامل: `index`, `teacher`, `specialist`, `session`, `book`,
-  `search`, `orders`, `ordercenter`, `payment`, `chat`, `credit`, `corporate`,
-  `campaign`, `store`, `tokens`, `assessment`, `flags`, `legal`, `login`, `otp`,
-  `profile`, `sitemap`, `curriculum`, `panel-admin`, `panel-teacher`
-- کاملاً خوداتکا: `assets/` (css+js)، `fonts/` (IRANYekanXFaNum — ۵ وزن)، `img/`
-- بدون نیاز به رانتایم سرور — فقط فایل استاتیک
+## معماری اتصال (اتصال کامل بک‌اند/فرانت‌اند/API)
+- **داده زنده**: `assets/vodda-api.js` از `https://api.vodda.ir/api/v1` (CORS تأییدشده برای vodda.ir)
+  - لندینگ: کاروسل استادان واقعی (`GET /teachers`)
+  - `/search.html`: جست‌وجوی زنده (`GET /teachers?q=…`) + فیلترها
+  - `/teacher.html?id=N`: پروفایل واقعی (`GET /teachers/:id`) با خدمات و نظرات واقعی
+  - در صورت خطا/خالی بودن: پیام صادقانه — بدون داده جعلی
+- **جریان‌های کاربردی** → اپ واقعی (Next.js + بک‌اند Go):
+  - ورود/OTP → `/panel/login` · رزرو → `/panel/user/book` · جلسات → `/panel/user/sessions`
+  - کیف پول → `/panel/user/wallet` · پروفایل → `/panel/user/settings`
+  - پنل استاد → `/panel/teacher` · ثبت استاد → `/panel/teacher/register` · پنل مدیریت → `/panel/admin`
+  - پروفایل عمومی استاد → `/teachers/{id}` (رزرو واقعی)
+- صفحات کاربردی قدیمی به استاب redirect تبدیل شده‌اند (بدون داده جعلی).
+- **fallback امن nginx**: مسیرهای بدون فایل استاتیک → فرانت‌اند قبلی (اپ کاربردی همیشه در دسترس).
 
-## اجرای محلی
+## ساخت
+منبع: `Vodda-ir/vodda2` → برنچ `rea/preview` → پوشه `preview/` → `python3 _release.py`
+
+## استقرار
 ```bash
-python3 -m http.server 8080 --directory web/
+bash deploy.sh web     # فقط سایت استاتیک (سریع)
+bash deploy.sh         # استقرار کامل
 ```
-
-## استقرار روی سرور تولیدی (vodda.ir) — سیم‌کشی شده ✅
-این پوشه به‌صورت خودکار در پایپ‌لاین `deploy.sh` لحاظ می‌شود:
-- آپلود خودکار: `web/` → `/var/www/vodda-web` روی سرور (مرحله [7b/8] و فرمان جدید `web`)
-- nginx (قالب `ops/nginx/vodda.conf.template`): دامنه اصلی سایت روی همین پوشه سرو می‌شود
-- **fallback ایمن**: هر مسیری که فایل استاتیکی نداشته باشد (مثل پنل‌های کاربردی `/panel/*`) به
-  فرانت‌اند قبلی پروکسی می‌شود → هیچ کارکردی از دست نمی‌رود؛ اگر هم پوشه web نباشد، سایت
-  قدیمی سرو می‌شود (صفر قطعی)
-- assetهای Next.js (`/_next/`، `/uploads/`) همیشه از فرانت‌اند قبلی می‌آیند
-
-### فرمان‌های استقرار
-```bash
-bash deploy.sh web     # فقط سایت استاتیک جدید — سریع، بدون rebuild داکر (پیشنهادی)
-bash deploy.sh         # استقرار کامل (ساخت ایمیج‌ها + همه سرویس‌ها)
-```
-
-## نکته فنی
-آدرس assetها دارای پارامتر `?XTransformPort=3500` هستند (مربوط به درگاه محیط
-پیش‌نمایش سندباکس). روی nginx تولیدی این پارامتر نادیده گرفته می‌شود و هیچ
-تأثیری ندارد؛ در صورت تمایل به حذف کامل:
-```bash
-grep -rl 'XTransformPort=3500' web/ | xargs sed -i 's/?XTransformPort=3500//g'
-```
-
-## منبع حقیقت (Source of Truth)
-- مخزن کاری: `github.com/Vodda-ir/vodda2` → برنچ `rea/preview` → پوشه `preview/`
-- نسخه قبلی سایت: برنچ `backup/voddaproject2` (اسنپ‌شات کامل قبل از استقرار v2)

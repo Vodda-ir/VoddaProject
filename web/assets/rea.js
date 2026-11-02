@@ -1,29 +1,8 @@
-/* REA Preview shared runtime — vodda2/preview/assets/rea.js */
+/* وُدّا — رانتایم مشترک */
 (function(){
   'use strict';
 
-  /* حاشیه‌نویسی‌ها */
-  var t=document.getElementById('annoToggle');
-  if(t){
-    t.addEventListener('click',function(){
-      var on=document.body.classList.toggle('no-anno');
-      t.setAttribute('aria-pressed',String(!on));
-      t.textContent='حاشیه‌نویسی: '+(on?'خاموش':'روشن');
-    });
-  }
-  document.addEventListener('click',function(e){
-    var b=e.target.closest?e.target.closest('.ann-btn'):null;
-    if(b){
-      e.stopPropagation();
-      var w=b.parentElement,open=w.classList.contains('open');
-      document.querySelectorAll('.ann-wrap.open').forEach(function(x){x.classList.remove('open')});
-      if(!open)w.classList.add('open');
-      return;
-    }
-    if(!(e.target.closest&&e.target.closest('.ann-pop'))){
-      document.querySelectorAll('.ann-wrap.open').forEach(function(x){x.classList.remove('open')});
-    }
-  });
+  
 
   /* ناوبری فعال بر اساس body[data-page] */
   var page=document.body.getAttribute('data-page');

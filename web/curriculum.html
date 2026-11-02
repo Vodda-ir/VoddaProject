@@ -7,15 +7,15 @@
 <link rel="icon" href="data:,">
 <style>
 /* ═══════════════════════════════════════════════════════════
-   REA Preview Design System — vodda2/preview/assets/rea.css
+   وُدّا — سیستم طراحی
    لایه ۱: توکن‌های برند وُدّا (از globals.css واقعی ریپو)
    لایه ۲: توکن‌های scoped کامپوننت‌ها (الگوی --otp-* اسنپ‌دکتر)
    ═══════════════════════════════════════════════════════════ */
-@font-face{font-family:'IRANYekanXFaNum';src:url('fonts/IRANYekanXFaNum-Regular.ttf?XTransformPort=3500') format('truetype');font-weight:400;font-display:swap}
-@font-face{font-family:'IRANYekanXFaNum';src:url('fonts/IRANYekanXFaNum-Medium.ttf?XTransformPort=3500') format('truetype');font-weight:500;font-display:swap}
-@font-face{font-family:'IRANYekanXFaNum';src:url('fonts/IRANYekanXFaNum-DemiBold.ttf?XTransformPort=3500') format('truetype');font-weight:600;font-display:swap}
-@font-face{font-family:'IRANYekanXFaNum';src:url('fonts/IRANYekanXFaNum-Bold.ttf?XTransformPort=3500') format('truetype');font-weight:700;font-display:swap}
-@font-face{font-family:'IRANYekanXFaNum';src:url('fonts/IRANYekanXFaNum-ExtraBold.ttf?XTransformPort=3500') format('truetype');font-weight:800;font-display:swap}
+@font-face{font-family:'IRANYekanXFaNum';src:url('fonts/IRANYekanXFaNum-Regular.ttf') format('truetype');font-weight:400;font-display:swap}
+@font-face{font-family:'IRANYekanXFaNum';src:url('fonts/IRANYekanXFaNum-Medium.ttf') format('truetype');font-weight:500;font-display:swap}
+@font-face{font-family:'IRANYekanXFaNum';src:url('fonts/IRANYekanXFaNum-DemiBold.ttf') format('truetype');font-weight:600;font-display:swap}
+@font-face{font-family:'IRANYekanXFaNum';src:url('fonts/IRANYekanXFaNum-Bold.ttf') format('truetype');font-weight:700;font-display:swap}
+@font-face{font-family:'IRANYekanXFaNum';src:url('fonts/IRANYekanXFaNum-ExtraBold.ttf') format('truetype');font-weight:800;font-display:swap}
 
 /* ─── لایه ۱ — پوسته نوترال اسنپ‌داکتر + سبز برند (یکدست با لندینگ) ─── */
 :root{
@@ -60,7 +60,7 @@ main{margin:26px 0}
 .gap{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 .mt{margin-top:14px}.mb{margin-bottom:14px}
 
-/* ─── نوار بالا — تیره، یکدست با نوار پیش‌نمایش لندینگ ─── */
+/* ─── نوار بالا — تیره ─── */
 .topbar{position:sticky;top:0;z-index:50;background:var(--olive-deep);border-bottom:1px solid #242c1e}
 .topbar-in{display:flex;align-items:center;gap:12px;padding:9px 0;flex-wrap:wrap}
 .brand{font-weight:800;color:#fff;font-size:17px;white-space:nowrap;text-decoration:none}
@@ -70,8 +70,6 @@ main{margin:26px 0}
 .topnav a{white-space:nowrap;text-decoration:none;font-size:12.5px;color:#cfd8c0;padding:8px 12px;border-radius:999px;min-height:36px;display:flex;align-items:center}
 .topnav a:hover{background:rgba(255,255,255,.12);color:#fff}
 .topnav a.on{background:var(--brand);color:#fff}
-.anno-toggle{background:transparent;border:1px solid rgba(255,255,255,.3);border-radius:999px;padding:8px 12px;font-family:var(--font);font-size:12px;color:#fff;cursor:pointer;min-height:36px}
-.anno-toggle[aria-pressed="true"]{background:#fff;color:var(--olive-deep);border-color:#fff}
 
 /* ─── کارت‌ها و سکشن‌ها ─── */
 .card{background:var(--surface);border-radius:var(--r-md);box-shadow:var(--sh-sm);padding:20px;margin-bottom:14px}
@@ -382,14 +380,6 @@ details.faq .a{font-size:12.5px;color:var(--ink-2);padding:0 0 14px;line-height:
 .toast{position:fixed;bottom:22px;right:50%;transform:translate(50%,16px);background:var(--olive-900);color:#fff;padding:11px 20px;border-radius:999px;font-size:13px;box-shadow:var(--sh-lg);opacity:0;transition:all .25s;z-index:100;pointer-events:none;max-width:88vw;text-align:center}
 .toast.show{opacity:1;transform:translate(50%,0)}
 
-/* ─── حاشیه‌نویسی ─── */
-.ann-wrap{position:relative;display:inline-block}
-.ann-btn{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--gold);background:var(--gold-bg);color:var(--gold);font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer;line-height:1;vertical-align:middle;padding:0}
-.ann-pop{position:absolute;bottom:calc(100% + 8px);inset-inline-start:50%;transform:translateX(50%);background:var(--olive-900);color:#fff;font-size:11.5px;line-height:1.7;padding:10px 12px;border-radius:var(--r-xs);width:min(270px,74vw);z-index:60;display:none;box-shadow:var(--sh-md);font-weight:400}
-.ann-wrap.open .ann-pop{display:block}
-body.no-anno .ann-wrap{display:none}
-.ann-pop::after{content:"";position:absolute;top:100%;inset-inline-start:50%;transform:translateX(50%);border:6px solid transparent;border-top-color:var(--olive-900)}
-
 /* ─── فوتر ─── */
 .foot{margin-top:auto;background:var(--sand-100);border-top:1px solid var(--sand-200);padding:18px 0;margin-top:40px}
 .foot .container{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;font-size:11.5px;color:var(--ink-3)}
@@ -601,37 +591,37 @@ details.acc[open] summary{background:var(--olive-50);border-bottom:1px solid var
 <body class="on" data-page="curriculum">
 <header class="topbar">
   <div class="container topbar-in">
-    <a class="brand" href="index.html?XTransformPort=3500">وُدّا<small>پیش‌نمایش ساختاری · فاز ۳ REA</small></a>
+    <a class="brand" href="/">وُدّا<small>قرآن، مداحی و آموزش آنلاین</small></a>
     <span class="mode-badge">ایزوله · پورت ۳۵۰۰</span>
-    <nav class="topnav" aria-label="صفحات پیش‌نمایش">
-      <a href="index.html?XTransformPort=3500" data-page="index">خانه</a>
-      <a href="curriculum.html?XTransformPort=3500" class="on" data-page="curriculum">سرفصل‌ها</a>
-      <a href="specialist.html?XTransformPort=3500" data-page="specialist">تخصص‌ها</a>
-      <a href="teacher.html?XTransformPort=3500" data-page="teacher">استاد</a>
-      <a href="store.html?XTransformPort=3500" data-page="store">فروشگاه</a>
-      <a href="book.html?XTransformPort=3500" data-page="book">رزرو</a>
-      <a href="ordercenter.html?XTransformPort=3500" data-page="ordercenter">سفارش‌ها</a>
-      <a href="payment.html?XTransformPort=3500" data-page="payment">پرداخت</a>
-      <a href="chat.html?XTransformPort=3500" data-page="chat">چت</a>
-      <a href="session.html?XTransformPort=3500" data-page="session">جلسه زنده</a>
-      <a href="assessment.html?XTransformPort=3500" data-page="assessment">سنجش</a>
-      <a href="panel-teacher.html?XTransformPort=3500" data-page="panel-teacher">پنل استاد</a>
-      <a href="panel-admin.html?XTransformPort=3500" data-page="panel-admin">پنل مدیریت</a>
-      <a href="credit.html?XTransformPort=3500" data-page="credit">کیف پول</a>
-      <a href="profile.html?XTransformPort=3500" data-page="profile">پروفایل</a>
-      <a href="sitemap.html?XTransformPort=3500" data-page="sitemap">نقشه ساختار</a>
+    <nav class="topnav" aria-label="ناوبری اصلی">
+      <a href="/" data-page="index">خانه</a>
+      <a href="/curriculum.html" class="on" data-page="curriculum">سرفصل‌ها</a>
+      <a href="/panel/teacher/register" data-page="specialist">تخصص‌ها</a>
+      <a href="/teacher.html" data-page="teacher">استاد</a>
+      <a href="/search.html" data-page="store">فروشگاه</a>
+      <a href="/panel/user/book" data-page="book">رزرو</a>
+      <a href="/panel/user" data-page="ordercenter">سفارش‌ها</a>
+      <a href="/panel/user/wallet" data-page="payment">پرداخت</a>
+      <a href="/panel/user" data-page="chat">چت</a>
+      <a href="/panel/user/sessions" data-page="session">جلسه زنده</a>
+      <a href="assessment.html" data-page="assessment">سنجش</a>
+      <a href="/panel/teacher" data-page="panel-teacher">پنل استاد</a>
+      <a href="/panel/admin" data-page="panel-admin">پنل مدیریت</a>
+      <a href="/panel/user/wallet" data-page="credit">کیف پول</a>
+      <a href="/panel/user/settings" data-page="profile">پروفایل</a>
+      <a href="sitemap.html" data-page="sitemap">نقشه ساختار</a>
     </nav>
-    <button class="anno-toggle" id="annoToggle" aria-pressed="true">حاشیه‌نویسی: روشن</button>
+    
   </div>
 </header>
 
 <main class="container">
   <div class="crumb-wrap">
-    <div class="crumbs"><a href="index.html?XTransformPort=3500">خانه</a> / سرفصل‌های مصوب</div>
+    <div class="crumbs"><a href="/">خانه</a> / سرفصل‌های مصوب</div>
   </div>
 
   <section class="hero-cur">
-    <h1>علوم و فنون تلاوت قرآن کریم<span class="ann-wrap"><button class="ann-btn" aria-label="توضیح">؟</button><span class="ann-pop">سرفصل‌های وُدّا عیناً از آیین‌نامه داوری مسابقات قرآن کریم (ستاد عالی هماهنگی مسابقات قرآنی جمهوری اسلامی ایران — ویرایش خرداد ۱۴۰۱) استخراج شده‌اند؛ امتیازها، شاخص‌ها و مباحث اصلی/فرعی هر رشته مطابق همان سند رسمی است.</span></span></h1>
+    <h1>علوم و فنون تلاوت قرآن کریم</h1>
     <p class="sub">تمام آموزش‌ها، جلسات و مشاوره‌های وُدّا بر پایه <b>رئوس مصوب قرآنی کشور</b> سامان داده شده است: رشته‌های قرائت (تحقیق و ترتیل)، حفظ، همخوانی و همسرایی، اذان، دعاخوانی، ابتهال و مناجات — با شاخص‌های رسمی ارزیابی، مباحث اصلی و فرعی، رده‌بندی آموزشی و مقامات لحن.</p>
     <div class="src-chips">
       <span class="chip">مبنا: <b>آیین‌نامه داوری مسابقات قرآن کریم</b> — ستاد عالی هماهنگی مسابقات قرآنی ج.ا.ا</span>
@@ -699,7 +689,7 @@ details.acc[open] summary{background:var(--olive-50);border-bottom:1px solid var
         <li><b>خروج از مقام یا انتقال ناهمگون</b> = کسر امتیاز در همه سطوح</li>
       </ul>
     </div></details>
-    <div class="chips" style="margin-top:12px"><span class="badge b-olive">ارزیابی در وُدّا: آزمون سنجش تحقیق</span> <a class="chip" href="assessment.html?XTransformPort=3500">آزمون سنجش ←</a> <a class="chip" href="book.html?XTransformPort=3500">رزرو جلسه تحقیق ←</a></div>
+    <div class="chips" style="margin-top:12px"><span class="badge b-olive">ارزیابی در وُدّا: آزمون سنجش تحقیق</span> <a class="chip" href="assessment.html">آزمون سنجش ←</a> <a class="chip" href="/panel/user/book">رزرو جلسه تحقیق ←</a></div>
   </section>
 
   <!-- ═══ ترتیل ═══ -->
@@ -726,7 +716,7 @@ details.acc[open] summary{background:var(--olive-50);border-bottom:1px solid var
         <li><b>الگوی لحنی محدودتر:</b> تلاوت یک‌دست با ردیف ثابت؛ مقامات رایج: بیات و رست</li>
       </ul>
     </div></details>
-    <div class="chips" style="margin-top:12px"><a class="chip" href="book.html?XTransformPort=3500">رزرو جلسه ترتیل ←</a> <a class="chip" href="specialist.html?XTransformPort=3500">صفحه رشته ترتیل ←</a></div>
+    <div class="chips" style="margin-top:12px"><a class="chip" href="/panel/user/book">رزرو جلسه ترتیل ←</a> <a class="chip" href="/panel/teacher/register">صفحه رشته ترتیل ←</a></div>
   </section>
 
   <!-- ═══ حفظ ═══ -->
@@ -762,7 +752,7 @@ details.acc[open] summary{background:var(--olive-50);border-bottom:1px solid var
         <li>آزمون ورود رده‌ها: بخش شفاهی (تلاوت محفوظات) + بخش کتبی (متن و علوم قرآنی پایه)</li>
       </ul>
     </div></details>
-    <div class="chips" style="margin-top:12px"><a class="chip" href="book.html?XTransformPort=3500">رزرو جلسه حفظ ←</a> <a class="chip" href="assessment.html?XTransformPort=3500">سنجش سطح حفظ ←</a></div>
+    <div class="chips" style="margin-top:12px"><a class="chip" href="/panel/user/book">رزرو جلسه حفظ ←</a> <a class="chip" href="assessment.html">سنجش سطح حفظ ←</a></div>
   </section>
 
   <!-- ═══ اذان ═══ -->
@@ -788,7 +778,7 @@ details.acc[open] summary{background:var(--olive-50);border-bottom:1px solid var
         <li>حکم لحن در اذان: تلاوت آهنگین مجاز، تحریر و قفله هنری نامناسب</li>
       </ul>
     </div></details>
-    <div class="chips" style="margin-top:12px"><a class="chip" href="book.html?XTransformPort=3500">رزرو جلسه اذان ←</a></div>
+    <div class="chips" style="margin-top:12px"><a class="chip" href="/panel/user/book">رزرو جلسه اذان ←</a></div>
   </section>
 
   <!-- ═══ دعاخوانی ═══ -->
@@ -816,7 +806,7 @@ details.acc[open] summary{background:var(--olive-50);border-bottom:1px solid var
         <li>در تساوی امتیازات، اولویت رتبه: صحت قرائت و تلفظ ← صوت ← لحن ← وقف و ابتدا ← اصول اجراء</li>
       </ul>
     </div></details>
-    <div class="chips" style="margin-top:12px"><a class="chip" href="book.html?XTransformPort=3500">رزرو جلسه دعاخوانی ←</a></div>
+    <div class="chips" style="margin-top:12px"><a class="chip" href="/panel/user/book">رزرو جلسه دعاخوانی ←</a></div>
   </section>
 
   <!-- ═══ تواشیح ═══ -->
@@ -846,7 +836,7 @@ details.acc[open] summary{background:var(--olive-50);border-bottom:1px solid var
         <li>قطع برنامه توسط گروه به هر دلیل = حذف گروه</li>
       </ul>
     </div></details>
-    <div class="chips" style="margin-top:12px"><a class="chip" href="book.html?XTransformPort=3500">رزرو جلسه تواشیح ←</a></div>
+    <div class="chips" style="margin-top:12px"><a class="chip" href="/panel/user/book">رزرو جلسه تواشیح ←</a></div>
   </section>
 
   <!-- ═══ ابتهال ═══ -->
@@ -865,7 +855,7 @@ details.acc[open] summary{background:var(--olive-50);border-bottom:1px solid var
       <div class="crit"><div class="crit-top"><b>تأثیرگذاری و تضرع</b><span class="num">اصلی</span></div><div class="track"><i style="width:25%"></i></div><p>جاذبه کلی، حس معنوی، تأکیدات مفهومی</p></div>
       <div class="crit"><div class="crit-top"><b>آداب اجراء</b><span class="num">بایدها و نبایدها</span></div><div class="track"><i style="width:15%"></i></div><p>رعایت شئون قرآنی؛ پرهیز از آهنگ‌های مغایر (سند شورای عالی قرآن)</p></div>
     </div>
-    <div class="chips" style="margin-top:12px"><a class="chip" href="book.html?XTransformPort=3500">رزرو جلسه ابتهال ←</a> <a class="chip" href="book.html?XTransformPort=3500">رزرو جلسه مناجات ←</a></div>
+    <div class="chips" style="margin-top:12px"><a class="chip" href="/panel/user/book">رزرو جلسه ابتهال ←</a> <a class="chip" href="/panel/user/book">رزرو جلسه مناجات ←</a></div>
   </section>
 
   <!-- ═══ مقامات ═══ -->
@@ -950,48 +940,27 @@ details.acc[open] summary{background:var(--olive-50);border-bottom:1px solid var
       <p>جلسه آنلاین با استادان دارای مدرک رسمی رده — سرفصل هر جلسه از همین رئوس مصوب پیروی می‌کند.</p>
     </div>
     <div style="display:flex;gap:10px;flex-wrap:wrap">
-      <a class="btn btn-primary" href="book.html?XTransformPort=3500">رزرو جلسه در رشته مصوب</a>
-      <a class="btn btn-gold" href="assessment.html?XTransformPort=3500">آزمون تعیین رده</a>
+      <a class="btn btn-primary" href="/panel/user/book">رزرو جلسه در رشته مصوب</a>
+      <a class="btn btn-gold" href="assessment.html">آزمون تعیین رده</a>
     </div>
   </section>
 
-  <p class="src-note">مبنای محتوایی: آیین‌نامه داوری مسابقات قرآن کریم — ستاد عالی هماهنگی مسابقات قرآنی جمهوری اسلامی ایران (ویرایش خرداد ۱۴۰۱)؛ شیوه‌نامه صوت و لحن مسابقات؛ «تواشیح و ابتهال، بایدها و نبایدها» — شورای عالی قرآن؛ رویه آزمون‌های ورود دارالقرآن‌ها و مهد قرآن‌ها؛ آموزش‌های صوت و لحن (سلسله‌درس‌های مقامات). این صفحه پیش‌نمایش ساختاری REA است.</p>
+  <p class="src-note">مبنای محتوایی: آیین‌نامه داوری مسابقات قرآن کریم — ستاد عالی هماهنگی مسابقات قرآنی جمهوری اسلامی ایران (ویرایش خرداد ۱۴۰۱)؛ شیوه‌نامه صوت و لحن مسابقات؛ «تواشیح و ابتهال، بایدها و نبایدها» — شورای عالی قرآن؛ رویه آزمون‌های ورود دارالقرآن‌ها و مهد قرآن‌ها؛ آموزش‌های صوت و لحن (سلسله‌درس‌های مقامات).</p>
 </main>
 
 <footer class="foot">
   <div class="container">
     <span>وُدّا — جلسه آنلاین قرآن و مداحی با استادان برتر</span>
-    <span>پیش‌نمایش REA · شاخه <b dir="ltr">rea/preview</b> · محتوای ساختگی</span>
+    <span>وُدّا — جلسه آنلاین قرآن و مداحی</span>
   </div>
 </footer>
 
 <script>
-/* REA Preview shared runtime — vodda2/preview/assets/rea.js */
+/* وُدّا — رانتایم مشترک */
 (function(){
   'use strict';
 
-  /* حاشیه‌نویسی‌ها */
-  var t=document.getElementById('annoToggle');
-  if(t){
-    t.addEventListener('click',function(){
-      var on=document.body.classList.toggle('no-anno');
-      t.setAttribute('aria-pressed',String(!on));
-      t.textContent='حاشیه‌نویسی: '+(on?'خاموش':'روشن');
-    });
-  }
-  document.addEventListener('click',function(e){
-    var b=e.target.closest?e.target.closest('.ann-btn'):null;
-    if(b){
-      e.stopPropagation();
-      var w=b.parentElement,open=w.classList.contains('open');
-      document.querySelectorAll('.ann-wrap.open').forEach(function(x){x.classList.remove('open')});
-      if(!open)w.classList.add('open');
-      return;
-    }
-    if(!(e.target.closest&&e.target.closest('.ann-pop'))){
-      document.querySelectorAll('.ann-wrap.open').forEach(function(x){x.classList.remove('open')});
-    }
-  });
+  
 
   /* ناوبری فعال بر اساس body[data-page] */
   var page=document.body.getAttribute('data-page');

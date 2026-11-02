@@ -21,11 +21,11 @@
    تم: پوسته نوترال اسنپ‌داکتر (بک‌گراند #f6f7f9، کارت سفید، شعاع ۱۶)
    با جایگزینی آبی #00bef2 ← سبز. فونت: IRANYekanXFaNum (برند واقعی)
    ═══════════════════════════════════════════════════════════ */
-@font-face{font-family:'IRANYekanXFaNum';src:url('fonts/IRANYekanXFaNum-Regular.ttf?XTransformPort=3500') format('truetype');font-weight:400;font-display:swap}
-@font-face{font-family:'IRANYekanXFaNum';src:url('fonts/IRANYekanXFaNum-Medium.ttf?XTransformPort=3500') format('truetype');font-weight:500;font-display:swap}
-@font-face{font-family:'IRANYekanXFaNum';src:url('fonts/IRANYekanXFaNum-DemiBold.ttf?XTransformPort=3500') format('truetype');font-weight:600;font-display:swap}
-@font-face{font-family:'IRANYekanXFaNum';src:url('fonts/IRANYekanXFaNum-Bold.ttf?XTransformPort=3500') format('truetype');font-weight:700;font-display:swap}
-@font-face{font-family:'IRANYekanXFaNum';src:url('fonts/IRANYekanXFaNum-ExtraBold.ttf?XTransformPort=3500') format('truetype');font-weight:800;font-display:swap}
+@font-face{font-family:'IRANYekanXFaNum';src:url('fonts/IRANYekanXFaNum-Regular.ttf') format('truetype');font-weight:400;font-display:swap}
+@font-face{font-family:'IRANYekanXFaNum';src:url('fonts/IRANYekanXFaNum-Medium.ttf') format('truetype');font-weight:500;font-display:swap}
+@font-face{font-family:'IRANYekanXFaNum';src:url('fonts/IRANYekanXFaNum-DemiBold.ttf') format('truetype');font-weight:600;font-display:swap}
+@font-face{font-family:'IRANYekanXFaNum';src:url('fonts/IRANYekanXFaNum-Bold.ttf') format('truetype');font-weight:700;font-display:swap}
+@font-face{font-family:'IRANYekanXFaNum';src:url('fonts/IRANYekanXFaNum-ExtraBold.ttf') format('truetype');font-weight:800;font-display:swap}
 :root{
   --bg:#f6f7f9;--surface:#fff;--line:#e8ebf0;--line2:#dfe3ea;
   --ink:#22262b;--ink2:#5a6472;--ink3:#98a1ad;
@@ -42,23 +42,6 @@ body{margin:0;font-family:var(--font);background:var(--bg);color:var(--ink);min-
 a{color:inherit;text-decoration:none}
 button{font-family:var(--font)}
 .wrap{max-width:1140px;margin:0 auto;padding:0 16px;width:100%}
-
-/* ─── نوار پیش‌نمایش REA (chrome خارج از آینه) ─── */
-.pvbar{background:var(--olive-deep);color:#cfd8c0;font-size:12px}
-.pvbar-in{display:flex;align-items:center;gap:10px;padding:7px 0;flex-wrap:wrap}
-.pvbar b{color:#fff;font-size:12px}
-.pvbar a{opacity:.85;padding:2px 8px;border-radius:999px;white-space:nowrap}
-.pvbar a:hover{background:rgba(255,255,255,.12);opacity:1}
-.pv-toggle{margin-inline-start:auto;background:transparent;border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:999px;padding:4px 12px;font-size:11.5px;cursor:pointer}
-.pv-toggle[aria-pressed="true"]{background:#fff;color:var(--olive-deep)}
-
-/* ─── حاشیه‌نویسی REA ─── */
-.ann-wrap{position:relative;display:inline-block}
-.ann-btn{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--gold);background:var(--gold-bg);color:var(--gold);font-size:12px;font-weight:700;cursor:pointer;line-height:1;vertical-align:middle;padding:0}
-.ann-pop{position:absolute;bottom:calc(100% + 8px);inset-inline-start:50%;transform:translateX(50%);background:var(--olive-deep);color:#fff;font-size:11.5px;line-height:1.7;padding:10px 12px;border-radius:12px;width:min(280px,74vw);z-index:80;display:none;box-shadow:var(--sh2);font-weight:400}
-.ann-wrap.open .ann-pop{display:block}
-body.no-anno .ann-wrap{display:none}
-.ann-pop::after{content:"";position:absolute;top:100%;inset-inline-start:50%;transform:translateX(50%);border:6px solid transparent;border-top-color:var(--olive-deep)}
 
 /* ─── بنر تبلیغاتی (الگوی banner اسنپ‌داکتر) ─── */
 .promo{background:linear-gradient(90deg,var(--brand-700),var(--brand));color:#fff;font-size:13px}
@@ -279,40 +262,27 @@ body.no-anno .ann-wrap{display:none}
 </head>
 <body data-page="index">
 
-<!-- نوار پیش‌نمایش REA — chrome؛ بخشی از آینه ساختاری نیست -->
-<div class="pvbar"><div class="wrap pvbar-in">
-  <b>پیش‌نمایش REA</b><span>فاز ۳ · لندینگ = آینه snapp.doctor با سبزِ وُدّا</span>
-  <a href="specialist.html?XTransformPort=3500">تخصص‌ها</a>
-  <a href="teacher.html?XTransformPort=3500">استاد</a>
-  <a href="book.html?XTransformPort=3500">رزرو</a>
-  <a href="ordercenter.html?XTransformPort=3500">سفارش‌ها</a>
-  <a href="panel-teacher.html?XTransformPort=3500">پنل استاد</a>
-  <a href="panel-admin.html?XTransformPort=3500">پنل مدیریت</a>
-  <a href="sitemap.html?XTransformPort=3500">نقشه ساختار</a>
-  <button class="pv-toggle" id="annoToggle" aria-pressed="true">حاشیه‌نویسی: روشن</button>
-</div></div>
-
 <!-- الگو: نوار تبلیغاتی بالای صفحه اسنپ‌داکتر (banner) -->
 <div class="promo"><div class="wrap promo-in">
-  🎁 اولین جلسه‌ات را با ۲۰٪ تخفیف شروع کن — <a href="book.html?XTransformPort=3500">همین حالا رزرو کن</a>
+  🎁 اولین جلسه‌ات را با ۲۰٪ تخفیف شروع کن — <a href="/panel/user/book">همین حالا رزرو کن</a>
   <button class="promo-x" aria-label="بستن">✕</button>
 </div></div>
 
 <!-- الگو: هدر اسنپ‌داکتر = لوگو + ناوبری + انتخاب‌گر (شهر ← وُدّا: نوع جلسه) + ورود -->
 <header class="hdr"><div class="wrap hdr-in">
-  <a class="logo" href="index.html?XTransformPort=3500"><span class="logo-mark">و</span>وُدّا</a>
+  <a class="logo" href="/"><span class="logo-mark">و</span>وُدّا</a>
   <nav>
-    <a href="curriculum.html?XTransformPort=3500">سرفصل‌ها</a>
-    <a href="specialist.html?XTransformPort=3500">تخصص‌ها</a>
-    <a href="session.html?XTransformPort=3500">جلسه آنلاین</a>
-    <a href="book.html?XTransformPort=3500">رزرو جلسه</a>
-    <a href="store.html?XTransformPort=3500">فروشگاه</a>
-    <a href="assessment.html?XTransformPort=3500">سنجش</a>
+    <a href="/curriculum.html">سرفصل‌ها</a>
+    <a href="/panel/teacher/register">تخصص‌ها</a>
+    <a href="/panel/user/sessions">جلسه آنلاین</a>
+    <a href="/panel/user/book">رزرو جلسه</a>
+    <a href="/search.html">فروشگاه</a>
+    <a href="assessment.html">سنجش</a>
   </nav>
   <button class="loc" id="locBtn" aria-label="انتخاب نوع جلسه">📍 <span id="locTxt">تهران</span></button>
   <div class="auth">
-    <a class="btn btn-ghost" href="credit.html?XTransformPort=3500">کیف پول</a>
-    <a class="btn btn-brand" href="login.html?XTransformPort=3500">ورود | ثبت‌نام</a>
+    <a class="btn btn-ghost" href="/panel/user/wallet">کیف پول</a>
+    <a class="btn btn-brand" href="/panel/login">ورود | ثبت‌نام</a>
   </div>
 </div></header>
 
@@ -321,27 +291,27 @@ body.no-anno .ann-wrap{display:none}
        صفحه اصلی snapp.doctor با getServerSideProps رندر می‌شود (gssp:true) -->
   <section class="hero"><div class="wrap hero-in">
     <div>
-      <h1>جلسه آنلاین <em>قرآن</em> و مداحی،<br>با استادِ خودت، هر جا که هستی<span class="ann-wrap"><button class="ann-btn" aria-label="توضیح">؟</button><span class="ann-pop">الگوی هیرو snapp.doctor: تیتر ارزش پیشنهادی + جستجوی سراسری + چیپ‌های «جستجوهای پرطرفدار». در اسنپ‌داکتر متن واقعی: «مشاوره آنلاین پزشکی و روانشناسی» — اینجا همان ساختار با دامنه وُدّا. رندر صفحه اصلی: SSR (gssp:true) + کش CDN ۴۵ دقیقه.</span></span></h1>
+      <h1>جلسه آنلاین <em>قرآن</em> و مداحی،<br>با استادِ خودت، هر جا که هستی</h1>
       <p class="sub">به‌سادگی با بهترین استادان قرآن، تجوید و مداحی جلسه بگذارید؛ آنلاین یا حضوری، همین حالا.</p>
       <form class="search" id="searchForm" role="search">
         <input id="q" type="search" placeholder="جستجو در وُدّا: استاد، تخصص، مسیر یادگیری، خدمت…" aria-label="جستجو">
         <button class="go" type="submit">جستجو</button>
       </form>
       <div class="pop">جستجوهای پرطرفدار:
-        <a href="specialist.html?XTransformPort=3500">روخوانی</a>
-        <a href="specialist.html?XTransformPort=3500">تجوید</a>
-        <a href="specialist.html?XTransformPort=3500">حفظ جزء ۳۰</a>
-        <a href="specialist.html?XTransformPort=3500">مداحی</a>
-        <a href="specialist.html?XTransformPort=3500">قرآن کودکان</a>
+        <a href="/panel/teacher/register">روخوانی</a>
+        <a href="/panel/teacher/register">تجوید</a>
+        <a href="/panel/teacher/register">حفظ جزء ۳۰</a>
+        <a href="/panel/teacher/register">مداحی</a>
+        <a href="/panel/teacher/register">قرآن کودکان</a>
       </div>
     </div>
     <div class="phone-wrap">
       <div class="phone" aria-hidden="true"><div class="scr">
         <div class="scr-h"><b>وُدّا</b><span>🔔</span></div>
         <div class="scr-t">استادان آنلاین — آماده جلسه</div>
-        <div class="scr-teacher"><span class="scr-av"><img src="img/av-kobra.jpg?XTransformPort=3500" alt=""></span><div><b>استاد کبری مرتضوی</b><span>تجوید و صوت و لحن</span></div><span class="scr-price">۲۲۰٬۰۰۰</span></div>
-        <div class="scr-teacher"><span class="scr-av"><img src="img/av-abdolrahman.jpg?XTransformPort=3500" alt=""></span><div><b>استاد عبدالرحمن حیدری</b><span>حفظ قرآن</span></div><span class="scr-price">۲۵۰٬۰۰۰</span></div>
-        <div class="scr-teacher"><span class="scr-av"><img src="img/av-sakine.jpg?XTransformPort=3500" alt=""></span><div><b>استاد سکینه موسوی</b><span>قرآن کودکان</span></div><span class="scr-price">۱۶۰٬۰۰۰</span></div>
+        <div class="scr-teacher"><span class="scr-av"><img src="img/av-kobra.jpg" alt=""></span><div><b>استاد کبری مرتضوی</b><span>تجوید و صوت و لحن</span></div><span class="scr-price">۲۲۰٬۰۰۰</span></div>
+        <div class="scr-teacher"><span class="scr-av"><img src="img/av-abdolrahman.jpg" alt=""></span><div><b>استاد عبدالرحمن حیدری</b><span>حفظ قرآن</span></div><span class="scr-price">۲۵۰٬۰۰۰</span></div>
+        <div class="scr-teacher"><span class="scr-av"><img src="img/av-sakine.jpg" alt=""></span><div><b>استاد سکینه موسوی</b><span>قرآن کودکان</span></div><span class="scr-price">۱۶۰٬۰۰۰</span></div>
         <div class="scr-cta">رزرو جلسه</div>
         <div class="scr-tabs"><span class="on">خانه</span><span>جلسات</span><span>چت‌ها</span><span>پروفایل</span></div>
       </div></div>
@@ -353,13 +323,13 @@ body.no-anno .ann-wrap{display:none}
   <div class="wrap">
     <!-- الگو: ردیف سرویس‌های اسنپ‌داکتر (ویزیت از راه دور / نوبت‌دهی / داروخانه …) اقتباس به خدمات وُدّا -->
     <section class="sec">
-      <div class="sec-head"><h2>خدمات وُدّا</h2><span class="ann-wrap"><button class="ann-btn" aria-label="توضیح">؟</button><span class="ann-pop">الگوی ردیف سرویس snapp.doctor: کارت‌های آیکون‌دار میان‌بر به هر نوع سفارش. در اسنپ‌داکتر: ویزیت از راه دور، نوبت‌دهی مطب، داروخانه، آزمایشگاه، پرستار — اینجا همان ردیف با خدمات قرآنی. هر کارت = ورودی به /document/orders/[type].</span></span></div>
+      <div class="sec-head"><h2>خدمات وُدّا</h2></div>
       <div class="svcs" id="svcs">
-        <a class="svc" href="session.html?XTransformPort=3500"><span class="ic"><img src="img/sv-video.jpg?XTransformPort=3500" alt="جلسه آنلاین تصویری"></span><b>جلسه آنلاین تصویری</b><span>از خانه، با هر استادی</span></a>
-        <a class="svc" href="book.html?XTransformPort=3500"><span class="ic"><img src="img/sv-reserve.jpg?XTransformPort=3500" alt="رزرو جلسه حضوری"></span><b>رزرو جلسه حضوری</b><span>نوبت‌دهی در محل استاد</span></a>
-        <a class="svc" href="orders.html?XTransformPort=3500&type=instant"><span class="ic"><img src="img/sv-instant.jpg?XTransformPort=3500" alt="پرسش فوری متنی"></span><b>پرسش فوری متنی</b><span>پاسخ در چند دقیقه</span></a>
-        <a class="svc" href="orders.html?XTransformPort=3500&type=text"><span class="ic"><img src="img/sv-text.jpg?XTransformPort=3500" alt="تصحیح تلاوت"></span><b>تصحیح تلاوت</b><span>ارسال صوت، بازخورد مکتوب</span></a>
-        <a class="svc" href="assessment.html?XTransformPort=3500"><span class="ic"><img src="img/sv-assess.jpg?XTransformPort=3500" alt="سنجش و آزمون"></span><b>سنجش و آزمون</b><span>سطح‌سنجی و گواهی</span></a>
+        <a class="svc" href="/panel/user/sessions"><span class="ic"><img src="img/sv-video.jpg" alt="جلسه آنلاین تصویری"></span><b>جلسه آنلاین تصویری</b><span>از خانه، با هر استادی</span></a>
+        <a class="svc" href="/panel/user/book"><span class="ic"><img src="img/sv-reserve.jpg" alt="رزرو جلسه حضوری"></span><b>رزرو جلسه حضوری</b><span>نوبت‌دهی در محل استاد</span></a>
+        <a class="svc" href="/panel/user/sessions"><span class="ic"><img src="img/sv-instant.jpg" alt="پرسش فوری متنی"></span><b>پرسش فوری متنی</b><span>پاسخ در چند دقیقه</span></a>
+        <a class="svc" href="/panel/user/sessions"><span class="ic"><img src="img/sv-text.jpg" alt="تصحیح تلاوت"></span><b>تصحیح تلاوت</b><span>ارسال صوت، بازخورد مکتوب</span></a>
+        <a class="svc" href="assessment.html"><span class="ic"><img src="img/sv-assess.jpg" alt="سنجش و آزمون"></span><b>سنجش و آزمون</b><span>سطح‌سنجی و گواهی</span></a>
       </div>
     </section>
 
@@ -367,21 +337,21 @@ body.no-anno .ann-wrap{display:none}
          کارت: عکس + نقطه سبز آنلاین + نام + تخصص + امتیاز + قیمت + دکمه چت/تماس تصویری -->
     <section class="sec">
       <div class="sec-head">
-        <h2>استادان آنلاین</h2><span class="ann-wrap"><button class="ann-btn" aria-label="توضیح">؟</button><span class="ann-pop">الگوی کلیدی snapp.doctor: کاروسل «مشاوران آنلاین» — Endpoint زنده: GET /consultancy/api/client/v2/consultant-carousel. کارت = آواتار + نقطه سبز آنلاین + نام + تخصص + امتیاز + قیمت + دکمه‌های چت/تماس تصویری. کلیک روی استاد → پروفایل (SSR/SEO).</span></span>
-        <a class="more" href="search.html?XTransformPort=3500">مشاهده همه</a>
+        <h2>استادان آنلاین</h2>
+        <a class="more" href="/search.html">مشاهده همه</a>
       </div>
       <div class="car-pos">
         <button class="car-arrow n" data-car="onlineCar" data-dir="1" aria-label="بعدی">‹</button>
         <button class="car-arrow p" data-car="onlineCar" data-dir="-1" aria-label="قبلی">›</button>
         <div class="car" id="onlineCar">
-          <a class="t-card" href="teacher.html?XTransformPort=3500"><span class="online-badge"><span class="dot"></span>آنلاین</span><div class="t-av pulse"><img src="img/av-kobra.jpg?XTransformPort=3500" alt="استاد کبری مرتضوی"></div><h3>استاد کبری مرتضوی</h3><div class="sp">تجوید و صوت و لحن · ۹ سال سابقه</div><div class="stars">★★★★★ <span>۴٫۹ (۲۱۴ نظر)</span></div><div class="price">از <b>۲۲۰٬۰۰۰</b> تومان / جلسه</div><div class="t-acts"><button class="btn btn-ghost" data-chat>💬 چت</button><button class="btn btn-brand" data-video>🎥 جلسه تصویری</button></div></a>
-          <a class="t-card" href="teacher.html?XTransformPort=3500"><span class="online-badge"><span class="dot"></span>آنلاین</span><div class="t-av pulse"><img src="img/av-abdolrahman.jpg?XTransformPort=3500" alt="استاد عبدالرحمن حیدری"></div><h3>استاد عبدالرحمن حیدری</h3><div class="sp">حفظ قرآن · مربی مسابقات</div><div class="stars">★★★★★ <span>۴٫۸ (۱۶۸ نظر)</span></div><div class="price">از <b>۲۵۰٬۰۰۰</b> تومان / جلسه</div><div class="t-acts"><button class="btn btn-ghost" data-chat>💬 چت</button><button class="btn btn-brand" data-video>🎥 جلسه تصویری</button></div></a>
-          <a class="t-card" href="teacher.html?XTransformPort=3500"><span class="online-badge"><span class="dot"></span>آنلاین</span><div class="t-av pulse"><img src="img/av-sakine.jpg?XTransformPort=3500" alt="استاد سکینه موسوی"></div><h3>استاد سکینه موسوی</h3><div class="sp">قرآن کودکان · بازی‌محور</div><div class="stars">★★★★☆ <span>۴٫۷ (۹۹ نظر)</span></div><div class="price">از <b>۱۶۰٬۰۰۰</b> تومان / جلسه</div><div class="t-acts"><button class="btn btn-ghost" data-chat>💬 چت</button><button class="btn btn-brand" data-video>🎥 جلسه تصویری</button></div></a>
-          <a class="t-card" href="teacher.html?XTransformPort=3500"><span class="online-badge"><span class="dot"></span>آنلاین</span><div class="t-av pulse"><img src="img/av-yaser.jpg?XTransformPort=3500" alt="استاد یاسر رحمانی"></div><h3>استاد یاسر رحمانی</h3><div class="sp">روخوانی و روان‌خوانی</div><div class="stars">★★★★★ <span>۴٫۹ (۲۴۰ نظر)</span></div><div class="price">از <b>۱۸۰٬۰۰۰</b> تومان / جلسه</div><div class="t-acts"><button class="btn btn-ghost" data-chat>💬 چت</button><button class="btn btn-brand" data-video>🎥 جلسه تصویری</button></div></a>
-          <a class="t-card" href="teacher.html?XTransformPort=3500"><span class="online-badge"><span class="dot"></span>آنلاین</span><div class="t-av pulse"><img src="img/av-masoume.jpg?XTransformPort=3500" alt="استاد معصومه محمدی"></div><h3>استاد معصومه محمدی</h3><div class="sp">مفاهیم و تفسیر · دانشگاه</div><div class="stars">★★★★★ <span>۴٫۸ (۱۳۰ نظر)</span></div><div class="price">از <b>۲۰۰٬۰۰۰</b> تومان / جلسه</div><div class="t-acts"><button class="btn btn-ghost" data-chat>💬 چت</button><button class="btn btn-brand" data-video>🎥 جلسه تصویری</button></div></a>
-          <a class="t-card" href="teacher.html?XTransformPort=3500"><span class="online-badge"><span class="dot"></span>آنلاین</span><div class="t-av pulse"><img src="img/av-hossein.jpg?XTransformPort=3500" alt="استاد حسین قاسمی"></div><h3>استاد حسین قاسمی</h3><div class="sp">مداحی و آوای مجلسی</div><div class="stars">★★★★★ <span>۴٫۹ (۱۹۰ نظر)</span></div><div class="price">از <b>۲۳۰٬۰۰۰</b> تومان / جلسه</div><div class="t-acts"><button class="btn btn-ghost" data-chat>💬 چت</button><button class="btn btn-brand" data-video>🎥 جلسه تصویری</button></div></a>
-          <a class="t-card" href="teacher.html?XTransformPort=3500"><span class="online-badge"><span class="dot"></span>آنلاین</span><div class="t-av pulse"><img src="img/av-fateme.jpg?XTransformPort=3500" alt="استاد فاطمه کریمی"></div><h3>استاد فاطمه کریمی</h3><div class="sp">روخوانی نوجوانان</div><div class="stars">★★★★☆ <span>۴٫۶ (۸۷ نظر)</span></div><div class="price">از <b>۱۵۰٬۰۰۰</b> تومان / جلسه</div><div class="t-acts"><button class="btn btn-ghost" data-chat>💬 چت</button><button class="btn btn-brand" data-video>🎥 جلسه تصویری</button></div></a>
-          <a class="t-card" href="teacher.html?XTransformPort=3500"><span class="online-badge"><span class="dot"></span>آنلاین</span><div class="t-av pulse"><img src="img/av-ahmad.jpg?XTransformPort=3500" alt="استاد احمد شریفی"></div><h3>استاد احمد شریفی</h3><div class="sp">تجوید · مصحح قرآن</div><div class="stars">★★★★★ <span>۴٫۸ (۱۵۵ نظر)</span></div><div class="price">از <b>۲۱۰٬۰۰۰</b> تومان / جلسه</div><div class="t-acts"><button class="btn btn-ghost" data-chat>💬 چت</button><button class="btn btn-brand" data-video>🎥 جلسه تصویری</button></div></a>
+          <a class="t-card" href="/teacher.html"><span class="online-badge"><span class="dot"></span>آنلاین</span><div class="t-av pulse"><img src="img/av-kobra.jpg" alt="استاد کبری مرتضوی"></div><h3>استاد کبری مرتضوی</h3><div class="sp">تجوید و صوت و لحن · ۹ سال سابقه</div><div class="stars">★★★★★ <span>۴٫۹ (۲۱۴ نظر)</span></div><div class="price">از <b>۲۲۰٬۰۰۰</b> تومان / جلسه</div><div class="t-acts"><button class="btn btn-ghost" data-chat>💬 چت</button><button class="btn btn-brand" data-video>🎥 جلسه تصویری</button></div></a>
+          <a class="t-card" href="/teacher.html"><span class="online-badge"><span class="dot"></span>آنلاین</span><div class="t-av pulse"><img src="img/av-abdolrahman.jpg" alt="استاد عبدالرحمن حیدری"></div><h3>استاد عبدالرحمن حیدری</h3><div class="sp">حفظ قرآن · مربی مسابقات</div><div class="stars">★★★★★ <span>۴٫۸ (۱۶۸ نظر)</span></div><div class="price">از <b>۲۵۰٬۰۰۰</b> تومان / جلسه</div><div class="t-acts"><button class="btn btn-ghost" data-chat>💬 چت</button><button class="btn btn-brand" data-video>🎥 جلسه تصویری</button></div></a>
+          <a class="t-card" href="/teacher.html"><span class="online-badge"><span class="dot"></span>آنلاین</span><div class="t-av pulse"><img src="img/av-sakine.jpg" alt="استاد سکینه موسوی"></div><h3>استاد سکینه موسوی</h3><div class="sp">قرآن کودکان · بازی‌محور</div><div class="stars">★★★★☆ <span>۴٫۷ (۹۹ نظر)</span></div><div class="price">از <b>۱۶۰٬۰۰۰</b> تومان / جلسه</div><div class="t-acts"><button class="btn btn-ghost" data-chat>💬 چت</button><button class="btn btn-brand" data-video>🎥 جلسه تصویری</button></div></a>
+          <a class="t-card" href="/teacher.html"><span class="online-badge"><span class="dot"></span>آنلاین</span><div class="t-av pulse"><img src="img/av-yaser.jpg" alt="استاد یاسر رحمانی"></div><h3>استاد یاسر رحمانی</h3><div class="sp">روخوانی و روان‌خوانی</div><div class="stars">★★★★★ <span>۴٫۹ (۲۴۰ نظر)</span></div><div class="price">از <b>۱۸۰٬۰۰۰</b> تومان / جلسه</div><div class="t-acts"><button class="btn btn-ghost" data-chat>💬 چت</button><button class="btn btn-brand" data-video>🎥 جلسه تصویری</button></div></a>
+          <a class="t-card" href="/teacher.html"><span class="online-badge"><span class="dot"></span>آنلاین</span><div class="t-av pulse"><img src="img/av-masoume.jpg" alt="استاد معصومه محمدی"></div><h3>استاد معصومه محمدی</h3><div class="sp">مفاهیم و تفسیر · دانشگاه</div><div class="stars">★★★★★ <span>۴٫۸ (۱۳۰ نظر)</span></div><div class="price">از <b>۲۰۰٬۰۰۰</b> تومان / جلسه</div><div class="t-acts"><button class="btn btn-ghost" data-chat>💬 چت</button><button class="btn btn-brand" data-video>🎥 جلسه تصویری</button></div></a>
+          <a class="t-card" href="/teacher.html"><span class="online-badge"><span class="dot"></span>آنلاین</span><div class="t-av pulse"><img src="img/av-hossein.jpg" alt="استاد حسین قاسمی"></div><h3>استاد حسین قاسمی</h3><div class="sp">مداحی و آوای مجلسی</div><div class="stars">★★★★★ <span>۴٫۹ (۱۹۰ نظر)</span></div><div class="price">از <b>۲۳۰٬۰۰۰</b> تومان / جلسه</div><div class="t-acts"><button class="btn btn-ghost" data-chat>💬 چت</button><button class="btn btn-brand" data-video>🎥 جلسه تصویری</button></div></a>
+          <a class="t-card" href="/teacher.html"><span class="online-badge"><span class="dot"></span>آنلاین</span><div class="t-av pulse"><img src="img/av-fateme.jpg" alt="استاد فاطمه کریمی"></div><h3>استاد فاطمه کریمی</h3><div class="sp">روخوانی نوجوانان</div><div class="stars">★★★★☆ <span>۴٫۶ (۸۷ نظر)</span></div><div class="price">از <b>۱۵۰٬۰۰۰</b> تومان / جلسه</div><div class="t-acts"><button class="btn btn-ghost" data-chat>💬 چت</button><button class="btn btn-brand" data-video>🎥 جلسه تصویری</button></div></a>
+          <a class="t-card" href="/teacher.html"><span class="online-badge"><span class="dot"></span>آنلاین</span><div class="t-av pulse"><img src="img/av-ahmad.jpg" alt="استاد احمد شریفی"></div><h3>استاد احمد شریفی</h3><div class="sp">تجوید · مصحح قرآن</div><div class="stars">★★★★★ <span>۴٫۸ (۱۵۵ نظر)</span></div><div class="price">از <b>۲۱۰٬۰۰۰</b> تومان / جلسه</div><div class="t-acts"><button class="btn btn-ghost" data-chat>💬 چت</button><button class="btn btn-brand" data-video>🎥 جلسه تصویری</button></div></a>
         </div>
       </div>
     </section>
@@ -389,25 +359,25 @@ body.no-anno .ann-wrap{display:none}
     <!-- الگو: کاروسل تخصص اسنپ‌داکتر → /specialist/[key] (صفحات فرود SEO) -->
     <section class="sec">
       <div class="sec-head">
-        <h2>رشته‌های مصوب قرآنی</h2><span class="ann-wrap"><button class="ann-btn" aria-label="توضیح">؟</button><span class="ann-pop">رشته‌ها و ترتیبشان از آیین‌نامه داوری مسابقات قرآن کریم (ستاد عالی هماهنگی مسابقات قرآنی ج.ا.ا — ویرایش ۱۴۰۱) استخراج شده: قرائت تحقیق و ترتیل، حفظ، اذان، دعاخوانی، همخوانی و همسرایی، ابتهال و مناجات. هر کارت → صفحه فرود /t/[key].</span></span>
-        <a class="more" href="curriculum.html?XTransformPort=3500">سرفصل‌های مصوب</a>
+        <h2>رشته‌های مصوب قرآنی</h2>
+        <a class="more" href="/curriculum.html">سرفصل‌های مصوب</a>
       </div>
       <div class="car-pos">
         <button class="car-arrow n" data-car="specCar" data-dir="1" aria-label="بعدی">‹</button>
         <button class="car-arrow p" data-car="specCar" data-dir="-1" aria-label="قبلی">›</button>
         <div class="car" id="specCar">
-          <a class="spec-card" href="specialist.html?XTransformPort=3500"><span class="ic"><img src="img/sp-telavat.jpg?XTransformPort=3500" alt="تلاوت تحقیق"></span><b>تلاوت تحقیق</b><span>۳۸ استاد</span></a>
-          <a class="spec-card" href="specialist.html?XTransformPort=3500"><span class="ic"><img src="img/sp-tajvid.jpg?XTransformPort=3500" alt="ترتیل و تجوید"></span><b>ترتیل و تجوید</b><span>۲۴ استاد</span></a>
-          <a class="spec-card" href="specialist.html?XTransformPort=3500"><span class="ic"><img src="img/sp-hifz.jpg?XTransformPort=3500" alt="حفظ قرآن"></span><b>حفظ قرآن</b><span>۱۷ استاد</span></a>
-          <a class="spec-card" href="specialist.html?XTransformPort=3500"><span class="ic"><img src="img/sp-azan.jpg?XTransformPort=3500" alt="اذان و مکبری"></span><b>اذان و مکبری</b><span>۶ استاد</span></a>
-          <a class="spec-card" href="specialist.html?XTransformPort=3500"><span class="ic"><img src="img/sp-dua.jpg?XTransformPort=3500" alt="دعاخوانی"></span><b>دعاخوانی</b><span>۸ استاد</span></a>
-          <a class="spec-card" href="specialist.html?XTransformPort=3500"><span class="ic"><img src="img/sp-tavashih.jpg?XTransformPort=3500" alt="تواشیح و همخوانی"></span><b>تواشیح و همخوانی</b><span>۵ گروه</span></a>
-          <a class="spec-card" href="specialist.html?XTransformPort=3500"><span class="ic"><img src="img/sp-ibtihal.jpg?XTransformPort=3500" alt="ابتهال"></span><b>ابتهال</b><span>۷ استاد</span></a>
-          <a class="spec-card" href="specialist.html?XTransformPort=3500"><span class="ic"><img src="img/sp-monajat.jpg?XTransformPort=3500" alt="مناجات‌خوانی"></span><b>مناجات‌خوانی</b><span>۶ استاد</span></a>
-          <a class="spec-card" href="specialist.html?XTransformPort=3500"><span class="ic"><img src="img/sp-tafsir.jpg?XTransformPort=3500" alt="مفاهیم و تفسیر"></span><b>مفاهیم و تفسیر</b><span>۱۲ استاد</span></a>
-          <a class="spec-card" href="specialist.html?XTransformPort=3500"><span class="ic"><img src="img/sp-kids.jpg?XTransformPort=3500" alt="قرآن کودکان"></span><b>قرآن کودکان</b><span>۹ استاد</span></a>
-          <a class="spec-card" href="specialist.html?XTransformPort=3500"><span class="ic"><img src="img/sp-madahi.jpg?XTransformPort=3500" alt="مداحی"></span><b>مداحی</b><span>۱۱ استاد</span></a>
-          <a class="spec-card" href="specialist.html?XTransformPort=3500"><span class="ic"><img src="img/sp-correct.jpg?XTransformPort=3500" alt="تصحیح تلاوت"></span><b>تصحیح تلاوت</b><span>۳۱ استاد</span></a>
+          <a class="spec-card" href="/panel/teacher/register"><span class="ic"><img src="img/sp-telavat.jpg" alt="تلاوت تحقیق"></span><b>تلاوت تحقیق</b><span>۳۸ استاد</span></a>
+          <a class="spec-card" href="/panel/teacher/register"><span class="ic"><img src="img/sp-tajvid.jpg" alt="ترتیل و تجوید"></span><b>ترتیل و تجوید</b><span>۲۴ استاد</span></a>
+          <a class="spec-card" href="/panel/teacher/register"><span class="ic"><img src="img/sp-hifz.jpg" alt="حفظ قرآن"></span><b>حفظ قرآن</b><span>۱۷ استاد</span></a>
+          <a class="spec-card" href="/panel/teacher/register"><span class="ic"><img src="img/sp-azan.jpg" alt="اذان و مکبری"></span><b>اذان و مکبری</b><span>۶ استاد</span></a>
+          <a class="spec-card" href="/panel/teacher/register"><span class="ic"><img src="img/sp-dua.jpg" alt="دعاخوانی"></span><b>دعاخوانی</b><span>۸ استاد</span></a>
+          <a class="spec-card" href="/panel/teacher/register"><span class="ic"><img src="img/sp-tavashih.jpg" alt="تواشیح و همخوانی"></span><b>تواشیح و همخوانی</b><span>۵ گروه</span></a>
+          <a class="spec-card" href="/panel/teacher/register"><span class="ic"><img src="img/sp-ibtihal.jpg" alt="ابتهال"></span><b>ابتهال</b><span>۷ استاد</span></a>
+          <a class="spec-card" href="/panel/teacher/register"><span class="ic"><img src="img/sp-monajat.jpg" alt="مناجات‌خوانی"></span><b>مناجات‌خوانی</b><span>۶ استاد</span></a>
+          <a class="spec-card" href="/panel/teacher/register"><span class="ic"><img src="img/sp-tafsir.jpg" alt="مفاهیم و تفسیر"></span><b>مفاهیم و تفسیر</b><span>۱۲ استاد</span></a>
+          <a class="spec-card" href="/panel/teacher/register"><span class="ic"><img src="img/sp-kids.jpg" alt="قرآن کودکان"></span><b>قرآن کودکان</b><span>۹ استاد</span></a>
+          <a class="spec-card" href="/panel/teacher/register"><span class="ic"><img src="img/sp-madahi.jpg" alt="مداحی"></span><b>مداحی</b><span>۱۱ استاد</span></a>
+          <a class="spec-card" href="/panel/teacher/register"><span class="ic"><img src="img/sp-correct.jpg" alt="تصحیح تلاوت"></span><b>تصحیح تلاوت</b><span>۳۱ استاد</span></a>
         </div>
       </div>
     </section>
@@ -415,21 +385,21 @@ body.no-anno .ann-wrap{display:none}
     <!-- الگو: کاروسل بیماری/علت مراجعه اسنپ‌داکتر → /illness/[key] ؛ معادل وُدّا: مسیر یادگیری -->
     <section class="sec">
       <div class="sec-head">
-        <h2>مسیرهای پرطرفدار</h2><span class="ann-wrap"><button class="ann-btn" aria-label="توضیح">؟</button><span class="ann-pop">الگوی کاروسل «بیماری‌های پرطرفدار» snapp.doctor → /illness/[key]. معادل وُدّا: مسیرهای یادگیری هدفمند بر اساس رده‌بندی مصوب (مقدماتی تا ویژه/تمام‌آیات).</span></span>
+        <h2>مسیرهای پرطرفدار</h2>
       </div>
       <div class="paths">
-        <a class="path" href="assessment.html?XTransformPort=3500">رده مقدماتی (صفر تا جزء ۳۰)</a>
-        <a class="path" href="assessment.html?XTransformPort=3500">ارتقا به رده متوسطه</a>
-        <a class="path" href="assessment.html?XTransformPort=3500">آمادگی رده عالی و قفلات</a>
-        <a class="path" href="assessment.html?XTransformPort=3500">آمادگی مسابقات سراسری</a>
-        <a class="path" href="assessment.html?XTransformPort=3500">حفظ ۵ تا ۲۵ جزء و کل</a>
-        <a class="path" href="assessment.html?XTransformPort=3500">اذان، دعاخوانی و ابتهال</a>
+        <a class="path" href="assessment.html">رده مقدماتی (صفر تا جزء ۳۰)</a>
+        <a class="path" href="assessment.html">ارتقا به رده متوسطه</a>
+        <a class="path" href="assessment.html">آمادگی رده عالی و قفلات</a>
+        <a class="path" href="assessment.html">آمادگی مسابقات سراسری</a>
+        <a class="path" href="assessment.html">حفظ ۵ تا ۲۵ جزء و کل</a>
+        <a class="path" href="assessment.html">اذان، دعاخوانی و ابتهال</a>
       </div>
     </section>
 
     <!-- الگو: بند اعتماد/آمار اسنپ‌داکتر -->
     <section class="sec">
-      <div class="sec-head"><h2>وُدّا در یک نگاه</h2><span class="ann-wrap"><button class="ann-btn" aria-label="توضیح">؟</button><span class="ann-pop">الگوی بند آمار/اعتماد اسنپ‌داکتر: اعداد واقعی پلتفرم برای اعتمادسازی پیش از ورود/ثبت‌نام. اعداد اینجا نمونهٔ پیش‌نمایش‌اند.</span></span></div>
+      <div class="sec-head"><h2>وُدّا در یک نگاه</h2></div>
       <div class="stats">
         <div class="stat"><b>+۱۲۰</b><span>استاد تأییدشده</span></div>
         <div class="stat"><b>+۴٬۵۰۰</b><span>جلسه موفق</span></div>
@@ -440,11 +410,11 @@ body.no-anno .ann-wrap{display:none}
 
     <!-- الگو: بخش مجله اسنپ‌داکتر (Directus CMS) -->
     <section class="sec">
-      <div class="sec-head"><h2>مجله وُدّا</h2><span class="ann-wrap"><button class="ann-btn" aria-label="توضیح">؟</button><span class="ann-pop">الگوی «مجله سلامت» اسنپ‌داکتر: مقالات CMS (در اسنپ‌داکتر: Directus) برای جذب ارگانیک و لینک‌دهی داخلی به صفحات تخصص. معادل وُدّا: /blog/[slug].</span></span></div>
+      <div class="sec-head"><h2>مجله وُدّا</h2></div>
       <div class="blog">
-        <div class="b-card" data-toast="در نسخه واقعی: /blog/tajvid-makharij — مقاله از CMS"><div class="b-img"><img src="img/bl-tajvid.jpg?XTransformPort=3500" alt="تمرین تلفظ حروف"></div><div class="b-body"><span class="b-cat">تجوید</span><h3>چگونه مخارج حروف را درست تمرین کنیم؟</h3><span class="meta">۷ دقیقه مطالعه · ۱۲ آبان</span></div></div>
-        <div class="b-card" data-toast="در نسخه واقعی: /blog/hifz-plan-j30 — مقاله از CMS"><div class="b-img"><img src="img/bl-hifz.jpg?XTransformPort=3500" alt="برنامه حفظ هفتگی"></div><div class="b-body"><span class="b-cat">حفظ</span><h3>برنامه هفتگی حفظ جزء ۳۰ با مرور جایگاه‌دار</h3><span class="meta">۵ دقیقه مطالعه · ۸ آبان</span></div></div>
-        <div class="b-card" data-toast="در نسخه واقعی: /blog/madahi-breath — مقاله از CMS"><div class="b-img"><img src="img/bl-madahi.jpg?XTransformPort=3500" alt="تمرین تنفس مداحی"></div><div class="b-body"><span class="b-cat">مداحی</span><h3>تنفس دیافراگمی برای آوای مجلسی؛ ۳ تمرین پایه</h3><span class="meta">۶ دقیقه مطالعه · ۳ آبان</span></div></div>
+        <div class="b-card" data-toast="در نسخه واقعی: /blog/tajvid-makharij — مقاله از CMS"><div class="b-img"><img src="img/bl-tajvid.jpg" alt="تمرین تلفظ حروف"></div><div class="b-body"><span class="b-cat">تجوید</span><h3>چگونه مخارج حروف را درست تمرین کنیم؟</h3><span class="meta">۷ دقیقه مطالعه · ۱۲ آبان</span></div></div>
+        <div class="b-card" data-toast="در نسخه واقعی: /blog/hifz-plan-j30 — مقاله از CMS"><div class="b-img"><img src="img/bl-hifz.jpg" alt="برنامه حفظ هفتگی"></div><div class="b-body"><span class="b-cat">حفظ</span><h3>برنامه هفتگی حفظ جزء ۳۰ با مرور جایگاه‌دار</h3><span class="meta">۵ دقیقه مطالعه · ۸ آبان</span></div></div>
+        <div class="b-card" data-toast="در نسخه واقعی: /blog/madahi-breath — مقاله از CMS"><div class="b-img"><img src="img/bl-madahi.jpg" alt="تمرین تنفس مداحی"></div><div class="b-body"><span class="b-cat">مداحی</span><h3>تنفس دیافراگمی برای آوای مجلسی؛ ۳ تمرین پایه</h3><span class="meta">۶ دقیقه مطالعه · ۳ آبان</span></div></div>
       </div>
     </section>
   </div>
@@ -452,7 +422,7 @@ body.no-anno .ann-wrap{display:none}
   <!-- الگو: بخش دانلود اپلیکیشن اسنپ‌داکتر (اکوسیستم super-app + PWA) -->
   <section class="app-sec"><div class="wrap app-in">
     <div>
-      <h2>اپلیکیشن وُدّا را دانلود کنید<span class="ann-wrap"><button class="ann-btn" aria-label="توضیح">؟</button><span class="ann-pop">الگوی بخش اپ اسنپ‌داکتر: CTA دانلود + فهرست مزایا. اسنپ‌داکتر PWA است (manifest.json + آیکون maskable) و از SDK مشترک اکوسیستم اسنپ استفاده می‌کند. معادل وُدّا: PWA + ساختار مشابه.</span></span></h2>
+      <h2>اپلیکیشن وُدّا را دانلود کنید</h2>
       <p>جلسه‌هایتان را از هر جا مدیریت کنید؛ با اعلان جلسه، کیف پول و پیوست صوتی برای تصحیح تلاوت.</p>
       <ul>
         <li>یادآوری خودکار جلسات و تکالیف</li>
@@ -479,7 +449,7 @@ body.no-anno .ann-wrap{display:none}
 <footer class="foot"><div class="wrap">
   <div class="foot-grid">
     <div class="about">
-      <a class="logo" href="index.html?XTransformPort=3500"><span class="logo-mark">و</span>وُدّا</a>
+      <a class="logo" href="/"><span class="logo-mark">و</span>وُدّا</a>
       <p>وُدّا؛ همراهِ یادگیری قرآن و مداحی — جلسه خصوصی آنلاین و حضوری با استادان تأییدشده، از روخوانی مقدماتی تا حفظ و آوای مجلسی.</p>
       <div class="socials">
         <span class="soc" data-toast="در نسخه واقعی: اینستاگرام وُدّا">in</span>
@@ -489,69 +459,48 @@ body.no-anno .ann-wrap{display:none}
     </div>
     <div>
       <h4>خدمات</h4>
-      <a href="session.html?XTransformPort=3500">جلسه آنلاین تصویری</a>
-      <a href="book.html?XTransformPort=3500">رزرو جلسه حضوری</a>
-      <a href="orders.html?XTransformPort=3500&type=instant">پرسش فوری متنی</a>
-      <a href="orders.html?XTransformPort=3500&type=text">تصحیح تلاوت</a>
-      <a href="assessment.html?XTransformPort=3500">سنجش و آزمون</a>
+      <a href="/panel/user/sessions">جلسه آنلاین تصویری</a>
+      <a href="/panel/user/book">رزرو جلسه حضوری</a>
+      <a href="/panel/user/sessions">پرسش فوری متنی</a>
+      <a href="/panel/user/sessions">تصحیح تلاوت</a>
+      <a href="assessment.html">سنجش و آزمون</a>
     </div>
     <div>
       <h4>تخصص‌ها</h4>
-      <a href="specialist.html?XTransformPort=3500">روخوانی قرآن</a>
-      <a href="specialist.html?XTransformPort=3500">تجوید و صوت و لحن</a>
-      <a href="specialist.html?XTransformPort=3500">حفظ قرآن</a>
-      <a href="specialist.html?XTransformPort=3500">مفاهیم و تفسیر</a>
-      <a href="specialist.html?XTransformPort=3500">مداحی</a>
+      <a href="/panel/teacher/register">روخوانی قرآن</a>
+      <a href="/panel/teacher/register">تجوید و صوت و لحن</a>
+      <a href="/panel/teacher/register">حفظ قرآن</a>
+      <a href="/panel/teacher/register">مفاهیم و تفسیر</a>
+      <a href="/panel/teacher/register">مداحی</a>
     </div>
     <div>
       <h4>لینک‌های سریع</h4>
-      <a href="sitemap.html?XTransformPort=3500">نقشه ساختار</a>
-      <a href="store.html?XTransformPort=3500">فروشگاه</a>
-      <a href="credit.html?XTransformPort=3500">کیف پول</a>
-      <a href="profile.html?XTransformPort=3500">پروفایل</a>
-      <a href="legal.html?XTransformPort=3500">قوانین و مقررات</a>
+      <a href="sitemap.html">نقشه ساختار</a>
+      <a href="/search.html">فروشگاه</a>
+      <a href="/panel/user/wallet">کیف پول</a>
+      <a href="/panel/user/settings">پروفایل</a>
+      <a href="legal.html">قوانین و مقررات</a>
     </div>
     <div>
       <h4>پشتیبانی</h4>
       <a href="#" data-toast="پشتیبانی ۲۴ ساعته: ۰۲۱-۹۱۰۰۰۰۰۰ (نمونه)">☎ ۰۲۱-۹۱۰۰۰۰۰۰</a>
       <a href="#" data-toast="در نسخه واقعی: mailto:support@vodda.ir">✉ support@vodda.ir</a>
-      <a href="corporate.html?XTransformPort=3500">سازمان‌ها (B2B)</a>
-      <a href="flags.html?XTransformPort=3500">پرچم‌های قابلیت</a>
+      <a href="corporate.html">سازمان‌ها (B2B)</a>
+      <a href="/search.html">پرچم‌های قابلیت</a>
     </div>
   </div>
   <div class="foot-bottom">
     <span>© ۱۴۰۵ وُدّا — تمامی حقوق محفوظ است.</span>
-    <div class="trust"><span>eNamad نمونه</span><span>ساماندهی نمونه</span><span>پیش‌نمایش REA · ساختار اقتباس‌شده از snapp.doctor</span></div>
+    <div class="trust"><span>eNamad نمونه</span><span>ساماندهی نمونه</span><span>وُدّا — جلسه آنلاین قرآن و مداحی</span></div>
   </div>
 </div></footer>
 
 <script>
-/* REA Preview shared runtime — vodda2/preview/assets/rea.js (inline) */
+/* وُدّا — رانتایم مشترک */
 (function(){
   'use strict';
 
-  /* حاشیه‌نویسی‌ها */
-  var t=document.getElementById('annoToggle');
-  if(t){
-    t.addEventListener('click',function(){
-      var on=document.body.classList.toggle('no-anno');
-      t.setAttribute('aria-pressed',String(!on));
-      t.textContent='حاشیه‌نویسی: '+(on?'خاموش':'روشن');
-    });
-  }
-  document.addEventListener('click',function(e){
-    var b=e.target.closest?e.target.closest('.ann-btn'):null;
-    if(b){
-      e.stopPropagation();
-      var w=b.parentElement,open=w.classList.contains('open');
-      document.querySelectorAll('.ann-wrap.open').forEach(function(x){x.classList.remove('open')});
-      if(!open)w.classList.add('open');
-      return;
-    }
-    if(!(e.target.closest&&e.target.closest('.ann-pop'))){
-      document.querySelectorAll('.ann-wrap.open').forEach(function(x){x.classList.remove('open')});
-    }
-  });
+  
 
   /* ناوبری فعال بر اساس body[data-page] */
   var page=document.body.getAttribute('data-page');
@@ -623,7 +572,7 @@ body.no-anno .ann-wrap{display:none}
   if(sf)sf.addEventListener('submit',function(e){
     e.preventDefault();
     var q=document.getElementById('q').value.trim();
-    location.href='search.html?XTransformPort=3500'+(q?'&q='+encodeURIComponent(q):'');
+    location.href='search.html'+(q?'&q='+encodeURIComponent(q):'');
   });
 
   /* فلش‌های کاروسل — RTL: جهت «بعدی» = scrollBy منفی */
@@ -639,7 +588,7 @@ body.no-anno .ann-wrap{display:none}
     row.addEventListener('click',function(e){
       e.preventDefault();e.stopPropagation();
       var chat=row.querySelector('[data-chat]')===e.target.closest('[data-chat]');
-      location.href=(chat?'chat.html':'session.html')+'?XTransformPort=3500';
+      location.href=(chat?'chat.html':'session.html')+'';
     });
   });
 
@@ -653,5 +602,7 @@ body.no-anno .ann-wrap{display:none}
   });
 })();
 </script>
+<script src="assets/vodda-api.js?v=202611021228"></script>
+<script>try{VoddaAPI.mountTeacherCarousel('onlineCar');VoddaAPI.bindHeaderSearch();}catch(e){console.warn(e)}</script>
 </body>
 </html>

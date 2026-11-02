@@ -1,13 +1,13 @@
 /* ═══════════════════════════════════════════════════════════
-   REA Preview Design System — vodda2/preview/assets/rea.css
+   وُدّا — سیستم طراحی
    لایه ۱: توکن‌های برند وُدّا (از globals.css واقعی ریپو)
    لایه ۲: توکن‌های scoped کامپوننت‌ها (الگوی --otp-* اسنپ‌دکتر)
    ═══════════════════════════════════════════════════════════ */
-@font-face{font-family:'IRANYekanXFaNum';src:url('../fonts/IRANYekanXFaNum-Regular.ttf?XTransformPort=3500') format('truetype');font-weight:400;font-display:swap}
-@font-face{font-family:'IRANYekanXFaNum';src:url('../fonts/IRANYekanXFaNum-Medium.ttf?XTransformPort=3500') format('truetype');font-weight:500;font-display:swap}
-@font-face{font-family:'IRANYekanXFaNum';src:url('../fonts/IRANYekanXFaNum-DemiBold.ttf?XTransformPort=3500') format('truetype');font-weight:600;font-display:swap}
-@font-face{font-family:'IRANYekanXFaNum';src:url('../fonts/IRANYekanXFaNum-Bold.ttf?XTransformPort=3500') format('truetype');font-weight:700;font-display:swap}
-@font-face{font-family:'IRANYekanXFaNum';src:url('../fonts/IRANYekanXFaNum-ExtraBold.ttf?XTransformPort=3500') format('truetype');font-weight:800;font-display:swap}
+@font-face{font-family:'IRANYekanXFaNum';src:url('../fonts/IRANYekanXFaNum-Regular.ttf') format('truetype');font-weight:400;font-display:swap}
+@font-face{font-family:'IRANYekanXFaNum';src:url('../fonts/IRANYekanXFaNum-Medium.ttf') format('truetype');font-weight:500;font-display:swap}
+@font-face{font-family:'IRANYekanXFaNum';src:url('../fonts/IRANYekanXFaNum-DemiBold.ttf') format('truetype');font-weight:600;font-display:swap}
+@font-face{font-family:'IRANYekanXFaNum';src:url('../fonts/IRANYekanXFaNum-Bold.ttf') format('truetype');font-weight:700;font-display:swap}
+@font-face{font-family:'IRANYekanXFaNum';src:url('../fonts/IRANYekanXFaNum-ExtraBold.ttf') format('truetype');font-weight:800;font-display:swap}
 
 /* ─── لایه ۱ — پوسته نوترال اسنپ‌داکتر + سبز برند (یکدست با لندینگ) ─── */
 :root{
@@ -52,7 +52,7 @@ main{margin:26px 0}
 .gap{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 .mt{margin-top:14px}.mb{margin-bottom:14px}
 
-/* ─── نوار بالا — تیره، یکدست با نوار پیش‌نمایش لندینگ ─── */
+/* ─── نوار بالا — تیره ─── */
 .topbar{position:sticky;top:0;z-index:50;background:var(--olive-deep);border-bottom:1px solid #242c1e}
 .topbar-in{display:flex;align-items:center;gap:12px;padding:9px 0;flex-wrap:wrap}
 .brand{font-weight:800;color:#fff;font-size:17px;white-space:nowrap;text-decoration:none}
