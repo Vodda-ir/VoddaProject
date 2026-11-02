@@ -1,0 +1,609 @@
+     1→<!doctype html>
+     2→<html lang="fa" dir="rtl">
+     3→<head>
+     4→<meta charset="utf-8">
+     5→<meta name="viewport" content="width=device-width, initial-scale=1">
+     6→<title>وُدّا — جلسه آنلاین قرآن و مداحی با استادان برتر</title>
+     7→<link rel="icon" href="data:,">
+     8→<script type="application/ld+json">
+     9→{"@context":"https://schema.org","@type":"EducationalOrganization","name":"وُدّا","url":"https://vodda.ir","description":"پلتفرم جلسه آنلاین و حضوری قرآن کریم با استادان تأییدشده تجوید، حفظ و روخوانی","sameAs":[]}
+    10→</script>
+    11→<script type="application/ld+json">
+    12→{"@context":"https://schema.org","@type":"ItemList","itemListElement":[
+    13→{"@type":"ListItem","position":1,"name":"روخوانی قرآن"},
+    14→{"@type":"ListItem","position":2,"name":"تجوید و صوت و لحن"},
+    15→{"@type":"ListItem","position":3,"name":"حفظ قرآن"},
+    16→{"@type":"ListItem","position":4,"name":"مفاهیم و تفسیر"}]}
+    17→</script>
+    18→<style>
+    19→/* ═══════════════════════════════════════════════════════════
+    20→   لندینگ وُدّا — آینه ساختاری صفحه اصلی snapp.doctor
+    21→   تم: پوسته نوترال اسنپ‌داکتر (بک‌گراند #f6f7f9، کارت سفید، شعاع ۱۶)
+    22→   با جایگزینی آبی #00bef2 ← سبز. فونت: IRANYekanXFaNum (برند واقعی)
+    23→   ═══════════════════════════════════════════════════════════ */
+    24→@font-face{font-family:'IRANYekanXFaNum';src:url('fonts/IRANYekanXFaNum-Regular.ttf') format('truetype');font-weight:400;font-display:swap}
+    25→@font-face{font-family:'IRANYekanXFaNum';src:url('fonts/IRANYekanXFaNum-Medium.ttf') format('truetype');font-weight:500;font-display:swap}
+    26→@font-face{font-family:'IRANYekanXFaNum';src:url('fonts/IRANYekanXFaNum-DemiBold.ttf') format('truetype');font-weight:600;font-display:swap}
+    27→@font-face{font-family:'IRANYekanXFaNum';src:url('fonts/IRANYekanXFaNum-Bold.ttf') format('truetype');font-weight:700;font-display:swap}
+    28→@font-face{font-family:'IRANYekanXFaNum';src:url('fonts/IRANYekanXFaNum-ExtraBold.ttf') format('truetype');font-weight:800;font-display:swap}
+    29→:root{
+    30→  --bg:#f6f7f9;--surface:#fff;--line:#e8ebf0;--line2:#dfe3ea;
+    31→  --ink:#22262b;--ink2:#5a6472;--ink3:#98a1ad;
+    32→  --brand:#12b76a;--brand-700:#0e9f5c;--brand-600:#10a862;--brand-50:#e9f9f1;--brand-100:#d3f3e3;
+    33→  --olive:#4c5a36;--olive-deep:#2e3622;
+    34→  --online:#21ba45;--gold:#bf9540;--gold-bg:#f7efd9;
+    35→  --r:16px;--r-sm:12px;
+    36→  --sh:0 4px 16px rgba(16,24,40,.06);
+    37→  --sh2:0 10px 30px rgba(16,24,40,.1);
+    38→  --font:'IRANYekanXFaNum',Tahoma,system-ui,sans-serif;
+    39→}
+    40→*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    41→body{margin:0;font-family:var(--font);background:var(--bg);color:var(--ink);min-height:100vh;display:flex;flex-direction:column;line-height:1.8;font-size:14px}
+    42→a{color:inherit;text-decoration:none}
+    43→button{font-family:var(--font)}
+    44→.wrap{max-width:1140px;margin:0 auto;padding:0 16px;width:100%}
+    45→
+    46→/* ─── بنر تبلیغاتی (الگوی banner اسنپ‌داکتر) ─── */
+    47→.promo{background:linear-gradient(90deg,var(--brand-700),var(--brand));color:#fff;font-size:13px}
+    48→.promo-in{display:flex;align-items:center;justify-content:center;gap:8px;padding:9px 0;position:relative}
+    49→.promo a{font-weight:700;text-decoration:underline;text-underline-offset:3px}
+    50→.promo-x{position:absolute;inset-inline-end:0;background:transparent;border:0;color:#fff;opacity:.8;font-size:16px;cursor:pointer}
+    51→
+    52→/* ─── هدر (الگوی اسنپ‌داکتر: لوگو + ناوبری + شهر + ورود) ─── */
+    53→.hdr{background:var(--surface);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:60}
+    54→.hdr-in{display:flex;align-items:center;gap:18px;padding:12px 0}
+    55→.logo{display:flex;align-items:center;gap:8px;font-size:20px;font-weight:800;color:var(--olive)}
+    56→.logo-mark{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--brand),var(--brand-700));color:#fff;display:grid;place-items:center;font-size:16px;font-weight:800}
+    57→.hdr nav{display:flex;gap:2px}
+    58→.hdr nav a{padding:8px 12px;border-radius:10px;font-size:13.5px;color:var(--ink2);font-weight:500;white-space:nowrap}
+    59→.hdr nav a:hover{background:var(--brand-50);color:var(--brand-700)}
+    60→.loc{display:flex;align-items:center;gap:6px;border:1px solid var(--line2);border-radius:999px;padding:7px 14px;font-size:13px;color:var(--ink2);cursor:pointer;background:var(--surface)}
+    61→.auth{margin-inline-start:auto;display:flex;align-items:center;gap:10px}
+    62→.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:999px;padding:10px 20px;font-size:13.5px;font-weight:700;cursor:pointer;border:0;transition:filter .15s,transform .15s}
+    63→.btn:active{transform:scale(.97)}
+    64→.btn-brand{background:var(--brand);color:#fff}
+    65→.btn-brand:hover{filter:brightness(.95)}
+    66→.btn-ghost{background:var(--surface);color:var(--brand-700);border:1.5px solid var(--brand-100)}
+    67→.btn-ghost:hover{background:var(--brand-50)}
+    68→.btn-lg{padding:13px 26px;font-size:14.5px}
+    69→
+    70→/* ─── هیرو ─── */
+    71→.hero{background:linear-gradient(180deg,var(--surface),var(--bg));border-bottom:1px solid var(--line);overflow:hidden}
+    72→.hero-in{display:grid;grid-template-columns:1.15fr .85fr;gap:30px;align-items:center;padding:44px 0 52px}
+    73→.hero h1{font-size:30px;font-weight:800;color:var(--ink);margin:0 0 10px;line-height:1.55}
+    74→.hero h1 em{font-style:normal;color:var(--brand)}
+    75→.hero .sub{font-size:15px;color:var(--ink2);margin:0 0 22px}
+    76→.search{display:flex;align-items:center;background:var(--surface);border:1.5px solid var(--line2);border-radius:14px;padding:6px 6px 6px 6px;box-shadow:var(--sh);max-width:520px}
+    77→.search:focus-within{border-color:var(--brand)}
+    78→.search input{flex:1;border:0;outline:0;font-family:var(--font);font-size:14px;padding:10px 14px;background:transparent;color:var(--ink);min-width:0}
+    79→.search .go{background:var(--brand);color:#fff;border:0;border-radius:10px;padding:11px 22px;font-size:13.5px;font-weight:700;cursor:pointer}
+    80→.search .go:hover{filter:brightness(.95)}
+    81→.pop{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:14px;font-size:12.5px;color:var(--ink3)}
+    82→.pop a{border:1px solid var(--line2);background:var(--surface);color:var(--ink2);border-radius:999px;padding:5px 13px}
+    83→.pop a:hover{border-color:var(--brand);color:var(--brand-700)}
+    84→
+    85→/* موکاپ گوشی هیرو */
+    86→.phone-wrap{position:relative;justify-self:center}
+    87→.phone{width:250px;height:470px;border-radius:38px;background:var(--olive-deep);padding:12px;box-shadow:var(--sh2);position:relative}
+    88→.phone::before{content:"";position:absolute;top:12px;left:50%;transform:translateX(-50%);width:110px;height:22px;background:var(--olive-deep);border-radius:0 0 14px 14px;z-index:2}
+    89→.scr{background:var(--bg);border-radius:28px;height:100%;overflow:hidden;display:flex;flex-direction:column;font-size:11px}
+    90→.scr-h{background:var(--surface);padding:30px 12px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}
+    91→.scr-h b{font-size:12.5px;color:var(--ink)}
+    92→.scr-t{padding:10px 12px;color:var(--ink3);font-size:10.5px}
+    93→.scr-teacher{display:flex;align-items:center;gap:9px;background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:9px;margin:0 10px 8px}
+    94→.scr-av{width:34px;height:34px;border-radius:50%;background:var(--brand-50);color:var(--brand-700);display:grid;place-items:center;font-weight:800;font-size:12px;position:relative;flex:none;overflow:hidden}
+    95→.scr-av img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+    96→.scr-av::after{content:"";position:absolute;bottom:0;inset-inline-start:0;width:9px;height:9px;border-radius:50%;background:var(--online);border:2px solid #fff}
+    97→.scr-teacher b{display:block;font-size:11.5px;color:var(--ink)}
+    98→.scr-teacher span{font-size:10px;color:var(--ink3)}
+    99→.scr-price{margin-inline-start:auto;color:var(--brand-700);font-weight:700;font-size:10.5px;white-space:nowrap}
+   100→.scr-cta{margin:8px 10px;background:var(--brand);color:#fff;text-align:center;border-radius:12px;padding:9px;font-weight:700;font-size:11.5px}
+   101→.scr-tabs{margin-top:auto;background:var(--surface);border-top:1px solid var(--line);display:flex;justify-content:space-around;padding:10px 0 14px;color:var(--ink3);font-size:10px}
+   102→.scr-tabs .on{color:var(--brand-700);font-weight:700}
+   103→.float-chip{position:absolute;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--sh2);padding:8px 12px;font-size:11.5px;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:7px}
+   104→.fc1{top:70px;inset-inline-start:-64px}
+   105→.fc2{bottom:150px;inset-inline-end:-64px}
+   106→.dot{width:8px;height:8px;border-radius:50%;background:var(--online);flex:none}
+   107→
+   108→/* ─── سکشن‌ها ─── */
+   109→.sec{padding:34px 0 8px}
+   110→.sec-head{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+   111→.sec-head h2{font-size:19px;font-weight:800;color:var(--ink);margin:0}
+   112→.sec-head .more{margin-inline-start:auto;color:var(--brand-700);font-size:13px;font-weight:700;white-space:nowrap}
+   113→.sec-head .more:hover{text-decoration:underline;text-underline-offset:3px}
+   114→
+   115→/* خدمات (۵ آیکون — الگوی ردیف سرویس اسنپ‌داکتر) */
+   116→.svcs{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+   117→.svc{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px 10px;text-align:center;transition:box-shadow .15s,transform .15s}
+   118→.svc:hover{box-shadow:var(--sh2);transform:translateY(-2px)}
+   119→.svc .ic{width:52px;height:52px;margin:0 auto 8px;border-radius:16px;background:var(--brand-50);display:grid;place-items:center;font-size:23px;overflow:hidden}
+   120→.svc .ic img{width:100%;height:100%;object-fit:cover}
+   121→.svc b{display:block;font-size:13px;color:var(--ink)}
+   122→.svc span{font-size:11px;color:var(--ink3)}
+   123→
+   124→/* کاروسل استادان آنلاین (الگوی consultant-carousel اسنپ‌داکتر) */
+   125→.car-pos{position:relative}
+   126→.car{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding:4px 2px 14px;scrollbar-width:none}
+   127→.car::-webkit-scrollbar{display:none}
+   128→.car>*{scroll-snap-align:start;flex:none}
+   129→.car-arrow{position:absolute;top:38%;z-index:5;width:40px;height:40px;border-radius:50%;background:var(--surface);border:1px solid var(--line2);box-shadow:var(--sh2);font-size:17px;cursor:pointer;color:var(--ink2);display:grid;place-items:center;transition:all .15s}
+   130→.car-arrow:hover{color:var(--brand-700);border-color:var(--brand)}
+   131→.car-arrow.n{inset-inline-start:-14px}
+   132→.car-arrow.p{inset-inline-end:-14px}
+   133→.t-card{width:225px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px 14px 14px;text-align:center;transition:box-shadow .15s,transform .15s;position:relative}
+   134→.t-card:hover{box-shadow:var(--sh2);transform:translateY(-2px)}
+   135→.t-av{width:74px;height:74px;border-radius:50%;margin:0 auto 10px;background:linear-gradient(135deg,var(--brand-50),var(--brand-100));display:grid;place-items:center;font-size:22px;font-weight:800;color:var(--brand-700);position:relative;overflow:hidden}
+   136→.t-av img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+   137→.t-av::after{content:"";position:absolute;bottom:2px;inset-inline-start:6px;width:16px;height:16px;border-radius:50%;background:var(--online);border:3px solid var(--surface)}
+   138→.t-av.pulse::before{content:"";position:absolute;bottom:2px;inset-inline-start:6px;width:16px;height:16px;border-radius:50%;background:var(--online);animation:pulse 1.8s ease-out infinite}
+   139→@keyframes pulse{0%{transform:scale(1);opacity:.7}100%{transform:scale(2.4);opacity:0}}
+   140→.t-card h3{font-size:14.5px;font-weight:700;color:var(--ink);margin:0 0 2px}
+   141→.t-card .sp{font-size:12px;color:var(--ink3);margin-bottom:6px}
+   142→.t-card .stars{font-size:12px;color:var(--gold);margin-bottom:6px}
+   143→.t-card .stars span{color:var(--ink3)}
+   144→.t-card .price{font-size:13px;color:var(--ink2);margin-bottom:12px}
+   145→.t-card .price b{color:var(--ink);font-weight:800}
+   146→.t-acts{display:flex;gap:8px}
+   147→.t-acts .btn{flex:1;padding:9px 6px;font-size:12.5px;border-radius:12px}
+   148→.online-badge{position:absolute;top:12px;inset-inline-start:12px;background:var(--brand-50);color:var(--brand-700);font-size:10.5px;font-weight:700;border-radius:999px;padding:2px 9px;display:flex;align-items:center;gap:5px}
+   149→
+   150→/* تخصص‌ها */
+   151→.spec-card{width:150px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px 10px;text-align:center;transition:all .15s}
+   152→.spec-card:hover{box-shadow:var(--sh2);transform:translateY(-2px);border-color:var(--brand-100)}
+   153→.spec-card .ic{width:56px;height:56px;margin:0 auto 8px;border-radius:50%;background:var(--brand-50);display:grid;place-items:center;font-size:25px;overflow:hidden}
+   154→.spec-card .ic img{width:100%;height:100%;object-fit:cover}
+   155→.spec-card b{display:block;font-size:13px;color:var(--ink);margin-bottom:2px}
+   156→.spec-card span{font-size:11px;color:var(--ink3)}
+   157→
+   158→/* مسیرها */
+   159→.paths{display:flex;gap:10px;flex-wrap:wrap}
+   160→.path{background:var(--surface);border:1.5px solid var(--line2);border-radius:999px;padding:9px 18px;font-size:13px;color:var(--ink2);cursor:pointer;transition:all .15s}
+   161→.path:hover{border-color:var(--brand);color:var(--brand-700);background:var(--brand-50)}
+   162→
+   163→/* آمار */
+   164→.stats{background:var(--surface);border:1px solid var(--line);border-radius:20px;display:grid;grid-template-columns:repeat(4,1fr);overflow:hidden}
+   165→.stat{padding:22px 10px;text-align:center;border-inline-start:1px solid var(--line)}
+   166→.stat:first-child{border-inline-start:0}
+   167→.stat b{display:block;font-size:24px;font-weight:800;color:var(--brand-700)}
+   168→.stat span{font-size:12px;color:var(--ink3)}
+   169→
+   170→/* مجله */
+   171→.blog{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+   172→.b-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;transition:all .15s;cursor:pointer}
+   173→.b-card:hover{box-shadow:var(--sh2);transform:translateY(-2px)}
+   174→.b-img{height:150px;background:linear-gradient(135deg,var(--brand-100),var(--brand-50));display:grid;place-items:center;font-size:36px;overflow:hidden}
+   175→.b-img img{width:100%;height:100%;object-fit:cover}
+   176→.b-body{padding:14px}
+   177→.b-cat{display:inline-block;background:var(--brand-50);color:var(--brand-700);font-size:10.5px;font-weight:700;border-radius:999px;padding:2px 10px;margin-bottom:8px}
+   178→.b-body h3{font-size:14px;font-weight:700;color:var(--ink);margin:0 0 6px;line-height:1.7}
+   179→.b-body .meta{font-size:11px;color:var(--ink3)}
+   180→
+   181→/* اپلیکیشن */
+   182→.app-sec{margin-top:34px;background:linear-gradient(135deg,var(--olive-deep),#3d5a38 60%,var(--brand-700));color:#fff;overflow:hidden}
+   183→.app-in{display:grid;grid-template-columns:1.1fr .9fr;gap:26px;align-items:center;padding:44px 0}
+   184→.app-in h2{font-size:24px;font-weight:800;margin:0 0 12px;color:#fff}
+   185→.app-in p{color:#d9e4d2;font-size:14px;margin:0 0 18px}
+   186→.app-in ul{list-style:none;padding:0;margin:0 0 22px;display:grid;gap:9px}
+   187→.app-in li{display:flex;align-items:center;gap:9px;font-size:13.5px;color:#eaf3e6}
+   188→.app-in li::before{content:"✓";width:20px;height:20px;border-radius:50%;background:var(--brand);display:grid;place-items:center;font-size:11px;flex:none}
+   189→.badges{display:flex;gap:10px;flex-wrap:wrap}
+   190→.badge{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);border-radius:12px;padding:9px 16px;cursor:pointer;transition:background .15s}
+   191→.badge:hover{background:rgba(255,255,255,.22)}
+   192→.badge b{display:block;font-size:12.5px;color:#fff}
+   193→.badge span{font-size:10px;color:#c9d6c2}
+   194→.app-phone{width:210px;height:400px;margin:0 auto;border-radius:34px;background:#1a1f16;padding:10px;box-shadow:0 24px 60px rgba(0,0,0,.4);position:relative}
+   195→.app-scr{background:var(--bg);border-radius:26px;height:100%;overflow:hidden;font-size:11px;display:flex;flex-direction:column}
+   196→.app-scr-h{background:var(--brand);color:#fff;padding:26px 12px 12px;font-weight:800;font-size:13px}
+   197→.app-live{display:flex;align-items:center;gap:8px;background:var(--surface);margin:10px;border-radius:12px;padding:9px}
+   198→.app-live .thumb{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,var(--brand-100),var(--brand-50));display:grid;place-items:center;font-size:19px;flex:none}
+   199→.app-live b{display:block;font-size:11.5px;color:var(--ink)}
+   200→.app-live span{font-size:10px;color:var(--online);font-weight:700}
+   201→.app-row{display:flex;gap:8px;margin:0 10px 8px}
+   202→.app-cell{flex:1;background:var(--surface);border-radius:12px;padding:8px;text-align:center;color:var(--ink2);font-size:10px}
+   203→.app-cell b{display:block;color:var(--ink);font-size:12px}
+   204→
+   205→/* ─── فوتر (الگوی چندستونه اسنپ‌داکتر) ─── */
+   206→.foot{margin-top:auto;background:var(--surface);border-top:1px solid var(--line);padding:38px 0 0;margin-top:44px}
+   207→.foot-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr 1.1fr;gap:22px;padding-bottom:26px}
+   208→.foot h4{font-size:13.5px;font-weight:800;color:var(--ink);margin:0 0 12px}
+   209→.foot a{display:block;font-size:12.5px;color:var(--ink2);padding:4px 0}
+   210→.foot a:hover{color:var(--brand-700)}
+   211→.foot .about p{font-size:12.5px;color:var(--ink2);line-height:1.9;margin:10px 0 14px}
+   212→.socials{display:flex;gap:8px}
+   213→.soc{width:34px;height:34px;border-radius:50%;background:var(--bg);border:1px solid var(--line2);display:grid;place-items:center;font-size:12px;color:var(--ink2);cursor:pointer}
+   214→.soc:hover{background:var(--brand-50);color:var(--brand-700);border-color:var(--brand-100)}
+   215→.foot-bottom{border-top:1px solid var(--line);padding:14px 0;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:11.5px;color:var(--ink3)}
+   216→.trust{display:flex;gap:8px}
+   217→.trust span{border:1px solid var(--line2);border-radius:8px;padding:4px 10px;font-size:10.5px;color:var(--ink3)}
+   218→
+   219→/* توست */
+   220→.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--olive-deep);color:#fff;padding:11px 20px;border-radius:12px;font-size:13px;box-shadow:var(--sh2);opacity:0;transition:all .25s;z-index:90;max-width:88vw;text-align:center}
+   221→.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+   222→
+   223→/* ─── ریسپانسیو ─── */
+   224→@media (max-width:1024px){
+   225→  .svcs{grid-template-columns:repeat(3,1fr)}
+   226→  .svcs .svc:nth-child(n+4){display:none}
+   227→  .svcs-mob{display:flex!important;gap:10px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px}
+   228→  .svcs-mob::-webkit-scrollbar{display:none}
+   229→  .svcs-mob .svc{flex:none;width:140px}
+   230→  .svcs-mob .svc:nth-child(n+4){display:block}
+   231→  .svcs-mob{display:flex!important}
+   232→}
+   233→@media (max-width:880px){
+   234→  .hdr nav{display:none}
+   235→  .hero-in{grid-template-columns:1fr;padding:28px 0 34px;text-align:center}
+   236→  .hero h1{font-size:23px}
+   237→  .search{margin:0 auto}
+   238→  .pop{justify-content:center}
+   239→  .phone-wrap{margin-top:6px}
+   240→  .fc1{inset-inline-start:-8px;top:40px}
+   241→  .fc2{inset-inline-end:-10px;bottom:60px}
+   242→  .app-in{grid-template-columns:1fr;text-align:center;padding:32px 0}
+   243→  .app-in ul{text-align:right}
+   244→  .badges{justify-content:center}
+   245→  .blog{grid-template-columns:1fr}
+   246→  .stats{grid-template-columns:repeat(2,1fr)}
+   247→  .stat:nth-child(3){border-inline-start:0;border-top:1px solid var(--line)}
+   248→  .stat:nth-child(4){border-top:1px solid var(--line)}
+   249→  .foot-grid{grid-template-columns:1fr 1fr}
+   250→  .car-arrow{display:none}
+   251→  .auth .btn-ghost{display:none}
+   252→}
+   253→@media (max-width:520px){
+   254→  .svcs{display:flex;gap:10px;overflow-x:auto;scrollbar-width:none}
+   255→  .svcs::-webkit-scrollbar{display:none}
+   256→  .svcs .svc{flex:none;width:140px}
+   257→  .foot-grid{grid-template-columns:1fr}
+   258→  .promo-in{font-size:11.5px}
+   259→  .hero h1{font-size:20px}
+   260→}
+   261→</style>
+   262→</head>
+   263→<body data-page="index">
+   264→
+   265→<!-- الگو: نوار تبلیغاتی بالای صفحه اسنپ‌داکتر (banner) -->
+   266→<div class="promo"><div class="wrap promo-in">
+   267→  🎁 اولین جلسه‌ات را با ۲۰٪ تخفیف شروع کن — <a href="/panel/user/book">همین حالا رزرو کن</a>
+   268→  <button class="promo-x" aria-label="بستن">✕</button>
+   269→</div></div>
+   270→
+   271→<!-- الگو: هدر اسنپ‌داکتر = لوگو + ناوبری + انتخاب‌گر (شهر ← وُدّا: نوع جلسه) + ورود -->
+   272→<header class="hdr"><div class="wrap hdr-in">
+   273→  <a class="logo" href="/"><span class="logo-mark">و</span>وُدّا</a>
+   274→  <nav>
+   275→    <a href="/curriculum.html">سرفصل‌ها</a>
+   276→    <a href="/panel/teacher/register">تخصص‌ها</a>
+   277→    <a href="/panel/user/sessions">جلسه آنلاین</a>
+   278→    <a href="/panel/user/book">رزرو جلسه</a>
+   279→    <a href="/search.html">فروشگاه</a>
+   280→    <a href="assessment.html">سنجش</a>
+   281→  </nav>
+   282→  <button class="loc" id="locBtn" aria-label="انتخاب نوع جلسه">📍 <span id="locTxt">تهران</span></button>
+   283→  <div class="auth">
+   284→    <a class="btn btn-ghost" href="/panel/user/wallet">کیف پول</a>
+   285→    <a class="btn btn-brand" href="/panel/login">ورود | ثبت‌نام</a>
+   286→  </div>
+   287→</div></header>
+   288→
+   289→<main>
+   290→  <!-- الگو: هیرو اسنپ‌داکتر = تیتر + زیرتیتر + جستجوی سراسری + جستجوهای پرطرفدار + تصویر اپ
+   291→       صفحه اصلی snapp.doctor با getServerSideProps رندر می‌شود (gssp:true) -->
+   292→  <section class="hero"><div class="wrap hero-in">
+   293→    <div>
+   294→      <h1>جلسه آنلاین <em>قرآن</em> و مداحی،<br>با استادِ خودت، هر جا که هستی</h1>
+   295→      <p class="sub">به‌سادگی با بهترین استادان قرآن، تجوید و مداحی جلسه بگذارید؛ آنلاین یا حضوری، همین حالا.</p>
+   296→      <form class="search" id="searchForm" role="search">
+   297→        <input id="q" type="search" placeholder="جستجو در وُدّا: استاد، تخصص، مسیر یادگیری، خدمت…" aria-label="جستجو">
+   298→        <button class="go" type="submit">جستجو</button>
+   299→      </form>
+   300→      <div class="pop">جستجوهای پرطرفدار:
+   301→        <a href="/panel/teacher/register">روخوانی</a>
+   302→        <a href="/panel/teacher/register">تجوید</a>
+   303→        <a href="/panel/teacher/register">حفظ جزء ۳۰</a>
+   304→        <a href="/panel/teacher/register">مداحی</a>
+   305→        <a href="/panel/teacher/register">قرآن کودکان</a>
+   306→      </div>
+   307→    </div>
+   308→    <div class="phone-wrap">
+   309→      <div class="phone" aria-hidden="true"><div class="scr">
+   310→        <div class="scr-h"><b>وُدّا</b><span>🔔</span></div>
+   311→        <div class="scr-t">استادان آنلاین — آماده جلسه</div>
+   312→        <div class="scr-teacher"><span class="scr-av"><img src="img/av-kobra.jpg" alt=""></span><div><b>استاد کبری مرتضوی</b><span>تجوید و صوت و لحن</span></div><span class="scr-price">۲۲۰٬۰۰۰</span></div>
+   313→        <div class="scr-teacher"><span class="scr-av"><img src="img/av-abdolrahman.jpg" alt=""></span><div><b>استاد عبدالرحمن حیدری</b><span>حفظ قرآن</span></div><span class="scr-price">۲۵۰٬۰۰۰</span></div>
+   314→        <div class="scr-teacher"><span class="scr-av"><img src="img/av-sakine.jpg" alt=""></span><div><b>استاد سکینه موسوی</b><span>قرآن کودکان</span></div><span class="scr-price">۱۶۰٬۰۰۰</span></div>
+   315→        <div class="scr-cta">رزرو جلسه</div>
+   316→        <div class="scr-tabs"><span class="on">خانه</span><span>جلسات</span><span>چت‌ها</span><span>پروفایل</span></div>
+   317→      </div></div>
+   318→      <div class="float-chip fc1"><span class="dot"></span> ۳۸ استاد آنلاین</div>
+   319→      <div class="float-chip fc2">⭐ ۴٫۸ رضایت کاربران</div>
+   320→    </div>
+   321→  </div></section>
+   322→
+   323→  <div class="wrap">
+   324→    <!-- الگو: ردیف سرویس‌های اسنپ‌داکتر (ویزیت از راه دور / نوبت‌دهی / داروخانه …) اقتباس به خدمات وُدّا -->
+   325→    <section class="sec">
+   326→      <div class="sec-head"><h2>خدمات وُدّا</h2></div>
+   327→      <div class="svcs" id="svcs">
+   328→        <a class="svc" href="/panel/user/sessions"><span class="ic"><img src="img/sv-video.jpg" alt="جلسه آنلاین تصویری"></span><b>جلسه آنلاین تصویری</b><span>از خانه، با هر استادی</span></a>
+   329→        <a class="svc" href="/panel/user/book"><span class="ic"><img src="img/sv-reserve.jpg" alt="رزرو جلسه حضوری"></span><b>رزرو جلسه حضوری</b><span>نوبت‌دهی در محل استاد</span></a>
+   330→        <a class="svc" href="/panel/user/sessions"><span class="ic"><img src="img/sv-instant.jpg" alt="پرسش فوری متنی"></span><b>پرسش فوری متنی</b><span>پاسخ در چند دقیقه</span></a>
+   331→        <a class="svc" href="/panel/user/sessions"><span class="ic"><img src="img/sv-text.jpg" alt="تصحیح تلاوت"></span><b>تصحیح تلاوت</b><span>ارسال صوت، بازخورد مکتوب</span></a>
+   332→        <a class="svc" href="assessment.html"><span class="ic"><img src="img/sv-assess.jpg" alt="سنجش و آزمون"></span><b>سنجش و آزمون</b><span>سطح‌سنجی و گواهی</span></a>
+   333→      </div>
+   334→    </section>
+   335→
+   336→    <!-- الگو: کاروسل مشاوران آنلاین اسنپ‌داکتر (GET /consultancy/api/client/v2/consultant-carousel)
+   337→         کارت: عکس + نقطه سبز آنلاین + نام + تخصص + امتیاز + قیمت + دکمه چت/تماس تصویری -->
+   338→    <section class="sec">
+   339→      <div class="sec-head">
+   340→        <h2>استادان آنلاین</h2>
+   341→        <a class="more" href="/search.html">مشاهده همه</a>
+   342→      </div>
+   343→      <div class="car-pos">
+   344→        <button class="car-arrow n" data-car="onlineCar" data-dir="1" aria-label="بعدی">‹</button>
+   345→        <button class="car-arrow p" data-car="onlineCar" data-dir="-1" aria-label="قبلی">›</button>
+   346→        <div class="car" id="onlineCar">
+   347→          <a class="t-card" href="/teacher.html"><span class="online-badge"><span class="dot"></span>آنلاین</span><div class="t-av pulse"><img src="img/av-kobra.jpg" alt="استاد کبری مرتضوی"></div><h3>استاد کبری مرتضوی</h3><div class="sp">تجوید و صوت و لحن · ۹ سال سابقه</div><div class="stars">★★★★★ <span>۴٫۹ (۲۱۴ نظر)</span></div><div class="price">از <b>۲۲۰٬۰۰۰</b> تومان / جلسه</div><div class="t-acts"><button class="btn btn-ghost" data-chat>💬 چت</button><button class="btn btn-brand" data-video>🎥 جلسه تصویری</button></div></a>
+   348→          <a class="t-card" href="/teacher.html"><span class="online-badge"><span class="dot"></span>آنلاین</span><div class="t-av pulse"><img src="img/av-abdolrahman.jpg" alt="استاد عبدالرحمن حیدری"></div><h3>استاد عبدالرحمن حیدری</h3><div class="sp">حفظ قرآن · مربی مسابقات</div><div class="stars">★★★★★ <span>۴٫۸ (۱۶۸ نظر)</span></div><div class="price">از <b>۲۵۰٬۰۰۰</b> تومان / جلسه</div><div class="t-acts"><button class="btn btn-ghost" data-chat>💬 چت</button><button class="btn btn-brand" data-video>🎥 جلسه تصویری</button></div></a>
+   349→          <a class="t-card" href="/teacher.html"><span class="online-badge"><span class="dot"></span>آنلاین</span><div class="t-av pulse"><img src="img/av-sakine.jpg" alt="استاد سکینه موسوی"></div><h3>استاد سکینه موسوی</h3><div class="sp">قرآن کودکان · بازی‌محور</div><div class="stars">★★★★☆ <span>۴٫۷ (۹۹ نظر)</span></div><div class="price">از <b>۱۶۰٬۰۰۰</b> تومان / جلسه</div><div class="t-acts"><button class="btn btn-ghost" data-chat>💬 چت</button><button class="btn btn-brand" data-video>🎥 جلسه تصویری</button></div></a>
+   350→          <a class="t-card" href="/teacher.html"><span class="online-badge"><span class="dot"></span>آنلاین</span><div class="t-av pulse"><img src="img/av-yaser.jpg" alt="استاد یاسر رحمانی"></div><h3>استاد یاسر رحمانی</h3><div class="sp">روخوانی و روان‌خوانی</div><div class="stars">★★★★★ <span>۴٫۹ (۲۴۰ نظر)</span></div><div class="price">از <b>۱۸۰٬۰۰۰</b> تومان / جلسه</div><div class="t-acts"><button class="btn btn-ghost" data-chat>💬 چت</button><button class="btn btn-brand" data-video>🎥 جلسه تصویری</button></div></a>
+   351→          <a class="t-card" href="/teacher.html"><span class="online-badge"><span class="dot"></span>آنلاین</span><div class="t-av pulse"><img src="img/av-masoume.jpg" alt="استاد معصومه محمدی"></div><h3>استاد معصومه محمدی</h3><div class="sp">مفاهیم و تفسیر · دانشگاه</div><div class="stars">★★★★★ <span>۴٫۸ (۱۳۰ نظر)</span></div><div class="price">از <b>۲۰۰٬۰۰۰</b> تومان / جلسه</div><div class="t-acts"><button class="btn btn-ghost" data-chat>💬 چت</button><button class="btn btn-brand" data-video>🎥 جلسه تصویری</button></div></a>
+   352→          <a class="t-card" href="/teacher.html"><span class="online-badge"><span class="dot"></span>آنلاین</span><div class="t-av pulse"><img src="img/av-hossein.jpg" alt="استاد حسین قاسمی"></div><h3>استاد حسین قاسمی</h3><div class="sp">مداحی و آوای مجلسی</div><div class="stars">★★★★★ <span>۴٫۹ (۱۹۰ نظر)</span></div><div class="price">از <b>۲۳۰٬۰۰۰</b> تومان / جلسه</div><div class="t-acts"><button class="btn btn-ghost" data-chat>💬 چت</button><button class="btn btn-brand" data-video>🎥 جلسه تصویری</button></div></a>
+   353→          <a class="t-card" href="/teacher.html"><span class="online-badge"><span class="dot"></span>آنلاین</span><div class="t-av pulse"><img src="img/av-fateme.jpg" alt="استاد فاطمه کریمی"></div><h3>استاد فاطمه کریمی</h3><div class="sp">روخوانی نوجوانان</div><div class="stars">★★★★☆ <span>۴٫۶ (۸۷ نظر)</span></div><div class="price">از <b>۱۵۰٬۰۰۰</b> تومان / جلسه</div><div class="t-acts"><button class="btn btn-ghost" data-chat>💬 چت</button><button class="btn btn-brand" data-video>🎥 جلسه تصویری</button></div></a>
+   354→          <a class="t-card" href="/teacher.html"><span class="online-badge"><span class="dot"></span>آنلاین</span><div class="t-av pulse"><img src="img/av-ahmad.jpg" alt="استاد احمد شریفی"></div><h3>استاد احمد شریفی</h3><div class="sp">تجوید · مصحح قرآن</div><div class="stars">★★★★★ <span>۴٫۸ (۱۵۵ نظر)</span></div><div class="price">از <b>۲۱۰٬۰۰۰</b> تومان / جلسه</div><div class="t-acts"><button class="btn btn-ghost" data-chat>💬 چت</button><button class="btn btn-brand" data-video>🎥 جلسه تصویری</button></div></a>
+   355→        </div>
+   356→      </div>
+   357→    </section>
+   358→
+   359→    <!-- الگو: کاروسل تخصص اسنپ‌داکتر → /specialist/[key] (صفحات فرود SEO) -->
+   360→    <section class="sec">
+   361→      <div class="sec-head">
+   362→        <h2>رشته‌های مصوب قرآنی</h2>
+   363→        <a class="more" href="/curriculum.html">سرفصل‌های مصوب</a>
+   364→      </div>
+   365→      <div class="car-pos">
+   366→        <button class="car-arrow n" data-car="specCar" data-dir="1" aria-label="بعدی">‹</button>
+   367→        <button class="car-arrow p" data-car="specCar" data-dir="-1" aria-label="قبلی">›</button>
+   368→        <div class="car" id="specCar">
+   369→          <a class="spec-card" href="/panel/teacher/register"><span class="ic"><img src="img/sp-telavat.jpg" alt="تلاوت تحقیق"></span><b>تلاوت تحقیق</b><span>۳۸ استاد</span></a>
+   370→          <a class="spec-card" href="/panel/teacher/register"><span class="ic"><img src="img/sp-tajvid.jpg" alt="ترتیل و تجوید"></span><b>ترتیل و تجوید</b><span>۲۴ استاد</span></a>
+   371→          <a class="spec-card" href="/panel/teacher/register"><span class="ic"><img src="img/sp-hifz.jpg" alt="حفظ قرآن"></span><b>حفظ قرآن</b><span>۱۷ استاد</span></a>
+   372→          <a class="spec-card" href="/panel/teacher/register"><span class="ic"><img src="img/sp-azan.jpg" alt="اذان و مکبری"></span><b>اذان و مکبری</b><span>۶ استاد</span></a>
+   373→          <a class="spec-card" href="/panel/teacher/register"><span class="ic"><img src="img/sp-dua.jpg" alt="دعاخوانی"></span><b>دعاخوانی</b><span>۸ استاد</span></a>
+   374→          <a class="spec-card" href="/panel/teacher/register"><span class="ic"><img src="img/sp-tavashih.jpg" alt="تواشیح و همخوانی"></span><b>تواشیح و همخوانی</b><span>۵ گروه</span></a>
+   375→          <a class="spec-card" href="/panel/teacher/register"><span class="ic"><img src="img/sp-ibtihal.jpg" alt="ابتهال"></span><b>ابتهال</b><span>۷ استاد</span></a>
+   376→          <a class="spec-card" href="/panel/teacher/register"><span class="ic"><img src="img/sp-monajat.jpg" alt="مناجات‌خوانی"></span><b>مناجات‌خوانی</b><span>۶ استاد</span></a>
+   377→          <a class="spec-card" href="/panel/teacher/register"><span class="ic"><img src="img/sp-tafsir.jpg" alt="مفاهیم و تفسیر"></span><b>مفاهیم و تفسیر</b><span>۱۲ استاد</span></a>
+   378→          <a class="spec-card" href="/panel/teacher/register"><span class="ic"><img src="img/sp-kids.jpg" alt="قرآن کودکان"></span><b>قرآن کودکان</b><span>۹ استاد</span></a>
+   379→          <a class="spec-card" href="/panel/teacher/register"><span class="ic"><img src="img/sp-madahi.jpg" alt="مداحی"></span><b>مداحی</b><span>۱۱ استاد</span></a>
+   380→          <a class="spec-card" href="/panel/teacher/register"><span class="ic"><img src="img/sp-correct.jpg" alt="تصحیح تلاوت"></span><b>تصحیح تلاوت</b><span>۳۱ استاد</span></a>
+   381→        </div>
+   382→      </div>
+   383→    </section>
+   384→
+   385→    <!-- الگو: کاروسل بیماری/علت مراجعه اسنپ‌داکتر → /illness/[key] ؛ معادل وُدّا: مسیر یادگیری -->
+   386→    <section class="sec">
+   387→      <div class="sec-head">
+   388→        <h2>مسیرهای پرطرفدار</h2>
+   389→      </div>
+   390→      <div class="paths">
+   391→        <a class="path" href="assessment.html">رده مقدماتی (صفر تا جزء ۳۰)</a>
+   392→        <a class="path" href="assessment.html">ارتقا به رده متوسطه</a>
+   393→        <a class="path" href="assessment.html">آمادگی رده عالی و قفلات</a>
+   394→        <a class="path" href="assessment.html">آمادگی مسابقات سراسری</a>
+   395→        <a class="path" href="assessment.html">حفظ ۵ تا ۲۵ جزء و کل</a>
+   396→        <a class="path" href="assessment.html">اذان، دعاخوانی و ابتهال</a>
+   397→      </div>
+   398→    </section>
+   399→
+   400→    <!-- الگو: بند اعتماد/آمار اسنپ‌داکتر -->
+   401→    <section class="sec">
+   402→      <div class="sec-head"><h2>وُدّا در یک نگاه</h2></div>
+   403→      <div class="stats">
+   404→        <div class="stat"><b>+۱۲۰</b><span>استاد تأییدشده</span></div>
+   405→        <div class="stat"><b>+۴٬۵۰۰</b><span>جلسه موفق</span></div>
+   406→        <div class="stat"><b>۴٫۸ از ۵</b><span>رضایت کاربران</span></div>
+   407→        <div class="stat"><b>۹۸٪</b><span>تمدید دوره</span></div>
+   408→      </div>
+   409→    </section>
+   410→
+   411→    <!-- الگو: بخش مجله اسنپ‌داکتر (Directus CMS) -->
+   412→    <section class="sec">
+   413→      <div class="sec-head"><h2>مجله وُدّا</h2></div>
+   414→      <div class="blog">
+   415→        <div class="b-card" data-toast="در نسخه واقعی: /blog/tajvid-makharij — مقاله از CMS"><div class="b-img"><img src="img/bl-tajvid.jpg" alt="تمرین تلفظ حروف"></div><div class="b-body"><span class="b-cat">تجوید</span><h3>چگونه مخارج حروف را درست تمرین کنیم؟</h3><span class="meta">۷ دقیقه مطالعه · ۱۲ آبان</span></div></div>
+   416→        <div class="b-card" data-toast="در نسخه واقعی: /blog/hifz-plan-j30 — مقاله از CMS"><div class="b-img"><img src="img/bl-hifz.jpg" alt="برنامه حفظ هفتگی"></div><div class="b-body"><span class="b-cat">حفظ</span><h3>برنامه هفتگی حفظ جزء ۳۰ با مرور جایگاه‌دار</h3><span class="meta">۵ دقیقه مطالعه · ۸ آبان</span></div></div>
+   417→        <div class="b-card" data-toast="در نسخه واقعی: /blog/madahi-breath — مقاله از CMS"><div class="b-img"><img src="img/bl-madahi.jpg" alt="تمرین تنفس مداحی"></div><div class="b-body"><span class="b-cat">مداحی</span><h3>تنفس دیافراگمی برای آوای مجلسی؛ ۳ تمرین پایه</h3><span class="meta">۶ دقیقه مطالعه · ۳ آبان</span></div></div>
+   418→      </div>
+   419→    </section>
+   420→  </div>
+   421→
+   422→  <!-- الگو: بخش دانلود اپلیکیشن اسنپ‌داکتر (اکوسیستم super-app + PWA) -->
+   423→  <section class="app-sec"><div class="wrap app-in">
+   424→    <div>
+   425→      <h2>اپلیکیشن وُدّا را دانلود کنید</h2>
+   426→      <p>جلسه‌هایتان را از هر جا مدیریت کنید؛ با اعلان جلسه، کیف پول و پیوست صوتی برای تصحیح تلاوت.</p>
+   427→      <ul>
+   428→        <li>یادآوری خودکار جلسات و تکالیف</li>
+   429→        <li>ارسال صوت تلاوت و دریافت بازخورد</li>
+   430→        <li>پرداخت امن با کیف پول وُدّا</li>
+   431→      </ul>
+   432→      <div class="badges">
+   433→        <div class="badge" data-toast="در نسخه واقعی: لینک گوگل‌پلی / کافه‌بازار"><span>▶</span><div><span>دریافت از</span><b>گوگل‌پلی</b></div></div>
+   434→        <div class="badge" data-toast="در نسخه واقعی: لینک سیب‌اپ / اپ‌استور"><span></span><div><span>دریافت از</span><b>سیب‌اپ</b></div></div>
+   435→        <div class="badge" data-toast="PWA: از خود مرورگر نصب می‌شود (manifest.json)"><span>🌐</span><div><span>یا</span><b>نصب PWA</b></div></div>
+   436→      </div>
+   437→    </div>
+   438→    <div class="app-phone" aria-hidden="true"><div class="app-scr">
+   439→      <div class="app-scr-h">جلسه در جریان</div>
+   440→      <div class="app-live"><span class="thumb">🎥</span><div><b>تجوید — جلسه ۴</b><span>● در جریان · ۰۲:۱۴</span></div></div>
+   441→      <div class="app-row"><div class="app-cell"><b>۴٫۹</b>امتیاز استاد</div><div class="app-cell"><b>۲</b>درخواست باز</div></div>
+   442→      <div class="app-row"><div class="app-cell"><b>🎙️</b>ارسال صوت</div><div class="app-cell"><b>📒</b>دفتر جلسه</div></div>
+   443→      <div class="app-row"><div class="app-cell"><b>💬</b>چت با استاد</div><div class="app-cell"><b>📅</b>جلسه بعدی</div></div>
+   444→    </div></div>
+   445→  </div></section>
+   446→</main>
+   447→
+   448→<!-- الگو: فوتر چندستونه اسنپ‌داکتر (درباره + خدمات + تخصص‌ها + پشتیبانی + شبکه‌های اجتماعی) -->
+   449→<footer class="foot"><div class="wrap">
+   450→  <div class="foot-grid">
+   451→    <div class="about">
+   452→      <a class="logo" href="/"><span class="logo-mark">و</span>وُدّا</a>
+   453→      <p>وُدّا؛ همراهِ یادگیری قرآن و مداحی — جلسه خصوصی آنلاین و حضوری با استادان تأییدشده، از روخوانی مقدماتی تا حفظ و آوای مجلسی.</p>
+   454→      <div class="socials">
+   455→        <span class="soc" data-toast="در نسخه واقعی: اینستاگرام وُدّا">in</span>
+   456→        <span class="soc" data-toast="در نسخه واقعی: تلگرام وُدّا">tg</span>
+   457→        <span class="soc" data-toast="در نسخه واقعی: یوتیوب وُدّا">yt</span>
+   458→      </div>
+   459→    </div>
+   460→    <div>
+   461→      <h4>خدمات</h4>
+   462→      <a href="/panel/user/sessions">جلسه آنلاین تصویری</a>
+   463→      <a href="/panel/user/book">رزرو جلسه حضوری</a>
+   464→      <a href="/panel/user/sessions">پرسش فوری متنی</a>
+   465→      <a href="/panel/user/sessions">تصحیح تلاوت</a>
+   466→      <a href="assessment.html">سنجش و آزمون</a>
+   467→    </div>
+   468→    <div>
+   469→      <h4>تخصص‌ها</h4>
+   470→      <a href="/panel/teacher/register">روخوانی قرآن</a>
+   471→      <a href="/panel/teacher/register">تجوید و صوت و لحن</a>
+   472→      <a href="/panel/teacher/register">حفظ قرآن</a>
+   473→      <a href="/panel/teacher/register">مفاهیم و تفسیر</a>
+   474→      <a href="/panel/teacher/register">مداحی</a>
+   475→    </div>
+   476→    <div>
+   477→      <h4>لینک‌های سریع</h4>
+   478→      <a href="sitemap.html">نقشه ساختار</a>
+   479→      <a href="/search.html">فروشگاه</a>
+   480→      <a href="/panel/user/wallet">کیف پول</a>
+   481→      <a href="/panel/user/settings">پروفایل</a>
+   482→      <a href="legal.html">قوانین و مقررات</a>
+   483→    </div>
+   484→    <div>
+   485→      <h4>پشتیبانی</h4>
+   486→      <a href="#" data-toast="پشتیبانی ۲۴ ساعته: ۰۲۱-۹۱۰۰۰۰۰۰ (نمونه)">☎ ۰۲۱-۹۱۰۰۰۰۰۰</a>
+   487→      <a href="#" data-toast="در نسخه واقعی: mailto:support@vodda.ir">✉ support@vodda.ir</a>
+   488→      <a href="corporate.html">سازمان‌ها (B2B)</a>
+   489→      <a href="/search.html">پرچم‌های قابلیت</a>
+   490→    </div>
+   491→  </div>
+   492→  <div class="foot-bottom">
+   493→    <span>© ۱۴۰۵ وُدّا — تمامی حقوق محفوظ است.</span>
+   494→    <div class="trust"><span>eNamad نمونه</span><span>ساماندهی نمونه</span><span>وُدّا — جلسه آنلاین قرآن و مداحی</span></div>
+   495→  </div>
+   496→</div></footer>
+   497→
+   498→<script>
+   499→/* وُدّا — رانتایم مشترک */
+   500→(function(){
+   501→  'use strict';
+   502→
+   503→  
+   504→
+   505→  /* ناوبری فعال بر اساس body[data-page] */
+   506→  var page=document.body.getAttribute('data-page');
+   507→  if(page){
+   508→    document.querySelectorAll('.topnav a').forEach(function(a){
+   509→      a.classList.toggle('on',a.getAttribute('data-page')===page);
+   510→    });
+   511→  }
+   512→
+   513→  /* تب‌ها */
+   514→  document.querySelectorAll('[data-tabs]').forEach(function(group){
+   515→    var tabs=group.querySelectorAll('.tab');
+   516→    tabs.forEach(function(tab){
+   517→      tab.addEventListener('click',function(){
+   518→        tabs.forEach(function(x){x.classList.remove('active');x.setAttribute('aria-selected','false')});
+   519→        tab.classList.add('active');
+   520→        tab.setAttribute('aria-selected','true');
+   521→        var target=tab.getAttribute('data-target');
+   522→        if(target){
+   523→          var scopeSel=group.getAttribute('data-scope');
+   524→          var root=scopeSel?document.querySelector(scopeSel):document;
+   525→          if(root){
+   526→            root.querySelectorAll('.tab-panel').forEach(function(p){
+   527→              p.classList.toggle('active',p.id===target);
+   528→            });
+   529→          }
+   530→        }
+   531→        var fn=tab.getAttribute('data-call');
+   532→        if(fn&&typeof window[fn]==='function')window[fn](tab);
+   533→      });
+   534→    });
+   535→  });
+   536→
+   537→  /* توست */
+   538→  var toastTimer=null;
+   539→  window.vToast=function(msg){
+   540→    var el=document.querySelector('.toast');
+   541→    if(!el){el=document.createElement('div');el.className='toast';document.body.appendChild(el);}
+   542→    el.textContent=msg;
+   543→    requestAnimationFrame(function(){el.classList.add('show')});
+   544→    clearTimeout(toastTimer);
+   545→    toastTimer=setTimeout(function(){el.classList.remove('show')},2400);
+   546→  };
+   547→
+   548→  /* ارقام فارسی */
+   549→  window.faNum=function(n){return String(n).replace(/\d/g,function(d){return '۰۱۲۳۴۵۶۷۸۹'[d]})};
+   550→  window.faToEn=function(s){return String(s).replace(/[۰-۹]/g,function(d){return '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)})};
+   551→})();
+   552→
+   553→/* ─── منطق لندینگ ─── */
+   554→(function(){
+   555→  'use strict';
+   556→
+   557→  /* بستن بنر تبلیغاتی */
+   558→  var px=document.querySelector('.promo-x');
+   559→  if(px)px.addEventListener('click',function(){document.querySelector('.promo').remove()});
+   560→
+   561→  /* انتخاب‌گر نوع جلسه (الگوی انتخاب شهر اسنپ‌داکتر) */
+   562→  var locs=['تهران','آنلاین — همه‌جا','مشهد','قم'];
+   563→  var li=0,locBtn=document.getElementById('locBtn'),locTxt=document.getElementById('locTxt');
+   564→  if(locBtn)locBtn.addEventListener('click',function(){
+   565→    li=(li+1)%locs.length;
+   566→    locTxt.textContent=locs[li];
+   567→    vToast('فیلتر جلسات: '+locs[li]+' — در نسخه واقعی: کوئری سراسری جستجو');
+   568→  });
+   569→
+   570→  /* جستجوی سراسری (الگوی اسنپ‌داکتر) */
+   571→  var sf=document.getElementById('searchForm');
+   572→  if(sf)sf.addEventListener('submit',function(e){
+   573→    e.preventDefault();
+   574→    var q=document.getElementById('q').value.trim();
+   575→    location.href='search.html'+(q?'&q='+encodeURIComponent(q):'');
+   576→  });
+   577→
+   578→  /* فلش‌های کاروسل — RTL: جهت «بعدی» = scrollBy منفی */
+   579→  document.querySelectorAll('.car-arrow').forEach(function(b){
+   580→    b.addEventListener('click',function(){
+   581→      var el=document.getElementById(b.getAttribute('data-car'));
+   582→      if(el)el.scrollBy({left:-1*Number(b.getAttribute('data-dir'))*560,behavior:'smooth'});
+   583→    });
+   584→  });
+   585→
+   586→  /* دکمه‌های کارت استاد — جلوگیری از ناوبری کارت والد */
+   587→  document.querySelectorAll('.t-acts').forEach(function(row){
+   588→    row.addEventListener('click',function(e){
+   589→      e.preventDefault();e.stopPropagation();
+   590→      var chat=row.querySelector('[data-chat]')===e.target.closest('[data-chat]');
+   591→      location.href=(chat?'chat.html':'session.html')+'';
+   592→    });
+   593→  });
+   594→
+   595→  /* توست‌های شفاف برای عناصر بدون صفحه معادل */
+   596→  document.querySelectorAll('[data-toast]').forEach(function(el){
+   597→    el.addEventListener('click',function(e){
+   598→      if(el.tagName==='A'&&el.getAttribute('href')==='#')e.preventDefault();
+   599→      e.stopPropagation();
+   600→      vToast(el.getAttribute('data-toast'));
+   601→    });
+   602→  });
+   603→})();
+   604→</script>
+   605→<script src="assets/vodda-api.js?v=202611021228"></script>
+   606→<script>try{VoddaAPI.mountTeacherCarousel('onlineCar');VoddaAPI.bindHeaderSearch();}catch(e){console.warn(e)}</script>
+   607→</body>
+   608→</html>
+   609→
