@@ -2,13 +2,157 @@
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="refresh" content="0; url=/panel/teacher">
-<link rel="canonical" href="/panel/teacher">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>پنل استاد — وُدّا</title>
 <meta name="robots" content="noindex">
-<title>وُدّا — در حال انتقال</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="assets/vodda-ui.css?v=202611021500">
+<style>
+.demo-badge{display:inline-flex;align-items:center;gap:6px;background:var(--brand-50);color:var(--brand-700);border:1.5px dashed var(--brand);border-radius:999px;padding:4px 12px;font-size:11.5px;font-weight:700}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+@media (max-width:820px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px 16px}
+.kpi b{display:block;font-size:22px;font-weight:800;color:var(--brand-700)}
+.kpi span{font-size:12px;color:var(--ink3)}
+.kpi .ic{font-size:22px;margin-bottom:8px;display:block}
+.grid-2{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;margin-top:16px}
+@media (max-width:900px){.grid-2{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px}
+.card h3{font-size:14.5px;font-weight:800;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+.req{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.req:last-child{border-bottom:0}
+.req .av{width:42px;height:42px;border-radius:50%;overflow:hidden;background:var(--brand-100);flex-shrink:0}
+.req .av img{width:100%;height:100%;object-fit:cover}
+.req .info{flex:1;min-width:0}
+.req .info b{font-size:13.5px;font-weight:800;display:block}
+.req .info span{font-size:11.5px;color:var(--ink3)}
+.req .act{display:flex;gap:6px;flex-shrink:0}
+.btn-ok{background:var(--brand);color:#fff;border:0;border-radius:10px;padding:7px 14px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}
+.btn-no{background:transparent;color:var(--ink3);border:1.5px solid var(--line2);border-radius:10px;padding:7px 12px;font:inherit;font-size:12px;cursor:pointer}
+.btn-ok:hover{background:var(--brand-700)}
+.sess{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}
+.sess:last-child{border-bottom:0}
+.sess .when{background:var(--brand-50);border-radius:12px;padding:7px 10px;text-align:center;flex-shrink:0;min-width:56px}
+.sess .when b{display:block;font-size:15px;color:var(--brand-700);font-weight:800}
+.sess .when span{font-size:10px;color:var(--ink3)}
+.sess .info{flex:1}
+.sess .info b{font-size:13.5px;font-weight:700;display:block}
+.sess .info span{font-size:11.5px;color:var(--ink3)}
+.badge-s{font-size:10.5px;font-weight:700;border-radius:999px;padding:3px 10px}
+.b-confirm{background:#e7f8ef;color:#0e9f5d}
+.b-pending2{background:#fff5e6;color:#c77c0a}
+.chart{display:flex;align-items:flex-end;gap:10px;height:150px;padding-top:10px}
+.chart .bar{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:6px;height:100%}
+.chart .bar i{display:block;width:100%;max-width:38px;background:linear-gradient(180deg,var(--brand),var(--brand-600));border-radius:8px 8px 3px 3px;transition:all .3s}
+.chart .bar span{font-size:10.5px;color:var(--ink3)}
+.chart .bar b{font-size:10px;color:var(--brand-700);font-weight:700}
+.side-links{display:grid;gap:8px}
+.side-links a{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:var(--bg);border:1px solid var(--line);border-radius:12px;font-size:13px;font-weight:600;color:var(--ink);text-decoration:none;transition:all .15s}
+.side-links a:hover{border-color:var(--brand);color:var(--brand-700)}
+.pill-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.pill{background:var(--brand-50);color:var(--brand-700);border-radius:999px;padding:5px 12px;font-size:11.5px;font-weight:700}
+</style>
 </head>
 <body>
-<p style="font-family:IRANYekanXFaNum,Tahoma,sans-serif;padding:28px;text-align:center">در حال انتقال… <a href="/panel/teacher">ادامه</a></p>
-<script>location.replace('/panel/teacher');</script>
+<header class="vhdr"><div class="vhdr-in">
+  <a class="vlogo" href="/"><span class="mark">و</span>وُدّا</a>
+  <nav class="vnav" aria-label="ناوبری اصلی">
+    <a href="/search.html">جستجوی استاد</a>
+    <a href="/book.html">رزرو جلسه</a>
+    <a href="/session.html">جلسات من</a>
+  </nav>
+  <div class="vauth" id="v-authbox"></div>
+</div></header>
+
+<main class="container-narrow">
+  <div class="phead" style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
+    <div>
+      <h1>پنل استاد</h1>
+      <p>مدیریت جلسات، درآمد و درخواست‌های رزرو — خوش آمدید استاد ربانی نژاد 🌿</p>
+    </div>
+    <span class="demo-badge">🧪 داده نمایشی</span>
+  </div>
+
+  <div class="kpis mt16">
+    <div class="kpi"><span class="ic">💰</span><b>۱۲٬۴۵۰٬۰۰۰</b><span>درآمد این ماه (تومان)</span></div>
+    <div class="kpi"><span class="ic">📅</span><b>۱۸</b><span>جلسه پیش‌رو</span></div>
+    <div class="kpi"><span class="ic">⭐</span><b>۴٫۹ <small style="font-size:11px;color:var(--ink3)">(۱۴۲ نظر)</small></b><span>امتیاز استاد</span></div>
+    <div class="kpi"><span class="ic">👨‍🎓</span><b>۳۷</b><span>دانش‌آموز فعال</span></div>
+  </div>
+
+  <div class="grid-2">
+    <div style="display:grid;gap:16px">
+      <div class="card">
+        <h3>🔔 درخواست‌های در انتظار تأیید <span class="badge-s b-pending2">۳ مورد</span></h3>
+        <div class="req"><div class="av"><img src="/img/avatars/f3.jpg" alt="زهرا احمدی"></div>
+          <div class="info"><b>زهرا احمدی</b><span>روخوانی و تجوید · جمعه ۲۱ فروردین · ۱۶:۰۰–۱۶:۳۰ · ۳۵۰٬۰۰۰ تومان</span></div>
+          <div class="act"><button class="btn-ok" onclick="this.closest('.req').style.opacity=.4;this.textContent='✓ تأیید شد';this.disabled=true">تأیید</button><button class="btn-no" onclick="this.closest('.req').remove()">رد</button></div></div>
+        <div class="req"><div class="av"><img src="/img/avatars/m2.jpg" alt="مهدی توکلی"></div>
+          <div class="info"><b>مهدی توکلی</b><span>تجوید و صوت · شنبه ۲۲ فروردین · ۱۰:۰۰–۱۰:۳۰ · ۳۵۰٬۰۰۰ تومان</span></div>
+          <div class="act"><button class="btn-ok" onclick="this.closest('.req').style.opacity=.4;this.textContent='✓ تأیید شد';this.disabled=true">تأیید</button><button class="btn-no" onclick="this.closest('.req').remove()">رد</button></div></div>
+        <div class="req"><div class="av"><img src="/img/avatars/f5.jpg" alt="نرگس رضایی"></div>
+          <div class="info"><b>نرگس رضایی</b><span>حفظ قرآن · یکشنبه ۲۳ فروردین · ۱۷:۳۰–۱۸:۳۰ · ۶۰۰٬۰۰۰ تومان</span></div>
+          <div class="act"><button class="btn-ok" onclick="this.closest('.req').style.opacity=.4;this.textContent='✓ تأیید شد';this.disabled=true">تأیید</button><button class="btn-no" onclick="this.closest('.req').remove()">رد</button></div></div>
+      </div>
+
+      <div class="card">
+        <h3>📅 جلسات پیش‌رو</h3>
+        <div class="sess"><div class="when"><b>۲۱</b><span>فروردین</span></div>
+          <div class="info"><b>روخوانی جزء ۱ — زهرا احمدی</b><span>۱۶:۰۰ تا ۱۶:۳۰ · آنلاین · ۳۰ دقیقه</span></div>
+          <span class="badge-s b-confirm">قطعی</span></div>
+        <div class="sess"><div class="when"><b>۲۲</b><span>فروردین</span></div>
+          <div class="info"><b>تجوید و صوت — مهدی توکلی</b><span>۱۰:۰۰ تا ۱۰:۳۰ · آنلاین · ۳۰ دقیقه</span></div>
+          <span class="badge-s b-confirm">قطعی</span></div>
+        <div class="sess"><div class="when"><b>۲۳</b><span>فروردین</span></div>
+          <div class="info"><b>حفظ جزء ۳۰ — نرگس رضایی</b><span>۱۷:۳۰ تا ۱۸:۳۰ · آنلاین · ۶۰ دقیقه</span></div>
+          <span class="badge-s b-pending2">در انتظار</span></div>
+        <div class="sess"><div class="when"><b>۲۵</b><span>فروردین</span></div>
+          <div class="info"><b>مرور و رفع اشکال — سینا مرادی</b><span>۰۹:۰۰ تا ۰۹:۳۰ · آنلاین · ۳۰ دقیقه</span></div>
+          <span class="badge-s b-confirm">قطعی</span></div>
+      </div>
+    </div>
+
+    <div style="display:grid;gap:16px">
+      <div class="card">
+        <h3>📈 درآمد ۶ ماه اخیر</h3>
+        <div class="chart">
+          <div class="bar"><b>۸٫۲م</b><i style="height:45%"></i><span>آبان</span></div>
+          <div class="bar"><b>۹٫۵م</b><i style="height:52%"></i><span>آذر</span></div>
+          <div class="bar"><b>۷٫۸م</b><i style="height:43%"></i><span>دی</span></div>
+          <div class="bar"><b>۱۰٫۴م</b><i style="height:58%"></i><span>بهمن</span></div>
+          <div class="bar"><b>۱۱٫۱م</b><i style="height:62%"></i><span>اسفند</span></div>
+          <div class="bar"><b>۱۲٫۵م</b><i style="height:70%"></i><span>فروردین</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>🎓 تخصص‌های من</h3>
+        <div class="pill-row"><span class="pill">روخوانی قرآن</span><span class="pill">تجوید و صوت و لحن</span><span class="pill">حفظ قرآن</span><span class="pill">سنجش سطح</span></div>
+        <h3 style="margin-top:18px">🔗 مدیریت</h3>
+        <div class="side-links">
+          <a href="/teacher.html?id=35">مشاهده پروفایل عمومی من ←</a>
+          <a href="#services">مدیریت خدمات و قیمت‌ها ←</a>
+          <a href="#calendar">تقویم در دسترس ←</a>
+          <a href="/orders.html">گردش مالی ←</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="foot"><div class="wrap">
+  <div class="foot-grid">
+    <div class="about">
+      <a class="logo" href="/"><span class="logo-mark">و</span>وُدّا</a>
+      <p>وُدّا؛ همراهِ یادگیری قرآن و مداحی — جلسه خصوصی آنلاین و حضوری با استادان تأییدشده.</p>
+    </div>
+    <div><h4>خدمات</h4><a href="/book.html">رزرو جلسه</a><a href="/session.html">جلسات من</a><a href="/assessment.html">سنجش و آزمون</a></div>
+    <div><h4>تخصص‌ها</h4><a href="/search.html">روخوانی قرآن</a><a href="/search.html">تجوید و صوت و لحن</a><a href="/search.html">حفظ قرآن</a><a href="/search.html">مداحی</a></div>
+    <div><h4>لینک‌های سریع</h4><a href="/credit.html">شارژ کیف پول</a><a href="/profile.html">پروفایل</a><a href="legal.html">قوانین و مقررات</a></div>
+  </div>
+  <div class="foot-bottom"><span>© ۱۴۰۵ وُدّا — تمامی حقوق محفوظ است.</span><span>جلسه آنلاین قرآن و مداحی</span></div>
+</div></footer>
+
+<script src="assets/vodda-api.js?v=202611021500"></script>
+<script src="assets/vodda-demo.js?v=202611021800"></script>
 </body>
 </html>
