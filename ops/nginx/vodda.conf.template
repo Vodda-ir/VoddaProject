@@ -179,7 +179,8 @@ server {
 server {
     listen 80;
     server_name __BASHAR_HOST__;
-    client_max_body_size 20m;
+    # سقف آپلود فایل (عکس/ویدئو/PDF) — با سقف ۳۰ مگابای اپ هماهنگ + سرباره multipart
+    client_max_body_size 64m;
 
     proxy_http_version 1.1;
     proxy_set_header Host $host;
