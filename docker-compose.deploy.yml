@@ -41,7 +41,7 @@ services:
       SERVER_PORT: ${BACKEND_INTERNAL_PORT:-3420}
       APP_ENV: production
       APP_TIMEZONE: ${APP_TIMEZONE:-Asia/Tehran}
-      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-${SITE_URL:-https://vodda.ir}}
+      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-https://vodda.ir}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://vodda.ir,https://app.vodda.ir,https://localhost,capacitor://localhost}
       TRUSTED_PROXIES: ${TRUSTED_PROXIES:-127.0.0.1,::1,172.16.0.0/12}
       DB_HOST: ${DB_HOST:-mysql}
@@ -68,15 +68,7 @@ services:
       DEV_WALLET_CHARGE_ENABLED: "false"
       ZARINPAL_MERCHANT_ID: ${ZARINPAL_MERCHANT_ID:-}
       ZARINPAL_SANDBOX: ${ZARINPAL_SANDBOX:-false}
-      # درگاه سامان‌سپ — بازسازی مطابق منافسه: فقط ترمینال + مبدأ عمومی سایت
-      SITE_URL: ${SITE_URL:-https://vodda.ir}
-      SAMAN_TERMINAL_ID: ${SAMAN_TERMINAL_ID:-31136631}
-      SAMAN_BASE_URL: ${SAMAN_BASE_URL:-https://sep.shaparak.ir}
       PLATFORM_COMMISSION_PERCENT: ${PLATFORM_COMMISSION_PERCENT:-15}
-      # ورود با گوگل — تا وقتی خالی باشد مسیر گوگل غیرفعال است
-      GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID:-}
-      GOOGLE_OAUTH_CLIENT_SECRET: ${GOOGLE_OAUTH_CLIENT_SECRET:-}
-      GOOGLE_OAUTH_REDIRECT_URI: ${GOOGLE_OAUTH_REDIRECT_URI:-https://api.vodda.ir/api/v1/auth/google/callback}
     ports:
       - "127.0.0.1:${BACKEND_PORT:-3420}:${BACKEND_INTERNAL_PORT:-3420}"
     volumes:
@@ -105,20 +97,7 @@ services:
       HOSTNAME: 0.0.0.0
       NODE_ENV: production
       SERVER_API_URL: ${SERVER_API_URL:-http://backend:3420/api/v1}
-      # هوش مصنوعی چندفراهموندی با اولویت مدل‌های رایگان (Pollinations بدون کلید
-      # همیشه فعال است) — کلیدها فقط سمت سرور؛ از .env کنار همین فایل خوانده می‌شود
-      ZAI_API_KEY: ${ZAI_API_KEY:-}
-      ZAI_MODEL: ${ZAI_MODEL:-glm-4.5-flash}
-      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
-      OPENROUTER_MODEL: ${OPENROUTER_MODEL:-deepseek/deepseek-chat-v3-0324:free}
-      POLLINATIONS_MODEL: ${POLLINATIONS_MODEL:-openai}
-      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
-      DEEPSEEK_MODEL: ${DEEPSEEK_MODEL:-deepseek-chat}
       UNIVERSAL_APP_ROOT_HOST: ${UNIVERSAL_APP_ROOT_HOST:-app.vodda.ir}
-      BFF_ALLOWED_HOSTS: ${BFF_ALLOWED_HOSTS:-vodda.ir,www.vodda.ir,app.vodda.ir,localhost,127.0.0.1}
-      # سشن مشترک بین vodda.ir و app.vodda.ir — برگشت از درگاه بانک همیشه به
-      # مبدأ عمومی vodda.ir فرود می‌آید و باید کاربر لاگ‌این را ببیند.
-      SESSION_COOKIE_DOMAIN: ${SESSION_COOKIE_DOMAIN:-.vodda.ir}
     ports:
       - "127.0.0.1:${FRONTEND_PORT:-3421}:${FRONTEND_INTERNAL_PORT:-3421}"
     healthcheck:
@@ -176,14 +155,13 @@ services:
       PORT: 3000
       HOSTNAME: 0.0.0.0
       DATABASE_URL: file:/app/db/custom.db
-      SESSION_SECRET: ${SESSION_SECRET:-}
       BASHAR_EITAA_TOKEN: ${BASHAR_EITAA_TOKEN:-}
       BASHAR_EITAA_CHANNEL: ${BASHAR_EITAA_CHANNEL:-}
     ports:
       - "127.0.0.1:${BASHAR_PORT:-3424}:3000"
     volumes:
       - bashar_db:/app/db
-      - ./bashar-uploads:/app/public/uploads
+      - bashar_uploads:/app/public/uploads
     healthcheck:
       test:
         - CMD-SHELL
@@ -198,23 +176,6 @@ services:
     security_opt:
       - no-new-privileges:true
 
-  turn:
-    image: coturn/coturn:alpine
-    container_name: vodda-turn-1
-    restart: unless-stopped
-    network_mode: host
-    command:
-      - -n
-      - --realm=vodda.ir
-      - --fingerprint
-      - --lt-cred-mech
-      - --user=vodda:Vd-turn-2026!x7Kq
-      - --listening-port=3478
-      - --external-ip=80.91.208.240
-      - --min-port=49160
-      - --max-port=49200
-      - --log-file=stdout
-
 volumes:
   monafaseh_db:
     name: monafaseh_monafaseh-db
@@ -225,11 +186,11 @@ volumes:
   bashar_db:
     name: bashar_bashar-db
     driver: local
+  bashar_uploads:
+    name: bashar_bashar-uploads
+    driver: local
 
 networks:
   vodda-network:
-    driver: bridge
-    driver_opts:
-      # مسیر خروجی سرور MTU محدود دارد (VMware)؛ بدون این، TLS خروجی کانتینرها
-      # به‌صورت intermittent fail می‌شود (مثلاً ارسال SMS به ippanel).
-      com.docker.network.driver.mtu: "1400"
+    name: vodda_vodda-network
+    external: true
