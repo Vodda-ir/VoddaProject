@@ -33,7 +33,6 @@ type AdvancedDraft = Pick<SearchFilters, "city" | "female">;
 const fieldPresets = [
   ["", "همه"],
   ["آموزش قرآن کریم", "آموزش قرآن"],
-  ["مداحی اهل‌بیت", "مداحی"],
 ] as const;
 
 function readInitialFilters(): SearchFilters {

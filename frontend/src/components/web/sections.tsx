@@ -171,16 +171,15 @@ function AppPreview() {
 
         <div className="landing-phone-hero">
           <span style={{ color: 'rgba(255,255,255,.67)', fontSize: 10.5 }}>استاد مناسب خودت را پیدا کن</span>
-          <strong style={{ display: 'block', marginTop: 4, color: '#fff', fontSize: 17, lineHeight: 1.65 }}>آموزش قرآن و مداحی،<br />در زمان مناسب تو</strong>
+          <strong style={{ display: 'block', marginTop: 4, color: '#fff', fontSize: 17, lineHeight: 1.65 }}>آموزش قرآن کریم،<br />در زمان مناسب تو</strong>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 12, padding: '8px 11px', borderRadius: 11, color: 'var(--olive-800)', background: '#fff', fontSize: 10.5, fontWeight: 700 }}>
             <Icon name="search" size={14} />
             جستجوی استاد
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
           <div className="landing-mini-category"><Icon name="quran" size={19} />آموزش قرآن</div>
-          <div className="landing-mini-category"><Icon name="mic" size={19} />مداحی</div>
         </div>
 
         <div style={{ marginTop: 13 }}>
@@ -248,7 +247,7 @@ export function Hero() {
       <div className="landing-hero-glow" aria-hidden="true" />
       <div className="public-container landing-hero-grid">
         <div className="landing-hero-copy">
-          <div className="landing-eyebrow"><Icon name="sparkle" size={16} />سکوی تخصصی آموزش قرآن و مداحی</div>
+          <div className="landing-eyebrow"><Icon name="sparkle" size={16} />سکوی تخصصی آموزش قرآن کریم</div>
           <h1>استاد مناسب را پیدا کن،<br /><span>زمان خودت را رزرو کن.</span></h1>
           <p>
             استادان تأییدشده را بر اساس تخصص و شهر پیدا کن، خدمات و زمان‌های آزاد را ببین و جریان رزرو و پرداخت را شفاف از داخل وُدّا پیگیری کن.
@@ -293,13 +292,6 @@ export function Categories() {
       desc: 'روخوانی، روان‌خوانی، تجوید، صوت و لحن و حفظ قرآن با استاد مناسب.',
       href: '/search?field=%D8%A2%D9%85%D9%88%D8%B2%D8%B4+%D9%82%D8%B1%D8%A2%D9%86+%DA%A9%D8%B1%DB%8C%D9%85',
       meta: 'قرآن',
-    },
-    {
-      icon: 'mic' as const,
-      title: 'مداحی اهل‌بیت',
-      desc: 'آموزش نوحه، مرثیه، مدیحه و مهارت‌های آوازی با برنامهٔ زمانی مشخص.',
-      href: '/search?field=%D9%85%D8%AF%D8%A7%D8%AD%DB%8C+%D8%A7%D9%87%D9%84%E2%80%8C%D8%A8%DB%8C%D8%AA',
-      meta: 'مداحی',
     },
   ];
 
@@ -544,7 +536,7 @@ export function Footer() {
           <div className="public-footer-brand">
             <Link href="/" style={brandStyle}>
               <img src="/vodda-logo.svg" alt="" style={{ width: 40, height: 40 }} />
-              <span><strong style={{ display: 'block', color: '#fff', fontSize: 19 }}>وُدّا</strong><small>همراه یادگیری قرآن و مداحی</small></span>
+              <span><strong style={{ display: 'block', color: '#fff', fontSize: 19 }}>وُدّا</strong><small>همراه یادگیری قرآن کریم</small></span>
             </Link>
             <p>فضایی برای پیدا کردن استاد، رزرو زمان و مدیریت شفاف مسیر آموزشی.</p>
           </div>

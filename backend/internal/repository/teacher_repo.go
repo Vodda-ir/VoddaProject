@@ -62,6 +62,8 @@ func (r *teacherRepo) List(ctx context.Context, f domain.TeacherFilter) ([]domai
 	if f.PublicOnly {
 		q = q.Where("teachers.status = ? AND teachers.verified = ? AND teachers.available = ? AND users.active = ?",
 			domain.TeacherApproved, true, true, true)
+		// پلتفرم فعلاً تخصصاً قرآنی است؛ استادهای مداحی از فهرست عمومی پنهان می‌شوند.
+		q = q.Where("teachers.field NOT LIKE ?", "%مداح%")
 	}
 	if f.Field != "" {
 		q = q.Where("teachers.field = ?", f.Field)

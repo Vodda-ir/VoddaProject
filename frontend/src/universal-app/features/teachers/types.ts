@@ -15,9 +15,17 @@ export type TeacherReview = {
   learnerName: string;
 };
 
+export type TeacherSample = {
+  id: number;
+  title: string;
+  length: string;
+  url: string;
+};
+
 export type Teacher = {
   id: number;
   name: string;
+  avatarUrl: string;
   field: string;
   tag: string;
   level: string;
@@ -27,11 +35,15 @@ export type Teacher = {
   price60: number;
   female: boolean;
   verified: boolean;
+  available: boolean;
+  tier: string;
   rating: number;
   reviews: number;
   sessions: number;
   followers: number;
   services: TeacherService[];
+  samples: TeacherSample[];
+  createdAt: string;
 };
 
 export type TeacherDetail = {
@@ -81,14 +93,26 @@ export function parseTeacherReview(value: unknown): TeacherReview {
   };
 }
 
+function parseTeacherSample(value: unknown): TeacherSample {
+  const data = record(value);
+  return {
+    id: numberValue(data.id),
+    title: stringValue(data.title, "نمونه‌صوت"),
+    length: stringValue(data.len),
+    url: stringValue(data.url),
+  };
+}
+
 export function parseTeacher(value: unknown): Teacher {
   const data = record(value);
   const user = record(data.user);
   const services = Array.isArray(data.services) ? data.services.map(parseTeacherService) : [];
+  const samples = Array.isArray(data.samples) ? data.samples.map(parseTeacherSample) : [];
 
   return {
     id: numberValue(data.id),
     name: stringValue(user.name, "استاد وُدّا"),
+    avatarUrl: stringValue(user.avatar_url),
     field: stringValue(data.field),
     tag: stringValue(data.tag),
     level: stringValue(data.level),
@@ -98,10 +122,14 @@ export function parseTeacher(value: unknown): Teacher {
     price60: numberValue(data.price60),
     female: booleanValue(data.female),
     verified: booleanValue(data.verified),
+    available: booleanValue(data.available, true),
+    tier: stringValue(data.tier),
     rating: numberValue(data.rating),
     reviews: numberValue(data.reviews),
     sessions: numberValue(data.sessions),
     followers: numberValue(data.followers),
     services,
+    samples,
+    createdAt: stringValue(data.created_at),
   };
 }

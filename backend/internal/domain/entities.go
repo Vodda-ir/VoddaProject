@@ -88,6 +88,9 @@ type Teacher struct {
 	Female    bool          `json:"female"`
 	Verified  bool          `json:"verified"`
 	Available bool          `gorm:"default:true" json:"available"`
+	// Tier رتبه‌بندی کیفی استاد: "" | "international" (درجه یک/بین‌المللی)
+	// | "grade2" | "grade3" — تیک نشان کنار نام استاد از همین تعیین می‌شود.
+	Tier     string        `gorm:"size:16;default:''" json:"tier"`
 	Status    TeacherStatus `gorm:"size:16;default:pending;index" json:"status"`
 	Rating    float64       `gorm:"default:0" json:"rating"`
 	Reviews   int           `gorm:"default:0" json:"reviews"`

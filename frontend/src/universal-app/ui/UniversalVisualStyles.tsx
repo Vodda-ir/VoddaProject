@@ -117,6 +117,40 @@ export function UniversalVisualStyles() {
       .vodda-overlay {
         animation: vodda-fade-in 140ms ease-out;
       }
+      .vodda-skeleton {
+        position: relative;
+        overflow: hidden;
+        background: #eceadf;
+        border-radius: 10px;
+      }
+      .vodda-skeleton::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        transform: translateX(-100%);
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+        animation: vodda-shimmer 1.4s ease infinite;
+      }
+      @keyframes vodda-shimmer {
+        to { transform: translateX(100%); }
+      }
+      .vodda-live-dot {
+        position: relative;
+      }
+      .vodda-live-dot::after {
+        content: "";
+        position: absolute;
+        inset: -4px;
+        border-radius: 50%;
+        background: currentColor;
+        opacity: 0;
+        animation: vodda-pulse 2s ease-out infinite;
+      }
+      @keyframes vodda-pulse {
+        0% { transform: scale(.55); opacity: .5; }
+        70% { transform: scale(1.45); opacity: 0; }
+        100% { transform: scale(1.45); opacity: 0; }
+      }
       .vodda-dialog {
         animation: vodda-dialog-in 170ms ease-out;
       }
@@ -141,7 +175,9 @@ export function UniversalVisualStyles() {
         .vodda-sheet,
         .vodda-overlay,
         .vodda-spinner,
-        .vodda-loader-orbit {
+        .vodda-loader-orbit,
+        .vodda-skeleton::after,
+        .vodda-live-dot::after {
           animation: none !important;
           transition: none !important;
         }

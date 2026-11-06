@@ -48,6 +48,7 @@ services:
       - PLATFORM_COMMISSION_PERCENT=${PLATFORM_COMMISSION_PERCENT:-15}
     volumes:
       - ./backend:/app
+      - ./data/uploads:/app/uploads
     ports:
       - "${BACKEND_PORT:-3420}:3420"
     networks:
