@@ -7,8 +7,8 @@ import {
   PanelButton,
   PanelEmpty,
   PanelPageHeader,
-  PanelStatus,
 } from '@/components/panel/PanelUI';
+import { StatCard } from '@/components/admin/AdminUI';
 import { fullUrl, getToken } from '@/lib/auth';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
 
@@ -70,6 +70,8 @@ export default function AdminServices() {
     }
   }
 
+  const pageValue = services.reduce((sum, service) => sum + Number(service.price || 0), 0);
+
   return (
     <main className="ops-page">
       <PanelPageHeader
@@ -79,6 +81,12 @@ export default function AdminServices() {
         actions={<PanelButton icon="refresh" onClick={() => void fetchData()}>به‌روزرسانی</PanelButton>}
       />
 
+      <div className="adm-stat-grid" style={{ marginBottom: 16, gridTemplateColumns: 'repeat(3, minmax(0,1fr))' }}>
+        <StatCard icon="book" tone={services.length ? 'gold' : 'olive'} label="خدمات در انتظار بررسی" value={loading ? '—' : toFaDigits(services.length)} hint={services.length ? 'نیازمند اقدام مدیریتی' : 'صف خالی است'} />
+        <StatCard icon="coins" tone="clay" label="ارزش صف بررسی" value={loading ? '—' : `${formatFaNumber(pageValue)} ت`} hint="جمع قیمت خدمات همین صف" />
+        <StatCard icon="shield" tone="info" label="سیاست انتشار" value="بررسی ← انتشار" hint="خدمت تأییدنشده قابل رزرو نیست" />
+      </div>
+
       {error && <div className="ops-error" role="alert"><span>{error}</span><PanelButton onClick={() => void fetchData()}>تلاش دوباره</PanelButton></div>}
 
       <section className="ops-data-surface">
@@ -87,11 +95,15 @@ export default function AdminServices() {
             <strong>صف بررسی خدمات</strong>
             <span style={{ display: 'block', marginTop: 2 }}>{loading ? 'در حال دریافت…' : `${toFaDigits(services.length)} خدمت در انتظار`}</span>
           </div>
-          <PanelStatus status={services.length ? 'pending' : 'approved'}>{services.length ? 'نیازمند اقدام' : 'صف خالی'}</PanelStatus>
+          <span className="adm-badge" data-tone={services.length ? 'gold' : 'green'}>{services.length ? 'نیازمند اقدام' : 'صف خالی'}</span>
         </div>
 
         {loading ? (
-          <div style={{ padding: 42, textAlign: 'center', color: 'var(--ink-3)', fontSize: 12 }}>در حال بارگذاری خدمات…</div>
+          <div style={{ padding: 20, display: 'grid', gap: 10 }}>
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div key={index} className="adm-skeleton" style={{ height: 56, borderRadius: 14 }} />
+            ))}
+          </div>
         ) : services.length === 0 ? (
           <PanelEmpty icon="checkCircle" title="خدمت در انتظار بررسی وجود ندارد" description="همه خدمات جدید تعیین تکلیف شده‌اند." />
         ) : (
@@ -101,13 +113,13 @@ export default function AdminServices() {
             const busy = busyId === service.id;
             return (
               <article className="ops-row" key={service.id} style={{ opacity: busy ? .55 : 1 }}>
-                <span style={{ width: 44, height: 44, display: 'grid', placeItems: 'center', flex: '0 0 44px', borderRadius: 13, color: 'var(--olive-700)', background: 'var(--olive-100)' }}>
+                <span className="adm-stat-icon" style={{ width: 44, height: 44, borderRadius: 13 }}>
                   <Icon name="book" size={20} />
                 </span>
                 <div className="ops-row-main">
                   <div className="ops-row-title">
                     <strong>{service.title || 'خدمت بدون عنوان'}</strong>
-                    <PanelStatus status="pending">در انتظار تأیید</PanelStatus>
+                    <span className="adm-badge" data-tone="gold">در انتظار تأیید</span>
                   </div>
                   <div className="ops-row-sub">
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
@@ -118,7 +130,7 @@ export default function AdminServices() {
                   </div>
                   <div className="ops-row-meta">
                     <span><Icon name="clock" size={13} />{toFaDigits(Number(service.duration) || 0)} دقیقه</span>
-                    <span>{formatFaNumber(Number(service.price) || 0)} تومان</span>
+                    <span style={{ fontWeight: 800, color: 'var(--olive-700)' }}>{formatFaNumber(Number(service.price) || 0)} تومان</span>
                     <span>#{toFaDigits(service.id)}</span>
                   </div>
                 </div>

@@ -7,7 +7,6 @@ export const metadata = { title: 'وبلاگ · وُدّا' };
 const posts = [
   { title: 'روش‌های مؤثر در حفظ قرآن کریم', excerpt: 'در این مقاله به بررسی روش‌های نوین و مؤثر در حفظ قرآن می‌پردازیم…', date: '۱۴۰۳/۰۴/۱۵', tag: 'حفظ', icon: 'quran' as const },
   { title: 'تجوید قرآن؛ قواعد پایه', excerpt: 'آشنایی با قواعد پایه‌ای تجوید برای شروع یادگیری تلاوت صحیح…', date: '۱۴۰۳/۰۴/۱۰', tag: 'تجوید', icon: 'book' as const },
-  { title: 'تاریخچه مداحی در ایران', excerpt: 'نگاهی به سیر تطور مداحی و نقش آن در فرهنگ ایرانی-اسلامی…', date: '۱۴۰۳/۰۳/۲۸', tag: 'مداحی', icon: 'mic' as const },
 ];
 
 export default function BlogPage() {
@@ -17,7 +16,7 @@ export default function BlogPage() {
       <PublicPageHero
         kicker="وبلاگ وُدّا"
         title="مطالب آموزشی برای مسیر یادگیری"
-        description="مجموعه‌ای از مطالب درباره آموزش قرآن، تجوید، حفظ و مداحی."
+        description="مجموعه‌ای از مطالب درباره آموزش قرآن، تجوید و حفظ."
         icon="book"
       />
 

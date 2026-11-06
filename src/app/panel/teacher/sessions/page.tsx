@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
 import { Avatar } from '@/components/web/ui';
 import { Icon } from '@/components/Icon';
 import {
@@ -105,6 +106,11 @@ export default function TeacherSessionsPage() {
                 </div>
                 {session.status === 'confirmed' && (
                   <div className="ops-row-actions">
+                    <Link href={`/panel/live/${session.id}`} style={{ display: 'inline-flex' }}>
+                      <PanelButton tone="primary" icon="video">
+                        ورود به کلاس آنلاین
+                      </PanelButton>
+                    </Link>
                     <PanelButton tone="success" icon="checkCircle" disabled={busy} onClick={() => void complete(session)}>
                       {busy ? 'در حال ثبت…' : 'ثبت برگزاری'}
                     </PanelButton>

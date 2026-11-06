@@ -10,11 +10,10 @@ import { digitsOnly, toFaDigits } from '@/lib/persian';
 
 const fields = [
   { id: 'quran', label: 'آموزش قرآن کریم' },
-  { id: 'maddahi', label: 'مداحی و روضه' },
   { id: 'consult', label: 'مشاوره صوتی' },
 ];
 
-const tags = ['مدرس قرآن', 'قاری', 'مداح', 'مربی تلاوت', 'استاد تجوید', 'مشاور'];
+const tags = ['مدرس قرآن', 'قاری', 'مربی تلاوت', 'استاد تجوید', 'مشاور'];
 
 export default function TeacherRegisterPage() {
   const router = useRouter();

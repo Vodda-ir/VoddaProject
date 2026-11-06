@@ -14,12 +14,10 @@ const LIMIT = 20;
 const fields = [
   { id: '', label: 'همه' },
   { id: 'آموزش قرآن کریم', label: 'آموزش قرآن' },
-  { id: 'مداحی اهل‌بیت', label: 'مداحی' },
 ];
 
 function normalizeField(value: string): string {
   if (value === 'quran') return 'آموزش قرآن کریم';
-  if (value === 'maddahi') return 'مداحی اهل‌بیت';
   return fields.some((field) => field.id === value) ? value : '';
 }
 
