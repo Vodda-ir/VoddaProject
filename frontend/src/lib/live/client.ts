@@ -51,6 +51,7 @@ export class LiveClient {
 
   private ws: WebSocket | null = null;
   private wsHealthy = false;
+  private wsDataBlocked = false;
   private closedByUser = false;
   private cursor = 0;
   private pollTimer: ReturnType<typeof setTimeout> | null = null;
@@ -92,27 +93,38 @@ export class LiveClient {
         const socket = new WebSocket(`${WS_BASE}/api/v1/live/ws?session=${this.sessionId}&ticket=${encodeURIComponent(ticket)}`);
         this.ws = socket;
 
+        // Some CDNs complete the WS handshake but silently drop data frames.
+        // The hub echoes a system join frame immediately, so if no frame
+        // arrives within this budget we treat the socket as data-dead and
+        // switch to long-polling (retrying the socket later).
+        let gotFrame = false;
         const failover = () => {
           if (settled) return;
           settled = true;
           this.wsHealthy = false;
+          if (!gotFrame) this.wsDataBlocked = true;
           try { socket.close(); } catch { /* ignore */ }
           if (this.ws === socket) this.ws = null;
           this.startPolling();
           resolve();
         };
         const handshakeTimer = setTimeout(failover, 6000);
+        const dataTimer = setTimeout(failover, 5000);
 
         socket.onopen = () => {
           clearTimeout(handshakeTimer);
-          if (settled) return;
-          settled = true;
-          this.wsHealthy = true;
-          this.stopPolling();
           this.setStatus('live');
-          resolve();
         };
         socket.onmessage = (raw) => {
+          gotFrame = true;
+          clearTimeout(dataTimer);
+          if (!settled) {
+            settled = true;
+            this.wsHealthy = true;
+            this.wsDataBlocked = false;
+            this.stopPolling();
+            resolve();
+          }
           try {
             const event = JSON.parse(String(raw.data)) as LiveEvent;
             this.track(event);
@@ -121,6 +133,7 @@ export class LiveClient {
         };
         socket.onclose = () => {
           clearTimeout(handshakeTimer);
+          clearTimeout(dataTimer);
           if (this.disposed || this.closedByUser) return;
           if (this.wsHealthy) {
             this.wsHealthy = false;
@@ -141,6 +154,8 @@ export class LiveClient {
 
   private scheduleReconnect() {
     if (this.disposed || this.closedByUser || this.reconnectTimer) return;
+    // Data-blocked sockets get a slow retry so polling stays the primary path.
+    const delay = this.wsDataBlocked ? 45_000 : 2_500;
     this.reconnectTimer = setTimeout(async () => {
       this.reconnectTimer = null;
       if (this.disposed || this.closedByUser || this.wsHealthy) return;
@@ -150,7 +165,7 @@ export class LiveClient {
       } catch {
         this.startPolling();
       }
-    }, 2500);
+    }, delay);
   }
 
   private track(event: LiveEvent) {
