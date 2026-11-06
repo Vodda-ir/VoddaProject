@@ -7,6 +7,7 @@ import {
   PanelEmpty,
   PanelPageHeader,
 } from '@/components/panel/PanelUI';
+import { DataTable, exportCsv, StatCard, TablePagination } from '@/components/admin/AdminUI';
 import { getToken } from '@/lib/auth';
 import { toFaDigits } from '@/lib/persian';
 
@@ -22,6 +23,28 @@ type AuditEntry = {
 };
 
 const PAGE_SIZE = 50;
+
+const ACTION_BADGE: Record<string, { label: string; tone: string }> = {
+  'POST:/api/v1/admin/teachers/:id/review': { label: 'بررسی استاد', tone: 'gold' },
+  'PATCH:/api/v1/admin/users/:id/active': { label: 'تغییر دسترسی حساب', tone: 'clay' },
+  'PUT:/api/v1/admin/services/:id/approve': { label: 'تأیید خدمت', tone: 'green' },
+  'PUT:/api/v1/admin/services/:id/reject': { label: 'رد خدمت', tone: 'rose' },
+  'POST:/api/v1/admin/withdrawals/:id/process': { label: 'ثبت وضعیت برداشت', tone: 'info' },
+  'PATCH:/api/v1/admin/support/messages/:id/resolve': { label: 'رسیدگی پشتیبانی', tone: 'olive' },
+};
+
+function actionMeta(action: string) {
+  if (ACTION_BADGE[action]) return ACTION_BADGE[action];
+  if (action.includes('teacher')) return { label: 'عملیات استاد', tone: 'gold' };
+  if (action.includes('user')) return { label: 'عملیات کاربر', tone: 'clay' };
+  if (action.includes('withdrawal')) return { label: 'عملیات مالی', tone: 'info' };
+  return { label: 'عملیات مدیریتی', tone: 'muted' };
+}
+
+function formatDate(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? '—' : new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium', timeStyle: 'medium' }).format(date);
+}
 
 export default function AdminAuditPage() {
   const [entries, setEntries] = useState<AuditEntry[]>([]);
@@ -52,66 +75,100 @@ export default function AdminAuditPage() {
 
   useEffect(() => { void load(); }, [load]);
 
-  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
-
   return (
     <main className="ops-page">
       <PanelPageHeader
         eyebrow="ردیابی عملیات حساس"
         title="گزارش عملیات مدیر"
         description="ثبت تغییرات مدیریتی برای پیگیری رخداد، پاسخ‌گویی و ردیابی درخواست‌ها."
-        actions={<PanelButton icon="refresh" onClick={() => void load()}>به‌روزرسانی</PanelButton>}
+        actions={
+          <>
+            <PanelButton
+              icon="download"
+              onClick={() =>
+                exportCsv(
+                  'vodda-audit-log',
+                  ['شناسه', 'عملیات', 'هدف', 'مدیر', 'زمان', 'شناسه درخواست'],
+                  entries.map((entry) => [
+                    entry.id,
+                    entry.action,
+                    `${entry.target_type || 'admin'}#${entry.target_id || 0}`,
+                    entry.actor_id,
+                    formatDate(entry.created_at),
+                    entry.request_id || '',
+                  ]),
+                )
+              }
+            >
+              خروجی CSV
+            </PanelButton>
+            <PanelButton icon="refresh" onClick={() => void load()}>به‌روزرسانی</PanelButton>
+          </>
+        }
       />
+
+      <div className="adm-stat-grid" style={{ marginBottom: 16, gridTemplateColumns: 'repeat(3, minmax(0,1fr))' }}>
+        <StatCard icon="shield" tone="olive" label="رخدادهای ثبت‌شده" value={loading ? '—' : toFaDigits(total)} hint="تمام تغییرات حساس مدیریتی" />
+        <StatCard icon="clock" tone="info" label="ترتیب" value="جدید ← قدیم" hint="۵۰ رخداد در هر صفحه" />
+        <StatCard icon="doc" tone="gold" label="شناسه درخواست" value="قابل ردیابی" hint="برای پیگیری در لاگ سرور" />
+      </div>
 
       {error && <div className="ops-error" role="alert"><span>{error}</span><PanelButton onClick={() => void load()}>تلاش دوباره</PanelButton></div>}
 
-      <section className="ops-data-surface">
-        <div className="ops-data-head">
-          <div>
-            <strong>Audit log</strong>
-            <span style={{ display: 'block', marginTop: 2 }}>{loading ? 'در حال دریافت…' : `${toFaDigits(total)} رخداد ثبت‌شده`}</span>
-          </div>
-          {!loading && total > 0 && <span>صفحه {toFaDigits(page + 1)} از {toFaDigits(pageCount)}</span>}
-        </div>
-
-        {loading ? (
-          <div style={{ padding: 42, textAlign: 'center', color: 'var(--ink-3)', fontSize: 12 }}>در حال بارگذاری گزارش عملیات…</div>
-        ) : entries.length === 0 ? (
-          <PanelEmpty icon="shield" title="هنوز عملیات مدیریتی ثبت نشده" />
-        ) : (
-          entries.map((entry) => (
-            <article className="ops-row" key={entry.id}>
-              <span style={{ width: 40, height: 40, display: 'grid', placeItems: 'center', flex: '0 0 40px', borderRadius: 12, color: 'var(--olive-700)', background: 'var(--olive-100)' }}>
-                <Icon name="shield" size={18} />
-              </span>
-              <div className="ops-row-main">
-                <div className="ops-row-title"><strong dir="ltr">{entry.action}</strong></div>
-                <div className="ops-row-sub">
-                  <span>{entry.target_type || 'admin'} {entry.target_id ? `#${toFaDigits(entry.target_id)}` : ''}</span>
-                  <span>· مدیر #{toFaDigits(entry.actor_id)}</span>
-                </div>
-                <div className="ops-row-meta">
-                  <span>{formatDate(entry.created_at)}</span>
-                  <code dir="ltr" style={{ maxWidth: 330, overflow: 'hidden', color: 'var(--ink-4)', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{entry.request_id || '—'}</code>
+      <DataTable
+        columns={[
+          {
+            key: 'action',
+            header: 'عملیات',
+            render: (entry) => (
+              <div className="adm-cell-main">
+                <span className="adm-stat-icon" style={{ width: 36, height: 36, borderRadius: 11 }}>
+                  <Icon name="shield" size={16} />
+                </span>
+                <div style={{ minWidth: 0 }}>
+                  <strong style={{ fontSize: 11.5 }} dir="ltr">{entry.action}</strong>
+                  <small>{actionMeta(entry.action).label}</small>
                 </div>
               </div>
-            </article>
-          ))
-        )}
+            ),
+          },
+          {
+            key: 'target',
+            header: 'هدف',
+            width: 150,
+            render: (entry) => <span style={{ fontSize: 10.5, color: 'var(--ink-3)' }}>{entry.target_type || 'admin'} {entry.target_id ? `#${toFaDigits(entry.target_id)}` : ''}</span>,
+          },
+          {
+            key: 'actor',
+            header: 'مدیر',
+            width: 90,
+            render: (entry) => <span className="adm-badge" data-tone="olive">#{toFaDigits(entry.actor_id)}</span>,
+          },
+          {
+            key: 'date',
+            header: 'زمان',
+            width: 170,
+            render: (entry) => <span style={{ fontSize: 10.5, color: 'var(--ink-3)' }}>{formatDate(entry.created_at)}</span>,
+          },
+          {
+            key: 'request',
+            header: 'شناسه درخواست',
+            width: 150,
+            render: (entry) => (
+              <code dir="ltr" style={{ display: 'block', maxWidth: 150, overflow: 'hidden', color: 'var(--ink-4)', fontSize: 9.5, textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {entry.request_id || '—'}
+              </code>
+            ),
+          },
+        ]}
+        rows={entries}
+        loading={loading}
+        emptyIcon="shield"
+        emptyTitle="هنوز عملیات مدیریتی ثبت نشده"
+        emptyDescription="تغییرات حساس (تأیید استاد، برداشت‌ها و…) به‌طور خودکار اینجا ثبت می‌شوند."
+      />
 
-        {!loading && total > PAGE_SIZE && (
-          <div className="ops-pagination">
-            <PanelButton disabled={page === 0} onClick={() => setPage((value) => Math.max(0, value - 1))}>صفحه قبل</PanelButton>
-            <span>{toFaDigits(page * PAGE_SIZE + 1)} تا {toFaDigits(Math.min((page + 1) * PAGE_SIZE, total))} از {toFaDigits(total)}</span>
-            <PanelButton disabled={page + 1 >= pageCount} onClick={() => setPage((value) => value + 1)}>صفحه بعد</PanelButton>
-          </div>
-        )}
-      </section>
+      <TablePagination page={page} pageSize={PAGE_SIZE} total={total} onPage={setPage} />
     </main>
   );
-}
-
-function formatDate(value: string) {
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? '—' : new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium', timeStyle: 'medium' }).format(date);
 }

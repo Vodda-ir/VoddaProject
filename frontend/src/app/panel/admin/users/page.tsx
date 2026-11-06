@@ -2,12 +2,22 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { Avatar } from '@/components/web/ui';
+import { Icon } from '@/components/Icon';
 import {
   PanelButton,
-  PanelEmpty,
   PanelPageHeader,
   PanelStatus,
 } from '@/components/panel/PanelUI';
+import {
+  DataTable,
+  Drawer,
+  exportCsv,
+  FilterTabs,
+  KeyValueRow,
+  SearchInput,
+  StatCard,
+  TablePagination,
+} from '@/components/admin/AdminUI';
 import { fullUrl, getToken } from '@/lib/auth';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
 
@@ -19,9 +29,13 @@ type AdminUser = {
   name?: string;
   mobile?: string;
   role?: RoleFilter;
+  city?: string;
+  bio?: string;
   wallet?: number;
   active?: boolean;
   avatar_url?: string;
+  created_at?: string;
+  teacher?: { id?: number; status?: string; verified?: boolean } | null;
 };
 
 const ROLES: Array<{ value: RoleFilter; label: string }> = [
@@ -31,14 +45,35 @@ const ROLES: Array<{ value: RoleFilter; label: string }> = [
   { value: 'admin', label: 'ادمین' },
 ];
 
+const ROLE_BADGE: Record<string, { label: string; tone: string }> = {
+  learner: { label: 'قرآن‌آموز', tone: 'info' },
+  teacher: { label: 'استاد', tone: 'gold' },
+  admin: { label: 'ادمین', tone: 'olive' },
+};
+
+function roleLabel(role?: string) {
+  return ROLE_BADGE[role ?? 'learner']?.label ?? 'قرآن‌آموز';
+}
+
+function faDate(iso?: string): string {
+  if (!iso) return '—';
+  try {
+    return new Intl.DateTimeFormat('fa-IR', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(iso));
+  } catch {
+    return '—';
+  }
+}
+
 export default function AdminUsers() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [role, setRole] = useState<RoleFilter>('');
+  const [query, setQuery] = useState('');
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [busyId, setBusyId] = useState<number | null>(null);
+  const [selected, setSelected] = useState<AdminUser | null>(null);
   const token = getToken();
 
   const fetchUsers = useCallback(async () => {
@@ -51,6 +86,7 @@ export default function AdminUsers() {
         offset: String(page * LIMIT),
       });
       if (role) sp.set('role', role);
+      if (query.trim()) sp.set('q', query.trim());
       const response = await fetch(`/api/backend/admin/users?${sp.toString()}`, { cache: 'no-store' });
       const body = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(body.error || 'فهرست کاربران دریافت نشد.');
@@ -63,7 +99,7 @@ export default function AdminUsers() {
     } finally {
       setLoading(false);
     }
-  }, [token, page, role]);
+  }, [token, page, role, query]);
 
   useEffect(() => { void fetchUsers(); }, [fetchUsers]);
 
@@ -84,6 +120,7 @@ export default function AdminUsers() {
       const body = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(body.error || 'تغییر وضعیت حساب انجام نشد.');
       setUsers((previous) => previous.map((item) => item.id === user.id ? { ...item, active: next } : item));
+      if (selected?.id === user.id) setSelected((current) => (current ? { ...current, active: next } : current));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'تغییر وضعیت حساب انجام نشد.');
     } finally {
@@ -91,88 +128,173 @@ export default function AdminUsers() {
     }
   }
 
-  const totalPages = Math.max(1, Math.ceil(total / LIMIT));
-
   return (
     <main className="ops-page">
       <PanelPageHeader
         eyebrow="حساب‌ها و دسترسی"
         title="کاربران"
-        description="حساب‌های سامانه را بر اساس نقش مرور کنید و دسترسی حساب‌ها را بدون دستکاری داده‌های پروفایل کنترل کنید."
-        actions={<PanelButton icon="refresh" onClick={() => void fetchUsers()}>به‌روزرسانی</PanelButton>}
+        description="جست‌وجو در حساب‌ها، پایش کیف پول و کنترل دسترسی — بدون دستکاری داده‌های پروفایل."
+        actions={
+          <>
+            <PanelButton
+              icon="download"
+              onClick={() =>
+                exportCsv(
+                  'vodda-users',
+                  ['شناسه', 'نام', 'موبایل', 'نقش', 'کیف پول', 'وضعیت', 'تاریخ عضویت'],
+                  users.map((user) => [user.id, user.name || '', user.mobile || '', roleLabel(user.role), Number(user.wallet || 0), user.active ? 'فعال' : 'غیرفعال', faDate(user.created_at)]),
+                )
+              }
+            >
+              خروجی CSV
+            </PanelButton>
+            <PanelButton icon="refresh" onClick={() => void fetchUsers()}>به‌روزرسانی</PanelButton>
+          </>
+        }
       />
 
-      <div className="ops-filter-tabs" role="tablist" aria-label="نقش کاربران" style={{ marginBottom: 14 }}>
-        {ROLES.map((item) => (
-          <button key={item.value || 'all'} type="button" role="tab" aria-selected={role === item.value} onClick={() => { setRole(item.value); setPage(0); }}>
-            {item.label}
-          </button>
-        ))}
+      <div className="adm-stat-grid" style={{ marginBottom: 16, gridTemplateColumns: 'repeat(3, minmax(0,1fr))' }}>
+        <StatCard icon="users" tone="olive" label="حساب‌های این نما" value={loading ? '—' : toFaDigits(total)} hint={role ? roleLabel(role) : 'همه نقش‌ها'} />
+        <StatCard
+          icon="checkCircle"
+          tone="olive"
+          label="فعال"
+          value={loading ? '—' : toFaDigits(users.filter((user) => user.active).length)}
+          hint="در همین صفحه"
+        />
+        <StatCard
+          icon="wallet"
+          tone="gold"
+          label="مجموع کیف پول صفحه"
+          value={loading ? '—' : `${formatFaNumber(users.reduce((sum, user) => sum + Number(user.wallet || 0), 0))} ت`}
+          hint="بر اساس داده همین صفحه"
+        />
+      </div>
+
+      <div className="adm-toolbar">
+        <FilterTabs
+          ariaLabel="نقش کاربران"
+          items={ROLES}
+          value={role}
+          onChange={(value) => { setRole(value); setPage(0); }}
+        />
+        <SearchInput value={query} onChange={(value) => { setQuery(value); setPage(0); }} placeholder="جست‌وجوی نام یا شماره موبایل…" />
       </div>
 
       {error && <div className="ops-error" role="alert"><span>{error}</span><PanelButton onClick={() => void fetchUsers()}>تلاش دوباره</PanelButton></div>}
 
-      <section className="ops-data-surface">
-        <div className="ops-data-head">
-          <div>
-            <strong>{role ? ROLES.find((item) => item.value === role)?.label : 'همه کاربران'}</strong>
-            <span style={{ display: 'block', marginTop: 2 }}>{loading ? 'در حال دریافت…' : `${toFaDigits(total)} حساب`}</span>
-          </div>
-          {!loading && total > 0 && <span>صفحه {toFaDigits(page + 1)} از {toFaDigits(totalPages)}</span>}
-        </div>
-
-        {loading ? (
-          <div style={{ padding: 42, textAlign: 'center', color: 'var(--ink-3)', fontSize: 12 }}>در حال بارگذاری کاربران…</div>
-        ) : users.length === 0 ? (
-          <PanelEmpty icon="users" title="کاربری در این گروه وجود ندارد" />
-        ) : (
-          users.map((user) => {
-            const busy = busyId === user.id;
-            return (
-              <article className="ops-row" key={user.id} style={{ opacity: busy ? .55 : 1 }}>
-                <Avatar size={44} imageUrl={fullUrl(user.avatar_url)} />
-                <div className="ops-row-main">
-                  <div className="ops-row-title">
-                    <strong>{user.name || 'کاربر بدون نام'}</strong>
-                    <PanelStatus status={user.active ? 'active' : 'inactive'}>{user.active ? 'فعال' : 'غیرفعال'}</PanelStatus>
-                    <PanelStatus status="info">{roleLabel(user.role)}</PanelStatus>
-                  </div>
-                  <div className="ops-row-sub">
-                    <span dir="ltr">{toFaDigits(user.mobile || '—')}</span>
-                    <span>· شناسه {toFaDigits(user.id)}</span>
-                  </div>
-                  <div className="ops-row-meta">
-                    <span>کیف پول: {formatFaNumber(Number(user.wallet) || 0)} تومان</span>
-                  </div>
+      <DataTable
+        columns={[
+          {
+            key: 'user',
+            header: 'کاربر',
+            render: (user) => (
+              <div className="adm-cell-main">
+                <Avatar size={38} imageUrl={fullUrl(user.avatar_url)} />
+                <div style={{ minWidth: 0 }}>
+                  <strong>{user.name || 'کاربر بدون نام'}</strong>
+                  <small dir="ltr">{toFaDigits(user.mobile || '—')}</small>
                 </div>
-                <div className="ops-row-actions">
+              </div>
+            ),
+          },
+          {
+            key: 'role',
+            header: 'نقش',
+            width: 110,
+            render: (user) => <span className="adm-badge" data-tone={ROLE_BADGE[user.role ?? 'learner']?.tone}>{roleLabel(user.role)}</span>,
+          },
+          {
+            key: 'wallet',
+            header: 'کیف پول',
+            width: 120,
+            render: (user) => <strong style={{ fontSize: 12 }}>{formatFaNumber(Number(user.wallet || 0))}</strong>,
+          },
+          {
+            key: 'created',
+            header: 'عضویت',
+            width: 110,
+            render: (user) => <span style={{ color: 'var(--ink-3)', fontSize: 10.5 }}>{faDate(user.created_at)}</span>,
+          },
+          {
+            key: 'status',
+            header: 'وضعیت',
+            width: 100,
+            render: (user) => <PanelStatus status={user.active ? 'active' : 'inactive'}>{user.active ? 'فعال' : 'غیرفعال'}</PanelStatus>,
+          },
+          {
+            key: 'actions',
+            header: '',
+            width: 150,
+            align: 'end',
+            render: (user) => {
+              const busy = busyId === user.id;
+              return (
+                <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                  <PanelButton icon="edit" onClick={() => setSelected(user)}>جزئیات</PanelButton>
                   <PanelButton
                     tone={user.active ? 'danger' : 'success'}
                     disabled={busy}
                     onClick={() => void toggleActive(user)}
                   >
-                    {busy ? 'در حال ثبت…' : user.active ? 'غیرفعال‌کردن حساب' : 'فعال‌کردن حساب'}
+                    {busy ? '…' : user.active ? 'غیرفعال' : 'فعال'}
                   </PanelButton>
                 </div>
-              </article>
-            );
-          })
-        )}
+              );
+            },
+          },
+        ]}
+        rows={users}
+        loading={loading}
+        emptyIcon="users"
+        emptyTitle="کاربری در این نما وجود ندارد"
+        emptyDescription="با تغییر فیلتر نقش یا عبارت جست‌وجو دوباره تلاش کنید."
+        onRowClick={(user) => setSelected(user)}
+      />
 
-        {!loading && total > LIMIT && (
-          <div className="ops-pagination">
-            <PanelButton disabled={page === 0} onClick={() => setPage((value) => Math.max(0, value - 1))}>صفحه قبل</PanelButton>
-            <span>{toFaDigits(page * LIMIT + 1)} تا {toFaDigits(Math.min((page + 1) * LIMIT, total))} از {toFaDigits(total)}</span>
-            <PanelButton disabled={page + 1 >= totalPages} onClick={() => setPage((value) => value + 1)}>صفحه بعد</PanelButton>
-          </div>
+      <TablePagination page={page} pageSize={LIMIT} total={total} onPage={setPage} />
+
+      <Drawer
+        open={selected !== null}
+        onClose={() => setSelected(null)}
+        title={selected?.name || 'کاربر بدون نام'}
+      >
+        {selected && (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '6px 2px 14px' }}>
+              <Avatar size={56} imageUrl={fullUrl(selected.avatar_url)} />
+              <div>
+                <strong style={{ display: 'block', fontSize: 14 }}>{selected.name || 'کاربر بدون نام'}</strong>
+                <div style={{ display: 'flex', gap: 5, marginTop: 5 }}>
+                  <span className="adm-badge" data-tone={ROLE_BADGE[selected.role ?? 'learner']?.tone}>{roleLabel(selected.role)}</span>
+                  <PanelStatus status={selected.active ? 'active' : 'inactive'}>{selected.active ? 'فعال' : 'غیرفعال'}</PanelStatus>
+                </div>
+              </div>
+            </div>
+            <KeyValueRow label="شناسه">{toFaDigits(selected.id)}</KeyValueRow>
+            <KeyValueRow label="موبایل"><span dir="ltr">{toFaDigits(selected.mobile || '—')}</span></KeyValueRow>
+            <KeyValueRow label="شهر">{selected.city || '—'}</KeyValueRow>
+            <KeyValueRow label="کیف پول">{formatFaNumber(Number(selected.wallet || 0))} تومان</KeyValueRow>
+            <KeyValueRow label="تاریخ عضویت">{faDate(selected.created_at)}</KeyValueRow>
+            {selected.teacher?.id && (
+              <KeyValueRow label="پروفایل استاد">
+                {selected.teacher.status === 'approved' ? 'تأییدشده' : selected.teacher.status === 'pending' ? 'در انتظار بررسی' : 'ردشده'}
+              </KeyValueRow>
+            )}
+            {selected.bio && <KeyValueRow label="بیو">{selected.bio}</KeyValueRow>}
+            <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+              <PanelButton
+                tone={selected.active ? 'danger' : 'success'}
+                icon={selected.active ? 'x' : 'check'}
+                disabled={busyId === selected.id}
+                onClick={() => void toggleActive(selected)}
+              >
+                {busyId === selected.id ? 'در حال ثبت…' : selected.active ? 'غیرفعال‌کردن حساب' : 'فعال‌کردن حساب'}
+              </PanelButton>
+            </div>
+          </>
         )}
-      </section>
+      </Drawer>
     </main>
   );
-}
-
-function roleLabel(role?: string) {
-  if (role === 'admin') return 'ادمین';
-  if (role === 'teacher') return 'استاد';
-  return 'قرآن‌آموز';
 }

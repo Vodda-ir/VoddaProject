@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react';
 
 // Line icon set ported from docs/design/vodda-icons.jsx (24×24, stroke=currentColor).
-type IconName =
+export type IconName =
   | 'home' | 'search' | 'calendar' | 'wallet' | 'user' | 'phone' | 'video' | 'camera'
   | 'book' | 'mic' | 'star' | 'heart' | 'chevronL' | 'chevronUp' | 'arrowL' | 'arrowDownLeft' | 'arrowUpRight' | 'play'
   | 'check' | 'checkCircle' | 'bell' | 'message' | 'pin' | 'clock' | 'info' | 'shield'

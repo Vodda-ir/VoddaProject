@@ -6,8 +6,8 @@ import {
   PanelButton,
   PanelEmpty,
   PanelPageHeader,
-  PanelStatus,
 } from '@/components/panel/PanelUI';
+import { FilterTabs, StatCard, TablePagination } from '@/components/admin/AdminUI';
 import { getToken } from '@/lib/auth';
 import { toFaDigits } from '@/lib/persian';
 
@@ -24,6 +24,11 @@ type SupportMessage = {
 };
 
 const PAGE_SIZE = 30;
+
+function formatDate(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? '—' : new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium', timeStyle: 'short' }).format(date);
+}
 
 export default function AdminSupportPage() {
   const [status, setStatus] = useState<SupportStatus>('new');
@@ -78,8 +83,6 @@ export default function AdminSupportPage() {
     }
   }
 
-  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
-
   return (
     <main className="ops-page">
       <PanelPageHeader
@@ -89,9 +92,28 @@ export default function AdminSupportPage() {
         actions={<PanelButton icon="refresh" onClick={() => void load()}>به‌روزرسانی</PanelButton>}
       />
 
-      <div className="ops-filter-tabs" role="tablist" aria-label="وضعیت پیام‌ها" style={{ marginBottom: 14 }}>
-        <button type="button" role="tab" aria-selected={status === 'new'} onClick={() => { setStatus('new'); setPage(0); }}>جدید</button>
-        <button type="button" role="tab" aria-selected={status === 'resolved'} onClick={() => { setStatus('resolved'); setPage(0); }}>رسیدگی‌شده</button>
+      <div className="adm-stat-grid" style={{ marginBottom: 16, gridTemplateColumns: 'repeat(3, minmax(0,1fr))' }}>
+        <StatCard
+          icon="message"
+          tone={status === 'new' ? 'gold' : 'olive'}
+          label={status === 'new' ? 'پیام‌های جدید' : 'پیام‌های رسیدگی‌شده'}
+          value={loading ? '—' : toFaDigits(total)}
+          hint={status === 'new' ? 'منتظر پیگیری شما' : 'بایگانی پیگیری‌ها'}
+        />
+        <StatCard icon="clock" tone="info" label="اولویت" value="جدید ← قدیم" hint="پیام‌های تازه در بالای فهرست" />
+        <StatCard icon="shield" tone="rose" label="حریم خصوصی" value="محرمانه" hint="اطلاعات تماس فقط برای پیگیری" />
+      </div>
+
+      <div className="adm-toolbar">
+        <FilterTabs
+          ariaLabel="وضعیت پیام‌ها"
+          items={[
+            { value: 'new' as SupportStatus, label: 'جدید' },
+            { value: 'resolved' as SupportStatus, label: 'رسیدگی‌شده' },
+          ]}
+          value={status}
+          onChange={(value) => { setStatus(value); setPage(0); }}
+        />
       </div>
 
       {error && <div className="ops-error" role="alert"><span>{error}</span><PanelButton onClick={() => void load()}>تلاش دوباره</PanelButton></div>}
@@ -105,7 +127,11 @@ export default function AdminSupportPage() {
         </div>
 
         {loading ? (
-          <div style={{ padding: 42, textAlign: 'center', color: 'var(--ink-3)', fontSize: 12 }}>در حال بارگذاری پیام‌ها…</div>
+          <div style={{ padding: 20, display: 'grid', gap: 10 }}>
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div key={index} className="adm-skeleton" style={{ height: 74, borderRadius: 14 }} />
+            ))}
+          </div>
         ) : messages.length === 0 ? (
           <PanelEmpty icon="message" title="پیامی در این وضعیت وجود ندارد" />
         ) : (
@@ -113,13 +139,13 @@ export default function AdminSupportPage() {
             const busy = busyId === item.id;
             return (
               <article className="ops-row" key={item.id} style={{ alignItems: 'flex-start', opacity: busy ? .55 : 1 }}>
-                <span style={{ width: 42, height: 42, display: 'grid', placeItems: 'center', flex: '0 0 42px', borderRadius: 12, color: 'var(--olive-700)', background: 'var(--olive-100)' }}>
+                <span className="adm-stat-icon" style={{ width: 42, height: 42, borderRadius: 12 }}>
                   <Icon name="message" size={19} />
                 </span>
                 <div className="ops-row-main">
                   <div className="ops-row-title">
                     <strong>{item.name}</strong>
-                    <PanelStatus status={item.status === 'new' ? 'pending' : 'done'}>{item.status === 'new' ? 'جدید' : 'رسیدگی‌شده'}</PanelStatus>
+                    <span className="adm-badge" data-tone={item.status === 'new' ? 'gold' : 'green'}>{item.status === 'new' ? 'جدید' : 'رسیدگی‌شده'}</span>
                   </div>
                   <div className="ops-row-sub">
                     <span dir="ltr">{toFaDigits(item.contact)}</span>
@@ -140,18 +166,11 @@ export default function AdminSupportPage() {
         )}
 
         {!loading && total > PAGE_SIZE && (
-          <div className="ops-pagination">
-            <PanelButton disabled={page === 0} onClick={() => setPage((value) => Math.max(0, value - 1))}>صفحه قبل</PanelButton>
-            <span>{toFaDigits(page * PAGE_SIZE + 1)} تا {toFaDigits(Math.min((page + 1) * PAGE_SIZE, total))} از {toFaDigits(total)}</span>
-            <PanelButton disabled={page + 1 >= pageCount} onClick={() => setPage((value) => value + 1)}>صفحه بعد</PanelButton>
+          <div style={{ padding: '4px 14px 16px' }}>
+            <TablePagination page={page} pageSize={PAGE_SIZE} total={total} onPage={setPage} />
           </div>
         )}
       </section>
     </main>
   );
-}
-
-function formatDate(value: string) {
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? '—' : new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium', timeStyle: 'short' }).format(date);
 }

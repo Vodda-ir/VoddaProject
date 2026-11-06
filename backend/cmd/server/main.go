@@ -65,6 +65,7 @@ func main() {
         notifRepo := repository.NewNotificationRepository(db)
         supportRepo := repository.NewSupportMessageRepository(db)
         auditRepo := repository.NewAdminAuditRepository(db)
+        analyticsRepo := repository.NewAnalyticsRepository(db)
 
         tm := token.NewManager(cfg.JWTSecret, cfg.TokenExpiration)
         sender := sms.New(cfg.SMS)
@@ -80,7 +81,7 @@ func main() {
                         cfg.DevWalletChargeEnabled && !cfg.IsProduction(),
                 ),
                 Review: usecase.NewReviewUsecase(reviewRepo, sessionRepo, teacherRepo, reviewTransactionRepo),
-                Admin:  usecase.NewAdminUsecase(userRepo, teacherRepo, sessionRepo, walletRepo, notifRepo),
+                Admin:  usecase.NewAdminUsecase(userRepo, teacherRepo, sessionRepo, walletRepo, notifRepo, analyticsRepo),
                 Notif:  notifRepo,
                 Live:   delivery.NewLiveHub(),
         }

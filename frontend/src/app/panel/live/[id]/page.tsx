@@ -210,10 +210,9 @@ export default function LiveClassroomPage() {
     })();
     return () => {
       cancelAnimationFrame(raf);
-      void ctx?.close().catch(() => { /* already closed on join */ });
+      void ctx?.close();
       stream?.getTracks().forEach((track) => track.stop());
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, ready, loadError, camId, micId]);
 
   /* ---------------- event handling ---------------- */
@@ -345,14 +344,6 @@ export default function LiveClassroomPage() {
     void audioCtxRef.current?.close();
   }, []);
 
-  // The live-phase <video> mounts after setPhase('live'); the ref assignment
-  // inside joinClassroom still targets the preflight element, so (re)attach
-  // the stream here whenever the phase or share state changes.
-  useEffect(() => {
-    if (phase !== 'live' || !localVideoRef.current) return;
-    localVideoRef.current.srcObject = (sharing && screenRef.current) ? screenRef.current : liveStreamRef.current;
-  }, [phase, sharing]);
-
   const openSide = (tab: 'chat' | 'board' | 'reading') => {
     setSideTab((current) => (current === tab ? 'none' : tab));
     if (tab === 'chat') setUnread(0);
@@ -397,12 +388,6 @@ export default function LiveClassroomPage() {
     });
     engineRef.current = engine;
     engine.setCameraTrack(stream?.getVideoTracks()[0] ?? null);
-    // Store the stream BEFORE the peer connection exists: ensureConnection()
-    // then creates the transceivers with addTrack (sendrecv). Flipping the
-    // recvonly transceivers afterwards makes Chrome refuse to associate them
-    // with an incoming offer (it creates fresh recvonly ones instead), which
-    // silently dropped the learner's upstream media.
-    if (stream) await engine.setLocalMedia(stream);
     await engine.ensureConnection();
     if (stream) await engine.setLocalMedia(stream);
     if (localVideoRef.current && stream) localVideoRef.current.srcObject = stream;

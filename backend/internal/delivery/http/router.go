@@ -152,10 +152,12 @@ func NewRouter(cfg *config.Config, h *Handler, tm *token.Manager, readiness func
         }
         {
                 admin.GET("/dashboard", h.AdminDashboard)
+                admin.GET("/analytics", h.AdminAnalytics)
                 admin.GET("/users", h.AdminUsers)
                 admin.PATCH("/users/:id/active", mutationLimiter.Middleware("admin-mutation"), h.AdminSetUserActive)
                 admin.GET("/teachers", h.AdminTeachers)
                 admin.POST("/teachers/:id/review", mutationLimiter.Middleware("admin-mutation"), h.AdminReviewTeacher)
+                admin.PATCH("/teachers/:id/settings", mutationLimiter.Middleware("admin-mutation"), h.AdminTeacherSettings)
                 admin.GET("/sessions", adminSessionDisplaysHandler(h.Session))
                 admin.GET("/withdrawals", h.AdminWithdrawals)
                 admin.POST("/withdrawals/:id/process", financialLimiter.Middleware("financial"), h.AdminProcessWithdrawal)
