@@ -101,9 +101,26 @@ export class LiveEngine {
     if (!this.pc) return;
     if (stream) {
       for (const track of stream.getTracks()) {
-        const sender = this.pc.getSenders().find((candidate) => candidate.track?.kind === track.kind);
+        let sender = this.pc.getSenders().find((candidate) => candidate.track?.kind === track.kind);
+        if (!sender) {
+          // ensureConnection may have run before media was ready and added
+          // recvonly transceivers; flip a free one to sendrecv so upstream
+          // media is negotiated even when this runs after the connection.
+          const transceiver = this.pc.getTransceivers().find((item) =>
+            item.receiver.track?.kind === track.kind && !item.sender.track && item.direction !== 'stopped');
+          if (transceiver) {
+            transceiver.direction = 'sendrecv';
+            sender = transceiver.sender;
+          }
+        }
         if (sender) await sender.replaceTrack(track);
         else this.pc.addTrack(track, stream);
+      }
+      // If media arrived only after a recvonly negotiation (remote offered
+      // before our stream was ready), trigger a renegotiation so upstream
+      // media is negotiated. Either side may offer; this side is polite.
+      if (this.pc.signalingState === 'stable' && /a=recvonly/.test(this.pc.currentLocalDescription?.sdp || '')) {
+        void this.initiate();
       }
     } else {
       for (const sender of this.pc.getSenders()) {
