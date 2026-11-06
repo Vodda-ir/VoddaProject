@@ -1,0 +1,713 @@
+     1→'use client';
+     2→
+     3→import { useCallback, useEffect, useRef, useState } from 'react';
+     4→import { useParams, useRouter } from 'next/navigation';
+     5→import { faDigits } from '@/components/PanelShell';
+     6→import { api, type SessionListItem } from '@/lib/api';
+     7→import { getToken } from '@/lib/auth';
+     8→import { LiveClient, type LiveEvent, type LiveStatus } from '@/lib/live/client';
+     9→import { LiveEngine, type EngineRole } from '@/lib/live/engine';
+    10→
+    11→type ChatMessage = { id: string; from: number; role: string; text: string; at: number; mine: boolean };
+    12→type StrokePoint = { x: number; y: number };
+    13→type Stroke = { id: string; points: StrokePoint[]; color: string; width: number };
+    14→type Reaction = { id: string; emoji: string; at: number };
+    15→
+    16→const REACTIONS = ['👍', '❤️', '👏', '🎉', '🤲', '✨'];
+    17→
+    18→const QURAN_SNIPPETS: Array<{ label: string; text: string }> = [
+    19→  {
+    20→    label: 'سورهٔ حمد',
+    21→    text: 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ\nالْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ\nالرَّحْمَٰنِ الرَّحِيمِ\nمَالِكِ يَوْمِ الدِّينِ\nإِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ\nاهْدِنَا الصِّرَاطَ الْمُسْتَقِيمَ\nصِرَاطَ الَّذِينَ أَنْعَمْتَ عَلَيْهِمْ غَيْرِ الْمَغْضُوبِ عَلَيْهِمْ وَلَا الضَّالِّينَ',
+    22→  },
+    23→  {
+    24→    label: 'سورهٔ اخلاص',
+    25→    text: 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ\nقُلْ هُوَ اللَّهُ أَحَدٌ\nاللَّهُ الصَّمَدُ\nلَمْ يَلِدْ وَلَمْ يُولَدْ\nوَلَمْ يَكُنْ لَهُ كُفُوًا أَحَدٌ',
+    26→  },
+    27→  {
+    28→    label: 'سورهٔ فلق',
+    29→    text: 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ\nقُلْ أَعُوذُ بِرَبِّ الْفَلَقِ\nمِنْ شَرِّ مَا خَلَقَ\nوَمِنْ شَرِّ غَاسِقٍ إِذَا وَقَبَ\nوَمِنْ شَرِّ النَّفَّاثَاتِ فِي الْعُقَدِ\nوَمِنْ شَرِّ حَاسِدٍ إِذَا حَسَدَ',
+    30→  },
+    31→  {
+    32→    label: 'سورهٔ ناس',
+    33→    text: 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ\nقُلْ أَعُوذُ بِرَبِّ النَّاسِ\nمَلِكِ النَّاسِ\nإِلَٰهِ النَّاسِ\nمِنْ شَرِّ الْوَسْوَاسِ الْخَنَّاسِ\nالَّذِي يُوَسْوِسُ فِي صُدُورِ النَّاسِ\nمِنَ الْجِنَّةِ وَالنَّاسِ',
+    34→  },
+    35→];
+    36→
+    37→const STROKE_COLORS = ['#1f2d1f', '#0f766e', '#b45309', '#be123c', '#4d7c0f'];
+    38→
+    39→function uid(): string {
+    40→  return Math.random().toString(36).slice(2) + Date.now().toString(36);
+    41→}
+    42→
+    43→export default function LiveClassroomPage() {
+    44→  const router = useRouter();
+    45→  const routeParams = useParams<{ id: string }>();
+    46→  const sessionId = Number(routeParams?.id ?? 0);
+    47→  const [session, setSession] = useState<SessionListItem | null>(null);
+    48→  const [role, setRole] = useState<EngineRole>('learner');
+    49→  const [loadError, setLoadError] = useState('');
+    50→  const [ready, setReady] = useState(false);
+    51→
+    52→  // preflight state
+    53→  const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
+    54→  const [camId, setCamId] = useState<string>('');
+    55→  const [micId, setMicId] = useState<string>('');
+    56→  const [previewStream, setPreviewStream] = useState<MediaStream | null>(null);
+    57→  const [mediaError, setMediaError] = useState('');
+    58→  const [micLevel, setMicLevel] = useState(0);
+    59→
+    60→  // live state
+    61→  const [phase, setPhase] = useState<'preflight' | 'live' | 'ended'>('preflight');
+    62→  const [status, setStatus] = useState<LiveStatus>('connecting');
+    63→  const [micOn, setMicOn] = useState(true);
+    64→  const [camOn, setCamOn] = useState(true);
+    65→  const [sharing, setSharing] = useState(false);
+    66→  const [remoteActive, setRemoteActive] = useState(false);
+    67→  const [connState, setConnState] = useState('');
+    68→  const [peerOnline, setPeerOnline] = useState(false);
+    69→
+    70→  // panels
+    71→  const [sideTab, setSideTab] = useState<'none' | 'chat' | 'board' | 'reading'>('none');
+    72→  const [chat, setChat] = useState<ChatMessage[]>([]);
+    73→  const [chatDraft, setChatDraft] = useState('');
+    74→  const [unread, setUnread] = useState(0);
+    75→  const [strokes, setStrokes] = useState<Stroke[]>([]);
+    76→  const [strokeColor, setStrokeColor] = useState(STROKE_COLORS[0]);
+    77→  const [strokeWidth, setStrokeWidth] = useState(3);
+    78→  const [readingText, setReadingText] = useState('');
+    79→  const [reactions, setReactions] = useState<Reaction[]>([]);
+    80→  const [handRaised, setHandRaised] = useState(false);
+    81→  const [notice, setNotice] = useState('');
+    82→  const [countdown, setCountdown] = useState('');
+    83→
+    84→  // refs (non-rendering objects)
+    85→  const clientRef = useRef<LiveClient | null>(null);
+    86→  const engineRef = useRef<LiveEngine | null>(null);
+    87→  const localVideoRef = useRef<HTMLVideoElement | null>(null);
+    88→  const remoteVideoRef = useRef<HTMLVideoElement | null>(null);
+    89→  const boardRef = useRef<HTMLCanvasElement | null>(null);
+    90→  const boardWrapperRef = useRef<HTMLDivElement | null>(null);
+    91→  const drawingRef = useRef<{ stroke: Stroke } | null>(null);
+    92→  const liveStreamRef = useRef<MediaStream | null>(null);
+    93→  const screenRef = useRef<MediaStream | null>(null);
+    94→  const audioCtxRef = useRef<AudioContext | null>(null);
+    95→  const myIdRef = useRef<number>(0);
+    96→
+    97→  const isTeacherSide = role !== 'learner';
+    98→
+    99→  /* ---------------- load session + identity ---------------- */
+   100→  useEffect(() => {
+   101→    if (!sessionId) {
+   102→      setLoadError('شناسهٔ جلسه نامعتبر است.');
+   103→      setReady(true);
+   104→      return;
+   105→    }
+   106→    const token = getToken();
+   107→    if (!token) {
+   108→      router.replace('/panel/login');
+   109→      return;
+   110→    }
+   111→    let cancelled = false;
+   112→    (async () => {
+   113→      try {
+   114→        const me = await api.me(token);
+   115→        const myId = Number(me.data?.id ?? 0);
+   116→        myIdRef.current = myId;
+   117→        const candidates: Array<{ when: string; loader: Promise<{ data?: SessionListItem[] }>; teacherSide: boolean }> = [
+   118→          { when: 'upcoming', loader: api.mySessions(token, 'upcoming'), teacherSide: false },
+   119→          { when: 'past', loader: api.mySessions(token, 'past'), teacherSide: false },
+   120→          { when: 'upcoming', loader: api.teacherSessions(token, 'upcoming'), teacherSide: true },
+   121→          { when: 'past', loader: api.teacherSessions(token, 'past'), teacherSide: true },
+   122→        ];
+   123→        for (const candidate of candidates) {
+   124→          if (cancelled) return;
+   125→          try {
+   126→            const response = await candidate.loader;
+   127→            const found = (response.data || []).find((item) => item.id === sessionId);
+   128→            if (found) {
+   129→              setSession(found);
+   130→              setRole(candidate.teacherSide ? (found.learner_id === myId ? 'learner' : 'teacher') : 'learner');
+   131→              setReady(true);
+   132→              return;
+   133→            }
+   134→          } catch { /* try next source */ }
+   135→        }
+   136→        // Not found in own lists — admins can still observe any session.
+   137→        if (me.data?.role === 'admin') {
+   138→          setRole('admin');
+   139→          setSession({
+   140→            id: sessionId,
+   141→            learner_id: 0,
+   142→            teacher_id: 0,
+   143→            service_id: 0,
+   144→            service: `کلاس زندهٔ #${faDigits(sessionId)}`,
+   145→            scheduled_at: new Date().toISOString(),
+   146→            local_date: '',
+   147→            local_start: '',
+   148→            local_end: '',
+   149→            weekday: 0,
+   150→            duration: 60,
+   151→            price: 0,
+   152→            status: 'confirmed',
+   153→            rated: false,
+   154→          });
+   155→        } else {
+   156→          setLoadError('این جلسه در دسترس شما نیست یا وجود ندارد.');
+   157→        }
+   158→      } catch (cause) {
+   159→        setLoadError(cause instanceof Error ? cause.message : 'اطلاعات جلسه دریافت نشد.');
+   160→      } finally {
+   161→        if (!cancelled) setReady(true);
+   162→      }
+   163→    })();
+   164→    return () => { cancelled = true; };
+   165→  }, [router, sessionId]);
+   166→
+   167→  /* ---------------- preflight: device preview ---------------- */
+   168→  const stopPreview = useCallback(() => {
+   169→    previewStream?.getTracks().forEach((track) => track.stop());
+   170→  }, [previewStream]);
+   171→
+   172→  useEffect(() => {
+   173→    if (phase !== 'preflight' || !ready || loadError) return;
+   174→    let stream: MediaStream | null = null;
+   175→    let raf = 0;
+   176→    let ctx: AudioContext | null = null;
+   177→    (async () => {
+   178→      try {
+   179→        stream = await navigator.mediaDevices.getUserMedia({
+   180→          video: camId ? { deviceId: { exact: camId } } : { width: { ideal: 1280 } },
+   181→          audio: micId ? { deviceId: { exact: micId } } : { echoCancellation: true, noiseSuppression: true },
+   182→        });
+   183→        setPreviewStream(stream);
+   184→        setMediaError('');
+   185→        if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+   186→        const [audioTrack] = stream.getAudioTracks();
+   187→        if (audioTrack) {
+   188→          ctx = new AudioContext();
+   189→          audioCtxRef.current = ctx;
+   190→          const source = ctx.createMediaStreamSource(new MediaStream([audioTrack]));
+   191→          const analyser = ctx.createAnalyser();
+   192→          analyser.fftSize = 256;
+   193→          source.connect(analyser);
+   194→          const buffer = new Uint8Array(analyser.frequencyBinCount);
+   195→          const tick = () => {
+   196→            analyser.getByteFrequencyData(buffer);
+   197→            const avg = buffer.reduce((sum, value) => sum + value, 0) / buffer.length;
+   198→            setMicLevel(Math.min(100, Math.round((avg / 128) * 100)));
+   199→            raf = requestAnimationFrame(tick);
+   200→          };
+   201→          tick();
+   202→        }
+   203→        const list = await navigator.mediaDevices.enumerateDevices();
+   204→        setDevices(list.filter((device) => device.kind !== 'audiooutput'));
+   205→        if (!camId && list.find((device) => device.kind === 'videoinput')) setCamId(list.find((device) => device.kind === 'videoinput')!.deviceId);
+   206→        if (!micId && list.find((device) => device.kind === 'audioinput')) setMicId(list.find((device) => device.kind === 'audioinput')!.deviceId);
+   207→      } catch {
+   208→        setMediaError('دسترسی به دوربین/میکروفون ممکن نشد. می‌توانید بدون آن‌ها وارد کلاس شوید.');
+   209→      }
+   210→    })();
+   211→    return () => {
+   212→      cancelAnimationFrame(raf);
+   213→      void ctx?.close();
+   214→      stream?.getTracks().forEach((track) => track.stop());
+   215→    };
+   216→    // eslint-disable-next-line react-hooks/exhaustive-deps
+   217→  }, [phase, ready, loadError, camId, micId]);
+   218→
+   219→  /* ---------------- event handling ---------------- */
+   220→  const pushReaction = useCallback((emoji: string) => {
+   221→    const reaction: Reaction = { id: uid(), emoji, at: Date.now() };
+   222→    setReactions((items) => [...items, reaction]);
+   223→    setTimeout(() => setReactions((items) => items.filter((item) => item.id !== reaction.id)), 2600);
+   224→  }, []);
+   225→
+   226→  const handleEvent = useCallback((event: LiveEvent) => {
+   227→    if (event.from === myIdRef.current && event.type !== 'system') {
+   228→      // own frames echoed by WS path are ignored (chat already optimistic)
+   229→      if (event.type !== 'reading') return;
+   230→    }
+   231→    switch (event.type) {
+   232→      case 'chat': {
+   233→        const payload = event.payload as { text?: string } | undefined;
+   234→        const text = String(payload?.text ?? '').slice(0, 1000);
+   235→        if (!text) return;
+   236→        setChat((items) => [...items, { id: uid(), from: event.from, role: String(event.role), text, at: event.at, mine: false }]);
+   237→        setUnread((count) => count + 1);
+   238→        break;
+   239→      }
+   240→      case 'wb': {
+   241→        const payload = event.payload as { action: string; stroke?: Stroke } | undefined;
+   242→        if (payload?.action === 'clear') setStrokes([]);
+   243→        else if (payload?.action === 'undo') setStrokes((items) => items.slice(0, -1));
+   244→        else if (payload?.action === 'draw' && payload.stroke) setStrokes((items) => [...items, payload.stroke!]);
+   245→        break;
+   246→      }
+   247→      case 'reading': {
+   248→        const payload = event.payload as { text?: string } | undefined;
+   249→        setReadingText(String(payload?.text ?? ''));
+   250→        break;
+   251→      }
+   252→      case 'control': {
+   253→        const payload = event.payload as { action: string; value?: boolean | string } | undefined;
+   254→        if (payload?.action === 'hand') {
+   255→          setNotice(payload.value ? '✋ دانش‌آموز دستش را بالا برده است.' : 'دست پایین آمد.');
+   256→          setTimeout(() => setNotice(''), 4000);
+   257→        }
+   258→        if (payload?.action === 'reaction' && typeof payload.value === 'string') pushReaction(payload.value);
+   259→        if (payload?.action === 'bye') {
+   260→          setNotice('طرف مقابل کلاس را ترک کرد.');
+   261→          setTimeout(() => setNotice(''), 4000);
+   262→        }
+   263→        if (payload?.action === 'end') {
+   264→          setPhase('ended');
+   265→        }
+   266→        break;
+   267→      }
+   268→      case 'offer':
+   269→      case 'answer':
+   270→      case 'ice':
+   271→        void engineRef.current?.handleSignal(event.type, event.payload);
+   272→        break;
+   273→      case 'system': {
+   274→        const payload = event.payload as { action?: string } | undefined;
+   275→        if (payload?.action === 'join') {
+   276→          setPeerOnline(true);
+   277→          setChat((items) => [...items, { id: uid(), from: 0, role: 'system', text: 'طرف مقابل وارد کلاس شد.', at: event.at, mine: false }]);
+   278→          if (isTeacherSide) void engineRef.current?.initiate();
+   279→        }
+   280→        if (payload?.action === 'leave') {
+   281→          setPeerOnline(false);
+   282→          setChat((items) => [...items, { id: uid(), from: 0, role: 'system', text: 'طرف مقابل خارج شد.', at: event.at, mine: false }]);
+   283→        }
+   284→        break;
+   285→      }
+   286→    }
+   287→  }, [isTeacherSide, pushReaction]);
+   288→
+   289→  /* ---------------- classroom countdown ---------------- */
+   290→  useEffect(() => {
+   291→    if (!session?.scheduled_at) return;
+   292→    const endAt = new Date(session.scheduled_at).getTime() + (session.duration || 60) * 60_000;
+   293→    const tick = () => {
+   294→      const diff = endAt - Date.now();
+   295→      if (diff <= 0) { setCountdown('به پایان زمان جلسه رسیده است'); return; }
+   296→      const minutes = Math.floor(diff / 60_000);
+   297→      const seconds = Math.floor((diff % 60_000) / 1000);
+   298→      setCountdown(`${faDigits(minutes)}:${faDigits(String(seconds).padStart(2, '0'))} باقی‌مانده`);
+   299→    };
+   300→    tick();
+   301→    const timer = setInterval(tick, 1000);
+   302→    return () => clearInterval(timer);
+   303→  }, [session]);
+   304→
+   305→  /* ---------------- board rendering ---------------- */
+   306→  useEffect(() => {
+   307→    const canvas = boardRef.current;
+   308→    const wrapper = boardWrapperRef.current;
+   309→    if (!canvas || !wrapper || sideTab !== 'board') return;
+   310→    const resize = () => {
+   311→      const rect = wrapper.getBoundingClientRect();
+   312→      if (canvas.width !== rect.width || canvas.height !== rect.height) {
+   313→        canvas.width = rect.width;
+   314→        canvas.height = rect.height;
+   315→      }
+   316→      const ctx = canvas.getContext('2d');
+   317→      if (!ctx) return;
+   318→      ctx.clearRect(0, 0, canvas.width, canvas.height);
+   319→      ctx.lineCap = 'round';
+   320→      ctx.lineJoin = 'round';
+   321→      for (const stroke of strokes) {
+   322→        ctx.strokeStyle = stroke.color;
+   323→        ctx.lineWidth = stroke.width;
+   324→        ctx.beginPath();
+   325→        stroke.points.forEach((point, index) => {
+   326→          const x = point.x * canvas.width;
+   327→          const y = point.y * canvas.height;
+   328→          if (index === 0) ctx.moveTo(x, y);
+   329→          else ctx.lineTo(x, y);
+   330→        });
+   331→        ctx.stroke();
+   332→      }
+   333→    };
+   334→    resize();
+   335→    const observer = new ResizeObserver(resize);
+   336→    observer.observe(wrapper);
+   337→    return () => observer.disconnect();
+   338→  }, [strokes, sideTab]);
+   339→
+   340→  /* ---------------- lifecycle ---------------- */
+   341→  useEffect(() => () => {
+   342→    clientRef.current?.close();
+   343→    engineRef.current?.close();
+   344→    screenRef.current?.getTracks().forEach((track) => track.stop());
+   345→    void audioCtxRef.current?.close();
+   346→  }, []);
+   347→
+   348→  const openSide = (tab: 'chat' | 'board' | 'reading') => {
+   349→    setSideTab((current) => (current === tab ? 'none' : tab));
+   350→    if (tab === 'chat') setUnread(0);
+   351→  };
+   352→
+   353→  /* ---------------- actions ---------------- */
+   354→  async function joinClassroom(withMedia: boolean) {
+   355→    if (!session) return;
+   356→    stopPreview();
+   357→    void audioCtxRef.current?.close();
+   358→    audioCtxRef.current = null;
+   359→
+   360→    let stream: MediaStream | null = null;
+   361→    if (withMedia) {
+   362→      try {
+   363→        stream = await navigator.mediaDevices.getUserMedia({
+   364→          video: camId ? { deviceId: { exact: camId } } : true,
+   365→          audio: micId ? { deviceId: { exact: micId } } : true,
+   366→        });
+   367→      } catch {
+   368→        setMediaError('ورود با دوربین/میکروفون ناموفق بود؛ بدون رسانه وارد می‌شوید.');
+   369→      }
+   370→    }
+   371→    liveStreamRef.current = stream;
+   372→    setPhase('live');
+   373→
+   374→    const client = new LiveClient({
+   375→      sessionId: session.id,
+   376→      onEvent: handleEvent,
+   377→      onStatus: (value) => setStatus(value),
+   378→    });
+   379→    clientRef.current = client;
+   380→
+   381→    const engine = new LiveEngine({
+   382→      role,
+   383→      onRemoteStream: (remote) => {
+   384→        setRemoteActive(remote.getTracks().length > 0);
+   385→        if (remoteVideoRef.current) remoteVideoRef.current.srcObject = remote;
+   386→      },
+   387→      onState: (state) => setConnState(`${state.connection}/${state.ice}`),
+   388→      send: (type, payload) => client.send(type, payload),
+   389→    });
+   390→    engineRef.current = engine;
+   391→    engine.setCameraTrack(stream?.getVideoTracks()[0] ?? null);
+   392→    await engine.ensureConnection();
+   393→    if (stream) await engine.setLocalMedia(stream);
+   394→    if (localVideoRef.current && stream) localVideoRef.current.srcObject = stream;
+   395→    if (engine.isInitiator && peerOnline) void engine.initiate();
+   396→
+   397→    await client.connect();
+   398→  }
+   399→
+   400→  function sendChat() {
+   401→    const text = chatDraft.trim();
+   402→    if (!text || !clientRef.current) return;
+   403→    setChat((items) => [...items, { id: uid(), from: myIdRef.current, role, text, at: Date.now(), mine: true }]);
+   404→    clientRef.current.send('chat', { text: text.slice(0, 1000) });
+   405→    setChatDraft('');
+   406→  }
+   407→
+   408→  function sendReading(text: string) {
+   409→    setReadingText(text);
+   410→    clientRef.current?.send('reading', { text: text.slice(0, 4000) });
+   411→  }
+   412→
+   413→  function sendReaction(emoji: string) {
+   414→    pushReaction(emoji);
+   415→    clientRef.current?.send('control', { action: 'reaction', value: emoji });
+   416→  }
+   417→
+   418→  function toggleHand() {
+   419→    const next = !handRaised;
+   420→    setHandRaised(next);
+   421→    clientRef.current?.send('control', { action: 'hand', value: next });
+   422→  }
+   423→
+   424→  async function toggleShare() {
+   425→    const engine = engineRef.current;
+   426→    if (!engine) return;
+   427→    if (sharing) {
+   428→      screenRef.current?.getTracks().forEach((track) => track.stop());
+   429→      screenRef.current = null;
+   430→      await engine.stopScreenShare();
+   431→      if (localVideoRef.current && liveStreamRef.current) localVideoRef.current.srcObject = liveStreamRef.current;
+   432→      setSharing(false);
+   433→      return;
+   434→    }
+   435→    try {
+   436→      const screen = await engine.startScreenShare();
+   437→      screenRef.current = screen;
+   438→      if (localVideoRef.current) localVideoRef.current.srcObject = screen;
+   439→      setSharing(true);
+   440→      screen.getVideoTracks()[0]?.addEventListener('ended', () => {
+   441→        setSharing(false);
+   442→        if (localVideoRef.current && liveStreamRef.current) localVideoRef.current.srcObject = liveStreamRef.current;
+   443→      });
+   444→    } catch (cause) {
+   445→      setNotice(cause instanceof Error ? cause.message : 'اشتراک صفحه انجام نشد.');
+   446→      setTimeout(() => setNotice(''), 4000);
+   447→    }
+   448→  }
+   449→
+   450→  async function leaveClassroom(complete = false) {
+   451→    const token = getToken();
+   452→    clientRef.current?.send('control', { action: complete ? 'end' : 'bye' });
+   453→    clientRef.current?.close();
+   454→    engineRef.current?.close();
+   455→    screenRef.current?.getTracks().forEach((track) => track.stop());
+   456→    if (complete && token && session && isTeacherSide) {
+   457→      try { await api.teacherCompleteSession(token, session.id); } catch { /* complete may be time-gated */ }
+   458→    }
+   459→    setPhase('ended');
+   460→    router.push(isTeacherSide ? '/panel/teacher/sessions' : '/panel/user/sessions');
+   461→  }
+   462→
+   463→  /* ---------------- render ---------------- */
+   464→  if (!ready) {
+   465→    return <main style={{ padding: 32, color: 'var(--ink-3)' }}>در حال آماده‌سازی کلاس…</main>;
+   466→  }
+   467→  if (loadError) {
+   468→    return (
+   469→      <main style={{ padding: 32 }}>
+   470→        <div style={{ padding: 22, borderRadius: 16, background: 'var(--clay-bg)', color: 'var(--rose)', fontWeight: 700 }}>{loadError}</div>
+   471→        <button type="button" onClick={() => router.back()} style={{ marginTop: 16, border: 0, borderRadius: 12, padding: '10px 18px', background: 'var(--olive-600)', color: '#fff', cursor: 'pointer' }}>بازگشت</button>
+   472→      </main>
+   473→    );
+   474→  }
+   475→  if (!session) return null;
+   476→
+   477→  const statusLabel = status === 'live' ? 'اتصال زنده (وب‌سوکت)' : status === 'polling' ? 'اتصال پایدار (کانال پشتیبان)' : status === 'connecting' ? 'در حال اتصال…' : status === 'error' ? 'خطای دسترسی' : 'پایان';
+   478→
+   479→  if (phase === 'preflight') {
+   480→    return (
+   481→      <main style={{ padding: '28px 20px', maxWidth: 760, margin: '0 auto' }}>
+   482→        <h1 style={{ fontSize: 21, fontWeight: 800, marginBottom: 4 }}>ورود به کلاس زنده</h1>
+   483→        <p style={{ fontSize: 13, color: 'var(--ink-3)', marginBottom: 18 }}>{session.service} · {session.local_date} {session.local_start && <>· {faDigits(session.local_start)}</>}</p>
+   484→        <div style={{ background: '#fff', borderRadius: 18, padding: 18, boxShadow: 'var(--sh-sm)', border: '1px solid var(--sand-150)' }}>
+   485→          <div style={{ position: 'relative', borderRadius: 14, overflow: 'hidden', background: '#101510', aspectRatio: '16 / 9' }}>
+   486→            <video ref={localVideoRef} autoPlay muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }} />
+   487→            {(!previewStream || !camOn) && (
+   488→              <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', color: '#cbd5c8', fontSize: 13 }}>
+   489→                {camOn ? 'در حال دسترسی به دوربین…' : 'دوربین خاموش است'}
+   490→              </div>
+   491→            )}
+   492→          </div>
+   493→          <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 10, fontSize: 12.5, color: 'var(--ink-3)' }}>
+   494→            <span>سطح صدای میکروفون:</span>
+   495→            <div style={{ flex: 1, height: 8, borderRadius: 999, background: 'var(--sand-100)', overflow: 'hidden' }}>
+   496→              <div style={{ width: `${micLevel}%`, height: '100%', background: 'var(--olive-600)', transition: 'width .1s' }} />
+   497→            </div>
+   498→          </div>
+   499→          <div style={{ display: 'flex', gap: 10, marginTop: 14, flexWrap: 'wrap' }}>
+   500→            <select value={camId} onChange={(event) => setCamId(event.target.value)} aria-label="دوربین" style={{ flex: 1, minWidth: 200, padding: '10px 12px', borderRadius: 12, border: '1px solid var(--sand-150)', background: 'var(--surface)', fontSize: 13 }}>
+   501→              {devices.filter((device) => device.kind === 'videoinput').map((device) => <option key={device.deviceId} value={device.deviceId}>{device.label || 'دوربین'}</option>)}
+   502→            </select>
+   503→            <select value={micId} onChange={(event) => setMicId(event.target.value)} aria-label="میکروفون" style={{ flex: 1, minWidth: 200, padding: '10px 12px', borderRadius: 12, border: '1px solid var(--sand-150)', background: 'var(--surface)', fontSize: 13 }}>
+   504→              {devices.filter((device) => device.kind === 'audioinput').map((device) => <option key={device.deviceId} value={device.deviceId}>{device.label || 'میکروفون'}</option>)}
+   505→            </select>
+   506→          </div>
+   507→          {mediaError && <div style={{ marginTop: 12, padding: 12, borderRadius: 12, background: 'var(--gold-bg)', color: 'var(--gold)', fontSize: 12.5 }}>{mediaError}</div>}
+   508→          <div style={{ display: 'flex', gap: 10, marginTop: 18, flexWrap: 'wrap' }}>
+   509→            <button type="button" onClick={() => void joinClassroom(true)} style={{ flex: 1, minWidth: 180, padding: '13px 0', borderRadius: 14, border: 0, background: 'var(--olive-600)', color: '#fff', fontWeight: 800, fontSize: 14.5, cursor: 'pointer', boxShadow: 'var(--sh-olive)' }}>ورود به کلاس با دوربین و میکروفون</button>
+   510→            <button type="button" onClick={() => void joinClassroom(false)} style={{ flex: 1, minWidth: 160, padding: '13px 0', borderRadius: 14, border: '1px solid var(--sand-150)', background: 'var(--surface)', color: 'var(--ink-2)', fontWeight: 700, fontSize: 13.5, cursor: 'pointer' }}>ورود بدون رسانه (فروشوینده)</button>
+   511→          </div>
+   512→        </div>
+   513→      </main>
+   514→    );
+   515→  }
+   516→
+   517→  if (phase === 'ended') {
+   518→    return (
+   519→      <main style={{ padding: 40, textAlign: 'center' }}>
+   520→        <div style={{ fontSize: 42 }}>🎓</div>
+   521→        <h1 style={{ fontSize: 19, fontWeight: 800, marginTop: 10 }}>کلاس پایان یافت</h1>
+   522→        <p style={{ fontSize: 13, color: 'var(--ink-3)', marginTop: 8 }}>امیدواریم جلسهٔ مفیدی داشته باشید. برای ثبت نظر به صفحهٔ جلسات بروید.</p>
+   523→        <button type="button" onClick={() => router.push(isTeacherSide ? '/panel/teacher/sessions' : '/panel/user/sessions')} style={{ marginTop: 18, border: 0, borderRadius: 12, padding: '11px 22px', background: 'var(--olive-600)', color: '#fff', fontWeight: 800, cursor: 'pointer' }}>بازگشت به جلسات</button>
+   524→      </main>
+   525→    );
+   526→  }
+   527→
+   528→  return (
+   529→    <main style={{ padding: '18px 14px', maxWidth: 1200, margin: '0 auto', minHeight: '70vh' }}>
+   530→      <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', marginBottom: 12 }}>
+   531→        <div>
+   532→          <h1 style={{ fontSize: 17.5, fontWeight: 800 }}>کلاس زنده · {session.service}</h1>
+   533→          <p style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 3 }}>{session.local_date} {session.local_start && <>· {faDigits(session.local_start)} تا {faDigits(session.local_end)}</>} · {countdown}</p>
+   534→        </div>
+   535→        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+   536→          <span style={{ fontSize: 11.5, fontWeight: 700, padding: '5px 12px', borderRadius: 999, background: status === 'live' ? 'var(--olive-100)' : 'var(--gold-bg)', color: status === 'live' ? 'var(--olive-700)' : 'var(--gold)' }}>
+   537→            ● {statusLabel}
+   538→          </span>
+   539→          <span style={{ fontSize: 11.5, fontWeight: 700, padding: '5px 12px', borderRadius: 999, background: peerOnline ? 'var(--olive-100)' : 'var(--sand-100)', color: peerOnline ? 'var(--olive-700)' : 'var(--ink-3)' }}>
+   540→            {peerOnline ? 'طرف مقابل آنلاین' : 'در انتظار طرف مقابل'}
+   541→          </span>
+   542→        </div>
+   543→      </header>
+   544→
+   545→      {notice && <div role="status" style={{ marginBottom: 10, padding: '10px 14px', borderRadius: 12, background: 'var(--gold-bg)', color: 'var(--gold)', fontSize: 12.5, fontWeight: 700 }}>{notice}</div>}
+   546→
+   547→      <div style={{ display: 'grid', gridTemplateColumns: sideTab === 'none' ? '1fr' : 'minmax(0, 1.6fr) minmax(280px, 1fr)', gap: 12, alignItems: 'start' }}>
+   548→        {/* stage */}
+   549→        <section style={{ background: '#0e130e', borderRadius: 18, overflow: 'hidden', position: 'relative', aspectRatio: '16 / 10' }}>
+   550→          <video ref={remoteVideoRef} autoPlay playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+   551→          {!remoteActive && (
+   552→            <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', color: '#a7b3a5', textAlign: 'center', padding: 20 }}>
+   553→              <div>
+   554→                <div style={{ fontSize: 40, marginBottom: 8 }}>📵</div>
+   555→                <div style={{ fontSize: 13.5 }}>پس از ورود طرف مقابل، تصویر او اینجا نمایش داده می‌شود.</div>
+   556→                <div style={{ fontSize: 11.5, marginTop: 6, opacity: .75 }}>{connState ? `وضعیت شبکه: ${connState}` : 'صدا و تصویر به‌صورت مستقیم (P2P) منتقل می‌شود.'}</div>
+   557→              </div>
+   558→            </div>
+   559→          )}
+   560→          <div style={{ position: 'absolute', bottom: 12, left: 12, width: 168, aspectRatio: '16 / 10', borderRadius: 12, overflow: 'hidden', background: '#1a211a', border: '1px solid rgba(255,255,255,.14)' }}>
+   561→            <video ref={localVideoRef} autoPlay muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', transform: sharing ? 'none' : 'scaleX(-1)' }} />
+   562→          </div>
+   563→          {reactions.map((reaction) => (
+   564→            <span key={reaction.id} style={{ position: 'absolute', left: `${20 + (parseInt(reaction.id.slice(-2), 16) % 60)}%`, bottom: 90, fontSize: 34, animation: 'floatUp 2.6s ease-out forwards' }}>{reaction.emoji}</span>
+   565→          ))}
+   566→        </section>
+   567→
+   568→        {/* side panel */}
+   569→        {sideTab !== 'none' && (
+   570→          <section style={{ background: '#fff', borderRadius: 18, border: '1px solid var(--sand-150)', boxShadow: 'var(--sh-sm)', display: 'flex', flexDirection: 'column', height: 520, overflow: 'hidden' }}>
+   571→            <div style={{ display: 'flex', borderBottom: '1px solid var(--sand-150)' }}>
+   572→              {([['chat', 'گفت‌وگو'], ['board', 'وایت‌برد'], ['reading', 'متن قرآنی']] as const).map(([key, label]) => (
+   573→                <button key={key} type="button" onClick={() => setSideTab(key)} style={{ flex: 1, padding: '11px 0', border: 0, cursor: 'pointer', fontSize: 13, fontWeight: 700, background: sideTab === key ? 'var(--olive-100)' : 'transparent', color: sideTab === key ? 'var(--olive-700)' : 'var(--ink-3)' }}>{label}</button>
+   574→              ))}
+   575→            </div>
+   576→
+   577→            {sideTab === 'chat' && (
+   578→              <>
+   579→                <div style={{ flex: 1, overflowY: 'auto', padding: 14, display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 420 }}>
+   580→                  {chat.map((message) => (
+   581→                    <div key={message.id} style={{ alignSelf: message.mine ? 'flex-start' : 'flex-end', maxWidth: '82%', padding: '8px 12px', borderRadius: 14, background: message.role === 'system' ? 'var(--sand-100)' : message.mine ? 'var(--olive-600)' : 'var(--olive-100)', color: message.role === 'system' ? 'var(--ink-3)' : message.mine ? '#fff' : 'var(--ink-2)', fontSize: 13, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
+   582→                      {message.text}
+   583→                    </div>
+   584→                  ))}
+   585→                  {chat.length === 0 && <div style={{ margin: 'auto', color: 'var(--ink-3)', fontSize: 12.5 }}>پیامی نیست. سلام کنید! 👋</div>}
+   586→                </div>
+   587→                <div style={{ display: 'flex', gap: 8, padding: 12, borderTop: '1px solid var(--sand-150)' }}>
+   588→                  <input value={chatDraft} onChange={(event) => setChatDraft(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') sendChat(); }} placeholder="پیام خود را بنویسید…" style={{ flex: 1, padding: '10px 12px', borderRadius: 12, border: '1px solid var(--sand-150)', fontSize: 13, background: 'var(--surface)' }} />
+   589→                  <button type="button" onClick={sendChat} style={{ border: 0, borderRadius: 12, padding: '0 18px', background: 'var(--olive-600)', color: '#fff', fontWeight: 800, cursor: 'pointer' }}>ارسال</button>
+   590→                </div>
+   591→              </>
+   592→            )}
+   593→
+   594→            {sideTab === 'board' && (
+   595→              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+   596→                <div style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '10px 12px', borderBottom: '1px solid var(--sand-150)', flexWrap: 'wrap' }}>
+   597→                  {STROKE_COLORS.map((color) => (
+   598→                    <button key={color} type="button" aria-label={`رنگ ${color}`} onClick={() => setStrokeColor(color)} style={{ width: 24, height: 24, borderRadius: 999, background: color, border: strokeColor === color ? '2px solid var(--olive-700)' : '2px solid transparent', cursor: 'pointer' }} />
+   599→                  ))}
+   600→                  <input type="range" min={2} max={10} value={strokeWidth} onChange={(event) => setStrokeWidth(Number(event.target.value))} aria-label="ضخامت قلم" style={{ width: 90 }} />
+   601→                  <button type="button" onClick={() => { setStrokes((items) => items.slice(0, -1)); clientRef.current?.send('wb', { action: 'undo' }); }} style={{ border: '1px solid var(--sand-150)', background: 'var(--surface)', borderRadius: 10, padding: '6px 12px', fontSize: 12, cursor: 'pointer' }}>برگشت</button>
+   602→                  <button type="button" onClick={() => { setStrokes([]); clientRef.current?.send('wb', { action: 'clear' }); }} style={{ border: '1px solid var(--clay)', background: 'var(--clay-bg)', color: 'var(--rose)', borderRadius: 10, padding: '6px 12px', fontSize: 12, cursor: 'pointer' }}>پاک کردن همه</button>
+   603→                </div>
+   604→                <div ref={boardWrapperRef} style={{ flex: 1, position: 'relative', minHeight: 0 }}>
+   605→                  <canvas
+   606→                    ref={boardRef}
+   607→                    style={{ position: 'absolute', inset: 0, touchAction: 'none', cursor: 'crosshair' }}
+   608→                    onPointerDown={(event) => {
+   609→                      const rect = event.currentTarget.getBoundingClientRect();
+   610→                      const stroke: Stroke = { id: uid(), points: [{ x: (event.clientX - rect.left) / rect.width, y: (event.clientY - rect.top) / rect.height }], color: strokeColor, width: strokeWidth };
+   611→                      drawingRef.current = { stroke };
+   612→                      event.currentTarget.setPointerCapture(event.pointerId);
+   613→                    }}
+   614→                    onPointerMove={(event) => {
+   615→                      if (!drawingRef.current) return;
+   616→                      const rect = event.currentTarget.getBoundingClientRect();
+   617→                      drawingRef.current.stroke.points.push({ x: (event.clientX - rect.left) / rect.width, y: (event.clientY - rect.top) / rect.height });
+   618→                      setStrokes((items) => {
+   619→                        const active = drawingRef.current?.stroke;
+   620→                        if (!active) return items;
+   621→                        const exists = items.some((item) => item.id === active.id);
+   622→                        return exists ? items : [...items, active];
+   623→                      });
+   624→                    }}
+   625→                    onPointerUp={() => {
+   626→                      const active = drawingRef.current?.stroke;
+   627→                      drawingRef.current = null;
+   628→                      if (active) clientRef.current?.send('wb', { action: 'draw', stroke: active });
+   629→                    }}
+   630→                  />
+   631→                </div>
+   632→              </div>
+   633→            )}
+   634→
+   635→            {sideTab === 'reading' && (
+   636→              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, padding: 12, gap: 10 }}>
+   637→                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+   638→                  {QURAN_SNIPPETS.map((snippet) => (
+   639→                    <button key={snippet.label} type="button" onClick={() => isTeacherSide && sendReading(snippet.text)} disabled={!isTeacherSide} style={{ border: '1px solid var(--sand-150)', background: 'var(--surface)', borderRadius: 999, padding: '6px 13px', fontSize: 12, cursor: isTeacherSide ? 'pointer' : 'default', opacity: isTeacherSide ? 1 : .6 }}>{snippet.label}</button>
+   640→                  ))}
+   641→                </div>
+   642→                {isTeacherSide ? (
+   643→                  <textarea value={readingText} onChange={(event) => setReadingText(event.target.value)} onBlur={(event) => sendReading(event.target.value)} placeholder={isTeacherSide ? 'متن تمرین تلاوت را بنویسید؛ با خروج از کادر برای دانش‌آموز ارسال می‌شود.' : ''} style={{ flex: 1, resize: 'none', padding: 14, borderRadius: 12, border: '1px solid var(--sand-150)', fontSize: 15.5, lineHeight: 2.2, background: 'var(--surface)', fontFamily: 'inherit' }} />
+   644→                ) : (
+   645→                  <div style={{ flex: 1, overflowY: 'auto', padding: 14, borderRadius: 12, border: '1px solid var(--sand-150)', background: 'var(--surface)', fontSize: 16.5, lineHeight: 2.3, whiteSpace: 'pre-wrap' }}>{readingText || 'مترببی هنوز متنی ارسال نکرده است.'}</div>
+   646→                )}
+   647→              </div>
+   648→            )}
+   649→          </section>
+   650→        )}
+   651→      </div>
+   652→
+   653→      {/* control bar */}
+   654→      <div style={{ marginTop: 12, display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+   655→        <ControlButton active={micOn} label={micOn ? 'میکروفون روشن' : 'میکروفون خاموش'} emoji={micOn ? '🎙️' : '🔇'} onClick={() => { setMicOn(!micOn); void engineRef.current?.toggleMic(!micOn); }} />
+   656→        <ControlButton active={camOn} label={camOn ? 'دوربین روشن' : 'دوربین خاموش'} emoji={camOn ? '📷' : '🚫'} onClick={() => { setCamOn(!camOn); void engineRef.current?.toggleCamera(!camOn); }} />
+   657→        <ControlButton active={sharing} label={sharing ? 'قطع اشتراک صفحه' : 'اشتراک صفحه'} emoji="🖥️" onClick={() => void toggleShare()} />
+   658→        <ControlButton active={handRaised} label={handRaised ? 'پایین آوردن دست' : 'اجازه صحبت'} emoji="✋" onClick={toggleHand} />
+   659→        {REACTIONS.map((emoji) => <ControlButton key={emoji} active={false} label={`واکنش ${emoji}`} emoji={emoji} onClick={() => sendReaction(emoji)} small />)}
+   660→        <ControlButton active={sideTab === 'chat'} label="گفت‌وگو" emoji="💬" onClick={() => openSide('chat')} badge={unread > 0 && sideTab !== 'chat' ? unread : 0} />
+   661→        <ControlButton active={sideTab === 'board'} label="وایت‌برد" emoji="📝" onClick={() => openSide('board')} />
+   662→        <ControlButton active={sideTab === 'reading'} label="متن قرآنی" emoji="📖" onClick={() => openSide('reading')} />
+   663→        <ControlButton active={false} label={isTeacherSide ? 'پایان کلاس و تسویه' : 'خروج از کلاس'} emoji="🔚" danger onClick={() => { if (window.confirm(isTeacherSide ? 'کلاس پایان یابد و تسویهٔ جلسه انجام شود؟' : 'از کلاس خارج می‌شوید؟')) void leaveClassroom(isTeacherSide); }} />
+   664→      </div>
+   665→
+   666→      <style jsx global>{`
+   667→        @keyframes floatUp {
+   668→          0% { transform: translateY(0) scale(1); opacity: 1; }
+   669→          100% { transform: translateY(-140px) scale(1.5); opacity: 0; }
+   670→        }
+   671→      `}</style>
+   672→    </main>
+   673→  );
+   674→}
+   675→
+   676→function ControlButton({ active, label, emoji, onClick, danger = false, small = false, badge = 0 }: {
+   677→  active: boolean;
+   678→  label: string;
+   679→  emoji: string;
+   680→  onClick: () => void;
+   681→  danger?: boolean;
+   682→  small?: boolean;
+   683→  badge?: number;
+   684→}) {
+   685→  return (
+   686→    <button
+   687→      type="button"
+   688→      onClick={onClick}
+   689→      title={label}
+   690→      aria-label={label}
+   691→      style={{
+   692→        position: 'relative',
+   693→        display: 'inline-flex',
+   694→        alignItems: 'center',
+   695→        gap: 7,
+   696→        padding: small ? '9px 12px' : '11px 16px',
+   697→        borderRadius: 13,
+   698→        border: '1px solid ' + (danger ? 'var(--clay)' : 'var(--sand-150)'),
+   699→        background: danger ? 'var(--rose)' : active ? 'var(--olive-600)' : '#fff',
+   700→        color: danger ? '#fff' : active ? '#fff' : 'var(--ink-2)',
+   701→        fontSize: small ? 15 : 13,
+   702→        fontWeight: 700,
+   703→        cursor: 'pointer',
+   704→        boxShadow: active && !danger ? 'var(--sh-olive)' : 'var(--sh-sm)',
+   705→      }}
+   706→    >
+   707→      <span>{emoji}</span>
+   708→      {!small && <span>{label}</span>}
+   709→      {badge > 0 && <span style={{ position: 'absolute', top: -6, left: -6, minWidth: 19, height: 19, borderRadius: 999, background: 'var(--rose)', color: '#fff', fontSize: 10.5, display: 'grid', placeItems: 'center', padding: '0 5px' }}>{faDigits(badge)}</span>}
+   710→    </button>
+   711→  );
+   712→}
+   713→
