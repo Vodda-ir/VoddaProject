@@ -182,6 +182,12 @@ export const api = {
       method: 'POST',
       headers: auth(token),
     }),
+  rateSession: (token: string, body: { session_id: number; rating: number; text?: string }) =>
+    request<{ data: Review }>('/reviews', {
+      method: 'POST',
+      body: JSON.stringify(body),
+      headers: auth(token),
+    }),
   transactions: (token: string) =>
     request<{ data: Transaction[] }>('/wallet/transactions', { headers: auth(token) }),
   becomeTeacher: (token: string, body: BecomeTeacherInput) =>
@@ -193,6 +199,12 @@ export const api = {
 
   teacherMe: (token: string) =>
     request<{ data: Teacher }>('/teacher/me', { headers: auth(token) }),
+  updateTeacherMe: (token: string, body: Partial<BecomeTeacherInput> & { available?: boolean }) =>
+    request<{ data: Teacher }>('/teacher/me', {
+      method: 'PUT',
+      body: JSON.stringify(body),
+      headers: auth(token),
+    }),
   teacherSessions: (token: string, when: string) =>
     request<{ data: SessionListItem[] }>(`/teacher/sessions?when=${encodeURIComponent(when)}`, {
       headers: auth(token),

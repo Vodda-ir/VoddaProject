@@ -34,6 +34,7 @@ const NAV_GROUPS: TeacherNavigationGroup[] = [
     items: [
       { id: 'services', icon: 'book' as const, label: 'خدمات من', href: '/panel/teacher/services' },
       { id: 'worktimes', icon: 'clock' as const, label: 'زمان‌های کاری', href: '/panel/teacher/worktimes' },
+      { id: 'profile', icon: 'user' as const, label: 'پروفایل مدرسی', href: '/panel/teacher/profile' },
       { id: 'reviews', icon: 'star' as const, label: 'نظرها', href: '/panel/teacher/reviews' },
     ],
   },
