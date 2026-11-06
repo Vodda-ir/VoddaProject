@@ -27,6 +27,13 @@ server {
     return 444;
 }
 
+# www.X.X to apex — the CDN forwards www traffic here; serve a canonical redirect
+server {
+    listen 80;
+    server_name www.__SITE_DOMAIN__;
+    return 301 https://__SITE_DOMAIN__$request_uri;
+}
+
 server {
     listen 80;
     server_name __SITE_DOMAIN__;
