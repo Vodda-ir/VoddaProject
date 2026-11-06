@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
 import { faDigits } from '@/components/PanelShell';
 import { Avatar } from '@/components/web/ui';
 import { Icon } from '@/components/Icon';
@@ -80,6 +81,7 @@ export default function UserSessionsPage() {
                 {session.status === 'done' && !session.rated && <PanelButton tone="primary" icon="star" disabled={busyId === session.id} onClick={() => setReviewFor(session)}>ثبت نظر</PanelButton>}
                 {session.status === 'done' && session.rated && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11.5, fontWeight: 700, color: 'var(--olive-700)', background: 'var(--olive-100)', padding: '4px 10px', borderRadius: 999 }}><Icon name="checkCircle" size={13} /> نظر ثبت شد</span>}
                 {(session.status === 'pending' || session.status === 'confirmed') && <button type="button" disabled={busyId === session.id} onClick={() => cancelSession(session)} style={{ fontSize: 12, fontWeight: 700, color: 'var(--rose)', background: 'none', border: 0, cursor: busyId === session.id ? 'wait' : 'pointer', opacity: busyId === session.id ? .55 : 1 }}>{busyId === session.id ? 'در حال لغو…' : 'لغو جلسه'}</button>}
+                {session.status === 'confirmed' && <Link href={`/panel/live/${session.id}`} style={{ display: 'inline-flex' }}><PanelButton tone="primary" icon="video">ورود به کلاس آنلاین</PanelButton></Link>}
               </div>
             </article>;
           })}
