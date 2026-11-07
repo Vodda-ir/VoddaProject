@@ -7,6 +7,7 @@ import { Icon } from '@/components/Icon';
 import { Avatar } from '@/components/web/ui';
 import { PanelButton } from '@/components/panel/PanelUI';
 import { clearToken, fullUrl, getToken } from '@/lib/auth';
+import { toFaDigits } from '@/lib/persian';
 
 type AdminNavigationItem = {
   id: string;
@@ -33,6 +34,7 @@ const NAV_GROUPS: AdminNavigationGroup[] = [
       { id: 'users', icon: 'users' as const, label: 'کاربران', href: '/panel/admin/users' },
       { id: 'teachers', icon: 'award' as const, label: 'اساتید', href: '/panel/admin/teachers' },
       { id: 'sessions', icon: 'calendar' as const, label: 'جلسات', href: '/panel/admin/sessions' },
+      { id: 'reviews', icon: 'star' as const, label: 'نظرات', href: '/panel/admin/reviews' },
     ],
   },
   {
@@ -41,17 +43,135 @@ const NAV_GROUPS: AdminNavigationGroup[] = [
       { id: 'services', icon: 'book' as const, label: 'بررسی خدمات', href: '/panel/admin/services' },
       { id: 'withdraws', icon: 'download' as const, label: 'برداشت‌ها', href: '/panel/admin/withdrawals' },
       { id: 'support', icon: 'message' as const, label: 'پشتیبانی', href: '/panel/admin/support' },
+      { id: 'finance', icon: 'coins' as const, label: 'گزارش مالی', href: '/panel/admin/finance' },
     ],
   },
   {
     label: 'سیستم',
     items: [
       { id: 'audit', icon: 'shield' as const, label: 'گزارش عملیات', href: '/panel/admin/audit' },
+      { id: 'settings', icon: 'settings' as const, label: 'تنظیمات سامانه', href: '/panel/admin/settings' },
     ],
   },
 ];
 
 const NAV = NAV_GROUPS.flatMap((group) => group.items);
+
+type AdminSummary = {
+  pending_teachers: number;
+  pending_services: number;
+  pending_withdrawals: number;
+  new_support: number;
+};
+
+const SUMMARY_ITEMS: Array<{ key: keyof AdminSummary; label: string; href: string; icon: React.ComponentProps<typeof Icon>['name']; tone: string; ink: string; bg: string }> = [
+  { key: 'pending_teachers', label: 'استاد در انتظار بررسی', href: '/panel/admin/teachers', icon: 'award', tone: 'gold', ink: '#8d6d1f', bg: 'var(--gold-bg)' },
+  { key: 'pending_services', label: 'خدمت در صف تأیید', href: '/panel/admin/services', icon: 'book', tone: 'info', ink: '#4f6f7c', bg: '#e8f0f2' },
+  { key: 'pending_withdrawals', label: 'درخواست برداشت در صف', href: '/panel/admin/withdrawals', icon: 'download', tone: 'clay', ink: 'var(--clay)', bg: 'var(--clay-bg)' },
+  { key: 'new_support', label: 'پیام پشتیبانی جدید', href: '/panel/admin/support', icon: 'message', tone: 'green', ink: 'var(--olive-700)', bg: 'var(--olive-100)' },
+];
+
+function AdminAlertsBell() {
+  const [open, setOpen] = useState(false);
+  const [summary, setSummary] = useState<AdminSummary | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = () => {
+      if (!getToken()) return;
+      fetch('/api/backend/admin/summary', { cache: 'no-store' })
+        .then((response) => (response.ok ? response.json() : null))
+        .then((body) => {
+          if (!cancelled && body?.data) setSummary(body.data as AdminSummary);
+        })
+        .catch(() => {});
+    };
+    load();
+    const timer = setInterval(load, 60_000);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, []);
+
+  const total = summary
+    ? SUMMARY_ITEMS.reduce((sum, item) => sum + Number(summary[item.key] || 0), 0)
+    : 0;
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <button
+        type="button"
+        className="ops-button"
+        aria-label={`اعلان‌های مدیریتی${total ? ` (${total} مورد)` : ''}`}
+        aria-expanded={open}
+        data-has-alert={total ? 'true' : undefined}
+        onClick={() => setOpen((value) => !value)}
+        style={{ position: 'relative' }}
+      >
+        <Icon name="bell" size={16} />
+        {total > 0 && (
+          <span
+            style={{
+              position: 'absolute', top: -6, insetInlineEnd: -6,
+              minWidth: 18, height: 18, padding: '0 5px',
+              display: 'grid', placeItems: 'center',
+              borderRadius: 999, background: 'var(--rose, #c2554f)', color: '#fff',
+              fontSize: 10, fontWeight: 800, lineHeight: 1,
+            }}
+          >
+            {toFaDigits(total)}
+          </span>
+        )}
+      </button>
+
+      {open && (
+        <>
+          <button type="button" aria-label="بستن اعلان‌ها" style={{ position: 'fixed', inset: 0, zIndex: 60, border: 0, background: 'transparent' }} onClick={() => setOpen(false)} />
+          <div
+            role="dialog"
+            aria-label="کارهای نیازمند اقدام"
+            style={{
+              position: 'absolute', zIndex: 70, top: 'calc(100% + 9px)', insetInlineEnd: 0,
+              width: 'min(340px, 88vw)', padding: 10,
+              border: '1px solid var(--sand-150)', borderRadius: 16,
+              background: '#fff', boxShadow: '0 18px 44px rgba(31,38,22,.16)',
+            }}
+          >
+            <strong style={{ display: 'block', padding: '3px 6px 9px', fontSize: 12 }}>کارهای نیازمند اقدام</strong>
+            {!summary ? (
+              <div style={{ padding: '8px 6px 12px', color: 'var(--ink-3)', fontSize: 11 }}>در حال دریافت…</div>
+            ) : total === 0 ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 6px 12px', color: 'var(--olive-700)', fontSize: 11.5 }}>
+                <Icon name="checkCircle" size={16} />
+                همه چیز بررسی شده؛ صفی خالی است.
+              </div>
+            ) : (
+              SUMMARY_ITEMS.map((item) => {
+                const count = Number(summary[item.key] || 0);
+                if (!count) return null;
+                return (
+                  <Link
+                    key={item.key}
+                    href={item.href}
+                    onClick={() => setOpen(false)}
+                    style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '9px 7px', borderRadius: 11, fontSize: 11.5, color: 'var(--ink)' }}
+                  >
+                    <span className="adm-stat-icon" style={{ width: 32, height: 32, borderRadius: 10, '--tone-ink': item.ink, '--tone-bg': item.bg } as React.CSSProperties}>
+                      <Icon name={item.icon} size={15} />
+                    </span>
+                    <span style={{ flex: 1 }}>{item.label}</span>
+                    <span className="adm-badge" data-tone={item.tone}>{toFaDigits(count)}</span>
+                  </Link>
+                );
+              })
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -237,6 +357,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <small>پنل عملیاتی وُدّا</small>
           </div>
           <div className="panel-top-links">
+            <AdminAlertsBell />
             {user.hasTeacherProfile && <Link href="/panel/teacher" className="ops-button"><Icon name="award" size={15} /> پنل استاد</Link>}
             <Link href="/panel/user" className="ops-button"><Icon name="user" size={15} /> پنل کاربری</Link>
           </div>

@@ -5,55 +5,6 @@ const nextConfig = {
   poweredByHeader: false,
   compress: true,
 
-  async redirects() {
-    // Root entry goes straight to the REA static preview (vodda2, branch
-    // rea/preview). Caddy :81 forwards any request carrying the
-    // XTransformPort query to the static server on localhost:3500.
-    //
-    // Bulletproofing: if the preview URL ever loses its ?XTransformPort=3500
-    // query (panel reload, address-bar strip, stale bookmark), Next.js would
-    // otherwise 404. Every known preview page therefore redirects back to
-    // its parameterised twin so the preview always comes up.
-    const previewPages = [
-      'index',
-      'panel-admin',
-      'panel-teacher',
-      'teacher',
-      'specialist',
-      'login',
-      'otp',
-      'search',
-      'session',
-      'book',
-      'orders',
-      'ordercenter',
-      'payment',
-      'chat',
-      'credit',
-      'corporate',
-      'campaign',
-      'store',
-      'tokens',
-      'assessment',
-      'flags',
-      'legal',
-      'profile',
-      'sitemap',
-    ];
-    return [
-      {
-        source: '/',
-        destination: '/index.html?XTransformPort=3500',
-        permanent: false,
-      },
-      ...previewPages.map((page) => ({
-        source: `/${page}.html`,
-        destination: `/${page}.html?XTransformPort=3500`,
-        permanent: false,
-      })),
-    ];
-  },
-
   async rewrites() {
     // Public media is proxied directly. API traffic must pass through the
     // /api/auth and /api/backend route handlers so JWTs remain HttpOnly.
@@ -90,3 +41,4 @@ const nextConfig = {
 };
 
 module.exports = nextConfig;
+
