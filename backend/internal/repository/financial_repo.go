@@ -222,6 +222,34 @@ func (r *financialRepo) ChargeWallet(ctx context.Context, userID uint, amount in
 	})
 }
 
+// AdminAdjustWallet moves a signed amount in one transaction: the balance is
+// updated under a row lock and a signed ledger row is written. Negative final
+// balances are rejected so adjustments can never bankrupt a wallet.
+func (r *financialRepo) AdminAdjustWallet(ctx context.Context, userID uint, amount int64, title string) error {
+	if amount == 0 {
+		return domain.ErrValidation
+	}
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var user domain.User
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&user, userID).Error; err != nil {
+			return recordError(err)
+		}
+		if user.Wallet+amount < 0 {
+			return domain.ErrInsufficient
+		}
+		if err := tx.Model(&domain.User{}).Where("id = ?", userID).
+			UpdateColumn("wallet", gorm.Expr("wallet + ?", amount)).Error; err != nil {
+			return err
+		}
+		return tx.Create(&domain.Transaction{
+			UserID: userID,
+			Type:   domain.TxAdjust,
+			Title:  title,
+			Amount: amount,
+		}).Error
+	})
+}
+
 func (r *financialRepo) CreateFundedWithdrawal(ctx context.Context, withdrawal *domain.Withdrawal) error {
 	if withdrawal.Amount <= 0 {
 		return domain.ErrValidation

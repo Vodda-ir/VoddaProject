@@ -32,3 +32,12 @@ type AdminAuditLog struct {
 	Metadata   string    `gorm:"type:text" json:"metadata,omitempty"`
 	CreatedAt  time.Time `gorm:"index" json:"created_at"`
 }
+
+// Setting is a platform-level configuration value editable by admins and read
+// by the public site (contact info, announcement banner, ...). Keys are
+// restricted to a whitelist enforced by the admin usecase.
+type Setting struct {
+	Key       string    `gorm:"size:60;primaryKey" json:"key"`
+	Value     string    `gorm:"size:500" json:"value"`
+	UpdatedAt time.Time `json:"updated_at"`
+}

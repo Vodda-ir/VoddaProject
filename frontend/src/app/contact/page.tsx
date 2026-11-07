@@ -1,13 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { CSSProperties, FormEvent } from 'react';
 import { Nav, Footer } from '@/components/web/sections';
 import { Icon } from '@/components/Icon';
 import { PublicPageHero, PublicSurface } from '@/components/web/ui';
 import { api } from '@/lib/api';
+import { toFaDigits } from '@/lib/persian';
 
-const SUPPORT_EMAIL = 'info@vodda.app';
+const FALLBACK_SUPPORT_EMAIL = 'info@vodda.app';
 
 export default function ContactPage() {
   const [name, setName] = useState('');
@@ -16,6 +17,24 @@ export default function ContactPage() {
   const [submitting, setSubmitting] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState('');
+  const [supportEmail, setSupportEmail] = useState(FALLBACK_SUPPORT_EMAIL);
+  const [supportPhone, setSupportPhone] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/backend/settings', { cache: 'no-store' })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((body) => {
+        if (cancelled || !body?.data?.settings) return;
+        const settings = body.data.settings as Record<string, string>;
+        if (settings.support_email?.includes('@')) setSupportEmail(settings.support_email);
+        if (settings.support_phone) setSupportPhone(settings.support_phone);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -60,10 +79,20 @@ export default function ContactPage() {
             <PublicSurface style={{ padding: 22 }}>
               <span className="contact-info-icon"><Icon name="message" size={23} /></span>
               <small>ایمیل پشتیبانی</small>
-              <strong dir="ltr">{SUPPORT_EMAIL}</strong>
+              <strong dir="ltr">{supportEmail}</strong>
               <p>برای موضوعاتی که نیاز به توضیح یا فایل تکمیلی دارند می‌توانید مستقیماً ایمیل بزنید.</p>
-              <a href={`mailto:${SUPPORT_EMAIL}`} className="contact-email-link">ارسال ایمیل <Icon name="arrowL" size={16} /></a>
+              <a href={`mailto:${supportEmail}`} className="contact-email-link">ارسال ایمیل <Icon name="arrowL" size={16} /></a>
             </PublicSurface>
+
+            {supportPhone && (
+              <PublicSurface style={{ padding: 22 }}>
+                <span className="contact-info-icon olive"><Icon name="phone" size={23} /></span>
+                <small>تلفن پشتیبانی</small>
+                <strong dir="ltr">{toFaDigits(supportPhone)}</strong>
+                <p>در ساعات کاری پاسخ‌گوی تماس شما هستیم.</p>
+                <a href={`tel:${supportPhone}`} className="contact-email-link">تماس تلفنی <Icon name="arrowL" size={16} /></a>
+              </PublicSurface>
+            )}
 
             <PublicSurface style={{ padding: 22 }}>
               <span className="contact-info-icon olive"><Icon name="shield" size={23} /></span>

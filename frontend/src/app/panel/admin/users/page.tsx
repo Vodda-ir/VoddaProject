@@ -74,6 +74,9 @@ export default function AdminUsers() {
   const [error, setError] = useState('');
   const [busyId, setBusyId] = useState<number | null>(null);
   const [selected, setSelected] = useState<AdminUser | null>(null);
+  const [adjustAmount, setAdjustAmount] = useState('');
+  const [adjustReason, setAdjustReason] = useState('');
+  const [adjustBusy, setAdjustBusy] = useState(false);
   const token = getToken();
 
   const fetchUsers = useCallback(async () => {
@@ -125,6 +128,61 @@ export default function AdminUsers() {
       setError(cause instanceof Error ? cause.message : 'تغییر وضعیت حساب انجام نشد.');
     } finally {
       setBusyId(null);
+    }
+  }
+
+  async function changeRole(user: AdminUser, role: RoleFilter) {
+    if (!token || busyId !== null || role === user.role) return;
+    const label = ROLES.find((item) => item.value === role)?.label || role;
+    if (!window.confirm(`نقش «${user.name || 'کاربر'}» به ${label} تغییر کند؟`)) return;
+
+    setBusyId(user.id);
+    setError('');
+    try {
+      const response = await fetch(`/api/backend/admin/users/${user.id}/role`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role }),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(body.error || 'تغییر نقش انجام نشد.');
+      setUsers((previous) => previous.map((item) => (item.id === user.id ? { ...item, role } : item)));
+      if (selected?.id === user.id) setSelected((current) => (current ? { ...current, role } : current));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'تغییر نقش انجام نشد.');
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function submitAdjust() {
+    if (!token || !selected || adjustBusy) return;
+    const parsed = Number(adjustAmount.replace(/[^0-9\-]/g, ''));
+    if (!Number.isFinite(parsed) || parsed === 0) {
+      setError('مبلغ تعدیل را وارد کنید؛ عدد مثبت افزودن و عدد منفی کسر است.');
+      return;
+    }
+    if (!window.confirm(`${parsed > 0 ? 'افزودن' : 'کسر'} ${formatFaNumber(Math.abs(parsed))} تومان ${parsed > 0 ? 'به' : 'از'} کیف پول «${selected.name || 'کاربر'}» ثبت شود؟`)) return;
+
+    setAdjustBusy(true);
+    setError('');
+    try {
+      const response = await fetch(`/api/backend/admin/users/${selected.id}/wallet-adjust`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: parsed, reason: adjustReason.trim() }),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(body.error || 'ثبت تعدیل کیف پول انجام نشد.');
+      const nextWallet = Number(selected.wallet || 0) + parsed;
+      setUsers((previous) => previous.map((item) => (item.id === selected.id ? { ...item, wallet: nextWallet } : item)));
+      setSelected((current) => (current && current.id === selected.id ? { ...current, wallet: nextWallet } : current));
+      setAdjustAmount('');
+      setAdjustReason('');
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'ثبت تعدیل کیف پول انجام نشد.');
+    } finally {
+      setAdjustBusy(false);
     }
   }
 
@@ -282,6 +340,78 @@ export default function AdminUsers() {
               </KeyValueRow>
             )}
             {selected.bio && <KeyValueRow label="بیو">{selected.bio}</KeyValueRow>}
+
+            <section style={{ marginTop: 16, padding: 14, border: '1px solid var(--sand-150)', borderRadius: 15, background: 'var(--surface-warm)' }}>
+              <strong style={{ display: 'block', marginBottom: 3, fontSize: 12.5 }}>نقش حساب</strong>
+              <p style={{ margin: '0 0 10px', color: 'var(--ink-3)', fontSize: 10.5, lineHeight: 1.9 }}>
+                نقش، پنل و دسترسی‌های حساب را تعیین می‌کند. نقش حساب خودتان قابل تغییر نیست.
+              </p>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {ROLES.filter((item) => item.value).map((item) => (
+                  <button
+                    key={item.value}
+                    type="button"
+                    disabled={busyId === selected.id || selected.role === item.value}
+                    onClick={() => void changeRole(selected, item.value)}
+                    style={{
+                      minHeight: 36, padding: '7px 13px', borderRadius: 999, cursor: 'pointer',
+                      border: '1px solid',
+                      borderColor: selected.role === item.value ? 'var(--olive-600)' : 'var(--sand-200)',
+                      background: selected.role === item.value ? 'var(--olive-100)' : '#fff',
+                      color: selected.role === item.value ? 'var(--olive-700)' : 'var(--ink-2s)',
+                      fontFamily: 'inherit', fontSize: 11.5, fontWeight: selected.role === item.value ? 800 : 500,
+                    }}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+              {busyId === selected.id && <small style={{ display: 'block', marginTop: 8, color: 'var(--olive-700)' }}>در حال ثبت تغییر…</small>}
+            </section>
+
+            <section style={{ marginTop: 14, padding: 14, border: '1px solid #ecd5c8', borderRadius: 15, background: 'var(--clay-bg)' }}>
+              <strong style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3, fontSize: 12.5 }}>
+                <Icon name="wallet" size={15} style={{ color: 'var(--clay)' }} />
+                تعدیل دستی کیف پول
+              </strong>
+              <p style={{ margin: '0 0 10px', color: 'var(--ink-3)', fontSize: 10.5, lineHeight: 1.9 }}>
+                مبلغ مثبت شارژ و مبلغ منفی کسر می‌کند. تراکنش در دفتر مالی کاربر با عنوان «تعدیل دستی» ثبت و در گزارش عملیات لاگ می‌شود.
+              </p>
+              <div style={{ display: 'grid', gap: 8 }}>
+                <input
+                  dir="ltr"
+                  inputMode="numeric"
+                  value={adjustAmount}
+                  onChange={(event) => setAdjustAmount(event.target.value)}
+                  placeholder="مثلاً 500000 یا -250000"
+                  aria-label="مبلغ تعدیل (تومان)"
+                  style={{
+                    minHeight: 42, padding: '9px 12px', border: '1px solid var(--sand-200)',
+                    borderRadius: 12, background: '#fff', fontFamily: 'inherit', fontSize: 12.5, textAlign: 'left',
+                  }}
+                />
+                <input
+                  value={adjustReason}
+                  onChange={(event) => setAdjustReason(event.target.value)}
+                  maxLength={120}
+                  placeholder="دلیل تعدیل (اختیاری)"
+                  aria-label="دلیل تعدیل"
+                  style={{
+                    minHeight: 42, padding: '9px 12px', border: '1px solid var(--sand-200)',
+                    borderRadius: 12, background: '#fff', fontFamily: 'inherit', fontSize: 12.5,
+                  }}
+                />
+                <PanelButton
+                  tone={adjustAmount.trim().startsWith('-') ? 'danger' : 'success'}
+                  icon="coins"
+                  disabled={adjustBusy || !adjustAmount.trim()}
+                  onClick={() => void submitAdjust()}
+                >
+                  {adjustBusy ? 'در حال ثبت…' : 'ثبت تعدیل'}
+                </PanelButton>
+              </div>
+            </section>
+
             <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
               <PanelButton
                 tone={selected.active ? 'danger' : 'success'}

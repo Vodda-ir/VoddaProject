@@ -76,3 +76,52 @@ func (r *reviewTransactionRepo) RateCompletedSession(ctx context.Context, learne
 		return nil
 	})
 }
+
+// DeleteReview removes a review in one transaction: the row is deleted, the
+// session becomes rateable again, and the teacher rating aggregate is
+// recomputed from the remaining reviews.
+func (r *reviewTransactionRepo) DeleteReview(ctx context.Context, reviewID uint) error {
+	if reviewID == 0 {
+		return domain.ErrValidation
+	}
+
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var review domain.Review
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&review, reviewID).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return domain.ErrNotFound
+			}
+			return err
+		}
+
+		if err := tx.Delete(&domain.Review{}, review.ID).Error; err != nil {
+			return err
+		}
+		if err := tx.Model(&domain.Session{}).
+			Where("id = ?", review.SessionID).
+			Update("rated", false).Error; err != nil {
+			return err
+		}
+
+		var stats struct {
+			Average float64
+			Count   int
+		}
+		if err := tx.Model(&domain.Review{}).
+			Select("COALESCE(AVG(rating), 0) AS average, COUNT(*) AS count").
+			Where("teacher_id = ?", review.TeacherID).
+			Scan(&stats).Error; err != nil {
+			return err
+		}
+		result := tx.Model(&domain.Teacher{}).
+			Where("id = ?", review.TeacherID).
+			Updates(map[string]any{"rating": stats.Average, "reviews": stats.Count})
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected != 1 {
+			return domain.ErrNotFound
+		}
+		return nil
+	})
+}

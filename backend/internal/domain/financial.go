@@ -12,4 +12,5 @@ type FinancialRepository interface {
 	ChargeWallet(ctx context.Context, userID uint, amount int64, title string) error
 	CreateFundedWithdrawal(ctx context.Context, withdrawal *Withdrawal) error
 	ProcessWithdrawal(ctx context.Context, withdrawal *Withdrawal, paid bool) error
+	AdminAdjustWallet(ctx context.Context, userID uint, amount int64, title string) error
 }

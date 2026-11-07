@@ -511,9 +511,12 @@ export default function AdminDashboard() {
               <QuickAction href="/panel/admin/users" icon="users" label="کاربران" />
               <QuickAction href="/panel/admin/teachers" icon="award" label="اساتید" />
               <QuickAction href="/panel/admin/sessions" icon="calendar" label="جلسات" />
+              <QuickAction href="/panel/admin/reviews" icon="star" label="نظرات" />
               <QuickAction href="/panel/admin/services" icon="book" label="خدمات" />
               <QuickAction href="/panel/admin/withdrawals" icon="download" label="برداشت‌ها" />
               <QuickAction href="/panel/admin/support" icon="message" label="پشتیبانی" />
+              <QuickAction href="/panel/admin/finance" icon="coins" label="گزارش مالی" />
+              <QuickAction href="/panel/admin/settings" icon="settings" label="تنظیمات" />
             </div>
           </PanelSection>
         </div>

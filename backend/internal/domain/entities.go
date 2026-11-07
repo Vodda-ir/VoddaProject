@@ -44,6 +44,7 @@ const (
 	TxEarning    TxType = "earning"
 	TxWithdrawal TxType = "withdrawal"
 	TxCommission TxType = "commission"
+	TxAdjust     TxType = "adjust"
 )
 
 // WithdrawalStatus enumerates payout request states.
@@ -74,23 +75,23 @@ type User struct {
 
 // Teacher is the professional profile attached to a teacher-role user.
 type Teacher struct {
-	ID        uint          `gorm:"primaryKey" json:"id"`
-	UserID    uint          `gorm:"uniqueIndex" json:"user_id"`
-	Field     string        `gorm:"size:60" json:"field"`
-	Tag       string        `gorm:"size:60" json:"tag"`
-	Level     string        `gorm:"size:30" json:"level"`
-	City      string        `gorm:"size:80;index" json:"city"`
-	Bio       string        `gorm:"size:1000" json:"bio"`
-	Skills    string        `gorm:"size:500" json:"-"`
-	SkillList []string      `gorm:"-" json:"skills"`
-	Price30   int64         `json:"price30"`
-	Price60   int64         `json:"price60"`
-	Female    bool          `json:"female"`
-	Verified  bool          `json:"verified"`
-	Available bool          `gorm:"default:true" json:"available"`
+	ID        uint     `gorm:"primaryKey" json:"id"`
+	UserID    uint     `gorm:"uniqueIndex" json:"user_id"`
+	Field     string   `gorm:"size:60" json:"field"`
+	Tag       string   `gorm:"size:60" json:"tag"`
+	Level     string   `gorm:"size:30" json:"level"`
+	City      string   `gorm:"size:80;index" json:"city"`
+	Bio       string   `gorm:"size:1000" json:"bio"`
+	Skills    string   `gorm:"size:500" json:"-"`
+	SkillList []string `gorm:"-" json:"skills"`
+	Price30   int64    `json:"price30"`
+	Price60   int64    `json:"price60"`
+	Female    bool     `json:"female"`
+	Verified  bool     `json:"verified"`
+	Available bool     `gorm:"default:true" json:"available"`
 	// Tier رتبه‌بندی کیفی استاد: "" | "international" (درجه یک/بین‌المللی)
 	// | "grade2" | "grade3" — تیک نشان کنار نام استاد از همین تعیین می‌شود.
-	Tier     string        `gorm:"size:16;default:''" json:"tier"`
+	Tier      string        `gorm:"size:16;default:''" json:"tier"`
 	Status    TeacherStatus `gorm:"size:16;default:pending;index" json:"status"`
 	Rating    float64       `gorm:"default:0" json:"rating"`
 	Reviews   int           `gorm:"default:0" json:"reviews"`

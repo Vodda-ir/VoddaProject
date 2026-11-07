@@ -67,6 +67,7 @@ function UserMenu({ name, role, avatar, hasTeacherProfile }: { name: string; rol
 export function Nav() {
   const [user, setUser] = useState<{ name: string; role: string; avatar_url?: string; hasTeacherProfile: boolean } | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [announcement, setAnnouncement] = useState<{ text: string; link: string } | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -86,6 +87,26 @@ export function Nav() {
     return () => controller.abort();
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    try {
+      if (sessionStorage.getItem('vodda-announcement-dismissed') === '1') return;
+    } catch { /* storage unavailable */ }
+    fetch('/api/backend/settings', { cache: 'no-store' })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((body) => {
+        if (cancelled || !body?.data?.settings) return;
+        const settings = body.data.settings as Record<string, string>;
+        if (settings.announcement_on === 'true' && settings.announcement_text?.trim()) {
+          setAnnouncement({ text: settings.announcement_text.trim(), link: settings.announcement_link || '' });
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const links = [
     ['خانه', '/'],
     ['اساتید', '/#teachers'],
@@ -96,6 +117,38 @@ export function Nav() {
 
   return (
     <header className="public-nav">
+      {announcement && (
+        <div
+          className="public-announcement"
+          role="status"
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+            padding: '9px 40px 9px 14px', position: 'relative',
+            background: 'linear-gradient(90deg, var(--olive-700), var(--olive-600))',
+            color: '#fff', fontSize: 12.5, textAlign: 'center',
+          }}
+        >
+          <Icon name="bell" size={14} />
+          {announcement.link ? (
+            <a href={announcement.link} style={{ color: '#fff', fontWeight: 700, textDecoration: 'underline', textUnderlineOffset: 3 }}>
+              {announcement.text}
+            </a>
+          ) : (
+            <strong style={{ fontWeight: 700 }}>{announcement.text}</strong>
+          )}
+          <button
+            type="button"
+            aria-label="بستن اعلان"
+            onClick={() => {
+              setAnnouncement(null);
+              try { sessionStorage.setItem('vodda-announcement-dismissed', '1'); } catch { /* ignore */ }
+            }}
+            style={{ position: 'absolute', insetInlineEnd: 10, top: '50%', transform: 'translateY(-50%)', border: 0, background: 'rgba(255,255,255,.16)', color: '#fff', width: 24, height: 24, borderRadius: 999, display: 'grid', placeItems: 'center', cursor: 'pointer' }}
+          >
+            <Icon name="x" size={13} />
+          </button>
+        </div>
+      )}
       <div className="public-container public-nav-inner">
         <Link href="/" style={brandStyle} aria-label="صفحه اصلی وُدّا">
           <img src="/vodda-logo.svg" alt="" style={{ width: 38, height: 38 }} />

@@ -39,6 +39,37 @@ func (r *reviewRepo) Stats(ctx context.Context, teacherID uint) (float64, int, e
 	return res.Avg, res.Count, err
 }
 
+// ListAll returns the newest reviews across all teachers with their learners.
+func (r *reviewRepo) ListAll(ctx context.Context, limit, offset int) ([]domain.Review, int64, error) {
+	if limit <= 0 || limit > 100 {
+		limit = 30
+	}
+	if offset < 0 {
+		offset = 0
+	}
+	var total int64
+	if err := r.db.WithContext(ctx).Model(&domain.Review{}).Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	var reviews []domain.Review
+	err := r.db.WithContext(ctx).Preload("Learner").
+		Order("created_at desc").Limit(limit).Offset(offset).Find(&reviews).Error
+	return reviews, total, err
+}
+
+// ByID loads a single review with its learner.
+func (r *reviewRepo) ByID(ctx context.Context, id uint) (*domain.Review, error) {
+	var review domain.Review
+	err := r.db.WithContext(ctx).Preload("Learner").First(&review, id).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, domain.ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &review, nil
+}
+
 // ── Wallet ──
 
 type walletRepo struct{ db *gorm.DB }
