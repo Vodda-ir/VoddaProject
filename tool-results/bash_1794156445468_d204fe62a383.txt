@@ -1,0 +1,575 @@
+From https://github.com/Vodda-ir/VoddaProject
+ * [new branch]      backup/voddaproject2 -> origin/backup/voddaproject2
+ * [new branch]      main                 -> origin/main
+===GITHUB LOG===
+a6c7834 fix: PastTeacher type gains avatarUrl for rebook rail avatar rendering
+be4fe5d demo: مسلمان avatar set for all teachers + rich fake data seed (sessions/orders/messages/wallets) + wire avatar into app screens
+cfaaa77 feat(user-panel): advanced learner panel — personal analytics API + modern dashboards
+929fa4b fix(blog): content parser handles lists after headings without blank line
+4f40606 feat(blog): full blog CMS — admin CRUD + cover upload + public SSR pages
+4dc1e60 feat(admin): panel part 2 — reviews moderation, finance reports, platform settings, alerts bell, user role & wallet controls
+a35f316 feat(admin): advanced admin panel — analytics API + beautiful dashboards
+4204d18 fix(live): three root-cause bugs blocking the online classroom
+===LOCAL ONLY===
+3560fd2 77563b82-3f67-4e24-acde-265b8db0c6b9
+894067c Advanced admin users panel, mobile wallet responsive fix, UI polish
+c02863d 2ce28630-2e2c-4ba8-8f16-0bd7e91a1d81
+4a73923 e06af5cb-7b98-456c-8d9d-95cbfa7639f4
+eea63d4 3a50bc51-457e-469e-9024-67320104a598
+2637d18 7a20ef42-0ab2-4122-8334-c91f313fc94b
+7e7c6e4 ac08233c-30a5-424b-8e5a-a65b685e3094
+6863a3f 15fa3f3e-f482-4797-8155-38ebb11e4a1f
+a5fa8a2 728abb8f-2467-4afc-bb5f-991a8b5b2b79
+18087c0 f53318bd-5cad-4550-8730-291332098aac
+49b16af 908e746c-361c-4cc5-8ea6-0fae5b63c59f
+ea6834b c8cde0fb-89ea-4d5f-b984-85a298ce3159
+4f35fd5 4dd61576-2a92-4986-8399-cf5179240e89
+5328c3c 05058730-10aa-428a-8ff6-89e2ec400adc
+c50b8ae ea39cac5-b0f2-4c2d-9c05-c8889b4e5c02
+88b79f1 e7a53cd1-ad61-420a-b132-edbb5469303f
+f95b14f c1146d4f-3592-4d60-861a-773920bb8a2c
+2d5aeb4 17d6153a-8c84-427c-aeda-c9ad36491aa2
+d994a01 14d2c70c-fc38-4447-94bc-14c796bdbf20
+6963b6a 89e7a340-ce3b-4a58-8b1d-3c3c7d430b36
+af59fca 4e2f9c4a-9685-4a3d-b65f-6a8e17e86c4a
+d920083 7ff3bcfb-93ba-42b9-bedb-a72ecd75985f
+aaf2315 d8d12f31-5309-433b-96b7-0d29ee0c1a15
+4277d24 0f9faddc-4457-400b-8afb-c430a82f70e8
+03b4932 Initial commit
+===GITHUB ONLY===
+a6c7834 fix: PastTeacher type gains avatarUrl for rebook rail avatar rendering
+be4fe5d demo: مسلمان avatar set for all teachers + rich fake data seed (sessions/orders/messages/wallets) + wire avatar into app screens
+cfaaa77 feat(user-panel): advanced learner panel — personal analytics API + modern dashboards
+929fa4b fix(blog): content parser handles lists after headings without blank line
+4f40606 feat(blog): full blog CMS — admin CRUD + cover upload + public SSR pages
+4dc1e60 feat(admin): panel part 2 — reviews moderation, finance reports, platform settings, alerts bell, user role & wallet controls
+a35f316 feat(admin): advanced admin panel — analytics API + beautiful dashboards
+4204d18 fix(live): three root-cause bugs blocking the online classroom
+6094b51 fix(live): WS data-liveness check — CDN may open handshake but drop frames; auto-failover to long-polling with slow socket retry
+49a392b fix(live): shadowed ok() helper, unused expires, init Live hub in main
+77b21de feat(live): online classroom — Go signaling hub (WS + long-poll fallback, single-use tickets, session-membership ACL), WebRTC 1:1 engine (P2P media, TURN/STUN, screen share), full classroom UI (chat/whiteboard/Quran reading pane/reactions/hand/device preflight), join buttons on both sessions pages
+11ace79 fix(bff): origin check compares hosts not protocols behind CDN/proxies; allow BFF_ALLOWED_HOSTS whitelist + capacitor origins; ops(nginx): canonical www→apex 301 redirect (fixes 502 on www.vodda.ir)
+e77e0ea chore: drop accidental bun.lock (repo uses npm flow per Dockerfile)
+f1ea4d6 feat(teacher): web profile editing (field/tag/level/city/bio/skills/prices/availability) + nav item; feat(learner): post-session review dialog in web panel; fix(backend): normalize teacher SkillList on create/update so API responses reflect latest save
+df60ea2 feat(home): learner home upgrade — next-session card, smart greeting, notifications, wallet balance, verse strip, rebook rail, onboarding checklist, skeletons; feat(teachers): compact card with availability ring and 3-tier Instagram-style badge (backend tier field); chore: hide maddahi across platform (Quran-only phase)
+3c42830 restore original vodda.ir routing: proxy root domain to Next.js app; align template with server monafaseh.conf split
+dad02d2 feat(web): demo layer — AI avatars for teachers + populated demo pages
+dc4d1d2 انجینکس بشر: سقف آپلود 64m (فایل‌های آموزش/ویدئو تا ۳۰MB بدون خطای 413)
+6f3f8de web v2: اتصال کامل فرانت‌اند به بک‌اند + حذف پیش‌نمایش/حاشیه‌نویسی + رفع مسیرها
+73add0c feat(web): clean production build — full backend/API integration
+ecd9b91 feat(deploy): serve vodda v2 static site on vodda.ir root
+89693f9 feat(web): add vodda v2 static site (REA preview build, 25 pages)
+32fb7ea feat(monafaseh): profile page rebuilt with Instagram structure
+9b8d31e chore: force LF for shell scripts (docker entrypoint safety)
+d1b2f46 update deploy pipeline, compose files and monafaseh dockerfile; ignore bashar/
+7850597 feat(monafaseh): social app UI, public profiles, panel nav, payments and moderation
+d945e4a chore(security): untrack local env files and remove hardcoded admin passwords
+41fb27a feat(poster): offline poster service (Pillow+raqm) and photo posts for occasions/Fridays
+3882722 feat(occasions): official 389-day occasion bank + Fatimiyya and major religious days
+35b708e feat(eitaa-bot): multi-line date block in morning message, filter sajdah verses
+9f423f5 chore(calendar): sync bot data copy with site
+443bdaa fix(calendar): add Ramadan 1446 so 1404 starts on official data
+45f9e0d feat(calendar): official Iranian Hijri data for 1404-1405, calendar API, bot integration
+317b671 docs(eitaa-bot): document weekly report slot and occasions
+0177971 feat(eitaa-bot): weekly report API + Hijri occasions + Jalali occasion override
+5fb153a feat(monafaseh): dual theme (pure dark + light), public events API, deep links, eitaa bot
+01ac34d fix ui issues
+a694959 deploy complete
+d54dfc8 deploy complete
+d01f672 working on deploy
+57a374d remove flutter app and prepare project for deploy
+3077c28 add monafaseh app
+7a897b5 docs: mark admin and teacher panel redesign complete
+1d922fc docs: document admin and teacher panel redesign
+c554d19 ui: align admin dashboard teacher queue navigation
+2438ecc ui: simplify admin teacher capability switch
+967d295 fix: keep work-time access error semantics consistent
+fa259e5 ui: modernize admin audit log with pagination
+baa2d31 ui: modernize admin support inbox
+005e3a3 fix: make public teacher search explicitly public-only
+ba09f80 fix: keep inactive approved teachers visible to admin
+015b928 fix: separate public teacher visibility from admin status filter
+fbab709 ui: modernize teacher work-time planner
+d4b4d7c ui: rebuild teacher withdrawal workflow
+553ece1 ui: rebuild teacher wallet as ledger workspace
+fe8f79e ui: turn teacher reviews into feedback workspace
+18b7eea ui: modernize teacher service management
+9c8b235 ui: modernize teacher sessions workspace
+8f301ea ui: modernize teacher request workflow
+fc134d1 ui: rebuild teacher dashboard as professional workspace
+97a24ba ui: rebuild teacher shell and navigation
+bfd9f57 ui: modernize admin service moderation queue
+cab9d99 ui: modernize admin user management
+aa68f6c fix: redesign admin withdrawals and send correct paid payload
+2b8c81c ui: add operational filters and pagination to admin sessions
+5208b8d ui: rebuild admin shell with role guard and grouped navigation
+3c8d9b5 ui: rebuild admin dashboard as operations workspace
+a375d42 ui: rebuild admin teacher directory with real filters
+54a5438 ui: add professional admin and teacher panel system
+775dd11 ui: add shared operational panel primitives
+553c025 admin: add teacher search and filter query contract
+f3608c0 admin: expose server-side teacher directory filters
+afa458b fix: guard teacher withdrawal history by profile capability
+e15fdfa fix: make shared panel switching capability-aware
+f20470d test: lock teacher API route contract
+ff15a2d fix: keep teacher registration outside operational guard
+3e9c41f fix: import errors for teacher profile guard
+312646b fix: expose teacher panel only for teacher-capable accounts
+4ad41c2 fix: gate teacher panel by actual teacher profile
+7b8611a fix: hide teacher panel for admins without profile
+16f6ab6 fix: use BFF and capability-aware teacher panel link
+8c8e390 fix: expose teacher profile capability in session state
+e22763e fix: guard teacher withdrawal by profile capability
+2307aa7 fix: guard teacher session lists by profile capability
+396acc5 fix: guard teacher session actions by profile capability
+ec6dc9d fix: guard teacher reviews by profile capability
+e17813f fix: normalize missing teacher profile errors
+554306b fix: return explicit teacher-profile access error
+60721ee fix: distinguish missing teacher profile from route not found
+e91440c fix local otp bypass
+fe0a1b9 docs: mark production seed migration complete
+645dda7 docs: document required production seed migration
+23ac41d seed: validate and bound legacy profile data
+5188e40 seed: run required bootstrap in production
+5a2e940 seed: add production-required admins and legacy teachers
+e157cb4 seed: add approved legacy teacher profiles
+88def1f docs: mark public website redesign complete
+ef74125 docs: document public website redesign
+76fdd52 ui: polish public system states and previews
+be2abd8 ui: make landing previews explicitly illustrative
+931c8c3 ui: redesign public loading state
+81b9c92 ui: redesign public error state
+331267a ui: redesign public not-found state
+150ae00 ui: style public search and teacher profile
+70fd8ad ui: redesign public teacher profile
+4bd3772 ui: redesign public teacher search
+7d9da2e ui: style redesigned public content pages
+7618775 ui: redesign public blog page
+f89660f ui: redesign public terms page
+aa70932 ui: redesign public privacy page
+8b235fd ui: redesign public contact page
+a5afa47 ui: redesign public FAQ experience
+f531bb0 ui: redesign public about page
+87e4f1f ui: add responsive public website redesign system
+7de4550 ui: redesign public landing and navigation
+b5da8b8 ui: rebuild public web design primitives
+eb1c888 fix bugs
+199c1b3 ui: auto-format universal work-time input
+09a6dc2 ui: auto-format Persian work-time input
+c4593a9 docs: document Persian typography and digit consistency
+b2a45e5 ui: load Persian font in universal native styles
+17eed04 ui: map Persian font heavy weights explicitly
+e397d4c ui: bundle universal Persian font faces
+55febce ui: remove external font dependencies
+dc8e15f ui: self-host unified Persian font
+c3fa55f ui: bundle Persian font with native shell
+064f7d6 ui: self-host Flutter Persian font in frontend
+d4a6bf1 ui: clean profile settings imports
+f05db75 ui: localize learner dashboard rating
+9425603 ui: localize teacher review metrics
+2a6a3a1 ui: render universal work-time inputs in Persian
+5ab6f9b ui: localize work-time inputs and labels
+a9b872a ui: localize teacher list metrics
+ffcb5d8 ui: localize support contact digits
+60a8bbd ui: localize audit request identifiers
+ca1a88b ui: localize teacher rating digits
+05b38ea ui: localize dashboard rating digits
+7f1dd71 ui: localize withdrawal sheba digits
+ecfaeb8 ui: localize admin user mobile digits
+b15aa95 ui: localize profile mobile display
+b626595 ui: localize teacher withdrawal fields
+1766efd ui: localize teacher service numeric fields
+6a0b401 ui: localize teacher registration price input
+a2ce570 ui: render panel login digits in Persian
+4b08a5d ui: localize withdrawal identifiers and amounts
+54e561a ui: localize service numeric inputs
+ef303b4 ui: localize teacher profile numeric inputs
+f3fa072 ui: localize profile mobile digits
+5fbffa4 ui: render login digits in Persian
+0313e2f ui: reuse shared Persian digit formatter
+a7f5667 ui: use shared Persian digit formatter
+38b54f2 ui: export Persian digit helpers
+8265c6a ui: enforce universal font inheritance
+9433391 ui: enforce Persian font on form controls
+8db7cdd ui: centralize universal Persian digit formatting
+9fae823 ui: centralize Persian digit formatting
+8182012 docs: sync visual parity guide with final Flutter refinement
+236a707 ui: preserve explicit card borders on flat primitives
+1984e25 ui: clean work-time parity imports
+74f4de8 ui: match Flutter work-time chips and dialog
+0630df5 ui: match Flutter service cards and editor
+30bb73d ui: match Flutter teacher request and session cards
+84b733c ui: match Flutter learner session cards
+002d643 ui: clean wallet card parity imports
+d5e239e ui: clean search parity imports
+372fc6b ui: preserve Flutter dashboard header in loading states
+a5d7120 ui: match Flutter teacher dashboard structure
+4225fa7 ui: match Flutter wallet transaction cards
+cce0032 ui: add wallet transaction direction icons
+8e2bb1b ui: match Flutter teacher wallet stats
+164127a ui: match Flutter learner wallet details
+59a993b ui: match Flutter wallet hero styling
+d7ef1aa ui: remove non-Flutter web interaction effects
+8763534 ui: align universal primitives with Flutter theme
+e6a8baa ui: match Flutter home loading and error hierarchy
+994b7a1 ui: match Flutter quick category navigation
+b2d3ac8 ui: reuse shared Flutter teacher card in search
+2b5912f ui: reuse shared Flutter teacher card on home
+a61a6d6 ui: share Flutter-parity teacher card
+a4e2332 ui: match Flutter teacher carousel cards
+9979fd7 ui: match Flutter teacher profile stats
+1a952b3 ui: mount universal visual styles at app root
+2bbd4db ui: clean public teacher parity imports
+c10a8cc ui: clean role sheet parity imports
+fc04868 ui: clean profile edit parity imports
+dd6766d ui: match Flutter profile edit screen
+fc11a18 ui: add camera icon for profile parity
+5ac30cd ui: match Flutter public teacher profile layout
+34fd8e4 ui: match Flutter dashboard role switch sheet
+7a08d61 ui: match Flutter home hero and role switching
+96fe171 ui: add Flutter-style role switch sheet
+8fb87a6 ui: remove obsolete teacher profile status helper
+6da4d1d ui: clean login parity imports
+de5a915 ui: clean obsolete shell spacing import
+d7fad78 ui: remove obsolete global role switch
+9d0e4ef ui: avoid duplicate reviews subroute heading
+459a31c ui: match Flutter teacher session headings
+01499da ui: match Flutter withdrawal form and success state
+6ec1dea ui: match Flutter work-time cards and actions
+281f947 ui: match Flutter teacher services layout
+dc4cdc8 ui: add plus icon for Flutter action parity
+0fb6bab ui: match Flutter booking step layout
+7513013 ui: match Flutter teacher session tabs
+2c58ee7 ui: match Flutter learner session tabs
+d1131b1 ui: match Flutter teacher profile structure
+dbfbb59 ui: match Flutter learner profile structure
+370b970 ui: match Flutter teacher wallet heading
+32260a7 ui: match Flutter wallet heading and notice
+10c7d17 ui: add info icon for Flutter parity
+3674946 ui: match Flutter login logo and OTP experience
+b613185 ui: share Vodda logo with native wrapper
+5b81f52 ui: match Flutter search filters and layout
+244ee5e ui: match Flutter teacher account switch header
+550d9bf ui: remove global role switch from universal screens
+cbd894f ui: match Flutter tab and subroute headers
+dae4d57 ui: add filter and refresh icons for Flutter parity
+3037a8f ui: keep universal frame app-like on wide screens
+07bd2bc ui: match Flutter app width and bottom navigation
+5daa5ab docs: record post-migration visual parity completion
+4825c81 docs: mark universal visual parity complete
+e3b7a70 docs: record universal app visual parity pass
+6e54ba0 ui: clean profile edit visual import
+021401e ui: clean visual parity imports
+1230d0e ui: clean visual parity imports
+cbf2cdc ui: clean visual parity imports
+5e084ff ui: clean visual parity imports
+dbc52fc ui: polish profile completion and edit flow
+6280d78 ui: polish universal login and launch experience
+638d283 ui: polish teacher reviews and rating summary
+1d9c17b ui: redesign teacher withdrawal flow
+c210331 ui: polish teacher work time scheduler
+ac6801e ui: polish teacher services management
+ac5a7b8 ui: elevate teacher profile and professional form
+6ec437f ui: polish teacher requests and session cards
+540bc3b ui: redesign teacher wallet and withdrawal entry
+4a49598 ui: rebuild teacher dashboard to flutter visual parity
+0263aa8 ui: polish learner sessions and status cards
+07e6b35 ui: redesign booking flow as visual stepper
+62085f0 ui: redesign learner teacher profile experience
+f000510 ui: redesign learner profile to flutter parity
+8a9e2d7 ui: redesign learner wallet visual hierarchy
+76f19b0 ui: polish wallet transaction cards
+268d05f ui: redesign learner search and teacher result cards
+2dad462 ui: rebuild learner home to flutter visual parity
+b9797c8 ui: install universal visual styles at app root
+f72eca6 ui: refine role mode switch affordance
+17ad9c2 ui: rebuild universal app shells and floating navigation
+21497df ui: export universal visual system
+8019b14 ui: add reusable flutter-parity visual patterns
+c71720d ui: add universal motion and interaction styling
+f17a615 ui: polish universal primitives to flutter visual language
+aae841d ui: enrich universal visual design tokens
+27f3591 add skills
+c8f228c test: guard universal session bootstrap behavior
+c768202 test: lock profile completion session contract
+c80036c fix: make session bootstrap retryable and fail safe
+a2cb414 fix: restore authoritative profile state on native
+0cee6f4 fix: restore authoritative profile state on web
+319fd31 fix: normalize authoritative profile state
+ce5124b fix: carry profile completion in restored sessions
+25476ea fix: share profile completion rule across auth flows
+3fab044 fix: correct user usecase declaration
+0948cab fix: make profile completion authoritative on session restore
+9ceaebc docs: close universal migration cleanup
+2d47303 refactor: deduplicate learner profile session restore
+ff5524c refactor: reuse shared helpers in learner teacher profile
+dbe181e refactor: reuse api coercion in wallet transactions
+b4514f1 refactor: reuse api coercion in teacher dashboard
+8b7f09b refactor: deduplicate learner session id validation
+6129a36 refactor: reuse shared helpers in learner booking
+2deacd5 refactor: reuse wallet formatting in teacher sessions
+5c1b2c5 refactor: reuse shared error helper in learner search
+703d9e7 refactor: reuse shared error helper in profile completion
+2d130cf refactor: reuse shared error helper in auth
+9c4ee83 refactor: reuse api coercion in teacher reviews
+6aed605 refactor: reuse api coercion in teacher work times
+c53e52e refactor: reuse shared helpers in learner profile
+b5f936e refactor: reuse shared helpers in teacher services
+d4f4367 refactor: reuse shared helpers in teacher profile
+6c988e6 refactor: reuse shared helpers in teacher withdrawals
+f3cea90 refactor: reuse shared helpers in teacher dashboard
+5101075 refactor: reuse api coercion in teacher sessions
+acba655 refactor: extend shared api coercion helpers
+2166d25 refactor: reuse shared error helper in learner home
+75f11a8 refactor: reuse api array coercion in sessions
+abbfa1a refactor: reuse api array coercion in booking
+84c681e refactor: centralize api array coercion
+57853df refactor: reuse wallet amount formatter in teacher wallet
+1c2b1ef refactor: reuse wallet amount formatter in learner wallet
+ec78463 refactor: centralize wallet amount formatting
+682aa32 refactor: reuse shared api helpers in teacher reviews
+3c87b47 refactor: centralize universal api coercion helpers
+60aec57 refactor: reuse shared helpers in teacher work times
+e700304 refactor: reuse shared helpers in learner sessions
+42a727a refactor: reuse shared helpers in teacher services
+f9eebf1 refactor: reuse shared helpers in teacher profile
+b60a7f0 refactor: reuse shared helpers in teacher withdrawals
+9eba107 refactor: reuse shared error helper in teacher dashboard
+2315d1a refactor: reuse shared error helper in teacher sessions
+c665863 refactor: reuse shared error helper in teacher reviews
+0c48ed8 refactor: share wallet error message helper
+ae672e7 docs: record wallet duplicate cleanup
+4c3367e docs: record shared wallet cleanup
+72fe56d refactor: reuse shared wallet transaction card
+8041df0 refactor: reuse shared wallet transaction card
+3877ed6 refactor: share wallet transaction card
+944ff3c refactor: reuse API envelope in teacher work times
+b211f76 refactor: reuse API envelope in teacher withdrawals
+ec76fff refactor: reuse API envelope in teacher sessions
+b76aabe refactor: reuse API envelope in teacher services
+1dd7d9a refactor: reuse API envelope in teacher profile
+ad9ab24 refactor: reuse API envelope in teacher dashboard
+f2ec3dd refactor: reuse API envelope in teacher reviews
+81ab197 refactor: deduplicate universal API envelopes
+fd649f5 docs: sync auth boundary checklist
+1236b4b docs: mark auth boundary documentation complete
+be0eb32 docs: document web and native auth boundary
+41ae62c docs: sync platform adapter contract checklist
+58b0f15 docs: mark platform adapter contract complete
+aab05c9 docs: document universal platform adapter contract
+d73b014 docs: sync Flutter mapping checklist
+2513752 docs: mark Flutter universal mapping complete
+06d5dc4 docs: map Flutter app to universal React
+944ca77 docs: mark migration checklist sync complete
+524088f docs: sync universal migration checklist
+82b035a docs: mark universal app readme complete
+8631254 docs: update readme for universal app architecture
+0d66dea docs: mark agents migration guidance complete
+78391ad docs: update agents for universal app architecture
+33abf40 docs: close universal app subdomain readiness audit
+ec66370 docs: sync universal app deployment checklist
+98cccdb docs: sync universal web deployment roadmap
+c9a75c5 docs: add universal app web deployment contract
+1a5182a feat: configure universal web deployment origins
+c08021b feat: make universal web auth subdomain-ready
+7719722 feat: add native media capability hooks
+d6e28cc docs: sync native scaffold checklist
+0693292 docs: sync Capacitor scaffold roadmap
+f04ab51 feat: scaffold universal Capacitor native app
+214ea49 docs: sync universal route helper checklist
+82e972f docs: record universal route helper progress
+5437576 feat: use named universal app routes in shells
+327a227 feat: centralize universal app route URLs
+805d8a0 docs: sync universal teacher profile checklist
+cf0b4fb docs: complete universal teacher profile roadmap
+5fbddd3 chore: expose universal app line color token
+7375304 feat: wire universal teacher profile and reviews
+cab7b45 feat: add universal teacher reviews parity
+2e689f3 feat: add universal teacher profile parity
+be4c132 docs: sync universal teacher wallet checklist
+32f4e31 docs: mark universal teacher wallet parity
+d0a16f0 feat: wire universal teacher wallet routes
+4e93936 feat: add universal teacher withdrawals
+462a86f feat: add universal teacher wallet
+8477461 docs: sync universal teacher work times
+d4cb1d8 docs: mark universal teacher work times complete
+294fc43 feat: route universal teacher work times
+13e2ce4 feat: add universal teacher work times
+4c774d1 docs: sync universal teacher services status
+437a913 docs: record universal teacher services parity
+6500d78 feat: wire universal teacher services route
+00d6a39 feat: add universal teacher services parity
+796b26c feat: add universal teacher sessions parity
+4668d97 feat: add universal teacher dashboard parity
+53d6f91 docs: sync universal learner profile status
+49dc5df docs: mark universal learner profile parity complete
+bd50ad6 feat: wire learner profile into universal app
+31e8321 fix: allow admin access to universal teacher namespace
+eca11a9 fix: allow admin universal teacher mode switch
+c25f684 feat: add avatar and edit mode to universal profile form
+3ecfbd4 fix: preserve multipart requests in universal runtime
+4b1c24d feat: add universal learner profile screen
+9d7702d docs: sync universal learner wallet status
+8df709a docs: mark learner wallet parity complete
+c091078 feat: wire universal learner wallet route
+383bfd3 feat: add universal learner wallet screen
+c051ee1 feat: add universal learner wallet api
+94a6bfa feat: add universal learner wallet models
+81f812d feat: add universal learner sessions parity
+5c73874 docs: record universal learner booking parity
+431b6ee fix(universal-app): align booking state primitives
+2d6bdcd docs: mark universal learner booking complete
+0fe6c1e feat(universal-app): wire learner booking route
+987c98b feat(universal-app): implement learner booking flow
+8f25ecd feat(universal-app): add booking api contract
+d3bfd9a feat(universal-app): add booking domain types
+a9efde8 docs: sync universal teacher profile checklist
+cad3cd4 docs: mark learner teacher profile parity complete
+2f13a48 fix(universal): keep booking CTA above app nav
+4929594 feat(universal): wire teacher profile route
+d94c8ce feat(universal): add learner teacher profile
+469ff0b feat(universal): load real teacher detail
+38100f8 feat(universal): model teacher profile reviews
+779024f docs: mark learner search parity complete
+9381efd docs: record universal learner search parity
+07eda33 fix(universal-app): align search with shared primitives
+46c0d81 feat(universal-app): wire learner search screen
+bc3cb69 feat(universal-app): add learner teacher search parity
+3a30a1b docs: sync universal learner home status
+b8bebdb docs: mark learner home parity complete
+fbeacbe feat(universal-app): complete learner home teacher sections
+ad7041a feat(universal-app): add teacher search API
+1e32bea feat(universal-app): add teacher domain types
+6d92dc1 docs: sync learner home migration status
+d4db4e0 docs: mark learner home foundation complete
+e6f8486 feat(universal-app): wire learner home screen
+9403483 feat(universal-app): add learner home foundation
+b2b3f0b docs: complete universal app auth role switch phase
+c801316 docs: mark universal app role mode switch complete
+240d0a8 feat(universal-app): wire learner teacher role mode switch
+3625b49 feat(universal-app): add learner teacher role mode switch
+a38415b docs(checklist): mark universal route guards complete
+7d03684 docs(universal-app): record route guard progress
+30dee7c feat(universal-app): guard teacher routes by authenticated role
+34dfc23 docs: sync universal app onboarding status
+7ef3929 docs: mark profile onboarding implemented
+fe5b656 feat(universal-app): wire profile completion route
+dc06255 feat(universal-app): add profile completion onboarding
+306dcc4 docs: advance universal auth roadmap
+783413e docs: record universal app auth migration progress
+ed17fcd chore(universal-app): use type-only react auth imports
+6d8354e feat(universal-app): wire auth bootstrap and login flow
+82e9a86 feat(universal-app): add launch and OTP auth flow
+aef707f docs: record universal mobile shell completion
+5ff10ce docs(universal-app): complete shared shell phase
+cf0ea20 fix(universal-app): keep fallback navigation base-path aware
+922df2c fix(universal-app): keep shell event types framework-safe
+9ecefc1 feat(universal-app): wire learner and teacher mobile shells
+450cbd0 feat(universal-app): export mobile app shells
+d90b7a0 feat(universal-app): add mobile learner and teacher shells
+6943446 docs: mark universal ui foundation complete
+13ca46c docs: update universal app ui migration status
+f58c130 feat(universal-app): export ui kit
+4a886fc feat(universal-app): add framework independent ui primitives
+f91ffe1 feat(universal-app): expose shared icon primitive
+7180a0f feat(universal-app): add shared design tokens
+d517bdf docs: record universal platform adapter progress
+8c0c266 docs: update universal app platform migration progress
+722aca3 refactor(universal-app): use typed platform HTTP errors
+f31ede1 feat(universal-app): export platform adapter API
+ee64c24 feat(universal-app): inject platform runtime into app
+4839516 feat(universal-app): add platform runtime context
+0bf906d feat(universal-app): add native bearer platform adapter
+7eb28f0 feat(universal-app): add web BFF platform adapter
+64e2330 feat(universal-app): add platform HTTP helper
+6da43d0 feat(universal-app): define platform runtime contract
+baf4b4d docs(checklist): record universal app phase 0
+0963070 docs(universal-app): mark phase 0 complete
+adfbf81 chore(universal-app): enforce Next isolation
+acccaba feat(universal-app): mount universal app under Next catch-all
+a8568fb feat(universal-app): expose framework-neutral entry points
+9f6a42f feat(universal-app): add standalone React entry
+20f4b30 feat(universal-app): add independent React app shell
+c487e3f feat(universal-app): add framework-independent router
+38785da feat(universal-app): add runtime base path config
+e33897b docs: track universal app migration
+aaabad1 docs: add universal app migration roadmap
+17be826 Complete technical and UI/UX audit
+ae1b8ca Complete incomplete flows and reduce technical debt
+4b22b13 x
+2b79fbd feat: production hardening and atomic financial flows
+370f9cd feat: harden and complete Vodda core flows
+814a24b docs: publish accurate project status and setup
+f4ced59 docs: enable OTP bypass for all development seed users
+e099517 fix(dev): make OTP bypass usable for seeded accounts
+12b3d94 fix(frontend): repair admin panel mobile layout
+0e1c1b8 test(frontend): remove stale non-runnable endpoint assertions
+f4e83fc fix(backend): correct admin notifications and reporting
+f80e2bc fix(backend): embed timezone database in server binary
+3587bd8 fix(backend): validate availability and booking conflicts
+121db47 docs: configure application timezone
+ac1898c fix(backend): make booking timezone explicit
+b46274f fix(frontend): repair teacher panel mobile layout
+bea2906 fix(frontend): repair user panel mobile layout and role links
+b601d2f ci: validate backend frontend and Flutter on main
+5ffa193 chore: remove accidental prompt file
+cbed0fd fix(frontend): remove fake contact submission and details
+3e206a2 fix(frontend): submit complete teacher registration payload
+4c187a0 fix(frontend): correct booking dates and work-time fields
+1b5e69c fix(frontend): align API types with backend contracts
+c20a51b docs: document secure development-only settings
+261e35c security: disable unverified wallet charging in production
+96c85f3 security: fail OTP requests when SMS delivery fails
+8e0dbe5 security: restrict production CORS and upload memory
+88f3ff5 security: validate config and restrict dev wallet charging
+c388775 security: harden runtime configuration defaults
+066214e working on ui
+e3e42e7 add icons
+f9eab1b working on times and services
+9f4a54b working on data and refresh
+29e2ea2 working on data and refresh
+bdf2119 working on bugs
+14eaa24 working on user panel
+d2f61ac working on teacher panel
+8dd5903 working on web ui
+4a88150 working on times and services
+52490dd add macos
+03deced fix service screen crash
+3ba3e27 working on teacher
+2ff0788 working on logo and services
+4d964ed working on logo and services
+8fd24bf fix edit profile app router
+1b91544 working on profile and avatar
+8415fa8 working on profile and avatar
+ae780c9 fix app size into mobile size
+bf8379d change icons
+9e00d29 working on ui
+62fe163 fix avatar
+77c09f4 fix some issues in ui and font
+72d295b working on app ui
+dd19ce2 fix backend auth
+77e834c fix app url
+3c1c041 fix initializing issues
+5a9ffec fix ignored files
+3e8c6b6 remove envs from gitignore
+59c7bb2 initialize
+66732a2 update git ignore
+b03d857 remove old apps
+f0f642d working on ui and login
+c8c31fc working on app theme
+c92390b working on logic
+03abc6c working on ui
+05cfeee convert app to laravel
+39288bb working on user and date picker
+df236af make front responsive
+bf6940c add deployment
+5028b3a clean project backend and fix login issue
+2192e99 working on logic
+196fef8 working on login and auth
+3d25843 working on login and logic
+cba8ce4 add fonts
+1492705 update main  project repos
+e85f8aa update main app version
+3e9db38 change order in backend files
+901caaa init project
+7850cbf Initial commit
