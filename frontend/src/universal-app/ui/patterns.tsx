@@ -99,6 +99,7 @@ export function StatusPill({ status, label }: { status: string; label?: string }
     rejected: { text: "رد شده", fg: colors.danger, bg: colors.dangerBackground },
     approved: { text: "تأییدشده", fg: colors.olive700, bg: colors.olive100 },
     paid: { text: "پرداخت‌شده", fg: colors.olive700, bg: colors.olive100 },
+    awaiting_payment: { text: "در انتظار پرداخت", fg: colors.goldDark, bg: colors.goldBackground },
   };
   const tone = map[status] ?? { text: label ?? status, fg: colors.inkSecondary, bg: colors.sand100 };
   return (

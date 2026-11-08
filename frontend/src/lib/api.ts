@@ -82,7 +82,7 @@ export type SessionListItem = {
   weekday: number;
   duration: number;
   price: number;
-  status: 'pending' | 'confirmed' | 'done' | 'canceled';
+  status: 'pending' | 'confirmed' | 'done' | 'canceled' | 'awaiting_payment';
   note?: string;
   reject_note?: string;
   rated: boolean;
@@ -183,6 +183,16 @@ export type NotificationItem = {
   created_at: string;
 };
 
+export type PaymentMethod = 'wallet' | 'gateway';
+
+/** Response of POST /sessions — gateway bookings carry redirect_url. */
+export type BookingResult = {
+  session: SessionListItem;
+  redirect_url?: string;
+  res_num?: string;
+  paid_via_wallet: boolean;
+};
+
 export type ListResponse<T> = { data: T[]; total: number };
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -230,11 +240,16 @@ export const api = {
     }),
   bookSession: (
     token: string,
-    body: { teacher_id: number; service_id: number; scheduled_at: string; note?: string },
+    body: { teacher_id: number; service_id: number; scheduled_at: string; note?: string; payment_method?: PaymentMethod },
   ) =>
-    request<{ data: SessionListItem }>('/sessions', {
+    request<{ data: BookingResult }>('/sessions', {
       method: 'POST',
       body: JSON.stringify(body),
+      headers: auth(token),
+    }),
+  paySession: (token: string, id: number) =>
+    request<{ data: { res_num: string; redirect_url: string; amount: number } }>(`/sessions/${id}/pay`, {
+      method: 'POST',
       headers: auth(token),
     }),
   cancelSession: (token: string, id: number) =>

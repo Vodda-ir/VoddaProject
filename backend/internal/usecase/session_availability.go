@@ -25,6 +25,7 @@ type AvailabilitySlot struct {
 // teacher conflicts; clients must still handle a conflict if another booking
 // wins between listing and submission.
 func (uc *SessionUsecase) AvailableSlots(ctx context.Context, teacherID, serviceID uint, days int) ([]AvailabilitySlot, error) {
+	uc.cancelExpiredAwaiting(ctx)
 	return uc.availableSlotsAt(ctx, teacherID, serviceID, days, time.Now())
 }
 
@@ -63,7 +64,7 @@ func (uc *SessionUsecase) availableSlotsAt(ctx context.Context, teacherID, servi
 	if err != nil {
 		return nil, err
 	}
-	existing, err := uc.sessions.ForTeacher(ctx, teacher.ID, []domain.SessionStatus{domain.SessionPending, domain.SessionConfirmed})
+	existing, err := uc.sessions.ForTeacher(ctx, teacher.ID, []domain.SessionStatus{domain.SessionPending, domain.SessionConfirmed, domain.SessionAwaitingPayment})
 	if err != nil {
 		return nil, err
 	}

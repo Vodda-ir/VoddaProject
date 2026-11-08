@@ -125,6 +125,7 @@ func NewRouter(cfg *config.Config, h *Handler, tm *token.Manager, readiness func
 		authed.POST("/notifications/:id/read", mutationLimiter.Middleware("notification-read"), h.ReadNotification)
 		authed.POST("/sessions", financialLimiter.Middleware("financial"), h.Book)
 		authed.GET("/sessions", learnerSessionDisplaysHandler(h.Session))
+		authed.POST("/sessions/:id/pay", financialLimiter.Middleware("financial"), h.PaySession)
 		authed.POST("/sessions/:id/cancel", financialLimiter.Middleware("financial"), cancelSessionBeforeStartHandler(h.Session))
 		authed.POST("/reviews", mutationLimiter.Middleware("review"), h.Rate)
 		authed.GET("/wallet/transactions", h.Transactions)

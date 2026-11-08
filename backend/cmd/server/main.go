@@ -83,12 +83,17 @@ func main() {
 		BaseURL:    cfg.Saman.BaseURL,
 	})
 
+	paymentUsecase := usecase.NewPaymentUsecase(
+		paymentRepo, financialRepo, userRepo, teacherRepo, notifRepo, sessionRepo,
+		samanClient, cfg,
+	)
+
 	h := &delivery.Handler{
 		Auth:         usecase.NewAuthUsecase(userRepo, otpRepo, sender, tm, cfg),
 		User:         usecase.NewUserUsecase(userRepo, teacherRepo, onboardingRepo),
 		LearnerStats: usecase.NewLearnerAnalyticsUsecase(analyticsRepo),
 		Teacher:      usecase.NewTeacherUsecase(teacherRepo, reviewRepo, userRepo),
-		Session:      usecase.NewSessionUsecase(sessionRepo, teacherRepo, userRepo, walletRepo, notifRepo, cfg, financialRepo),
+		Session:      usecase.NewSessionUsecase(sessionRepo, teacherRepo, userRepo, walletRepo, notifRepo, cfg, financialRepo).WithBookingGateway(paymentUsecase),
 		Wallet: usecase.NewWalletUsecaseWithFinancial(
 			walletRepo, userRepo, teacherRepo, notifRepo, financialRepo,
 			cfg.DevWalletChargeEnabled && !cfg.IsProduction(),
@@ -105,7 +110,7 @@ func main() {
 		Notif:   notifRepo,
 		Live:    delivery.NewLiveHub(),
 		Blog:    usecase.NewBlogUsecase(postRepo),
-		Payment: usecase.NewPaymentUsecase(paymentRepo, financialRepo, userRepo, samanClient, cfg),
+		Payment: paymentUsecase,
 	}
 
 	readiness := func(ctx context.Context) error { return sqlDB.PingContext(ctx) }

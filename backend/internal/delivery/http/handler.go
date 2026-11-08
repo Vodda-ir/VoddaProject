@@ -425,10 +425,11 @@ func (h *Handler) DeleteWorkTime(c *gin.Context) {
 
 func (h *Handler) Book(c *gin.Context) {
 	var in struct {
-		TeacherID   uint   `json:"teacher_id" binding:"required"`
-		ServiceID   uint   `json:"service_id" binding:"required"`
-		ScheduledAt string `json:"scheduled_at" binding:"required"`
-		Note        string `json:"note"`
+		TeacherID     uint   `json:"teacher_id" binding:"required"`
+		ServiceID     uint   `json:"service_id" binding:"required"`
+		ScheduledAt   string `json:"scheduled_at" binding:"required"`
+		Note          string `json:"note"`
+		PaymentMethod string `json:"payment_method"`
 	}
 	if err := c.ShouldBindJSON(&in); err != nil {
 		fail(c, domain.ErrValidation)
@@ -439,12 +440,29 @@ func (h *Handler) Book(c *gin.Context) {
 		fail(c, domain.ErrValidation)
 		return
 	}
-	session, err := h.Session.Book(c, userID(c), usecase.BookInput{TeacherID: in.TeacherID, ServiceID: in.ServiceID, ScheduledAt: at, Note: in.Note})
+	result, err := h.Session.Book(c, userID(c), usecase.BookInput{
+		TeacherID:     in.TeacherID,
+		ServiceID:     in.ServiceID,
+		ScheduledAt:   at,
+		Note:          in.Note,
+		PaymentMethod: in.PaymentMethod,
+	})
 	if err != nil {
 		fail(c, err)
 		return
 	}
-	created(c, session)
+	created(c, result)
+}
+
+// PaySession re-opens the gateway checkout for a booking still awaiting
+// payment (the learner closed the browser or the session expired mid-flow).
+func (h *Handler) PaySession(c *gin.Context) {
+	payment, err := h.Session.BookingPayment(c, userID(c), paramID(c))
+	if err != nil {
+		fail(c, err)
+		return
+	}
+	ok(c, payment)
 }
 
 func (h *Handler) MySessions(c *gin.Context) {

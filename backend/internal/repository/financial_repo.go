@@ -437,3 +437,195 @@ func (r *financialRepo) MarkPaymentOrderFailed(ctx context.Context, orderID uint
 		return nil
 	})
 }
+
+// FailPendingBookingOrders closes every still-pending booking order raised for
+// one session, e.g. before the learner re-initiates the gateway payment.
+func (r *financialRepo) FailPendingBookingOrders(ctx context.Context, sessionID uint, reason string) error {
+	result := r.db.WithContext(ctx).Model(&domain.PaymentOrder{}).
+		Where("order_type = ? AND ref_id = ? AND status = ?", domain.PaymentOrderBooking, sessionID, domain.PaymentPending).
+		Updates(map[string]any{
+			"status":      domain.PaymentFailed,
+			"fail_reason": reason,
+			"updated_at":  time.Now(),
+		})
+	return result.Error
+}
+
+// CreateAwaitingSession validates and reserves a slot for a gateway-paid
+// booking in one transaction. No wallet money moves; the session stays in
+// awaiting_payment until the payment settles or expires.
+func (r *financialRepo) CreateAwaitingSession(ctx context.Context, session *domain.Session) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var teacher domain.Teacher
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&teacher, session.TeacherID).Error; err != nil {
+			return recordError(err)
+		}
+		if teacher.Status != domain.TeacherApproved || !teacher.Verified || !teacher.Available || teacher.UserID == session.LearnerID {
+			return domain.ErrTeacherNotReady
+		}
+
+		var teacherUser domain.User
+		if err := tx.Select("id", "active").First(&teacherUser, teacher.UserID).Error; err != nil {
+			return recordError(err)
+		}
+		if !teacherUser.Active {
+			return domain.ErrTeacherNotReady
+		}
+
+		var service domain.Service
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&service, session.ServiceID).Error; err != nil {
+			return recordError(err)
+		}
+		if service.TeacherID != teacher.ID || !service.Active || service.Price <= 0 || service.Duration <= 0 || service.Duration > 240 {
+			return domain.ErrValidation
+		}
+
+		var learner domain.User
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&learner, session.LearnerID).Error; err != nil {
+			return recordError(err)
+		}
+		if !learner.Active {
+			return domain.ErrForbidden
+		}
+
+		end := session.ScheduledAt.Add(time.Duration(service.Duration) * time.Minute)
+		var overlaps int64
+		if err := tx.Model(&domain.Session{}).
+			Where("status IN ?", []domain.SessionStatus{domain.SessionPending, domain.SessionConfirmed, domain.SessionAwaitingPayment}).
+			Where("(teacher_id = ? OR learner_id = ?)", teacher.ID, session.LearnerID).
+			Where("scheduled_at < ? AND TIMESTAMPADD(MINUTE, duration, scheduled_at) > ?", end, session.ScheduledAt).
+			Count(&overlaps).Error; err != nil {
+			return err
+		}
+		if overlaps > 0 {
+			return domain.ErrConflict
+		}
+
+		session.ID = 0
+		session.TeacherID = teacher.ID
+		session.ServiceID = service.ID
+		session.Title = service.Title
+		session.Duration = service.Duration
+		session.Price = service.Price
+		session.Status = domain.SessionAwaitingPayment
+		return tx.Create(session).Error
+	})
+}
+
+// CancelBookingSession cancels a session that has not left awaiting_payment,
+// freeing its slot. Returning sessions in other states is a no-op conflict.
+func (r *financialRepo) CancelBookingSession(ctx context.Context, sessionID uint, reason string) error {
+	result := r.db.WithContext(ctx).Model(&domain.Session{}).
+		Where("id = ? AND status = ?", sessionID, domain.SessionAwaitingPayment).
+		Updates(map[string]any{
+			"status":      domain.SessionCanceled,
+			"reject_note": reason,
+			"updated_at":  time.Now(),
+		})
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
+}
+
+// CancelExpiredAwaitingSessions batch-cancels gateway bookings whose payment
+// window elapsed. Slots become bookable again right after this call.
+func (r *financialRepo) CancelExpiredAwaitingSessions(ctx context.Context, cutoff time.Time) (int64, error) {
+	result := r.db.WithContext(ctx).Model(&domain.Session{}).
+		Where("status = ? AND created_at < ?", domain.SessionAwaitingPayment, cutoff).
+		Updates(map[string]any{
+			"status":      domain.SessionCanceled,
+			"reject_note": "مهلت پرداخت آنلاین به پایان رسید",
+			"updated_at":  time.Now(),
+		})
+	return result.RowsAffected, result.Error
+}
+
+// SettleBookingPaymentOrder finalizes a booking payment in one transaction:
+// the order is locked, RefNum replay protection applies, and the attached
+// session is activated (awaiting_payment → pending) so the teacher receives
+// the request. No wallet balance moves — the money came straight from the
+// gateway. If the session can no longer be activated (expired/canceled in the
+// meantime), the paid amount lands in the learner wallet as a compensating
+// charge with a ledger row, so the payer never loses money.
+func (r *financialRepo) SettleBookingPaymentOrder(ctx context.Context, orderID uint, refNum, traceNo, cardPan string) (*domain.PaymentOrder, error) {
+	var settled domain.PaymentOrder
+	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var order domain.PaymentOrder
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&order, orderID).Error; err != nil {
+			return recordError(err)
+		}
+		if order.Status == domain.PaymentPaid {
+			settled = order
+			return nil
+		}
+		if order.Status != domain.PaymentPending || order.OrderType != domain.PaymentOrderBooking {
+			return domain.ErrConflict
+		}
+		var replay int64
+		if err := tx.Model(&domain.PaymentOrder{}).
+			Where("gateway = ? AND ref_num = ? AND id <> ? AND status = ?", order.Gateway, refNum, order.ID, domain.PaymentPaid).
+			Count(&replay).Error; err != nil {
+			return err
+		}
+		if replay > 0 {
+			return domain.ErrConflict
+		}
+		var user domain.User
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&user, order.UserID).Error; err != nil {
+			return recordError(err)
+		}
+		if !user.Active {
+			return domain.ErrForbidden
+		}
+
+		updates := map[string]any{
+			"status":     domain.PaymentPaid,
+			"ref_num":    refNum,
+			"trace_no":   traceNo,
+			"card_pan":   cardPan,
+			"updated_at": time.Now(),
+		}
+		if err := tx.Model(&domain.PaymentOrder{}).Where("id = ?", order.ID).Updates(updates).Error; err != nil {
+			return err
+		}
+
+		var session domain.Session
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&session, order.RefID).Error; err != nil {
+			return recordError(err)
+		}
+		if session.Status == domain.SessionAwaitingPayment {
+			if err := tx.Model(&domain.Session{}).Where("id = ? AND status = ?", session.ID, domain.SessionAwaitingPayment).
+				Update("status", domain.SessionPending).Error; err != nil {
+				return err
+			}
+		} else {
+			// Booking no longer activatable — refund into the wallet so the
+			// gateway money stays reachable by the payer.
+			if err := tx.Model(&domain.User{}).Where("id = ?", order.UserID).
+				UpdateColumn("wallet", gorm.Expr("wallet + ?", order.Amount)).Error; err != nil {
+				return err
+			}
+			if err := tx.Create(&domain.Transaction{
+				UserID: order.UserID,
+				Type:   domain.TxCharge,
+				Title:  "شارژ کیف پول (جلسه قابل فعال‌سازی نبود)",
+				Amount: order.Amount,
+				RefID:  order.ID,
+			}).Error; err != nil {
+				return err
+			}
+		}
+
+		order.Status = domain.PaymentPaid
+		order.RefNum = refNum
+		order.TraceNo = traceNo
+		order.CardPan = cardPan
+		settled = order
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &settled, nil
+}

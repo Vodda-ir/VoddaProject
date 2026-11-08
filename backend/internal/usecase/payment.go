@@ -28,11 +28,15 @@ const (
 // served by the BFF (public, no session) and forwarded to the backend.
 const PaymentCallbackURL = "/api/payments/saman/callback"
 
-// PaymentUsecase coordinates wallet top-ups through Saman Sep.
+// PaymentUsecase coordinates gateway payments (wallet top-ups and session
+// bookings) through Saman Sep.
 type PaymentUsecase struct {
 	payments    domain.PaymentOrderStore
 	financial   domain.FinancialRepository
 	users       domain.UserRepository
+	teachers    domain.TeacherRepository
+	notifs      domain.NotificationRepository
+	sessions    domain.SessionRepository
 	saman       *payment.Saman
 	frontendURL string
 }
@@ -42,6 +46,9 @@ func NewPaymentUsecase(
 	payments domain.PaymentOrderStore,
 	financial domain.FinancialRepository,
 	users domain.UserRepository,
+	teachers domain.TeacherRepository,
+	notifs domain.NotificationRepository,
+	sessions domain.SessionRepository,
 	saman *payment.Saman,
 	cfg *config.Config,
 ) *PaymentUsecase {
@@ -49,6 +56,9 @@ func NewPaymentUsecase(
 		payments:    payments,
 		financial:   financial,
 		users:       users,
+		teachers:    teachers,
+		notifs:      notifs,
+		sessions:    sessions,
 		saman:       saman,
 		frontendURL: strings.TrimRight(cfg.FrontendBaseURL, "/"),
 	}
@@ -130,9 +140,61 @@ func (uc *PaymentUsecase) walletResultURL(status, refNum string) string {
 	return target
 }
 
+// bookingResultURL sends the payer back to their sessions list, where the
+// booked session now appears (pending, awaiting teacher confirmation).
+func (uc *PaymentUsecase) bookingResultURL(status, refNum string) string {
+	target := uc.frontendURL + "/panel/user/sessions?payment=" + url.QueryEscape(status)
+	if refNum != "" {
+		target += "&ref=" + url.QueryEscape(refNum)
+	}
+	return target
+}
+
+// CreateBookingPayment opens a pending order attached to a reserved session
+// and returns the Sep payment page URL. Amount equals the session price.
+func (uc *PaymentUsecase) CreateBookingPayment(ctx context.Context, user *domain.User, session *domain.Session) (*TopupResult, error) {
+	if !uc.GatewayReady() {
+		return nil, domain.ErrForbidden
+	}
+	if user == nil || session == nil || session.Price <= 0 {
+		return nil, domain.ErrValidation
+	}
+	if !user.Active {
+		return nil, domain.ErrForbidden
+	}
+
+	order := &domain.PaymentOrder{
+		UserID:    user.ID,
+		Gateway:   "saman",
+		OrderType: domain.PaymentOrderBooking,
+		RefID:     session.ID,
+		ResNum:    newResNum(),
+		Amount:    session.Price,
+		Status:    domain.PaymentPending,
+	}
+	if err := uc.payments.Create(ctx, order); err != nil {
+		return nil, err
+	}
+
+	// Saman works in Rial; the platform prices are denominated in Toman.
+	token, err := uc.saman.RequestToken(ctx, order.Amount*10, order.ResNum, uc.frontendURL+PaymentCallbackURL, user.Mobile)
+	if err != nil {
+		if markErr := uc.financial.MarkPaymentOrderFailed(ctx, order.ID, "token: "+err.Error()); markErr != nil {
+			log.Printf("[payment] booking order %d token+markfailed errors: %v / %v", order.ID, err, markErr)
+		}
+		return nil, fmt.Errorf("درگاه پرداخت موقتاً در دسترس نیست؛ لطفاً چند دقیقه دیگر تلاش کنید")
+	}
+	return &TopupResult{
+		ResNum:      order.ResNum,
+		RedirectURL: uc.saman.PayURL(token),
+		Amount:      order.Amount,
+	}, nil
+}
+
 // HandleCallback processes the gateway POST/GET back-channel. It always
 // returns a frontend redirect URL, regardless of outcome, so the payer never
-// lands on a raw API response.
+// lands on a raw API response. Settlement branches on the order type:
+// topups credit the wallet, bookings activate the reserved session.
 func (uc *PaymentUsecase) HandleCallback(ctx context.Context, form payment.CallbackForm) string {
 	const failurePrefix = "[payment] saman callback"
 	resNum := form.CRN
@@ -145,6 +207,11 @@ func (uc *PaymentUsecase) HandleCallback(ctx context.Context, form payment.Callb
 		log.Printf("%s: unknown resnum=%s refnum=%s", failurePrefix, resNum, form.RefNum)
 		return uc.walletResultURL("failed", "")
 	}
+	isBooking := order.OrderType == domain.PaymentOrderBooking
+	failureURL := uc.walletResultURL("failed", "")
+	if isBooking {
+		failureURL = uc.bookingResultURL("failed", "")
+	}
 
 	if !strings.EqualFold(form.State, "OK") {
 		reason := "پرداخت ناموفق یا لغو شده توسط کاربر"
@@ -152,7 +219,12 @@ func (uc *PaymentUsecase) HandleCallback(ctx context.Context, form payment.Callb
 			reason += " (کد " + form.Status + ")"
 		}
 		_ = uc.financial.MarkPaymentOrderFailed(ctx, order.ID, reason)
-		return uc.walletResultURL("failed", "")
+		if isBooking {
+			if err := uc.financial.CancelBookingSession(ctx, order.RefID, "پرداخت آنلاین انجام نشد"); err != nil {
+				log.Printf("%s: cancel booking session %d failed: %v", failurePrefix, order.RefID, err)
+			}
+		}
+		return failureURL
 	}
 
 	// Amount guard: callback Amount is Rial, order.Amount is Toman.
@@ -160,14 +232,20 @@ func (uc *PaymentUsecase) HandleCallback(ctx context.Context, form payment.Callb
 	if amountErr != nil || callbackRial != order.Amount*10 {
 		log.Printf("%s: amount mismatch resnum=%s callback_rial=%s order_toman=%d", failurePrefix, resNum, form.Amount, order.Amount)
 		_ = uc.financial.MarkPaymentOrderFailed(ctx, order.ID, "مبلغ بازگشتی با سفارش مطابقت ندارد")
-		return uc.walletResultURL("failed", "")
+		if isBooking {
+			_ = uc.financial.CancelBookingSession(ctx, order.RefID, "پرداخت آنلاین انجام نشد")
+		}
+		return failureURL
 	}
 
 	// Terminal/MID guard when the gateway echoes them.
 	if form.MID != "" && uc.saman != nil && uc.saman.MerchantID() != "" && form.MID != uc.saman.MerchantID() {
 		log.Printf("%s: MID mismatch resnum=%s mid=%s", failurePrefix, resNum, form.MID)
 		_ = uc.financial.MarkPaymentOrderFailed(ctx, order.ID, "شناسه پذیرنده مطابقت ندارد")
-		return uc.walletResultURL("failed", "")
+		if isBooking {
+			_ = uc.financial.CancelBookingSession(ctx, order.RefID, "پرداخت آنلاین انجام نشد")
+		}
+		return failureURL
 	}
 
 	// Remote verification when panel credentials are configured.
@@ -176,10 +254,30 @@ func (uc *PaymentUsecase) HandleCallback(ctx context.Context, form payment.Callb
 		if verifyErr != nil || !verified {
 			log.Printf("%s: verify failed resnum=%s raw=%s err=%v", failurePrefix, resNum, raw, verifyErr)
 			_ = uc.financial.MarkPaymentOrderFailed(ctx, order.ID, "تأیید درگاه ناموفق بود")
-			return uc.walletResultURL("failed", "")
+			if isBooking {
+				_ = uc.financial.CancelBookingSession(ctx, order.RefID, "پرداخت آنلاین انجام نشد")
+			}
+			return failureURL
 		}
 	} else {
 		log.Printf("[payment] verify credentials absent — settling callback with strict validation only (resnum=%s)", resNum)
+	}
+
+	if isBooking {
+		settled, err := uc.financial.SettleBookingPaymentOrder(ctx, order.ID, form.RefNum, form.TraceNo, form.SecurePan)
+		if err != nil {
+			switch {
+			case errors.Is(err, domain.ErrConflict):
+				log.Printf("%s: booking replay/conflict resnum=%s refnum=%s", failurePrefix, resNum, form.RefNum)
+			default:
+				log.Printf("%s: booking settle error resnum=%s: %v", failurePrefix, resNum, err)
+			}
+			return failureURL
+		}
+		log.Printf("[payment] settled booking order=%d session=%d user=%d amount=%d toman refnum=%s trace=%s",
+			settled.ID, settled.RefID, settled.UserID, settled.Amount, settled.RefNum, settled.TraceNo)
+		uc.notifyBookingSettled(ctx, settled)
+		return uc.bookingResultURL("success", settled.RefNum)
 	}
 
 	settled, err := uc.financial.SettlePaymentOrder(ctx, order.ID, form.RefNum, form.TraceNo, form.SecurePan)
@@ -196,6 +294,35 @@ func (uc *PaymentUsecase) HandleCallback(ctx context.Context, form payment.Callb
 	log.Printf("[payment] settled order=%d user=%d amount=%d toman refnum=%s trace=%s",
 		settled.ID, settled.UserID, settled.Amount, settled.RefNum, settled.TraceNo)
 	return uc.walletResultURL("success", settled.RefNum)
+}
+
+// notifyBookingSettled tells the teacher a gateway-paid request just became
+// actionable. Best-effort: settlement itself already committed.
+func (uc *PaymentUsecase) notifyBookingSettled(ctx context.Context, order *domain.PaymentOrder) {
+	if uc.teachers == nil || uc.notifs == nil || order.RefID == 0 {
+		return
+	}
+	session, err := uc.sessionsByID(ctx, order.RefID)
+	if err != nil || session == nil {
+		return
+	}
+	teacher, err := uc.teachers.ByID(ctx, session.TeacherID)
+	if err != nil || teacher == nil {
+		return
+	}
+	_ = uc.notifs.Create(ctx, &domain.Notification{
+		UserID: teacher.UserID,
+		Title:  "درخواست جلسه‌ی جدید",
+		Body:   "یک درخواست جلسه‌ی جدید دریافت کردید.",
+	})
+}
+
+// sessionsByID resolves a session for post-settlement notifications.
+func (uc *PaymentUsecase) sessionsByID(ctx context.Context, id uint) (*domain.Session, error) {
+	if uc.sessions == nil {
+		return nil, domain.ErrNotFound
+	}
+	return uc.sessions.ByID(ctx, id)
 }
 
 // RecentTopups lists the user's latest gateway orders.

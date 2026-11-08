@@ -48,6 +48,8 @@ func fail(c *gin.Context, err error) {
 		status, msg = http.StatusBadRequest, "پروفایل استاد هنوز تأیید نشده است"
 	case errors.Is(err, domain.ErrTeacherProfileRequired):
 		status, msg = http.StatusForbidden, "برای این حساب پروفایل استاد فعال نیست"
+	case errors.Is(err, domain.ErrSelfBooking):
+		status, msg = http.StatusBadRequest, "نمی‌توانید استاد خودتان را رزرو کنید؛ برای رزرو با حساب قرآن‌آموز وارد شوید"
 	}
 	c.AbortWithStatusJSON(status, gin.H{"error": msg})
 }

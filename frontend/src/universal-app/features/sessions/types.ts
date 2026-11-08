@@ -73,5 +73,5 @@ export function hasOfficialSessionTime(session: LearnerSession): boolean {
 }
 
 export function isUpcomingSession(session: LearnerSession): boolean {
-  return session.status === "pending" || session.status === "confirmed";
+  return session.status === "pending" || session.status === "confirmed" || session.status === "awaiting_payment";
 }

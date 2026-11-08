@@ -10,7 +10,7 @@ import type { Teacher, TeacherService } from "../teachers/types";
 import { Avatar, Button, Card, EmptyState, ErrorState, Icon, LoadingState, colors, radii, shadows, spacing, typography } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
 import { formatWalletAmount } from "../wallet/WalletTransactionCard";
-import { createBooking, getBookingAvailability } from "./api";
+import { createBooking, getBookingAvailability, getBookingMe, type BookingPaymentMethod } from "./api";
 import type { BookingSlot } from "./types";
 
 const weekdays = ["شنبه", "یکشنبه", "دوشنبه", "سه‌شنبه", "چهارشنبه", "پنجشنبه", "جمعه"];
@@ -78,6 +78,10 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
   const [saving, setSaving] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
+  const [meId, setMeId] = useState(0);
+  const [wallet, setWallet] = useState<number | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<BookingPaymentMethod>("wallet");
   const availabilityRequest = useRef(0);
 
   const loadTeacher = useCallback(async () => {
@@ -101,7 +105,16 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
 
   useEffect(() => {
     void loadTeacher();
-  }, [loadTeacher]);
+    let active = true;
+    getBookingMe(runtime)
+      .then((me) => {
+        if (!active) return;
+        setMeId(me.id);
+        setWallet(me.wallet);
+      })
+      .catch(() => { /* wallet display stays unknown; booking still works */ });
+    return () => { active = false; };
+  }, [loadTeacher, runtime]);
 
   const loadAvailability = useCallback(
     async (selectedService: TeacherService) => {
@@ -155,18 +168,46 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
     [dateGroups, localDate],
   );
 
+  const services = teacher?.services.filter((item) => item.active && item.id > 0) ?? [];
+  const isSelfTeacher = Boolean(teacher?.userId && meId && teacher.userId === meId);
+  const walletCovers = wallet !== null && service ? wallet >= service.price : false;
+
+  // Keep the sensible default as the selection changes: wallet when it covers
+  // the price, otherwise the online gateway is the only viable method.
+  useEffect(() => {
+    if (!service) return;
+    setPaymentMethod(walletCovers ? "wallet" : "gateway");
+  }, [service?.id, walletCovers]);
+
   const submit = useCallback(async () => {
     if (!teacher || !service || !slot || saving) return;
+    if (isSelfTeacher) {
+      setSubmitError("نمی‌توانید استاد خودتان را رزرو کنید؛ برای رزرو با حساب قرآن‌آموز وارد شوید.");
+      return;
+    }
     setSaving(true);
     setSubmitError("");
     try {
-      await createBooking(runtime, {
+      const response = await createBooking(runtime, {
         teacherId: teacher.id,
         serviceId: service.id,
         // startAt is emitted by the authoritative backend in UTC. Do not rebuild
         // scheduled_at from the device timezone or the local display fields.
         scheduledAt: slot.startAt,
+        paymentMethod,
       });
+      if (response.data?.redirect_url) {
+        // Gateway payment: hand the payer to Saman Sep. The session is held as
+        // «awaiting payment» and activates automatically after settlement.
+        setRedirecting(true);
+        if (runtime.kind === "native") {
+          window.open(response.data.redirect_url, "_blank");
+          setSubmitted(true);
+        } else {
+          window.location.href = response.data.redirect_url;
+        }
+        return;
+      }
       setSubmitted(true);
     } catch (error) {
       if (error instanceof PlatformHttpError && error.status === 409) {
@@ -180,7 +221,7 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
     } finally {
       setSaving(false);
     }
-  }, [loadAvailability, runtime, saving, service, slot, teacher]);
+  }, [isSelfTeacher, loadAvailability, paymentMethod, runtime, saving, service, slot, teacher]);
 
   if (teacherLoading) return <LoadingState label="در حال دریافت اطلاعات استاد…" />;
   if (teacherError || !teacher) {
@@ -208,7 +249,20 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
     );
   }
 
-  const services = teacher.services.filter((item) => item.active && item.id > 0);
+  if (redirecting) {
+    return (
+      <Card elevated style={{ display: "grid", gap: spacing.lg, textAlign: "center" }}>
+        <div aria-hidden="true" style={{ width: 68, height: 68, display: "grid", placeItems: "center", marginInline: "auto", borderRadius: "50%", color: colors.surface, background: colors.olive600, boxShadow: shadows.olive }}><Icon name="shield" size={30} stroke={2.2} /></div>
+        <div>
+          <h2 style={{ ...typography.title, margin: 0 }}>در حال انتقال به درگاه پرداخت…</h2>
+          <p style={{ ...typography.body, color: colors.inkSecondary, marginBottom: 0 }}>
+            رزرو شما ثبت و تا پایان پرداخت برای شما نگه داشته شده است.
+          </p>
+        </div>
+        <Button variant="secondary" fullWidth onClick={() => navigateApp("/sessions", config)}>مشاهده جلسات من</Button>
+      </Card>
+    );
+  }
 
   return (
     <div className="vodda-screen" style={{ display: "grid", gap: spacing.xl }}>
@@ -370,17 +424,81 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
               </div>
             ))}
             <div style={{ height: 1, marginBlock: 4, background: colors.sand150 }} />
+            <div role="radiogroup" aria-label="روش پرداخت" style={{ display: "grid", gap: spacing.sm, marginBlock: spacing.md }}>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={paymentMethod === "wallet"}
+                disabled={!walletCovers}
+                onClick={() => walletCovers && setPaymentMethod("wallet")}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: spacing.md,
+                  padding: 13,
+                  textAlign: "right",
+                  color: colors.ink,
+                  background: paymentMethod === "wallet" ? colors.olive50 : colors.surface,
+                  border: paymentMethod === "wallet" ? `1.6px solid ${colors.olive600}` : `1px solid ${colors.sand200}`,
+                  borderRadius: 16,
+                  cursor: walletCovers ? "pointer" : "not-allowed",
+                  opacity: walletCovers ? 1 : 0.55,
+                  fontFamily: typography.fontFamily,
+                }}
+              >
+                <span style={{ display: "grid", gap: 2, flex: 1 }}>
+                  <strong style={{ fontSize: 13.5, fontWeight: 800 }}>پرداخت از کیف پول</strong>
+                  <span style={{ ...typography.caption, color: colors.inkMuted }}>
+                    {wallet !== null ? `موجودی: ${formatWalletAmount(wallet)} تومان` : "موجودی نامشخص"}{walletCovers ? "" : " — موجودی کافی نیست"}
+                  </span>
+                </span>
+                <Icon name="wallet" size={20} style={{ color: paymentMethod === "wallet" ? colors.olive600 : colors.inkMuted }} />
+              </button>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={paymentMethod === "gateway"}
+                onClick={() => setPaymentMethod("gateway")}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: spacing.md,
+                  padding: 13,
+                  textAlign: "right",
+                  color: colors.ink,
+                  background: paymentMethod === "gateway" ? colors.olive50 : colors.surface,
+                  border: paymentMethod === "gateway" ? `1.6px solid ${colors.olive600}` : `1px solid ${colors.sand200}`,
+                  borderRadius: 16,
+                  cursor: "pointer",
+                  fontFamily: typography.fontFamily,
+                }}
+              >
+                <span style={{ display: "grid", gap: 2, flex: 1 }}>
+                  <strong style={{ fontSize: 13.5, fontWeight: 800 }}>پرداخت آنلاین با درگاه سامان‌سپ</strong>
+                  <span style={{ ...typography.caption, color: colors.inkMuted }}>پرداخت امن با کارت بانکی؛ زمان رزرو تا پایان پرداخت نگه داشته می‌شود</span>
+                </span>
+                <Icon name="shield" size={20} style={{ color: paymentMethod === "gateway" ? colors.olive600 : colors.inkMuted }} />
+              </button>
+            </div>
             <p style={{ ...typography.caption, margin: "8px 0 0", color: colors.inkMuted, lineHeight: 1.8 }}>
+              {paymentMethod === "gateway"
+                ? "با ثبت رزرو به درگاه امن سامان‌سپ منتقل می‌شوید و پس از پرداخت موفق، درخواست برای استاد ارسال می‌شود."
+                : "مبلغ هنگام ثبت رزرو از کیف پول کسر می‌شود."}{" "}
               زمان‌ها با timezone رسمی سامانه و تداخل جلسات فعال محاسبه شده‌اند. ممکن است تا لحظهٔ ثبت توسط کاربر دیگری رزرو شوند.
             </p>
           </div>
         )}
       </Card>
 
+      {isSelfTeacher ? (
+        <p role="alert" style={{ ...typography.bodySmall, padding: spacing.md, borderRadius: radii.md, background: colors.goldBackground, color: colors.goldDark, margin: 0 }}>
+          این پروفایل متعلق به حساب شماست؛ رزرو جلسه با خودتان ممکن نیست. برای آزمایش فرآیند، با حساب قرآن‌آموز وارد شوید و استاد دیگری را رزرو کنید.
+        </p>
+      ) : null}
       {submitError ? <p role="alert" style={{ ...typography.bodySmall, padding: spacing.md, borderRadius: radii.md, background: colors.dangerBackground, color: colors.danger, margin: 0 }}>{submitError}</p> : null}
       <div style={{ position: "sticky", zIndex: 12, bottom: "calc(68px + env(safe-area-inset-bottom))", padding: "8px 0 12px", background: colors.sand50 }}>
-        <Button fullWidth loading={saving} disabled={!service || !slot} onClick={() => void submit()} style={{ minHeight: 52 }}>
-          ثبت درخواست رزرو
+        <Button fullWidth loading={saving} disabled={!service || !slot || isSelfTeacher} onClick={() => void submit()} style={{ minHeight: 52 }}>
+          {paymentMethod === "gateway" ? "پرداخت و ثبت رزرو" : "ثبت درخواست رزرو"}
         </Button>
       </div>
     </div>

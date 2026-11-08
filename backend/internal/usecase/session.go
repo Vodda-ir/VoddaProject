@@ -9,6 +9,24 @@ import (
 	"vodda/backend/internal/domain"
 )
 
+// AwaitingPaymentWindow bounds how long a gateway reservation holds its slot
+// before the lazy sweep cancels it and frees the time again.
+const AwaitingPaymentWindow = 45 * time.Minute
+
+// BookingGateway is the subset of the payment usecase the booking flow needs.
+type BookingGateway interface {
+	CreateBookingPayment(ctx context.Context, user *domain.User, session *domain.Session) (*TopupResult, error)
+}
+
+// BookResult carries the created session plus, for online payments, the
+// gateway hand-off data the client must redirect to.
+type BookResult struct {
+	Session       *domain.Session `json:"session"`
+	RedirectURL   string          `json:"redirect_url,omitempty"`
+	ResNum        string          `json:"res_num,omitempty"`
+	PaidViaWallet bool            `json:"paid_via_wallet"`
+}
+
 // SessionUsecase orchestrates bookings, the session lifecycle, and the
 // associated wallet movements (escrow on booking, payout on completion).
 type SessionUsecase struct {
@@ -18,6 +36,7 @@ type SessionUsecase struct {
 	wallet    domain.WalletRepository
 	financial domain.FinancialRepository
 	notif     domain.NotificationRepository
+	payments  BookingGateway
 	cfg       *config.Config
 }
 
@@ -32,16 +51,36 @@ func NewSessionUsecase(s domain.SessionRepository, t domain.TeacherRepository, u
 	return &SessionUsecase{sessions: s, teachers: t, users: u, wallet: w, financial: f, notif: n, cfg: cfg}
 }
 
-// BookInput is the learner's booking request.
-type BookInput struct {
-	TeacherID   uint
-	ServiceID   uint
-	ScheduledAt time.Time
-	Note        string
+// WithBookingGateway attaches the online-payment usecase used by the
+// "gateway" booking method. Passing nil keeps wallet-only bookings.
+func (uc *SessionUsecase) WithBookingGateway(payments BookingGateway) *SessionUsecase {
+	uc.payments = payments
+	return uc
 }
 
-// Book creates a pending session, charging the learner's wallet up front.
-func (uc *SessionUsecase) Book(ctx context.Context, learnerID uint, in BookInput) (*domain.Session, error) {
+// BookInput is the learner's booking request.
+type BookInput struct {
+	TeacherID     uint
+	ServiceID     uint
+	ScheduledAt   time.Time
+	Note          string
+	PaymentMethod string // "wallet" (default) | "gateway"
+}
+
+// Book creates a booking: the wallet method charges the learner's wallet up
+// front; the gateway method reserves the slot and hands the learner to the
+// Saman Sep payment page, activating the session after settlement.
+func (uc *SessionUsecase) Book(ctx context.Context, learnerID uint, in BookInput) (*BookResult, error) {
+	uc.cancelExpiredAwaiting(ctx)
+
+	gatewayPayment := in.PaymentMethod == "gateway"
+	if in.PaymentMethod != "" && in.PaymentMethod != "wallet" && in.PaymentMethod != "gateway" {
+		return nil, domain.ErrValidation
+	}
+	if gatewayPayment && uc.payments == nil {
+		return nil, domain.ErrForbidden
+	}
+
 	teacher, err := uc.teachers.ByID(ctx, in.TeacherID)
 	if err != nil {
 		return nil, err
@@ -50,7 +89,7 @@ func (uc *SessionUsecase) Book(ctx context.Context, learnerID uint, in BookInput
 		return nil, domain.ErrTeacherNotReady
 	}
 	if teacher.UserID == learnerID {
-		return nil, domain.ErrForbidden
+		return nil, domain.ErrSelfBooking
 	}
 
 	svc, err := uc.teachers.ServiceByID(ctx, in.ServiceID)
@@ -79,7 +118,7 @@ func (uc *SessionUsecase) Book(ctx context.Context, learnerID uint, in BookInput
 	if !learner.Active {
 		return nil, domain.ErrForbidden
 	}
-	if learner.Wallet < svc.Price {
+	if !gatewayPayment && learner.Wallet < svc.Price {
 		return nil, domain.ErrInsufficient
 	}
 
@@ -93,6 +132,26 @@ func (uc *SessionUsecase) Book(ctx context.Context, learnerID uint, in BookInput
 		Price:       svc.Price,
 		Status:      domain.SessionPending,
 		Note:        in.Note,
+	}
+
+	if gatewayPayment {
+		if uc.financial != nil {
+			if err := uc.financial.CreateAwaitingSession(ctx, s); err != nil {
+				return nil, err
+			}
+		} else {
+			s.Status = domain.SessionAwaitingPayment
+			if err := uc.sessions.Create(ctx, s); err != nil {
+				return nil, err
+			}
+		}
+		payment, err := uc.payments.CreateBookingPayment(ctx, learner, s)
+		if err != nil {
+			// Free the reserved slot so the learner can retry cleanly.
+			uc.cancelAwaitingSession(ctx, s.ID, "شروع پرداخت ناموفق بود")
+			return nil, err
+		}
+		return &BookResult{Session: s, RedirectURL: payment.RedirectURL, ResNum: payment.ResNum, PaidViaWallet: false}, nil
 	}
 
 	if uc.financial != nil {
@@ -120,7 +179,35 @@ func (uc *SessionUsecase) Book(ctx context.Context, learnerID uint, in BookInput
 	}
 
 	uc.notify(ctx, teacher.UserID, "درخواست جلسه‌ی جدید", "یک درخواست جلسه‌ی جدید دریافت کردید.")
-	return s, nil
+	return &BookResult{Session: s, PaidViaWallet: true}, nil
+}
+
+// BookingPayment re-initiates the gateway payment for a session that is still
+// awaiting payment (e.g. the learner closed the browser mid-checkout).
+func (uc *SessionUsecase) BookingPayment(ctx context.Context, learnerID, sessionID uint) (*TopupResult, error) {
+	uc.cancelExpiredAwaiting(ctx)
+	s, err := uc.sessions.ByID(ctx, sessionID)
+	if err != nil {
+		return nil, err
+	}
+	if s.LearnerID != learnerID {
+		return nil, domain.ErrForbidden
+	}
+	if s.Status != domain.SessionAwaitingPayment {
+		return nil, domain.ErrConflict
+	}
+	if uc.payments == nil {
+		return nil, domain.ErrForbidden
+	}
+	learner, err := uc.users.ByID(ctx, learnerID)
+	if err != nil {
+		return nil, err
+	}
+	if !learner.Active {
+		return nil, domain.ErrForbidden
+	}
+	_ = uc.financialFailStaleOrders(ctx, s.ID)
+	return uc.payments.CreateBookingPayment(ctx, learner, s)
 }
 
 // Accept confirms a pending session (teacher action).
@@ -350,7 +437,7 @@ func (uc *SessionUsecase) ensureWithinWorkTime(ctx context.Context, teacherID ui
 
 func (uc *SessionUsecase) ensureNoOverlap(ctx context.Context, learnerID, teacherID uint, start time.Time, duration int) error {
 	end := start.Add(time.Duration(duration) * time.Minute)
-	statuses := []domain.SessionStatus{domain.SessionPending, domain.SessionConfirmed}
+	statuses := []domain.SessionStatus{domain.SessionPending, domain.SessionConfirmed, domain.SessionAwaitingPayment}
 	teacherSessions, err := uc.sessions.ForTeacher(ctx, teacherID, statuses)
 	if err != nil {
 		return err
@@ -366,7 +453,7 @@ func (uc *SessionUsecase) ensureNoOverlap(ctx context.Context, learnerID, teache
 		return err
 	}
 	for _, existing := range learnerSessions {
-		if existing.Status != domain.SessionPending && existing.Status != domain.SessionConfirmed {
+		if existing.Status != domain.SessionPending && existing.Status != domain.SessionConfirmed && existing.Status != domain.SessionAwaitingPayment {
 			continue
 		}
 		if overlaps(start, end, existing.ScheduledAt, existing.ScheduledAt.Add(time.Duration(existing.Duration)*time.Minute)) {
@@ -374,6 +461,32 @@ func (uc *SessionUsecase) ensureNoOverlap(ctx context.Context, learnerID, teache
 		}
 	}
 	return nil
+}
+
+// cancelExpiredAwaiting lazily frees slots abandoned during checkout.
+func (uc *SessionUsecase) cancelExpiredAwaiting(ctx context.Context) {
+	if uc.financial == nil {
+		return
+	}
+	if _, err := uc.financial.CancelExpiredAwaitingSessions(ctx, time.Now().Add(-AwaitingPaymentWindow)); err != nil {
+		_ = err
+	}
+}
+
+func (uc *SessionUsecase) cancelAwaitingSession(ctx context.Context, sessionID uint, reason string) {
+	if uc.financial == nil {
+		return
+	}
+	if err := uc.financial.CancelBookingSession(ctx, sessionID, reason); err != nil {
+		_ = err
+	}
+}
+
+func (uc *SessionUsecase) financialFailStaleOrders(ctx context.Context, sessionID uint) error {
+	if uc.financial == nil {
+		return nil
+	}
+	return uc.financial.FailPendingBookingOrders(ctx, sessionID, "سفارش جدیدی برای این جلسه صادر شد")
 }
 
 func (uc *SessionUsecase) refund(ctx context.Context, s *domain.Session) error {

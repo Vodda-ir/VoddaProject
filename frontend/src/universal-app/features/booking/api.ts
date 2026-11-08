@@ -31,17 +31,46 @@ export async function getBookingAvailability(
     );
 }
 
+export type BookingPaymentMethod = "wallet" | "gateway";
+
+export type BookingGatewayResult = {
+  session: unknown;
+  redirect_url?: string;
+  res_num?: string;
+  paid_via_wallet?: boolean;
+};
+
 export async function createBooking(
   runtime: PlatformRuntime,
-  input: { teacherId: number; serviceId: number; scheduledAt: string; note?: string },
+  input: { teacherId: number; serviceId: number; scheduledAt: string; note?: string; paymentMethod?: BookingPaymentMethod },
 ) {
-  return runtime.request<ApiEnvelope>("/sessions", {
+  return runtime.request<ApiEnvelope<BookingGatewayResult>>("/sessions", {
     method: "POST",
     body: JSON.stringify({
       teacher_id: input.teacherId,
       service_id: input.serviceId,
       scheduled_at: input.scheduledAt,
       note: input.note?.trim() ?? "",
+      payment_method: input.paymentMethod ?? "wallet",
     }),
   });
+}
+
+/** Re-opens the Saman checkout for a booking still awaiting payment. */
+export async function payBooking(
+  runtime: PlatformRuntime,
+  sessionId: number,
+): Promise<{ redirect_url: string; res_num: string; amount: number }> {
+  const response = await runtime.request<ApiEnvelope<{ redirect_url: string; res_num: string; amount: number }>>(
+    `/sessions/${sessionId}/pay`,
+    { method: "POST" },
+  );
+  if (!response.data?.redirect_url) throw new Error("لینک درگاه پرداخت دریافت نشد.");
+  return response.data;
+}
+
+export async function getBookingMe(runtime: PlatformRuntime): Promise<{ id: number; wallet: number }> {
+  const response = await runtime.request<ApiEnvelope<{ id: number; wallet: number }>>("/me");
+  if (!response.data) throw new Error("اطلاعات حساب دریافت نشد.");
+  return { id: response.data.id, wallet: response.data.wallet ?? 0 };
 }

@@ -39,7 +39,7 @@ func (r *sessionRepo) ForLearner(ctx context.Context, learnerID uint, when strin
 		Where("learner_id = ?", learnerID)
 	switch when {
 	case "upcoming":
-		q = q.Where("status IN ?", []domain.SessionStatus{domain.SessionPending, domain.SessionConfirmed})
+		q = q.Where("status IN ?", []domain.SessionStatus{domain.SessionPending, domain.SessionConfirmed, domain.SessionAwaitingPayment})
 	case "past":
 		q = q.Where("status IN ?", []domain.SessionStatus{domain.SessionDone, domain.SessionCanceled})
 	}

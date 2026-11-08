@@ -33,6 +33,10 @@ const (
 	SessionConfirmed SessionStatus = "confirmed"
 	SessionDone      SessionStatus = "done"
 	SessionCanceled  SessionStatus = "canceled"
+	// SessionAwaitingPayment holds a slot while the learner completes the
+	// gateway payment. It is invisible to the teacher and expires after a
+	// payment window; on a successful callback it becomes pending.
+	SessionAwaitingPayment SessionStatus = "awaiting_payment"
 )
 
 // TxType enumerates wallet transaction kinds.
@@ -219,13 +223,16 @@ const (
 	PaymentFailed  PaymentStatus = "failed"
 )
 
-// PaymentOrder tracks a wallet top-up (or future product purchase) initiated
-// through an external payment gateway such as Saman Sep. Amount is stored in
-// Toman; gateways receive the Rial equivalent (amount * 10).
+// PaymentOrder tracks a gateway payment initiated through an external payment
+// gateway such as Saman Sep. Amount is stored in Toman; gateways receive the
+// Rial equivalent (amount * 10). OrderType selects the settlement path:
+// "topup" credits the wallet, "booking" funds a Session whose ID is RefID.
 type PaymentOrder struct {
 	ID         uint          `gorm:"primaryKey" json:"id"`
 	UserID     uint          `gorm:"index" json:"user_id"`
 	Gateway    string        `gorm:"size:24;default:saman;index" json:"gateway"`
+	OrderType  string        `gorm:"size:16;default:topup;index" json:"order_type"`
+	RefID      uint          `gorm:"index" json:"ref_id"`
 	ResNum     string        `gorm:"size:64;uniqueIndex" json:"res_num"`
 	Amount     int64         `json:"amount"`
 	Status     PaymentStatus `gorm:"size:16;index;default:pending" json:"status"`
@@ -236,6 +243,12 @@ type PaymentOrder struct {
 	CreatedAt  time.Time     `gorm:"index" json:"created_at"`
 	UpdatedAt  time.Time     `json:"updated_at"`
 }
+
+// Payment order purposes.
+const (
+	PaymentOrderTopup   = "topup"
+	PaymentOrderBooking = "booking"
+)
 
 // OTPCode is a one-time password issued for mobile verification. Code stores a
 // keyed digest rather than the user-visible OTP in production code paths.

@@ -14,5 +14,6 @@ var (
 	ErrInsufficient           = errors.New("insufficient wallet balance")
 	ErrTeacherNotReady        = errors.New("teacher profile not approved")
 	ErrTeacherProfileRequired = errors.New("teacher profile required")
+	ErrSelfBooking            = errors.New("self booking is not allowed")
 	ErrInternal               = errors.New("internal server error")
 )
