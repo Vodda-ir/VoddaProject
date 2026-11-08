@@ -10,11 +10,25 @@ const BASE =
 export type TeacherService = {
   id: number;
   teacher_id?: number;
+  official_service_id?: number;
   title: string;
   duration: number;
   price: number;
   icon?: string;
   active?: boolean;
+};
+
+export type OfficialService = {
+  id: number;
+  category: string;
+  title: string;
+  description: string;
+  icon?: string;
+};
+
+export type OfficialServiceCategory = {
+  category: string;
+  services: OfficialService[];
 };
 
 export type Teacher = {
@@ -321,14 +335,18 @@ export const api = {
     request<{ data: Review[] }>('/teacher/reviews', { headers: auth(token) }),
   teacherServices: (token: string) =>
     request<{ data: Teacher }>('/teacher/me', { headers: auth(token) }),
-  createTeacherService: (token: string, body: { title: string; duration: number; price: number; icon?: string }) =>
+  officialServices: () =>
+    request<{ data: { categories: OfficialServiceCategory[]; total: number } }>('/catalog/services', {
+      cache: 'no-store',
+    }),
+  createTeacherService: (token: string, body: { official_service_id: number; duration: number; price: number }) =>
     request<{ data: TeacherService }>('/teacher/services', {
       method: 'POST',
       headers: auth(token),
       body: JSON.stringify(body),
     }),
-  updateTeacherService: (token: string, id: number, body: { title?: string; duration?: number; price?: number; icon?: string }) =>
-    request<{ data: { updated: boolean; pending_review: boolean } }>(`/teacher/services/${id}`, {
+  updateTeacherService: (token: string, id: number, body: { official_service_id?: number; duration?: number; price?: number }) =>
+    request<{ data: { updated: boolean } }>(`/teacher/services/${id}`, {
       method: 'PUT',
       headers: auth(token),
       body: JSON.stringify(body),

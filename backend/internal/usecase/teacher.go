@@ -117,10 +117,21 @@ func (uc *TeacherUsecase) UpdateMine(ctx context.Context, userID uint, in Become
 	return t, nil
 }
 
+// ── official catalog ──
+
+// ListOfficialServices returns the platform-approved service catalog that
+// teachers must pick from when publishing a bookable service.
+func (uc *TeacherUsecase) ListOfficialServices(ctx context.Context) ([]domain.OfficialService, error) {
+	return uc.teachers.OfficialServices(ctx)
+}
+
 // ── services ──
 
 // AddService creates a bookable service for the teacher. New services remain
-// inactive until admin moderation.
+// service (OfficialServiceID). The official title/icon are copied from the
+// catalog entry, so teachers cannot publish custom service titles. Because
+// the catalog itself is platform-approved, the service becomes bookable
+// immediately; admins may still deactivate any service.
 func (uc *TeacherUsecase) AddService(ctx context.Context, userID uint, s *domain.Service) (*domain.Service, error) {
 	t, err := uc.teacherForUser(ctx, userID)
 	if err != nil {
@@ -129,12 +140,21 @@ func (uc *TeacherUsecase) AddService(ctx context.Context, userID uint, s *domain
 	if t.Status == domain.TeacherRejected {
 		return nil, domain.ErrForbidden
 	}
-	if err := validateService(s); err != nil {
-		return nil, err
+	if s.OfficialServiceID == nil {
+		return nil, domain.ErrValidation
+	}
+	official, err := uc.teachers.OfficialServiceByID(ctx, *s.OfficialServiceID)
+	if err != nil {
+		return nil, domain.ErrValidation
 	}
 	s.ID = 0
 	s.TeacherID = t.ID
-	s.Active = false
+	s.Title = official.Title
+	s.Icon = official.Icon
+	s.Active = true
+	if err := validateService(s); err != nil {
+		return nil, err
+	}
 	if err := uc.teachers.AddService(ctx, s); err != nil {
 		return nil, err
 	}
@@ -156,26 +176,25 @@ func (uc *TeacherUsecase) UpdateService(ctx context.Context, userID uint, s *dom
 		return domain.ErrForbidden
 	}
 
-	contentChanged := false
-	if value := strings.TrimSpace(s.Title); value != "" {
-		existing.Title = value
-		contentChanged = true
+	// Switching the official service is allowed; the title/icon always come
+	// from the catalog, so teacher input can never alter the service title.
+	if s.OfficialServiceID != nil && *s.OfficialServiceID != 0 {
+		official, err := uc.teachers.OfficialServiceByID(ctx, *s.OfficialServiceID)
+		if err != nil {
+			return domain.ErrValidation
+		}
+		existing.OfficialServiceID = s.OfficialServiceID
+		existing.Title = official.Title
+		existing.Icon = official.Icon
 	}
 	if s.Duration > 0 {
 		existing.Duration = s.Duration
-		contentChanged = true
 	}
 	if s.Price > 0 {
 		existing.Price = s.Price
-		contentChanged = true
 	}
-	if value := strings.TrimSpace(s.Icon); value != "" {
-		existing.Icon = value
-		contentChanged = true
-	}
-	if contentChanged || !s.Active {
-		existing.Active = false
-	}
+	// Official content is pre-approved: catalog-based services stay active.
+	existing.Active = s.Active
 	if err := validateService(existing); err != nil {
 		return err
 	}

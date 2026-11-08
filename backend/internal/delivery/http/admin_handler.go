@@ -316,3 +316,32 @@ func (h *Handler) PublicSettings(c *gin.Context) {
 	}
 	ok(c, settings)
 }
+
+// CatalogServices exposes the official, platform-approved service catalog.
+// Teachers must pick one of these entries when publishing a bookable service.
+func (h *Handler) CatalogServices(c *gin.Context) {
+	rows, err := h.Teacher.ListOfficialServices(c)
+	if err != nil {
+		fail(c, err)
+		return
+	}
+	grouped := make([]gin.H, 0, 8)
+	order := make([]string, 0, 8)
+	byCategory := make(map[string][]gin.H, 8)
+	for _, row := range rows {
+		entry := gin.H{
+			"id":          row.ID,
+			"title":       row.Title,
+			"description": row.Description,
+			"icon":        row.Icon,
+		}
+		if _, seen := byCategory[row.Category]; !seen {
+			order = append(order, row.Category)
+		}
+		byCategory[row.Category] = append(byCategory[row.Category], entry)
+	}
+	for _, category := range order {
+		grouped = append(grouped, gin.H{"category": category, "services": byCategory[category]})
+	}
+	ok(c, gin.H{"categories": grouped, "total": len(rows)})
+}

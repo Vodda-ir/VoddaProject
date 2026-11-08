@@ -162,6 +162,33 @@ func (r *teacherRepo) ServiceByID(ctx context.Context, id uint) (*domain.Service
 	return &s, err
 }
 
+func (r *teacherRepo) OfficialServices(ctx context.Context) ([]domain.OfficialService, error) {
+	var rows []domain.OfficialService
+	err := r.db.WithContext(ctx).
+		Where("active = ?", true).
+		Order("sort_order ASC, id ASC").
+		Find(&rows).Error
+	return rows, err
+}
+
+func (r *teacherRepo) OfficialServiceByID(ctx context.Context, id uint) (*domain.OfficialService, error) {
+	var row domain.OfficialService
+	err := r.db.WithContext(ctx).First(&row, id).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, domain.ErrNotFound
+	}
+	return &row, err
+}
+
+func (r *teacherRepo) OfficialServiceByTitle(ctx context.Context, title string) (*domain.OfficialService, error) {
+	var row domain.OfficialService
+	err := r.db.WithContext(ctx).Where("title = ?", title).First(&row).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, domain.ErrNotFound
+	}
+	return &row, err
+}
+
 func (r *teacherRepo) SetWorkTimes(ctx context.Context, teacherID uint, wt []domain.WorkTime) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Where("teacher_id = ?", teacherID).Delete(&domain.WorkTime{}).Error; err != nil {

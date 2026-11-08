@@ -79,6 +79,12 @@ func RunRequired(db *gorm.DB) error {
 		return err
 	}
 
+	// Official service catalog + legacy mapping runs after profile boot
+	// so every existing free-text service gets an official reference.
+	if err := RunCatalog(db); err != nil {
+		return fmt.Errorf("ensure official service catalog: %w", err)
+	}
+
 	log.Printf("seed: required bootstrap ensured (%d admins, %d legacy teachers)", len(requiredAdmins), len(teachers))
 	return nil
 }

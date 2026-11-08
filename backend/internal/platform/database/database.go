@@ -63,6 +63,7 @@ func Migrate(db *gorm.DB) error {
 		&domain.User{},
 		&domain.Teacher{},
 		&domain.Service{},
+		&domain.OfficialService{},
 		&domain.Sample{},
 		&domain.WorkTime{},
 		&domain.Session{},

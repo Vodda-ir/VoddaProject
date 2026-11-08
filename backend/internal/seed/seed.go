@@ -19,6 +19,25 @@ type teacherSeed struct {
 	services                                   []domain.Service
 }
 
+// catalogService builds a service bound to the official catalog entry with
+// the given ID, taking title/icon from the catalog itself.
+func catalogService(officialID uint, duration int, price int64) domain.Service {
+	for i := range officialCatalog {
+		if officialCatalog[i].ID == officialID {
+			entry := officialCatalog[i]
+			return domain.Service{
+				OfficialServiceID: &entry.ID,
+				Title:             entry.Title,
+				Duration:          duration,
+				Price:             price,
+				Icon:              entry.Icon,
+				Active:            true,
+			}
+		}
+	}
+	return domain.Service{}
+}
+
 // Run seeds development accounts and published teacher profiles only when the
 // database is empty. The operation is atomic and never fabricates aggregate
 // ratings, session counts or follower counts without source records.
@@ -49,8 +68,8 @@ func Run(db *gorm.DB) error {
 				price30: 85000, price60: 150000,
 				skills: []string{"تجوید", "صوت و لحن", "روان‌خوانی"},
 				services: []domain.Service{
-					{Title: "تصحیح قرائت و تجوید", Duration: 30, Price: 85000, Icon: "book", Active: true},
-					{Title: "آموزش صوت و لحن", Duration: 60, Price: 150000, Icon: "mic", Active: true},
+					catalogService(8, 30, 85000),   // تصحیح تلاوت و اصلاح لهجه
+					catalogService(19, 60, 150000), // آموزش صوت و لحن
 				},
 			},
 			{
@@ -59,7 +78,7 @@ func Run(db *gorm.DB) error {
 				price30: 90000, price60: 160000,
 				skills: []string{"نوحه‌خوانی", "تنظیم نفس", "دستگاه آوازی"},
 				services: []domain.Service{
-					{Title: "مبانی مداحی", Duration: 60, Price: 160000, Icon: "mic", Active: true},
+					catalogService(24, 60, 160000), // مداحی و نوحه‌خوانی
 				},
 			},
 			{
@@ -68,7 +87,7 @@ func Run(db *gorm.DB) error {
 				price30: 95000, price60: 170000, female: true,
 				skills: []string{"روخوانی", "حفظ", "ویژهٔ بانوان"},
 				services: []domain.Service{
-					{Title: "روخوانی از پایه", Duration: 30, Price: 95000, Icon: "quran", Active: true},
+					catalogService(2, 30, 95000), // روخوانی و درست‌خوانی
 				},
 			},
 		}

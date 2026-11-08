@@ -24,6 +24,7 @@ function isPublicRequest(method: string, path: string[]): boolean {
   if (method === 'GET' && path[0] === 'teachers') return true;
   if (method === 'GET' && path[0] === 'blog') return true;
   if (method === 'GET' && path[0] === 'settings' && path.length === 1) return true;
+  if (method === 'GET' && path[0] === 'catalog') return true;
   return method === 'POST' && path[0] === 'support' && path[1] === 'messages' && path.length === 2;
 }
 

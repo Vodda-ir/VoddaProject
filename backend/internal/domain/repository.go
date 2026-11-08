@@ -55,6 +55,10 @@ type TeacherRepository interface {
 	DeleteService(ctx context.Context, teacherID, serviceID uint) error
 	ServiceByID(ctx context.Context, id uint) (*Service, error)
 
+	OfficialServices(ctx context.Context) ([]OfficialService, error)
+	OfficialServiceByID(ctx context.Context, id uint) (*OfficialService, error)
+	OfficialServiceByTitle(ctx context.Context, title string) (*OfficialService, error)
+
 	SetWorkTimes(ctx context.Context, teacherID uint, wt []WorkTime) error
 	WorkTimes(ctx context.Context, teacherID uint) ([]WorkTime, error)
 	AddWorkTime(ctx context.Context, wt *WorkTime) error

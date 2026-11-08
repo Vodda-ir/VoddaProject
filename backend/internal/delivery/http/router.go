@@ -163,6 +163,7 @@ func NewRouter(cfg *config.Config, h *Handler, tm *token.Manager, readiness func
 	}
 
 	api.GET("/settings", h.PublicSettings)
+	api.GET("/catalog/services", publicLimiter.Middleware("catalog-services"), h.CatalogServices)
 
 	admin := api.Group("/admin")
 	admin.Use(AuthRequired(tm, operations.Users), RequireRole(domain.RoleAdmin), adminLimiter.Middleware("admin"))

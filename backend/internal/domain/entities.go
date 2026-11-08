@@ -123,16 +123,34 @@ func (t *Teacher) Normalize() {
 	}
 }
 
-// Service is a bookable offering of a teacher.
+// Service is a bookable offering of a teacher. The title is always sourced
+// from the platform's official service catalog (OfficialServiceID); teachers
+// cannot invent custom service titles.
 type Service struct {
-	ID        uint     `gorm:"primaryKey" json:"id"`
-	TeacherID uint     `gorm:"index" json:"teacher_id"`
-	Title     string   `gorm:"size:160" json:"title"`
-	Duration  int      `json:"duration"`
-	Price     int64    `json:"price"`
-	Icon      string   `gorm:"size:30" json:"icon"`
-	Active    bool     `gorm:"default:false" json:"active"`
-	Teacher   *Teacher `gorm:"foreignKey:TeacherID" json:"teacher,omitempty"`
+	ID                uint     `gorm:"primaryKey" json:"id"`
+	TeacherID         uint     `gorm:"index" json:"teacher_id"`
+	OfficialServiceID *uint    `gorm:"index" json:"official_service_id,omitempty"`
+	Title             string   `gorm:"size:160" json:"title"`
+	Duration          int      `json:"duration"`
+	Price             int64    `json:"price"`
+	Icon              string   `gorm:"size:30" json:"icon"`
+	Active            bool     `gorm:"default:false" json:"active"`
+	Teacher           *Teacher `gorm:"foreignKey:TeacherID" json:"teacher,omitempty"`
+}
+
+// OfficialService is a platform-approved service catalog entry. Teachers can
+// only publish bookable services by selecting one of these entries, which
+// guarantees every service title on the marketplace is official and verified.
+type OfficialService struct {
+	ID          uint      `gorm:"primaryKey" json:"id"`
+	Category    string    `gorm:"size:60;index" json:"category"`
+	Title       string    `gorm:"size:160" json:"title"`
+	Description string    `gorm:"size:500" json:"description"`
+	Icon        string    `gorm:"size:30" json:"icon"`
+	SortOrder   int       `json:"sort_order"`
+	Active      bool      `gorm:"default:true" json:"active"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }
 
 // Sample is an audio work sample of a teacher.

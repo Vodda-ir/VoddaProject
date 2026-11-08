@@ -277,16 +277,16 @@ func (h *Handler) UpdateMyTeacher(c *gin.Context) {
 
 func (h *Handler) AddService(c *gin.Context) {
 	var in struct {
-		Title    string `json:"title" binding:"required"`
-		Duration int    `json:"duration" binding:"required"`
-		Price    int64  `json:"price" binding:"required"`
-		Icon     string `json:"icon"`
+		OfficialServiceID uint   `json:"official_service_id" binding:"required"`
+		Duration          int    `json:"duration" binding:"required"`
+		Price             int64  `json:"price" binding:"required"`
+		Title             string `json:"title"` // deprecated: title always comes from the official catalog
 	}
 	if err := c.ShouldBindJSON(&in); err != nil {
 		fail(c, domain.ErrValidation)
 		return
 	}
-	service := &domain.Service{Title: in.Title, Duration: in.Duration, Price: in.Price, Icon: in.Icon}
+	service := &domain.Service{OfficialServiceID: &in.OfficialServiceID, Duration: in.Duration, Price: in.Price}
 	out, err := h.Teacher.AddService(c, userID(c), service)
 	if err != nil {
 		fail(c, err)
@@ -297,17 +297,17 @@ func (h *Handler) AddService(c *gin.Context) {
 
 func (h *Handler) UpdateService(c *gin.Context) {
 	var in struct {
-		Title    *string `json:"title"`
-		Duration *int    `json:"duration"`
-		Price    *int64  `json:"price"`
-		Icon     *string `json:"icon"`
-		Active   *bool   `json:"active"`
+		OfficialServiceID *uint   `json:"official_service_id"`
+		Duration          *int    `json:"duration"`
+		Price             *int64  `json:"price"`
+		Active            *bool   `json:"active"`
+		Title             *string `json:"title"` // deprecated: title always comes from the official catalog
 	}
 	if err := c.ShouldBindJSON(&in); err != nil {
 		fail(c, domain.ErrValidation)
 		return
 	}
-	if in.Title == nil && in.Duration == nil && in.Price == nil && in.Icon == nil {
+	if in.OfficialServiceID == nil && in.Duration == nil && in.Price == nil {
 		if in.Active == nil {
 			fail(c, domain.ErrValidation)
 			return
@@ -320,8 +320,8 @@ func (h *Handler) UpdateService(c *gin.Context) {
 		return
 	}
 	service := &domain.Service{ID: paramID(c), Active: true}
-	if in.Title != nil {
-		service.Title = *in.Title
+	if in.OfficialServiceID != nil {
+		service.OfficialServiceID = in.OfficialServiceID
 	}
 	if in.Duration != nil {
 		service.Duration = *in.Duration
@@ -329,14 +329,11 @@ func (h *Handler) UpdateService(c *gin.Context) {
 	if in.Price != nil {
 		service.Price = *in.Price
 	}
-	if in.Icon != nil {
-		service.Icon = *in.Icon
-	}
 	if err := h.Teacher.UpdateService(c, userID(c), service); err != nil {
 		fail(c, err)
 		return
 	}
-	ok(c, gin.H{"updated": true, "pending_review": true})
+	ok(c, gin.H{"updated": true})
 }
 
 func (h *Handler) DeleteService(c *gin.Context) {
