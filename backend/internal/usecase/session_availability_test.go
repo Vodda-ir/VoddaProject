@@ -53,7 +53,7 @@ func TestAvailableSlotsUsesBusinessTimezoneAndExcludesOccupiedStarts(t *testing.
 			ID: 8, Status: domain.TeacherApproved, Verified: true, Available: true,
 			User: &domain.User{ID: 9, Active: true},
 		},
-		service: domain.Service{ID: 12, TeacherID: 8, Duration: 30, Price: 1000, Active: true},
+		service:  domain.Service{ID: 12, TeacherID: 8, Duration: 30, Price: 1000, Active: true},
 		workTime: domain.WorkTime{TeacherID: 8, Weekday: weekday, FromTime: "09:00", ToTime: "12:00", Active: true},
 	}
 	sessions := &availabilitySessionRepository{sessions: []domain.Session{

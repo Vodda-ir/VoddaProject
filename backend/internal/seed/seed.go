@@ -35,8 +35,8 @@ func Run(db *gorm.DB) error {
 	log.Println("seed: populating coherent development data…")
 	return db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		accounts := []domain.User{
-		{Name: "مدیر وُدّا", Mobile: "09130000000", Role: domain.RoleAdmin, City: "تهران", Active: true},
-		{Name: "قرآن‌آموز آزمایشی", Mobile: "09130000001", Role: domain.RoleLearner, City: "قم", Active: true},
+			{Name: "مدیر وُدّا", Mobile: "09130000000", Role: domain.RoleAdmin, City: "تهران", Active: true},
+			{Name: "قرآن‌آموز آزمایشی", Mobile: "09130000001", Role: domain.RoleLearner, City: "قم", Active: true},
 		}
 		if err := tx.Create(&accounts).Error; err != nil {
 			return err

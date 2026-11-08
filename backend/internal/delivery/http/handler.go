@@ -17,17 +17,17 @@ import (
 
 // Handler bundles all usecases consumed by the HTTP layer.
 type Handler struct {
-	Auth    *usecase.AuthUsecase
-	User    *usecase.UserUsecase
+	Auth         *usecase.AuthUsecase
+	User         *usecase.UserUsecase
 	LearnerStats *usecase.LearnerAnalyticsUsecase
-	Teacher *usecase.TeacherUsecase
-	Session *usecase.SessionUsecase
-	Wallet  *usecase.WalletUsecase
-	Review  *usecase.ReviewUsecase
-	Admin   *usecase.AdminUsecase
-	Blog    *usecase.BlogUsecase
-	Notif   domain.NotificationRepository
-	Live    *LiveHub
+	Teacher      *usecase.TeacherUsecase
+	Session      *usecase.SessionUsecase
+	Wallet       *usecase.WalletUsecase
+	Review       *usecase.ReviewUsecase
+	Admin        *usecase.AdminUsecase
+	Blog         *usecase.BlogUsecase
+	Notif        domain.NotificationRepository
+	Live         *LiveHub
 }
 
 func paramID(c *gin.Context) uint {

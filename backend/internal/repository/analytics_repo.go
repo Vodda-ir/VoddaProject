@@ -35,8 +35,8 @@ type statusRow struct {
 }
 
 type roleRow struct {
-	Role  string
-	N     int64
+	Role string
+	N    int64
 }
 
 // Overview assembles the whole analytics payload. Each block is independent:
@@ -194,8 +194,8 @@ func (r *analyticsRepo) Overview(ctx context.Context, days int) (*domain.Analyti
 
 	// ── reviews ──
 	var ratingRow struct {
-		Avg   float64
-		N     int64
+		Avg float64
+		N   int64
 	}
 	if err := r.db.WithContext(ctx).
 		Raw(`SELECT COALESCE(AVG(rating), 0) AS avg, COUNT(*) AS n FROM reviews`).
@@ -253,7 +253,7 @@ func (r *analyticsRepo) Overview(ctx context.Context, days int) (*domain.Analyti
 func (r *analyticsRepo) countByDay(ctx context.Context, table string, start time.Time) (map[string]int64, error) {
 	var rows []dayRow
 	if err := r.db.WithContext(ctx).
-		Raw("SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS date, COUNT(*) AS n FROM " + table +
+		Raw("SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS date, COUNT(*) AS n FROM "+table+
 			" WHERE created_at >= ? GROUP BY date", start).Scan(&rows).Error; err != nil {
 		return nil, err
 	}
