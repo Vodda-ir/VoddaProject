@@ -395,7 +395,7 @@ function OnboardingChecklist({ user, config }: { user: AuthUser; config: Univers
   );
 }
 
-type PastTeacher = { id: number; name: string };
+type PastTeacher = { id: number; name: string; avatarUrl: string };
 
 function RebookRail({ teachers, config }: { teachers: PastTeacher[]; config: UniversalAppConfig }) {
   if (teachers.length === 0) return null;
@@ -963,7 +963,7 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
         for (const session of [...past].sort((a, b) => b.scheduledAt.localeCompare(a.scheduledAt))) {
           if (session.teacherId > 0 && !seen.has(session.teacherId)) {
             seen.add(session.teacherId);
-            unique.push({ id: session.teacherId, name: session.teacherName });
+            unique.push({ id: session.teacherId, name: session.teacherName, avatarUrl: session.teacherAvatar });
           }
         }
         setPastTeachers(unique.slice(0, 8));
