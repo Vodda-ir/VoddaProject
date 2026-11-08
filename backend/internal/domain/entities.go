@@ -221,6 +221,14 @@ type OTPCode struct {
 	CreatedAt time.Time `gorm:"index" json:"-"`
 }
 
+// PostStatus enumerates blog article publication states.
+type PostStatus string
+
+const (
+	PostDraft     PostStatus = "draft"
+	PostPublished PostStatus = "published"
+)
+
 // Notification is an in-app notification.
 type Notification struct {
 	ID        uint      `gorm:"primaryKey" json:"id"`
@@ -229,4 +237,25 @@ type Notification struct {
 	Body      string    `gorm:"size:500" json:"body"`
 	Read      bool      `gorm:"default:false;index" json:"read"`
 	CreatedAt time.Time `gorm:"index" json:"created_at"`
+}
+
+// Post is a blog article authored by the platform team. Content is plain
+// text: blank lines separate paragraphs, "## " marks a heading and "- "
+// lines render as a list — the web renderer understands exactly this.
+type Post struct {
+	ID          uint       `gorm:"primaryKey" json:"id"`
+	Slug        string     `gorm:"size:190;uniqueIndex" json:"slug"`
+	Title       string     `gorm:"size:180" json:"title"`
+	Excerpt     string     `gorm:"size:400" json:"excerpt"`
+	Content     string     `gorm:"type:text" json:"content"`
+	CoverURL    string     `gorm:"size:255" json:"cover_url"`
+	Category    string     `gorm:"size:60;index" json:"category"`
+	Status      PostStatus `gorm:"size:16;default:draft;index" json:"status"`
+	AuthorID    uint       `gorm:"index" json:"author_id"`
+	Author      *User      `gorm:"foreignKey:AuthorID" json:"author,omitempty"`
+	ReadMinutes int        `gorm:"default:1" json:"read_minutes"`
+	Views       int64      `gorm:"default:0" json:"views"`
+	PublishedAt *time.Time `gorm:"index" json:"published_at,omitempty"`
+	CreatedAt   time.Time  `json:"created_at"`
+	UpdatedAt   time.Time  `json:"updated_at"`
 }

@@ -92,6 +92,9 @@ func NewRouter(cfg *config.Config, h *Handler, tm *token.Manager, readiness func
 	api.GET("/teachers/:id", publicLimiter.Middleware("teacher-detail"), h.GetTeacher)
 	api.GET("/teachers/:id/work-times", publicLimiter.Middleware("teacher-work-times"), h.TeacherWorkTimes)
 	api.GET("/teachers/:id/availability", publicLimiter.Middleware("teacher-availability"), teacherAvailabilityHandler(h.Session))
+	blogLimiter := NewRateLimiter(90, time.Minute)
+	api.GET("/blog/posts", blogLimiter.Middleware("blog-list"), h.BlogList)
+	api.GET("/blog/posts/:slug", blogLimiter.Middleware("blog-detail"), h.BlogPostBySlug)
 	if operations.Support != nil {
 		api.POST("/support/messages", supportLimiter.Middleware("support-message"), createSupportMessageHandler(operations.Support))
 	}
@@ -173,6 +176,13 @@ func NewRouter(cfg *config.Config, h *Handler, tm *token.Manager, readiness func
 		admin.GET("/services", h.AdminServices)
 		admin.PUT("/services/:id/approve", mutationLimiter.Middleware("admin-mutation"), h.AdminApproveService)
 		admin.PUT("/services/:id/reject", mutationLimiter.Middleware("admin-mutation"), h.AdminRejectService)
+		admin.GET("/posts", h.AdminPosts)
+		admin.GET("/post-stats", h.AdminPostStats)
+		admin.POST("/posts", mutationLimiter.Middleware("admin-mutation"), h.AdminCreatePost)
+		admin.GET("/posts/:id", h.AdminGetPost)
+		admin.PUT("/posts/:id", mutationLimiter.Middleware("admin-mutation"), h.AdminUpdatePost)
+		admin.DELETE("/posts/:id", mutationLimiter.Middleware("admin-mutation"), h.AdminDeletePost)
+		admin.POST("/blog-upload", mutationLimiter.Middleware("admin-mutation"), h.AdminUploadPostImage)
 		if operations.Support != nil {
 			admin.GET("/support/messages", listSupportMessagesHandler(operations.Support))
 			admin.PATCH("/support/messages/:id/resolve", mutationLimiter.Middleware("admin-mutation"), resolveSupportMessageHandler(operations.Support))

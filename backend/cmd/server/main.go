@@ -67,6 +67,7 @@ func main() {
 	auditRepo := repository.NewAdminAuditRepository(db)
 	analyticsRepo := repository.NewAnalyticsRepository(db)
 	settingsRepo := repository.NewSettingRepository(db)
+	postRepo := repository.NewPostRepository(db)
 
 	tm := token.NewManager(cfg.JWTSecret, cfg.TokenExpiration)
 	sender := sms.New(cfg.SMS)
@@ -92,6 +93,7 @@ func main() {
 			}),
 		Notif: notifRepo,
 		Live:  delivery.NewLiveHub(),
+		Blog:  usecase.NewBlogUsecase(postRepo),
 	}
 
 	readiness := func(ctx context.Context) error { return sqlDB.PingContext(ctx) }

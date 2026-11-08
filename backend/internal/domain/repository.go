@@ -127,3 +127,27 @@ type SettingRepository interface {
 	All(ctx context.Context) (map[string]string, error)
 	SetMany(ctx context.Context, values map[string]string) error
 }
+
+// PostFilter narrows blog article listing queries.
+type PostFilter struct {
+	Query    string
+	Category string
+	Status   PostStatus
+	Public   bool
+	Limit    int
+	Offset   int
+}
+
+// PostRepository persists blog articles.
+type PostRepository interface {
+	Create(ctx context.Context, p *Post) error
+	Update(ctx context.Context, p *Post) error
+	Delete(ctx context.Context, id uint) error
+	ByID(ctx context.Context, id uint) (*Post, error)
+	BySlug(ctx context.Context, slug string) (*Post, error)
+	SlugTaken(ctx context.Context, slug string, excludeID uint) (bool, error)
+	List(ctx context.Context, f PostFilter) ([]Post, int64, error)
+	IncrementViews(ctx context.Context, id uint) error
+	Stats(ctx context.Context) (total, published, drafts int64, views int64, err error)
+	Categories(ctx context.Context) ([]string, error)
+}
