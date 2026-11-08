@@ -119,6 +119,20 @@ func (uc *AdminUsecase) ReviewTeacher(ctx context.Context, id uint, approve bool
 	return t, nil
 }
 
+// SetTeacherTier assigns the quality-tier badge of a teacher
+// ("", "international", "grade2", "grade3") shown as a tick next to their name.
+func (uc *AdminUsecase) SetTeacherTier(ctx context.Context, id uint, tier string) (*domain.Teacher, error) {
+	t, err := uc.teachers.ByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	t.Tier = tier
+	if err := uc.teachers.Update(ctx, t); err != nil {
+		return nil, err
+	}
+	return t, nil
+}
+
 // ListSessions returns paginated sessions filtered by status.
 func (uc *AdminUsecase) ListSessions(ctx context.Context, status domain.SessionStatus, limit, offset int) ([]domain.Session, int64, error) {
 	return uc.sessions.List(ctx, status, limit, offset)

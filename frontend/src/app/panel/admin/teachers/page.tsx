@@ -27,6 +27,7 @@ type TeacherRow = {
   status?: Exclude<TeacherStatus, ''>;
   verified?: boolean;
   available?: boolean;
+  tier?: string;
   user?: {
     id?: number;
     name?: string;
@@ -35,6 +36,19 @@ type TeacherRow = {
     active?: boolean;
   };
 };
+
+const TIER_COLORS: Record<string, string> = {
+  international: '#0095F6',
+  grade2: '#1EA55C',
+  grade3: '#E5484D',
+};
+
+function tierLabel(tier: string) {
+  if (tier === 'international') return 'درجه ۱ (بین‌المللی)';
+  if (tier === 'grade2') return 'درجه ۲';
+  if (tier === 'grade3') return 'درجه ۳';
+  return '';
+}
 
 const FILTERS: Array<{ value: TeacherStatus; label: string }> = [
   { value: '', label: 'همه' },
@@ -161,6 +175,26 @@ export default function AdminTeachers() {
     }
   }
 
+  async function setTier(teacher: TeacherRow, tier: string) {
+    if (!token || busyId !== null) return;
+    setBusyId(teacher.id);
+    setError('');
+    try {
+      const response = await fetch(`/api/backend/admin/teachers/${teacher.id}/tier`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tier }),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(body.error || 'ثبت درجه استاد انجام نشد.');
+      setTeachers((current) => current.map((row) => (row.id === teacher.id ? { ...row, tier } : row)));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'ثبت درجه استاد انجام نشد.');
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const hasFilters = Boolean(filters.q || filters.city || filters.field || status);
 
@@ -274,6 +308,11 @@ export default function AdminTeachers() {
                   <div className="ops-row-title">
                     <strong>{teacher.user?.name || 'استاد بدون نام'}</strong>
                     <PanelStatus status={normalizedStatus}>{statusLabel(normalizedStatus)}</PanelStatus>
+                    {teacher.tier ? (
+                      <span style={{ fontSize: 11, fontWeight: 800, color: TIER_COLORS[teacher.tier] || 'var(--ink-2)' }}>
+                        {tierLabel(teacher.tier)}
+                      </span>
+                    ) : null}
                     {!teacher.user?.active && <PanelStatus status="inactive">حساب غیرفعال</PanelStatus>}
                   </div>
                   <div className="ops-row-sub">
@@ -290,6 +329,28 @@ export default function AdminTeachers() {
                 </div>
 
                 <div className="ops-row-actions">
+                  <select
+                    aria-label={`درجه استاد ${teacher.user?.name || ''}`}
+                    value={teacher.tier || ''}
+                    disabled={isBusy}
+                    onChange={(event) => void setTier(teacher, event.target.value)}
+                    style={{
+                      minHeight: 32,
+                      padding: '4px 8px',
+                      borderRadius: 9,
+                      border: '1px solid var(--line-1, rgba(255,255,255,.14))',
+                      background: 'transparent',
+                      color: 'inherit',
+                      fontFamily: 'inherit',
+                      fontSize: 12,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <option value="">بدون درجه</option>
+                    <option value="international">درجه ۱ (بین‌المللی)</option>
+                    <option value="grade2">درجه ۲</option>
+                    <option value="grade3">درجه ۳</option>
+                  </select>
                   {normalizedStatus === 'approved' && (
                     <Link href={`/teachers/${teacher.id}`} target="_blank" className="ops-button">
                       <Icon name="user" size={16} /> مشاهده پروفایل

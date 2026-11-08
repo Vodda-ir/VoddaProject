@@ -85,6 +85,28 @@ func (h *Handler) AdminReviewTeacher(c *gin.Context) {
 	ok(c, teacher)
 }
 
+func (h *Handler) AdminSetTeacherTier(c *gin.Context) {
+	var in struct {
+		Tier string `json:"tier"`
+	}
+	if err := c.ShouldBindJSON(&in); err != nil {
+		fail(c, domain.ErrValidation)
+		return
+	}
+	switch in.Tier {
+	case "", "international", "grade2", "grade3":
+	default:
+		fail(c, domain.ErrValidation)
+		return
+	}
+	teacher, err := h.Admin.SetTeacherTier(c, paramID(c), in.Tier)
+	if err != nil {
+		fail(c, err)
+		return
+	}
+	ok(c, teacher)
+}
+
 func (h *Handler) AdminSessions(c *gin.Context) {
 	sessions, total, err := h.Admin.ListSessions(c, domain.SessionStatus(c.Query("status")), queryInt(c, "limit", 30), queryInt(c, "offset", 0))
 	if err != nil {
