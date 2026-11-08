@@ -64,21 +64,21 @@ func (r *analyticsRepo) Overview(ctx context.Context, days int) (*domain.Analyti
 	}
 	var sessionDays []sessionDayRow
 	if err := r.db.WithContext(ctx).
-		Raw(`SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS date, COUNT(*) AS n,
-		             COALESCE(SUM(status = 'done'), 0) AS done
-		      FROM sessions WHERE created_at >= ? GROUP BY date`, start).Scan(&sessionDays).Error; err != nil {
+		Raw("SELECT "+r.dayExpr()+" AS date, COUNT(*) AS n, "+
+			"COALESCE(SUM(status = 'done'), 0) AS done "+
+			"FROM sessions WHERE created_at >= ? GROUP BY date", start).Scan(&sessionDays).Error; err != nil {
 		return nil, err
 	}
 	var chargeDays, commissionDays []dayRow
 	if err := r.db.WithContext(ctx).
-		Raw(`SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS date, COALESCE(SUM(amount), 0) AS n
-		     FROM transactions WHERE type = ? AND created_at >= ? GROUP BY date`,
+		Raw("SELECT "+r.dayExpr()+" AS date, COALESCE(SUM(amount), 0) AS n "+
+			"FROM transactions WHERE type = ? AND created_at >= ? GROUP BY date",
 			domain.TxCharge, start).Scan(&chargeDays).Error; err != nil {
 		return nil, err
 	}
 	if err := r.db.WithContext(ctx).
-		Raw(`SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS date, COALESCE(ABS(SUM(amount)), 0) AS n
-		     FROM transactions WHERE type = ? AND created_at >= ? GROUP BY date`,
+		Raw("SELECT "+r.dayExpr()+" AS date, COALESCE(ABS(SUM(amount)), 0) AS n "+
+			"FROM transactions WHERE type = ? AND created_at >= ? GROUP BY date",
 			domain.TxCommission, start).Scan(&commissionDays).Error; err != nil {
 		return nil, err
 	}
@@ -253,11 +253,20 @@ func (r *analyticsRepo) Overview(ctx context.Context, days int) (*domain.Analyti
 func (r *analyticsRepo) countByDay(ctx context.Context, table string, start time.Time) (map[string]int64, error) {
 	var rows []dayRow
 	if err := r.db.WithContext(ctx).
-		Raw("SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS date, COUNT(*) AS n FROM "+table+
+		Raw("SELECT "+r.dayExpr()+" AS date, COUNT(*) AS n FROM "+table+
 			" WHERE created_at >= ? GROUP BY date", start).Scan(&rows).Error; err != nil {
 		return nil, err
 	}
 	return dayMap(rows), nil
+}
+
+// dayExpr returns the dialect-specific expression that formats a timestamp
+// column as YYYY-MM-DD (MySQL DATE_FORMAT vs SQLite strftime).
+func (r *analyticsRepo) dayExpr() string {
+	if r.db != nil && r.db.Dialector.Name() == "sqlite" {
+		return "strftime('%Y-%m-%d', created_at)"
+	}
+	return "DATE_FORMAT(created_at, '%Y-%m-%d')"
 }
 
 // LearnerOverview assembles the personal analytics payload of one learner.
@@ -342,23 +351,23 @@ func (r *analyticsRepo) LearnerOverview(ctx context.Context, userID uint, days i
 	// ── per-day series ──
 	var sessionDays []sessionDayRow
 	if err := r.db.WithContext(ctx).
-		Raw(`SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS date, COUNT(*) AS n,
-			    COALESCE(SUM(status = ?), 0) AS done,
-			    COALESCE(SUM(CASE WHEN status = ? THEN duration ELSE 0 END), 0) AS minutes
-		     FROM sessions WHERE learner_id = ? AND created_at >= ? GROUP BY date`,
+		Raw("SELECT "+r.dayExpr()+" AS date, COUNT(*) AS n, "+
+			"COALESCE(SUM(status = ?), 0) AS done, "+
+			"COALESCE(SUM(CASE WHEN status = ? THEN duration ELSE 0 END), 0) AS minutes "+
+			"FROM sessions WHERE learner_id = ? AND created_at >= ? GROUP BY date",
 			domain.SessionDone, domain.SessionDone, userID, start).Scan(&sessionDays).Error; err != nil {
 		return nil, err
 	}
 	var spentDays, chargedDays []dayRow
 	if err := r.db.WithContext(ctx).
-		Raw(`SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS date, COALESCE(ABS(SUM(amount)), 0) AS n
-		     FROM transactions WHERE user_id = ? AND type = ? AND created_at >= ? GROUP BY date`,
+		Raw("SELECT "+r.dayExpr()+" AS date, COALESCE(ABS(SUM(amount)), 0) AS n "+
+			"FROM transactions WHERE user_id = ? AND type = ? AND created_at >= ? GROUP BY date",
 			userID, domain.TxSession, start).Scan(&spentDays).Error; err != nil {
 		return nil, err
 	}
 	if err := r.db.WithContext(ctx).
-		Raw(`SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS date, COALESCE(SUM(amount), 0) AS n
-		     FROM transactions WHERE user_id = ? AND type = ? AND created_at >= ? GROUP BY date`,
+		Raw("SELECT "+r.dayExpr()+" AS date, COALESCE(SUM(amount), 0) AS n "+
+			"FROM transactions WHERE user_id = ? AND type = ? AND created_at >= ? GROUP BY date",
 			userID, domain.TxCharge, start).Scan(&chargedDays).Error; err != nil {
 		return nil, err
 	}

@@ -16,6 +16,8 @@ import {
   typography,
 } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
+import { navigateApp } from "../../router";
+import { getCatalog } from "../dispatch/api";
 import { searchTeachersPage } from "../teachers/api";
 import { getAllTeachersCached, getTeacherCities } from "../teachers/cached";
 import { TeacherCard } from "../teachers/TeacherCard";
@@ -180,6 +182,11 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
   const initial = useMemo(readInitialFilters, []);
   const [filters, setFilters] = useState<SearchFilters>(initial);
   const [debouncedQuery, setDebouncedQuery] = useState(initial.query);
+  const [topicId, setTopicId] = useState<number>(() => {
+    if (typeof window === "undefined") return 0;
+    return Number(new URLSearchParams(window.location.search).get("topic") ?? 0) || 0;
+  });
+  const [topicTitle, setTopicTitle] = useState<string>("");
   const [rows, setRows] = useState<Teacher[]>([]);
   const [serverTotal, setServerTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -238,6 +245,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
       field: filters.field,
       city: filters.city,
       female: filters.female === "all" ? undefined : filters.female === "female",
+      officialServiceId: topicId,
       limit: 100,
       offset: 0,
     })
@@ -258,7 +266,26 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
     return () => {
       active = false;
     };
-  }, [runtime, debouncedQuery, filters.field, filters.city, filters.female, reloadKey]);
+  }, [runtime, debouncedQuery, filters.field, filters.city, filters.female, topicId, reloadKey]);
+
+  // عنوان موضوع فراخوان (برای نشانِ فیلتر فعال)
+  useEffect(() => {
+    if (!topicId) {
+      setTopicTitle("");
+      return;
+    }
+    let active = true;
+    getCatalog(runtime)
+      .then((rows) => {
+        if (active) setTopicTitle(rows.find((row) => row.id === topicId)?.title ?? "");
+      })
+      .catch(() => {
+        if (active) setTopicTitle("");
+      });
+    return () => {
+      active = false;
+    };
+  }, [runtime, topicId]);
 
   // شهرها فقط وقتی شیت فیلتر باز می‌شود دریافت می‌شوند (کش ۵ دقیقه‌ای)
   useEffect(() => {
@@ -284,7 +311,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
   const visible = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]);
   const hasMore = visibleCount < filtered.length;
   const hasAdvancedFilter = Boolean(filters.city || filters.female !== "all" || filters.availableOnly || filters.tier);
-  const hasAnyFilter = Boolean(filters.query || filters.field || hasAdvancedFilter);
+  const hasAnyFilter = Boolean(filters.query || filters.field || hasAdvancedFilter || topicId);
   const filteredCities = useMemo(() => {
     const needle = cityQuery.trim();
     return needle ? cities.filter((city) => city.includes(needle)) : cities;
@@ -344,6 +371,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
 
   function clearAllFilters() {
     setFilters({ query: "", field: "", city: "", female: "all", tier: "", availableOnly: false, sort: "recommended" });
+    setTopicId(0);
   }
 
   function removeRecent(item: string) {
@@ -370,6 +398,45 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
           نام، تخصص، شهر و جنسیت استاد را جستجو کنید.
         </p>
       </header>
+
+      {topicId ? (
+        <div
+          className="vodda-enter"
+          style={{
+            display: "flex", alignItems: "center", gap: 9,
+            padding: "11px 14px", borderRadius: 16,
+            background: colors.olive50, border: `1px solid ${colors.olive200}`,
+          }}
+        >
+          <Icon name="quran" size={17} style={{ color: colors.olive700, flex: "0 0 auto" }} />
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <strong style={{ display: "block", fontSize: 12.5, color: colors.olive700 }}>
+              موضوع: {topicTitle || `#${topicId}`}
+            </strong>
+            <span style={{ fontSize: 11, color: colors.inkMuted }}>اساتیدی که این موضوع رسمی را تدریس می‌کنند</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setTopicId(0)}
+            aria-label="حذف فیلتر موضوع"
+            style={{ background: "none", border: 0, color: colors.inkMuted, cursor: "pointer", padding: 4, fontFamily: typography.fontFamily }}
+          >
+            <Icon name="x" size={16} />
+          </button>
+          <button
+            type="button"
+            onClick={() => navigateApp("/dispatch", config)}
+            style={{
+              flex: "0 0 auto", minHeight: 36, padding: "0 13px",
+              borderRadius: 999, border: 0, cursor: "pointer",
+              background: colors.olive600, color: colors.surface,
+              fontSize: 11.5, fontWeight: 800, fontFamily: typography.fontFamily,
+            }}
+          >
+            🔔 فراخوان
+          </button>
+        </div>
+      ) : null}
 
       <div className="vodda-enter" style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <div style={{ position: "relative", minWidth: 0, flex: 1 }}>

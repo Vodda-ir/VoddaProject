@@ -95,14 +95,17 @@ type Teacher struct {
 	Available bool     `gorm:"default:true" json:"available"`
 	// Tier رتبه‌بندی کیفی استاد: "" | "international" (درجه یک/بین‌المللی)
 	// | "grade2" | "grade3" — تیک نشان کنار نام استاد از همین تعیین می‌شود.
-	Tier      string        `gorm:"size:16;default:''" json:"tier"`
-	Status    TeacherStatus `gorm:"size:16;default:pending;index" json:"status"`
-	Rating    float64       `gorm:"default:0" json:"rating"`
-	Reviews   int           `gorm:"default:0" json:"reviews"`
-	Sessions  int           `gorm:"default:0" json:"sessions"`
-	Followers int           `gorm:"default:0" json:"followers"`
-	CreatedAt time.Time     `json:"created_at"`
-	UpdatedAt time.Time     `json:"updated_at"`
+	Tier   string        `gorm:"size:16;default:''" json:"tier"`
+	Status TeacherStatus `gorm:"size:16;default:pending;index" json:"status"`
+	// DispatchSeenAt updates whenever the teacher polls the dispatch inbox;
+	// it doubles as a lightweight online-presence signal for the فراخوان.
+	DispatchSeenAt *time.Time `gorm:"index" json:"dispatch_seen_at,omitempty"`
+	Rating         float64    `gorm:"default:0" json:"rating"`
+	Reviews        int        `gorm:"default:0" json:"reviews"`
+	Sessions       int        `gorm:"default:0" json:"sessions"`
+	Followers      int        `gorm:"default:0" json:"followers"`
+	CreatedAt      time.Time  `json:"created_at"`
+	UpdatedAt      time.Time  `json:"updated_at"`
 
 	User     *User     `gorm:"foreignKey:UserID" json:"user,omitempty"`
 	Services []Service `gorm:"foreignKey:TeacherID" json:"services,omitempty"`

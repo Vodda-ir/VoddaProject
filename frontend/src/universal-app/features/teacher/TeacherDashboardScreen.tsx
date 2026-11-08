@@ -8,6 +8,7 @@ import type { PlatformRuntime } from "../../platform/types";
 import { navigateApp } from "../../router";
 import { messageOf } from "../../ui/errorMessage";
 import { RoleModeSheet } from "../auth/RoleModeSheet";
+import { getTeacherDispatchInbox } from "../dispatch/api";
 import {
   Avatar,
   Button,
@@ -19,6 +20,7 @@ import {
   WalletHero,
   colors,
   radii,
+  shadows,
   spacing,
   typography,
 } from "../../ui";
@@ -114,6 +116,17 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [roleSheetOpen, setRoleSheetOpen] = useState(false);
+  const [dispatchBadge, setDispatchBadge] = useState(0);
+
+  const loadDispatchBadge = useCallback(async () => {
+    try {
+      const inbox = await getTeacherDispatchInbox(runtime);
+      const waiting = inbox.offers.filter((offer) => offer.status === "waiting").length;
+      setDispatchBadge(inbox.calls.length + waiting);
+    } catch {
+      // badge is best-effort
+    }
+  }, [runtime]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -130,7 +143,10 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
 
   useEffect(() => {
     void load();
-  }, [load]);
+    void loadDispatchBadge();
+    const timer = window.setInterval(() => void loadDispatchBadge(), 12000);
+    return () => window.clearInterval(timer);
+  }, [load, loadDispatchBadge]);
 
   const nextSession = useMemo(() => {
     if (!snapshot) return null;
@@ -213,6 +229,62 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
           آمار دوره‌ای درآمد تا زمان وجود گزارش واقعی نمایش داده نمی‌شود.
         </p>
       </div>
+
+      <button
+        type="button"
+        className="vodda-tappable vodda-enter"
+        onClick={() => navigateApp("/t/dispatch", config)}
+        aria-label="فراخوان‌های زنده"
+        style={{
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          padding: "14px 16px",
+          borderRadius: 20,
+          border: `1px solid ${dispatchBadge > 0 ? colors.olive200 : colors.sand150}`,
+          background: dispatchBadge > 0 ? "linear-gradient(135deg, #f2f5ea 0%, #ffffff 62%)" : colors.surface,
+          boxShadow: shadows.sm,
+          cursor: "pointer",
+          fontFamily: typography.fontFamily,
+          textAlign: "right",
+        }}
+      >
+        <span
+          aria-hidden="true"
+          style={{
+            display: "grid", placeItems: "center", width: 42, height: 42,
+            borderRadius: 14, flex: "0 0 42px",
+            background: dispatchBadge > 0 ? colors.olive600 : colors.sand100, color: dispatchBadge > 0 ? colors.surface : colors.inkMuted,
+          }}
+        >
+          <Icon name="bell" size={20} stroke={1.9} />
+        </span>
+        <span style={{ flex: 1, minWidth: 0 }}>
+          <strong style={{ display: "block", fontSize: 14, fontWeight: 800, color: colors.ink }}>
+            فراخوان‌های زنده
+          </strong>
+          <span style={{ display: "block", fontSize: 11.5, color: colors.inkMuted, marginTop: 2, lineHeight: 1.7 }}>
+            {dispatchBadge > 0
+              ? "🔔 درخواست‌های تازه در موضوع‌های شما — سریع اعلام آمادگی کنید"
+              : "درخواست‌های تدریس لحظه‌ای کاربران در موضوع‌های شما"}
+          </span>
+        </span>
+        {dispatchBadge > 0 ? (
+          <span
+            aria-label={`${dispatchBadge} فراخوان جدید`}
+            style={{
+              flex: "0 0 auto", minWidth: 24, height: 24, borderRadius: 999,
+              display: "grid", placeItems: "center", padding: "0 7px",
+              background: colors.gold, color: "#fff", fontSize: 12, fontWeight: 800,
+            }}
+          >
+            {toFaDigits(dispatchBadge)}
+          </span>
+        ) : (
+          <Icon name="chevronL" size={16} style={{ flex: "0 0 auto", color: colors.inkFaint }} />
+        )}
+      </button>
 
       {pending.length > 0 ? (
         <button

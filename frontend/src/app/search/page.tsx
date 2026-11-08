@@ -26,6 +26,8 @@ export default function SearchPage() {
   const [city, setCity] = useState('');
   const [field, setField] = useState('');
   const [female, setFemale] = useState(false);
+  const [topicId, setTopicId] = useState(0);
+  const [topicTitle, setTopicTitle] = useState('');
   const [page, setPage] = useState(0);
   const [initialized, setInitialized] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -39,9 +41,39 @@ export default function SearchPage() {
     setCity(params.get('city') || '');
     setField(normalizeField(params.get('field') || ''));
     setFemale(params.get('female') === 'true');
+    setTopicId(Number.parseInt(params.get('official_service_id') || '0', 10) || 0);
     setPage(Math.max(0, Number.parseInt(params.get('page') || '1', 10) - 1 || 0));
     setInitialized(true);
   }, []);
+
+  useEffect(() => {
+    if (!topicId) {
+      setTopicTitle('');
+      return;
+    }
+    let active = true;
+    fetch('/api/backend/catalog/services', { cache: 'no-store' })
+      .then((response) => response.json())
+      .then((body) => {
+        if (!active) return;
+        const groups: Array<{ services?: Array<{ id: number; title: string }> }> = body?.data?.categories ?? [];
+        let foundTitle = '';
+        for (const group of groups) {
+          const hit = group.services?.find((item) => item.id === topicId);
+          if (hit) {
+            foundTitle = hit.title;
+            break;
+          }
+        }
+        setTopicTitle(foundTitle);
+      })
+      .catch(() => {
+        if (active) setTopicTitle('');
+      });
+    return () => {
+      active = false;
+    };
+  }, [topicId]);
 
   useEffect(() => {
     if (!initialized) return;
@@ -55,6 +87,7 @@ export default function SearchPage() {
         if (city.trim()) params.set('city', city.trim());
         if (field) params.set('field', field);
         if (female) params.set('female', 'true');
+        if (topicId) params.set('official_service_id', String(topicId));
 
         const response = await fetch(`/api/backend/teachers?${params}`, { cache: 'no-store', signal: controller.signal });
         const body = await response.json().catch(() => ({}));
@@ -64,11 +97,12 @@ export default function SearchPage() {
         setTotal(body.total || 0);
 
         const url = new URL(window.location.href);
-        for (const key of ['q', 'city', 'field', 'female', 'page']) url.searchParams.delete(key);
+        for (const key of ['q', 'city', 'field', 'female', 'page', 'official_service_id']) url.searchParams.delete(key);
         if (query.trim()) url.searchParams.set('q', query.trim());
         if (city.trim()) url.searchParams.set('city', city.trim());
         if (field) url.searchParams.set('field', field);
         if (female) url.searchParams.set('female', 'true');
+        if (topicId) url.searchParams.set('official_service_id', String(topicId));
         if (page > 0) url.searchParams.set('page', String(page + 1));
         window.history.replaceState(null, '', `${url.pathname}${url.search}`);
       } catch (cause) {
@@ -85,14 +119,14 @@ export default function SearchPage() {
       window.clearTimeout(timeout);
       controller.abort();
     };
-  }, [query, city, field, female, page, initialized]);
+  }, [query, city, field, female, topicId, page, initialized]);
 
   const totalPages = Math.ceil(total / LIMIT);
   const resetPage = (update: () => void) => {
     setPage(0);
     update();
   };
-  const hasFilter = Boolean(query.trim() || city.trim() || field || female);
+  const hasFilter = Boolean(query.trim() || city.trim() || field || female || topicId);
 
   function clearFilters() {
     setPage(0);
@@ -100,6 +134,7 @@ export default function SearchPage() {
     setCity('');
     setField('');
     setFemale(false);
+    setTopicId(0);
   }
 
   return (
@@ -113,6 +148,20 @@ export default function SearchPage() {
       />
 
       <main className="public-container public-content">
+        {topicId ? (
+          <div className="ops-inline-note" style={{ marginBottom: 14 }}>
+            <Icon name="quran" size={16} />
+            <span style={{ flex: 1 }}>
+              موضوع: <strong>{topicTitle || `#${topicId}`}</strong> — فقط اساتیدی که این موضوع رسمی را تدریس می‌کنند.
+            </span>
+            <Link href="/dispatch" style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontWeight: 800, color: 'var(--olive-600)' }}>
+              <Icon name="bell" size={15} /> فراخوان بزن
+            </Link>
+            <button type="button" onClick={() => setTopicId(0)} aria-label="حذف فیلتر موضوع" style={{ background: 'none', border: 0, cursor: 'pointer', color: 'var(--ink-3)', fontFamily: 'inherit' }}>
+              <Icon name="x" size={15} />
+            </button>
+          </div>
+        ) : null}
         <section className="web-search-panel">
           <div className="web-search-fields">
             <label>

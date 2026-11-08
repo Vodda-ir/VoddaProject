@@ -18,6 +18,16 @@ func NewFinancialRepository(db *gorm.DB) domain.FinancialRepository {
 	return &financialRepo{db: db}
 }
 
+// sessionEndOverlapExpr returns the dialect-aware overlap predicate for a
+// session window: existing rows whose [scheduled_at, scheduled_at+duration)
+// intersects [start, end).
+func (r *financialRepo) sessionEndOverlapExpr() string {
+	if r.db != nil && r.db.Dialector.Name() == "sqlite" {
+		return "scheduled_at < ? AND datetime(scheduled_at, '+' || duration || ' minutes') > ?"
+	}
+	return "scheduled_at < ? AND TIMESTAMPADD(MINUTE, duration, scheduled_at) > ?"
+}
+
 func (r *financialRepo) CreateFundedSession(ctx context.Context, session *domain.Session) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		var teacher domain.Teacher
@@ -60,7 +70,7 @@ func (r *financialRepo) CreateFundedSession(ctx context.Context, session *domain
 		if err := tx.Model(&domain.Session{}).
 			Where("status IN ?", []domain.SessionStatus{domain.SessionPending, domain.SessionConfirmed}).
 			Where("(teacher_id = ? OR learner_id = ?)", teacher.ID, session.LearnerID).
-			Where("scheduled_at < ? AND TIMESTAMPADD(MINUTE, duration, scheduled_at) > ?", end, session.ScheduledAt).
+			Where(r.sessionEndOverlapExpr(), end, session.ScheduledAt).
 			Count(&overlaps).Error; err != nil {
 			return err
 		}
@@ -493,7 +503,7 @@ func (r *financialRepo) CreateAwaitingSession(ctx context.Context, session *doma
 		if err := tx.Model(&domain.Session{}).
 			Where("status IN ?", []domain.SessionStatus{domain.SessionPending, domain.SessionConfirmed, domain.SessionAwaitingPayment}).
 			Where("(teacher_id = ? OR learner_id = ?)", teacher.ID, session.LearnerID).
-			Where("scheduled_at < ? AND TIMESTAMPADD(MINUTE, duration, scheduled_at) > ?", end, session.ScheduledAt).
+			Where(r.sessionEndOverlapExpr(), end, session.ScheduledAt).
 			Count(&overlaps).Error; err != nil {
 			return err
 		}
