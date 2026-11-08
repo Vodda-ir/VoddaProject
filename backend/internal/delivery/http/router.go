@@ -108,6 +108,7 @@ func NewRouter(cfg *config.Config, h *Handler, tm *token.Manager, readiness func
 	authed.Use(AuthRequired(tm, operations.Users), authedLimiter.Middleware("authenticated"))
 	{
 		authed.GET("/me", h.Me)
+		authed.GET("/me/analytics", h.MeAnalytics)
 		authed.PUT("/me", mutationLimiter.Middleware("profile-update"), ValidateAvatarUpload(5<<20), h.UpdateMe)
 		authed.POST("/me/become-teacher", mutationLimiter.Middleware("become-teacher"), h.BecomeTeacher)
 		authed.GET("/notifications", h.Notifications)

@@ -19,6 +19,7 @@ import (
 type Handler struct {
 	Auth    *usecase.AuthUsecase
 	User    *usecase.UserUsecase
+	LearnerStats *usecase.LearnerAnalyticsUsecase
 	Teacher *usecase.TeacherUsecase
 	Session *usecase.SessionUsecase
 	Wallet  *usecase.WalletUsecase
@@ -82,6 +83,16 @@ func (h *Handler) Me(c *gin.Context) {
 		return
 	}
 	ok(c, u)
+}
+
+// MeAnalytics serves the personal learning analytics of the authenticated user.
+func (h *Handler) MeAnalytics(c *gin.Context) {
+	stats, err := h.LearnerStats.Overview(c, userID(c), queryInt(c, "days", 30))
+	if err != nil {
+		fail(c, err)
+		return
+	}
+	ok(c, stats)
 }
 
 func (h *Handler) UpdateMe(c *gin.Context) {

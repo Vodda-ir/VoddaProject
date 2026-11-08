@@ -76,6 +76,7 @@ func main() {
 	h := &delivery.Handler{
 		Auth:    usecase.NewAuthUsecase(userRepo, otpRepo, sender, tm, cfg),
 		User:    usecase.NewUserUsecase(userRepo, teacherRepo, onboardingRepo),
+		LearnerStats: usecase.NewLearnerAnalyticsUsecase(analyticsRepo),
 		Teacher: usecase.NewTeacherUsecase(teacherRepo, reviewRepo, userRepo),
 		Session: usecase.NewSessionUsecase(sessionRepo, teacherRepo, userRepo, walletRepo, notifRepo, cfg, financialRepo),
 		Wallet: usecase.NewWalletUsecaseWithFinancial(

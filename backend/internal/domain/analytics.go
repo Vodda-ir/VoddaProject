@@ -120,3 +120,63 @@ type AnalyticsOverview struct {
 type AdminAnalyticsRepository interface {
 	Overview(ctx context.Context, days int) (*AnalyticsOverview, error)
 }
+
+// ─────────────────────────── learner analytics ───────────────────────────
+
+// LearnerPoint is one UTC day of a single learner's activity.
+type LearnerPoint struct {
+	Date     string `json:"date"` // YYYY-MM-DD (UTC)
+	Sessions int64  `json:"sessions"`
+	Done     int64  `json:"done"`
+	Minutes  int64  `json:"minutes"`
+	Spent    int64  `json:"spent"`
+	Charged  int64  `json:"charged"`
+}
+
+// LearnerTotals aggregates one learner's all-time counters.
+type LearnerTotals struct {
+	SessionsTotal  int64      `json:"sessions_total"`
+	Pending        int64      `json:"pending"`
+	Confirmed      int64      `json:"confirmed"`
+	Done           int64      `json:"done"`
+	Canceled       int64      `json:"canceled"`
+	Rated          int64      `json:"rated"`
+	MinutesLearned int64      `json:"minutes_learned"`
+	TeachersCount  int64      `json:"teachers_count"`
+	SpentTotal     int64      `json:"spent_total"`
+	ChargedTotal   int64      `json:"charged_total"`
+	NextSessionAt  *time.Time `json:"next_session_at"`
+}
+
+// LearnerTeacherStat is one teacher the learner has sessions with.
+type LearnerTeacherStat struct {
+	ID        uint       `json:"id"`
+	Name      string     `json:"name"`
+	AvatarURL string     `json:"avatar_url"`
+	Field     string     `json:"field"`
+	Rating    float64    `json:"rating"`
+	Sessions  int64      `json:"sessions"`
+	LastAt    *time.Time `json:"last_at"`
+}
+
+// LearnerAnalytics is the full payload of GET /me/analytics.
+type LearnerAnalytics struct {
+	Days      int                  `json:"days"`
+	Series    []LearnerPoint       `json:"series"`
+	Totals    LearnerTotals        `json:"totals"`
+	Wallet    int64                `json:"wallet"`
+	ByService []NamedCount         `json:"by_service"`
+	Teachers  []LearnerTeacherStat `json:"teachers"`
+}
+
+// LearnerAnalyticsRepository computes per-user reporting aggregates.
+type LearnerAnalyticsRepository interface {
+	LearnerOverview(ctx context.Context, userID uint, days int) (*LearnerAnalytics, error)
+}
+
+// AnalyticsRepository is the combined read-only analytics surface injected by
+// the server wiring; it satisfies both the admin and learner usecases.
+type AnalyticsRepository interface {
+	AdminAnalyticsRepository
+	LearnerAnalyticsRepository
+}

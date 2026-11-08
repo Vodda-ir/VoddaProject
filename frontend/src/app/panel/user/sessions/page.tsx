@@ -1,24 +1,38 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { faDigits } from '@/components/PanelShell';
 import { Avatar } from '@/components/web/ui';
 import { Icon } from '@/components/Icon';
-import { PanelButton } from '@/components/panel/PanelUI';
+import {
+  PanelButton,
+  PanelEmpty,
+  PanelMetric,
+  PanelPageHeader,
+  PanelStatus,
+} from '@/components/panel/PanelUI';
+import { SearchInput, exportCsv } from '@/components/admin/AdminUI';
 import { api, type SessionListItem } from '@/lib/api';
 import { fullUrl, getToken } from '@/lib/auth';
+import { formatFaNumber, toFaDigits } from '@/lib/persian';
 
-const statusMap: Record<string, [string, string, string]> = {
-  pending: ['var(--gold-bg)', 'var(--gold)', 'در انتظار تأیید استاد'],
-  confirmed: ['var(--olive-100)', 'var(--olive-700)', 'تأییدشده'],
-  done: ['var(--sand-100)', 'var(--ink-3)', 'برگزارش‌شده'],
-  canceled: ['var(--clay-bg)', 'var(--clay)', 'لغوشده'],
+type TabKey = 'all' | 'upcoming' | 'past';
+
+type Row = SessionListItem & { when: 'upcoming' | 'past' };
+
+const STATUS_META: Record<string, { status: 'pending' | 'approved' | 'done' | 'canceled'; label: string }> = {
+  pending: { status: 'pending', label: 'در انتظار تأیید استاد' },
+  confirmed: { status: 'approved', label: 'تأییدشده' },
+  done: { status: 'done', label: 'برگزارشده' },
+  canceled: { status: 'canceled', label: 'لغوشده' },
 };
 
 export default function UserSessionsPage() {
-  const [tab, setTab] = useState<'upcoming' | 'past'>('upcoming');
-  const [sessions, setSessions] = useState<SessionListItem[]>([]);
+  const [tab, setTab] = useState<TabKey>('all');
+  const [query, setQuery] = useState('');
+  const [upcoming, setUpcoming] = useState<Row[]>([]);
+  const [past, setPast] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [busyId, setBusyId] = useState<number | null>(null);
@@ -30,15 +44,20 @@ export default function UserSessionsPage() {
     setLoading(true);
     setError('');
     try {
-      const response = await api.mySessions(token, tab);
-      setSessions(response.data || []);
+      const [upcomingResponse, pastResponse] = await Promise.all([
+        api.mySessions(token, 'upcoming'),
+        api.mySessions(token, 'past'),
+      ]);
+      setUpcoming(((upcomingResponse.data || []) as Row[]).map((row) => ({ ...row, when: 'upcoming' as const })));
+      setPast(((pastResponse.data || []) as Row[]).map((row) => ({ ...row, when: 'past' as const })));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'جلسات دریافت نشدند.');
-      setSessions([]);
+      setUpcoming([]);
+      setPast([]);
     } finally {
       setLoading(false);
     }
-  }, [tab, token]);
+  }, [token]);
 
   useEffect(() => { void load(); }, [load]);
 
@@ -49,7 +68,8 @@ export default function UserSessionsPage() {
     setError('');
     try {
       await api.cancelSession(token, session.id);
-      setSessions((items) => items.map((item) => item.id === session.id ? { ...item, status: 'canceled' } : item));
+      setUpcoming((items) => items.map((item) => item.id === session.id ? { ...item, status: 'canceled' } : item));
+      setPast((items) => items.map((item) => item.id === session.id ? { ...item, status: 'canceled' } : item));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'لغو جلسه انجام نشد.');
     } finally {
@@ -58,36 +78,180 @@ export default function UserSessionsPage() {
   }
 
   function markRated(sessionId: number) {
-    setSessions((items) => items.map((item) => item.id === sessionId ? { ...item, rated: true } : item));
+    setUpcoming((items) => items.map((item) => item.id === sessionId ? { ...item, rated: true } : item));
+    setPast((items) => items.map((item) => item.id === sessionId ? { ...item, rated: true } : item));
   }
 
-  return (
-    <main style={{ padding: 28 }}>
-      <h1 style={{ fontSize: 21, fontWeight: 800, marginBottom: 4 }}>جلسات من</h1>
-      <p style={{ fontSize: 13, color: 'var(--ink-3)', marginBottom: 18 }}>زمان رسمی سامانه، وضعیت درخواست و نتیجهٔ مالی جلسه</p>
-      <div role="tablist" aria-label="نوع جلسات" style={{ display: 'flex', gap: 8, marginBottom: 22 }}>
-        {(['upcoming', 'past'] as const).map((value) => <button type="button" key={value} role="tab" aria-selected={tab === value} onClick={() => setTab(value)} style={{ flex: 1, padding: '11px 0', borderRadius: 14, border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 700, background: tab === value ? 'var(--olive-600)' : 'var(--surface)', color: tab === value ? '#fff' : 'var(--ink-3)', boxShadow: tab === value ? 'var(--sh-olive)' : 'var(--sh-sm)' }}>{value === 'upcoming' ? 'پیش‌رو' : 'گذشته'}</button>)}
-      </div>
+  const rows = useMemo(() => {
+    const base = tab === 'upcoming' ? upcoming : tab === 'past' ? past : [...upcoming, ...past];
+    const needle = query.trim();
+    const filtered = needle
+      ? base.filter((row) =>
+          (row.teacher?.user?.name || '').includes(needle) ||
+          (row.service || '').includes(needle) ||
+          (row.local_date || '').includes(needle))
+      : base;
+    return [...filtered].sort((left, right) => {
+      if (left.when !== right.when) return left.when === 'upcoming' ? -1 : 1;
+      return left.when === 'upcoming'
+        ? left.scheduled_at.localeCompare(right.scheduled_at)
+        : right.scheduled_at.localeCompare(left.scheduled_at);
+    });
+  }, [tab, query, upcoming, past]);
 
-      {error && <div role="alert" style={{ padding: 14, marginBottom: 14, borderRadius: 14, background: 'var(--clay-bg)', color: 'var(--rose)' }}>{error}<button type="button" onClick={load} style={{ display: 'block', marginTop: 10, border: 0, borderRadius: 10, padding: '7px 12px', background: 'var(--rose)', color: '#fff', cursor: 'pointer' }}>تلاش دوباره</button></div>}
-      {loading ? <div style={{ padding: 28, color: 'var(--ink-3)' }}>در حال بارگذاری…</div> : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {sessions.map((session) => {
-            const [background, color, label] = statusMap[session.status] || statusMap.pending;
-            return <article key={session.id} style={{ background: '#fff', borderRadius: 16, padding: 16, display: 'flex', alignItems: 'center', gap: 14, border: '1px solid var(--sand-150)', boxShadow: 'var(--sh-sm)', flexWrap: 'wrap' }}>
-              <Avatar size={46} imageUrl={fullUrl(session.teacher?.user?.avatar_url)} />
-              <div style={{ flex: '1 1 220px', minWidth: 0 }}><strong style={{ fontSize: 14 }}>{session.teacher?.user?.name || 'استاد'}</strong><div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 3 }}>{session.service} · {faDigits(session.duration)} دقیقه</div><time dateTime={session.scheduled_at} style={{ display: 'block', fontSize: 12.5, color: 'var(--ink-2s)', marginTop: 5 }}>{session.local_date} · {faDigits(session.local_start)} تا {faDigits(session.local_end)}</time>{session.reject_note && <div style={{ fontSize: 12, color: 'var(--clay)', marginTop: 5 }}>دلیل لغو: {session.reject_note}</div>}{session.status === 'pending' && <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 8, padding: '7px 10px', borderRadius: 10, background: 'var(--gold-bg)', color: 'var(--gold)', fontSize: 12 }}><Icon name="clock" size={14} /> در انتظار تأیید استاد</div>}</div>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}><span style={{ fontSize: 12, fontWeight: 700, padding: '4px 12px', borderRadius: 999, background, color }}>{label}</span><strong style={{ fontSize: 14, color: 'var(--olive-700)' }}>{faDigits(session.price)} تومان</strong>
-                {session.status === 'done' && !session.rated && <PanelButton tone="primary" icon="star" disabled={busyId === session.id} onClick={() => setReviewFor(session)}>ثبت نظر</PanelButton>}
-                {session.status === 'done' && session.rated && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11.5, fontWeight: 700, color: 'var(--olive-700)', background: 'var(--olive-100)', padding: '4px 10px', borderRadius: 999 }}><Icon name="checkCircle" size={13} /> نظر ثبت شد</span>}
-                {(session.status === 'pending' || session.status === 'confirmed') && <button type="button" disabled={busyId === session.id} onClick={() => cancelSession(session)} style={{ fontSize: 12, fontWeight: 700, color: 'var(--rose)', background: 'none', border: 0, cursor: busyId === session.id ? 'wait' : 'pointer', opacity: busyId === session.id ? .55 : 1 }}>{busyId === session.id ? 'در حال لغو…' : 'لغو جلسه'}</button>}
-                {session.status === 'confirmed' && <Link href={`/panel/live/${session.id}`} style={{ display: 'inline-flex' }}><PanelButton tone="primary" icon="video">ورود به کلاس آنلاین</PanelButton></Link>}
-              </div>
-            </article>;
-          })}
-          {sessions.length === 0 && <div style={{ textAlign: 'center', padding: 40, color: 'var(--ink-3)' }}>جلسه‌ای در این بخش وجود ندارد.</div>}
+  const counts = useMemo(() => ({
+    all: upcoming.length + past.length,
+    upcoming: upcoming.length,
+    past: past.length,
+    pending: upcoming.filter((row) => row.status === 'pending').length,
+    confirmed: upcoming.filter((row) => row.status === 'confirmed').length,
+    done: past.filter((row) => row.status === 'done').length,
+    canceled: past.filter((row) => row.status === 'canceled').length,
+    rated: past.filter((row) => row.rated).length,
+  }), [upcoming, past]);
+
+  return (
+    <main className="ops-page">
+      <PanelPageHeader
+        eyebrow="مسیر یادگیری"
+        title="جلسات من"
+        description="زمان رسمی جلسات، وضعیت درخواست‌ها، ورود به کلاس آنلاین و نتیجه مالی هر جلسه."
+        actions={
+          <>
+            <PanelButton
+              icon="download"
+              onClick={() => {
+                if (!rows.length) return;
+                exportCsv(
+                  'vodda-my-sessions',
+                  ['شناسه', 'استاد', 'خدمت', 'تاریخ', 'ساعت شروع', 'مدت (دقیقه)', 'قیمت (تومان)', 'وضعیت'],
+                  rows.map((row) => [
+                    row.id,
+                    row.teacher?.user?.name || '',
+                    row.service || '',
+                    row.local_date || '',
+                    row.local_start || '',
+                    row.duration,
+                    row.price,
+                    STATUS_META[row.status]?.label ?? row.status,
+                  ]),
+                );
+              }}
+            >
+              خروجی CSV
+            </PanelButton>
+            <PanelButton icon="refresh" onClick={() => void load()}>به‌روزرسانی</PanelButton>
+            <Link href="/panel/user/book" className="ops-button" data-tone="primary"><Icon name="plus" size={15} /> رزرو جدید</Link>
+          </>
+        }
+      />
+
+      {error && (
+        <div className="ops-error" role="alert">
+          <span>{error}</span>
+          <PanelButton onClick={() => void load()}>تلاش دوباره</PanelButton>
         </div>
       )}
+
+      <div className="ops-metric-grid">
+        <PanelMetric icon="clock" label="در انتظار تأیید" value={loading ? '—' : toFaDigits(counts.pending)} hint="نیازمند تأیید استاد" tone={counts.pending ? 'clay' : 'olive'} />
+        <PanelMetric icon="video" label="تأییدشده پیش‌رو" value={loading ? '—' : toFaDigits(counts.confirmed)} hint="آماده ورود به کلاس" tone="info" />
+        <PanelMetric icon="checkCircle" label="برگزارشده" value={loading ? '—' : toFaDigits(counts.done)} hint={`${toFaDigits(counts.rated)} نظر ثبت کرده‌اید`} tone="olive" />
+        <PanelMetric icon="x" label="لغوشده" value={loading ? '—' : toFaDigits(counts.canceled)} hint="مبلغ لغوها به کیف پول برگشته است" tone="gold" />
+      </div>
+
+      <section className="ops-section-card">
+        <div className="adm-toolbar">
+          <div className="adm-tabs" role="tablist" aria-label="نوع جلسات">
+            {([
+              { value: 'all', label: 'همه' },
+              { value: 'upcoming', label: 'پیش‌رو' },
+              { value: 'past', label: 'گذشته' },
+            ] as Array<{ value: TabKey; label: string }>).map((item) => (
+              <button
+                key={item.value}
+                type="button"
+                role="tab"
+                aria-selected={tab === item.value}
+                className="adm-tab"
+                data-active={tab === item.value ? 'true' : undefined}
+                onClick={() => setTab(item.value)}
+              >
+                {item.label}
+                <span className="adm-tab-count">{toFaDigits(counts[item.value])}</span>
+              </button>
+            ))}
+          </div>
+          <SearchInput value={query} onChange={setQuery} placeholder="جستجوی استاد، خدمت یا تاریخ…" />
+        </div>
+
+        {loading ? (
+          <div style={{ padding: 18, display: 'grid', gap: 10 }}>
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div key={index} className="adm-skeleton" style={{ height: 74, borderRadius: 16 }} />
+            ))}
+          </div>
+        ) : rows.length === 0 ? (
+          <PanelEmpty
+            icon="calendar"
+            title={query ? 'نتیجه‌ای برای جستجو پیدا نشد' : 'جلسه‌ای در این بخش وجود ندارد'}
+            description={query ? 'عبارت دیگری را امتحان کنید یا فیلتر را بردارید.' : 'اولین جلسه یادگیری‌تان را همین حالا رزرو کنید.'}
+            action={!query && <Link href="/panel/user/book" className="ops-button" data-tone="primary">رزرو جلسه</Link>}
+          />
+        ) : (
+          <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {rows.map((session) => (
+              <article className="ops-row" key={`${session.when}-${session.id}`} style={{ opacity: busyId === session.id ? .55 : 1, flexWrap: 'wrap' }}>
+                <Avatar size={46} ring verified={session.teacher?.verified} imageUrl={fullUrl(session.teacher?.user?.avatar_url)} />
+                <div className="ops-row-main">
+                  <div className="ops-row-title">
+                    <strong>{session.teacher?.user?.name || 'استاد'}</strong>
+                    <PanelStatus status={STATUS_META[session.status]?.status ?? 'pending'}>
+                      {STATUS_META[session.status]?.label ?? session.status}
+                    </PanelStatus>
+                  </div>
+                  <div className="ops-row-sub">
+                    <span>{session.service}</span>
+                    <span>· {session.local_date}</span>
+                    <span>· ساعت {toFaDigits(session.local_start)} تا {toFaDigits(session.local_end)}</span>
+                  </div>
+                  <div className="ops-row-meta">
+                    <span>{toFaDigits(session.duration)} دقیقه</span>
+                    <span>{formatFaNumber(session.price)} تومان</span>
+                    {session.when === 'past' && session.rated && <span><Icon name="star" size={11} fill style={{ color: 'var(--gold)' }} /> نظر ثبت شده</span>}
+                  </div>
+                  {session.reject_note && (
+                    <div style={{ marginTop: 6, fontSize: 11, color: 'var(--clay)', background: 'var(--clay-bg)', borderRadius: 9, padding: '5px 10px', display: 'inline-block' }}>
+                      دلیل لغو: {session.reject_note}
+                    </div>
+                  )}
+                  {session.status === 'pending' && (
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 7, padding: '6px 10px', borderRadius: 9, background: 'var(--gold-bg)', color: '#8d6d1f', fontSize: 11 }}>
+                      <Icon name="clock" size={13} /> در انتظار پاسخ استاد؛ مبلغ از کیف پول شما رزرو شده است
+                    </div>
+                  )}
+                </div>
+                <div className="ops-row-actions">
+                  {session.status === 'done' && !session.rated && (
+                    <PanelButton tone="primary" icon="star" disabled={busyId === session.id} onClick={() => setReviewFor(session)}>
+                      ثبت نظر
+                    </PanelButton>
+                  )}
+                  {session.status === 'confirmed' && (
+                    <Link href={`/panel/live/${session.id}`}><PanelButton tone="primary" icon="video">ورود به کلاس</PanelButton></Link>
+                  )}
+                  {(session.status === 'pending' || session.status === 'confirmed') && (
+                    <PanelButton tone="danger" icon="x" disabled={busyId === session.id} onClick={() => void cancelSession(session)}>
+                      {busyId === session.id ? 'در حال لغو…' : 'لغو'}
+                    </PanelButton>
+                  )}
+                  {session.status === 'done' && <Link href={`/teachers/${session.teacher_id}`} className="ops-button">پروفایل استاد</Link>}
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
 
       {reviewFor && (
         <ReviewDialog
@@ -171,7 +335,7 @@ function ReviewDialog({
             value={text}
             maxLength={1000}
             rows={4}
-            placeholder={session.rated ? '' : 'تجربه‌ات از این جلسه را بنویس…'}
+            placeholder="تجربه‌ات از این جلسه را بنویس…"
             onChange={(event) => setText(event.target.value)}
             style={{ width: '100%', padding: '10px 12px', borderRadius: 11, border: '1px solid var(--sand-200)', color: 'var(--ink)', background: '#fff', fontFamily: 'inherit', resize: 'vertical' }}
           />

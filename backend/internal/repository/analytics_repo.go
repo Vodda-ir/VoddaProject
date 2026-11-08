@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 	"time"
 
 	"gorm.io/gorm"
@@ -13,8 +14,8 @@ import (
 // All timestamps are handled in UTC to match the DSN loc=UTC setting.
 type analyticsRepo struct{ db *gorm.DB }
 
-// NewAnalyticsRepository builds a domain.AdminAnalyticsRepository.
-func NewAnalyticsRepository(db *gorm.DB) domain.AdminAnalyticsRepository { return &analyticsRepo{db: db} }
+// NewAnalyticsRepository builds the combined domain.AnalyticsRepository.
+func NewAnalyticsRepository(db *gorm.DB) domain.AnalyticsRepository { return &analyticsRepo{db: db} }
 
 type dayRow struct {
 	Date string
@@ -22,9 +23,10 @@ type dayRow struct {
 }
 
 type sessionDayRow struct {
-	Date string
-	N    int64
-	Done int64
+	Date    string
+	N       int64
+	Done    int64
+	Minutes int64
 }
 
 type statusRow struct {
@@ -256,6 +258,160 @@ func (r *analyticsRepo) countByDay(ctx context.Context, table string, start time
 		return nil, err
 	}
 	return dayMap(rows), nil
+}
+
+// LearnerOverview assembles the personal analytics payload of one learner.
+// Totals are all-time; the series covers the requested UTC window.
+func (r *analyticsRepo) LearnerOverview(ctx context.Context, userID uint, days int) (*domain.LearnerAnalytics, error) {
+	if days <= 0 {
+		days = 30
+	}
+	if days > 90 {
+		days = 90
+	}
+	start := time.Now().UTC().AddDate(0, 0, -(days - 1)).Truncate(24 * time.Hour)
+
+	out := &domain.LearnerAnalytics{Days: days}
+
+	if err := r.db.WithContext(ctx).
+		Raw(`SELECT COALESCE(wallet, 0) FROM users WHERE id = ?`, userID).
+		Scan(&out.Wallet).Error; err != nil {
+		return nil, err
+	}
+
+	// ── session lifecycle counters ──
+	var statuses []statusRow
+	if err := r.db.WithContext(ctx).
+		Raw(`SELECT status, COUNT(*) AS n FROM sessions WHERE learner_id = ? GROUP BY status`, userID).
+		Scan(&statuses).Error; err != nil {
+		return nil, err
+	}
+	for _, row := range statuses {
+		out.Totals.SessionsTotal += row.N
+		switch domain.SessionStatus(row.Status) {
+		case domain.SessionPending:
+			out.Totals.Pending = row.N
+		case domain.SessionConfirmed:
+			out.Totals.Confirmed = row.N
+		case domain.SessionDone:
+			out.Totals.Done = row.N
+		case domain.SessionCanceled:
+			out.Totals.Canceled = row.N
+		}
+	}
+	if err := r.db.WithContext(ctx).
+		Raw(`SELECT COUNT(*) FROM sessions WHERE learner_id = ? AND rated = 1`, userID).
+		Scan(&out.Totals.Rated).Error; err != nil {
+		return nil, err
+	}
+	if err := r.db.WithContext(ctx).
+		Raw(`SELECT COALESCE(SUM(duration), 0) FROM sessions WHERE learner_id = ? AND status = ?`,
+			userID, domain.SessionDone).Scan(&out.Totals.MinutesLearned).Error; err != nil {
+		return nil, err
+	}
+	if err := r.db.WithContext(ctx).
+		Raw(`SELECT COUNT(DISTINCT teacher_id) FROM sessions WHERE learner_id = ?`, userID).
+		Scan(&out.Totals.TeachersCount).Error; err != nil {
+		return nil, err
+	}
+	var nextAt sql.NullTime
+	if err := r.db.WithContext(ctx).
+		Raw(`SELECT MIN(scheduled_at) FROM sessions
+		     WHERE learner_id = ? AND status IN (?, ?) AND scheduled_at >= ?`,
+			userID, domain.SessionPending, domain.SessionConfirmed, time.Now().UTC()).
+		Scan(&nextAt).Error; err != nil {
+		return nil, err
+	}
+	if nextAt.Valid {
+		next := nextAt.Time
+		out.Totals.NextSessionAt = &next
+	}
+
+	// ── wallet ledger totals ──
+	if err := r.db.WithContext(ctx).
+		Raw(`SELECT COALESCE(ABS(SUM(amount)), 0) FROM transactions WHERE user_id = ? AND type = ?`,
+			userID, domain.TxSession).Scan(&out.Totals.SpentTotal).Error; err != nil {
+		return nil, err
+	}
+	if err := r.db.WithContext(ctx).
+		Raw(`SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE user_id = ? AND type = ?`,
+			userID, domain.TxCharge).Scan(&out.Totals.ChargedTotal).Error; err != nil {
+		return nil, err
+	}
+
+	// ── per-day series ──
+	var sessionDays []sessionDayRow
+	if err := r.db.WithContext(ctx).
+		Raw(`SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS date, COUNT(*) AS n,
+			    COALESCE(SUM(status = ?), 0) AS done,
+			    COALESCE(SUM(CASE WHEN status = ? THEN duration ELSE 0 END), 0) AS minutes
+		     FROM sessions WHERE learner_id = ? AND created_at >= ? GROUP BY date`,
+			domain.SessionDone, domain.SessionDone, userID, start).Scan(&sessionDays).Error; err != nil {
+		return nil, err
+	}
+	var spentDays, chargedDays []dayRow
+	if err := r.db.WithContext(ctx).
+		Raw(`SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS date, COALESCE(ABS(SUM(amount)), 0) AS n
+		     FROM transactions WHERE user_id = ? AND type = ? AND created_at >= ? GROUP BY date`,
+			userID, domain.TxSession, start).Scan(&spentDays).Error; err != nil {
+		return nil, err
+	}
+	if err := r.db.WithContext(ctx).
+		Raw(`SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS date, COALESCE(SUM(amount), 0) AS n
+		     FROM transactions WHERE user_id = ? AND type = ? AND created_at >= ? GROUP BY date`,
+			userID, domain.TxCharge, start).Scan(&chargedDays).Error; err != nil {
+		return nil, err
+	}
+
+	sessionMap := make(map[string]learnerDay, len(sessionDays))
+	for _, row := range sessionDays {
+		sessionMap[row.Date] = learnerDay{N: row.N, Done: row.Done, Minutes: row.Minutes}
+	}
+	spentMap := dayMap(spentDays)
+	chargedMap := dayMap(chargedDays)
+
+	for i := 0; i < days; i++ {
+		date := start.AddDate(0, 0, i).Format("2006-01-02")
+		day := sessionMap[date]
+		out.Series = append(out.Series, domain.LearnerPoint{
+			Date:     date,
+			Sessions: day.N,
+			Done:     day.Done,
+			Minutes:  day.Minutes,
+			Spent:    spentMap[date],
+			Charged:  chargedMap[date],
+		})
+	}
+
+	// ── service distribution ──
+	if err := r.db.WithContext(ctx).
+		Raw(`SELECT COALESCE(NULLIF(title, ''), 'جلسه آموزشی') AS name, COUNT(*) AS n
+		     FROM sessions WHERE learner_id = ? GROUP BY name ORDER BY n DESC LIMIT 6`, userID).
+		Scan(&out.ByService).Error; err != nil {
+		return nil, err
+	}
+
+	// ── my teachers ──
+	if err := r.db.WithContext(ctx).
+		Raw(`SELECT t.id, COALESCE(u.name, 'استاد') AS name, COALESCE(u.avatar_url, '') AS avatar_url,
+			    t.field, t.rating, COUNT(s.id) AS sessions, MAX(s.created_at) AS last_at
+		     FROM sessions s
+		     JOIN teachers t ON t.id = s.teacher_id
+		     JOIN users u ON u.id = t.user_id
+		     WHERE s.learner_id = ?
+		     GROUP BY t.id, u.name, u.avatar_url, t.field, t.rating
+		     ORDER BY sessions DESC, last_at DESC
+		     LIMIT 6`, userID).Scan(&out.Teachers).Error; err != nil {
+		return nil, err
+	}
+
+	return out, nil
+}
+
+type learnerDay struct {
+	N       int64
+	Done    int64
+	Minutes int64
 }
 
 func dayMap(rows []dayRow) map[string]int64 {

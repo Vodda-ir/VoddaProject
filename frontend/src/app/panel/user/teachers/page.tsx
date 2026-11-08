@@ -1,55 +1,134 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { useCallback, useEffect, useState } from 'react';
 import { faDigits } from '@/components/PanelShell';
 import { Avatar } from '@/components/web/ui';
 import { Icon } from '@/components/Icon';
-import { getToken } from '@/lib/auth';
+import {
+  PanelButton,
+  PanelEmpty,
+  PanelPageHeader,
+} from '@/components/panel/PanelUI';
+import { SearchInput } from '@/components/admin/AdminUI';
+import { api, type Teacher } from '@/lib/api';
+import { fullUrl } from '@/lib/auth';
+import { formatFaNumber, toFaDigits } from '@/lib/persian';
 
 export default function UserTeachersPage() {
-  const [teachers, setTeachers] = useState<unknown[]>([]);
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [query, setQuery] = useState('');
+  const [femaleOnly, setFemaleOnly] = useState(false);
   const [loading, setLoading] = useState(true);
-  const token = getToken();
+  const [error, setError] = useState('');
 
-  useEffect(() => {
-    if (!token) return;
-    fetch('/api/v1/teachers', { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.ok ? r.json() : { data: [] })
-      .then(j => setTeachers(j.data || []))
-      .finally(() => setLoading(false));
-  }, [token]);
+  const load = useCallback(async (search: string, female: boolean) => {
+    setLoading(true);
+    setError('');
+    try {
+      const response = await api.teachers(search, { limit: '36', ...(female ? { female: 'true' } : {}) });
+      setTeachers(response.data || []);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'فهرست اساتید دریافت نشد.');
+      setTeachers([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  const list = teachers as Array<Record<string, unknown>>;
+  useEffect(() => { void load('', femaleOnly); }, [load, femaleOnly]);
 
   return (
-    <div style={{ padding: 28 }}>
-      <h1 style={{ fontSize: 21, fontWeight: 800, marginBottom: 4 }}>اساتید</h1>
-      <p style={{ fontSize: 13, color: 'var(--ink-3)', marginBottom: 22 }}>مشاهده و رزرو جلسه با اساتید</p>
-      {loading ? <div style={{ padding: 28 }}>در حال بارگذاری…</div> : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {list.map(t => (
-            <div key={t.id as number} style={{ background: '#fff', borderRadius: 16, padding: 16, display: 'flex', alignItems: 'center', gap: 14, border: '1px solid var(--sand-150)', boxShadow: 'var(--sh-sm)' }}>
-              <Avatar size={46} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 14, fontWeight: 700 }}>{((t.user as Record<string, string>)?.name || t.name || 'استاد') as string}</div>
-                <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 3 }}>{(t.field as string) || ''} · {(t.city as string) || ''}</div>
-                <div style={{ display: 'flex', gap: 16, marginTop: 6, fontSize: 12, color: 'var(--ink-2s)' }}>
-                  <span><Icon name="star" size={13} style={{ color: 'var(--gold)' }} /> {(t.rating as number) ? faDigits((t.rating as number).toFixed(1)) : '—'}</span>
-                  <span>{faDigits((t.reviews as number) || 0)} نظر</span>
-                  <span>{faDigits((t.sessions as number) || 0)} جلسه</span>
-                </div>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
-                <span style={{ fontSize: 12, fontWeight: 700, padding: '4px 12px', borderRadius: 999, background: (t.verified as boolean) ? 'var(--olive-100)' : 'var(--gold-bg)', color: (t.verified as boolean) ? 'var(--olive-700)' : 'var(--gold)' }}>
-                  {(t.verified as boolean) ? 'تأییدشده' : 'در انتظار'}
-                </span>
-                <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--olive-700)' }}>از {faDigits((t.price30 as number) || 0)} ت</span>
-              </div>
-            </div>
-          ))}
-          {list.length === 0 && <div style={{ textAlign: 'center', padding: 40, color: 'var(--ink-3)' }}>استادی یافت نشد</div>}
+    <main className="ops-page">
+      <PanelPageHeader
+        eyebrow="پیدا کردن همراه"
+        title="اساتید وُدّا"
+        description="اساتید تأییدشده سامانه را ببینید، پروفایل‌شان را بررسی کنید و مستقیم رزرو کنید."
+      />
+
+      {error && (
+        <div className="ops-error" role="alert">
+          <span>{error}</span>
+          <PanelButton onClick={() => void load(query, femaleOnly)}>تلاش دوباره</PanelButton>
         </div>
       )}
-    </div>
+
+      <section className="ops-section-card">
+        <div className="adm-toolbar">
+          <SearchInput value={query} onChange={(value) => void load(value, femaleOnly)} placeholder="جستجوی نام، حوزه یا شهر…" />
+          <button
+            type="button"
+            className="adm-tab"
+            data-active={femaleOnly ? 'true' : undefined}
+            aria-pressed={femaleOnly}
+            onClick={() => setFemaleOnly((value) => !value)}
+          >
+            <Icon name="user" size={13} /> مربی زن
+          </button>
+        </div>
+
+        {loading ? (
+          <div className="usr-teacher-grid" style={{ padding: 16 }} aria-busy="true">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <div key={index} className="adm-skeleton" style={{ height: 170, borderRadius: 18 }} />
+            ))}
+          </div>
+        ) : teachers.length === 0 ? (
+          <PanelEmpty
+            icon="users"
+            title={query ? 'استادی با این مشخصات پیدا نشد' : 'هنوز استادی تأیید نشده است'}
+            description={query ? 'عبارت دیگری را جستجو کنید یا فیلتر را بردارید.' : 'به‌زودی اساتید تأییدشده در این فهرست قرار می‌گیرند.'}
+          />
+        ) : (
+          <div className="usr-teacher-grid" style={{ padding: 16 }}>
+            {teachers.map((teacher) => (
+              <article className="usr-teacher-card" key={teacher.id}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
+                  <Avatar size={48} ring verified={teacher.verified} imageUrl={fullUrl(teacher.user?.avatar_url)} />
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <strong style={{ fontSize: 13.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {teacher.user?.name || 'استاد وُدّا'}
+                      </strong>
+                      {teacher.verified && <span className="adm-badge" data-tone="olive">تأییدشده</span>}
+                    </div>
+                    <div style={{ fontSize: 11, color: 'var(--olive-700)', fontWeight: 600, marginTop: 2 }}>
+                      {teacher.tag || teacher.field || 'آموزش قرآن'}
+                    </div>
+                    {teacher.city && (
+                      <div style={{ fontSize: 10.5, color: 'var(--ink-4)', marginTop: 2 }}>
+                        <Icon name="pin" size={11} /> {teacher.city}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: 14, fontSize: 11.5, color: 'var(--ink-2s)' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <Icon name="star" size={13} fill style={{ color: 'var(--gold)' }} />
+                    {Number(teacher.rating) > 0 ? faDigits(Number(teacher.rating).toFixed(1)) : '—'}
+                    <em style={{ fontStyle: 'normal', color: 'var(--ink-4)' }}>({toFaDigits(teacher.reviews)})</em>
+                  </span>
+                  <span>{toFaDigits(teacher.sessions)} جلسه موفق</span>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 9, borderTop: '1px solid var(--sand-100)', paddingTop: 11, marginTop: 'auto' }}>
+                  <div>
+                    <div style={{ fontSize: 9.5, color: 'var(--ink-4)' }}>شروع قیمت از</div>
+                    <strong style={{ fontSize: 14, color: 'var(--olive-700)' }}>{formatFaNumber(teacher.price30)} <small style={{ fontWeight: 500 }}>تومان</small></strong>
+                  </div>
+                  <div style={{ display: 'flex', gap: 7 }}>
+                    <Link href={`/teachers/${teacher.id}`} className="ops-button">پروفایل</Link>
+                    <Link href={`/panel/user/book?teacher=${teacher.id}`} className="ops-button" data-tone="primary">
+                      <Icon name="plus" size={14} /> رزرو
+                    </Link>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+    </main>
   );
 }
