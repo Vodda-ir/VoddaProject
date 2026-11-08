@@ -99,6 +99,16 @@ func NewRouter(cfg *config.Config, h *Handler, tm *token.Manager, readiness func
 		api.POST("/support/messages", supportLimiter.Middleware("support-message"), createSupportMessageHandler(operations.Support))
 	}
 
+	// Payment gateway back-channel. The payer's browser lands here straight
+	// from sep.shaparak.ir — no session cookie exists yet, so the route stays
+	// public and the usecase validates the payload against the stored order.
+	paymentLimiter := NewRateLimiter(30, time.Minute)
+	payments := api.Group("/payments")
+	{
+		payments.POST("/saman/callback", paymentLimiter.Middleware("saman-callback"), h.SamanCallback)
+		payments.GET("/saman/callback", paymentLimiter.Middleware("saman-callback"), h.SamanCallback)
+	}
+
 	// Online classroom signaling. The WebSocket accepts a short-lived
 	// ticket (browsers cannot set headers on WS handshakes); HTTP fallback
 	// endpoints stay inside the authenticated group.
@@ -119,6 +129,8 @@ func NewRouter(cfg *config.Config, h *Handler, tm *token.Manager, readiness func
 		authed.POST("/reviews", mutationLimiter.Middleware("review"), h.Rate)
 		authed.GET("/wallet/transactions", h.Transactions)
 		authed.POST("/wallet/charge", financialLimiter.Middleware("financial"), h.Charge)
+		authed.POST("/wallet/topup", financialLimiter.Middleware("financial"), h.WalletTopup)
+		authed.GET("/wallet/topups", h.MyTopups)
 		live := authed.Group("/live")
 		{
 			live.POST("/ticket", mutationLimiter.Middleware("live-ticket"), h.LiveTicket)

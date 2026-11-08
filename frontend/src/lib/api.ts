@@ -102,6 +102,20 @@ export type Withdrawal = {
   updated_at?: string;
 };
 
+export type PaymentOrder = {
+  id: number;
+  user_id: number;
+  gateway: string;
+  res_num: string;
+  amount: number;
+  status: 'pending' | 'paid' | 'failed';
+  ref_num: string;
+  trace_no: string;
+  card_pan: string;
+  fail_reason: string;
+  created_at: string;
+};
+
 export type Transaction = {
   id: number;
   type: string;
@@ -236,6 +250,14 @@ export const api = {
     }),
   transactions: (token: string) =>
     request<{ data: Transaction[] }>('/wallet/transactions', { headers: auth(token) }),
+  walletTopup: (token: string, amount: number) =>
+    request<{ data: { res_num: string; redirect_url: string; amount: number } }>('/wallet/topup', {
+      method: 'POST',
+      body: JSON.stringify({ amount }),
+      headers: auth(token),
+    }),
+  walletTopups: (token: string, limit = 20) =>
+    request<{ data: PaymentOrder[] }>(`/wallet/topups?limit=${limit}`, { headers: auth(token) }),
   meAnalytics: (token: string, days = 30) =>
     request<{ data: LearnerAnalytics }>(`/me/analytics?days=${days}`, { headers: auth(token) }),
   notifications: (token: string, limit = 20) =>

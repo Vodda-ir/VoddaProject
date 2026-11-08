@@ -75,5 +75,6 @@ func Migrate(db *gorm.DB) error {
 		&domain.AdminAuditLog{},
 		&domain.Setting{},
 		&domain.Post{},
+		&domain.PaymentOrder{},
 	)
 }

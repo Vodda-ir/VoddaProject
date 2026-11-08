@@ -348,3 +348,92 @@ func recordError(err error) error {
 	}
 	return err
 }
+
+// SettlePaymentOrder finalizes a gateway payment in one transaction: the order
+// row is locked, lifecycle is checked, gateway RefNum uniqueness is enforced
+// (replay protection), the wallet balance is credited and a charge ledger row
+// is written. Re-invoking an already-paid order is an idempotent no-op that
+// returns the stored order, so duplicate gateway callbacks are safe.
+func (r *financialRepo) SettlePaymentOrder(ctx context.Context, orderID uint, refNum, traceNo, cardPan string) (*domain.PaymentOrder, error) {
+	var settled domain.PaymentOrder
+	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var order domain.PaymentOrder
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&order, orderID).Error; err != nil {
+			return recordError(err)
+		}
+		if order.Status == domain.PaymentPaid {
+			settled = order
+			return nil
+		}
+		if order.Status != domain.PaymentPending {
+			return domain.ErrConflict
+		}
+		var replay int64
+		if err := tx.Model(&domain.PaymentOrder{}).
+			Where("gateway = ? AND ref_num = ? AND id <> ? AND status = ?", order.Gateway, refNum, order.ID, domain.PaymentPaid).
+			Count(&replay).Error; err != nil {
+			return err
+		}
+		if replay > 0 {
+			return domain.ErrConflict
+		}
+		var user domain.User
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&user, order.UserID).Error; err != nil {
+			return recordError(err)
+		}
+		if !user.Active {
+			return domain.ErrForbidden
+		}
+		updates := map[string]any{
+			"status":     domain.PaymentPaid,
+			"ref_num":    refNum,
+			"trace_no":   traceNo,
+			"card_pan":   cardPan,
+			"updated_at": time.Now(),
+		}
+		if err := tx.Model(&domain.PaymentOrder{}).Where("id = ?", order.ID).Updates(updates).Error; err != nil {
+			return err
+		}
+		if err := tx.Model(&domain.User{}).Where("id = ?", order.UserID).
+			UpdateColumn("wallet", gorm.Expr("wallet + ?", order.Amount)).Error; err != nil {
+			return err
+		}
+		if err := tx.Create(&domain.Transaction{
+			UserID: order.UserID,
+			Type:   domain.TxCharge,
+			Title:  "شارژ کیف پول از درگاه پرداخت",
+			Amount: order.Amount,
+			RefID:  order.ID,
+		}).Error; err != nil {
+			return err
+		}
+		order.Status = domain.PaymentPaid
+		order.RefNum = refNum
+		order.TraceNo = traceNo
+		order.CardPan = cardPan
+		settled = order
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &settled, nil
+}
+
+// MarkPaymentOrderFailed closes a pending order after a declined/canceled
+// payment. Already-settled orders keep their paid state (money already moved).
+func (r *financialRepo) MarkPaymentOrderFailed(ctx context.Context, orderID uint, reason string) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		result := tx.Model(&domain.PaymentOrder{}).
+			Where("id = ? AND status = ?", orderID, domain.PaymentPending).
+			Updates(map[string]any{
+				"status":      domain.PaymentFailed,
+				"fail_reason": reason,
+				"updated_at":  time.Now(),
+			})
+		if result.Error != nil {
+			return result.Error
+		}
+		return nil
+	})
+}

@@ -173,3 +173,22 @@ type PostRepository interface {
 	Stats(ctx context.Context) (total, published, drafts int64, views int64, err error)
 	Categories(ctx context.Context) ([]string, error)
 }
+
+// PaymentOrderFilter narrows admin-facing gateway order queries.
+type PaymentOrderFilter struct {
+	UserID uint
+	Status PaymentStatus
+	Limit  int
+	Offset int
+}
+
+// PaymentOrderStore persists gateway payment orders (wallet top-ups and
+// future product purchases). Settlement money-moves live in FinancialRepository
+// so balance, ledger and lifecycle updates stay atomic.
+type PaymentOrderStore interface {
+	Create(ctx context.Context, o *PaymentOrder) error
+	ByResNum(ctx context.Context, resNum string) (*PaymentOrder, error)
+	ByID(ctx context.Context, id uint) (*PaymentOrder, error)
+	RecentForUser(ctx context.Context, userID uint, limit int) ([]PaymentOrder, error)
+	List(ctx context.Context, f PaymentOrderFilter) ([]PaymentOrder, int64, error)
+}

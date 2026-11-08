@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -12,6 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"vodda/backend/internal/domain"
+	"vodda/backend/internal/platform/payment"
 	"vodda/backend/internal/usecase"
 )
 
@@ -23,6 +25,7 @@ type Handler struct {
 	Teacher      *usecase.TeacherUsecase
 	Session      *usecase.SessionUsecase
 	Wallet       *usecase.WalletUsecase
+	Payment      *usecase.PaymentUsecase
 	Review       *usecase.ReviewUsecase
 	Admin        *usecase.AdminUsecase
 	Blog         *usecase.BlogUsecase
@@ -582,6 +585,46 @@ func (h *Handler) MyWithdrawals(c *gin.Context) {
 		return
 	}
 	ok(c, withdrawals)
+}
+
+// WalletTopup opens a Saman Sep order and returns the Sep payment page URL.
+func (h *Handler) WalletTopup(c *gin.Context) {
+	var in struct {
+		Amount int64 `json:"amount" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&in); err != nil {
+		fail(c, domain.ErrValidation)
+		return
+	}
+	result, err := h.Payment.CreateTopup(c, userID(c), in.Amount)
+	if err != nil {
+		fail(c, err)
+		return
+	}
+	created(c, result)
+}
+
+// MyTopups lists the caller's latest gateway top-up orders.
+func (h *Handler) MyTopups(c *gin.Context) {
+	orders, err := h.Payment.RecentTopups(c, userID(c), queryInt(c, "limit", 20))
+	if err != nil {
+		fail(c, err)
+		return
+	}
+	ok(c, orders)
+}
+
+// SamanCallback is the public gateway back-channel. The payer's browser is
+// redirected here by sep.shaparak.ir; the handler settles the order and sends
+// the payer back to the wallet page. It accepts both POST form and GET query.
+func (h *Handler) SamanCallback(c *gin.Context) {
+	if h.Payment == nil {
+		c.Redirect(http.StatusFound, "/panel/user/wallet?payment=failed")
+		return
+	}
+	target := h.Payment.HandleCallback(c, payment.ParseCallback(c.Request))
+	c.Header("Cache-Control", "no-store")
+	c.Redirect(http.StatusFound, target)
 }
 
 func (h *Handler) Notifications(c *gin.Context) {

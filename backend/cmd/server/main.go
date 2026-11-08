@@ -14,6 +14,7 @@ import (
 	"vodda/backend/internal/config"
 	delivery "vodda/backend/internal/delivery/http"
 	"vodda/backend/internal/platform/database"
+	"vodda/backend/internal/platform/payment"
 	"vodda/backend/internal/platform/sms"
 	"vodda/backend/internal/platform/token"
 	"vodda/backend/internal/repository"
@@ -73,6 +74,15 @@ func main() {
 	sender := sms.New(cfg.SMS)
 	supportUsecase := usecase.NewSupportUsecase(supportRepo)
 
+	paymentRepo := repository.NewPaymentRepository(db)
+	samanClient := payment.NewSaman(payment.SamanConfig{
+		TerminalID: cfg.Saman.TerminalID,
+		MerchantID: cfg.Saman.MerchantID,
+		Username:   cfg.Saman.Username,
+		Password:   cfg.Saman.Password,
+		BaseURL:    cfg.Saman.BaseURL,
+	})
+
 	h := &delivery.Handler{
 		Auth:         usecase.NewAuthUsecase(userRepo, otpRepo, sender, tm, cfg),
 		User:         usecase.NewUserUsecase(userRepo, teacherRepo, onboardingRepo),
@@ -92,9 +102,10 @@ func main() {
 				Support:    supportRepo,
 				Settings:   settingsRepo,
 			}),
-		Notif: notifRepo,
-		Live:  delivery.NewLiveHub(),
-		Blog:  usecase.NewBlogUsecase(postRepo),
+		Notif:   notifRepo,
+		Live:    delivery.NewLiveHub(),
+		Blog:    usecase.NewBlogUsecase(postRepo),
+		Payment: usecase.NewPaymentUsecase(paymentRepo, financialRepo, userRepo, samanClient, cfg),
 	}
 
 	readiness := func(ctx context.Context) error { return sqlDB.PingContext(ctx) }

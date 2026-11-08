@@ -42,6 +42,8 @@ type Config struct {
 
 	Zarinpal ZarinpalConfig
 
+	Saman SamanConfig
+
 	PlatformCommissionPercent int
 }
 
@@ -72,6 +74,17 @@ type SMSConfig struct {
 type ZarinpalConfig struct {
 	MerchantID string
 	Sandbox    bool
+}
+
+// SamanConfig holds Saman Sep (سامان‌سپ) gateway settings. Username/Password
+// are the Sep panel credentials used for the verify call; when empty the
+// gateway still works but settlement relies on strict callback validation.
+type SamanConfig struct {
+	TerminalID string
+	MerchantID string
+	Username   string
+	Password   string
+	BaseURL    string
 }
 
 // Load reads configuration from the environment, applying development-safe defaults.
@@ -123,6 +136,13 @@ func Load() *Config {
 		Zarinpal: ZarinpalConfig{
 			MerchantID: getEnv("ZARINPAL_MERCHANT_ID", ""),
 			Sandbox:    getBool("ZARINPAL_SANDBOX", true),
+		},
+		Saman: SamanConfig{
+			TerminalID: getEnv("SAMAN_TERMINAL_ID", ""),
+			MerchantID: getEnv("SAMAN_MERCHANT_ID", ""),
+			Username:   getEnv("SAMAN_USERNAME", ""),
+			Password:   getEnv("SAMAN_PASSWORD", ""),
+			BaseURL:    getEnv("SAMAN_BASE_URL", "https://sep.shaparak.ir"),
 		},
 		PlatformCommissionPercent: getInt("PLATFORM_COMMISSION_PERCENT", 15),
 	}

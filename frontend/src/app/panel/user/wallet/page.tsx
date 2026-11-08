@@ -13,10 +13,20 @@ import { BarsChart } from '@/components/admin/charts';
 import { SearchInput, exportCsv, FilterTabs } from '@/components/admin/AdminUI';
 import { api, type LearnerAnalytics, type Transaction } from '@/lib/api';
 import { getToken } from '@/lib/auth';
-import { formatFaNumber, toFaDigits } from '@/lib/persian';
+import { formatFaNumber } from '@/lib/persian';
 
 type TabKey = 'all' | 'in' | 'out';
 type RangeKey = '7' | '14' | '30';
+
+const TOPUP_PRESETS: Array<{ value: number; label: string }> = [
+  { value: 50_000, label: '۵۰ هزار' },
+  { value: 100_000, label: '۱۰۰ هزار' },
+  { value: 250_000, label: '۲۵۰ هزار' },
+  { value: 500_000, label: '۵۰۰ هزار' },
+  { value: 1_000_000, label: '۱ میلیون' },
+];
+const TOPUP_MIN = 10_000;
+const TOPUP_MAX = 100_000_000;
 
 const TX_META: Record<string, { label: string; icon: 'coins' | 'download' | 'wallet' | 'x' | 'trending' | 'info' | 'video'; in: boolean }> = {
   charge: { label: 'شارژ کیف پول', icon: 'coins', in: true },
@@ -52,6 +62,10 @@ export default function UserWalletPage() {
   const [range, setRange] = useState<RangeKey>('14');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [topupAmount, setTopupAmount] = useState('');
+  const [topupBusy, setTopupBusy] = useState(false);
+  const [topupError, setTopupError] = useState('');
+  const [toast, setToast] = useState<{ kind: 'success' | 'failed'; ref: string } | null>(null);
   const token = getToken();
 
   const load = useCallback(async () => {
@@ -73,6 +87,16 @@ export default function UserWalletPage() {
   }, [token]);
 
   useEffect(() => { void load(); }, [load]);
+
+  // Payment gateway round-trip result (Saman Sep redirects back with ?payment=).
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const payment = params.get('payment');
+    if (payment === 'success' || payment === 'failed') {
+      setToast({ kind: payment, ref: params.get('ref') || '' });
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+  }, []);
 
   const wallet = Number(analytics?.wallet ?? 0);
   const totals = analytics?.totals;
@@ -99,6 +123,28 @@ export default function UserWalletPage() {
   const chartData = visible.map((point) => ({ label: point.date, value: Number(point.charged || 0) }));
   const chartSecondary = visible.map((point) => ({ label: point.date, value: Number(point.spent || 0) }));
   const hasFlow = chartData.some((point) => point.value > 0) || chartSecondary.some((point) => point.value > 0);
+
+  const parsedTopup = useMemo(() => {
+    const digits = topupAmount.replace(/[^\d]/g, '');
+    return digits ? Number(digits) : 0;
+  }, [topupAmount]);
+
+  const startTopup = useCallback(async () => {
+    if (!token || topupBusy) return;
+    if (parsedTopup < TOPUP_MIN || parsedTopup > TOPUP_MAX) {
+      setTopupError(`مبلغ باید بین ${formatFaNumber(TOPUP_MIN)} و ${formatFaNumber(TOPUP_MAX)} تومان باشد.`);
+      return;
+    }
+    setTopupBusy(true);
+    setTopupError('');
+    try {
+      const response = await api.walletTopup(token, parsedTopup);
+      window.location.href = response.data.redirect_url;
+    } catch (cause) {
+      setTopupError(cause instanceof Error ? cause.message : 'اتصال به درگاه پرداخت برقرار نشد.');
+      setTopupBusy(false);
+    }
+  }, [token, topupBusy, parsedTopup]);
 
   return (
     <main className="ops-page">
@@ -148,8 +194,83 @@ export default function UserWalletPage() {
 
       <div role="note" style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: 14, borderRadius: 16, background: 'var(--gold-bg)', color: '#765918', fontSize: 13, lineHeight: 1.9, marginBottom: 18 }}>
         <Icon name="shield" size={19} style={{ flexShrink: 0, marginTop: 2 }} />
-        <span>درگاه پرداخت عمومی هنوز فعال نشده است. شارژ مستقیم فقط ابزار توسعه است و در نسخه نهایی نمایش داده نمی‌شود.</span>
+        <span>پرداخت‌ها از طریق درگاه امن سامان‌سپ انجام می‌شود؛ اطلاعات کارت شما هرگز نزد وُدّا ذخیره نمی‌شود.</span>
       </div>
+
+      {toast && (
+        <div
+          role="status"
+          style={{
+            display: 'flex', gap: 10, alignItems: 'center', justifyContent: 'space-between',
+            padding: 14, borderRadius: 16, marginBottom: 18,
+            background: toast.kind === 'success' ? 'var(--olive-100)' : '#fdecec',
+            color: toast.kind === 'success' ? 'var(--olive-800)' : '#8c2f39',
+            border: `1px solid ${toast.kind === 'success' ? 'var(--olive-300)' : '#f6c6cb'}`,
+          }}
+        >
+          <span style={{ display: 'flex', alignItems: 'center', gap: 9, fontSize: 13, fontWeight: 700 }}>
+            <Icon name={toast.kind === 'success' ? 'check' : 'x'} size={17} />
+            {toast.kind === 'success'
+              ? 'پرداخت با موفقیت انجام شد و کیف پول شما شارژ شد.'
+              : 'پرداخت ناموفق بود یا لغو شد؛ مبلغی از حساب شما کسر نشده است.'}
+            {toast.ref && <span style={{ fontSize: 11, fontWeight: 500, opacity: 0.8 }}>· کد پیگیری: {faDigits(toast.ref)}</span>}
+          </span>
+          <button type="button" aria-label="بستن پیام" onClick={() => setToast(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', padding: 4 }}>
+            <Icon name="x" size={16} />
+          </button>
+        </div>
+      )}
+
+      <PanelSection
+        title="شارژ کیف پول"
+        description="مبلغ دلخواه را وارد کنید و از درگاه امن سامان‌سپ پرداخت کنید."
+      >
+        <div style={{ padding: '6px 18px 18px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div className="adm-range" role="group" aria-label="مبالغ پیشنهادی">
+            {TOPUP_PRESETS.map((preset) => (
+              <button
+                key={preset.value}
+                type="button"
+                data-active={parsedTopup === preset.value ? 'true' : undefined}
+                onClick={() => { setTopupAmount(String(preset.value)); setTopupError(''); }}
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'stretch', flexWrap: 'wrap' }}>
+            <label style={{ position: 'relative', flex: '1 1 220px', minWidth: 0 }}>
+              <span className="sr-only">مبلغ شارژ (تومان)</span>
+              <input
+                inputMode="numeric"
+                value={topupAmount ? faDigits(formatFaNumber(parsedTopup)) : ''}
+                onChange={(event) => {
+                  const digits = event.target.value.replace(/[^\d]/g, '');
+                  setTopupAmount(digits ? String(Number(digits)) : '');
+                  setTopupError('');
+                }}
+                placeholder="مثلاً ۱۵۰٬۰۰۰"
+                aria-label="مبلغ شارژ (تومان)"
+                style={{
+                  width: '100%', padding: '12px 14px', borderRadius: 13,
+                  border: '1px solid var(--line, #e4e0d5)', background: '#fff',
+                  fontSize: 15, fontWeight: 700, color: 'var(--ink, #3c4433)',
+                  outline: 'none', textAlign: 'left',
+                }}
+              />
+              <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', fontSize: 12, fontWeight: 600, color: 'var(--ink-4, #9a968a)' }}>تومان</span>
+            </label>
+            <PanelButton icon="coins" onClick={() => void startTopup()} disabled={topupBusy}>
+              {topupBusy ? 'در حال اتصال به درگاه…' : 'پرداخت با سامان‌سپ'}
+            </PanelButton>
+          </div>
+          {topupError && (
+            <div role="alert" style={{ fontSize: 12.5, color: '#8c2f39', background: '#fdecec', borderRadius: 12, padding: '9px 13px', fontWeight: 600 }}>
+              {topupError}
+            </div>
+          )}
+        </div>
+      </PanelSection>
 
       <PanelSection
         title="گردش مالی"

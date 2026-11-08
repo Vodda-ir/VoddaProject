@@ -210,6 +210,33 @@ type Withdrawal struct {
 	User *User `gorm:"foreignKey:UserID" json:"user,omitempty"`
 }
 
+// PaymentStatus enumerates gateway order states.
+type PaymentStatus string
+
+const (
+	PaymentPending PaymentStatus = "pending"
+	PaymentPaid    PaymentStatus = "paid"
+	PaymentFailed  PaymentStatus = "failed"
+)
+
+// PaymentOrder tracks a wallet top-up (or future product purchase) initiated
+// through an external payment gateway such as Saman Sep. Amount is stored in
+// Toman; gateways receive the Rial equivalent (amount * 10).
+type PaymentOrder struct {
+	ID         uint          `gorm:"primaryKey" json:"id"`
+	UserID     uint          `gorm:"index" json:"user_id"`
+	Gateway    string        `gorm:"size:24;default:saman;index" json:"gateway"`
+	ResNum     string        `gorm:"size:64;uniqueIndex" json:"res_num"`
+	Amount     int64         `json:"amount"`
+	Status     PaymentStatus `gorm:"size:16;index;default:pending" json:"status"`
+	RefNum     string        `gorm:"size:64;index" json:"ref_num"`
+	TraceNo    string        `gorm:"size:64" json:"trace_no"`
+	CardPan    string        `gorm:"size:32" json:"card_pan"`
+	FailReason string        `gorm:"size:255" json:"fail_reason"`
+	CreatedAt  time.Time     `gorm:"index" json:"created_at"`
+	UpdatedAt  time.Time     `json:"updated_at"`
+}
+
 // OTPCode is a one-time password issued for mobile verification. Code stores a
 // keyed digest rather than the user-visible OTP in production code paths.
 type OTPCode struct {
