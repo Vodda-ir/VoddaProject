@@ -161,6 +161,7 @@ services:
       PORT: 3000
       HOSTNAME: 0.0.0.0
       DATABASE_URL: file:/app/db/custom.db
+      SESSION_SECRET: ${SESSION_SECRET:-}
       BASHAR_EITAA_TOKEN: ${BASHAR_EITAA_TOKEN:-}
       BASHAR_EITAA_CHANNEL: ${BASHAR_EITAA_CHANNEL:-}
     ports:
