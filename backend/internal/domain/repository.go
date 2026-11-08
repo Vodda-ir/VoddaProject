@@ -14,13 +14,22 @@ type TeacherFilter struct {
 	Offset     int
 }
 
+// UserListFilter narrows the admin account listing.
+type UserListFilter struct {
+	Role   Role
+	Query  string
+	Active *bool
+	Limit  int
+	Offset int
+}
+
 // UserRepository persists accounts.
 type UserRepository interface {
 	Create(ctx context.Context, u *User) error
 	Update(ctx context.Context, u *User) error
 	ByID(ctx context.Context, id uint) (*User, error)
 	ByMobile(ctx context.Context, mobile string) (*User, error)
-	List(ctx context.Context, role Role, q string, limit, offset int) ([]User, int64, error)
+	List(ctx context.Context, f UserListFilter) ([]User, int64, error)
 	AddWallet(ctx context.Context, userID uint, delta int64) error
 	Count(ctx context.Context, role Role) (int64, error)
 }
@@ -70,6 +79,7 @@ type SessionRepository interface {
 type ReviewRepository interface {
 	Create(ctx context.Context, r *Review) error
 	ForTeacher(ctx context.Context, teacherID uint) ([]Review, error)
+	ForLearner(ctx context.Context, learnerID uint, limit int) ([]Review, error)
 	Stats(ctx context.Context, teacherID uint) (avg float64, count int, err error)
 	ListAll(ctx context.Context, limit, offset int) ([]Review, int64, error)
 	ByID(ctx context.Context, id uint) (*Review, error)
@@ -83,10 +93,22 @@ type ReviewTransactionRepository interface {
 	DeleteReview(ctx context.Context, reviewID uint) error
 }
 
+// WalletSums aggregates a user's signed ledger by type for the admin user
+// detail view. Values are raw sums of the amount column per transaction kind.
+type WalletSums struct {
+	Charge     int64 `json:"charge"`
+	Session    int64 `json:"session"`
+	Earning    int64 `json:"earning"`
+	Withdrawal int64 `json:"withdrawal"`
+	Commission int64 `json:"commission"`
+	Adjust     int64 `json:"adjust"`
+}
+
 // WalletRepository persists transactions and withdrawals.
 type WalletRepository interface {
 	AddTx(ctx context.Context, t *Transaction) error
 	Transactions(ctx context.Context, userID uint, limit, offset int) ([]Transaction, error)
+	SumsForUser(ctx context.Context, userID uint) (WalletSums, error)
 	CreateWithdrawal(ctx context.Context, w *Withdrawal) error
 	UpdateWithdrawal(ctx context.Context, w *Withdrawal) error
 	WithdrawalByID(ctx context.Context, id uint) (*Withdrawal, error)

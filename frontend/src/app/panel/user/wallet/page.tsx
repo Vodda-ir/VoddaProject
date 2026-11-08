@@ -35,7 +35,10 @@ const RANGE_LABELS: Array<{ value: RangeKey; label: string }> = [
 
 function txTime(iso: string): string {
   try {
-    return new Intl.DateTimeFormat('fa-IR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
+    const date = new Date(iso);
+    const day = new Intl.DateTimeFormat('fa-IR', { day: 'numeric', month: 'short' }).format(date);
+    const time = new Intl.DateTimeFormat('fa-IR', { hour: '2-digit', minute: '2-digit' }).format(date);
+    return `${day} · ${time}`;
   } catch {
     return '';
   }
@@ -116,6 +119,7 @@ export default function UserWalletPage() {
       <section
         role="region"
         aria-label="موجودی کیف پول"
+        className="wal-hero"
         style={{
           position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center',
           justifyContent: 'space-between', gap: 18, flexWrap: 'wrap', marginBottom: 18,
@@ -124,21 +128,21 @@ export default function UserWalletPage() {
           boxShadow: '0 14px 34px rgba(46,54,34,.22)',
         }}
       >
-        <div style={{ position: 'relative', zIndex: 1 }}>
+        <div style={{ position: 'relative', zIndex: 1, minWidth: 0 }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.78)', background: 'rgba(255,255,255,.12)', padding: '4px 11px', borderRadius: 999 }}>
             <Icon name="wallet" size={13} /> موجودی قابل استفاده
           </span>
-          <div style={{ marginTop: 10, fontSize: 34, fontWeight: 800, lineHeight: 1.2 }}>
+          <div style={{ marginTop: 10, fontSize: 'clamp(26px, 7vw, 34px)', fontWeight: 800, lineHeight: 1.2 }}>
             {loading ? '—' : `${formatFaNumber(wallet)}`}
             <span style={{ fontSize: 14, fontWeight: 600, marginRight: 7, opacity: .75 }}>تومان</span>
           </div>
-          <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', marginTop: 12, fontSize: 11.5, color: 'rgba(255,255,255,.78)' }}>
-            <span><Icon name="coins" size={13} /> مجموع شارژ: {formatFaNumber(Number(totals?.charged_total ?? 0))} تومان</span>
-            <span><Icon name="video" size={13} /> مجموع هزینه جلسات: {formatFaNumber(Number(totals?.spent_total ?? 0))} تومان</span>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12, fontSize: 11.5, color: 'rgba(255,255,255,.78)' }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: 999, background: 'rgba(255,255,255,.10)' }}><Icon name="coins" size={13} /> شارژ: {formatFaNumber(Number(totals?.charged_total ?? 0))} تومان</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: 999, background: 'rgba(255,255,255,.10)' }}><Icon name="video" size={13} /> هزینه جلسات: {formatFaNumber(Number(totals?.spent_total ?? 0))} تومان</span>
           </div>
         </div>
-        <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: 9, flexWrap: 'wrap' }}>
-          <span style={{ width: 92, height: 58, borderRadius: 12, background: 'repeating-linear-gradient(45deg, rgba(255,255,255,.16) 0 7px, rgba(255,255,255,.05) 7px 14px)', border: '1px solid rgba(255,255,255,.25)' }} aria-hidden="true" />
+        <div className="wal-hero-decor" style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: 9, flexWrap: 'wrap' }} aria-hidden="true">
+          <span style={{ width: 92, height: 58, borderRadius: 12, background: 'repeating-linear-gradient(45deg, rgba(255,255,255,.16) 0 7px, rgba(255,255,255,.05) 7px 14px)', border: '1px solid rgba(255,255,255,.25)' }} />
         </div>
       </section>
 

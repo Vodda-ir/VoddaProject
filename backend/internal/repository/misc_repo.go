@@ -28,6 +28,17 @@ func (r *reviewRepo) ForTeacher(ctx context.Context, teacherID uint) ([]domain.R
 	return reviews, err
 }
 
+// ForLearner returns the newest reviews written by a learner (admin drill-down).
+func (r *reviewRepo) ForLearner(ctx context.Context, learnerID uint, limit int) ([]domain.Review, error) {
+	if limit <= 0 || limit > 100 {
+		limit = 20
+	}
+	var reviews []domain.Review
+	err := r.db.WithContext(ctx).Preload("Learner").
+		Where("learner_id = ?", learnerID).Order("created_at desc").Limit(limit).Find(&reviews).Error
+	return reviews, err
+}
+
 func (r *reviewRepo) Stats(ctx context.Context, teacherID uint) (float64, int, error) {
 	var res struct {
 		Avg   float64
@@ -95,6 +106,39 @@ func (r *walletRepo) Transactions(ctx context.Context, userID uint, limit, offse
 	err := r.db.WithContext(ctx).Where("user_id = ?", userID).
 		Order("created_at desc").Limit(limit).Offset(offset).Find(&transactions).Error
 	return transactions, err
+}
+
+// SumsForUser aggregates the signed ledger per transaction kind.
+func (r *walletRepo) SumsForUser(ctx context.Context, userID uint) (domain.WalletSums, error) {
+	var rows []struct {
+		Type  domain.TxType
+		Total int64
+	}
+	err := r.db.WithContext(ctx).Model(&domain.Transaction{}).
+		Select("type, SUM(amount) as total").
+		Where("user_id = ?", userID).
+		Group("type").Scan(&rows).Error
+	if err != nil {
+		return domain.WalletSums{}, err
+	}
+	sums := domain.WalletSums{}
+	for _, row := range rows {
+		switch row.Type {
+		case domain.TxCharge:
+			sums.Charge = row.Total
+		case domain.TxSession:
+			sums.Session = row.Total
+		case domain.TxEarning:
+			sums.Earning = row.Total
+		case domain.TxWithdrawal:
+			sums.Withdrawal = row.Total
+		case domain.TxCommission:
+			sums.Commission = row.Total
+		case domain.TxAdjust:
+			sums.Adjust = row.Total
+		}
+	}
+	return sums, nil
 }
 
 func (r *walletRepo) CreateWithdrawal(ctx context.Context, w *domain.Withdrawal) error {

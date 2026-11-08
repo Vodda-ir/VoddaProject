@@ -71,6 +71,15 @@ export function UniversalVisualStyles() {
       [data-app-shell] a {
         -webkit-tap-highlight-color: transparent;
       }
+      /* Lock single-column screen grids to the container width. Without this a
+         nowrap title inside a card can push the implicit grid track past the
+         viewport and horizontally break narrow screens. */
+      .vodda-screen {
+        grid-template-columns: minmax(0, 1fr);
+      }
+      .vodda-screen > * {
+        max-width: 100%;
+      }
       .vodda-button:not(:disabled):hover {
         filter: brightness(.985);
       }

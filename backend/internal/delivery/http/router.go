@@ -165,6 +165,8 @@ func NewRouter(cfg *config.Config, h *Handler, tm *token.Manager, readiness func
 		admin.GET("/settings", h.AdminGetSettings)
 		admin.PUT("/settings", mutationLimiter.Middleware("admin-mutation"), h.AdminUpdateSettings)
 		admin.GET("/users", h.AdminUsers)
+		admin.GET("/users/:id", h.AdminUserDetail)
+		admin.POST("/users/:id/notify", mutationLimiter.Middleware("admin-mutation"), h.AdminNotifyUser)
 		admin.PATCH("/users/:id/active", mutationLimiter.Middleware("admin-mutation"), h.AdminSetUserActive)
 		admin.PATCH("/users/:id/role", mutationLimiter.Middleware("admin-mutation"), h.AdminSetUserRole)
 		admin.POST("/users/:id/wallet-adjust", mutationLimiter.Middleware("admin-mutation"), h.AdminAdjustWallet)

@@ -26,12 +26,57 @@ func (h *Handler) AdminAnalytics(c *gin.Context) {
 }
 
 func (h *Handler) AdminUsers(c *gin.Context) {
-	users, total, err := h.Admin.ListUsers(c, domain.Role(c.Query("role")), c.Query("q"), queryInt(c, "limit", 30), queryInt(c, "offset", 0))
+	filter := domain.UserListFilter{
+		Role:   domain.Role(c.Query("role")),
+		Query:  c.Query("q"),
+		Limit:  queryInt(c, "limit", 30),
+		Offset: queryInt(c, "offset", 0),
+	}
+	switch c.Query("active") {
+	case "true", "1":
+		active := true
+		filter.Active = &active
+	case "false", "0":
+		active := false
+		filter.Active = &active
+	case "":
+	default:
+		fail(c, domain.ErrValidation)
+		return
+	}
+	users, total, err := h.Admin.ListUsers(c, filter)
 	if err != nil {
 		fail(c, err)
 		return
 	}
 	okList(c, users, total)
+}
+
+// AdminUserDetail serves the advanced user drill-down payload.
+func (h *Handler) AdminUserDetail(c *gin.Context) {
+	detail, err := h.Admin.UserDetail(c, paramID(c))
+	if err != nil {
+		fail(c, err)
+		return
+	}
+	ok(c, detail)
+}
+
+// AdminNotifyUser sends an in-app notification on behalf of the platform team.
+func (h *Handler) AdminNotifyUser(c *gin.Context) {
+	var in struct {
+		Title string `json:"title" binding:"required"`
+		Body  string `json:"body" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&in); err != nil {
+		fail(c, domain.ErrValidation)
+		return
+	}
+	if err := h.Admin.NotifyUser(c, paramID(c), in.Title, in.Body); err != nil {
+		fail(c, err)
+		return
+	}
+	ok(c, gin.H{"sent": true})
 }
 
 func (h *Handler) AdminSetUserActive(c *gin.Context) {

@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"sort"
 	"strings"
 	"time"
 
@@ -102,8 +103,8 @@ func (uc *AdminUsecase) Analytics(ctx context.Context, days int) (*domain.Analyt
 }
 
 // ListUsers returns paginated accounts, optionally by role and free-text search.
-func (uc *AdminUsecase) ListUsers(ctx context.Context, role domain.Role, q string, limit, offset int) ([]domain.User, int64, error) {
-	return uc.users.List(ctx, role, q, limit, offset)
+func (uc *AdminUsecase) ListUsers(ctx context.Context, f domain.UserListFilter) ([]domain.User, int64, error) {
+	return uc.users.List(ctx, f)
 }
 
 // SetUserActive toggles account access.
@@ -114,6 +115,138 @@ func (uc *AdminUsecase) SetUserActive(ctx context.Context, id uint, active bool)
 	}
 	u.Active = active
 	return uc.users.Update(ctx, u)
+}
+
+// AdminUserSessionStats summarizes a user's bookings from both angles.
+type AdminUserSessionStats struct {
+	AsLearner   int64 `json:"as_learner"`
+	LearnerDone int64 `json:"learner_done"`
+	AsTeacher   int64 `json:"as_teacher"`
+	TeacherDone int64 `json:"teacher_done"`
+	Upcoming    int64 `json:"upcoming"`
+}
+
+// AdminUserDetail is the drill-down payload of the advanced user panel.
+type AdminUserDetail struct {
+	User         *domain.User          `json:"user"`
+	Stats        AdminUserSessionStats `json:"stats"`
+	Sums         domain.WalletSums     `json:"sums"`
+	Transactions []domain.Transaction  `json:"transactions"`
+	Sessions     []domain.Session      `json:"sessions"`
+	Reviews      []domain.Review       `json:"reviews"`
+	ReviewsCount int64                 `json:"reviews_count"`
+}
+
+// UserDetail assembles the full operational picture of one account: profile,
+// teacher profile, session counters, wallet aggregates and recent activity.
+func (uc *AdminUsecase) UserDetail(ctx context.Context, id uint) (*AdminUserDetail, error) {
+	user, err := uc.users.ByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	detail := &AdminUserDetail{User: user, Sessions: []domain.Session{}, Transactions: []domain.Transaction{}, Reviews: []domain.Review{}}
+
+	learnerSessions, err := uc.sessions.ForLearner(ctx, user.ID, "")
+	if err != nil {
+		return nil, err
+	}
+	detail.Stats.AsLearner = int64(len(learnerSessions))
+	merged := make([]domain.Session, 0, len(learnerSessions)+8)
+	seen := map[uint]bool{}
+	for _, s := range learnerSessions {
+		detail.Stats.LearnerDone += boolToInt(s.Status == domain.SessionDone)
+		detail.Stats.Upcoming += boolToInt(s.Status == domain.SessionPending || s.Status == domain.SessionConfirmed)
+		if !seen[s.ID] {
+			seen[s.ID] = true
+			merged = append(merged, s)
+		}
+	}
+
+	if user.Teacher != nil {
+		teacherSessions, err := uc.sessions.ForTeacher(ctx, user.Teacher.ID, nil)
+		if err != nil {
+			return nil, err
+		}
+		detail.Stats.AsTeacher = int64(len(teacherSessions))
+		for _, s := range teacherSessions {
+			detail.Stats.TeacherDone += boolToInt(s.Status == domain.SessionDone)
+			detail.Stats.Upcoming += boolToInt(s.Status == domain.SessionPending || s.Status == domain.SessionConfirmed)
+			if !seen[s.ID] {
+				seen[s.ID] = true
+				merged = append(merged, s)
+			}
+		}
+
+		reviews, err := uc.reviewRepo.ForTeacher(ctx, user.Teacher.ID)
+		if err != nil {
+			return nil, err
+		}
+		detail.Reviews = reviews
+		detail.ReviewsCount = int64(len(reviews))
+	}
+
+	if uc.reviewRepo != nil {
+		written, err := uc.reviewRepo.ForLearner(ctx, user.ID, 8)
+		if err != nil {
+			return nil, err
+		}
+		// written reviews only enrich the received list when the account has
+		// no teacher profile (otherwise the received list is already shown).
+		if user.Teacher == nil {
+			detail.Reviews = written
+			detail.ReviewsCount = int64(len(written))
+		}
+	}
+
+	sort.Slice(merged, func(i, j int) bool {
+		return merged[i].ScheduledAt.After(merged[j].ScheduledAt)
+	})
+	if len(merged) > 10 {
+		merged = merged[:10]
+	}
+	detail.Sessions = merged
+
+	transactions, err := uc.wallet.Transactions(ctx, user.ID, 12, 0)
+	if err != nil {
+		return nil, err
+	}
+	detail.Transactions = transactions
+
+	if uc.wallet == nil {
+		return detail, nil
+	}
+	sums, err := uc.wallet.SumsForUser(ctx, user.ID)
+	if err != nil {
+		return nil, err
+	}
+	detail.Sums = sums
+	return detail, nil
+}
+
+// NotifyUser delivers an in-app notification written by an administrator.
+func (uc *AdminUsecase) NotifyUser(ctx context.Context, userID uint, title, body string) error {
+	if _, err := uc.users.ByID(ctx, userID); err != nil {
+		return err
+	}
+	title = strings.TrimSpace(title)
+	body = strings.TrimSpace(body)
+	if title == "" || body == "" {
+		return domain.ErrValidation
+	}
+	if len([]rune(title)) > 160 {
+		title = string([]rune(title)[:160])
+	}
+	if len([]rune(body)) > 500 {
+		body = string([]rune(body)[:500])
+	}
+	return uc.notif.Create(ctx, &domain.Notification{UserID: userID, Title: title, Body: body})
+}
+
+func boolToInt(b bool) int64 {
+	if b {
+		return 1
+	}
+	return 0
 }
 
 // ListTeachers returns teachers filtered by status.

@@ -114,7 +114,7 @@ export function TeacherWalletScreen({ config }: { config: UniversalAppConfig }) 
         />
       ) : null}
       {!loading && !error && transactions.length > 0 ? (
-        <div style={{ display: "grid", gap: spacing.sm }}>
+        <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: spacing.sm }}>
           {transactions.map((transaction) => (
             <WalletTransactionCard key={transaction.id} transaction={transaction} />
           ))}
