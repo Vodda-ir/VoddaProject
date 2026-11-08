@@ -31,6 +31,7 @@ type TeacherSessionsWhen = "pending" | "upcoming" | "past";
 type TeacherSession = {
   id: number;
   learnerName: string;
+  learnerAvatar: string;
   service: string;
   scheduledAt: string;
   localDate: string;
@@ -60,6 +61,7 @@ function parseTeacherSession(value: unknown): TeacherSession | null {
   return {
     id,
     learnerName: asString(learner?.name, "قرآن‌آموز"),
+    learnerAvatar: asString(learner?.avatar_url),
     service: asString(row.service ?? row.title, "جلسه"),
     scheduledAt: asString(row.scheduled_at),
     localDate: asString(row.local_date),
@@ -132,7 +134,7 @@ function SessionCard({
     return (
       <Card className="vodda-card--interactive" style={commonCardStyle}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <Avatar name={session.learnerName} size={46} ring={false} />
+          <Avatar name={session.learnerName} src={session.learnerAvatar || undefined} size={46} ring={false} />
           <div style={{ minWidth: 0, flex: 1 }}>
             <strong style={{ display: "block", fontSize: 14.5, fontWeight: 800, color: colors.ink }}>{session.learnerName}</strong>
             <span style={{ display: "block", marginTop: 3, fontSize: 12.5, color: colors.inkSecondary }}>{session.service}</span>
@@ -172,7 +174,7 @@ function SessionCard({
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <Avatar name={session.learnerName} size={46} ring={false} />
+        <Avatar name={session.learnerName} src={session.learnerAvatar || undefined} size={46} ring={false} />
         <div style={{ minWidth: 0 }}>
           <strong style={{ display: "block", fontSize: 14.5, fontWeight: 800, color: colors.ink }}>{session.learnerName}</strong>
           <span style={{ display: "block", marginTop: 3, fontSize: 12.5, color: colors.inkSecondary }}>{session.service}</span>

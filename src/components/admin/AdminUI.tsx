@@ -328,7 +328,7 @@ export function KeyValueRow({ label, children }: { label: string; children: Reac
 
 /** Sums a daily series into window totals + previous-window totals for delta badges. */
 export function windowTotals(series: Array<Record<string, number>>, key: string, days: number) {
-  const values = useMemo(() => series.map((point) => Number(point[key] || 0)), [series, key]);
+  const values = series.map((point) => Number(point[key] || 0));
   const current = values.slice(-days).reduce((sum, value) => sum + value, 0);
   const previous = values.slice(-days * 2, -days).reduce((sum, value) => sum + value, 0);
   return { current, previous };

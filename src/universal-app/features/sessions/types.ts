@@ -4,6 +4,7 @@ export type LearnerSession = {
   id: number;
   teacherId: number;
   teacherName: string;
+  teacherAvatar: string;
   service: string;
   scheduledAt: string;
   localDate: string;
@@ -52,6 +53,7 @@ export function parseLearnerSession(value: unknown): LearnerSession | null {
     id,
     teacherId: integer(row.teacher_id ?? teacher?.id),
     teacherName: text(teacherUser?.name, "استاد"),
+    teacherAvatar: text(teacherUser?.avatar_url),
     service: text(row.service ?? row.title),
     scheduledAt: text(row.scheduled_at),
     localDate: text(row.local_date),

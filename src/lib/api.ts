@@ -123,6 +123,52 @@ export type BecomeTeacherInput = {
   female?: boolean;
 };
 
+export type LearnerAnalyticsPoint = {
+  date: string;
+  sessions: number;
+  done: number;
+  minutes: number;
+  spent: number;
+  charged: number;
+};
+
+export type LearnerAnalytics = {
+  days: number;
+  series: LearnerAnalyticsPoint[];
+  totals: {
+    sessions_total: number;
+    pending: number;
+    confirmed: number;
+    done: number;
+    canceled: number;
+    rated: number;
+    minutes_learned: number;
+    teachers_count: number;
+    spent_total: number;
+    charged_total: number;
+    next_session_at: string | null;
+  };
+  wallet: number;
+  by_service: Array<{ name: string; count: number }> | null;
+  teachers: Array<{
+    id: number;
+    name: string;
+    avatar_url: string;
+    field: string;
+    rating: number;
+    sessions: number;
+    last_at: string | null;
+  }> | null;
+};
+
+export type NotificationItem = {
+  id: number;
+  title: string;
+  body: string;
+  read: boolean;
+  created_at: string;
+};
+
 export type ListResponse<T> = { data: T[]; total: number };
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -190,6 +236,15 @@ export const api = {
     }),
   transactions: (token: string) =>
     request<{ data: Transaction[] }>('/wallet/transactions', { headers: auth(token) }),
+  meAnalytics: (token: string, days = 30) =>
+    request<{ data: LearnerAnalytics }>(`/me/analytics?days=${days}`, { headers: auth(token) }),
+  notifications: (token: string, limit = 20) =>
+    request<{ data: NotificationItem[] }>(`/notifications?limit=${limit}`, { headers: auth(token) }),
+  readNotification: (token: string, id: number) =>
+    request<{ data: { read: boolean } }>(`/notifications/${id}/read`, {
+      method: 'POST',
+      headers: auth(token),
+    }),
   becomeTeacher: (token: string, body: BecomeTeacherInput) =>
     request<{ data: Teacher }>('/me/become-teacher', {
       method: 'POST',

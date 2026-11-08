@@ -10,8 +10,21 @@ export function formatWalletAmount(value: number): string {
 function transactionDate(value: string): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
-  return toFaDigits(`${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`);
+  const label = new Intl.DateTimeFormat("fa-IR", { day: "numeric", month: "short" }).format(date);
+  const time = new Intl.DateTimeFormat("fa-IR", { hour: "2-digit", minute: "2-digit" }).format(date);
+  return toFaDigits(`${label} · ${time}`);
 }
+
+type TxVisual = { icon: "coins" | "video" | "trending" | "download" | "x" | "info"; label: string; ink: string; background: string };
+
+const TX_VISUAL: Record<string, TxVisual> = {
+  charge: { icon: "coins", label: "شارژ کیف پول", ink: colors.olive700, background: colors.olive100 },
+  session: { icon: "video", label: "پرداخت جلسه", ink: "#8d6d1f", background: colors.goldBackground },
+  earning: { icon: "trending", label: "درآمد جلسه", ink: colors.olive700, background: colors.olive100 },
+  withdrawal: { icon: "download", label: "برداشت", ink: colors.clay, background: colors.clayBackground },
+  commission: { icon: "x", label: "کارمزد سامانه", ink: colors.clay, background: colors.clayBackground },
+  adjust: { icon: "info", label: "اصلاحیه حساب", ink: colors.olive700, background: colors.olive100 },
+};
 
 export function WalletTransactionCard({
   transaction,
@@ -21,6 +34,7 @@ export function WalletTransactionCard({
   formatAmount?: (value: number) => string;
 }) {
   const credit = transaction.amount > 0;
+  const visual = TX_VISUAL[transaction.type] ?? TX_VISUAL.adjust;
 
   return (
     <Card
@@ -32,6 +46,7 @@ export function WalletTransactionCard({
         padding: 14,
         borderRadius: 18,
         boxShadow: "0 0 6px rgba(46,54,34,.04)",
+        maxWidth: "100%",
       }}
     >
       <div
@@ -42,12 +57,12 @@ export function WalletTransactionCard({
           flex: "0 0 42px",
           display: "grid",
           placeItems: "center",
-          borderRadius: 12,
-          background: credit ? colors.successBackground : colors.clayBackground,
-          color: credit ? colors.olive700 : colors.clay,
+          borderRadius: 13,
+          background: visual.background,
+          color: visual.ink,
         }}
       >
-        <Icon name={credit ? "arrowDownLeft" : "arrowUpRight"} size={20} stroke={1.9} />
+        <Icon name={visual.icon} size={20} stroke={1.9} />
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <strong
@@ -61,13 +76,12 @@ export function WalletTransactionCard({
             fontWeight: 800,
           }}
         >
-          {transaction.title || transaction.type || "تراکنش"}
+          {transaction.title || visual.label}
         </strong>
-        {transaction.createdAt ? (
-          <span style={{ ...typography.caption, display: "block", marginTop: 2, color: colors.inkMuted }}>
-            {transactionDate(transaction.createdAt)}
-          </span>
-        ) : null}
+        <span style={{ ...typography.caption, display: "block", marginTop: 3, color: colors.inkMuted }}>
+          {visual.label}
+          {transaction.createdAt ? ` · ${transactionDate(transaction.createdAt)}` : ""}
+        </span>
       </div>
       <div style={{ flex: "0 0 auto", textAlign: "left" }}>
         <strong

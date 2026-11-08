@@ -73,7 +73,7 @@ function SessionCard({
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: spacing.md }}>
-        <Avatar name={session.teacherName} size={46} ring />
+        <Avatar name={session.teacherName} src={session.teacherAvatar || undefined} size={46} ring />
         <div style={{ minWidth: 0 }}>
           <strong style={{ ...typography.body, display: "block" }}>{session.teacherName}</strong>
           <span style={{ ...typography.bodySmall, color: colors.inkSecondary }}>{session.service}</span>
