@@ -63,3 +63,4 @@ app/android/key.properties
 
 # bashar (separate project with its own git repo — 1.6G)
 /bashar/
+frontend/tsconfig.tsbuildinfo

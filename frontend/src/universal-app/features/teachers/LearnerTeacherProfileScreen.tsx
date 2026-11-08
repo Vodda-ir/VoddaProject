@@ -136,7 +136,7 @@ export function LearnerTeacherProfileScreen({
     <section className="vodda-screen" style={{ display: "grid", gap: spacing.xl }}>
       <div className="vodda-enter" style={{ display: "grid", justifyItems: "center", textAlign: "center", gap: 4 }}>
         <div style={{ position: "relative" }}>
-          <Avatar name={teacher.name} size={88} ring />
+          <Avatar name={teacher.name} src={teacher.avatarUrl || undefined} size={88} ring />
           {teacher.verified ? (
             <span
               aria-label="استاد تأییدشده"
