@@ -30,7 +30,8 @@ test('contact form persists through the support API', async () => {
 test('public search uses backend field values, pagination and abortable URL state', async () => {
   const search = await read('src/app/search/page.tsx');
   assert.match(search, /آموزش قرآن کریم/);
-  assert.match(search, /مداحی اهل‌بیت/);
+  // فاز فعلی: پلتفرم تخصصاً قرآنی است — موضوع مداحی به‌طور کامل پنهان شده (تصمیم مالک، ۱۴۰۵/۰۸).
+  assert.doesNotMatch(search, /مداح/);
   assert.match(search, /window\.history\.replaceState/);
   assert.match(search, /AbortController/);
   assert.match(search, /totalPages/);
@@ -60,31 +61,29 @@ test('production wallet and session UI do not advertise inactive capabilities', 
 });
 
 test('admin and teacher dashboards contain no fabricated metrics or charts', async () => {
-  const [adminDashboard, teacherDashboard, flutterTeacherDashboard] = await Promise.all([
+  // اپ Flutter حذف شده است — ادعاهای مربوط به آن از این تست خارج شد.
+  const [adminDashboard, teacherDashboard] = await Promise.all([
     read('src/app/panel/admin/page.tsx'),
     read('src/app/panel/teacher/page.tsx'),
-    read('../app/lib/features/teacher/presentation/teacher_dashboard.dart'),
   ]);
   assert.doesNotMatch(adminDashboard, /MiniBars|\[3\.1,\s*3\.9/);
-  assert.match(adminDashboard, /pending_teachers/);
-  assert.match(adminDashboard, /نمودار تاریخی/);
+  // داشبورد جدید از API تحلیلی واقعی و کامپوننت‌های چارت واقعی تغذیه می‌شود.
+  assert.match(adminDashboard, /admin\/analytics/);
+  assert.match(adminDashboard, /AreaChart|BarsChart|DonutChart/);
+  assert.match(adminDashboard, /pendingTeachers/);
   assert.doesNotMatch(teacherDashboard, /MiniBars|4\.8|\[1\.8,\s*2\.4/);
   assert.match(teacherDashboard, /teacher\.reviews/);
-  assert.match(teacherDashboard, /نمودار درآمد/);
-  assert.doesNotMatch(flutterTeacherDashboard, /4\.8|درآمد این ماه|قابلیت تماس|شروع جلسه/);
-  assert.match(flutterTeacherDashboard, /teacherReviews/);
-  assert.match(flutterTeacherDashboard, /localStart/);
+  // داشبورد بازنویسی‌شده به‌جای نمودار ثابت، از PanelMetric با داده واقعی استفاده می‌کند.
+  assert.match(teacherDashboard, /PanelMetric/);
 });
 
 test('teacher panel uses real endpoints and cannot self-approve services', async () => {
-  const [api, services, reviews, withdrawals, flutterServices, flutterRepository, flutterWithdraw] = await Promise.all([
+  // اپ Flutter حذف شده است — ادعاهای مربوط به آن از این تست خارج شد.
+  const [api, services, reviews, withdrawals] = await Promise.all([
     read('src/lib/api.ts'),
     read('src/app/panel/teacher/services/page.tsx'),
     read('src/app/panel/teacher/reviews/page.tsx'),
     read('src/app/panel/teacher/withdrawals/page.tsx'),
-    read('../app/lib/features/teacher/presentation/services_screen.dart'),
-    read('../app/lib/features/teacher/data/teacher_repository.dart'),
-    read('../app/lib/features/teacher/presentation/withdraw_screen.dart'),
   ]);
   assert.match(api, /teacherReviews:[\s\S]*\/teacher\/reviews/);
   assert.match(reviews, /api\.teacherReviews/);
@@ -94,12 +93,6 @@ test('teacher panel uses real endpoints and cannot self-approve services', async
   assert.match(services, /parsedDuration < 10/);
   assert.match(withdrawals, /requestTeacherWithdrawal/);
   assert.match(withdrawals, /\^IR\\d\{24\}\$/);
-  assert.doesNotMatch(flutterRepository, /data\['active'\]\s*=\s*true/);
-  assert.match(flutterServices, /duration < 10/);
-  assert.doesNotMatch(flutterServices, /_Toggle/);
-  assert.match(flutterWithdraw, /card:\s*card/);
-  assert.match(flutterWithdraw, /sheba:\s*sheba/);
-  assert.doesNotMatch(flutterWithdraw, /۲۴ تا ۷۲ ساعت/);
 });
 
 test('web booking consumes backend-authoritative timezone-aware availability', async () => {
@@ -120,13 +113,11 @@ test('web booking consumes backend-authoritative timezone-aware availability', a
 });
 
 test('all session lists render official backend local date and time fields', async () => {
-  const [learner, teacher, admin, flutterLearner, flutterTeacher, flutterRequests, api, router, display] = await Promise.all([
+  // اپ Flutter حذف شده است — ادعاهای مربوط به آن از این تست خارج شد.
+  const [learner, teacher, admin, api, router, display] = await Promise.all([
     read('src/app/panel/user/sessions/page.tsx'),
     read('src/app/panel/teacher/sessions/page.tsx'),
     read('src/app/panel/admin/sessions/page.tsx'),
-    read('../app/lib/features/sessions/presentation/sessions_screen.dart'),
-    read('../app/lib/features/teacher/presentation/teacher_sessions.dart'),
-    read('../app/lib/features/teacher/presentation/requests_screen.dart'),
     read('src/lib/api.ts'),
     read('../backend/internal/delivery/http/router.go'),
     read('../backend/internal/usecase/session_display.go'),
@@ -135,10 +126,6 @@ test('all session lists render official backend local date and time fields', asy
     assert.match(page, /local_date/);
     assert.match(page, /local_start/);
     assert.match(page, /local_end/);
-  }
-  for (const dartSource of [flutterLearner, flutterTeacher, flutterRequests]) {
-    assert.match(dartSource, /localStart/);
-    assert.doesNotMatch(dartSource, /scheduledAt\.hour/);
   }
   assert.match(api, /type SessionListItem/);
   assert.match(router, /learnerSessionDisplaysHandler/);
