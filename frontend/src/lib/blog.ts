@@ -54,24 +54,34 @@ export type ContentBlock =
 /**
  * Parses the CMS content format understood by the renderer:
  * blank lines separate blocks, "## " prefixes a heading and consecutive
- * "- " lines form a bullet list.
+ * "- " lines form a bullet list. A heading may be followed by list items
+ * or paragraphs within the same block without a blank line.
  */
 export function parseContent(content: string): ContentBlock[] {
   const blocks: ContentBlock[] = [];
-  const chunks = content.split(/\n\s*\n/);
-  for (const chunk of chunks) {
+  for (const chunk of content.split(/\n\s*\n/)) {
     const lines = chunk.split('\n').map((line) => line.trim()).filter(Boolean);
     if (!lines.length) continue;
-    if (lines.every((line) => line.startsWith('- '))) {
-      blocks.push({ kind: 'list', items: lines.map((line) => line.slice(2).trim()) });
-      continue;
+    let index = 0;
+    while (index < lines.length) {
+      const line = lines[index];
+      if (line.startsWith('## ')) {
+        blocks.push({ kind: 'heading', text: line.slice(3).trim() });
+        index += 1;
+        continue;
+      }
+      if (line.startsWith('- ')) {
+        const items: string[] = [];
+        while (index < lines.length && lines[index].startsWith('- ')) {
+          items.push(lines[index].slice(2).trim());
+          index += 1;
+        }
+        blocks.push({ kind: 'list', items });
+        continue;
+      }
+      blocks.push({ kind: 'paragraph', text: line });
+      index += 1;
     }
-    if (lines[0].startsWith('## ')) {
-      blocks.push({ kind: 'heading', text: lines[0].slice(3).trim() });
-      for (const line of lines.slice(1)) blocks.push({ kind: 'paragraph', text: line });
-      continue;
-    }
-    blocks.push({ kind: 'paragraph', text: lines.join(' ') });
   }
   return blocks;
 }
