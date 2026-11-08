@@ -18,6 +18,7 @@ import {
   spacing,
   typography,
 } from "../../ui";
+import { TierBadge } from "./TierBadge";
 import { messageOf } from "../../ui/errorMessage";
 import { formatWalletAmount } from "../wallet/WalletTransactionCard";
 import { getTeacherDetail } from "./api";
@@ -137,9 +138,9 @@ export function LearnerTeacherProfileScreen({
       <div className="vodda-enter" style={{ display: "grid", justifyItems: "center", textAlign: "center", gap: 4 }}>
         <div style={{ position: "relative" }}>
           <Avatar name={teacher.name} src={teacher.avatarUrl || undefined} size={88} ring />
-          {teacher.verified ? (
+          {teacher.tier ? (
             <span
-              aria-label="استاد تأییدشده"
+              aria-label="نشان درجه استاد"
               style={{
                 position: "absolute",
                 insetInlineEnd: -2,
@@ -150,15 +151,17 @@ export function LearnerTeacherProfileScreen({
                 placeItems: "center",
                 border: "3px solid " + colors.sand50,
                 borderRadius: "50%",
-                color: colors.surface,
-                background: colors.olive600,
+                background: colors.sand50,
               }}
             >
-              <Icon name="check" size={13} stroke={2.4} />
+              <TierBadge tier={teacher.tier} size={17} />
             </span>
           ) : null}
         </div>
-        <h2 style={{ fontSize: 20, fontWeight: 800, margin: "8px 0 0", color: colors.ink }}>{teacher.name}</h2>
+        <h2 style={{ fontSize: 20, fontWeight: 800, margin: "8px 0 0", color: colors.ink, display: "inline-flex", alignItems: "center", gap: 6 }}>
+          {teacher.name}
+          <TierBadge tier={teacher.tier} size={16} />
+        </h2>
         <p style={{ fontSize: 13, fontWeight: 600, margin: 0, color: colors.olive600 }}>
           {teacher.tag || teacher.field || "استاد وُدّا"}
         </p>
@@ -180,7 +183,7 @@ export function LearnerTeacherProfileScreen({
 
       <section>
         <h3 style={{ fontSize: 16, fontWeight: 800, margin: 0, color: colors.ink }}>دربارهٔ استاد</h3>
-        <p style={{ fontSize: 14, lineHeight: 1.7, margin: "8px 0 0", color: colors.inkSecondary }}>
+        <p style={{ fontSize: 14, lineHeight: 1.9, margin: "8px 0 0", color: colors.inkSecondary, whiteSpace: "pre-line" }}>
           {teacher.bio || "اطلاعاتی ثبت نشده است."}
         </p>
       </section>

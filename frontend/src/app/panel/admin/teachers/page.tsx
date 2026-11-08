@@ -209,7 +209,7 @@ export default function AdminTeachers() {
       <PanelPageHeader
         eyebrow="مدیریت محتوا و اعتماد"
         title="مدیریت اساتید"
-        description="بررسی درخواست استادی، کنترل نشان درجه و تیک تأیید — نشان‌ها مستقیماً در پروفایل عمومی استاد دیده می‌شود."
+        description="بررسی درخواست استادی، کنترل نشان درجه و تأیید حساب — مهر رنگی درجه مستقیماً روی آواتار پروفایل عمومی استاد دیده می‌شود."
         actions={
           <>
             <PanelButton
@@ -397,13 +397,13 @@ export default function AdminTeachers() {
               <section style={{ marginTop: 16, padding: 14, border: '1px solid var(--sand-150)', borderRadius: 15, background: 'var(--surface-warm)' }}>
                 <strong style={{ display: 'block', marginBottom: 3, fontSize: 12.5 }}>نشان‌های عمومی</strong>
                 <p style={{ margin: '0 0 12px', color: 'var(--ink-3)', fontSize: 10.5, lineHeight: 1.9 }}>
-                  تیک تأیید و درجه استاد در پروفایل عمومی و نتایج جست‌وجو نمایش داده می‌شود.
+                  مهر رنگی درجه استاد روی آواتار پروفایل عمومی و نتایج جست‌وجو نمایش داده می‌شود؛ اساتید بدون درجه هیچ مهر و تیکی ندارند.
                 </p>
 
                 <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 12, cursor: 'pointer' }}>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 12 }}>
                     <Icon name="checkCircle" size={16} style={{ color: selected.verified ? 'var(--olive-600)' : 'var(--ink-4)' }} />
-                    استاد تأییدشده (تیک آبی اعتماد)
+                    استاد تأییدشده (تأیید حساب استاد)
                   </span>
                   <button
                     type="button"

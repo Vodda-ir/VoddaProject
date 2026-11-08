@@ -44,6 +44,8 @@ export type Teacher = {
   female: boolean;
   verified: boolean;
   available?: boolean;
+  /** درجه استاد: "" | "international" (درجه ۱) | "grade2" | "grade3" */
+  tier?: '' | 'international' | 'grade2' | 'grade3';
   status?: 'pending' | 'approved' | 'rejected';
   rating: number;
   reviews: number;

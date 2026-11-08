@@ -208,7 +208,7 @@ function SearchTeacherCard({ teacher }: { teacher: Teacher }) {
   return (
     <Link href={`/teachers/${teacher.id}`} className="web-search-teacher-card">
       <div className="web-search-teacher-top">
-        <Avatar size={58} ring verified={teacher.verified} imageUrl={fullUrl(teacher.user?.avatar_url)} />
+        <Avatar size={58} ring tier={teacher.tier} imageUrl={fullUrl(teacher.user?.avatar_url)} />
         <div style={{ minWidth: 0, flex: 1 }}>
           <strong>{name}</strong>
           <span>{teacher.tag || teacher.field}</span>

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { CSSProperties, ReactNode } from 'react';
 import { Icon } from '../Icon';
+import { TierSeal, tierOf } from './tier';
 
 export function GeoPattern({ color = '#fff', opacity = 0.08 }: { color?: string; opacity?: number }) {
   const id = 'wgeo' + color.replace(/[^a-z0-9]/gi, '');
@@ -76,16 +77,19 @@ export function WebBtn({
 export function Avatar({
   size = 48,
   ring = false,
-  verified = false,
+  tier,
   emoji,
   imageUrl,
 }: {
   size?: number;
   ring?: boolean;
-  verified?: boolean;
+  /** درجه استاد — مهر رنگی درجه جای تیک سبز ثابت می‌نشیند؛ بدون درجه هیچ نشانی نیست. */
+  tier?: string | null;
   emoji?: string;
   imageUrl?: string;
 }) {
+  const seal = tierOf(tier);
+  const sealSize = Math.max(13, Math.round(size * 0.36));
   return (
     <div style={{ position: 'relative', flexShrink: 0 }}>
       <div
@@ -110,24 +114,23 @@ export function Avatar({
           <Icon name="user" size={size * 0.55} stroke={1.6} style={{ color: 'var(--olive-500)' }} />
         )}
       </div>
-      {verified && (
+      {seal && (
         <span
           style={{
             position: 'absolute',
             insetInlineEnd: -2,
             bottom: -2,
-            width: size * 0.4,
-            height: size * 0.4,
+            width: sealSize,
+            height: sealSize,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            border: '2px solid var(--surface)',
+            border: `2px solid var(--surface)`,
             borderRadius: '50%',
-            color: '#fff',
-            background: 'var(--olive-600)',
+            background: 'var(--surface)',
           }}
         >
-          <Icon name="check" size={size * 0.24} stroke={3} />
+          <TierSeal tier={seal} size={sealSize - 4} />
         </span>
       )}
     </div>

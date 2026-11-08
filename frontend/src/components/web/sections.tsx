@@ -241,7 +241,7 @@ function AppPreview() {
             <span style={{ color: 'var(--olive-600)', fontSize: 9.5 }}>مشاهده همه</span>
           </div>
           <div className="landing-mini-teacher">
-            <Avatar size={43} verified />
+            <Avatar size={43} tier="international" />
             <div style={{ minWidth: 0, flex: 1 }}>
               <strong style={{ display: 'block', fontSize: 11.5 }}>استاد وُدّا</strong>
               <span style={{ display: 'block', marginTop: 2, color: 'var(--olive-600)', fontSize: 9.5 }}>آموزش قرآن کریم</span>
@@ -271,7 +271,7 @@ function AppPreview() {
 
       <div className="landing-floating-card landing-floating-card-top">
         <span className="landing-floating-icon"><Icon name="checkCircle" size={18} /></span>
-        <span><strong>استاد تأییدشده</strong><small>پروفایل‌های بررسی‌شده</small></span>
+        <span><strong>استاد درجه‌دار</strong><small>مهر بین‌المللی، درجه ۲ و درجه ۳</small></span>
       </div>
       <div className="landing-floating-card landing-floating-card-bottom">
         <span className="landing-floating-icon gold"><Icon name="calendar" size={18} /></span>
@@ -402,7 +402,7 @@ function WebTeacherCard({ teacher }: { teacher: Teacher }) {
   return (
     <article className="landing-teacher-card">
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <Avatar size={54} ring verified={teacher.verified} imageUrl={fullUrl(teacher.user?.avatar_url)} />
+        <Avatar size={54} ring tier={teacher.tier} imageUrl={fullUrl(teacher.user?.avatar_url)} />
         <div style={{ minWidth: 0, flex: 1 }}>
           <strong className="landing-teacher-name">{name}</strong>
           <span className="landing-teacher-tag">{teacher.tag || teacher.field}</span>

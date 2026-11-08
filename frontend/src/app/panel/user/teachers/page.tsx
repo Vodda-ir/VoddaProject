@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { faDigits } from '@/components/PanelShell';
 import { Avatar } from '@/components/web/ui';
+import { TierChip } from '@/components/web/tier';
 import { Icon } from '@/components/Icon';
 import {
   PanelButton,
@@ -84,13 +85,13 @@ export default function UserTeachersPage() {
             {teachers.map((teacher) => (
               <article className="usr-teacher-card" key={teacher.id}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
-                  <Avatar size={48} ring verified={teacher.verified} imageUrl={fullUrl(teacher.user?.avatar_url)} />
+                  <Avatar size={48} ring tier={teacher.tier} imageUrl={fullUrl(teacher.user?.avatar_url)} />
                   <div style={{ minWidth: 0, flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       <strong style={{ fontSize: 13.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {teacher.user?.name || 'استاد وُدّا'}
                       </strong>
-                      {teacher.verified && <span className="adm-badge" data-tone="olive">تأییدشده</span>}
+                      <TierChip tier={teacher.tier} size={10} />
                     </div>
                     <div style={{ fontSize: 11, color: 'var(--olive-700)', fontWeight: 600, marginTop: 2 }}>
                       {teacher.tag || teacher.field || 'آموزش قرآن'}

@@ -103,7 +103,7 @@ export default function TeacherDashboard() {
         background: 'linear-gradient(120deg,#fff,var(--olive-50))',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
-          <Avatar size={58} ring verified={Boolean(teacher?.verified)} imageUrl={fullUrl(teacher?.user?.avatar_url)} />
+          <Avatar size={58} ring tier={teacher?.tier} imageUrl={fullUrl(teacher?.user?.avatar_url)} />
           <div style={{ minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap' }}>
               <strong style={{ fontSize: 16 }}>{teacher?.user?.name || 'استاد وُدّا'}</strong>

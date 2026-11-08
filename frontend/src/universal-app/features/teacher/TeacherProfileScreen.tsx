@@ -23,6 +23,7 @@ import {
   typography,
 } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
+import { TierBadge } from "../teachers/TierBadge";
 import { formatWalletAmount } from "../wallet/WalletTransactionCard";
 
 type UserProfile = {
@@ -43,6 +44,7 @@ type TeacherProfile = {
   available: boolean;
   status: string;
   verified: boolean;
+  tier: string;
   rating: number;
   reviews: number;
   sessions: number;
@@ -93,6 +95,7 @@ function parseTeacher(value: unknown): TeacherProfile | null {
     available: record.available === true,
     status: asString(record.status) || "pending",
     verified: record.verified === true,
+    tier: asString(record.tier),
     rating: asNumber(record.rating),
     reviews: asNumber(record.reviews),
     sessions: asNumber(record.sessions),
@@ -260,9 +263,9 @@ export function TeacherProfileScreen({ config }: { config: UniversalAppConfig })
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <div style={{ position: "relative", flex: "0 0 auto" }}>
             <Avatar name={user.name} src={user.avatarUrl} size={62} ring />
-            {teacher.verified ? (
+            {teacher.tier ? (
               <span
-                aria-label="استاد تأییدشده"
+                aria-label="نشان درجه استاد"
                 style={{
                   position: "absolute",
                   insetInlineEnd: -2,
@@ -273,11 +276,10 @@ export function TeacherProfileScreen({ config }: { config: UniversalAppConfig })
                   placeItems: "center",
                   border: "3px solid " + colors.surface,
                   borderRadius: "50%",
-                  color: colors.surface,
-                  background: colors.olive600,
+                  background: colors.surface,
                 }}
               >
-                <Icon name="check" size={12} stroke={2.4} />
+                <TierBadge tier={teacher.tier} size={16} />
               </span>
             ) : null}
           </div>
