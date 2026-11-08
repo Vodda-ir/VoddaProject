@@ -185,6 +185,86 @@ export type NotificationItem = {
 
 export type ListResponse<T> = { data: T[]; total: number };
 
+// ── فراخوان اساتید (dispatch) types ──
+export type OfficialServiceItem = {
+  id: number;
+  category: string;
+  title: string;
+  description: string;
+  icon: string;
+  sort_order?: number;
+};
+
+export type CatalogResponse = {
+  categories: Array<{ category: string; services: Array<{ id: number; title: string; description: string; icon: string }> }>;
+};
+
+export type DispatchCandidateItem = {
+  offer_id: number;
+  responded_at: string;
+  service_id: number;
+  duration: number;
+  price: number;
+  teacher_id: number;
+  name: string;
+  avatar_url: string;
+  tag: string;
+  field: string;
+  city: string;
+  level: string;
+  tier: string;
+  female: boolean;
+  rating: number;
+  reviews: number;
+  sessions: number;
+  bio: string;
+};
+
+export type DispatchCallItem = {
+  id: number;
+  learner_id: number;
+  official_service_id: number;
+  topic_title: string;
+  topic_icon: string;
+  note: string;
+  flexible: boolean;
+  scheduled_at?: string | null;
+  status: 'searching' | 'matched' | 'canceled' | 'expired';
+  matched_teacher_id?: number | null;
+  session_id?: number | null;
+  expires_at: string;
+  offer_count?: number;
+};
+
+export type DispatchCallViewData = {
+  call: DispatchCallItem | null;
+  candidates: DispatchCandidateItem[];
+};
+
+export type DispatchOfferItem = {
+  id: number;
+  call_id: number;
+  teacher_id: number;
+  status: 'waiting' | 'chosen' | 'released' | 'declined';
+  service_id: number;
+  service_duration: number;
+  service_price: number;
+  responded_at: string;
+  call?: DispatchCallItem;
+};
+
+export type TeacherInboxData = {
+  calls: Array<{ call: DispatchCallItem; offer_id?: number; accepted?: boolean }>;
+  offers: DispatchOfferItem[];
+};
+
+export type BookResultShape = {
+  session?: SessionListItem;
+  redirect_url?: string;
+  res_num?: string;
+  paid_via_wallet?: boolean;
+};
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
     ...init,
@@ -361,6 +441,54 @@ export const api = {
     request<{ data: Record<string, unknown> }>('/admin/dashboard', { headers: auth(token) }),
   adminPendingTeachers: (token: string) =>
     request<ListResponse<Teacher>>('/admin/teachers?status=pending', { headers: auth(token) }),
+
+  // ── فراخوان اساتید (dispatch) ──
+  catalog: () => request<{ data: CatalogResponse }>('/catalog/services'),
+  dispatchCurrent: (token: string) =>
+    request<{ data: DispatchCallViewData }>('/dispatch/calls/current', { headers: auth(token) }),
+  dispatchCreate: (
+    token: string,
+    body: { official_service_id: number; note?: string; scheduled_at?: string; flexible?: boolean },
+  ) =>
+    request<{ data: DispatchCallViewData }>('/dispatch/calls', {
+      method: 'POST',
+      headers: auth(token),
+      body: JSON.stringify(body),
+    }),
+  dispatchChoose: (token: string, callId: number, offerId: number, paymentMethod: 'wallet' | 'gateway') =>
+    request<{ data: BookResultShape }>(`/dispatch/calls/${callId}/choose`, {
+      method: 'POST',
+      headers: auth(token),
+      body: JSON.stringify({ offer_id: offerId, payment_method: paymentMethod }),
+    }),
+  dispatchDecline: (token: string, callId: number, offerId: number) =>
+    request<{ data: DispatchCallViewData }>(`/dispatch/calls/${callId}/decline`, {
+      method: 'POST',
+      headers: auth(token),
+      body: JSON.stringify({ offer_id: offerId }),
+    }),
+  dispatchCancel: (token: string, callId: number) =>
+    request<{ data: { canceled: boolean } }>(`/dispatch/calls/${callId}/cancel`, {
+      method: 'POST',
+      headers: auth(token),
+    }),
+  dispatchInbox: (token: string) =>
+    request<{ data: TeacherInboxData }>('/teacher/dispatch/inbox', { headers: auth(token) }),
+  dispatchAccept: (token: string, callId: number) =>
+    request<{ data: DispatchOfferItem }>(`/teacher/dispatch/calls/${callId}/accept`, {
+      method: 'POST',
+      headers: auth(token),
+    }),
+  dispatchRejectCall: (token: string, callId: number) =>
+    request<{ data: { rejected: boolean } }>(`/teacher/dispatch/calls/${callId}/reject`, {
+      method: 'POST',
+      headers: auth(token),
+    }),
+  dispatchWithdraw: (token: string, offerId: number) =>
+    request<{ data: { withdrawn: boolean } }>(`/teacher/dispatch/offers/${offerId}/withdraw`, {
+      method: 'POST',
+      headers: auth(token),
+    }),
 };
 
 export function toman(n: number): string {

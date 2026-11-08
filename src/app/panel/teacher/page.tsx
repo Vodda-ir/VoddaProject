@@ -179,6 +179,7 @@ export default function TeacherDashboard() {
         <div style={{ display: 'grid', gap: 16, alignContent: 'start' }}>
           <PanelSection title="دسترسی سریع" description="کارهای پرتکرار مدیریت آموزش.">
             <div className="ops-quick-actions">
+              <TeacherQuickAction href="/panel/teacher/dispatch" icon="bell" label="فراخوان‌های زنده" />
               <TeacherQuickAction href="/panel/teacher/services" icon="book" label="مدیریت خدمات" />
               <TeacherQuickAction href="/panel/teacher/worktimes" icon="clock" label="زمان‌های کاری" />
               <TeacherQuickAction href="/panel/teacher/sessions" icon="calendar" label="جلسات" />

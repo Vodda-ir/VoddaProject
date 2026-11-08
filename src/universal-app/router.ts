@@ -8,11 +8,13 @@ export type AppRouteName =
   | "search"
   | "teacher"
   | "book"
+  | "dispatch"
   | "sessions"
   | "wallet"
   | "profile"
   | "profile-edit"
   | "teacher-home"
+  | "teacher-dispatch"
   | "teacher-requests"
   | "teacher-sessions"
   | "teacher-services"
@@ -33,11 +35,13 @@ export const appRoutePaths = {
   home: "/",
   login: "/login",
   search: "/search",
+  dispatch: "/dispatch",
   sessions: "/sessions",
   wallet: "/wallet",
   profile: "/profile",
   "profile-edit": "/profile/edit",
   "teacher-home": "/t",
+  "teacher-dispatch": "/t/dispatch",
   "teacher-requests": "/t/requests",
   "teacher-sessions": "/t/sessions",
   "teacher-services": "/t/services",

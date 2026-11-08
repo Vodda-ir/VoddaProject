@@ -12,6 +12,7 @@ export type TeacherSearchParams = {
   field?: string;
   city?: string;
   female?: boolean;
+  officialServiceId?: number;
   limit?: number;
   offset?: number;
 };
@@ -31,6 +32,9 @@ export async function searchTeachers(runtime: PlatformRuntime, params: TeacherSe
   if (field) search.set("field", field);
   if (city) search.set("city", city);
   if (typeof params.female === "boolean") search.set("female", String(params.female));
+  if (params.officialServiceId && params.officialServiceId > 0) {
+    search.set("official_service_id", String(params.officialServiceId));
+  }
   search.set("limit", String(Math.min(100, Math.max(1, params.limit ?? 50))));
   search.set("offset", String(Math.max(0, params.offset ?? 0)));
 

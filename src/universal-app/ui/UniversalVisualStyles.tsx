@@ -166,6 +166,35 @@ export function UniversalVisualStyles() {
       .vodda-sheet {
         animation: vodda-sheet-in 190ms ease-out;
       }
+      /* فراخوان — live broadcast animations */
+      .vodda-dispatch-pulse {
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.92);
+        position: relative;
+      }
+      .vodda-dispatch-pulse::after {
+        content: "";
+        position: absolute;
+        inset: -7px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.45);
+        animation: vodda-pulse 1.8s ease-out infinite;
+      }
+      .vodda-dispatch-radar {
+        animation: vodda-radar 2.1s ease-out infinite;
+      }
+      @keyframes vodda-radar {
+        0% { box-shadow: 0 0 0 0 rgba(94, 110, 67, 0.32); }
+        70% { box-shadow: 0 0 0 18px rgba(94, 110, 67, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(94, 110, 67, 0); }
+      }
+      @keyframes vodda-live-dot {
+        0% { box-shadow: 0 0 0 0 rgba(94, 110, 67, 0.45); }
+        70% { box-shadow: 0 0 0 7px rgba(94, 110, 67, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(94, 110, 67, 0); }
+      }
       @keyframes vodda-spin { to { transform: rotate(360deg); } }
       @keyframes vodda-fade-in { from { opacity: 0; } to { opacity: 1; } }
       @keyframes vodda-dialog-in {
@@ -186,7 +215,9 @@ export function UniversalVisualStyles() {
         .vodda-spinner,
         .vodda-loader-orbit,
         .vodda-skeleton::after,
-        .vodda-live-dot::after {
+        .vodda-live-dot::after,
+        .vodda-dispatch-pulse::after,
+        .vodda-dispatch-radar {
           animation: none !important;
           transition: none !important;
         }

@@ -325,6 +325,55 @@ function SearchPill({ config }: { config: UniversalAppConfig }) {
   );
 }
 
+function DispatchBanner({ config }: { config: UniversalAppConfig }) {
+  return (
+    <button
+      type="button"
+      onClick={() => navigateApp("/dispatch", config)}
+      className="vodda-card vodda-card--interactive vodda-tappable vodda-enter"
+      aria-label="فراخوان استاد — اسنپ‌مانند"
+      style={{
+        width: "100%",
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        padding: "14px 16px",
+        borderRadius: 20,
+        border: `1px solid ${colors.olive200}`,
+        background: "linear-gradient(135deg, #f2f5ea 0%, #ffffff 62%)",
+        boxShadow: shadows.sm,
+        color: colors.ink,
+        cursor: "pointer",
+        fontFamily: typography.fontFamily,
+        textAlign: "right",
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
+      <span
+        aria-hidden="true"
+        style={{
+          display: "grid", placeItems: "center", width: 42, height: 42,
+          borderRadius: 14, flex: "0 0 42px",
+          background: colors.olive600, color: colors.surface,
+          boxShadow: "0 8px 18px rgba(94,110,67,.28)",
+        }}
+      >
+        <Icon name="bell" size={20} stroke={1.9} />
+      </span>
+      <span style={{ flex: 1, minWidth: 0 }}>
+        <strong style={{ display: "block", fontSize: 14, fontWeight: 800 }}>
+          فراخوان استاد <span style={{ color: colors.goldDark }}>جدید</span>
+        </strong>
+        <span style={{ display: "block", fontSize: 11.5, color: colors.inkMuted, marginTop: 2, lineHeight: 1.7 }}>
+          موضوعت را بگو؛ استادها مسابقه بدهند، تو انتخاب کن
+        </span>
+      </span>
+      <Icon name="chevronL" size={16} style={{ flex: "0 0 auto", color: colors.olive700 }} />
+    </button>
+  );
+}
+
 function OnboardingChecklist({ user, config }: { user: AuthUser; config: UniversalAppConfig }) {
   const profileDone = Boolean(user.avatar_url && user.city?.trim() && user.bio?.trim());
   const steps = [
@@ -1112,6 +1161,7 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
 
       <VerseStrip />
       <SearchPill config={config} />
+      <DispatchBanner config={config} />
 
       {sessionArea === "loading" ? (
         <Skeleton style={{ height: 120, borderRadius: radii.xl }} />

@@ -5,11 +5,13 @@ import { createUniversalAppConfig, type UniversalAppConfig } from "./config";
 import { LoginScreen, SessionBootstrap } from "./features/auth/AuthExperience";
 import { ProfileCompletionScreen } from "./features/auth/ProfileCompletionScreen";
 import { LearnerBookingScreen } from "./features/booking/LearnerBookingScreen";
+import { LearnerDispatchScreen } from "./features/dispatch/LearnerDispatchScreen";
 import { LearnerHomeScreen } from "./features/home/LearnerHomeScreen";
 import { LearnerProfileScreen } from "./features/profile/LearnerProfileScreen";
 import { LearnerSearchScreen } from "./features/search/LearnerSearchScreen";
 import { LearnerSessionsScreen } from "./features/sessions/LearnerSessionsScreen";
 import { TeacherDashboardScreen } from "./features/teacher/TeacherDashboardScreen";
+import { TeacherDispatchScreen } from "./features/teacher/TeacherDispatchScreen";
 import { TeacherProfileScreen } from "./features/teacher/TeacherProfileScreen";
 import { TeacherReviewsScreen } from "./features/teacher/TeacherReviewsScreen";
 import { TeacherServicesScreen } from "./features/teacher/TeacherServicesScreen";
@@ -36,11 +38,13 @@ const routeTitles: Record<AppRouteName, string> = {
   search: "جستجوی استاد",
   teacher: "پروفایل استاد",
   book: "رزرو جلسه",
+  dispatch: "فراخوان استاد",
   sessions: "جلسات من",
   wallet: "کیف پول",
   profile: "پروفایل",
   "profile-edit": "ویرایش پروفایل",
   "teacher-home": "داشبورد استاد",
+  "teacher-dispatch": "فراخوان‌های زنده",
   "teacher-requests": "درخواست‌های جلسه",
   "teacher-sessions": "جلسات استاد",
   "teacher-services": "خدمات استاد",
@@ -54,6 +58,7 @@ const routeTitles: Record<AppRouteName, string> = {
 
 const teacherRoutes = new Set<AppRouteName>([
   "teacher-home",
+  "teacher-dispatch",
   "teacher-requests",
   "teacher-sessions",
   "teacher-services",
@@ -124,6 +129,8 @@ function UniversalAppContent({ config, runtime }: { config: UniversalAppConfig; 
     <LearnerTeacherProfileScreen teacherId={route.params.id ?? ""} config={config} />
   ) : route.name === "book" ? (
     <LearnerBookingScreen teacherId={route.params.id ?? ""} config={config} />
+  ) : route.name === "dispatch" ? (
+    <LearnerDispatchScreen config={config} />
   ) : route.name === "sessions" ? (
     <LearnerSessionsScreen />
   ) : route.name === "wallet" ? (
@@ -132,6 +139,8 @@ function UniversalAppContent({ config, runtime }: { config: UniversalAppConfig; 
     <LearnerProfileScreen config={config} />
   ) : route.name === "teacher-home" ? (
     <TeacherDashboardScreen config={config} />
+  ) : route.name === "teacher-dispatch" ? (
+    <TeacherDispatchScreen config={config} />
   ) : route.name === "teacher-requests" ? (
     <TeacherSessionsScreen mode="requests" />
   ) : route.name === "teacher-sessions" ? (

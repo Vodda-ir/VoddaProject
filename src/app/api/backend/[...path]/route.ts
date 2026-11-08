@@ -24,6 +24,8 @@ function isPublicRequest(method: string, path: string[]): boolean {
   if (method === 'GET' && path[0] === 'teachers') return true;
   if (method === 'GET' && path[0] === 'blog') return true;
   if (method === 'GET' && path[0] === 'settings' && path.length === 1) return true;
+  // فهرست رسمی خدمات (کاتالوگ موضوعات) عمومی است — صفحه فراخوان و جستجو بدون ورود هم آن را می‌بینند.
+  if (method === 'GET' && path[0] === 'catalog' && path[1] === 'services' && path.length === 2) return true;
   return method === 'POST' && path[0] === 'support' && path[1] === 'messages' && path.length === 2;
 }
 
