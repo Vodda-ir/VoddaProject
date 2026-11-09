@@ -1,0 +1,629 @@
+    60→    60→          </div>
+    61→    61→        </>
+    62→    62→      )}
+    63→    63→    </div>
+    64→    64→  );
+    65→    65→}
+    66→    66→
+    67→    67→export function Nav() {
+    68→    68→  const [user, setUser] = useState<{ name: string; role: string; avatar_url?: string; hasTeacherProfile: boolean } | null>(null);
+    69→    69→  const [mobileOpen, setMobileOpen] = useState(false);
+    70→    70→  const [announcement, setAnnouncement] = useState<{ text: string; link: string } | null>(null);
+    71→    71→
+    72→    72→  useEffect(() => {
+    73→    73→    const controller = new AbortController();
+    74→    74→    fetch('/api/backend/me', { cache: 'no-store', credentials: 'same-origin', signal: controller.signal })
+    75→    75→      .then((response) => (response.ok ? response.json() : null))
+    76→    76→      .then((body) => {
+    77→    77→        if (body?.data) {
+    78→    78→          setUser({
+    79→    79→            name: body.data.name || 'کاربر',
+    80→    80→            role: body.data.role || 'learner',
+    81→    81→            avatar_url: body.data.avatar_url,
+    82→    82→            hasTeacherProfile: Boolean(body.data.teacher?.id),
+    83→    83→          });
+    84→    84→        }
+    85→    85→      })
+    86→    86→      .catch(() => undefined);
+    87→    87→    return () => controller.abort();
+    88→    88→  }, []);
+    89→    89→
+    90→    90→  useEffect(() => {
+    91→    91→    let cancelled = false;
+    92→    92→    try {
+    93→    93→      if (sessionStorage.getItem('vodda-announcement-dismissed') === '1') return;
+    94→    94→    } catch { /* storage unavailable */ }
+    95→    95→    fetch('/api/backend/settings', { cache: 'no-store' })
+    96→    96→      .then((response) => (response.ok ? response.json() : null))
+    97→    97→      .then((body) => {
+    98→    98→        if (cancelled || !body?.data?.settings) return;
+    99→    99→        const settings = body.data.settings as Record<string, string>;
+   100→   100→        if (settings.announcement_on === 'true' && settings.announcement_text?.trim()) {
+   101→   101→          setAnnouncement({ text: settings.announcement_text.trim(), link: settings.announcement_link || '' });
+   102→   102→        }
+   103→   103→      })
+   104→   104→      .catch(() => undefined);
+   105→   105→    return () => {
+   106→   106→      cancelled = true;
+   107→   107→    };
+   108→   108→  }, []);
+   109→   109→
+   110→   110→  const links = [
+   111→   111→    ['خانه', '/'],
+   112→   112→    ['اساتید', '/#teachers'],
+   113→   113→    ['جستجو', '/search'],
+   114→   114→    ['فراخوان استاد', '/dispatch'],
+   115→   115→    ['نحوهٔ کار', '/#how'],
+   116→   116→    ['دربارهٔ وُدّا', '/about'],
+   117→   117→  ];
+   118→   118→
+   119→   119→  return (
+   120→   120→    <header className="public-nav">
+   121→   121→      {announcement && (
+   122→   122→        <div
+   123→   123→          className="public-announcement"
+   124→   124→          role="status"
+   125→   125→          style={{
+   126→   126→            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+   127→   127→            padding: '9px 40px 9px 14px', position: 'relative',
+   128→   128→            background: 'linear-gradient(90deg, var(--olive-700), var(--olive-600))',
+   129→   129→            color: '#fff', fontSize: 12.5, textAlign: 'center',
+   130→   130→          }}
+   131→   131→        >
+   132→   132→          <Icon name="bell" size={14} />
+   133→   133→          {announcement.link ? (
+   134→   134→            <a href={announcement.link} style={{ color: '#fff', fontWeight: 700, textDecoration: 'underline', textUnderlineOffset: 3 }}>
+   135→   135→              {announcement.text}
+   136→   136→            </a>
+   137→   137→          ) : (
+   138→   138→            <strong style={{ fontWeight: 700 }}>{announcement.text}</strong>
+   139→   139→          )}
+   140→   140→          <button
+   141→   141→            type="button"
+   142→   142→            aria-label="بستن اعلان"
+   143→   143→            onClick={() => {
+   144→   144→              setAnnouncement(null);
+   145→   145→              try { sessionStorage.setItem('vodda-announcement-dismissed', '1'); } catch { /* ignore */ }
+   146→   146→            }}
+   147→   147→            style={{ position: 'absolute', insetInlineEnd: 10, top: '50%', transform: 'translateY(-50%)', border: 0, background: 'rgba(255,255,255,.16)', color: '#fff', width: 24, height: 24, borderRadius: 999, display: 'grid', placeItems: 'center', cursor: 'pointer' }}
+   148→   148→          >
+   149→   149→            <Icon name="x" size={13} />
+   150→   150→          </button>
+   151→   151→        </div>
+   152→   152→      )}
+   153→   153→      <div className="public-container public-nav-inner">
+   154→   154→        <Link href="/" style={brandStyle} aria-label="صفحه اصلی وُدّا">
+   155→   155→          <img src="/vodda-logo.svg" alt="" style={{ width: 38, height: 38 }} />
+   156→   156→          <span>
+   157→   157→            <strong style={{ display: 'block', fontSize: 18, lineHeight: 1.2 }}>وُدّا</strong>
+   158→   158→            <span className="brand-subtitle">همراه یادگیری</span>
+   159→   159→          </span>
+   160→   160→        </Link>
+   161→   161→
+   162→   162→        <nav className="desktop-nav" aria-label="ناوبری اصلی">
+   163→   163→          {links.map(([label, href]) => (
+   164→   164→            <Link key={href} href={href} className="public-nav-link">{label}</Link>
+   165→   165→          ))}
+   166→   166→        </nav>
+   167→   167→
+   168→   168→        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+   169→   169→          <Link href="/app" className="nav-app-link">
+   170→   170→            <Icon name="grid" size={17} />
+   171→   171→            ورود به اپ
+   172→   172→          </Link>
+   173→   173→          {user ? <UserMenu name={user.name} role={user.role} avatar={user.avatar_url} hasTeacherProfile={user.hasTeacherProfile} /> : <WebBtn size="sm" href="/panel/login">ورود</WebBtn>}
+   174→   174→          <button
+   175→   175→            type="button"
+   176→   176→            className="mobile-nav-toggle"
+   177→   177→            aria-label={mobileOpen ? 'بستن منو' : 'باز کردن منو'}
+   178→   178→            aria-expanded={mobileOpen}
+   179→   179→            onClick={() => setMobileOpen((value) => !value)}
+   180→   180→          >
+   181→   181→            <Icon name={mobileOpen ? 'x' : 'list'} size={21} />
+   182→   182→          </button>
+   183→   183→        </div>
+   184→   184→      </div>
+   185→   185→
+   186→   186→      {mobileOpen && (
+   187→   187→        <>
+   188→   188→          <button className="mobile-menu-backdrop" aria-label="بستن منو" onClick={() => setMobileOpen(false)} />
+   189→   189→          <div className="mobile-menu">
+   190→   190→            {links.map(([label, href]) => (
+   191→   191→              <Link key={href} href={href} onClick={() => setMobileOpen(false)}>
+   192→   192→                <span>{label}</span>
+   193→   193→                <Icon name="chevronL" size={16} />
+   194→   194→              </Link>
+   195→   195→            ))}
+   196→   196→            <Link href={user?.hasTeacherProfile ? "/panel/teacher" : "/panel/teacher/register"} onClick={() => setMobileOpen(false)} className="mobile-menu-teacher">
+   197→   197→              <Icon name="award" size={18} />
+   198→   198→              {user?.hasTeacherProfile ? 'پنل استاد' : 'ثبت درخواست استادی'}
+   199→   199→            </Link>
+   200→   200→          </div>
+   201→   201→        </>
+   202→   202→      )}
+   203→   203→    </header>
+   204→   204→  );
+   205→   205→}
+   206→   206→
+   207→   207→function AppPreview() {
+   208→   208→  return (
+   209→   209→    <div className="landing-app-stage" aria-label="نمایی از رابط اپ وُدّا">
+   210→   210→      <div className="landing-orb landing-orb-gold" />
+   211→   211→      <div className="landing-orb landing-orb-olive" />
+   212→   212→
+   213→   213→      <span className="landing-preview-label">نمونه رابط اپ</span>
+   214→   214→      <div className="landing-phone">
+   215→   215→        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+   216→   216→          <Avatar size={42} ring />
+   217→   217→          <div style={{ flex: 1, minWidth: 0 }}>
+   218→   218→            <span style={{ display: 'block', color: 'var(--ink-3)', fontSize: 10.5 }}>سلام، خوش آمدید</span>
+   219→   219→            <strong style={{ display: 'block', marginTop: 1, fontSize: 13.5 }}>مسیر یادگیری شما 🌿</strong>
+   220→   220→          </div>
+   221→   221→          <span style={{ width: 36, height: 36, display: 'grid', placeItems: 'center', borderRadius: 11, color: 'var(--olive-700)', background: 'var(--olive-50)' }}>
+   222→   222→            <Icon name="bell" size={18} />
+   223→   223→          </span>
+   224→   224→        </div>
+   225→   225→
+   226→   226→        <div className="landing-phone-hero">
+   227→   227→          <span style={{ color: 'rgba(255,255,255,.67)', fontSize: 10.5 }}>استاد مناسب خودت را پیدا کن</span>
+   228→   228→          <strong style={{ display: 'block', marginTop: 4, color: '#fff', fontSize: 17, lineHeight: 1.65 }}>آموزش قرآن کریم،<br />در زمان مناسب تو</strong>
+   229→   229→          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 12, padding: '8px 11px', borderRadius: 11, color: 'var(--olive-800)', background: '#fff', fontSize: 10.5, fontWeight: 700 }}>
+   230→   230→            <Icon name="search" size={14} />
+   231→   231→            جستجوی استاد
+   232→   232→          </div>
+   233→   233→        </div>
+   234→   234→
+   235→   235→        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
+   236→   236→          <div className="landing-mini-category"><Icon name="quran" size={19} />آموزش قرآن</div>
+   237→   237→        </div>
+   238→   238→
+   239→   239→        <div style={{ marginTop: 13 }}>
+   240→   240→          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 9 }}>
+   241→   241→            <strong style={{ fontSize: 11.5 }}>استادان پیشنهادی</strong>
+   242→   242→            <span style={{ color: 'var(--olive-600)', fontSize: 9.5 }}>مشاهده همه</span>
+   243→   243→          </div>
+   244→   244→          <div className="landing-mini-teacher">
+   245→   245→            <Avatar size={43} tier="international" />
+   246→   246→            <div style={{ minWidth: 0, flex: 1 }}>
+   247→   247→              <strong style={{ display: 'block', fontSize: 11.5 }}>استاد وُدّا</strong>
+   248→   248→              <span style={{ display: 'block', marginTop: 2, color: 'var(--olive-600)', fontSize: 9.5 }}>آموزش قرآن کریم</span>
+   249→   249→              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, marginTop: 6, color: 'var(--gold)', fontSize: 9.5, fontWeight: 800 }}>
+   250→   250→                <Icon name="star" size={11} fill /> ۴٫۹
+   251→   251→              </span>
+   252→   252→            </div>
+   253→   253→            <span style={{ padding: '6px 8px', borderRadius: 8, color: '#fff', background: 'var(--olive-600)', fontSize: 9.5, fontWeight: 700 }}>رزرو</span>
+   254→   254→          </div>
+   255→   255→        </div>
+   256→   256→
+   257→   257→        <div className="landing-mini-bottom-nav">
+   258→   258→          {([
+   259→   259→            ['home', 'خانه'],
+   260→   260→            ['search', 'جستجو'],
+   261→   261→            ['calendar', 'جلسات'],
+   262→   262→            ['wallet', 'کیف پول'],
+   263→   263→            ['user', 'پروفایل'],
+   264→   264→          ] as const).map(([icon, label], index) => (
+   265→   265→            <span key={label} className={index === 0 ? 'active' : undefined}>
+   266→   266→              <Icon name={icon} size={15} />
+   267→   267→              <small>{label}</small>
+   268→   268→            </span>
+   269→   269→          ))}
+   270→   270→        </div>
+   271→   271→      </div>
+   272→   272→
+   273→   273→      <div className="landing-floating-card landing-floating-card-top">
+   274→   274→        <span className="landing-floating-icon"><Icon name="checkCircle" size={18} /></span>
+   275→   275→        <span><strong>استاد درجه‌دار</strong><small>مهر بین‌المللی، درجه ۲ و درجه ۳</small></span>
+   276→   276→      </div>
+   277→   277→      <div className="landing-floating-card landing-floating-card-bottom">
+   278→   278→        <span className="landing-floating-icon gold"><Icon name="calendar" size={18} /></span>
+   279→   279→        <span><strong>رزرو زمان آزاد</strong><small>بر اساس برنامهٔ واقعی استاد</small></span>
+   280→   280→      </div>
+   281→   281→    </div>
+   282→   282→  );
+   283→   283→}
+   284→   284→
+   285→   285→export function Hero() {
+   286→   286→  const router = useRouter();
+   287→   287→  const [query, setQuery] = useState('');
+   288→   288→  const [city, setCity] = useState('');
+   289→   289→
+   290→   290→  function submit(event: FormEvent<HTMLFormElement>) {
+   291→   291→    event.preventDefault();
+   292→   292→    const params = new URLSearchParams();
+   293→   293→    if (query.trim()) params.set('q', query.trim());
+   294→   294→    if (city.trim()) params.set('city', city.trim());
+   295→   295→    const search = params.toString();
+   296→   296→    router.push(`/search${search ? `?${search}` : ''}`);
+   297→   297→  }
+   298→   298→
+   299→   299→  return (
+   300→   300→    <section className="landing-hero">
+   301→   301→      <div className="landing-hero-glow" aria-hidden="true" />
+   302→   302→      <div className="public-container landing-hero-grid">
+   303→   303→        <div className="landing-hero-copy">
+   304→   304→          <div className="landing-eyebrow"><Icon name="sparkle" size={16} />سکوی تخصصی آموزش قرآن کریم</div>
+   305→   305→          <h1>استاد مناسب را پیدا کن،<br /><span>زمان خودت را رزرو کن.</span></h1>
+   306→   306→          <p>
+   307→   307→            استادان تأییدشده را بر اساس تخصص و شهر پیدا کن، خدمات و زمان‌های آزاد را ببین و جریان رزرو و پرداخت را شفاف از داخل وُدّا پیگیری کن.
+   308→   308→          </p>
+   309→   309→
+   310→   310→          <form onSubmit={submit} className="landing-search-box">
+   311→   311→            <label>
+   312→   312→              <Icon name="search" size={19} />
+   313→   313→              <input value={query} onChange={(event) => setQuery(event.target.value)} aria-label="نام یا تخصص استاد" placeholder="نام یا تخصص استاد" />
+   314→   314→            </label>
+   315→   315→            <span className="landing-search-divider" />
+   316→   316→            <label className="landing-city-field">
+   317→   317→              <Icon name="pin" size={18} />
+   318→   318→              <input value={city} onChange={(event) => setCity(event.target.value)} aria-label="شهر" placeholder="شهر" />
+   319→   319→            </label>
+   320→   320→            <button type="submit">جستجوی استاد <Icon name="arrowL" size={17} /></button>
+   321→   321→          </form>
+   322→   322→
+   323→   323→          <div className="landing-trust-row">
+   324→   324→            <span><Icon name="shield" size={16} /> انتشار استاد پس از تأیید</span>
+   325→   325→            <span><Icon name="wallet" size={16} /> گردش مالی قابل پیگیری</span>
+   326→   326→            <span><Icon name="star" size={16} /> امتیاز پس از جلسه</span>
+   327→   327→          </div>
+   328→   328→
+   329→   329→          <div className="landing-hero-actions">
+   330→   330→            <WebBtn href="/app" size="lg" icon="grid">ورود به اپ وُدّا</WebBtn>
+   331→   331→            <WebBtn href="/panel/teacher/register" size="lg" variant="ghost" icon="award">استاد هستم</WebBtn>
+   332→   332→          </div>
+   333→   333→        </div>
+   334→   334→
+   335→   335→        <AppPreview />
+   336→   336→      </div>
+   337→   337→    </section>
+   338→   338→  );
+   339→   339→}
+   340→   340→
+   341→   341→export function Categories() {
+   342→   342→  const categories = [
+   343→   343→    {
+   344→   344→      icon: 'quran' as const,
+   345→   345→      title: 'آموزش قرآن کریم',
+   346→   346→      desc: 'روخوانی، روان‌خوانی، تجوید، صوت و لحن و حفظ قرآن با استاد مناسب.',
+   347→   347→      href: '/search?field=%D8%A2%D9%85%D9%88%D8%B2%D8%B4+%D9%82%D8%B1%D8%A2%D9%86+%DA%A9%D8%B1%DB%8C%D9%85',
+   348→   348→      meta: 'قرآن',
+   349→   349→    },
+   350→   350→  ];
+   351→   351→
+   352→   352→  return (
+   353→   353→    <section className="landing-categories">
+   354→   354→      <div className="public-container">
+   355→   355→        <div className="landing-category-grid">
+   356→   356→          {categories.map((category) => (
+   357→   357→            <Link key={category.title} href={category.href} className="landing-category-card">
+   358→   358→              <span className="landing-category-icon"><Icon name={category.icon} size={26} /></span>
+   359→   359→              <span style={{ minWidth: 0, flex: 1 }}>
+   360→   360→                <small>{category.meta}</small>
+   361→   361→                <strong>{category.title}</strong>
+   362→   362→                <p>{category.desc}</p>
+   363→   363→              </span>
+   364→   364→              <span className="landing-category-arrow"><Icon name="arrowL" size={19} /></span>
+   365→   365→            </Link>
+   366→   366→          ))}
+   367→   367→        </div>
+   368→   368→      </div>
+   369→   369→    </section>
+   370→   370→  );
+   371→   371→}
+   372→   372→
+   373→   373→export function HowItWorks() {
+   374→   374→  const steps = [
+   375→   375→    ['search' as const, 'استاد را پیدا کن', 'نام، تخصص، شهر یا جنسیت استاد را جستجو و پروفایل منتشرشده را بررسی کن.'],
+   376→   376→    ['calendar' as const, 'خدمت و زمان را انتخاب کن', 'سرویس تأییدشده و بازهٔ آزاد واقعی از برنامهٔ کاری استاد را انتخاب کن.'],
+   377→   377→    ['checkCircle' as const, 'درخواست را پیگیری کن', 'وضعیت رزرو، جلسه و گردش مالی را از فضای کاربری وُدّا دنبال کن.'],
+   378→   378→  ] as const;
+   379→   379→
+   380→   380→  return (
+   381→   381→    <section id="how" className="landing-section landing-how">
+   382→   382→      <div className="public-container">
+   383→   383→        <SectionTitle kicker="مسیر ساده" title="از پیدا کردن استاد تا رزرو جلسه" sub="سه مرحله روشن؛ بدون مسیرهای پیچیده و بدون زمان یا سرویس ساختگی." />
+   384→   384→        <div className="landing-steps">
+   385→   385→          {steps.map(([icon, title, description], index) => (
+   386→   386→            <article key={title} className="landing-step-card">
+   387→   387→              <span className="landing-step-number">{toFaDigits(index + 1)}</span>
+   388→   388→              <span className="landing-step-icon"><Icon name={icon} size={24} /></span>
+   389→   389→              <h3>{title}</h3>
+   390→   390→              <p>{description}</p>
+   391→   391→            </article>
+   392→   392→          ))}
+   393→   393→        </div>
+   394→   394→      </div>
+   395→   395→    </section>
+   396→   396→  );
+   397→   397→}
+   398→   398→
+   399→   399→function WebTeacherCard({ teacher }: { teacher: Teacher }) {
+   400→   400→  const name = teacher.user?.name || 'استاد وُدّا';
+   401→   401→  const price = Math.max(0, teacher.price30 || teacher.services?.[0]?.price || 0);
+   402→   402→
+   403→   403→  return (
+   404→   404→    <article className="landing-teacher-card">
+   405→   405→      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+   406→   406→        <Avatar size={54} ring tier={teacher.tier} imageUrl={fullUrl(teacher.user?.avatar_url)} />
+   407→   407→        <div style={{ minWidth: 0, flex: 1 }}>
+   408→   408→          <strong className="landing-teacher-name">{name}</strong>
+   409→   409→          <span className="landing-teacher-tag">{teacher.tag || teacher.field}</span>
+   410→   410→        </div>
+   411→   411→        {teacher.rating > 0 && (
+   412→   412→          <span className="landing-teacher-rating"><Icon name="star" size={14} fill />{toFaDigits(teacher.rating.toFixed(1))}</span>
+   413→   413→        )}
+   414→   414→      </div>
+   415→   415→
+   416→   416→      <div className="landing-teacher-meta">
+   417→   417→        {teacher.city && <span><Icon name="pin" size={14} />{teacher.city}</span>}
+   418→   418→        <span><Icon name="calendar" size={14} />{toFaDigits(teacher.sessions || 0)} جلسه</span>
+   419→   419→        <span><Icon name="message" size={14} />{toFaDigits(teacher.reviews || 0)} نظر</span>
+   420→   420→      </div>
+   421→   421→
+   422→   422→      {teacher.bio && <p className="landing-teacher-bio">{teacher.bio}</p>}
+   423→   423→
+   424→   424→      <div className="landing-teacher-footer">
+   425→   425→        <span>
+   426→   426→          <small>شروع جلسه از</small>
+   427→   427→          <strong>{price > 0 ? `${formatFaNumber(price)} تومان` : 'مشاهده خدمات'}</strong>
+   428→   428→        </span>
+   429→   429→        <WebBtn size="sm" href={`/teachers/${teacher.id}`}>پروفایل و رزرو</WebBtn>
+   430→   430→      </div>
+   431→   431→    </article>
+   432→   432→  );
+   433→   433→}
+   434→   434→
+   435→   435→export function FeaturedTeachers({ teachers, unavailable = false }: { teachers: Teacher[]; unavailable?: boolean }) {
+   436→   436→  return (
+   437→   437→    <section id="teachers" className="landing-section">
+   438→   438→      <div className="public-container">
+   439→   439→        <div className="landing-section-head">
+   440→   440→          <SectionTitle kicker="استادان وُدّا" title="پروفایل‌های تأییدشده" sub="قبل از رزرو، تخصص، سابقه، خدمات، امتیاز و زمان‌های قابل رزرو را ببین." center={false} />
+   441→   441→          <WebBtn variant="ghost" icon="arrowL" href="/search">مشاهده همه استادان</WebBtn>
+   442→   442→        </div>
+   443→   443→
+   444→   444→        {teachers.length ? (
+   445→   445→          <div className="landing-teacher-grid">
+   446→   446→            {teachers.slice(0, 6).map((teacher) => <WebTeacherCard key={teacher.id} teacher={teacher} />)}
+   447→   447→          </div>
+   448→   448→        ) : (
+   449→   449→          <div className="landing-empty-state" role="status">
+   450→   450→            <span><Icon name="users" size={27} /></span>
+   451→   451→            <strong>{unavailable ? 'ارتباط با فهرست استادان برقرار نیست' : 'هنوز استاد تأییدشده‌ای منتشر نشده'}</strong>
+   452→   452→            <p>{unavailable ? 'کمی بعد دوباره تلاش کنید.' : 'پس از تأیید اولین پروفایل‌ها، این بخش به‌صورت خودکار تکمیل می‌شود.'}</p>
+   453→   453→          </div>
+   454→   454→        )}
+   455→   455→      </div>
+   456→   456→    </section>
+   457→   457→  );
+   458→   458→}
+   459→   459→
+   460→   460→export function WhyVodda() {
+   461→   461→  const items = [
+   462→   462→    ['shield' as const, 'پروفایل بررسی‌شده', 'استاد پیش از تأیید مدیر در نتایج عمومی نمایش داده نمی‌شود.'],
+   463→   463→    ['calendar' as const, 'زمان واقعی رزرو', 'بازه‌ها از برنامهٔ کاری استاد و تداخل جلسات فعال محاسبه می‌شوند.'],
+   464→   464→    ['wallet' as const, 'جریان مالی شفاف', 'کسر، بازگشت وجه، درآمد و برداشت در دفتر تراکنش‌ها ثبت می‌شوند.'],
+   465→   465→    ['star' as const, 'بازخورد معتبرتر', 'امتیاز فقط برای قرآن‌آموز همان جلسه و پس از تکمیل جلسه ثبت می‌شود.'],
+   466→   466→  ] as const;
+   467→   467→
+   468→   468→  return (
+   469→   469→    <section className="landing-proof">
+   470→   470→      <GeoPattern color="#fff" opacity={0.045} />
+   471→   471→      <div className="public-container landing-proof-grid">
+   472→   472→        <div style={{ position: 'relative', maxWidth: 420 }}>
+   473→   473→          <span className="landing-proof-kicker">چرا وُدّا؟</span>
+   474→   474→          <h2>شفافیت در مسیری که قرار است ساده باشد.</h2>
+   475→   475→          <p>وُدّا تلاش می‌کند آنچه واقعاً در محصول فعال است، همان چیزی باشد که در صفحه عمومی وعده داده می‌شود.</p>
+   476→   476→          <WebBtn href="/about" variant="white" icon="arrowL">بیشتر درباره وُدّا</WebBtn>
+   477→   477→        </div>
+   478→   478→        <div className="landing-proof-cards">
+   479→   479→          {items.map(([icon, title, description]) => (
+   480→   480→            <article key={title}>
+   481→   481→              <span><Icon name={icon} size={23} /></span>
+   482→   482→              <strong>{title}</strong>
+   483→   483→              <p>{description}</p>
+   484→   484→            </article>
+   485→   485→          ))}
+   486→   486→        </div>
+   487→   487→      </div>
+   488→   488→    </section>
+   489→   489→  );
+   490→   490→}
+   491→   491→
+   492→   492→export function Testimonials() {
+   493→   493→  return null;
+   494→   494→}
+   495→   495→
+   496→   496→function TeacherDashboardPreview() {
+   497→   497→  return (
+   498→   498→    <div className="teacher-preview-card" aria-hidden="true">
+   499→   499→      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+   500→   500→        <Avatar size={42} ring />
+   501→   501→        <span style={{ minWidth: 0, flex: 1 }}>
+   502→   502→          <small style={{ display: 'block', color: 'var(--ink-3)' }}>پنل استاد</small>
+   503→   503→          <strong style={{ display: 'block', marginTop: 2, fontSize: 13 }}>مدیریت آموزش در یک نگاه</strong>
+   504→   504→        </span>
+   505→   505→        <Icon name="refresh" size={17} style={{ color: 'var(--olive-600)' }} />
+   506→   506→      </div>
+   507→   507→      <div className="teacher-preview-wallet">
+   508→   508→        <small>موجودی قابل برداشت</small>
+   509→   509→        <strong>— <span>تومان</span></strong>
+   510→   510→        <div>
+   511→   511→          <span>امتیاز<strong>—</strong></span>
+   512→   512→          <i />
+   513→   513→          <span>جلسات<strong>—</strong></span>
+   514→   514→          <i />
+   515→   515→          <span>نظرها<strong>—</strong></span>
+   516→   516→        </div>
+   517→   517→      </div>
+   518→   518→      <div className="teacher-preview-actions">
+   519→   519→        <span><Icon name="book" size={18} />خدمات من</span>
+   520→   520→        <span><Icon name="clock" size={18} />زمان کاری</span>
+   521→   521→        <span><Icon name="wallet" size={18} />کیف پول</span>
+   522→   522→        <span><Icon name="calendar" size={18} />جلسات</span>
+   523→   523→      </div>
+   524→   524→    </div>
+   525→   525→  );
+   526→   526→}
+   527→   527→
+   528→   528→export function BecomeTeacher() {
+   529→   529→  return (
+   530→   530→    <section className="landing-section">
+   531→   531→      <div className="public-container">
+   532→   532→        <div className="landing-teacher-cta">
+   533→   533→          <div className="landing-teacher-cta-copy">
+   534→   534→            <div className="landing-eyebrow"><Icon name="award" size={16} />برای استادان</div>
+   535→   535→            <h2>فضای حرفه‌ای خودت را در وُدّا بساز.</h2>
+   536→   536→            <p>
+   537→   537→              خدمات، تعرفه و زمان‌های کاری را مدیریت کن، درخواست‌های جلسه را ببین و درآمد و برداشت‌ها را از یک فضای یکپارچه پیگیری کن.
+   538→   538→            </p>
+   539→   539→            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 9 }}>
+   540→   540→              <WebBtn size="lg" href="/panel/teacher/register" icon="arrowL">ثبت درخواست استادی</WebBtn>
+   541→   541→              <WebBtn size="lg" variant="ghost" href="/panel/teacher">ورود استاد</WebBtn>
+   542→   542→            </div>
+   543→   543→          </div>
+   544→   544→          <TeacherDashboardPreview />
+   545→   545→        </div>
+   546→   546→      </div>
+   547→   547→    </section>
+   548→   548→  );
+   549→   549→}
+   550→   550→
+   551→   551→export function DownloadApp() {
+   552→   552→  return (
+   553→   553→    <section className="landing-app-cta">
+   554→   554→      <div className="public-container">
+   555→   555→        <div className="landing-app-cta-inner">
+   556→   556→          <span className="landing-app-cta-icon"><Icon name="grid" size={25} /></span>
+   557→   557→          <div style={{ minWidth: 0, flex: 1 }}>
+   558→   558→            <strong>تجربه کامل وُدّا داخل اپ</strong>
+   559→   559→            <p>همین رابط یکپارچه روی وب و نسخه‌های native در دسترس خواهد بود.</p>
+   560→   560→          </div>
+   561→   561→          <WebBtn href="/app" variant="dark" icon="arrowL">باز کردن اپ وب</WebBtn>
+   562→   562→        </div>
+   563→   563→      </div>
+   564→   564→    </section>
+   565→   565→  );
+   566→   566→}
+   567→   567→
+   568→   568→export function Footer() {
+   569→   569→  const productLinks = [
+   570→   570→    ['جستجوی استاد', '/search'],
+   571→   571→    ['اپ وُدّا', '/app'],
+   572→   572→    ['استاد شوید', '/panel/teacher/register'],
+   573→   573→    ['ورود', '/panel/login'],
+   574→   574→  ];
+   575→   575→  const companyLinks = [
+   576→   576→    ['درباره وُدّا', '/about'],
+   577→   577→    ['تماس با ما', '/contact'],
+   578→   578→    ['سؤالات متداول', '/faq'],
+   579→   579→    ['وبلاگ', '/blog'],
+   580→   580→  ];
+   581→   581→  const legalLinks = [
+   582→   582→    ['قوانین استفاده', '/terms'],
+   583→   583→    ['حریم خصوصی', '/privacy'],
+   584→   584→  ];
+   585→   585→
+   586→   586→  return (
+   587→   587→    <footer className="public-footer">
+   588→   588→      <div className="public-container">
+   589→   589→        <div className="public-footer-grid">
+   590→   590→          <div className="public-footer-brand">
+   591→   591→            <Link href="/" style={brandStyle}>
+   592→   592→              <img src="/vodda-logo.svg" alt="" style={{ width: 40, height: 40 }} />
+   593→   593→              <span><strong style={{ display: 'block', color: '#fff', fontSize: 19 }}>وُدّا</strong><small>همراه یادگیری قرآن کریم</small></span>
+   594→   594→            </Link>
+   595→   595→            <p>فضایی برای پیدا کردن استاد، رزرو زمان و مدیریت شفاف مسیر آموزشی.</p>
+   596→   596→          </div>
+   597→   597→
+   598→   598→          <FooterColumn title="محصول" links={productLinks} />
+   599→   599→          <FooterColumn title="وُدّا" links={companyLinks} />
+   600→   600→          <FooterColumn title="حقوقی" links={legalLinks} />
+   601→   601→        </div>
+   602→   602→
+   603→   603→        <div className="public-footer-bottom">
+   604→   604→          <span>© {toFaDigits(new Date().getFullYear())} وُدّا</span>
+   605→   605→          <span>طراحی‌شده با تمرکز بر تجربه فارسی و RTL</span>
+   606→   606→        </div>
+   607→   607→      </div>
+   608→   608→    </footer>
+   609→   609→  );
+   610→   610→}
+   611→   611→
+   612→   612→function FooterColumn({ title, links }: { title: string; links: string[][] }) {
+   613→   613→  return (
+   614→   614→    <div className="public-footer-column">
+   615→   615→      <strong>{title}</strong>
+   616→   616→      {links.map(([label, href]) => <Link key={href} href={href}>{label}</Link>)}
+   617→   617→    </div>
+   618→   618→  );
+   619→   619→}
+   620→   620→
+   621→   621→const brandStyle: CSSProperties = {
+   622→   622→  display: 'inline-flex',
+   623→   623→  alignItems: 'center',
+   624→   624→  gap: 9,
+   625→   625→  color: 'var(--ink)',
+   626→   626→};
+   627→   627→
+   628→   628→const panelLinkStyle: CSSProperties = {
+   629→   629→  display: 'flex',
+   630→   630→  alignItems: 'center',
+   631→   631→  gap: 9,
+   632→   632→  padding: '9px 10px',
+   633→   633→  borderRadius: 10,
+   634→   634→  color: 'var(--ink-2s)',
+   635→   635→  fontSize: 13,
+   636→   636→  fontWeight: 600,
+   637→   637→};
+   638→   638→
+   639→   639→const userButtonStyle: CSSProperties = {
+   640→   640→  width: 40,
+   641→   641→  height: 40,
+   642→   642→  display: 'grid',
+   643→   643→  placeItems: 'center',
+   644→   644→  padding: 0,
+   645→   645→  border: '1px solid var(--sand-200)',
+   646→   646→  borderRadius: 13,
+   647→   647→  color: 'var(--olive-700)',
+   648→   648→  background: '#fff',
+   649→   649→  cursor: 'pointer',
+   650→   650→};
+   651→   651→
+   652→   652→const menuBackdropStyle: CSSProperties = {
+   653→   653→  position: 'fixed',
+   654→   654→  inset: 0,
+   655→   655→  zIndex: 89,
+   656→   656→  border: 0,
+   657→   657→  background: 'transparent',
+   658→   658→};
+   659→   659→
+   660→   660→const menuStyle: CSSProperties = {
+   661→   661→  position: 'absolute',
+   662→   662→  zIndex: 90,
+   663→   663→  insetInlineEnd: 0,
+   664→   664→  top: 48,
+   665→   665→  width: 245,
+   666→   666→  padding: 12,
+   667→   667→  border: '1px solid var(--sand-150)',
+   668→   668→  borderRadius: 18,
+   669→   669→  background: '#fff',
+   670→   670→  boxShadow: 'var(--sh-lg)',
+   671→   671→};
+   672→   672→
+   673→   673→const logoutStyle: CSSProperties = {
+   674→   674→  width: '100%',
+   675→   675→  display: 'flex',
+   676→   676→  alignItems: 'center',
+   677→   677→  gap: 9,
+   678→   678→  padding: '9px 10px',
+   679→   679→  border: 0,
+   680→   680→  borderRadius: 10,
+   681→   681→  color: 'var(--rose)',
+   682→   682→  background: 'transparent',
+   683→   683→  fontFamily: 'inherit',
+   684→   684→  fontSize: 13,
+   685→   685→  fontWeight: 600,
+   686→   686→  cursor: 'pointer',
+   687→   687→};
+   688→   688→
