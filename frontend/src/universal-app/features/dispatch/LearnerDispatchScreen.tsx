@@ -204,6 +204,7 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
   const [busyOffer, setBusyOffer] = useState(0);
   const [canceling, setCanceling] = useState(false);
   const [resuming, setResuming] = useState(true);
+  const [payMethod, setPayMethod] = useState<"wallet" | "gateway">("gateway");
   const [tick, setTick] = useState(0);
   const pollRef = useRef<number | null>(null);
 
@@ -316,14 +317,14 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
       setBusyOffer(offerId);
       setActionError("");
       try {
-        const result = await chooseDispatchOffer(runtime, call.id, offerId, "wallet");
+        const result = await chooseDispatchOffer(runtime, call.id, offerId, payMethod);
         await refresh();
         if (result.redirect_url) {
           window.location.href = result.redirect_url;
         }
       } catch (error) {
-        if (error instanceof PlatformHttpError && error.status === 400) {
-          setActionError("کیف پول شما کافی نیست. ابتدا کیف پول را شارژ کنید و دوباره انتخاب کنید.");
+        if (payMethod === "wallet" && error instanceof PlatformHttpError && error.status === 400) {
+          setActionError("کیف پول شما کافی نیست. ابتدا کیف پول را شارژ کنید یا پرداخت آنلاین را برگزینید.");
         } else {
           setActionError(messageOf(error, "ثبت رزرو انجام نشد."));
         }
@@ -332,7 +333,7 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
         setBusyOffer(0);
       }
     },
-    [busyOffer, call, refresh, runtime],
+    [busyOffer, call, payMethod, refresh, runtime],
   );
 
   const decline = useCallback(
@@ -447,6 +448,38 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
           </span>
         </div>
 
+        <div
+          role="radiogroup"
+          aria-label="روش پرداخت"
+          style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, padding: 6, borderRadius: 16, border: `1px solid ${colors.border}`, background: colors.surface }}
+        >
+          {([
+            ["gateway", "💳 پرداخت آنلاین (سامان)"],
+            ["wallet", "👛 پرداخت از کیف پول"],
+          ] as const).map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              role="radio"
+              aria-checked={payMethod === value}
+              onClick={() => setPayMethod(value)}
+              style={{
+                padding: "10px 8px",
+                borderRadius: 11,
+                fontSize: 12.5,
+                fontWeight: 800,
+                cursor: "pointer",
+                fontFamily: "inherit",
+                color: payMethod === value ? colors.surface : colors.inkSecondary,
+                background: payMethod === value ? colors.olive600 : "transparent",
+                border: "none",
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
         {(view?.candidates ?? []).length === 0 ? (
           <Card style={{ padding: 20, borderRadius: 20, textAlign: "center" }}>
             <div style={{ display: "grid", placeItems: "center", gap: 10 }}>
@@ -515,8 +548,8 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
             <Icon name="bell" size={24} />
           </div>
           <div>
-            <h1 style={{ margin: 0, fontSize: 19, fontWeight: 800 }}>فراخوان استاد</h1>
-            <span style={{ fontSize: 12.5, opacity: 0.85 }}>مثل اسنپ؛ استادها مسابقه می‌دهند، شما انتخاب می‌کنید</span>
+            <h1 style={{ margin: 0, fontSize: 19, fontWeight: 800 }}>فراخوان اساتید</h1>
+            <span style={{ fontSize: 12.5, opacity: 0.85 }}>مثل اسنپ؛ اساتید اعلام آمادگی می‌کنند، شما انتخاب می‌کنید</span>
           </div>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginTop: 16 }}>
@@ -601,7 +634,7 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
 
           <div style={{ display: "grid", gap: spacing.sm }}>
             <Button fullWidth loading={creating} disabled={creating} onClick={() => void start()} style={{ minHeight: 52 }}>
-              🔔 برزنام فراخوان برای اساتید
+              🔔 ثبت فراخوان برای اساتید
             </Button>
             <Button variant="secondary" fullWidth onClick={() => navigateApp(`/search?topic=${topic.id}`, config)} style={{ minHeight: 46 }}>
               یا دیدن اساتید همین موضوع
@@ -612,7 +645,7 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
         <Card className="vodda-enter vodda-enter-delay-1" style={{ padding: 18, borderRadius: 20 }}>
           <strong style={{ fontSize: 15, fontWeight: 800, color: colors.ink, display: "block" }}>۱. موضوع آموزش را انتخاب کنید</strong>
           <span style={{ fontSize: 12, color: colors.inkMuted, display: "block", margin: "4px 0 12px" }}>
-            از فهرست رسمی خدمات وُدّا — {fa(catalog.length)} موضوع تایید‌شده
+            از فهرست رسمی خدمات وُدّا — {fa(catalog.length)} موضوع تأییدشده
           </span>
           <input
             type="search"

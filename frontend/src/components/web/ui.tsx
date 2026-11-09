@@ -257,3 +257,77 @@ export function PublicSurface({
     </div>
   );
 }
+
+/* ═════════ «دربارهٔ استاد» — بازچینش ساختاریافتهٔ بیوگرافی ═════════
+   الگوی متن: بندهای 🌙/📖 به‌صورت پاراگراف با نشان ایموجی،
+   بند 🎯 به‌صورت فهرست مهارت‌های چیپی و بند 📍 به‌صورت نشان‌های طلایی.
+   این رندر مشترک، متنِ چندخطی را مرتب و خوانا نگه می‌دارد. */
+type BioBlock =
+  | { kind: 'para'; emoji: string; text: string }
+  | { kind: 'chips'; title: string; items: string[] }
+  | { kind: 'meta'; items: string[] };
+
+export function parseTeacherBio(bio?: string | null): BioBlock[] {
+  if (!bio) return [];
+  const rawBlocks = bio.trim().split(/\n\s*\n/);
+  const blocks: BioBlock[] = [];
+  for (const rawBlock of rawBlocks) {
+    const lines = rawBlock.split('\n').map((line) => line.trim()).filter(Boolean);
+    if (!lines.length) continue;
+    const first = lines[0];
+    if (first.startsWith('🎯')) {
+      const title = first.replace(/^🎯\s*/, '').replace(/:\s*$/, '') || 'زمینه‌های تدریس';
+      const items = lines.slice(1).map((line) => line.replace(/^[•\-*]\s*/, '').trim()).filter(Boolean);
+      blocks.push({ kind: 'chips', title, items: items.length ? items : lines.slice(1) });
+      continue;
+    }
+    if (first.startsWith('📍')) {
+      const merged = lines.map((line) => line.replace(/^📍\s*/, '')).join(' ');
+      const items = merged.split('|').map((part) => part.trim()).filter(Boolean);
+      blocks.push({ kind: 'meta', items });
+      continue;
+    }
+    const emojiMatch = first.match(/^(\p{Extended_Pictographic})/u);
+    const emoji = emojiMatch?.[1] ?? '';
+    const text = emoji ? first.slice(emoji.length).trim() : first;
+    const rest = lines.slice(1).join(' ');
+    blocks.push({ kind: 'para', emoji, text: [text, rest].filter(Boolean).join(' ') });
+  }
+  return blocks;
+}
+
+export function TeacherBio({ bio, empty = 'اطلاعاتی ثبت نشده است.' }: { bio?: string | null; empty?: string }) {
+  const blocks = parseTeacherBio(bio);
+  if (!blocks.length) {
+    return <p className="teacher-bio-para"><span>{empty}</span></p>;
+  }
+  return (
+    <div className="teacher-bio">
+      {blocks.map((block, index) => {
+        if (block.kind === 'para') {
+          return (
+            <p key={index} className="teacher-bio-para">
+              {block.emoji ? <span className="teacher-bio-emoji" aria-hidden="true">{block.emoji}</span> : null}
+              <span>{block.text}</span>
+            </p>
+          );
+        }
+        if (block.kind === 'chips') {
+          return (
+            <div key={index} className="teacher-bio-block">
+              <strong className="teacher-bio-block-title"><Icon name="sparkle" size={14} /> {block.title}</strong>
+              <div className="teacher-bio-chips">
+                {block.items.map((item) => <span key={item} className="teacher-bio-chip">{item}</span>)}
+              </div>
+            </div>
+          );
+        }
+        return (
+          <div key={index} className="teacher-bio-chips">
+            {block.items.map((item) => <span key={item} className="teacher-bio-chip gold">{item}</span>)}
+          </div>
+        );
+      })}
+    </div>
+  );
+}

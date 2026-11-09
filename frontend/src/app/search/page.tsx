@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import type { Teacher } from '@/lib/api';
 import { Icon } from '@/components/Icon';
-import { Nav, Footer } from '@/components/web/sections';
+import { Nav, Footer, bioIntro } from '@/components/web/sections';
 import { Avatar, PublicPageHero } from '@/components/web/ui';
 import { fullUrl } from '@/lib/auth';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
@@ -273,7 +273,7 @@ function SearchTeacherCard({ teacher }: { teacher: Teacher }) {
         <span><Icon name="message" size={14} />{toFaDigits(teacher.reviews || 0)} نظر</span>
       </div>
 
-      {teacher.bio && <p>{teacher.bio}</p>}
+      {teacher.bio && <p>{bioIntro(teacher.bio)}</p>}
 
       <div className="web-search-teacher-footer">
         <span>

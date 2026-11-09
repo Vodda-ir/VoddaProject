@@ -111,7 +111,6 @@ export function Nav() {
     ['خانه', '/'],
     ['اساتید', '/#teachers'],
     ['جستجو', '/search'],
-    ['فراخوان استاد', '/dispatch'],
     ['نحوهٔ کار', '/#how'],
     ['دربارهٔ وُدّا', '/about'],
   ];
@@ -163,6 +162,11 @@ export function Nav() {
           {links.map(([label, href]) => (
             <Link key={href} href={href} className="public-nav-link">{label}</Link>
           ))}
+          <Link href="/dispatch" className="nav-dispatch-btn" aria-label="فراخوان اساتید — درخواست زنده استاد">
+            <span className="nav-dispatch-dot" aria-hidden="true" />
+            <Icon name="bell" size={15} />
+            فراخوان اساتید
+          </Link>
         </nav>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -193,6 +197,11 @@ export function Nav() {
                 <Icon name="chevronL" size={16} />
               </Link>
             ))}
+            <Link href="/dispatch" onClick={() => setMobileOpen(false)} className="mobile-menu-dispatch">
+              <Icon name="bell" size={18} />
+              <span style={{ flex: 1 }}>فراخوان اساتید</span>
+              <span style={{ fontSize: 10, fontWeight: 800, color: '#8b681f', background: 'var(--gold-bg)', borderRadius: 999, padding: '3px 8px' }}>جدید ✨</span>
+            </Link>
             <Link href={user?.hasTeacherProfile ? "/panel/teacher" : "/panel/teacher/register"} onClick={() => setMobileOpen(false)} className="mobile-menu-teacher">
               <Icon name="award" size={18} />
               {user?.hasTeacherProfile ? 'پنل استاد' : 'ثبت درخواست استادی'}
@@ -338,6 +347,63 @@ export function Hero() {
   );
 }
 
+export function DispatchCallout() {
+  const steps = [
+    ['search' as const, '۱ · موضوع را انتخاب کن', 'روخوانی، تجوید، صوت و لحن، حفظ و… از فهرست رسمی وُدّا.'],
+    ['bell' as const, '۲ · فراخوان بزن', 'درخواستت برای همهٔ اساتید همان موضوع زنده پخش می‌شود.'],
+    ['checkCircle' as const, '۳ · استادت را برگزین', 'نخستین اساتیدِ آماده همان‌جا دیده می‌شوند؛ یکی را تأیید کن و جلسه رزرو می‌شود.'],
+  ] as const;
+
+  return (
+    <section id="dispatch" className="landing-dispatch">
+      <div className="public-container">
+        <div className="landing-dispatch-inner">
+          <div className="landing-dispatch-top">
+            <div className="landing-dispatch-copy">
+              <span className="landing-dispatch-badge"><Icon name="bell" size={14} /> فراخوان اساتید — ویژهٔ وُدّا</span>
+              <h2>موضوع را بگو؛ اساتید اعلام آمادگی کنند،<br /><span>تو فقط انتخاب کن.</span></h2>
+              <p>
+                مثل اسنپ، اما برای کلاس قرآن: درخواست شما بین همهٔ اساتیدِ موضوعِ دلخواه به‌صورت زنده پخش می‌شود،
+                اساتید به‌ترتیب اعلام آمادگی می‌کنند و شما هرکدام را خواستید تأیید می‌کنید تا جلسه با همان استاد رزرو شود.
+              </p>
+            </div>
+            <div className="landing-dispatch-art" aria-hidden="true">
+              <div className="dispatch-chip-float one">🔔 فراخوان زنده</div>
+              <div className="dispatch-chip-float two">⚡ پاسخ در چند دقیقه</div>
+              <div className="dispatch-chip-float three">✅ انتخاب با شما</div>
+              <div className="dispatch-radar">
+                <span className="dispatch-radar-core"><Icon name="quran" size={30} /></span>
+              </div>
+            </div>
+          </div>
+
+          <div className="landing-dispatch-steps">
+            {steps.map(([icon, title, description]) => (
+              <article key={title} className="landing-dispatch-step">
+                <small><Icon name={icon} size={15} /> گام</small>
+                <strong>{title}</strong>
+                <span>{description}</span>
+              </article>
+            ))}
+          </div>
+
+          <div className="landing-dispatch-actions">
+            <Link href="/dispatch" className="dispatch-special-btn">
+              <span className="dispatch-btn-icon"><Icon name="bell" size={18} /></span>
+              فراخوان اساتید
+            </Link>
+            <WebBtn href="/search" size="lg" variant="ghost" icon="search">مشاهده اساتید هر موضوع</WebBtn>
+            <span className="dispatch-special-note">
+              <Icon name="shield" size={14} />
+              فقط اساتید تأییدشدهٔ وُدّا در فراخوان دیده می‌شوند.
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export function Categories() {
   const categories = [
     {
@@ -396,6 +462,13 @@ export function HowItWorks() {
   );
 }
 
+/** نخستین بند بیوگرافی را برای نمایش فشرده در کارت‌ها برمی‌گرداند (بدون ایموجی آغازین). */
+export function bioIntro(bio?: string | null): string {
+  if (!bio) return '';
+  const firstBlock = bio.trim().split(/\n\s*\n/)[0] || bio.trim();
+  return firstBlock.replace(/^[\p{Extended_Pictographic}\u{1F000}-\u{1FAFF}\u2600-\u27BF]+\s*/u, '').trim();
+}
+
 function WebTeacherCard({ teacher }: { teacher: Teacher }) {
   const name = teacher.user?.name || 'استاد وُدّا';
   const price = Math.max(0, teacher.price30 || teacher.services?.[0]?.price || 0);
@@ -419,7 +492,7 @@ function WebTeacherCard({ teacher }: { teacher: Teacher }) {
         <span><Icon name="message" size={14} />{toFaDigits(teacher.reviews || 0)} نظر</span>
       </div>
 
-      {teacher.bio && <p className="landing-teacher-bio">{teacher.bio}</p>}
+      {teacher.bio && <p className="landing-teacher-bio">{bioIntro(teacher.bio)}</p>}
 
       <div className="landing-teacher-footer">
         <span>
@@ -567,6 +640,7 @@ export function DownloadApp() {
 
 export function Footer() {
   const productLinks = [
+    ['فراخوان اساتید', '/dispatch'],
     ['جستجوی استاد', '/search'],
     ['اپ وُدّا', '/app'],
     ['استاد شوید', '/panel/teacher/register'],

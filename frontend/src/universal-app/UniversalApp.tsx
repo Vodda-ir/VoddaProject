@@ -42,7 +42,7 @@ const routeTitles: Record<AppRouteName, string> = {
   wallet: "کیف پول",
   profile: "پروفایل",
   "profile-edit": "ویرایش پروفایل",
-  dispatch: "فراخوان استاد",
+  dispatch: "فراخوان اساتید",
   "teacher-home": "داشبورد استاد",
   "teacher-requests": "درخواست‌های جلسه",
   "teacher-sessions": "جلسات استاد",

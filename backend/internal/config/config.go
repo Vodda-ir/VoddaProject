@@ -93,7 +93,9 @@ type SamanConfig struct {
 // Load reads configuration from the environment, applying development-safe defaults.
 // Potentially dangerous development features are disabled unless explicitly enabled.
 func Load() *Config {
-        frontendBaseURL := getEnv("FRONTEND_BASE_URL", "http://localhost:3421")
+        // FRONTEND_BASE_URL is canonical; SITE_URL is accepted as an alias so the
+        // deployment env can use either name interchangeably.
+        frontendBaseURL := getEnv("FRONTEND_BASE_URL", getEnv("SITE_URL", "http://localhost:3421"))
         smsProvider := getOptionalEnv("SMS_PROVIDER")
         if smsProvider == "" {
                 // Keep existing deployments on sms.ir until they opt into Faraz explicitly.

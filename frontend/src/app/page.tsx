@@ -1,6 +1,6 @@
 import { api, type Teacher } from '@/lib/api';
 import {
-  Nav, Hero, Categories, HowItWorks, FeaturedTeachers,
+  Nav, Hero, DispatchCallout, Categories, HowItWorks, FeaturedTeachers,
   WhyVodda, BecomeTeacher, DownloadApp, Footer,
 } from '@/components/web/sections';
 
@@ -19,6 +19,7 @@ export default async function Home() {
     <div style={{ background: 'var(--sand-50)' }}>
       <Nav />
       <Hero />
+      <DispatchCallout />
       <Categories />
       <HowItWorks />
       <FeaturedTeachers teachers={teachers} unavailable={unavailable} />

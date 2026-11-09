@@ -41,7 +41,7 @@ services:
       SERVER_PORT: ${BACKEND_INTERNAL_PORT:-3420}
       APP_ENV: production
       APP_TIMEZONE: ${APP_TIMEZONE:-Asia/Tehran}
-      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-https://vodda.ir}
+      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-${SITE_URL:-https://vodda.ir}}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://vodda.ir,https://app.vodda.ir,https://localhost,capacitor://localhost}
       TRUSTED_PROXIES: ${TRUSTED_PROXIES:-127.0.0.1,::1,172.16.0.0/12}
       DB_HOST: ${DB_HOST:-mysql}
@@ -68,8 +68,8 @@ services:
       DEV_WALLET_CHARGE_ENABLED: "false"
       ZARINPAL_MERCHANT_ID: ${ZARINPAL_MERCHANT_ID:-}
       ZARINPAL_SANDBOX: ${ZARINPAL_SANDBOX:-false}
-      SAMAN_TERMINAL_ID: ${SAMAN_TERMINAL_ID:-}
-      SAMAN_MERCHANT_ID: ${SAMAN_MERCHANT_ID:-}
+      SAMAN_TERMINAL_ID: ${SAMAN_TERMINAL_ID:-31136631}
+      SAMAN_MERCHANT_ID: ${SAMAN_MERCHANT_ID:-311347052}
       SAMAN_USERNAME: ${SAMAN_USERNAME:-}
       SAMAN_PASSWORD: ${SAMAN_PASSWORD:-}
       SAMAN_BASE_URL: ${SAMAN_BASE_URL:-https://sep.shaparak.ir}
