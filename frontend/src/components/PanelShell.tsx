@@ -216,7 +216,7 @@ export function StatusTag({ status }: { status: string }) {
 export function Placeholder({ label }: { label: string }) {
   return (
     <div style={{ border: '1px dashed var(--sand-200)', borderRadius: 18, padding: 64, textAlign: 'center', color: 'var(--ink-3)', background: 'rgba(255,255,255,.5)' }}>
-      بخش «{label}» — به API بکاند متصل میشود.
+      بخش «{label}» — به API بکاند متصل می‌شود.
     </div>
   );
 }
