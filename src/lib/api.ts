@@ -10,11 +10,25 @@ const BASE =
 export type TeacherService = {
   id: number;
   teacher_id?: number;
+  official_service_id?: number;
   title: string;
   duration: number;
   price: number;
   icon?: string;
   active?: boolean;
+};
+
+export type OfficialService = {
+  id: number;
+  category: string;
+  title: string;
+  description: string;
+  icon?: string;
+};
+
+export type OfficialServiceCategory = {
+  category: string;
+  services: OfficialService[];
 };
 
 export type Teacher = {
@@ -30,6 +44,8 @@ export type Teacher = {
   female: boolean;
   verified: boolean;
   available?: boolean;
+  /** درجه استاد: "" | "international" (درجه ۱) | "grade2" | "grade3" */
+  tier?: '' | 'international' | 'grade2' | 'grade3';
   status?: 'pending' | 'approved' | 'rejected';
   rating: number;
   reviews: number;
@@ -82,7 +98,7 @@ export type SessionListItem = {
   weekday: number;
   duration: number;
   price: number;
-  status: 'pending' | 'confirmed' | 'done' | 'canceled';
+  status: 'pending' | 'confirmed' | 'done' | 'canceled' | 'awaiting_payment';
   note?: string;
   reject_note?: string;
   rated: boolean;
@@ -183,9 +199,19 @@ export type NotificationItem = {
   created_at: string;
 };
 
+export type PaymentMethod = 'wallet' | 'gateway';
+
+/** Response of POST /sessions — gateway bookings carry redirect_url. */
+export type BookingResult = {
+  session: SessionListItem;
+  redirect_url?: string;
+  res_num?: string;
+  paid_via_wallet: boolean;
+};
+
 export type ListResponse<T> = { data: T[]; total: number };
 
-// ── فراخوان اساتید (dispatch) types ──
+/* ─── فراخوان اساتید (dispatch) types ─── */
 export type OfficialServiceItem = {
   id: number;
   category: string;
@@ -258,11 +284,13 @@ export type TeacherInboxData = {
   offers: DispatchOfferItem[];
 };
 
-export type BookResultShape = {
+/** Response of the dispatch «choose» action — wallet bookings settle instantly;
+ *  gateway bookings carry redirect_url to Saman Sep. */
+export type DispatchChooseResult = {
   session?: SessionListItem;
+  paid_via_wallet?: boolean;
   redirect_url?: string;
   res_num?: string;
-  paid_via_wallet?: boolean;
 };
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -310,11 +338,16 @@ export const api = {
     }),
   bookSession: (
     token: string,
-    body: { teacher_id: number; service_id: number; scheduled_at: string; note?: string },
+    body: { teacher_id: number; service_id: number; scheduled_at: string; note?: string; payment_method?: PaymentMethod },
   ) =>
-    request<{ data: SessionListItem }>('/sessions', {
+    request<{ data: BookingResult }>('/sessions', {
       method: 'POST',
       body: JSON.stringify(body),
+      headers: auth(token),
+    }),
+  paySession: (token: string, id: number) =>
+    request<{ data: { res_num: string; redirect_url: string; amount: number } }>(`/sessions/${id}/pay`, {
+      method: 'POST',
       headers: auth(token),
     }),
   cancelSession: (token: string, id: number) =>
@@ -386,14 +419,19 @@ export const api = {
     request<{ data: Review[] }>('/teacher/reviews', { headers: auth(token) }),
   teacherServices: (token: string) =>
     request<{ data: Teacher }>('/teacher/me', { headers: auth(token) }),
-  createTeacherService: (token: string, body: { title: string; duration: number; price: number; icon?: string }) =>
+  officialServices: () =>
+    request<{ data: { categories: OfficialServiceCategory[]; total: number } }>('/catalog/services', {
+      cache: 'no-store',
+    }),
+  catalog: () => request<{ data: CatalogResponse }>('/catalog/services', { cache: 'no-store' }),
+  createTeacherService: (token: string, body: { official_service_id: number; duration: number; price: number }) =>
     request<{ data: TeacherService }>('/teacher/services', {
       method: 'POST',
       headers: auth(token),
       body: JSON.stringify(body),
     }),
-  updateTeacherService: (token: string, id: number, body: { title?: string; duration?: number; price?: number; icon?: string }) =>
-    request<{ data: { updated: boolean; pending_review: boolean } }>(`/teacher/services/${id}`, {
+  updateTeacherService: (token: string, id: number, body: { official_service_id?: number; duration?: number; price?: number }) =>
+    request<{ data: { updated: boolean } }>(`/teacher/services/${id}`, {
       method: 'PUT',
       headers: auth(token),
       body: JSON.stringify(body),
@@ -437,13 +475,7 @@ export const api = {
       body: JSON.stringify(body),
     }),
 
-  adminDashboard: (token: string) =>
-    request<{ data: Record<string, unknown> }>('/admin/dashboard', { headers: auth(token) }),
-  adminPendingTeachers: (token: string) =>
-    request<ListResponse<Teacher>>('/admin/teachers?status=pending', { headers: auth(token) }),
-
-  // ── فراخوان اساتید (dispatch) ──
-  catalog: () => request<{ data: CatalogResponse }>('/catalog/services'),
+  /* ─── فراخوان اساتید (dispatch) ─── */
   dispatchCurrent: (token: string) =>
     request<{ data: DispatchCallViewData }>('/dispatch/calls/current', { headers: auth(token) }),
   dispatchCreate: (
@@ -456,7 +488,7 @@ export const api = {
       body: JSON.stringify(body),
     }),
   dispatchChoose: (token: string, callId: number, offerId: number, paymentMethod: 'wallet' | 'gateway') =>
-    request<{ data: BookResultShape }>(`/dispatch/calls/${callId}/choose`, {
+    request<{ data: DispatchChooseResult }>(`/dispatch/calls/${callId}/choose`, {
       method: 'POST',
       headers: auth(token),
       body: JSON.stringify({ offer_id: offerId, payment_method: paymentMethod }),
@@ -489,6 +521,11 @@ export const api = {
       method: 'POST',
       headers: auth(token),
     }),
+
+  adminDashboard: (token: string) =>
+    request<{ data: Record<string, unknown> }>('/admin/dashboard', { headers: auth(token) }),
+  adminPendingTeachers: (token: string) =>
+    request<ListResponse<Teacher>>('/admin/teachers?status=pending', { headers: auth(token) }),
 };
 
 export function toman(n: number): string {

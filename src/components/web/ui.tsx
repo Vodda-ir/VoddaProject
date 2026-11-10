@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { CSSProperties, ReactNode } from 'react';
 import { Icon } from '../Icon';
+import { TierSeal, tierOf } from './tier';
 
 export function GeoPattern({ color = '#fff', opacity = 0.08 }: { color?: string; opacity?: number }) {
   const id = 'wgeo' + color.replace(/[^a-z0-9]/gi, '');
@@ -76,16 +77,19 @@ export function WebBtn({
 export function Avatar({
   size = 48,
   ring = false,
-  verified = false,
+  tier,
   emoji,
   imageUrl,
 }: {
   size?: number;
   ring?: boolean;
-  verified?: boolean;
+  /** درجه استاد — مهر رنگی درجه جای تیک سبز ثابت می‌نشیند؛ بدون درجه هیچ نشانی نیست. */
+  tier?: string | null;
   emoji?: string;
   imageUrl?: string;
 }) {
+  const seal = tierOf(tier);
+  const sealSize = Math.max(13, Math.round(size * 0.36));
   return (
     <div style={{ position: 'relative', flexShrink: 0 }}>
       <div
@@ -110,24 +114,23 @@ export function Avatar({
           <Icon name="user" size={size * 0.55} stroke={1.6} style={{ color: 'var(--olive-500)' }} />
         )}
       </div>
-      {verified && (
+      {seal && (
         <span
           style={{
             position: 'absolute',
             insetInlineEnd: -2,
             bottom: -2,
-            width: size * 0.4,
-            height: size * 0.4,
+            width: sealSize,
+            height: sealSize,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            border: '2px solid var(--surface)',
+            border: `2px solid var(--surface)`,
             borderRadius: '50%',
-            color: '#fff',
-            background: 'var(--olive-600)',
+            background: 'var(--surface)',
           }}
         >
-          <Icon name="check" size={size * 0.24} stroke={3} />
+          <TierSeal tier={seal} size={sealSize - 4} />
         </span>
       )}
     </div>
@@ -251,6 +254,80 @@ export function PublicSurface({
       }}
     >
       {children}
+    </div>
+  );
+}
+
+/* ═════════ «دربارهٔ استاد» — بازچینش ساختاریافتهٔ بیوگرافی ═════════
+   الگوی متن: بندهای 🌙/📖 به‌صورت پاراگراف با نشان ایموجی،
+   بند 🎯 به‌صورت فهرست مهارت‌های چیپی و بند 📍 به‌صورت نشان‌های طلایی.
+   این رندر مشترک، متنِ چندخطی را مرتب و خوانا نگه می‌دارد. */
+type BioBlock =
+  | { kind: 'para'; emoji: string; text: string }
+  | { kind: 'chips'; title: string; items: string[] }
+  | { kind: 'meta'; items: string[] };
+
+export function parseTeacherBio(bio?: string | null): BioBlock[] {
+  if (!bio) return [];
+  const rawBlocks = bio.trim().split(/\n\s*\n/);
+  const blocks: BioBlock[] = [];
+  for (const rawBlock of rawBlocks) {
+    const lines = rawBlock.split('\n').map((line) => line.trim()).filter(Boolean);
+    if (!lines.length) continue;
+    const first = lines[0];
+    if (first.startsWith('🎯')) {
+      const title = first.replace(/^🎯\s*/, '').replace(/:\s*$/, '') || 'زمینه‌های تدریس';
+      const items = lines.slice(1).map((line) => line.replace(/^[•\-*]\s*/, '').trim()).filter(Boolean);
+      blocks.push({ kind: 'chips', title, items: items.length ? items : lines.slice(1) });
+      continue;
+    }
+    if (first.startsWith('📍')) {
+      const merged = lines.map((line) => line.replace(/^📍\s*/, '')).join(' ');
+      const items = merged.split('|').map((part) => part.trim()).filter(Boolean);
+      blocks.push({ kind: 'meta', items });
+      continue;
+    }
+    const emojiMatch = first.match(/^(\p{Extended_Pictographic})/u);
+    const emoji = emojiMatch?.[1] ?? '';
+    const text = emoji ? first.slice(emoji.length).trim() : first;
+    const rest = lines.slice(1).join(' ');
+    blocks.push({ kind: 'para', emoji, text: [text, rest].filter(Boolean).join(' ') });
+  }
+  return blocks;
+}
+
+export function TeacherBio({ bio, empty = 'اطلاعاتی ثبت نشده است.' }: { bio?: string | null; empty?: string }) {
+  const blocks = parseTeacherBio(bio);
+  if (!blocks.length) {
+    return <p className="teacher-bio-para"><span>{empty}</span></p>;
+  }
+  return (
+    <div className="teacher-bio">
+      {blocks.map((block, index) => {
+        if (block.kind === 'para') {
+          return (
+            <p key={index} className="teacher-bio-para">
+              {block.emoji ? <span className="teacher-bio-emoji" aria-hidden="true">{block.emoji}</span> : null}
+              <span>{block.text}</span>
+            </p>
+          );
+        }
+        if (block.kind === 'chips') {
+          return (
+            <div key={index} className="teacher-bio-block">
+              <strong className="teacher-bio-block-title"><Icon name="sparkle" size={14} /> {block.title}</strong>
+              <div className="teacher-bio-chips">
+                {block.items.map((item) => <span key={item} className="teacher-bio-chip">{item}</span>)}
+              </div>
+            </div>
+          );
+        }
+        return (
+          <div key={index} className="teacher-bio-chips">
+            {block.items.map((item) => <span key={item} className="teacher-bio-chip gold">{item}</span>)}
+          </div>
+        );
+      })}
     </div>
   );
 }

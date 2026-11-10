@@ -38,13 +38,12 @@ const routeTitles: Record<AppRouteName, string> = {
   search: "جستجوی استاد",
   teacher: "پروفایل استاد",
   book: "رزرو جلسه",
-  dispatch: "فراخوان استاد",
   sessions: "جلسات من",
   wallet: "کیف پول",
   profile: "پروفایل",
   "profile-edit": "ویرایش پروفایل",
+  dispatch: "فراخوان اساتید",
   "teacher-home": "داشبورد استاد",
-  "teacher-dispatch": "فراخوان‌های زنده",
   "teacher-requests": "درخواست‌های جلسه",
   "teacher-sessions": "جلسات استاد",
   "teacher-services": "خدمات استاد",
@@ -53,12 +52,12 @@ const routeTitles: Record<AppRouteName, string> = {
   "teacher-withdraw": "برداشت",
   "teacher-profile": "پروفایل استاد",
   "teacher-reviews": "نظرها",
+  "teacher-dispatch": "فراخوان‌های زنده",
   "not-found": "صفحه پیدا نشد",
 };
 
 const teacherRoutes = new Set<AppRouteName>([
   "teacher-home",
-  "teacher-dispatch",
   "teacher-requests",
   "teacher-sessions",
   "teacher-services",
@@ -67,6 +66,7 @@ const teacherRoutes = new Set<AppRouteName>([
   "teacher-withdraw",
   "teacher-profile",
   "teacher-reviews",
+  "teacher-dispatch",
 ]);
 
 function RoutePlaceholder({
@@ -129,18 +129,16 @@ function UniversalAppContent({ config, runtime }: { config: UniversalAppConfig; 
     <LearnerTeacherProfileScreen teacherId={route.params.id ?? ""} config={config} />
   ) : route.name === "book" ? (
     <LearnerBookingScreen teacherId={route.params.id ?? ""} config={config} />
-  ) : route.name === "dispatch" ? (
-    <LearnerDispatchScreen config={config} />
   ) : route.name === "sessions" ? (
     <LearnerSessionsScreen />
   ) : route.name === "wallet" ? (
     <LearnerWalletScreen />
   ) : route.name === "profile" ? (
     <LearnerProfileScreen config={config} />
+  ) : route.name === "dispatch" ? (
+    <LearnerDispatchScreen config={config} />
   ) : route.name === "teacher-home" ? (
     <TeacherDashboardScreen config={config} />
-  ) : route.name === "teacher-dispatch" ? (
-    <TeacherDispatchScreen config={config} />
   ) : route.name === "teacher-requests" ? (
     <TeacherSessionsScreen mode="requests" />
   ) : route.name === "teacher-sessions" ? (
@@ -157,6 +155,8 @@ function UniversalAppContent({ config, runtime }: { config: UniversalAppConfig; 
     <TeacherProfileScreen config={config} />
   ) : route.name === "teacher-reviews" ? (
     <TeacherReviewsScreen />
+  ) : route.name === "teacher-dispatch" ? (
+    <TeacherDispatchScreen config={config} />
   ) : (
     <RoutePlaceholder routeName={route.name} pathname={route.pathname} config={config} />
   );

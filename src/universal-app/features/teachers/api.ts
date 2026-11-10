@@ -1,4 +1,4 @@
-import type { ApiEnvelope } from "../../platform/api";
+import { asArray, asInteger, type ApiEnvelope } from "../../platform/api";
 import type { PlatformRuntime } from "../../platform/types";
 import {
   parseTeacher,
@@ -12,9 +12,15 @@ export type TeacherSearchParams = {
   field?: string;
   city?: string;
   female?: boolean;
-  officialServiceId?: number;
   limit?: number;
   offset?: number;
+  /** فراخوان: فیلتر موضوع رسمی — فقط اساتیدی که این خدمت رسمی را تدریس می‌کنند. */
+  officialServiceId?: number;
+};
+
+export type TeacherSearchResult = {
+  items: Teacher[];
+  total: number;
 };
 
 type TeacherDetailData = {
@@ -22,7 +28,7 @@ type TeacherDetailData = {
   reviews?: unknown;
 };
 
-export async function searchTeachers(runtime: PlatformRuntime, params: TeacherSearchParams = {}): Promise<Teacher[]> {
+function buildTeacherQuery(params: TeacherSearchParams): string {
   const search = new URLSearchParams();
   const query = params.query?.trim();
   const field = params.field?.trim();
@@ -38,9 +44,27 @@ export async function searchTeachers(runtime: PlatformRuntime, params: TeacherSe
   search.set("limit", String(Math.min(100, Math.max(1, params.limit ?? 50))));
   search.set("offset", String(Math.max(0, params.offset ?? 0)));
 
-  const response = await runtime.request<ApiEnvelope>(`/teachers?${search.toString()}`);
-  const rows = Array.isArray(response.data) ? response.data : [];
-  return rows.map(parseTeacher).filter((teacher) => teacher.id > 0);
+  return search.toString();
+}
+
+function parseTeacherRows(response: ApiEnvelope & { total?: unknown }): TeacherSearchResult {
+  const rows = asArray(response.data);
+  const items = rows.map(parseTeacher).filter((teacher) => teacher.id > 0);
+  return { items, total: Math.max(asInteger(response.total, items.length), items.length) };
+}
+
+export async function searchTeachersPage(
+  runtime: PlatformRuntime,
+  params: TeacherSearchParams = {},
+): Promise<TeacherSearchResult> {
+  const response = await runtime.request<ApiEnvelope & { total?: unknown }>(
+    `/teachers?${buildTeacherQuery(params)}`,
+  );
+  return parseTeacherRows(response);
+}
+
+export async function searchTeachers(runtime: PlatformRuntime, params: TeacherSearchParams = {}): Promise<Teacher[]> {
+  return (await searchTeachersPage(runtime, params)).items;
 }
 
 export async function getTeacherDetail(runtime: PlatformRuntime, id: number): Promise<TeacherDetail> {

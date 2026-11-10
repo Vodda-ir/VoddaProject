@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import type { Teacher } from '@/lib/api';
 import { Icon } from '@/components/Icon';
-import { Nav, Footer } from '@/components/web/sections';
+import { Nav, Footer, bioIntro } from '@/components/web/sections';
 import { Avatar, PublicPageHero } from '@/components/web/ui';
 import { fullUrl } from '@/lib/auth';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
@@ -56,9 +56,16 @@ export default function SearchPage() {
       .then((response) => response.json())
       .then((body) => {
         if (!active) return;
-        const rows = Array.isArray(body?.data) ? body.data : [];
-        const found = rows.find((item: { id: number }) => item.id === topicId);
-        setTopicTitle(found?.title || '');
+        const groups: Array<{ services?: Array<{ id: number; title: string }> }> = body?.data?.categories ?? [];
+        let foundTitle = '';
+        for (const group of groups) {
+          const hit = group.services?.find((item) => item.id === topicId);
+          if (hit) {
+            foundTitle = hit.title;
+            break;
+          }
+        }
+        setTopicTitle(foundTitle);
       })
       .catch(() => {
         if (active) setTopicTitle('');
@@ -250,7 +257,7 @@ function SearchTeacherCard({ teacher }: { teacher: Teacher }) {
   return (
     <Link href={`/teachers/${teacher.id}`} className="web-search-teacher-card">
       <div className="web-search-teacher-top">
-        <Avatar size={58} ring verified={teacher.verified} imageUrl={fullUrl(teacher.user?.avatar_url)} />
+        <Avatar size={58} ring tier={teacher.tier} imageUrl={fullUrl(teacher.user?.avatar_url)} />
         <div style={{ minWidth: 0, flex: 1 }}>
           <strong>{name}</strong>
           <span>{teacher.tag || teacher.field}</span>
@@ -266,7 +273,7 @@ function SearchTeacherCard({ teacher }: { teacher: Teacher }) {
         <span><Icon name="message" size={14} />{toFaDigits(teacher.reviews || 0)} نظر</span>
       </div>
 
-      {teacher.bio && <p>{teacher.bio}</p>}
+      {teacher.bio && <p>{bioIntro(teacher.bio)}</p>}
 
       <div className="web-search-teacher-footer">
         <span>

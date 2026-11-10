@@ -22,6 +22,7 @@ import {
 } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
 import { toFaDigits } from "../wallet/WalletTransactionCard";
+import { payBooking } from "../booking/api";
 import {
   cancelLearnerSession,
   createSessionReview,
@@ -39,6 +40,7 @@ const statusLabels: Record<string, string> = {
   confirmed: "تأیید شده",
   done: "انجام شده",
   canceled: "لغو شده",
+  awaiting_payment: "در انتظار پرداخت",
 };
 
 function officialTime(session: LearnerSession): string {
@@ -57,11 +59,13 @@ function SessionCard({
   busy,
   onCancel,
   onRate,
+  onPay,
 }: {
   session: LearnerSession;
   busy: boolean;
   onCancel: () => void;
   onRate: () => void;
+  onPay: () => void;
 }) {
   return (
     <Card className="vodda-card--interactive" style={{ display: "grid", gap: 13, borderRadius: 24, padding: 15, boxShadow: "0 0 6px rgba(46,54,34,.04)" }}>
@@ -100,6 +104,18 @@ function SessionCard({
         <p style={{ ...typography.caption, margin: 0, color: colors.danger }}>
           دلیل لغو: {session.rejectNote}
         </p>
+      ) : null}
+
+      {session.status === "awaiting_payment" ? (
+        <div style={{ display: "grid", gap: spacing.sm }}>
+          <span style={{ ...typography.caption, color: colors.goldDark }}>
+            پرداخت آنلاین تکمیل نشده؛ با تکمیل پرداخت، درخواست برای استاد ارسال می‌شود.
+          </span>
+          <Button fullWidth loading={busy} onClick={onPay}>
+            <Icon name="wallet" size={17} />
+            تکمیل پرداخت
+          </Button>
+        </div>
       ) : null}
 
       {session.status === "pending" || session.status === "confirmed" ? (
@@ -176,6 +192,24 @@ export function LearnerSessionsScreen() {
       await load(when);
     } catch (cancelError) {
       setError(messageOf(cancelError));
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function paySession(session: LearnerSession) {
+    if (busyId !== null) return;
+    setBusyId(session.id);
+    setError(null);
+    try {
+      const gateway = await payBooking(runtime, session.id);
+      if (runtime.kind === "native") {
+        window.open(gateway.redirect_url, "_blank");
+      } else {
+        window.location.href = gateway.redirect_url;
+      }
+    } catch (payError) {
+      setError(messageOf(payError));
     } finally {
       setBusyId(null);
     }
@@ -260,6 +294,7 @@ export function LearnerSessionsScreen() {
               busy={busyId === session.id}
               onCancel={() => setCancelTarget(session)}
               onRate={() => openRating(session)}
+              onPay={() => void paySession(session)}
             />
           ))}
         </div>

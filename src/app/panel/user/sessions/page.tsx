@@ -26,6 +26,7 @@ const STATUS_META: Record<string, { status: 'pending' | 'approved' | 'done' | 'c
   confirmed: { status: 'approved', label: 'تأییدشده' },
   done: { status: 'done', label: 'برگزارشده' },
   canceled: { status: 'canceled', label: 'لغوشده' },
+  awaiting_payment: { status: 'pending', label: 'در انتظار پرداخت' },
 };
 
 export default function UserSessionsPage() {
@@ -73,6 +74,19 @@ export default function UserSessionsPage() {
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'لغو جلسه انجام نشد.');
     } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function paySession(session: SessionListItem) {
+    if (!token || busyId !== null) return;
+    setBusyId(session.id);
+    setError('');
+    try {
+      const response = await api.paySession(token, session.id);
+      window.location.href = response.data.redirect_url;
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'شروع پرداخت انجام نشد.');
       setBusyId(null);
     }
   }
@@ -202,7 +216,7 @@ export default function UserSessionsPage() {
           <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
             {rows.map((session) => (
               <article className="ops-row" key={`${session.when}-${session.id}`} style={{ opacity: busyId === session.id ? .55 : 1, flexWrap: 'wrap' }}>
-                <Avatar size={46} ring verified={session.teacher?.verified} imageUrl={fullUrl(session.teacher?.user?.avatar_url)} />
+                <Avatar size={46} ring tier={session.teacher?.tier} imageUrl={fullUrl(session.teacher?.user?.avatar_url)} />
                 <div className="ops-row-main">
                   <div className="ops-row-title">
                     <strong>{session.teacher?.user?.name || 'استاد'}</strong>
@@ -230,6 +244,11 @@ export default function UserSessionsPage() {
                       <Icon name="clock" size={13} /> در انتظار پاسخ استاد؛ مبلغ از کیف پول شما رزرو شده است
                     </div>
                   )}
+                  {session.status === 'awaiting_payment' && (
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 7, padding: '6px 10px', borderRadius: 9, background: 'var(--gold-bg)', color: '#8d6d1f', fontSize: 11 }}>
+                      <Icon name="clock" size={13} /> پرداخت آنلاین تکمیل نشده؛ با تکمیل پرداخت، درخواست برای استاد ارسال می‌شود
+                    </div>
+                  )}
                 </div>
                 <div className="ops-row-actions">
                   {session.status === 'done' && !session.rated && (
@@ -239,6 +258,11 @@ export default function UserSessionsPage() {
                   )}
                   {session.status === 'confirmed' && (
                     <Link href={`/panel/live/${session.id}`}><PanelButton tone="primary" icon="video">ورود به کلاس</PanelButton></Link>
+                  )}
+                  {session.status === 'awaiting_payment' && (
+                    <PanelButton tone="primary" icon="wallet" disabled={busyId === session.id} onClick={() => void paySession(session)}>
+                      {busyId === session.id ? 'در حال انتقال…' : 'تکمیل پرداخت'}
+                    </PanelButton>
                   )}
                   {(session.status === 'pending' || session.status === 'confirmed') && (
                     <PanelButton tone="danger" icon="x" disabled={busyId === session.id} onClick={() => void cancelSession(session)}>

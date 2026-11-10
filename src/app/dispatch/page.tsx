@@ -60,6 +60,7 @@ export default function DispatchPage() {
   const [busyOffer, setBusyOffer] = useState(0);
   const [creating, setCreating] = useState(false);
   const [canceling, setCanceling] = useState(false);
+  const [payMethod, setPayMethod] = useState<'wallet' | 'gateway'>('gateway');
   const [error, setError] = useState('');
   const [tick, setTick] = useState(0);
   const pollRef = useRef<number | null>(null);
@@ -178,18 +179,22 @@ export default function DispatchPage() {
       setBusyOffer(offerId);
       setError('');
       try {
-        const result = await api.dispatchChoose(token, call.id, offerId, 'wallet');
+        const result = await api.dispatchChoose(token, call.id, offerId, payMethod);
         await refresh();
         if (result.data?.redirect_url) window.location.href = result.data.redirect_url;
       } catch (cause) {
         const message = cause instanceof Error ? cause.message : 'ثبت رزرو انجام نشد.';
-        setError(message.includes('کیف') ? 'کیف پول کافی نیست؛ ابتدا کیف پول را شارژ کنید.' : message);
+        setError(
+          payMethod === 'wallet' && message.includes('کیف')
+            ? 'کیف پول کافی نیست؛ ابتدا کیف پول را شارژ کنید یا پرداخت آنلاین را برگزینید.'
+            : message,
+        );
         await refresh();
       } finally {
         setBusyOffer(0);
       }
     },
-    [busyOffer, call, refresh, token],
+    [busyOffer, call, payMethod, refresh, token],
   );
 
   const decline = useCallback(
@@ -216,8 +221,8 @@ export default function DispatchPage() {
       <Nav />
       <PublicPageHero
         kicker="فراخوان اساتید"
-        title="موضوع را بگو؛ استادها مسابقه بدهند، تو انتخاب کن"
-        description="درخواست شما بین همه اساتید آن موضوع پخش می‌شود؛ نخستین استادهایی که اعلام آمادگی کنند، زنده همین‌جا دیده می‌شوند و شما یکی را تأیید می‌کنید."
+        title="موضوع را بگو؛ اساتید اعلام آمادگی کنند، شما انتخاب کنید"
+        description="درخواست شما بین همهٔ اساتید آن موضوع به‌صورت زنده پخش می‌شود؛ نخستین استادهایی که اعلام آمادگی کنند، همین‌جا دیده می‌شوند و شما یکی را تأیید می‌کنید تا جلسه رزرو شود."
         icon="bell"
       />
 
@@ -225,7 +230,7 @@ export default function DispatchPage() {
         {!loading && authed === false ? (
           <section className="ops-data-surface" style={{ textAlign: 'center', padding: '28px 18px' }}>
             <span style={{ color: 'var(--olive-500)' }}><Icon name="bell" size={34} /></span>
-            <h2 style={{ margin: '10px 0 6px', fontSize: 20 }}>برای برزنام فراخوان، ابتدا وارد حساب شوید</h2>
+            <h2 style={{ margin: '10px 0 6px', fontSize: 20 }}>برای ثبت فراخوان، ابتدا وارد حساب شوید</h2>
             <p style={{ margin: '0 0 16px', color: 'var(--ink-2)' }}>ورود با شماره موبایل و کد تأیید انجام می‌شود.</p>
             <Link href="/panel/login" className="ops-primary-btn" style={{ display: 'inline-flex' }}>
               ورود به حساب وُدّا
@@ -235,7 +240,7 @@ export default function DispatchPage() {
           <MatchedCard call={call} candidates={candidates} onNew={() => setView({ call: null, candidates: [] })} />
         ) : phase === 'searching' && call ? (
           <div style={{ display: 'grid', gap: 16 }}>
-            <section className="ops-data-surface" style={{ position: 'relative', overflow: 'hidden' }}>
+            <section className="ops-data-surface neon-frame" style={{ position: 'relative', overflow: 'hidden' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                 <span
                   aria-hidden="true"
@@ -266,6 +271,38 @@ export default function DispatchPage() {
                 <strong>{toFaDigits(candidates.length)} پاسخ زنده</strong>
               </div>
               <span className="vodda-live-dot" style={{ fontSize: 12, color: 'var(--olive-500)' }}>● زنده</span>
+            </div>
+
+            <div
+              role="radiogroup"
+              aria-label="روش پرداخت"
+              style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, padding: 6, borderRadius: 16, border: '1px solid var(--sand-200)', background: '#fff' }}
+            >
+              {([
+                ['gateway', '💳 پرداخت آنلاین (سامان)'],
+                ['wallet', '👛 پرداخت از کیف پول'],
+              ] as const).map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  role="radio"
+                  aria-checked={payMethod === value}
+                  onClick={() => setPayMethod(value)}
+                  style={{
+                    padding: '10px 8px',
+                    borderRadius: 11,
+                    fontSize: 12.5,
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                    color: payMethod === value ? '#fff' : 'var(--ink-2)',
+                    background: payMethod === value ? 'var(--olive-600)' : 'transparent',
+                    border: 'none',
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
 
             {candidates.length === 0 ? (
@@ -304,7 +341,7 @@ export default function DispatchPage() {
         ) : (
           <div style={{ display: 'grid', gap: 16 }}>
             {topic ? (
-              <section className="ops-data-surface">
+              <section className="ops-data-surface neon-frame-gold">
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
                   <span style={{ display: 'grid', placeItems: 'center', width: 44, height: 44, borderRadius: 14, background: 'var(--olive-50)', color: 'var(--olive-600)', flex: '0 0 auto' }}>
                     <Icon name="quran" size={21} />
@@ -356,7 +393,7 @@ export default function DispatchPage() {
 
                 <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 16 }}>
                   <button type="button" className="ops-primary-btn" onClick={() => void start()} disabled={creating}>
-                    {creating ? 'در حال ارسال…' : '🔔 برزنام فراخوان برای اساتید'}
+                    {creating ? 'در حال ارسال…' : '🔔 ثبت فراخوان برای اساتید'}
                   </button>
                   <Link href={`/search?official_service_id=${topic.id}`} className="ops-ghost-btn" style={{ display: 'inline-flex', alignItems: 'center' }}>
                     یا دیدن اساتید همین موضوع
@@ -368,7 +405,7 @@ export default function DispatchPage() {
                 <div className="ops-data-head" style={{ marginBottom: 12 }}>
                   <div>
                     <strong>۱. موضوع آموزش را انتخاب کنید</strong>
-                    <span style={{ display: 'block', marginTop: 2 }}>از فهرست رسمی خدمات وُدّا — {toFaDigits(catalog.length)} موضوع تایید‌شده</span>
+                    <span style={{ display: 'block', marginTop: 2 }}>از فهرست رسمی خدمات وُدّا — {toFaDigits(catalog.length)} موضوع تأییدشده</span>
                   </div>
                 </div>
                 <div className="web-search-fields" style={{ marginBottom: 14 }}>
@@ -482,7 +519,7 @@ function MatchedCard({
 }) {
   const chosen = candidates.find((item) => item.teacher_id === call.matched_teacher_id);
   return (
-    <section className="ops-data-surface" style={{ textAlign: 'center', padding: '26px 18px' }}>
+    <section className="ops-data-surface neon-frame-gold" style={{ textAlign: 'center', padding: '26px 18px' }}>
       <span style={{ color: 'var(--olive-500)' }}><Icon name="checkCircle" size={40} /></span>
       <h2 style={{ margin: '10px 0 6px', fontSize: 21 }}>جلسه شما رزرو شد 🎉</h2>
       <p style={{ margin: '0 0 16px', color: 'var(--ink-2)', lineHeight: 1.9 }}>

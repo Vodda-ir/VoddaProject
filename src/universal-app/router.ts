@@ -8,13 +8,12 @@ export type AppRouteName =
   | "search"
   | "teacher"
   | "book"
-  | "dispatch"
   | "sessions"
   | "wallet"
   | "profile"
   | "profile-edit"
+  | "dispatch"
   | "teacher-home"
-  | "teacher-dispatch"
   | "teacher-requests"
   | "teacher-sessions"
   | "teacher-services"
@@ -23,6 +22,7 @@ export type AppRouteName =
   | "teacher-withdraw"
   | "teacher-profile"
   | "teacher-reviews"
+  | "teacher-dispatch"
   | "not-found";
 
 export type AppRoute = {
@@ -35,13 +35,12 @@ export const appRoutePaths = {
   home: "/",
   login: "/login",
   search: "/search",
-  dispatch: "/dispatch",
   sessions: "/sessions",
   wallet: "/wallet",
   profile: "/profile",
   "profile-edit": "/profile/edit",
+  dispatch: "/dispatch",
   "teacher-home": "/t",
-  "teacher-dispatch": "/t/dispatch",
   "teacher-requests": "/t/requests",
   "teacher-sessions": "/t/sessions",
   "teacher-services": "/t/services",
@@ -50,6 +49,7 @@ export const appRoutePaths = {
   "teacher-withdraw": "/t/withdraw",
   "teacher-profile": "/t/profile",
   "teacher-reviews": "/t/reviews",
+  "teacher-dispatch": "/t/dispatch",
 } as const;
 
 type StaticAppRouteName = keyof typeof appRoutePaths;

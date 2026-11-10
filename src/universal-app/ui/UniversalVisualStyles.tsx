@@ -160,13 +160,31 @@ export function UniversalVisualStyles() {
         70% { transform: scale(1.45); opacity: 0; }
         100% { transform: scale(1.45); opacity: 0; }
       }
-      .vodda-dialog {
-        animation: vodda-dialog-in 170ms ease-out;
-      }
-      .vodda-sheet {
-        animation: vodda-sheet-in 190ms ease-out;
-      }
       /* فراخوان — live broadcast animations */
+      .vodda-neon {
+        border: 1.5px solid rgba(114, 131, 80, 0.55) !important;
+        box-shadow:
+          0 0 0 1px rgba(114, 131, 80, 0.12),
+          0 0 18px rgba(114, 131, 80, 0.18),
+          inset 0 0 22px rgba(114, 131, 80, 0.05) !important;
+        animation: vodda-neon-olive 3.4s ease-in-out infinite;
+      }
+      .vodda-neon-gold {
+        border: 1.5px solid rgba(191, 149, 64, 0.6) !important;
+        box-shadow:
+          0 0 0 1px rgba(191, 149, 64, 0.14),
+          0 0 20px rgba(191, 149, 64, 0.2),
+          inset 0 0 22px rgba(191, 149, 64, 0.06) !important;
+        animation: vodda-neon-gold 3.4s ease-in-out infinite;
+      }
+      @keyframes vodda-neon-olive {
+        0%, 100% { box-shadow: 0 0 0 1px rgba(114, 131, 80, 0.12), 0 0 14px rgba(114, 131, 80, 0.14), inset 0 0 18px rgba(114, 131, 80, 0.04) !important; }
+        50% { box-shadow: 0 0 0 1px rgba(114, 131, 80, 0.18), 0 0 24px rgba(114, 131, 80, 0.24), inset 0 0 26px rgba(114, 131, 80, 0.07) !important; }
+      }
+      @keyframes vodda-neon-gold {
+        0%, 100% { box-shadow: 0 0 0 1px rgba(191, 149, 64, 0.14), 0 0 16px rgba(191, 149, 64, 0.16), inset 0 0 18px rgba(191, 149, 64, 0.05) !important; }
+        50% { box-shadow: 0 0 0 1px rgba(191, 149, 64, 0.2), 0 0 26px rgba(191, 149, 64, 0.26), inset 0 0 26px rgba(191, 149, 64, 0.08) !important; }
+      }
       .vodda-dispatch-pulse {
         width: 11px;
         height: 11px;
@@ -195,6 +213,12 @@ export function UniversalVisualStyles() {
         70% { box-shadow: 0 0 0 7px rgba(94, 110, 67, 0); }
         100% { box-shadow: 0 0 0 0 rgba(94, 110, 67, 0); }
       }
+      .vodda-dialog {
+        animation: vodda-dialog-in 170ms ease-out;
+      }
+      .vodda-sheet {
+        animation: vodda-sheet-in 190ms ease-out;
+      }
       @keyframes vodda-spin { to { transform: rotate(360deg); } }
       @keyframes vodda-fade-in { from { opacity: 0; } to { opacity: 1; } }
       @keyframes vodda-dialog-in {
@@ -217,7 +241,9 @@ export function UniversalVisualStyles() {
         .vodda-skeleton::after,
         .vodda-live-dot::after,
         .vodda-dispatch-pulse::after,
-        .vodda-dispatch-radar {
+        .vodda-dispatch-radar,
+        .vodda-neon,
+        .vodda-neon-gold {
           animation: none !important;
           transition: none !important;
         }

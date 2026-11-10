@@ -118,6 +118,16 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
   const [roleSheetOpen, setRoleSheetOpen] = useState(false);
   const [dispatchBadge, setDispatchBadge] = useState(0);
 
+  const loadDispatchBadge = useCallback(async () => {
+    try {
+      const inbox = await getTeacherDispatchInbox(runtime);
+      const waiting = inbox.offers.filter((offer) => offer.status === "waiting").length;
+      setDispatchBadge(inbox.calls.length + waiting);
+    } catch {
+      // badge is best-effort
+    }
+  }, [runtime]);
+
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -128,16 +138,6 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
       setError(messageOf(loadError));
     } finally {
       setLoading(false);
-    }
-  }, [runtime]);
-
-  const loadDispatchBadge = useCallback(async () => {
-    try {
-      const inbox = await getTeacherDispatchInbox(runtime);
-      const waiting = inbox.offers.filter((offer) => offer.status === "waiting").length;
-      setDispatchBadge(inbox.calls.length + waiting);
-    } catch {
-      // badge is best-effort
     }
   }, [runtime]);
 
@@ -196,6 +196,40 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
         </span>
       </button>
 
+      {loading ? (
+        <LoadingState label="در حال دریافت داشبورد استاد…" style={{ minHeight: 180 }} />
+      ) : error || !snapshot || !teacher ? (
+        <ErrorState
+          title="دریافت داشبورد ناموفق بود"
+          description={error ?? "اطلاعات داشبورد دریافت نشد."}
+          action={<Button onClick={() => void load()}>تلاش دوباره</Button>}
+        />
+      ) : (
+        <>
+      <div>
+        <WalletHero label="موجودی قابل برداشت" amount={formatWalletAmount(teacher.wallet)}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1px 1fr 1px 1fr", alignItems: "center" }}>
+            {[
+              ["امتیاز", (rating === "—" ? rating : toFaDigits(rating)) + " ★"],
+              ["نظرها", toFaDigits(teacher.reviews)],
+              ["جلسات", toFaDigits(teacher.sessions)],
+            ].flatMap(([label, value], index) => {
+              const metric = (
+                <div key={label} style={{ minWidth: 0, textAlign: "center" }}>
+                  <span style={{ display: "block", fontSize: 11, color: "rgba(255,255,255,.60)" }}>{label}</span>
+                  <strong style={{ display: "block", marginTop: 3, fontSize: 15, fontWeight: 800, color: colors.surface }}>{value}</strong>
+                </div>
+              );
+              if (index === 2) return [metric];
+              return [metric, <span key={label + "-divider"} aria-hidden="true" style={{ width: 1, height: 34, background: "rgba(255,255,255,.24)" }} />];
+            })}
+          </div>
+        </WalletHero>
+        <p style={{ margin: "10px 0 0", textAlign: "center", fontSize: 11.5, lineHeight: 1.6, color: colors.inkMuted }}>
+          آمار دوره‌ای درآمد تا زمان وجود گزارش واقعی نمایش داده نمی‌شود.
+        </p>
+      </div>
+
       <button
         type="button"
         className="vodda-tappable vodda-enter"
@@ -251,40 +285,6 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
           <Icon name="chevronL" size={16} style={{ flex: "0 0 auto", color: colors.inkFaint }} />
         )}
       </button>
-
-      {loading ? (
-        <LoadingState label="در حال دریافت داشبورد استاد…" style={{ minHeight: 180 }} />
-      ) : error || !snapshot || !teacher ? (
-        <ErrorState
-          title="دریافت داشبورد ناموفق بود"
-          description={error ?? "اطلاعات داشبورد دریافت نشد."}
-          action={<Button onClick={() => void load()}>تلاش دوباره</Button>}
-        />
-      ) : (
-        <>
-      <div>
-        <WalletHero label="موجودی قابل برداشت" amount={formatWalletAmount(teacher.wallet)}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1px 1fr 1px 1fr", alignItems: "center" }}>
-            {[
-              ["امتیاز", (rating === "—" ? rating : toFaDigits(rating)) + " ★"],
-              ["نظرها", toFaDigits(teacher.reviews)],
-              ["جلسات", toFaDigits(teacher.sessions)],
-            ].flatMap(([label, value], index) => {
-              const metric = (
-                <div key={label} style={{ minWidth: 0, textAlign: "center" }}>
-                  <span style={{ display: "block", fontSize: 11, color: "rgba(255,255,255,.60)" }}>{label}</span>
-                  <strong style={{ display: "block", marginTop: 3, fontSize: 15, fontWeight: 800, color: colors.surface }}>{value}</strong>
-                </div>
-              );
-              if (index === 2) return [metric];
-              return [metric, <span key={label + "-divider"} aria-hidden="true" style={{ width: 1, height: 34, background: "rgba(255,255,255,.24)" }} />];
-            })}
-          </div>
-        </WalletHero>
-        <p style={{ margin: "10px 0 0", textAlign: "center", fontSize: 11.5, lineHeight: 1.6, color: colors.inkMuted }}>
-          آمار دوره‌ای درآمد تا زمان وجود گزارش واقعی نمایش داده نمی‌شود.
-        </p>
-      </div>
 
       {pending.length > 0 ? (
         <button

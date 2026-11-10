@@ -1,6 +1,7 @@
 import { api } from '@/lib/api';
 import { Icon } from '@/components/Icon';
-import { Avatar, PublicSurface, Stars, WebBtn } from '@/components/web/ui';
+import { Avatar, PublicSurface, Stars, TeacherBio, WebBtn } from '@/components/web/ui';
+import { TierChip } from '@/components/web/tier';
 import { Nav, Footer } from '@/components/web/sections';
 import { fullUrl } from '@/lib/auth';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
@@ -39,11 +40,11 @@ export default async function TeacherDetailPage({ params }: { params: Promise<{ 
 
         <section className="teacher-public-hero">
           <div className="teacher-public-profile">
-            <Avatar size={92} ring verified={teacher.verified} imageUrl={fullUrl(teacher.user?.avatar_url)} />
+            <Avatar size={92} ring tier={teacher.tier} imageUrl={fullUrl(teacher.user?.avatar_url)} />
             <div style={{ minWidth: 0, flex: 1 }}>
               <div className="teacher-public-name-row">
                 <h1>{name}</h1>
-                {teacher.verified && <span><Icon name="checkCircle" size={14} />تأییدشده</span>}
+                <TierChip tier={teacher.tier} />
               </div>
               <strong className="teacher-public-tag">{teacher.tag || teacher.field || 'استاد وُدّا'}</strong>
               <div className="teacher-public-location">
@@ -67,7 +68,7 @@ export default async function TeacherDetailPage({ params }: { params: Promise<{ 
                 <span><Icon name="user" size={18} /></span>
                 <h2>دربارهٔ استاد</h2>
               </div>
-              <p className="teacher-public-bio">{teacher.bio || 'اطلاعاتی ثبت نشده است.'}</p>
+              <TeacherBio bio={teacher.bio} />
             </section>
 
             <section>
@@ -127,7 +128,7 @@ export default async function TeacherDetailPage({ params }: { params: Promise<{ 
             )}
           </div>
 
-          <aside className="teacher-booking-card">
+          <aside className="teacher-booking-card neon-frame-gold">
             <span className="teacher-booking-icon"><Icon name="calendar" size={23} /></span>
             <small>رزرو جلسه</small>
             <strong>{services.length ? 'یک خدمت و زمان مناسب انتخاب کنید' : 'فعلاً خدمت قابل رزروی وجود ندارد'}</strong>

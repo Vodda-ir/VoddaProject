@@ -330,8 +330,8 @@ function DispatchBanner({ config }: { config: UniversalAppConfig }) {
     <button
       type="button"
       onClick={() => navigateApp("/dispatch", config)}
-      className="vodda-card vodda-card--interactive vodda-tappable vodda-enter"
-      aria-label="فراخوان استاد — اسنپ‌مانند"
+      className="vodda-card vodda-card--interactive vodda-tappable vodda-enter vodda-neon-gold"
+      aria-label="فراخوان اساتید — درخواست زنده استاد"
       style={{
         width: "100%",
         display: "flex",
@@ -363,10 +363,10 @@ function DispatchBanner({ config }: { config: UniversalAppConfig }) {
       </span>
       <span style={{ flex: 1, minWidth: 0 }}>
         <strong style={{ display: "block", fontSize: 14, fontWeight: 800 }}>
-          فراخوان استاد <span style={{ color: colors.goldDark }}>جدید</span>
+          فراخوان اساتید <span style={{ color: colors.goldDark }}>جدید</span>
         </strong>
         <span style={{ display: "block", fontSize: 11.5, color: colors.inkMuted, marginTop: 2, lineHeight: 1.7 }}>
-          موضوعت را بگو؛ استادها مسابقه بدهند، تو انتخاب کن
+          موضوعت را بگو؛ اساتید اعلام آمادگی کنند، تو انتخاب کن
         </span>
       </span>
       <Icon name="chevronL" size={16} style={{ flex: "0 0 auto", color: colors.olive700 }} />

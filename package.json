@@ -12,7 +12,8 @@
     "native:build": "npm --prefix native run build",
     "cap:sync": "npm --prefix native run cap:sync",
     "cap:android": "npm --prefix native run cap:android",
-    "cap:ios": "npm --prefix native run cap:ios"
+    "cap:ios": "npm --prefix native run cap:ios",
+    "db:push": "echo \"db not used in preview (BFF proxies prod API)\""
   },
   "dependencies": {
     "next": "15.5.20",
@@ -27,6 +28,7 @@
     "eslint": "9.39.4",
     "eslint-config-next": "15.5.20",
     "postcss": "8.4.49",
+    "prisma": "^8.0.0-rc.33",
     "tailwindcss": "3.4.17",
     "typescript": "5.7.2"
   }

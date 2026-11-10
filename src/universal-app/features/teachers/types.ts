@@ -24,6 +24,7 @@ export type TeacherSample = {
 
 export type Teacher = {
   id: number;
+  userId: number;
   name: string;
   avatarUrl: string;
   field: string;
@@ -111,6 +112,7 @@ export function parseTeacher(value: unknown): Teacher {
 
   return {
     id: numberValue(data.id),
+    userId: numberValue(data.user_id),
     name: stringValue(user.name, "استاد وُدّا"),
     avatarUrl: stringValue(user.avatar_url),
     field: stringValue(data.field),
