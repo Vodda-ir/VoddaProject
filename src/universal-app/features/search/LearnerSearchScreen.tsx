@@ -51,9 +51,9 @@ const SORT_PRESETS: Array<[SortKey, string]> = [
 
 const TIER_PRESETS: Array<[TierKey, string, string]> = [
   ["", "همه درجه‌ها", ""],
-  ["international", "بین‌المللی", "#0095F6"],
-  ["grade2", "درجه ۲", "#1EA55C"],
-  ["grade3", "درجه ۳", "#E5484D"],
+  ["international", "بین‌المللی", "#8b681f"],
+  ["grade2", "درجه ۲", "#4c5a36"],
+  ["grade3", "درجه ۳", "#5e7e8c"],
 ];
 
 const TIER_LABELS: Record<string, string> = {

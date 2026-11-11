@@ -1,15 +1,15 @@
 /*
  * نشان درجه استاد — همان سیستم اپلیکیشن (سبک مهر اینستاگرام).
- * رنگ مهر نشان‌دهندهٔ درجه استاد است و تیک سبز ثابت جای آن را گرفته است:
- * بین‌المللی (درجه ۱) → آبی، درجه ۲ → سبز، درجه ۳ → قرمز.
+ * رنگ مهر نشان‌دهندهٔ درجه استاد است و هماهنگ با پالت برند وُدّاست:
+ * بین‌المللی (درجه ۱) → طلایی، درجه ۲ → زیتونی، درجه ۳ → فیروزه‌ای خاکستری.
  * استادان بدون درجه هیچ نشانِ تیک‌مانندی ندارند.
  */
 export type TeacherTier = 'international' | 'grade2' | 'grade3';
 
 export const TIER_BADGES: Record<TeacherTier, { color: string; label: string; short: string }> = {
-  international: { color: '#0095F6', label: 'استاد بین‌المللی (درجه ۱)', short: 'بین‌المللی' },
-  grade2: { color: '#1EA55C', label: 'استاد درجه ۲', short: 'درجه ۲' },
-  grade3: { color: '#E5484D', label: 'استاد درجه ۳', short: 'درجه ۳' },
+  international: { color: '#8b681f', label: 'استاد بین‌المللی (درجه ۱)', short: 'بین‌المللی' },
+  grade2: { color: '#4c5a36', label: 'استاد درجه ۲', short: 'درجه ۲' },
+  grade3: { color: '#5e7e8c', label: 'استاد درجه ۳', short: 'درجه ۳' },
 };
 
 export function tierOf(tier?: string | null): TeacherTier | null {
