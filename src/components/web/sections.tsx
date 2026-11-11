@@ -349,9 +349,9 @@ export function Hero() {
 
 export function DispatchCallout() {
   const steps = [
-    ['search' as const, '۱ · موضوع را انتخاب کن', 'روخوانی، تجوید، صوت و لحن، حفظ و… از فهرست رسمی وُدّا.'],
-    ['bell' as const, '۲ · فراخوان بزن', 'درخواستت برای همهٔ اساتید همان موضوع زنده پخش می‌شود.'],
-    ['checkCircle' as const, '۳ · استادت را برگزین', 'نخستین اساتیدِ آماده همان‌جا دیده می‌شوند؛ یکی را تأیید کن و جلسه رزرو می‌شود.'],
+    ['search' as const, '۱ · موضوع را انتخاب کن', 'روخوانی، تجوید، صوت و لحن، حفظ قرآن و… از فهرست رسمی وُدّا.'],
+    ['bell' as const, '۲ · دو شیوه را برگزین', 'یا «فراخوان زنده» برای همهٔ اساتیدِ موضوع، یا «فهرست اساتید» برای انتخاب مستقیم.'],
+    ['checkCircle' as const, '۳ · استادت را برگزین', 'در فراخوان، نخستین اساتیدِ آماده همان‌جا دیده می‌شوند؛ در فهرست هم مستقیم رزرو می‌کنید.'],
   ] as const;
 
   return (
@@ -361,11 +361,15 @@ export function DispatchCallout() {
           <div className="landing-dispatch-top">
             <div className="landing-dispatch-copy">
               <span className="landing-dispatch-badge"><Icon name="bell" size={14} /> فراخوان اساتید — ویژهٔ وُدّا</span>
-              <h2>موضوع را بگو؛ اساتید اعلام آمادگی کنند،<br /><span>تو فقط انتخاب کن.</span></h2>
+              <h2>موضوع را بگو؛ یا فراخوان بزن،<br /><span>یا مستقیم استادت را برگزین.</span></h2>
               <p>
-                مثل اسنپ، اما برای کلاس قرآن: درخواست شما بین همهٔ اساتیدِ موضوعِ دلخواه به‌صورت زنده پخش می‌شود،
-                اساتید به‌ترتیب اعلام آمادگی می‌کنند و شما هرکدام را خواستید تأیید می‌کنید تا جلسه با همان استاد رزرو شود.
+                مثل اسنپ، اما برای کلاس قرآن: در شیوهٔ «فراخوان زنده» درخواست شما بین همهٔ اساتیدِ موضوعِ دلخواه پخش می‌شود،
+                اساتید به‌ترتیب اعلام آمادگی می‌کنند و شما هرکدام را خواستید تأیید می‌کنید. اگر عجله ندارید، از شیوهٔ «فهرست اساتید» هم می‌توانید مستقیم استاد و زمان دلخواه را رزرو کنید.
               </p>
+              <div className="landing-dispatch-modes" aria-label="دو شیوهٔ فراخوان">
+                <span className="landing-dispatch-mode-chip active"><Icon name="bell" size={14} /> فراخوان زنده — ویژهٔ وُدّا</span>
+                <span className="landing-dispatch-mode-chip"><Icon name="users" size={14} /> فهرست اساتید — انتخاب مستقیم</span>
+              </div>
             </div>
             <div className="landing-dispatch-art" aria-hidden="true">
               <div className="dispatch-chip-float one">🔔 فراخوان زنده</div>
@@ -392,10 +396,10 @@ export function DispatchCallout() {
               <span className="dispatch-btn-icon"><Icon name="bell" size={18} /></span>
               فراخوان اساتید
             </Link>
-            <WebBtn href="/search" size="lg" variant="ghost" icon="search">مشاهده اساتید هر موضوع</WebBtn>
+            <WebBtn href="/search" size="lg" variant="ghost" icon="search">فهرست اساتید هر موضوع</WebBtn>
             <span className="dispatch-special-note">
               <Icon name="shield" size={14} />
-              فقط اساتید تأییدشدهٔ وُدّا در فراخوان دیده می‌شوند.
+              فقط اساتید تأییدشدهٔ وُدّا در فراخوان و فهرست دیده می‌شوند.
             </span>
           </div>
         </div>
@@ -420,7 +424,7 @@ export function Categories() {
       <div className="public-container">
         <div className="landing-category-grid">
           {categories.map((category) => (
-            <Link key={category.title} href={category.href} className="landing-category-card">
+            <Link key={category.title} href={category.href} className="landing-category-card neon-frame-gold">
               <span className="landing-category-icon"><Icon name={category.icon} size={26} /></span>
               <span style={{ minWidth: 0, flex: 1 }}>
                 <small>{category.meta}</small>

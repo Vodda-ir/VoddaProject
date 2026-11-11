@@ -5319,6 +5319,46 @@ a.blog-card:hover .blog-card-action {
   gap: 12px;
   flex-wrap: wrap;
 }
+
+/* دو نشانِ شیوه در لندینگ — فراخوان زنده / فهرست اساتید */
+.landing-dispatch-modes {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+.landing-dispatch-mode-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 13px;
+  border: 1px solid var(--sand-200);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 800;
+}
+.landing-dispatch-mode-chip.active {
+  border-color: rgba(191, 149, 64, .55);
+  color: #8b681f;
+  background: var(--gold-bg, #f7efd9);
+  box-shadow: 0 0 14px rgba(191, 149, 64, .22);
+}
+
+/* کارت‌های انتخاب شیوه در صفحهٔ فراخوان */
+.dispatch-mode-card {
+  border-width: 1.5px;
+  transition: transform .18s ease, opacity .2s ease;
+}
+.dispatch-mode-card:hover {
+  transform: translateY(-2px);
+}
+.dispatch-mode-card.neon-frame,
+.dispatch-mode-card.neon-frame-gold {
+  border-radius: 22px;
+}
+
 .dispatch-special-btn {
   position: relative;
   display: inline-flex;
@@ -5461,6 +5501,41 @@ a.blog-card:hover .blog-card-action {
 /* ═══════════════════════════════════════════════════════════
    ۴) «دربارهٔ استاد» — بازچینش ساختاریافته و مرتب
 ═══════════════════════════════════════════════════════════ */
+.teacher-about-card {
+  display: grid;
+  gap: 15px;
+  padding: 19px;
+  border: 1px solid var(--sand-150);
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 0 3px 12px rgba(46,54,34,.04);
+}
+.teacher-about-facts {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-bottom: 14px;
+  border-bottom: 1px dashed var(--sand-150);
+}
+.teacher-about-fact {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--sand-200);
+  border-radius: 999px;
+  background: var(--sand-50);
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 700;
+}
+.teacher-about-fact svg { color: var(--olive-600); }
+.teacher-about-fact.gold {
+  border-color: rgba(191, 149, 64, .45);
+  background: var(--gold-bg, #f7efd9);
+  color: #8b681f;
+}
+.teacher-about-fact.gold svg { color: #b0922f; }
 .teacher-bio {
   display: grid;
   gap: 13px;

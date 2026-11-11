@@ -11,6 +11,7 @@ import type {
   DispatchCallViewData,
   DispatchCandidateItem,
   OfficialServiceItem,
+  Teacher,
 } from '@/lib/api';
 import { fullUrl, getToken } from '@/lib/auth';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
@@ -57,6 +58,10 @@ export default function DispatchPage() {
   const [laterAt, setLaterAt] = useState('');
   const [note, setNote] = useState('');
   const [view, setView] = useState<DispatchCallViewData | null>(null);
+  const [mode, setMode] = useState<'broadcast' | 'list'>('broadcast');
+  const [list, setList] = useState<Teacher[]>([]);
+  const [listTotal, setListTotal] = useState(0);
+  const [listLoading, setListLoading] = useState(false);
   const [busyOffer, setBusyOffer] = useState(0);
   const [creating, setCreating] = useState(false);
   const [canceling, setCanceling] = useState(false);
@@ -214,15 +219,41 @@ export default function DispatchPage() {
     [busyOffer, call, token],
   );
 
+  // حالت فهرست: اساتیدی که همین موضوع رسمی را تدریس می‌کنند
+  useEffect(() => {
+    if (!topic || mode !== 'list') return;
+    let active = true;
+    setListLoading(true);
+    api
+      .teachers('', { official_service_id: String(topic.id), limit: '24' })
+      .then((response) => {
+        if (!active) return;
+        setList(response.data || []);
+        setListTotal(response.total || 0);
+      })
+      .catch(() => {
+        if (active) {
+          setList([]);
+          setListTotal(0);
+        }
+      })
+      .finally(() => {
+        if (active) setListLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [topic, mode]);
+
   const candidates = view?.candidates ?? [];
 
   return (
     <div style={{ background: 'var(--sand-50)', minHeight: '100vh' }}>
       <Nav />
       <PublicPageHero
-        kicker="فراخوان اساتید"
-        title="موضوع را بگو؛ اساتید اعلام آمادگی کنند، شما انتخاب کنید"
-        description="درخواست شما بین همهٔ اساتید آن موضوع به‌صورت زنده پخش می‌شود؛ نخستین استادهایی که اعلام آمادگی کنند، همین‌جا دیده می‌شوند و شما یکی را تأیید می‌کنید تا جلسه رزرو شود."
+        kicker="فراخوان اساتید — به دو شیوه"
+        title="موضوع را بگو؛ یا فراخوان بزن یا مستقیم استادت را برگزین"
+        description="در شیوهٔ «فراخوان زنده»، درخواست شما بین همهٔ اساتید آن موضوع پخش می‌شود و نخستین اساتیدی که اعلام آمادگی کنند دیده می‌شوند. در شیوهٔ «فهرست اساتید» هم می‌توانید پروفایل اساتید همان موضوع را ببینید و مستقیم رزرو کنید."
         icon="bell"
       />
 
@@ -341,20 +372,24 @@ export default function DispatchPage() {
         ) : (
           <div style={{ display: 'grid', gap: 16 }}>
             {topic ? (
-              <section className="ops-data-surface neon-frame-gold">
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
-                  <span style={{ display: 'grid', placeItems: 'center', width: 44, height: 44, borderRadius: 14, background: 'var(--olive-50)', color: 'var(--olive-600)', flex: '0 0 auto' }}>
-                    <Icon name="quran" size={21} />
-                  </span>
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                    <strong style={{ fontSize: 16 }}>{topic.title}</strong>
-                    <span style={{ display: 'block', fontSize: 12.5, color: 'var(--ink-2)', marginTop: 3, lineHeight: 1.8 }}>{topic.description}</span>
+              <>
+                <section className="ops-data-surface neon-frame-gold">
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
+                    <span style={{ display: 'grid', placeItems: 'center', width: 44, height: 44, borderRadius: 14, background: 'var(--olive-50)', color: 'var(--olive-600)', flex: '0 0 auto' }}>
+                      <Icon name="quran" size={21} />
+                    </span>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <strong style={{ fontSize: 16 }}>{topic.title}</strong>
+                      <span style={{ display: 'block', fontSize: 12.5, color: 'var(--ink-2)', marginTop: 3, lineHeight: 1.8 }}>{topic.description}</span>
+                    </div>
+                    <button type="button" className="ops-ghost-btn" onClick={() => setTopic(null)}>تغییر موضوع</button>
                   </div>
-                  <button type="button" className="ops-ghost-btn" onClick={() => setTopic(null)}>تغییر موضوع</button>
-                </div>
+                </section>
 
-                <div style={{ height: 1, background: 'var(--sand-150)', margin: '14px 0' }} />
+                <ModeSelector mode={mode} onChange={setMode} topicTitle={topic.title} />
 
+                {mode === 'broadcast' ? (
+                <section className="ops-data-surface neon-frame">
                 <strong style={{ fontSize: 13.5, display: 'block', marginBottom: 8 }}>کی می‌خواهید؟</strong>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
                   <button type="button" onClick={() => setWhenMode('now')} className={whenMode === 'now' ? 'web-filter-active-chip' : 'web-filter-chip'}>
@@ -395,11 +430,21 @@ export default function DispatchPage() {
                   <button type="button" className="ops-primary-btn" onClick={() => void start()} disabled={creating}>
                     {creating ? 'در حال ارسال…' : '🔔 ثبت فراخوان برای اساتید'}
                   </button>
-                  <Link href={`/search?official_service_id=${topic.id}`} className="ops-ghost-btn" style={{ display: 'inline-flex', alignItems: 'center' }}>
-                    یا دیدن اساتید همین موضوع
-                  </Link>
                 </div>
-              </section>
+                <p style={{ margin: '10px 0 0', fontSize: 11.5, color: 'var(--ink-3)', lineHeight: 1.8 }}>
+                  فراخوان برای همهٔ اساتیدِ تأییدشدهٔ همین موضوع پخش می‌شود و نخستین پاسخ‌ها به‌صورت زنده همین‌جا نمایش داده می‌شود.
+                </p>
+                </section>
+                ) : (
+                  <TeacherListMode
+                    topic={topic}
+                    teachers={list}
+                    total={listTotal}
+                    loading={listLoading}
+                    onSwitchToBroadcast={() => setMode('broadcast')}
+                  />
+                )}
+              </>
             ) : (
               <section className="ops-data-surface">
                 <div className="ops-data-head" style={{ marginBottom: 12 }}>
@@ -535,5 +580,190 @@ function MatchedCard({
         <button type="button" className="ops-ghost-btn" onClick={onNew}>فراخوان جدید</button>
       </div>
     </section>
+  );
+}
+
+/* ═══ انتخاب شیوه: فراخوان زنده یا فهرست اساتید ═══ */
+function ModeSelector({
+  mode,
+  onChange,
+  topicTitle,
+}: {
+  mode: 'broadcast' | 'list';
+  onChange: (mode: 'broadcast' | 'list') => void;
+  topicTitle: string;
+}) {
+  const cards: Array<{
+    id: 'broadcast' | 'list';
+    icon: Parameters<typeof Icon>[0]['name'];
+    title: string;
+    badge: string;
+    description: string;
+    accent: boolean;
+  }> = [
+    {
+      id: 'broadcast',
+      icon: 'bell',
+      title: 'فراخوان زنده',
+      badge: 'ویژهٔ وُدّا',
+      description: 'درخواست شما برای همهٔ اساتیدِ این موضوع پخش می‌شود؛ نخستین اساتیدی که اعلام آمادگی کنند دیده می‌شوند و شما یکی را تأیید می‌کنید.',
+      accent: true,
+    },
+    {
+      id: 'list',
+      icon: 'users',
+      title: 'فهرست اساتید',
+      badge: 'انتخاب مستقیم',
+      description: 'پروفایل اساتیدی که همین موضوع را تدریس می‌کنند را ببینید و بدون انتظار، مستقیم استاد و زمان دلخواه را رزرو کنید.',
+      accent: false,
+    },
+  ];
+
+  return (
+    <section aria-label="انتخاب شیوه">
+      <strong style={{ display: 'block', fontSize: 14.5, marginBottom: 10 }}>
+        ۲. برای موضوع «{topicTitle}» کدام شیوه را می‌پسندید؟
+      </strong>
+      <div role="radiogroup" aria-label="شیوهٔ ادامه" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 10 }}>
+        {cards.map((card) => {
+          const active = mode === card.id;
+          return (
+            <button
+              key={card.id}
+              type="button"
+              role="radio"
+              aria-checked={active}
+              onClick={() => onChange(card.id)}
+              className={`ops-data-surface dispatch-mode-card${active ? (card.accent ? ' neon-frame' : ' neon-frame-gold') : ''}`}
+              style={{
+                textAlign: 'right',
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                padding: 16,
+                background: active ? '#fff' : 'var(--surface)',
+                opacity: active ? 1 : 0.82,
+                transition: 'opacity .2s ease',
+              }}
+            >
+              <span style={{ display: 'flex', alignItems: 'center', gap: 9, flexWrap: 'wrap' }}>
+                <span
+                  style={{
+                    display: 'grid', placeItems: 'center', width: 38, height: 38, borderRadius: 12, flex: '0 0 auto',
+                    background: active ? 'var(--olive-600)' : 'var(--olive-50)', color: active ? '#fff' : 'var(--olive-600)',
+                  }}
+                >
+                  <Icon name={card.icon} size={18} />
+                </span>
+                <strong style={{ fontSize: 14.5 }}>{card.title}</strong>
+                <span
+                  style={{
+                    fontSize: 10, fontWeight: 800, borderRadius: 999, padding: '2.5px 9px',
+                    background: card.accent ? 'var(--gold-bg, #f7efd9)' : 'var(--olive-50)',
+                    color: card.accent ? '#8b681f' : '#4c5a36',
+                  }}
+                >
+                  {card.badge}
+                </span>
+                {active ? (
+                  <span style={{ marginInlineStart: 'auto', color: 'var(--olive-600)', display: 'inline-flex' }} aria-hidden="true">
+                    <Icon name="checkCircle" size={18} />
+                  </span>
+                ) : null}
+              </span>
+              <span style={{ display: 'block', marginTop: 9, fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.9 }}>{card.description}</span>
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+/* ═══ شیوهٔ فهرست: اساتیدِ همین موضوع برای انتخاب مستقیم ═══ */
+function TeacherListMode({
+  topic,
+  teachers,
+  total,
+  loading,
+  onSwitchToBroadcast,
+}: {
+  topic: OfficialServiceItem;
+  teachers: Teacher[];
+  total: number;
+  loading: boolean;
+  onSwitchToBroadcast: () => void;
+}) {
+  return (
+    <section aria-label="فهرست اساتید موضوع" style={{ display: 'grid', gap: 12 }}>
+      <div className="web-results-head">
+        <div>
+          <small>اساتید موضوع «{topic.title}»</small>
+          <strong>{loading ? 'در حال دریافت اساتید…' : `${toFaDigits(total)} استاد یافت شد`}</strong>
+        </div>
+        <button type="button" onClick={onSwitchToBroadcast} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'none', border: 0, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 800, fontSize: 12.5, color: 'var(--olive-600)' }}>
+          <Icon name="bell" size={15} /> کسی مناسب نبود؟ فراخوان بزنید
+        </button>
+      </div>
+
+      {loading ? (
+        <div className="web-search-loading">
+          {[0, 1, 2].map((item) => <div key={item} />)}
+        </div>
+      ) : teachers.length === 0 ? (
+        <section className="ops-data-surface" style={{ textAlign: 'center', padding: 24 }}>
+          <span style={{ color: 'var(--olive-500)' }}><Icon name="users" size={30} /></span>
+          <strong style={{ display: 'block', marginTop: 8, fontSize: 15 }}>هنوز استادی برای این موضوع ثبت‌نام نکرده است</strong>
+          <p style={{ margin: '6px 0 14px', fontSize: 12.5, color: 'var(--ink-3)', lineHeight: 1.9 }}>
+            اشکالی ندارد! فراخوان بزنید تا به‌محض ثبت‌نام یا آنلاین‌شدن اساتیدِ این موضوع، درخواست شما به آن‌ها اعلام شود.
+          </p>
+          <button type="button" className="ops-primary-btn" style={{ display: 'inline-flex' }} onClick={onSwitchToBroadcast}>
+            🔔 رفتن به شیوهٔ فراخوان زنده
+          </button>
+        </section>
+      ) : (
+        <div style={{ display: 'grid', gap: 10 }}>
+          {teachers.map((teacher, index) => (
+            <ListTeacherRow key={teacher.id} teacher={teacher} index={index} />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function ListTeacherRow({ teacher, index }: { teacher: Teacher; index: number }) {
+  const price = Math.max(0, teacher.price30 || teacher.services?.[0]?.price || 0);
+  const badge = TIER_BADGE[teacher.tier ?? ''];
+  return (
+    <Link
+      href={`/teachers/${teacher.id}`}
+      className="ops-data-surface"
+      style={{
+        display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+        color: 'inherit', textDecoration: 'none', animationDelay: `${index * 60}ms`,
+      }}
+    >
+      <Avatar size={50} ring tier={teacher.tier} imageUrl={fullUrl(teacher.user?.avatar_url)} />
+      <div style={{ minWidth: 0, flex: 1 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap' }}>
+          <strong style={{ fontSize: 14.5 }}>{teacher.user?.name || 'استاد وُدّا'}</strong>
+          {badge ? (
+            <span style={{ fontSize: 10.5, fontWeight: 700, color: badge.color, background: badge.bg, borderRadius: 999, padding: '2px 8px' }}>
+              {badge.label}
+            </span>
+          ) : null}
+        </div>
+        <span style={{ display: 'block', fontSize: 12, color: 'var(--ink-2)', marginTop: 2 }}>
+          {teacher.tag || teacher.field}
+          {teacher.sessions > 0 ? ` · ${toFaDigits(teacher.sessions)} جلسه` : ''}
+          {teacher.reviews > 0 ? ` · ⭐ ${toFaDigits(teacher.rating.toFixed(1))}` : ''}
+          {teacher.city ? ` · ${teacher.city}` : ''}
+        </span>
+      </div>
+      <strong style={{ fontSize: 13.5, color: 'var(--olive-700)' }}>
+        {price > 0 ? `${toman(price)} تومان` : 'مشاهده خدمات'}
+      </strong>
+      <span className="web-search-card-cta">پروفایل و رزرو <Icon name="arrowL" size={14} /></span>
+    </Link>
   );
 }

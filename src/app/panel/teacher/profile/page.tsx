@@ -15,6 +15,22 @@ const FIELD_OPTIONS = ['آموزش قرآن کریم', 'مشاوره صوتی'];
 const TAG_OPTIONS = ['مدرس قرآن', 'قاری', 'مربی تلاوت', 'استاد تجوید', 'مربی حفظ', 'مشاور'];
 const LEVEL_OPTIONS = ['مبتدی', 'متوسط', 'پیشرفته'];
 
+/* الگوی یکپارچهٔ «دربارهٔ استاد» — همین ساختار در پروفایل عمومی به‌صورت
+   بخش‌بندی‌شده (پاراگراف، چیپ مهارت و نشان طلایی) رندر می‌شود. */
+const BIO_TEMPLATE = `🌙 معرفی کوتاه
+سلام! به کلاس قرآن من خوش آمدید. سال‌هاست با روش گام‌به‌گام و صبر، قرآن‌آموزان را از مبتدی تا روان‌خوانی همراهی می‌کنم.
+
+📖 سوابق و گواهی‌ها
+تحصیل‌کردهٔ علوم قرآنی؛ دارندهٔ گواهی تجوید و سابقهٔ تدریس آنلاین و حضوری.
+
+🎯 زمینه‌های تدریس
+• روخوانی و روان‌خوانی
+• تجوید و صوت و لحن
+• حفظ قرآن
+
+📍 اطلاعات تکمیلی
+جلسات آنلاین: دارد | ویژهٔ بانوان/برادران: هر دو | زبان تدریس: فارسی`;
+
 export default function TeacherProfilePage() {
   const [teacher, setTeacher] = useState<Teacher | null>(null);
   const [form, setForm] = useState<TeacherForm | null>(null);
@@ -140,6 +156,18 @@ export default function TeacherProfilePage() {
 
             <Field label="معرفی و سوابق" hint={`${toFaDigits(form.bio.length)} / ${toFaDigits(1000)} کاراکتر`}>
               <textarea value={form.bio} rows={5} maxLength={1000} placeholder="سوابق، روش تدریس و هر چیزی که قرآن‌آموزان باید بدانند…" onChange={(event) => patch({ bio: event.target.value })} style={{ ...inputStyle, resize: 'vertical' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginTop: 8 }}>
+                <button
+                  type="button"
+                  onClick={() => patch({ bio: BIO_TEMPLATE })}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 13px', borderRadius: 999, border: '1px solid rgba(191,149,64,.45)', background: 'var(--gold-bg, #f7efd9)', color: '#8b681f', fontFamily: 'inherit', fontSize: 11.5, fontWeight: 800, cursor: 'pointer' }}
+                >
+                  <Icon name="sparkle" size={13} /> درج الگوی پیشنهادی «دربارهٔ استاد»
+                </button>
+                <span style={{ fontSize: 11, color: 'var(--ink-3)', lineHeight: 1.8 }}>
+                  با این الگو، معرفی شما در پروفایل به‌صورت مرتب و بخش‌بندی‌شده نمایش داده می‌شود؛ متن‌ها را جایگزین کنید.
+                </span>
+              </div>
             </Field>
 
             <Field label="مهارت‌ها" hint="مهارت‌ها را با ویرگول جدا کنید (حداکثر ۲۰ مورد)">

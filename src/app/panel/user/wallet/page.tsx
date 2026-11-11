@@ -170,8 +170,9 @@ export default function UserWalletPage() {
           position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center',
           justifyContent: 'space-between', gap: 18, flexWrap: 'wrap', marginBottom: 18,
           padding: '24px 26px', borderRadius: 22, color: '#fff',
+          border: '1.5px solid rgba(191,149,64,.55)',
           background: 'radial-gradient(120% 170% at 88% -18%, rgba(191,149,64,.4) 0%, rgba(191,149,64,0) 52%), linear-gradient(135deg, var(--olive-800) 0%, var(--olive-600) 74%, var(--olive-500) 100%)',
-          boxShadow: '0 14px 34px rgba(46,54,34,.22)',
+          boxShadow: '0 0 0 1px rgba(191,149,64,.16), 0 0 24px rgba(191,149,64,.30), 0 0 52px rgba(191,149,64,.14), 0 14px 34px rgba(46,54,34,.22), inset 0 0 26px rgba(191,149,64,.10)',
         }}
       >
         <div style={{ position: 'relative', zIndex: 1, minWidth: 0 }}>

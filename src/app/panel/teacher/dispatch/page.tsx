@@ -130,7 +130,7 @@ export default function TeacherDispatchPanel() {
 
       {error ? <div className="ops-error" role="alert"><span>{error}</span><PanelButton onClick={() => void load()}>تلاش دوباره</PanelButton></div> : null}
 
-      <section className="ops-data-surface">
+      <section className={`ops-data-surface${openCalls.length ? ' neon-frame' : ''}`}>
         <div className="ops-data-head">
           <div>
             <strong>در انتظار پاسخ</strong>

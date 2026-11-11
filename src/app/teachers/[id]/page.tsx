@@ -68,7 +68,37 @@ export default async function TeacherDetailPage({ params }: { params: Promise<{ 
                 <span><Icon name="user" size={18} /></span>
                 <h2>دربارهٔ استاد</h2>
               </div>
-              <TeacherBio bio={teacher.bio} />
+
+              <div className="teacher-about-card">
+                <div className="teacher-about-facts" aria-label="اطلاعات خلاصهٔ استاد">
+                  <span className="teacher-about-fact">
+                    <Icon name="book" size={15} />
+                    {teacher.tag || teacher.field || 'آموزش قرآن کریم'}
+                  </span>
+                  <span className="teacher-about-fact">
+                    <Icon name={teacher.female ? 'users' : 'user'} size={15} />
+                    {teacher.female ? 'استاد بانو' : 'استاد برادر'}
+                  </span>
+                  {teacher.city ? (
+                    <span className="teacher-about-fact">
+                      <Icon name="pin" size={15} />
+                      {teacher.city}
+                    </span>
+                  ) : null}
+                  <span className="teacher-about-fact">
+                    <Icon name="calendar" size={15} />
+                    {toFaDigits(teacher.sessions || 0)} جلسه برگزارشده
+                  </span>
+                  {teacher.reviews > 0 ? (
+                    <span className="teacher-about-fact gold">
+                      <Icon name="star" size={15} />
+                      امتیاز {toFaDigits(teacher.rating.toFixed(1))} از {toFaDigits(teacher.reviews)} نظر
+                    </span>
+                  ) : null}
+                </div>
+
+                <TeacherBio bio={teacher.bio} />
+              </div>
             </section>
 
             <section>
