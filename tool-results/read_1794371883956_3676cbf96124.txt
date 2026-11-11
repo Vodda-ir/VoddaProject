@@ -1,0 +1,770 @@
+     1→     1→'use client';
+     2→     2→
+     3→     3→import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+     4→     4→import Link from 'next/link';
+     5→     5→import { Icon } from '@/components/Icon';
+     6→     6→import { Nav, Footer } from '@/components/web/sections';
+     7→     7→import { Avatar, PublicPageHero } from '@/components/web/ui';
+     8→     8→import { api, toman } from '@/lib/api';
+     9→     9→import type {
+    10→    10→  DispatchCallItem,
+    11→    11→  DispatchCallViewData,
+    12→    12→  DispatchCandidateItem,
+    13→    13→  OfficialServiceItem,
+    14→    14→  Teacher,
+    15→    15→} from '@/lib/api';
+    16→    16→import { fullUrl, getToken } from '@/lib/auth';
+    17→    17→import { formatFaNumber, toFaDigits } from '@/lib/persian';
+    18→    18→
+    19→    19→type Phase = 'idle' | 'searching' | 'matched';
+    20→    20→
+    21→    21→const TIER_BADGE: Record<string, { label: string; bg: string; color: string }> = {
+    22→    22→  international: { label: 'درجه یک بین‌المللی', bg: 'var(--gold-bg, #f7efd9)', color: '#8b681f' },
+    23→    23→  grade2: { label: 'درجه دو', bg: 'var(--olive-50, #f2f5ea)', color: '#4c5a36' },
+    24→    24→  grade3: { label: 'درجه سه', bg: 'var(--info-bg, #edf3f5)', color: '#5e7e8c' },
+    25→    25→};
+    26→    26→
+    27→    27→function countdown(total: number) {
+    28→    28→  const m = Math.floor(total / 60);
+    29→    29→  const s = total % 60;
+    30→    30→  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    31→    31→}
+    32→    32→
+    33→    33→function faNumber(n: number) {
+    34→    34→  return formatFaNumber(n);
+    35→    35→}
+    36→    36→
+    37→    37→function remaining(expiresAt: string) {
+    38→    38→  const at = new Date(expiresAt).getTime();
+    39→    39→  if (Number.isNaN(at)) return 0;
+    40→    40→  return Math.max(0, Math.round((at - Date.now()) / 1000));
+    41→    41→}
+    42→    42→
+    43→    43→function whenLabel(call: DispatchCallItem) {
+    44→    44→  if (call.flexible || !call.scheduled_at) return '⚡ در اسرع وقت';
+    45→    45→  const at = new Date(call.scheduled_at);
+    46→    46→  if (Number.isNaN(at.getTime())) return '⚡ در اسرع وقت';
+    47→    47→  return `📅 ${at.toLocaleString('fa-IR', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}`;
+    48→    48→}
+    49→    49→
+    50→    50→export default function DispatchPage() {
+    51→    51→  const token = getToken();
+    52→    52→  const [authed, setAuthed] = useState<boolean | null>(token ? true : null);
+    53→    53→  const [catalog, setCatalog] = useState<OfficialServiceItem[]>([]);
+    54→    54→  const [loading, setLoading] = useState(true);
+    55→    55→  const [query, setQuery] = useState('');
+    56→    56→  const [topic, setTopic] = useState<OfficialServiceItem | null>(null);
+    57→    57→  const [whenMode, setWhenMode] = useState<'now' | 'later'>('now');
+    58→    58→  const [laterAt, setLaterAt] = useState('');
+    59→    59→  const [note, setNote] = useState('');
+    60→    60→  const [view, setView] = useState<DispatchCallViewData | null>(null);
+    61→    61→  const [mode, setMode] = useState
+    62→    62→  const [list, setList] = useState<Teacher[]>([]);
+    63→    63→  const [listTotal, setListTotal] = useState(0);
+    64→    64→  const [listLoading, setListLoading] = useState(false);
+    65→    65→  const [busyOffer, setBusyOffer] = useState(0);
+    66→    66→  const [creating, setCreating] = useState(false);
+    67→    67→  const [canceling, setCanceling] = useState(false);
+    68→    68→  const [payMethod, setPayMethod] = useState<'wallet' | 'gateway'>('gateway');
+    69→    69→  const [error, setError] = useState('');
+    70→    70→  const [tick, setTick] = useState(0);
+    71→    71→  const pollRef = useRef<number | null>(null);
+    72→    72→
+    73→    73→  const call = view?.call ?? null;
+    74→    74→  const phase: Phase = call ? (call.status === 'searching' ? 'searching' : 'matched') : 'idle';
+    75→    75→
+    76→    76→  useEffect(() => {
+    77→    77→    let active = true;
+    78→    78→    (async () => {
+    79→    79→      try {
+    80→    80→        const catalogResponse = await api.catalog();
+    81→    81→        const groups = catalogResponse.data?.categories ?? [];
+    82→    82→        const flat: OfficialServiceItem[] = [];
+    83→    83→        for (const group of groups) {
+    84→    84→          for (const item of group.services ?? []) {
+    85→    85→            if (item.id > 0 && item.title) flat.push({ id: item.id, category: group.category, title: item.title, description: item.description, icon: item.icon });
+    86→    86→          }
+    87→    87→        }
+    88→    88→        if (active) setCatalog(flat);
+    89→    89→      } catch {
+    90→    90→        if (active) setError('فهرست موضوعات دریافت نشد.');
+    91→    91→      } finally {
+    92→    92→        if (active) setLoading(false);
+    93→    93→      }
+    94→    94→      if (!token) {
+    95→    95→        if (active) setAuthed(false);
+    96→    96→        return;
+    97→    97→      }
+    98→    98→      try {
+    99→    99→        const current = await api.dispatchCurrent(token);
+   100→   100→        if (active) setView(current.data ?? null);
+   101→   101→        if (active) setAuthed(true);
+   102→   102→      } catch {
+   103→   103→        if (active) setAuthed(false);
+   104→   104→      }
+   105→   105→    })();
+   106→   106→    return () => {
+   107→   107→      active = false;
+   108→   108→    };
+   109→   109→  }, [token]);
+   110→   110→
+   111→   111→  const refresh = useCallback(async () => {
+   112→   112→    if (!token) return;
+   113→   113→    try {
+   114→   114→      const current = await api.dispatchCurrent(token);
+   115→   115→      setView(current.data ?? null);
+   116→   116→    } catch {
+   117→   117→      // polling errors are non-fatal
+   118→   118→    }
+   119→   119→  }, [token]);
+   120→   120→
+   121→   121→  useEffect(() => {
+   122→   122→    if (phase === 'idle') return;
+   123→   123→    pollRef.current = window.setInterval(() => {
+   124→   124→      void refresh();
+   125→   125→      setTick((value) => value + 1);
+   126→   126→    }, 2500);
+   127→   127→    return () => {
+   128→   128→      if (pollRef.current) window.clearInterval(pollRef.current);
+   129→   129→      pollRef.current = null;
+   130→   130→    };
+   131→   131→  }, [phase, refresh]);
+   132→   132→
+   133→   133→  const secondsLeft = useMemo(() => (call ? remaining(call.expires_at) : 0), [call, tick]);
+   134→   134→
+   135→   135→  const grouped = useMemo(() => {
+   136→   136→    const q = query.trim();
+   137→   137→    const rows = q ? catalog.filter((item) => item.title.includes(q) || item.category.includes(q)) : catalog;
+   138→   138→    const groups = new Map<string, OfficialServiceItem[]>();
+   139→   139→    for (const item of rows) {
+   140→   140→      const list = groups.get(item.category) ?? [];
+   141→   141→      list.push(item);
+   142→   142→      groups.set(item.category, list);
+   143→   143→    }
+   144→   144→    return [...groups.entries()];
+   145→   145→  }, [catalog, query]);
+   146→   146→
+   147→   147→  const start = useCallback(async () => {
+   148→   148→    if (!token || !topic || creating) return;
+   149→   149→    setCreating(true);
+   150→   150→    setError('');
+   151→   151→    try {
+   152→   152→      const scheduledAt = whenMode === 'later' && laterAt ? new Date(laterAt).toISOString() : undefined;
+   153→   153→      const created = await api.dispatchCreate(token, {
+   154→   154→        official_service_id: topic.id,
+   155→   155→        note: note.trim(),
+   156→   156→        flexible: whenMode === 'now',
+   157→   157→        scheduled_at: scheduledAt,
+   158→   158→      });
+   159→   159→      setView(created.data ?? null);
+   160→   160→    } catch (cause) {
+   161→   161→      setError(cause instanceof Error ? cause.message : 'ثبت فراخوان انجام نشد.');
+   162→   162→    } finally {
+   163→   163→      setCreating(false);
+   164→   164→    }
+   165→   165→  }, [creating, laterAt, note, token, topic, whenMode]);
+   166→   166→
+   167→   167→  const cancel = useCallback(async () => {
+   168→   168→    if (!token || !call || canceling) return;
+   169→   169→    setCanceling(true);
+   170→   170→    setError('');
+   171→   171→    try {
+   172→   172→      await api.dispatchCancel(token, call.id);
+   173→   173→      setView({ call: null, candidates: [] });
+   174→   174→    } catch (cause) {
+   175→   175→      setError(cause instanceof Error ? cause.message : 'لغو فراخوان انجام نشد.');
+   176→   176→    } finally {
+   177→   177→      setCanceling(false);
+   178→   178→    }
+   179→   179→  }, [call, canceling, token]);
+   180→   180→
+   181→   181→  const choose = useCallback(
+   182→   182→    async (offerId: number) => {
+   183→   183→      if (!token || !call || busyOffer) return;
+   184→   184→      setBusyOffer(offerId);
+   185→   185→      setError('');
+   186→   186→      try {
+   187→   187→        const result = await api.dispatchChoose(token, call.id, offerId, payMethod);
+   188→   188→        await refresh();
+   189→   189→        if (result.data?.redirect_url) window.location.href = result.data.redirect_url;
+   190→   190→      } catch (cause) {
+   191→   191→        const message = cause instanceof Error ? cause.message : 'ثبت رزرو انجام نشد.';
+   192→   192→        setError(
+   193→   193→          payMethod === 'wallet' && message.includes('کیف')
+   194→   194→            ? 'کیف پول کافی نیست؛ ابتدا کیف پول را شارژ کنید یا پرداخت آنلاین را برگزینید.'
+   195→   195→            : message,
+   196→   196→        );
+   197→   197→        await refresh();
+   198→   198→      } finally {
+   199→   199→        setBusyOffer(0);
+   200→   200→      }
+   201→   201→    },
+   202→   202→    [busyOffer, call, payMethod, refresh, token],
+   203→   203→  );
+   204→   204→
+   205→   205→  const decline = useCallback(
+   206→   206→    async (offerId: number) => {
+   207→   207→      if (!token || !call || busyOffer) return;
+   208→   208→      setBusyOffer(offerId);
+   209→   209→      setError('');
+   210→   210→      try {
+   211→   211→        const updated = await api.dispatchDecline(token, call.id, offerId);
+   212→   212→        setView(updated.data ?? null);
+   213→   213→      } catch (cause) {
+   214→   214→        setError(cause instanceof Error ? cause.message : 'رد پاسخ انجام نشد.');
+   215→   215→      } finally {
+   216→   216→        setBusyOffer(0);
+   217→   217→      }
+   218→   218→    },
+   219→   219→    [busyOffer, call, token],
+   220→   220→  );
+   221→   221→
+   222→   222→  // حالت فهرست: اساتیدی که همین موضوع رسمی را تدریس می‌کنند
+   223→   223→  useEffect(() => {
+   224→   224→    if (!topic || mode !== 'list') return;
+   225→   225→    let active = true;
+   226→   226→    setListLoading(true);
+   227→   227→    api
+   228→   228→      .teachers('', { official_service_id: String(topic.id), limit: '24' })
+   229→   229→      .then((response) => {
+   230→   230→        if (!active) return;
+   231→   231→        setList(response.data || []);
+   232→   232→        setListTotal(response.total || 0);
+   233→   233→      })
+   234→   234→      .catch(() => {
+   235→   235→        if (active) {
+   236→   236→          setList([]);
+   237→   237→          setListTotal(0);
+   238→   238→        }
+   239→   239→      })
+   240→   240→      .finally(() => {
+   241→   241→        if (active) setListLoading(false);
+   242→   242→      });
+   243→   243→    return () => {
+   244→   244→      active = false;
+   245→   245→    };
+   246→   246→  }, [topic, mode]);
+   247→   247→
+   248→   248→  const candidates = view?.candidates ?? [];
+   249→   249→
+   250→   250→  return (
+   251→   251→    <div style={{ background: 'var(--sand-50)', minHeight: '100vh' }}>
+   252→   252→      <Nav />
+   253→   253→      <PublicPageHero
+   254→   254→        kicker="فراخوان اساتید — به دو شیوه"
+   255→   255→        title="موضوع را بگو؛ یا فراخوان بزن یا مستقیم استادت را برگزین"
+   256→   256→        description="در شیوهٔ «فراخوان زنده»، درخواست شما بین همهٔ اساتید آن موضوع پخش می‌شود و نخستین اساتیدی که اعلام آمادگی کنند دیده می‌شوند. در شیوهٔ «فهرست اساتید» هم می‌توانید پروفایل اساتید همان موضوع را ببینید و مستقیم رزرو کنید."
+   257→   257→        icon="bell"
+   258→   258→      />
+   259→   259→
+   260→   260→      <main className="public-container public-content">
+   261→   261→        {!loading && authed === false ? (
+   262→   262→          <section className="ops-data-surface" style={{ textAlign: 'center', padding: '28px 18px' }}>
+   263→   263→            <span style={{ color: 'var(--olive-500)' }}><Icon name="bell" size={34} /></span>
+   264→   264→            <h2 style={{ margin: '10px 0 6px', fontSize: 20 }}>برای ثبت فراخوان، ابتدا وارد حساب شوید</h2>
+   265→   265→            <p style={{ margin: '0 0 16px', color: 'var(--ink-2)' }}>ورود با شماره موبایل و کد تأیید انجام می‌شود.</p>
+   266→   266→            <Link href="/panel/login" className="ops-primary-btn" style={{ display: 'inline-flex' }}>
+   267→   267→              ورود به حساب وُدّا
+   268→   268→            </Link>
+   269→   269→          </section>
+   270→   270→        ) : phase === 'matched' && call ? (
+   271→   271→          <MatchedCard call={call} candidates={candidates} onNew={() => setView({ call: null, candidates: [] })} />
+   272→   272→        ) : phase === 'searching' && call ? (
+   273→   273→          <div style={{ display: 'grid', gap: 16 }}>
+   274→   274→            <section className="ops-data-surface neon-frame" style={{ position: 'relative', overflow: 'hidden' }}>
+   275→   275→              <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+   276→   276→                <span
+   277→   277→                  aria-hidden="true"
+   278→   278→                  className="vodda-live-dot"
+   279→   279→                  style={{ width: 12, height: 12, borderRadius: '50%', background: 'var(--olive-500)', display: 'inline-block', flex: '0 0 auto' }}
+   280→   280→                />
+   281→   281→                <div style={{ minWidth: 0, flex: 1 }}>
+   282→   282→                  <strong style={{ fontSize: 17 }}>{call.topic_title}</strong>
+   283→   283→                  <span style={{ display: 'block', fontSize: 12.5, color: 'var(--ink-2)', marginTop: 2 }}>{whenLabel(call)}</span>
+   284→   284→                </div>
+   285→   285→                <strong dir="ltr" style={{ fontSize: 20, fontVariantNumeric: 'tabular-nums', color: 'var(--olive-700)' }}>
+   286→   286→                  {countdown(secondsLeft)}
+   287→   287→                </strong>
+   288→   288→              </div>
+   289→   289→              {call.note ? (
+   290→   290→                <p style={{ margin: '12px 0 0', fontSize: 13, color: 'var(--ink-2)', background: 'var(--sand-50)', borderRadius: 12, padding: '9px 12px', lineHeight: 1.9 }}>
+   291→   291→                  «{call.note}»
+   292→   292→                </p>
+   293→   293→              ) : null}
+   294→   294→              <p style={{ margin: '12px 0 0', fontSize: 12.5, color: 'var(--ink-3)', lineHeight: 1.9 }}>
+   295→   295→                فراخوان بین اساتید این موضوع پخش شده است؛ پاسخ‌های جدید به‌صورت زنده اضافه می‌شوند.
+   296→   296→              </p>
+   297→   297→            </section>
+   298→   298→
+   299→   299→            <div className="web-results-head">
+   300→   300→              <div>
+   301→   301→                <small>استادهای آماده</small>
+   302→   302→                <strong>{toFaDigits(candidates.length)} پاسخ زنده</strong>
+   303→   303→              </div>
+   304→   304→              <span className="vodda-live-dot" style={{ fontSize: 12, color: 'var(--olive-500)' }}>● زنده</span>
+   305→   305→            </div>
+   306→   306→
+   307→   307→            <div
+   308→   308→              role="radiogroup"
+   309→   309→              aria-label="روش پرداخت"
+   310→   310→              style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, padding: 6, borderRadius: 16, border: '1px solid var(--sand-200)', background: '#fff' }}
+   311→   311→            >
+   312→   312→              {([
+   313→   313→                ['gateway', '💳 پرداخت آنلاین (سامان)'],
+   314→   314→                ['wallet', '👛 پرداخت از کیف پول'],
+   315→   315→              ] as const).map(([value, label]) => (
+   316→   316→                <button
+   317→   317→                  key={value}
+   318→   318→                  type="button"
+   319→   319→                  role="radio"
+   320→   320→                  aria-checked={payMethod === value}
+   321→   321→                  onClick={() => setPayMethod(value)}
+   322→   322→                  style={{
+   323→   323→                    padding: '10px 8px',
+   324→   324→                    borderRadius: 11,
+   325→   325→                    fontSize: 12.5,
+   326→   326→                    fontWeight: 800,
+   327→   327→                    cursor: 'pointer',
+   328→   328→                    fontFamily: 'inherit',
+   329→   329→                    color: payMethod === value ? '#fff' : 'var(--ink-2)',
+   330→   330→                    background: payMethod === value ? 'var(--olive-600)' : 'transparent',
+   331→   331→                    border: 'none',
+   332→   332→                  }}
+   333→   333→                >
+   334→   334→                  {label}
+   335→   335→                </button>
+   336→   336→              ))}
+   337→   337→            </div>
+   338→   338→
+   339→   339→            {candidates.length === 0 ? (
+   340→   340→              <section className="ops-data-surface" style={{ textAlign: 'center', padding: 24 }}>
+   341→   341→                <div className="vodda-dispatch-radar" style={{ width: 58, height: 58, margin: '0 auto 12px', borderRadius: '50%', display: 'grid', placeItems: 'center', background: 'var(--olive-50)', color: 'var(--olive-600)' }}>
+   342→   342→                  <Icon name="bell" size={24} />
+   343→   343→                </div>
+   344→   344→                <strong style={{ display: 'block', fontSize: 15 }}>در انتظار نخستین پاسخ…</strong>
+   345→   345→                <p style={{ margin: '6px 0 0', fontSize: 12.5, color: 'var(--ink-3)', lineHeight: 1.9 }}>
+   346→   346→                  معمولاً نخستین پاسخ‌ها در چند دقیقه می‌رسند. این صفحه را باز نگه دارید.
+   347→   347→                </p>
+   348→   348→              </section>
+   349→   349→            ) : (
+   350→   350→              <div style={{ display: 'grid', gap: 12 }}>
+   351→   351→                {candidates.map((candidate, index) => (
+   352→   352→                  <CandidateRow
+   353→   353→                    key={candidate.offer_id}
+   354→   354→                    candidate={candidate}
+   355→   355→                    index={index}
+   356→   356→                    busy={busyOffer === candidate.offer_id}
+   357→   357→                    onChoose={() => void choose(candidate.offer_id)}
+   358→   358→                    onDecline={() => void decline(candidate.offer_id)}
+   359→   359→                  />
+   360→   360→                ))}
+   361→   361→              </div>
+   362→   362→            )}
+   363→   363→
+   364→   364→            {error ? <div className="ops-error" role="alert"><span>{error}</span></div> : null}
+   365→   365→
+   366→   366→            <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+   367→   367→              <button type="button" className="ops-ghost-btn" onClick={() => void cancel()} disabled={canceling}>
+   368→   368→                {canceling ? 'در حال لغو…' : 'لغو فراخوان'}
+   369→   369→              </button>
+   370→   370→            </div>
+   371→   371→          </div>
+   372→   372→        ) : (
+   373→   373→          <div style={{ display: 'grid', gap: 16 }}>
+   374→   374→            {topic ? (
+   375→   375→              <>
+   376→   376→                <section className="ops-data-surface neon-frame-gold">
+   377→   377→                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
+   378→   378→                    <span style={{ display: 'grid', placeItems: 'center', width: 44, height: 44, borderRadius: 14, background: 'var(--olive-50)', color: 'var(--olive-600)', flex: '0 0 auto' }}>
+   379→   379→                      <Icon name="quran" size={21} />
+   380→   380→                    </span>
+   381→   381→                    <div style={{ minWidth: 0, flex: 1 }}>
+   382→   382→                      <strong style={{ fontSize: 16 }}>{topic.title}</strong>
+   383→   383→                      <span style={{ display: 'block', fontSize: 12.5, color: 'var(--ink-2)', marginTop: 3, lineHeight: 1.8 }}>{topic.description}</span>
+   384→   384→                    </div>
+   385→   385→                    <button type="button" className="ops-ghost-btn" onClick={() => setTopic(null)}>تغییر موضوع</button>
+   386→   386→                  </div>
+   387→   387→                </section>
+   388→   388→
+   389→   389→                <ModeSelector mode={mode} onChange={setMode} topicTitle={topic.title} />
+   390→   390→
+   391→   391→                {mode === 'broadcast' ? (
+   392→   392→                <section className="ops-data-surface neon-frame">
+   393→   393→                <strong style={{ fontSize: 13.5, display: 'block', marginBottom: 8 }}>کی می‌خواهید؟</strong>
+   394→   394→                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
+   395→   395→                  <button type="button" onClick={() => setWhenMode('now')} className={whenMode === 'now' ? 'web-filter-active-chip' : 'web-filter-chip'}>
+   396→   396→                    ⚡ در اسرع وقت
+   397→   397→                  </button>
+   398→   398→                  <button type="button" onClick={() => setWhenMode('later')} className={whenMode === 'later' ? 'web-filter-active-chip' : 'web-filter-chip'}>
+   399→   399→                    📅 زمان مشخص
+   400→   400→                  </button>
+   401→   401→                </div>
+   402→   402→                {whenMode === 'later' ? (
+   403→   403→                  <input
+   404→   404→                    type="datetime-local"
+   405→   405→                    value={laterAt}
+   406→   406→                    min={new Date(Date.now() + 3600000).toISOString().slice(0, 16)}
+   407→   407→                    onChange={(event) => setLaterAt(event.target.value)}
+   408→   408→                    dir="ltr"
+   409→   409→                    aria-label="زمان جلسه"
+   410→   410→                    style={{ width: '100%', maxWidth: 320, padding: '10px 12px', borderRadius: 12, border: '1px solid var(--sand-200)', background: '#fff', fontFamily: 'inherit', marginBottom: 6 }}
+   411→   411→                  />
+   412→   412→                ) : null}
+   413→   413→                <p style={{ margin: '4px 0 14px', fontSize: 11.5, color: 'var(--ink-3)', lineHeight: 1.8 }}>
+   414→   414→                  در «در اسرع وقت» ساعت نهایی با توافق استاد مشخص می‌شود.
+   415→   415→                </p>
+   416→   416→
+   417→   417→                <strong style={{ fontSize: 13.5, display: 'block', marginBottom: 8 }}>یادداشت برای اساتید (اختیاری)</strong>
+   418→   418→                <textarea
+   419→   419→                  value={note}
+   420→   420→                  onChange={(event) => setNote(event.target.value.slice(0, 300))}
+   421→   421→                  rows={2}
+   422→   422→                  placeholder="مثلاً: مبتدی هستم، برای شروع کمکم کنید…"
+   423→   423→                  style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1px solid var(--sand-200)', background: '#fff', fontFamily: 'inherit', resize: 'vertical', lineHeight: 1.9 }}
+   424→   424→                  aria-label="یادداشت فراخوان"
+   425→   425→                />
+   426→   426→
+   427→   427→                {error ? <div className="ops-error" role="alert" style={{ marginTop: 12 }}><span>{error}</span></div> : null}
+   428→   428→
+   429→   429→                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 16 }}>
+   430→   430→                  <button type="button" className="ops-primary-btn" onClick={() => void start()} disabled={creating}>
+   431→   431→                    {creating ? 'در حال ارسال…' : '🔔 ثبت فراخوان برای اساتید'}
+   432→   432→                  </button>
+   433→   433→                </div>
+   434→   434→                <p style={{ margin: '10px 0 0', fontSize: 11.5, color: 'var(--ink-3)', lineHeight: 1.8 }}>
+   435→   435→                  فراخوان برای همهٔ اساتیدِ تأییدشدهٔ همین موضوع پخش می‌شود و نخستین پاسخ‌ها به‌صورت زنده همین‌جا نمایش داده می‌شود.
+   436→   436→                </p>
+   437→   437→                </section>
+   438→   438→                ) : (
+   439→   439→                  <TeacherListMode
+   440→   440→                    topic={topic}
+   441→   441→                    teachers={list}
+   442→   442→                    total={listTotal}
+   443→   443→                    loading={listLoading}
+   444→   444→                    onSwitchToBroadcast={() => setMode('broadcast')}
+   445→   445→                  />
+   446→   446→                )}
+   447→   447→              </>
+   448→   448→            ) : (
+   449→   449→              <section className="ops-data-surface">
+   450→   450→                <div className="ops-data-head" style={{ marginBottom: 12 }}>
+   451→   451→                  <div>
+   452→   452→                    <strong>۱. موضوع آموزش را انتخاب کنید</strong>
+   453→   453→                    <span style={{ display: 'block', marginTop: 2 }}>از فهرست رسمی خدمات وُدّا — {toFaDigits(catalog.length)} موضوع تأییدشده</span>
+   454→   454→                  </div>
+   455→   455→                </div>
+   456→   456→                <div className="web-search-fields" style={{ marginBottom: 14 }}>
+   457→   457→                  <label>
+   458→   458→                    <Icon name="search" size={18} />
+   459→   459→                    <input
+   460→   460→                      type="search"
+   461→   461→                      value={query}
+   462→   462→                      onChange={(event) => setQuery(event.target.value)}
+   463→   463→                      placeholder="جستجو در موضوعات؛ مثلاً تجوید، حفظ، صوت و لحن…"
+   464→   464→                      aria-label="جستجوی موضوع"
+   465→   465→                    />
+   466→   466→                  </label>
+   467→   467→                </div>
+   468→   468→                {loading ? (
+   469→   469→                  <p style={{ color: 'var(--ink-3)', fontSize: 13 }}>در حال دریافت موضوعات…</p>
+   470→   470→                ) : (
+   471→   471→                  <div style={{ display: 'grid', gap: 16, maxHeight: 560, overflowY: 'auto', paddingLeft: 4 }}>
+   472→   472→                    {grouped.map(([category, items]) => (
+   473→   473→                      <div key={category}>
+   474→   474→                        <strong style={{ display: 'block', fontSize: 12.5, color: 'var(--olive-700)', margin: '2px 0 8px' }}>{category}</strong>
+   475→   475→                        <div style={{ display: 'grid', gap: 8 }}>
+   476→   476→                          {items.map((item) => (
+   477→   477→                            <button
+   478→   478→                              key={item.id}
+   479→   479→                              type="button"
+   480→   480→                              onClick={() => { setTopic(item); setError(''); }}
+   481→   481→                              className="web-topic-row"
+   482→   482→                              title={item.description}
+   483→   483→                            >
+   484→   484→                              <span className="web-topic-icon"><Icon name="book" size={16} /></span>
+   485→   485→                              <span style={{ minWidth: 0, flex: 1 }}>
+   486→   486→                                <strong>{item.title}</strong>
+   487→   487→                              </span>
+   488→   488→                              <Icon name="chevronL" size={15} style={{ color: 'var(--ink-4)' }} />
+   489→   489→                            </button>
+   490→   490→                          ))}
+   491→   491→                        </div>
+   492→   492→                      </div>
+   493→   493→                    ))}
+   494→   494→                  </div>
+   495→   495→                )}
+   496→   496→              </section>
+   497→   497→            )}
+   498→   498→          </div>
+   499→   499→        )}
+   500→   500→      </main>
+   501→   501→      <Footer />
+   502→   502→    </div>
+   503→   503→  );
+   504→   504→}
+   505→   505→
+   506→   506→function CandidateRow({
+   507→   507→  candidate,
+   508→   508→  index,
+   509→   509→  busy,
+   510→   510→  onChoose,
+   511→   511→  onDecline,
+   512→   512→}: {
+   513→   513→  candidate: DispatchCandidateItem;
+   514→   514→  index: number;
+   515→   515→  busy: boolean;
+   516→   516→  onChoose: () => void;
+   517→   517→  onDecline: () => void;
+   518→   518→}) {
+   519→   519→  const badge = TIER_BADGE[candidate.tier];
+   520→   520→  return (
+   521→   521→    <section className="ops-data-surface" style={{ animationDelay: `${index * 80}ms` }}>
+   522→   522→      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+   523→   523→        <Avatar size={52} ring imageUrl={fullUrl(candidate.avatar_url)} />
+   524→   524→        <div style={{ minWidth: 0, flex: 1 }}>
+   525→   525→          <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap' }}>
+   526→   526→            <strong style={{ fontSize: 15 }}>{candidate.name}</strong>
+   527→   527→            {badge ? (
+   528→   528→              <span style={{ fontSize: 10.5, fontWeight: 700, color: badge.color, background: badge.bg, borderRadius: 999, padding: '2px 8px' }}>
+   529→   529→                {badge.label}
+   530→   530→              </span>
+   531→   531→            ) : null}
+   532→   532→          </div>
+   533→   533→          <span style={{ display: 'block', fontSize: 12.5, color: 'var(--ink-2)', marginTop: 2 }}>
+   534→   534→            {candidate.tag || candidate.field}
+   535→   535→            {candidate.sessions > 0 ? ` · ${faNumber(candidate.sessions)} جلسه` : ''}
+   536→   536→            {candidate.reviews > 0 ? ` · ⭐ ${toFaDigits(candidate.rating.toFixed(1))}` : ''}
+   537→   537→            {candidate.city ? ` · ${candidate.city}` : ''}
+   538→   538→          </span>
+   539→   539→        </div>
+   540→   540→        <strong style={{ fontSize: 14, color: 'var(--olive-700)' }}>{toman(candidate.price)} تومان</strong>
+   541→   541→      </div>
+   542→   542→      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', margin: '12px 0' }}>
+   543→   543→        <span className="web-filter-chip">{faNumber(candidate.duration)} دقیقه</span>
+   544→   544→        <span className="web-filter-chip">پاسخ سریع</span>
+   545→   545→      </div>
+   546→   546→      <div style={{ display: 'flex', gap: 8 }}>
+   547→   547→        <button type="button" className="ops-ghost-btn" onClick={onDecline} disabled={busy}>رد</button>
+   548→   548→        <button type="button" className="ops-primary-btn" onClick={onChoose} disabled={busy}>
+   549→   549→          {busy ? 'در حال ثبت…' : 'انتخاب و رزرو این استاد'}
+   550→   550→        </button>
+   551→   551→      </div>
+   552→   552→    </section>
+   553→   553→  );
+   554→   554→}
+   555→   555→
+   556→   556→function MatchedCard({
+   557→   557→  call,
+   558→   558→  candidates,
+   559→   559→  onNew,
+   560→   560→}: {
+   561→   561→  call: DispatchCallItem;
+   562→   562→  candidates: DispatchCandidateItem[];
+   563→   563→  onNew: () => void;
+   564→   564→}) {
+   565→   565→  const chosen = candidates.find((item) => item.teacher_id === call.matched_teacher_id);
+   566→   566→  return (
+   567→   567→    <section className="ops-data-surface neon-frame-gold" style={{ textAlign: 'center', padding: '26px 18px' }}>
+   568→   568→      <span style={{ color: 'var(--olive-500)' }}><Icon name="checkCircle" size={40} /></span>
+   569→   569→      <h2 style={{ margin: '10px 0 6px', fontSize: 21 }}>جلسه شما رزرو شد 🎉</h2>
+   570→   570→      <p style={{ margin: '0 0 16px', color: 'var(--ink-2)', lineHeight: 1.9 }}>
+   571→   571→        موضوع «{call.topic_title}»{chosen ? ` با استاد ${chosen.name}` : ''} ثبت شد و در انتظار تأیید نهایی استاد است.
+   572→   572→      </p>
+   573→   573→      {chosen ? (
+   574→   574→        <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--ink-2)' }}>
+   575→   575→          {toman(chosen.price)} تومان · {whenLabel(call)}
+   576→   576→        </p>
+   577→   577→      ) : null}
+   578→   578→      <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+   579→   579→        <Link href="/panel/user/sessions" className="ops-primary-btn" style={{ display: 'inline-flex' }}>پیگیری در جلسات من</Link>
+   580→   580→        <button type="button" className="ops-ghost-btn" onClick={onNew}>فراخوان جدید</button>
+   581→   581→      </div>
+   582→   582→    </section>
+   583→   583→  );
+   584→   584→}
+   585→   585→
+   586→   586→/* ═══ انتخاب شیوه: فراخوان زنده یا فهرست اساتید ═══ */
+   587→   587→function ModeSelector({
+   588→   588→  mode,
+   589→   589→  onChange,
+   590→   590→  topicTitle,
+   591→   591→}: {
+   592→   592→  mode: 'broadcast' | 'list';
+   593→   593→  onChange: (mode: 'broadcast' | 'list') => void;
+   594→   594→  topicTitle: string;
+   595→   595→}) {
+   596→   596→  const cards: Array<{
+   597→   597→    id: 'broadcast' | 'list';
+   598→   598→    icon: Parameters<typeof Icon>[0]['name'];
+   599→   599→    title: string;
+   600→   600→    badge: string;
+   601→   601→    description: string;
+   602→   602→    accent: boolean;
+   603→   603→  }> = [
+   604→   604→    {
+   605→   605→      id: 'broadcast',
+   606→   606→      icon: 'bell',
+   607→   607→      title: 'فراخوان زنده',
+   608→   608→      badge: 'ویژهٔ وُدّا',
+   609→   609→      description: 'درخواست شما برای همهٔ اساتیدِ این موضوع پخش می‌شود؛ نخستین اساتیدی که اعلام آمادگی کنند دیده می‌شوند و شما یکی را تأیید می‌کنید.',
+   610→   610→      accent: true,
+   611→   611→    },
+   612→   612→    {
+   613→   613→      id: 'list',
+   614→   614→      icon: 'users',
+   615→   615→      title: 'فهرست اساتید',
+   616→   616→      badge: 'انتخاب مستقیم',
+   617→   617→      description: 'پروفایل اساتیدی که همین موضوع را تدریس می‌کنند را ببینید و بدون انتظار، مستقیم استاد و زمان دلخواه را رزرو کنید.',
+   618→   618→      accent: false,
+   619→   619→    },
+   620→   620→  ];
+   621→   621→
+   622→   622→  return (
+   623→   623→    <section aria-label="انتخاب شیوه">
+   624→   624→      <strong style={{ display: 'block', fontSize: 14.5, marginBottom: 10 }}>
+   625→   625→        ۲. برای موضوع «{topicTitle}» کدام شیوه را می‌پسندید؟
+   626→   626→      </strong>
+   627→   627→      <div role="radiogroup" aria-label="شیوهٔ ادامه" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 10 }}>
+   628→   628→        {cards.map((card) => {
+   629→   629→          const active = mode === card.id;
+   630→   630→          return (
+   631→   631→            <button
+   632→   632→              key={card.id}
+   633→   633→              type="button"
+   634→   634→              role="radio"
+   635→   635→              aria-checked={active}
+   636→   636→              onClick={() => onChange(card.id)}
+   637→   637→              className={`ops-data-surface dispatch-mode-card${active ? (card.accent ? ' neon-frame' : ' neon-frame-gold') : ''}`}
+   638→   638→              style={{
+   639→   639→                textAlign: 'right',
+   640→   640→                cursor: 'pointer',
+   641→   641→                fontFamily: 'inherit',
+   642→   642→                padding: 16,
+   643→   643→                background: active ? '#fff' : 'var(--surface)',
+   644→   644→                opacity: active ? 1 : 0.82,
+   645→   645→                transition: 'opacity .2s ease',
+   646→   646→              }}
+   647→   647→            >
+   648→   648→              <span style={{ display: 'flex', alignItems: 'center', gap: 9, flexWrap: 'wrap' }}>
+   649→   649→                <span
+   650→   650→                  style={{
+   651→   651→                    display: 'grid', placeItems: 'center', width: 38, height: 38, borderRadius: 12, flex: '0 0 auto',
+   652→   652→                    background: active ? 'var(--olive-600)' : 'var(--olive-50)', color: active ? '#fff' : 'var(--olive-600)',
+   653→   653→                  }}
+   654→   654→                >
+   655→   655→                  <Icon name={card.icon} size={18} />
+   656→   656→                </span>
+   657→   657→                <strong style={{ fontSize: 14.5 }}>{card.title}</strong>
+   658→   658→                <span
+   659→   659→                  style={{
+   660→   660→                    fontSize: 10, fontWeight: 800, borderRadius: 999, padding: '2.5px 9px',
+   661→   661→                    background: card.accent ? 'var(--gold-bg, #f7efd9)' : 'var(--olive-50)',
+   662→   662→                    color: card.accent ? '#8b681f' : '#4c5a36',
+   663→   663→                  }}
+   664→   664→                >
+   665→   665→                  {card.badge}
+   666→   666→                </span>
+   667→   667→                {active ? (
+   668→   668→                  <span style={{ marginInlineStart: 'auto', color: 'var(--olive-600)', display: 'inline-flex' }} aria-hidden="true">
+   669→   669→                    <Icon name="checkCircle" size={18} />
+   670→   670→                  </span>
+   671→   671→                ) : null}
+   672→   672→              </span>
+   673→   673→              <span style={{ display: 'block', marginTop: 9, fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.9 }}>{card.description}</span>
+   674→   674→            </button>
+   675→   675→          );
+   676→   676→        })}
+   677→   677→      </div>
+   678→   678→    </section>
+   679→   679→  );
+   680→   680→}
+   681→   681→
+   682→   682→/* ═══ شیوهٔ فهرست: اساتیدِ همین موضوع برای انتخاب مستقیم ═══ */
+   683→   683→function TeacherListMode({
+   684→   684→  topic,
+   685→   685→  teachers,
+   686→   686→  total,
+   687→   687→  loading,
+   688→   688→  onSwitchToBroadcast,
+   689→   689→}: {
+   690→   690→  topic: OfficialServiceItem;
+   691→   691→  teachers: Teacher[];
+   692→   692→  total: number;
+   693→   693→  loading: boolean;
+   694→   694→  onSwitchToBroadcast: () => void;
+   695→   695→}) {
+   696→   696→  return (
+   697→   697→    <section aria-label="فهرست اساتید موضوع" style={{ display: 'grid', gap: 12 }}>
+   698→   698→      <div className="web-results-head">
+   699→   699→        <div>
+   700→   700→          <small>اساتید موضوع «{topic.title}»</small>
+   701→   701→          <strong>{loading ? 'در حال دریافت اساتید…' : `${toFaDigits(total)} استاد یافت شد`}</strong>
+   702→   702→        </div>
+   703→   703→        <button type="button" onClick={onSwitchToBroadcast} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'none', border: 0, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 800, fontSize: 12.5, color: 'var(--olive-600)' }}>
+   704→   704→          <Icon name="bell" size={15} /> کسی مناسب نبود؟ فراخوان بزنید
+   705→   705→        </button>
+   706→   706→      </div>
+   707→   707→
+   708→   708→      {loading ? (
+   709→   709→        <div className="web-search-loading">
+   710→   710→          {[0, 1, 2].map((item) => <div key={item} />)}
+   711→   711→        </div>
+   712→   712→      ) : teachers.length === 0 ? (
+   713→   713→        <section className="ops-data-surface" style={{ textAlign: 'center', padding: 24 }}>
+   714→   714→          <span style={{ color: 'var(--olive-500)' }}><Icon name="users" size={30} /></span>
+   715→   715→          <strong style={{ display: 'block', marginTop: 8, fontSize: 15 }}>هنوز استادی برای این موضوع ثبت‌نام نکرده است</strong>
+   716→   716→          <p style={{ margin: '6px 0 14px', fontSize: 12.5, color: 'var(--ink-3)', lineHeight: 1.9 }}>
+   717→   717→            اشکالی ندارد! فراخوان بزنید تا به‌محض ثبت‌نام یا آنلاین‌شدن اساتیدِ این موضوع، درخواست شما به آن‌ها اعلام شود.
+   718→   718→          </p>
+   719→   719→          <button type="button" className="ops-primary-btn" style={{ display: 'inline-flex' }} onClick={onSwitchToBroadcast}>
+   720→   720→            🔔 رفتن به شیوهٔ فراخوان زنده
+   721→   721→          </button>
+   722→   722→        </section>
+   723→   723→      ) : (
+   724→   724→        <div style={{ display: 'grid', gap: 10 }}>
+   725→   725→          {teachers.map((teacher, index) => (
+   726→   726→            <ListTeacherRow key={teacher.id} teacher={teacher} index={index} />
+   727→   727→          ))}
+   728→   728→        </div>
+   729→   729→      )}
+   730→   730→    </section>
+   731→   731→  );
+   732→   732→}
+   733→   733→
+   734→   734→function ListTeacherRow({ teacher, index }: { teacher: Teacher; index: number }) {
+   735→   735→  const price = Math.max(0, teacher.price30 || teacher.services?.[0]?.price || 0);
+   736→   736→  const badge = TIER_BADGE[teacher.tier ?? ''];
+   737→   737→  return (
+   738→   738→    <Link
+   739→   739→      href={`/teachers/${teacher.id}`}
+   740→   740→      className="ops-data-surface"
+   741→   741→      style={{
+   742→   742→        display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+   743→   743→        color: 'inherit', textDecoration: 'none', animationDelay: `${index * 60}ms`,
+   744→   744→      }}
+   745→   745→    >
+   746→   746→      <Avatar size={50} ring tier={teacher.tier} imageUrl={fullUrl(teacher.user?.avatar_url)} />
+   747→   747→      <div style={{ minWidth: 0, flex: 1 }}>
+   748→   748→        <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap' }}>
+   749→   749→          <strong style={{ fontSize: 14.5 }}>{teacher.user?.name || 'استاد وُدّا'}</strong>
+   750→   750→          {badge ? (
+   751→   751→            <span style={{ fontSize: 10.5, fontWeight: 700, color: badge.color, background: badge.bg, borderRadius: 999, padding: '2px 8px' }}>
+   752→   752→              {badge.label}
+   753→   753→            </span>
+   754→   754→          ) : null}
+   755→   755→        </div>
+   756→   756→        <span style={{ display: 'block', fontSize: 12, color: 'var(--ink-2)', marginTop: 2 }}>
+   757→   757→          {teacher.tag || teacher.field}
+   758→   758→          {teacher.sessions > 0 ? ` · ${toFaDigits(teacher.sessions)} جلسه` : ''}
+   759→   759→          {teacher.reviews > 0 ? ` · ⭐ ${toFaDigits(teacher.rating.toFixed(1))}` : ''}
+   760→   760→          {teacher.city ? ` · ${teacher.city}` : ''}
+   761→   761→        </span>
+   762→   762→      </div>
+   763→   763→      <strong style={{ fontSize: 13.5, color: 'var(--olive-700)' }}>
+   764→   764→        {price > 0 ? `${toman(price)} تومان` : 'مشاهده خدمات'}
+   765→   765→      </strong>
+   766→   766→      <span className="web-search-card-cta">پروفایل و رزرو <Icon name="arrowL" size={14} /></span>
+   767→   767→    </Link>
+   768→   768→  );
+   769→   769→}
+   770→   770→
