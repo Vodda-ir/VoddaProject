@@ -311,7 +311,7 @@ export default function UserWalletPage() {
               { value: 'out', label: 'خروجی' },
             ]}
             value={tab}
-            onChange={setTab}
+            onChange={(v) => setTab(v as TabKey)}
             counts={counts}
           />
           <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>

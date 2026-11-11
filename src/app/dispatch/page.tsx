@@ -58,7 +58,7 @@ export default function DispatchPage() {
   const [laterAt, setLaterAt] = useState('');
   const [note, setNote] = useState('');
   const [view, setView] = useState<DispatchCallViewData | null>(null);
-  const [mode, setMode] = useState<'broadcast' | 'list'>('broadcast');
+  const [mode, setMode] = useState
   const [list, setList] = useState<Teacher[]>([]);
   const [listTotal, setListTotal] = useState(0);
   const [listLoading, setListLoading] = useState(false);
