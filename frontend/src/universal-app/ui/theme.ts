@@ -48,6 +48,7 @@ export const gradients = {
   deep: "linear-gradient(145deg, #2e3622 0%, #3c472b 58%, #4c5a36 100%)",
   soft: "linear-gradient(145deg, #f2f5ea 0%, #ffffff 72%)",
   gold: "linear-gradient(145deg, #f7efd9 0%, #fffaf0 100%)",
+  goldRich: "linear-gradient(145deg, #d4ab52 0%, #bf9540 52%, #8b681f 100%)",
 } as const;
 
 export const radii = {

@@ -107,6 +107,12 @@ export function UniversalVisualStyles() {
       .vodda-bottom-nav a {
         transition: color 150ms ease, background 150ms ease, transform 150ms ease;
       }
+      .vodda-nav-cta-orb {
+        transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+      }
+      .vodda-bottom-nav a:active .vodda-nav-cta-orb {
+        transform: scale(0.92);
+      }
       .vodda-spinner {
         width: 16px;
         height: 16px;

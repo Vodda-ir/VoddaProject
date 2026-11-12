@@ -2,7 +2,7 @@ import type { CSSProperties, MouseEvent, ReactNode } from "react";
 import type { UniversalAppConfig } from "../config";
 import { appRouteUrl, navigateAppRoute, type AppRouteName } from "../router";
 import { Icon } from "./Icon";
-import { colors, radii, shadows, spacing, typography } from "./theme";
+import { colors, gradients, radii, shadows, spacing, typography } from "./theme";
 
 type IconName = Parameters<typeof Icon>[0]["name"];
 
@@ -11,6 +11,27 @@ type NavigationItem = {
   target: Exclude<AppRouteName, "teacher" | "book" | "not-found">;
   icon: IconName;
   routes: AppRouteName[];
+};
+
+/**
+ * دکمه فراخوان (Call to action) وسط نوار ناوبری.
+ * فعلاً جریان «فراخوان اساتید» را باز می‌کند؛ برنامه‌های بعدی هم از همین
+ * نقطه پیاده‌سازی می‌شوند تا دکمه به هاب اصلی اکشن‌های کاربر تبدیل شود.
+ */
+type NavigationCta = {
+  label: string;
+  ariaLabel: string;
+  icon: IconName;
+  target: Exclude<AppRouteName, "teacher" | "book" | "not-found">;
+  activeRoutes: AppRouteName[];
+};
+
+const learnerCallToAction: NavigationCta = {
+  label: "فراخوان",
+  ariaLabel: "فراخوان اساتید — درخواست زنده استاد",
+  icon: "bell",
+  target: "dispatch",
+  activeRoutes: ["dispatch"],
 };
 
 type AppShellProps = {
@@ -24,7 +45,6 @@ const learnerNavigation: NavigationItem[] = [
   { label: "خانه", target: "home", icon: "home", routes: ["home"] },
   { label: "جستجو", target: "search", icon: "search", routes: ["search", "teacher", "book"] },
   { label: "جلسات", target: "sessions", icon: "calendar", routes: ["sessions"] },
-  { label: "کیف پول", target: "wallet", icon: "wallet", routes: ["wallet"] },
   { label: "پروفایل", target: "profile", icon: "user", routes: ["profile", "profile-edit"] },
 ];
 
@@ -70,7 +90,7 @@ const frameStyle: CSSProperties = {
 const contentStyle: CSSProperties = {
   paddingInline: spacing.xl,
   paddingTop: `max(${spacing.lg}px, env(safe-area-inset-top))`,
-  paddingBottom: `calc(88px + env(safe-area-inset-bottom))`,
+  paddingBottom: `calc(104px + env(safe-area-inset-bottom))`,
 };
 
 function navigate(
@@ -85,15 +105,66 @@ function navigate(
 
 function BottomNavigation({
   items,
+  cta,
   routeName,
   config,
   ariaLabel,
 }: {
   items: NavigationItem[];
+  cta?: NavigationCta;
   routeName: AppRouteName;
   config: UniversalAppConfig;
   ariaLabel: string;
 }) {
+  const renderTab = (item: NavigationItem) => {
+    const active = item.routes.includes(routeName);
+    return (
+      <a
+        key={item.target}
+        href={appRouteUrl(item.target, config)}
+        aria-current={active ? "page" : undefined}
+        onClick={(event) => navigate(event, item.target, config)}
+        style={{
+          minWidth: 0,
+          minHeight: 60,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 3,
+          borderRadius: radii.md,
+          color: active ? colors.olive700 : colors.inkMuted,
+          background: "transparent",
+          textDecoration: "none",
+          fontSize: 10.5,
+          fontWeight: active ? 800 : 600,
+        }}
+      >
+        <span
+          style={{
+            width: 58,
+            height: 30,
+            display: "grid",
+            placeItems: "center",
+            borderRadius: radii.pill,
+            color: active ? colors.surface : colors.inkMuted,
+            background: active ? colors.olive600 : "transparent",
+            boxShadow: undefined,
+          }}
+        >
+          <Icon name={item.icon} size={19} stroke={active ? 2 : 1.7} />
+        </span>
+        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }}>
+          {item.label}
+        </span>
+      </a>
+    );
+  };
+
+  const ctaActive = cta ? cta.activeRoutes.includes(routeName) : false;
+  const leadingTabs = cta ? items.slice(0, Math.ceil(items.length / 2)) : items;
+  const trailingTabs = cta ? items.slice(Math.ceil(items.length / 2)) : [];
+
   return (
     <nav
       aria-label={ariaLabel}
@@ -107,7 +178,8 @@ function BottomNavigation({
         minHeight: 68,
         transform: "translateX(-50%)",
         display: "grid",
-        gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))`,
+        gridTemplateColumns: cta ? "1fr 1fr auto 1fr 1fr" : `repeat(${items.length}, minmax(0, 1fr))`,
+        alignItems: "stretch",
         gap: 0,
         padding: "4px 8px max(4px, env(safe-area-inset-bottom))",
         borderTop: `1px solid ${colors.sand150}`,
@@ -115,50 +187,58 @@ function BottomNavigation({
         boxShadow: "0 -6px 24px rgba(46,54,34,.055)",
       }}
     >
-      {items.map((item) => {
-        const active = item.routes.includes(routeName);
-        return (
-          <a
-            key={item.target}
-            href={appRouteUrl(item.target, config)}
-            aria-current={active ? "page" : undefined}
-            onClick={(event) => navigate(event, item.target, config)}
+      {leadingTabs.map(renderTab)}
+      {cta ? (
+        <a
+          key="nav-cta"
+          href={appRouteUrl(cta.target, config)}
+          aria-label={cta.ariaLabel}
+          aria-current={ctaActive ? "true" : undefined}
+          onClick={(event) => navigate(event, cta.target, config)}
+          style={{
+            minWidth: 76,
+            minHeight: 60,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "flex-end",
+            gap: 3,
+            textDecoration: "none",
+          }}
+        >
+          <span
+            aria-hidden
+            className="vodda-nav-cta-orb"
             style={{
-              minWidth: 0,
-              minHeight: 60,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 3,
-              borderRadius: radii.md,
-              color: active ? colors.olive700 : colors.inkMuted,
-              background: "transparent",
-              textDecoration: "none",
-              fontSize: 10.5,
-              fontWeight: active ? 800 : 600,
+              width: 56,
+              height: 56,
+              marginTop: -26,
+              display: "grid",
+              placeItems: "center",
+              borderRadius: "50%",
+              color: colors.surface,
+              background: ctaActive ? gradients.goldRich : gradients.hero,
+              border: `2px solid ${ctaActive ? colors.goldDark : colors.goldSoft}`,
+              boxShadow: ctaActive
+                ? "0 16px 34px rgba(139,104,31,.42), 0 4px 10px rgba(46,54,34,.16)"
+                : "0 16px 34px rgba(76,90,54,.36), 0 4px 10px rgba(46,54,34,.14)",
             }}
           >
-            <span
-              style={{
-                width: 58,
-                height: 30,
-                display: "grid",
-                placeItems: "center",
-                borderRadius: radii.pill,
-                color: active ? colors.surface : colors.inkMuted,
-                background: active ? colors.olive600 : "transparent",
-                boxShadow: undefined,
-              }}
-            >
-              <Icon name={item.icon} size={19} stroke={active ? 2 : 1.7} />
-            </span>
-            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }}>
-              {item.label}
-            </span>
-          </a>
-        );
-      })}
+            <Icon name={cta.icon} size={25} stroke={2.2} />
+          </span>
+          <span
+            style={{
+              fontSize: 10.5,
+              fontWeight: 800,
+              lineHeight: 1.2,
+              color: ctaActive ? colors.goldDark : colors.olive700,
+            }}
+          >
+            {cta.label}
+          </span>
+        </a>
+      ) : null}
+      {trailingTabs.map(renderTab)}
     </nav>
   );
 }
@@ -244,6 +324,7 @@ function Shell({
         </div>
         <BottomNavigation
           items={items}
+          cta={mode === "learner" ? learnerCallToAction : undefined}
           routeName={routeName}
           config={config}
           ariaLabel={mode === "teacher" ? "ناوبری اصلی استاد" : "ناوبری اصلی قرآن‌آموز"}
