@@ -262,6 +262,10 @@ type PaymentOrder struct {
         TraceNo    string        `gorm:"size:64" json:"trace_no"`
         CardPan    string        `gorm:"size:32" json:"card_pan"`
         FailReason string        `gorm:"size:255" json:"fail_reason"`
+        // ReturnPath is the client-chosen landing path for the gateway
+        // round-trip. Only validated "/app..." paths are stored (universal
+        // app); empty keeps the legacy panel landing for old clients.
+        ReturnPath string        `gorm:"size:255;default:''" json:"return_path"`
         CreatedAt  time.Time     `gorm:"index" json:"created_at"`
         UpdatedAt  time.Time     `json:"updated_at"`
 }

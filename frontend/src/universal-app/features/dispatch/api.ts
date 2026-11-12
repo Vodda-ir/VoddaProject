@@ -1,6 +1,7 @@
 // API helpers for the فراخوان اساتید feature.
 import { asArray, asRecord, type ApiEnvelope } from "../../platform/api";
 import type { PlatformRuntime } from "../../platform/types";
+import { APP_LANDING_SESSIONS } from "../payments/landing";
 import type {
   ChooseOfferResult,
   DispatchCallView,
@@ -80,7 +81,12 @@ export async function chooseDispatchOffer(
 ): Promise<ChooseOfferResult> {
   const response = await runtime.request<ApiEnvelope>(`/dispatch/calls/${callId}/choose`, {
     method: "POST",
-    body: JSON.stringify({ offer_id: offerId, payment_method: paymentMethod }),
+    body: JSON.stringify({
+      offer_id: offerId,
+      payment_method: paymentMethod,
+      // لندینگ برگشت از درگاه: فهرست جلسات اپ یونیورسال (قرارداد backend).
+      return_to: APP_LANDING_SESSIONS,
+    }),
   });
   return asObject(response.data ?? {}) as unknown as ChooseOfferResult;
 }

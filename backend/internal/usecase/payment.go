@@ -29,6 +29,38 @@ const (
 // served by the BFF (public, no session) and forwarded to the backend.
 const PaymentCallbackURL = "/api/payments/saman/callback"
 
+// landingPathPrefix is the only family of client-chosen landing paths the
+// callback accepts. The universal app lives under /app on the public site
+// origin (FRONTEND_BASE_URL), so gateway round-trips always land there —
+// including payers who started from app.vodda.ir or the Capacitor WebView.
+const landingPathPrefix = "/app"
+
+// sanitizeReturnPath validates a client-supplied landing path. Only relative
+// "/app..." paths are accepted (no scheme, no query, no traversal); anything
+// else falls back to the legacy panel landing.
+func sanitizeReturnPath(raw string) string {
+        path := strings.TrimSpace(raw)
+        if path == "" || len(path) > 255 {
+                return ""
+        }
+        if !strings.HasPrefix(path, landingPathPrefix) {
+                return ""
+        }
+        if strings.ContainsAny(path, "?#\\") || strings.Contains(path, "..") || strings.Contains(path, "//") {
+                return ""
+        }
+        return path
+}
+
+// landingPath picks the callback landing path: the order's validated return
+// path when present, otherwise the legacy panel default.
+func landingPath(returnPath, fallback string) string {
+        if returnPath != "" {
+                return returnPath
+        }
+        return fallback
+}
+
 // PaymentUsecase coordinates gateway payments (wallet top-ups and session
 // bookings) through Saman Sep.
 type PaymentUsecase struct {
@@ -101,7 +133,7 @@ func gatewayNotReadyErr() error {
 
 // CreateTopup opens a pending order and mints the Sep payment token that the
 // frontend posts to OnlinePG (Monafaseh create semantics).
-func (uc *PaymentUsecase) CreateTopup(ctx context.Context, userID uint, amount int64) (*TopupResult, error) {
+func (uc *PaymentUsecase) CreateTopup(ctx context.Context, userID uint, amount int64, returnPath string) (*TopupResult, error) {
         if !uc.GatewayReady() {
                 return nil, domain.ErrForbidden
         }
@@ -121,11 +153,12 @@ func (uc *PaymentUsecase) CreateTopup(ctx context.Context, userID uint, amount i
         }
 
         order := &domain.PaymentOrder{
-                UserID:  userID,
-                Gateway: "saman",
-                ResNum:  newResNum(),
-                Amount:  amount,
-                Status:  domain.PaymentPending,
+                UserID:     userID,
+                Gateway:    "saman",
+                ResNum:     newResNum(),
+                Amount:     amount,
+                Status:     domain.PaymentPending,
+                ReturnPath: sanitizeReturnPath(returnPath),
         }
         if err := uc.payments.Create(ctx, order); err != nil {
                 return nil, err
@@ -157,15 +190,30 @@ func (uc *PaymentUsecase) failOrder(ctx context.Context, order *domain.PaymentOr
         }
 }
 
-// walletResultURL builds the frontend landing URL after gateway round-trip.
+// walletResultURL builds the legacy-panel landing URL after a gateway
+// round-trip whose order (hence return path) is unknown.
 func (uc *PaymentUsecase) walletResultURL(status, refNum string) string {
         return uc.resultURL("/panel/user/wallet", status, refNum)
 }
 
-// bookingResultURL sends the payer back to their sessions list, where the
-// booked session now appears (pending, awaiting teacher confirmation).
+// bookingResultURL sends the payer back to the legacy sessions list, where
+// the booked session now appears (pending, awaiting teacher confirmation).
 func (uc *PaymentUsecase) bookingResultURL(status, refNum string) string {
         return uc.resultURL("/panel/user/sessions", status, refNum)
+}
+
+// topupResultURL lands the payer on the order's stored return path — the
+// universal app wallet ("/app/wallet") when the top-up was opened from /app,
+// the legacy panel otherwise.
+func (uc *PaymentUsecase) topupResultURL(order *domain.PaymentOrder, status, refNum string) string {
+        return uc.resultURL(landingPath(order.ReturnPath, "/panel/user/wallet"), status, refNum)
+}
+
+// bookingResultURLFor lands the payer on the order's stored return path —
+// the universal app sessions list ("/app/sessions") when the booking was
+// opened from /app, the legacy panel otherwise.
+func (uc *PaymentUsecase) bookingResultURLFor(order *domain.PaymentOrder, status, refNum string) string {
+        return uc.resultURL(landingPath(order.ReturnPath, "/panel/user/sessions"), status, refNum)
 }
 
 func (uc *PaymentUsecase) resultURL(path, status, refNum string) string {
@@ -179,7 +227,7 @@ func (uc *PaymentUsecase) resultURL(path, status, refNum string) string {
 // CreateBookingPayment opens a pending order attached to a reserved session
 // and returns the Sep payment token for the client-side form post. Amount
 // equals the session price.
-func (uc *PaymentUsecase) CreateBookingPayment(ctx context.Context, user *domain.User, session *domain.Session) (*TopupResult, error) {
+func (uc *PaymentUsecase) CreateBookingPayment(ctx context.Context, user *domain.User, session *domain.Session, returnPath string) (*TopupResult, error) {
         if !uc.GatewayReady() {
                 return nil, domain.ErrForbidden
         }
@@ -195,13 +243,14 @@ func (uc *PaymentUsecase) CreateBookingPayment(ctx context.Context, user *domain
         }
 
         order := &domain.PaymentOrder{
-                UserID:    user.ID,
-                Gateway:   "saman",
-                OrderType: domain.PaymentOrderBooking,
-                RefID:     session.ID,
-                ResNum:    newResNum(),
-                Amount:    session.Price,
-                Status:    domain.PaymentPending,
+                UserID:     user.ID,
+                Gateway:    "saman",
+                OrderType:  domain.PaymentOrderBooking,
+                RefID:      session.ID,
+                ResNum:     newResNum(),
+                Amount:     session.Price,
+                Status:     domain.PaymentPending,
+                ReturnPath: sanitizeReturnPath(returnPath),
         }
         if err := uc.payments.Create(ctx, order); err != nil {
                 return nil, err
@@ -258,9 +307,9 @@ func (uc *PaymentUsecase) HandleCallback(ctx context.Context, form payment.Callb
                 return uc.walletResultURL("failed", "")
         }
         isBooking := order.OrderType == domain.PaymentOrderBooking
-        failureURL := uc.walletResultURL("failed", "")
+        failureURL := uc.topupResultURL(order, "failed", "")
         if isBooking {
-                failureURL = uc.bookingResultURL("failed", "")
+                failureURL = uc.bookingResultURLFor(order, "failed", "")
         }
         if order.Token == "" || order.Token != form.Token {
                 // A bank token must belong to this exact order.
@@ -286,9 +335,9 @@ func (uc *PaymentUsecase) HandleCallback(ctx context.Context, form payment.Callb
         if order.Status == domain.PaymentPaid {
                 refNum := order.RefNum
                 if isBooking {
-                        return uc.bookingResultURL("success", refNum)
+                        return uc.bookingResultURLFor(order, "success", refNum)
                 }
-                return uc.walletResultURL("success", refNum)
+                return uc.topupResultURL(order, "success", refNum)
         }
 
         // 5. Bank-side failure / payer cancellation.
@@ -320,9 +369,9 @@ func (uc *PaymentUsecase) HandleCallback(ctx context.Context, form payment.Callb
                         latest, fetchErr := uc.payments.ByID(ctx, order.ID)
                         if fetchErr == nil && latest.Status == domain.PaymentPaid && latest.RefNum == refNum {
                                 if isBooking {
-                                        return uc.bookingResultURL("success", refNum)
+                                        return uc.bookingResultURLFor(order, "success", refNum)
                                 }
-                                return uc.walletResultURL("success", refNum)
+                                return uc.topupResultURL(order, "success", refNum)
                         }
                         log.Printf("%s: receipt bound elsewhere resnum=%s refnum=%s", failurePrefix, form.CRN, refNum)
                         return failureURL
@@ -339,9 +388,9 @@ func (uc *PaymentUsecase) HandleCallback(ctx context.Context, form payment.Callb
         if verifyErr != nil || !verified {
                 log.Printf("%s: verify pending resnum=%s refnum=%s raw=%s err=%v", failurePrefix, form.CRN, refNum, raw, verifyErr)
                 if isBooking {
-                        return uc.bookingResultURL("verify", refNum)
+                        return uc.bookingResultURLFor(order, "verify", refNum)
                 }
-                return uc.walletResultURL("verify", refNum)
+                return uc.topupResultURL(order, "verify", refNum)
         }
 
         // 9. Settlement — atomic claim, credit and ledger (topup) or booking
@@ -360,7 +409,7 @@ func (uc *PaymentUsecase) HandleCallback(ctx context.Context, form payment.Callb
                 log.Printf("[payment] settled booking order=%d session=%d user=%d amount=%d toman refnum=%s trace=%s",
                         settled.ID, settled.RefID, settled.UserID, settled.Amount, settled.RefNum, settled.TraceNo)
                 uc.notifyBookingSettled(ctx, settled)
-                return uc.bookingResultURL("success", settled.RefNum)
+                return uc.bookingResultURLFor(order, "success", settled.RefNum)
         }
 
         settled, err := uc.financial.SettlePaymentOrder(ctx, order.ID, refNum, form.TraceNo, form.SecurePan)
@@ -375,7 +424,7 @@ func (uc *PaymentUsecase) HandleCallback(ctx context.Context, form payment.Callb
         }
         log.Printf("[payment] settled order=%d user=%d amount=%d toman refnum=%s trace=%s",
                 settled.ID, settled.UserID, settled.Amount, settled.RefNum, settled.TraceNo)
-        return uc.walletResultURL("success", settled.RefNum)
+        return uc.topupResultURL(order, "success", settled.RefNum)
 }
 
 // notifyBookingSettled tells the teacher a gateway-paid request just became

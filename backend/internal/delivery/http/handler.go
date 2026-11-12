@@ -429,6 +429,7 @@ func (h *Handler) Book(c *gin.Context) {
                 ScheduledAt   string `json:"scheduled_at" binding:"required"`
                 Note          string `json:"note"`
                 PaymentMethod string `json:"payment_method"`
+                ReturnTo      string `json:"return_to"`
         }
         if err := c.ShouldBindJSON(&in); err != nil {
                 fail(c, domain.ErrValidation)
@@ -445,6 +446,7 @@ func (h *Handler) Book(c *gin.Context) {
                 ScheduledAt:   at,
                 Note:          in.Note,
                 PaymentMethod: in.PaymentMethod,
+                ReturnPath:    in.ReturnTo,
         })
         if err != nil {
                 fail(c, err)
@@ -455,8 +457,13 @@ func (h *Handler) Book(c *gin.Context) {
 
 // PaySession re-opens the gateway checkout for a booking still awaiting
 // payment (the learner closed the browser or the session expired mid-flow).
+// return_to optionally selects the universal app landing path.
 func (h *Handler) PaySession(c *gin.Context) {
-        payment, err := h.Session.BookingPayment(c, userID(c), paramID(c))
+        var in struct {
+                ReturnTo string `json:"return_to"`
+        }
+        _ = c.ShouldBindJSON(&in) // an empty body is fine; return_to stays optional
+        payment, err := h.Session.BookingPayment(c, userID(c), paramID(c), in.ReturnTo)
         if err != nil {
                 fail(c, err)
                 return
@@ -604,16 +611,19 @@ func (h *Handler) MyWithdrawals(c *gin.Context) {
         ok(c, withdrawals)
 }
 
-// WalletTopup opens a Saman Sep order and returns the Sep payment page URL.
+// WalletTopup opens a Saman Sep order and returns the Sep payment token the
+// client posts to OnlinePG. return_to optionally selects the universal app
+// landing path for the gateway round-trip.
 func (h *Handler) WalletTopup(c *gin.Context) {
         var in struct {
-                Amount int64 `json:"amount" binding:"required"`
+                Amount   int64  `json:"amount" binding:"required"`
+                ReturnTo string `json:"return_to"`
         }
         if err := c.ShouldBindJSON(&in); err != nil {
                 fail(c, domain.ErrValidation)
                 return
         }
-        result, err := h.Payment.CreateTopup(c, userID(c), in.Amount)
+        result, err := h.Payment.CreateTopup(c, userID(c), in.Amount, in.ReturnTo)
         if err != nil {
                 fail(c, err)
                 return

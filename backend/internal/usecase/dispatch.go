@@ -190,7 +190,7 @@ func (uc *DispatchUsecase) view(ctx context.Context, call *domain.DispatchCall) 
 
 // ChooseOffer confirms a candidate: creates the booking through the regular
 // pipeline, marks the call matched and releases every other waiting teacher.
-func (uc *DispatchUsecase) ChooseOffer(ctx context.Context, learnerID, callID, offerID uint, paymentMethod string) (*BookResult, error) {
+func (uc *DispatchUsecase) ChooseOffer(ctx context.Context, learnerID, callID, offerID uint, paymentMethod, returnPath string) (*BookResult, error) {
 	call, err := uc.dispatch.CallByID(ctx, callID)
 	if err != nil {
 		return nil, err
@@ -227,6 +227,7 @@ func (uc *DispatchUsecase) ChooseOffer(ctx context.Context, learnerID, callID, o
 		ScheduledAt:       *scheduledAt,
 		Note:              dispatchBookingNote(call),
 		PaymentMethod:     paymentMethod,
+		ReturnPath:        returnPath,
 		SkipWorkTimeCheck: true, // the teacher opted in by accepting the call
 	})
 	if err != nil {

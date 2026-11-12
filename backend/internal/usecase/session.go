@@ -15,7 +15,7 @@ const AwaitingPaymentWindow = 45 * time.Minute
 
 // BookingGateway is the subset of the payment usecase the booking flow needs.
 type BookingGateway interface {
-        CreateBookingPayment(ctx context.Context, user *domain.User, session *domain.Session) (*TopupResult, error)
+        CreateBookingPayment(ctx context.Context, user *domain.User, session *domain.Session, returnPath string) (*TopupResult, error)
 }
 
 // BookResult carries the created session plus, for online payments, the Sep
@@ -66,6 +66,10 @@ type BookInput struct {
         ScheduledAt   time.Time
         Note          string
         PaymentMethod string // "wallet" (default) | "gateway"
+        // ReturnPath is the client-chosen callback landing path. Only
+        // validated "/app..." paths are stored on the payment order; empty
+        // keeps the legacy panel landing.
+        ReturnPath string
         // SkipWorkTimeCheck bypasses the teacher's weekly work-time template.
         // The dispatch (فراخوان) confirm path uses it: the teacher already opted
         // in by accepting the call, so the learner's chosen hour stands even if
@@ -153,7 +157,7 @@ func (uc *SessionUsecase) Book(ctx context.Context, learnerID uint, in BookInput
                                 return nil, err
                         }
                 }
-                payment, err := uc.payments.CreateBookingPayment(ctx, learner, s)
+                payment, err := uc.payments.CreateBookingPayment(ctx, learner, s, in.ReturnPath)
                 if err != nil {
                         // Free the reserved slot so the learner can retry cleanly.
                         uc.cancelAwaitingSession(ctx, s.ID, "شروع پرداخت ناموفق بود")
@@ -192,7 +196,7 @@ func (uc *SessionUsecase) Book(ctx context.Context, learnerID uint, in BookInput
 
 // BookingPayment re-initiates the gateway payment for a session that is still
 // awaiting payment (e.g. the learner closed the browser mid-checkout).
-func (uc *SessionUsecase) BookingPayment(ctx context.Context, learnerID, sessionID uint) (*TopupResult, error) {
+func (uc *SessionUsecase) BookingPayment(ctx context.Context, learnerID, sessionID uint, returnPath string) (*TopupResult, error) {
         uc.cancelExpiredAwaiting(ctx)
         s, err := uc.sessions.ByID(ctx, sessionID)
         if err != nil {
@@ -215,7 +219,7 @@ func (uc *SessionUsecase) BookingPayment(ctx context.Context, learnerID, session
                 return nil, domain.ErrForbidden
         }
         _ = uc.financialFailStaleOrders(ctx, s.ID)
-        return uc.payments.CreateBookingPayment(ctx, learner, s)
+        return uc.payments.CreateBookingPayment(ctx, learner, s, returnPath)
 }
 
 // Accept confirms a pending session (teacher action).

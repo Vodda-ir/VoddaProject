@@ -24,6 +24,7 @@ import { messageOf } from "../../ui/errorMessage";
 import { toFaDigits } from "../wallet/WalletTransactionCard";
 import { payBooking } from "../booking/api";
 import { payViaSamanGate } from "../../../lib/saman-gate";
+import { PaymentResultBanner } from "../payments/PaymentResultBanner";
 import {
   cancelLearnerSession,
   createSessionReview,
@@ -241,6 +242,7 @@ export function LearnerSessionsScreen() {
 
   return (
     <section className="vodda-screen" style={{ display: "grid", gap: spacing.xl }}>
+      <PaymentResultBanner />
       <SectionHeader title="جلسات من" description="زمان‌ها بر اساس ساعت رسمی سامانه نمایش داده می‌شوند" />
 
       <div className="vodda-enter" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>

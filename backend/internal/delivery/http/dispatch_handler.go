@@ -66,12 +66,13 @@ func (h *Handler) ChooseDispatchOffer(c *gin.Context) {
 	var in struct {
 		OfferID       uint   `json:"offer_id" binding:"required"`
 		PaymentMethod string `json:"payment_method"`
+		ReturnTo      string `json:"return_to"`
 	}
 	if err := c.ShouldBindJSON(&in); err != nil {
 		fail(c, domain.ErrValidation)
 		return
 	}
-	result, err := h.Dispatch.ChooseOffer(c, userID(c), paramID(c), in.OfferID, in.PaymentMethod)
+	result, err := h.Dispatch.ChooseOffer(c, userID(c), paramID(c), in.OfferID, in.PaymentMethod, in.ReturnTo)
 	if err != nil {
 		fail(c, err)
 		return

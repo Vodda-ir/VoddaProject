@@ -26,6 +26,11 @@ frontend/out/
 frontend/.turbo/
 node_modules/
 
+# frontend/native (Capacitor wrapper)
+frontend/native/dist/
+frontend/native/android/
+frontend/native/ios/
+
 # Monafaseh (Next.js + SQLite)
 monafaseh/.env
 monafaseh/.env.*
