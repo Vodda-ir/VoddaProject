@@ -1,10 +1,10 @@
-/* نشان درجه استاد — سبک مهر اینستاگرام؛ رنگ مهر درجه استاد را نشان می‌دهد:
- * بین‌المللی (درجه ۱) → آبی، درجه ۲ → سبز، درجه ۳ → قرمز.
+/* نشان درجه استاد — سبک مهر؛ رنگ مهر درجه استاد را نشان می‌دهد و هماهنگ با پالت برند وُدّاست:
+ * بین‌المللی (درجه ۱) → طلایی، درجه ۲ → زیتونی، درجه ۳ → فیروزه‌ای خاکستری.
  * استادان بدون درجه هیچ مهر و تیکی ندارند. */
 export const TIER_BADGES: Record<string, { color: string; label: string }> = {
-  international: { color: "#0095F6", label: "استاد بین‌المللی (درجه ۱)" },
-  grade2: { color: "#1EA55C", label: "استاد درجه ۲" },
-  grade3: { color: "#E5484D", label: "استاد درجه ۳" },
+  international: { color: "#8b681f", label: "استاد بین‌المللی (درجه ۱)" },
+  grade2: { color: "#4c5a36", label: "استاد درجه ۲" },
+  grade3: { color: "#5e7e8c", label: "استاد درجه ۳" },
 };
 
 export function TierBadge({ tier, size = 15 }: { tier: string; size?: number }) {
