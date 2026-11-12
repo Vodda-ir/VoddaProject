@@ -28,11 +28,10 @@ import {
   JalaliWhenPicker,
   TopicIcon,
   chipStyle,
-  formatBudgetRange,
-  formatToman,
   inputStyle,
 } from "./elements";
 import { isWhenInFuture, tehranWallToRfc3339, type WhenValue } from "./schedule";
+import { Chip, CountField, NoteTemplateChips, PriceRangePicker, TimePresetChips, VenuePicker } from "./fields";
 import type { CeremonyAudience, OfficialInPersonService } from "./types";
 
 function todayLocalDate(): string {
@@ -73,6 +72,8 @@ function whenChip(active: boolean): CSSProperties {
     border: `1px solid ${active ? colors.olive600 : colors.sand200}`,
   };
 }
+
+const RECITER_PRESETS: readonly number[] = [1, 2, 3, 4, 5];
 
 function FieldLabel({ children, hint }: { children: string; hint?: string }) {
   return (
@@ -303,51 +304,48 @@ export function CeremonyNewScreen({ config }: { config: UniversalAppConfig }) {
             </span>
           </div>
           <JalaliWhenPicker value={when} onChange={setWhen} label="تاریخ و ساعت برگزاری" />
+          <div style={{ display: "grid", gap: 8 }}>
+            <strong style={{ fontSize: 13.5, color: colors.ink, display: "block" }}>ساعت‌های پیشنهادی</strong>
+            <TimePresetChips hh={when.hh} mm={when.mm} onPick={({ hh, mm }) => setWhen((current) => ({ ...current, hh, mm }))} />
+          </div>
         </div>
 
-        <div>
-          <FieldLabel hint="اجباری">شهر برگزاری</FieldLabel>
-          <input
-            type="text"
-            value={city}
-            onChange={(event) => setCity(event.target.value.slice(0, 60))}
-            placeholder="مثلاً: تهران، مشهد، قم…"
-            style={inputStyle}
-            aria-label="شهر برگزاری مراسم"
-          />
-        </div>
-
-        <div>
-          <FieldLabel hint="اختیاری و محرمانه — فقط برای قاریِ انتخاب‌شده">نشانی دقیق یا مشخصات مکان</FieldLabel>
-          <input
-            type="text"
-            value={venue}
-            onChange={(event) => setVenue(event.target.value.slice(0, 200))}
-            placeholder="مثلاً: مسجد جامع، سالن شماره ۲…"
-            style={inputStyle}
-            aria-label="نشانی مکان مراسم"
-          />
-        </div>
+        <VenuePicker
+          city={city}
+          venue={venue}
+          onCityChange={setCity}
+          onVenueChange={setVenue}
+        />
       </Card>
 
       <Card className="vodda-enter vodda-enter-delay-2" style={{ padding: 18, borderRadius: 20, display: "grid", gap: spacing.lg }}>
         <strong style={{ fontSize: 15, fontWeight: 800, color: colors.ink }}>۳. مهمانان و قاریان</strong>
 
-        <div>
-          <FieldLabel>تعداد مهمانان</FieldLabel>
-          <input
-            type="text"
-            inputMode="numeric"
-            value={toFaDigits(guests)}
-            onChange={(event) => setGuests(digitsOnly(event.target.value, 6))}
-            placeholder="مثلاً ۱۵۰"
-            style={inputStyle}
-            aria-label="تعداد مهمانان"
-          />
-        </div>
+        <CountField
+          label="تعداد مهمانان"
+          hint="انتخاب سریع یا دکمه‌های + و −"
+          value={guests}
+          onChange={setGuests}
+          presets={[30, 50, 100, 200, 500, 1000]}
+          min={1}
+          max={100000}
+          step={10}
+          unit="نفر"
+          ariaLabel="تعداد مهمانان"
+        />
 
         <div>
-          <FieldLabel hint="۱ تا ۱۰ قاری">تعداد قاریان موردنیاز</FieldLabel>
+          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: spacing.sm, marginBottom: 8 }}>
+            <strong style={{ fontSize: 13.5, color: colors.ink, display: "block" }}>تعداد قاریان موردنیاز</strong>
+            <span style={{ fontSize: 11, color: colors.inkFaint }}>۱ تا ۱۰ قاری</span>
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: spacing.sm, marginBottom: spacing.md }}>
+            {RECITER_PRESETS.map((preset) => (
+              <Chip key={preset} active={reciters === preset} onClick={() => setReciters(preset)}>
+                {toFaDigits(preset)} قاری
+              </Chip>
+            ))}
+          </div>
           <div style={{ display: "flex", alignItems: "center", gap: spacing.md }}>
             <button
               type="button"
@@ -387,41 +385,14 @@ export function CeremonyNewScreen({ config }: { config: UniversalAppConfig }) {
       <Card className="vodda-enter vodda-enter-delay-3" style={{ padding: 18, borderRadius: 20, display: "grid", gap: spacing.lg }}>
         <strong style={{ fontSize: 15, fontWeight: 800, color: colors.ink }}>۴. بودجه و مخاطبان</strong>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: spacing.md }}>
-          <div>
-            <FieldLabel hint="تومان">حداقل حق‌الزحمه</FieldLabel>
-            <input
-              type="text"
-              inputMode="numeric"
-              value={toFaDigits(budgetMin)}
-              onChange={(event) => setBudgetMin(digitsOnly(event.target.value, 12))}
-              placeholder="اختیاری"
-              style={inputStyle}
-              aria-label="حداقل حق‌الزحمه به تومان"
-            />
-            {budgetMinValue >= 1000 ? (
-              <span style={{ display: "block", marginTop: 5, fontSize: 11, color: colors.olive700 }}>{formatToman(budgetMinValue)}</span>
-            ) : null}
-          </div>
-          <div>
-            <FieldLabel hint="تومان">حداکثر حق‌الزحمه</FieldLabel>
-            <input
-              type="text"
-              inputMode="numeric"
-              value={toFaDigits(budgetMax)}
-              onChange={(event) => setBudgetMax(digitsOnly(event.target.value, 12))}
-              placeholder="اختیاری"
-              style={inputStyle}
-              aria-label="حداکثر حق‌الزحمه به تومان"
-            />
-            {budgetMaxValue >= 1000 ? (
-              <span style={{ display: "block", marginTop: 5, fontSize: 11, color: colors.olive700 }}>{formatToman(budgetMaxValue)}</span>
-            ) : null}
-          </div>
-        </div>
-        {budgetMinValue > 0 || budgetMaxValue > 0 ? (
-          <p style={{ margin: 0, fontSize: 11.5, color: colors.inkMuted }}>بازهٔ اعلام‌شده: {formatBudgetRange(budgetMinValue, budgetMaxValue)}</p>
-        ) : null}
+        <PriceRangePicker
+          minValue={budgetMinValue}
+          maxValue={budgetMaxValue}
+          onChange={({ min, max }) => {
+            setBudgetMin(min);
+            setBudgetMax(max);
+          }}
+        />
 
         <div>
           <FieldLabel hint="برای رعایت شرعی فضای مراسم">مخاطبان مراسم</FieldLabel>
@@ -441,8 +412,9 @@ export function CeremonyNewScreen({ config }: { config: UniversalAppConfig }) {
           </div>
         </div>
 
-        <div>
+        <div style={{ display: "grid", gap: 10 }}>
           <FieldLabel hint={`${toFaDigits(note.length)} از ۳۰۰`}>یادداشت برای قاریان (اختیاری)</FieldLabel>
+          <NoteTemplateChips value={note} onChange={setNote} />
           <textarea
             value={note}
             onChange={(event) => setNote(event.target.value.slice(0, 300))}

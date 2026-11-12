@@ -35,6 +35,7 @@ import {
   updateTeacherPresenceService,
 } from "./api";
 import { ToneChip, TopicIcon, bookingStatusMeta, formatAmountFull, formatToman, inputStyle } from "./elements";
+import { AmountPicker, CitiesChipsField, DurationPicker } from "./fields";
 import type { CeremonyBooking, OfficialInPersonService, PresenceService } from "./types";
 
 const serviceRowStyle: CSSProperties = {
@@ -133,41 +134,18 @@ function ServiceForm({
         )}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: spacing.md }}>
-        <label style={{ display: "grid", gap: 6, ...typography.bodySmall }}>
-          <span style={{ fontWeight: 800, color: colors.inkSecondary }}>حق‌الزحمهٔ پایه (تومان)</span>
-          <input
-            type="text"
-            inputMode="numeric"
-            value={toFaDigits(form.basePrice)}
-            onChange={(event) => onChange({ ...form, basePrice: digitsOnly(event.target.value, 12) })}
-            placeholder="مثلاً ۱۵۰۰۰۰۰"
-            style={inputStyle}
-          />
-        </label>
-        <label style={{ display: "grid", gap: 6, ...typography.bodySmall }}>
-          <span style={{ fontWeight: 800, color: colors.inkSecondary }}>مدت (دقیقه)</span>
-          <input
-            type="text"
-            inputMode="numeric"
-            value={toFaDigits(form.duration)}
-            onChange={(event) => onChange({ ...form, duration: digitsOnly(event.target.value, 4) })}
-            placeholder="۶۰"
-            style={inputStyle}
-          />
-        </label>
-      </div>
+      <AmountPicker
+        label="حق‌الزحمهٔ پایه"
+        hint="تومان — مبنای پیشنهاد شما در فراخوان‌ها و رزرو مستقیم"
+        value={form.basePrice}
+        onChange={(next) => onChange({ ...form, basePrice: next })}
+        presets={[500_000, 1_000_000, 1_500_000, 2_000_000, 3_000_000, 5_000_000]}
+        ariaLabel={`حق‌الزحمهٔ پایه برای خدمت ${selectedService?.title ?? "حضوری"}`}
+      />
 
-      <label style={{ display: "grid", gap: 6, ...typography.bodySmall }}>
-        <span style={{ fontWeight: 800, color: colors.inkSecondary }}>شهرهای پذیرش مراسم (با ویرگول جدا کنید)</span>
-        <input
-          type="text"
-          value={form.cities}
-          onChange={(event) => onChange({ ...form, cities: event.target.value.slice(0, 200) })}
-          placeholder="مثلاً: تهران، کرج، قم"
-          style={inputStyle}
-        />
-      </label>
+      <DurationPicker value={form.duration} onChange={(next) => onChange({ ...form, duration: next })} />
+
+      <CitiesChipsField value={form.cities} onChange={(next) => onChange({ ...form, cities: next })} />
 
       <label style={{ display: "grid", gap: 6, ...typography.bodySmall }}>
         <span style={{ fontWeight: 800, color: colors.inkSecondary }}>توضیح خدمت (اختیاری)</span>
@@ -175,7 +153,7 @@ function ServiceForm({
           value={form.note}
           onChange={(event) => onChange({ ...form, note: event.target.value.slice(0, 300) })}
           rows={2}
-          placeholder="مثلاً: تلاوت جزء ۳۰ با آهنگ‌خوانی معتبر؛ مناسب مراسم ختم…"
+          placeholder="مثلاً: تلاوت جزء ۳۰ با روخوانی معتبر؛ مناسب مراسم ختم…"
           style={{ ...inputStyle, resize: "none", lineHeight: 1.9 }}
         />
       </label>

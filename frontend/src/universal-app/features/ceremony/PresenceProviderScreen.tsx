@@ -31,6 +31,7 @@ import {
   formatToman,
   inputStyle,
 } from "./elements";
+import { TimePresetChips, VenuePicker } from "./fields";
 import { isWhenInFuture, tehranWallToRfc3339, type WhenValue } from "./schedule";
 import type { PresenceProvider, PresenceService } from "./types";
 
@@ -91,21 +92,15 @@ function DirectBookingForm({
   return (
     <div style={{ display: "grid", gap: spacing.lg, marginTop: spacing.md, padding: 14, background: colors.surfaceSoft, border: `1px solid ${colors.olive200}`, borderRadius: 16 }}>
       <JalaliWhenPicker value={when} onChange={setWhen} label="تاریخ و ساعت مراسم" />
-      <input
-        type="text"
-        value={city}
-        onChange={(event) => setCity(event.target.value.slice(0, 60))}
-        placeholder="شهر برگزاری"
-        style={inputStyle}
-        aria-label={`شهر برگزاری برای خدمت ${service.title}`}
-      />
-      <input
-        type="text"
-        value={venue}
-        onChange={(event) => setVenue(event.target.value.slice(0, 200))}
-        placeholder="نشانی مکان (اختیاری و محرمانه تا پرداخت ودیعه)"
-        style={inputStyle}
-        aria-label={`نشانی مکان برای خدمت ${service.title}`}
+      <div style={{ display: "grid", gap: 8 }}>
+        <strong style={{ fontSize: 13.5, color: colors.ink, display: "block" }}>ساعت‌های پیشنهادی</strong>
+        <TimePresetChips hh={when.hh} mm={when.mm} onPick={({ hh, mm }) => setWhen((current) => ({ ...current, hh, mm }))} />
+      </div>
+      <VenuePicker
+        city={city}
+        venue={venue}
+        onCityChange={setCity}
+        onVenueChange={setVenue}
       />
       <textarea
         value={note}

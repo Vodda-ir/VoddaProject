@@ -25,16 +25,8 @@ import {
 } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
 import { acceptTeacherCeremonyCall, getTeacherCeremonyInbox, getTeacherPresenceServices, withdrawTeacherCeremonyOffer } from "./api";
-import {
-  ToneChip,
-  TopicIcon,
-  audienceMeta,
-  ceremonyWhenLabel,
-  formatBudgetRange,
-  formatToman,
-  inputStyle,
-  offerStatusMeta,
-} from "./elements";
+import { ToneChip, TopicIcon, audienceMeta, ceremonyWhenLabel, formatBudgetRange, formatToman, inputStyle, offerStatusMeta } from "./elements";
+import { AmountPicker } from "./fields";
 import type { CeremonyOffer, PresenceService, TeacherCeremonyInboxCall } from "./types";
 
 function OpenCallCard({
@@ -179,6 +171,7 @@ export function TeacherCeremonyScreen({ config }: { config: UniversalAppConfig }
   const [busyId, setBusyId] = useState(0);
   const [sheetCall, setSheetCall] = useState<TeacherCeremonyInboxCall["call"] | null>(null);
   const [sheetPrice, setSheetPrice] = useState("");
+  const [sheetPresets, setSheetPresets] = useState<number[]>([]);
   const [sheetMessage, setSheetMessage] = useState("");
   const [sheetSaving, setSheetSaving] = useState(false);
   const [sheetError, setSheetError] = useState("");
@@ -224,6 +217,13 @@ export function TeacherCeremonyScreen({ config }: { config: UniversalAppConfig }
   const openAcceptSheet = useCallback((call: TeacherCeremonyInboxCall["call"], suggested: PresenceService | null) => {
     setSheetCall(call);
     setSheetPrice(suggested && suggested.base_price > 0 ? String(Math.round(suggested.base_price)) : "");
+    // پیشنهادهای سریع قیمت: قیمت پایهٔ خود قاری + بودجهٔ اعلام‌شدهٔ فراخوان.
+    const presets: number[] = [];
+    if (suggested && suggested.base_price > 0) presets.push(Math.round(suggested.base_price));
+    if (call.budget_max > 0) presets.push(Math.round(call.budget_max));
+    if (call.budget_min > 0 && call.budget_max > 0) presets.push(Math.round((call.budget_min + call.budget_max) / 2));
+    if (call.budget_min > 0) presets.push(Math.round(call.budget_min));
+    setSheetPresets([...new Set(presets)]);
     setSheetMessage("");
     setSheetError("");
   }, []);
@@ -399,18 +399,21 @@ export function TeacherCeremonyScreen({ config }: { config: UniversalAppConfig }
           <div style={{ display: "grid", gap: spacing.lg }}>
             <p style={{ ...typography.bodySmall, margin: 0, color: colors.inkSecondary, lineHeight: 1.9 }}>
               {ceremonyWhenLabel(sheetCall)} · 📍 {sheetCall.city || "شهر نامشخص"} · 👥 {toFaDigits(sheetCall.guests_count)} مهمان
+              {sheetCall.budget_min > 0 || sheetCall.budget_max > 0 ? (
+                <>
+                  {" "}· 💰 بودجهٔ برگزارکننده: <strong>{formatBudgetRange(sheetCall.budget_min, sheetCall.budget_max)}</strong>
+                </>
+              ) : null}
             </p>
-            <label style={{ display: "grid", gap: 7, ...typography.bodySmall }}>
-              <span style={{ fontWeight: 800, color: colors.inkSecondary }}>حق‌الزحمهٔ پیشنهادی (تومان — اختیاری)</span>
-              <input
-                type="text"
-                inputMode="numeric"
-                value={toFaDigits(sheetPrice)}
-                onChange={(event) => setSheetPrice(digitsOnly(event.target.value, 12))}
-                placeholder="خالی بگذارید تا قیمت خدمت حضوری شما اعمال شود"
-                style={inputStyle}
-              />
-            </label>
+            <AmountPicker
+              label="حق‌الزحمهٔ پیشنهادی"
+              hint="تومان — از پیشنهادها انتخاب کنید یا دقیق بنویسید"
+              value={sheetPrice}
+              onChange={setSheetPrice}
+              presets={sheetPresets}
+              ariaLabel="حق‌الزحمهٔ پیشنهادی به تومان"
+              emptyHint="خالی بگذارید تا قیمت خدمت حضوری شما برای این موضوع اعمال شود."
+            />
             <label style={{ display: "grid", gap: 7, ...typography.bodySmall }}>
               <span style={{ fontWeight: 800, color: colors.inkSecondary }}>پیام به برگزارکننده (اختیاری)</span>
               <textarea
