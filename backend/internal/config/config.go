@@ -79,14 +79,13 @@ type ZarinpalConfig struct {
         Sandbox    bool
 }
 
-// SamanConfig holds Saman Sep (سامان‌سپ) gateway settings. Username/Password
-// are the Sep panel credentials used for the verify call; when empty the
-// gateway still works but settlement relies on strict callback validation.
+// SamanConfig holds Saman Sep (سامان‌سپ) gateway settings. The rebuild mirrors
+// the Monafaseh reference: only the terminal number and site origin matter —
+// verification runs through VerifyTransaction (credential-free), so panel
+// username/password/merchant-id are intentionally not part of the flow.
 type SamanConfig struct {
         TerminalID string
-        MerchantID string
-        Username   string
-        Password   string
+        SiteURL    string
         BaseURL    string
 }
 
@@ -145,10 +144,11 @@ func Load() *Config {
                 },
                 Saman: SamanConfig{
                         TerminalID: getEnv("SAMAN_TERMINAL_ID", ""),
-                        MerchantID: getEnv("SAMAN_MERCHANT_ID", ""),
-                        Username:   getEnv("SAMAN_USERNAME", ""),
-                        Password:   getEnv("SAMAN_PASSWORD", ""),
-                        BaseURL:    getEnv("SAMAN_BASE_URL", "https://sep.shaparak.ir"),
+                        // SITE_URL is the merchant's registered public origin;
+                        // FRONTEND_BASE_URL is the historical fallback so
+                        // existing deployments keep working.
+                        SiteURL: getEnv("SITE_URL", getEnv("FRONTEND_BASE_URL", "")),
+                        BaseURL: getEnv("SAMAN_BASE_URL", "https://sep.shaparak.ir"),
                 },
                 PlatformCommissionPercent: getInt("PLATFORM_COMMISSION_PERCENT", 15),
         }

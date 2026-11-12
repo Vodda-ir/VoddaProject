@@ -68,10 +68,9 @@ services:
       DEV_WALLET_CHARGE_ENABLED: "false"
       ZARINPAL_MERCHANT_ID: ${ZARINPAL_MERCHANT_ID:-}
       ZARINPAL_SANDBOX: ${ZARINPAL_SANDBOX:-false}
+      # درگاه سامان‌سپ — بازسازی مطابق منافسه: فقط ترمینال + مبدأ عمومی سایت
+      SITE_URL: ${SITE_URL:-https://vodda.ir}
       SAMAN_TERMINAL_ID: ${SAMAN_TERMINAL_ID:-31136631}
-      SAMAN_MERCHANT_ID: ${SAMAN_MERCHANT_ID:-311347052}
-      SAMAN_USERNAME: ${SAMAN_USERNAME:-}
-      SAMAN_PASSWORD: ${SAMAN_PASSWORD:-}
       SAMAN_BASE_URL: ${SAMAN_BASE_URL:-https://sep.shaparak.ir}
       PLATFORM_COMMISSION_PERCENT: ${PLATFORM_COMMISSION_PERCENT:-15}
     ports:

@@ -38,6 +38,7 @@ export default function UserSessionsPage() {
   const [error, setError] = useState('');
   const [busyId, setBusyId] = useState<number | null>(null);
   const [reviewFor, setReviewFor] = useState<SessionListItem | null>(null);
+  const [payToast, setPayToast] = useState<{ kind: 'success' | 'failed' | 'verify'; ref: string } | null>(null);
   const token = getToken();
 
   const load = useCallback(async () => {
@@ -61,6 +62,16 @@ export default function UserSessionsPage() {
   }, [token]);
 
   useEffect(() => { void load(); }, [load]);
+
+  // Payment gateway round-trip result (Saman Sep redirects back with ?payment=).
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const payment = params.get('payment');
+    if (payment === 'success' || payment === 'failed' || payment === 'verify') {
+      setPayToast({ kind: payment, ref: params.get('ref') || '' });
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+  }, []);
 
   async function cancelSession(session: SessionListItem) {
     if (!token || busyId !== null) return;
@@ -126,6 +137,44 @@ export default function UserSessionsPage() {
 
   return (
     <main className="ops-page">
+      {payToast && (
+        <div
+          role="status"
+          style={{
+            display: 'flex', gap: 10, alignItems: 'center', justifyContent: 'space-between',
+            padding: 14, borderRadius: 16, marginBottom: 18,
+            background: payToast.kind === 'success'
+              ? 'var(--olive-100)'
+              : payToast.kind === 'verify'
+                ? '#fdf6e7'
+                : '#fdecec',
+            color: payToast.kind === 'success'
+              ? 'var(--olive-800)'
+              : payToast.kind === 'verify'
+                ? '#7a5b16'
+                : '#8c2f39',
+            border: `1px solid ${payToast.kind === 'success'
+              ? 'var(--olive-300)'
+              : payToast.kind === 'verify'
+                ? '#ecd9a8'
+                : '#f6c6cb'}`,
+            fontSize: 13, fontWeight: 700,
+          }}
+        >
+          <span style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+            <Icon name={payToast.kind === 'failed' ? 'x' : 'check'} size={17} />
+            {payToast.kind === 'success'
+              ? 'پرداخت با موفقیت انجام شد؛ درخواست جلسه برای استاد ارسال شد.'
+              : payToast.kind === 'verify'
+                ? 'پرداخت شما در حال بررسی بانک است؛ پس از تأیید نهایی، جلسه فعال می‌شود. رسید شما نزد پشتیبانی حفظ شده است.'
+                : 'پرداخت ناموفق بود یا لغو شد؛ جلسه رزرو نشد و مبلغی کسر نشده است.'}
+            {payToast.ref && <span style={{ fontSize: 11, fontWeight: 500, opacity: 0.8 }}>· کد پیگیری: {toFaDigits(payToast.ref)}</span>}
+          </span>
+          <button type="button" aria-label="بستن پیام" onClick={() => setPayToast(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', padding: 4 }}>
+            <Icon name="x" size={16} />
+          </button>
+        </div>
+      )}
       <PanelPageHeader
         eyebrow="مسیر یادگیری"
         title="جلسات من"

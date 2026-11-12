@@ -65,7 +65,7 @@ export default function UserWalletPage() {
   const [topupAmount, setTopupAmount] = useState('');
   const [topupBusy, setTopupBusy] = useState(false);
   const [topupError, setTopupError] = useState('');
-  const [toast, setToast] = useState<{ kind: 'success' | 'failed'; ref: string } | null>(null);
+  const [toast, setToast] = useState<{ kind: 'success' | 'failed' | 'verify'; ref: string } | null>(null);
   const token = getToken();
 
   const load = useCallback(async () => {
@@ -92,7 +92,7 @@ export default function UserWalletPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const payment = params.get('payment');
-    if (payment === 'success' || payment === 'failed') {
+    if (payment === 'success' || payment === 'failed' || payment === 'verify') {
       setToast({ kind: payment, ref: params.get('ref') || '' });
       window.history.replaceState(null, '', window.location.pathname);
     }
@@ -203,16 +203,30 @@ export default function UserWalletPage() {
           style={{
             display: 'flex', gap: 10, alignItems: 'center', justifyContent: 'space-between',
             padding: 14, borderRadius: 16, marginBottom: 18,
-            background: toast.kind === 'success' ? 'var(--olive-100)' : '#fdecec',
-            color: toast.kind === 'success' ? 'var(--olive-800)' : '#8c2f39',
-            border: `1px solid ${toast.kind === 'success' ? 'var(--olive-300)' : '#f6c6cb'}`,
+            background: toast.kind === 'success'
+              ? 'var(--olive-100)'
+              : toast.kind === 'verify'
+                ? '#fdf6e7'
+                : '#fdecec',
+            color: toast.kind === 'success'
+              ? 'var(--olive-800)'
+              : toast.kind === 'verify'
+                ? '#7a5b16'
+                : '#8c2f39',
+            border: `1px solid ${toast.kind === 'success'
+              ? 'var(--olive-300)'
+              : toast.kind === 'verify'
+                ? '#ecd9a8'
+                : '#f6c6cb'}`,
           }}
         >
           <span style={{ display: 'flex', alignItems: 'center', gap: 9, fontSize: 13, fontWeight: 700 }}>
-            <Icon name={toast.kind === 'success' ? 'check' : 'x'} size={17} />
+            <Icon name={toast.kind === 'failed' ? 'x' : 'check'} size={17} />
             {toast.kind === 'success'
               ? 'پرداخت با موفقیت انجام شد و کیف پول شما شارژ شد.'
-              : 'پرداخت ناموفق بود یا لغو شد؛ مبلغی از حساب شما کسر نشده است.'}
+              : toast.kind === 'verify'
+                ? 'پرداخت شما در حال بررسی بانک است؛ پس از تأیید نهایی، کیف پول شما شارژ می‌شود. رسید شما نزد پشتیبانی حفظ شده است.'
+                : 'پرداخت ناموفق بود یا لغو شد؛ مبلغی از حساب شما کسر نشده است.'}
             {toast.ref && <span style={{ fontSize: 11, fontWeight: 500, opacity: 0.8 }}>· کد پیگیری: {faDigits(toast.ref)}</span>}
           </span>
           <button type="button" aria-label="بستن پیام" onClick={() => setToast(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', padding: 4 }}>

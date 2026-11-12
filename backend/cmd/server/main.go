@@ -75,13 +75,7 @@ func main() {
         supportUsecase := usecase.NewSupportUsecase(supportRepo)
 
         paymentRepo := repository.NewPaymentRepository(db)
-        samanClient := payment.NewSaman(payment.SamanConfig{
-                TerminalID: cfg.Saman.TerminalID,
-                MerchantID: cfg.Saman.MerchantID,
-                Username:   cfg.Saman.Username,
-                Password:   cfg.Saman.Password,
-                BaseURL:    cfg.Saman.BaseURL,
-        })
+        samanClient := payment.NewSaman(cfg.Saman.TerminalID, cfg.Saman.SiteURL, cfg.Saman.BaseURL)
 
         paymentUsecase := usecase.NewPaymentUsecase(
                 paymentRepo, financialRepo, userRepo, teacherRepo, notifRepo, sessionRepo,

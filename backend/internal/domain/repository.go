@@ -221,6 +221,14 @@ type PaymentOrderStore interface {
         Create(ctx context.Context, o *PaymentOrder) error
         ByResNum(ctx context.Context, resNum string) (*PaymentOrder, error)
         ByID(ctx context.Context, id uint) (*PaymentOrder, error)
+        // BindBankToken stores the freshly minted gateway token on the pending
+        // order BEFORE the token is exposed to the purchaser (Monafaseh
+        // semantics — the callback must echo this exact token).
+        BindBankToken(ctx context.Context, id uint, token string) error
+        // BindReceipt atomically claims the bank receipt for this order.
+        // Returns ErrConflict when the receipt cannot be claimed; the caller may
+        // re-read the order to distinguish idempotent replays.
+        BindReceipt(ctx context.Context, id uint, refNum string) error
         RecentForUser(ctx context.Context, userID uint, limit int) ([]PaymentOrder, error)
         List(ctx context.Context, f PaymentOrderFilter) ([]PaymentOrder, int64, error)
 }
