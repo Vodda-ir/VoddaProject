@@ -241,7 +241,7 @@ export default function UserSessionsPage() {
                   )}
                   {session.status === 'pending' && (
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 7, padding: '6px 10px', borderRadius: 9, background: 'var(--gold-bg)', color: '#8d6d1f', fontSize: 11 }}>
-                      <Icon name="clock" size={13} /> در انتظار پاسخ استاد؛ مبلغ از کیف پول شما رزرو شده است
+                      <Icon name="clock" size={13} /> در انتظار پاسخ استاد
                     </div>
                   )}
                   {session.status === 'awaiting_payment' && (
