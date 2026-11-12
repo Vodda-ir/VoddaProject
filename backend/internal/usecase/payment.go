@@ -28,6 +28,13 @@ const (
 // served by the BFF (public, no session) and forwarded to the backend.
 const PaymentCallbackURL = "/api/payments/saman/callback"
 
+// PaymentStartPath is the public BFF route serving the self-submitting
+// payment hand-off page (SamanStart). The payer's browser loads it from
+// vodda.ir so the Sep OnlinePG UI receives the vodda.ir Referer it enforces;
+// pointing the payer straight at sep.shaparak.ir/payment.aspx no longer
+// works (the gateway answers with its generic error page).
+const PaymentStartPath = "/api/backend/payments/saman/start"
+
 // PaymentUsecase coordinates gateway payments (wallet top-ups and session
 // bookings) through Saman Sep.
 type PaymentUsecase struct {
@@ -126,9 +133,39 @@ func (uc *PaymentUsecase) CreateTopup(ctx context.Context, userID uint, amount i
 	}
 	return &TopupResult{
 		ResNum:      order.ResNum,
-		RedirectURL: uc.saman.PayURL(token),
+		RedirectURL: uc.startURL(token),
 		Amount:      order.Amount,
 	}, nil
+}
+
+// startURL points the payer at the vodda.ir hand-off page that carries the
+// freshly minted token into the Sep OnlinePG payment UI.
+func (uc *PaymentUsecase) startURL(token string) string {
+	return uc.frontendURL + PaymentStartPath + "?token=" + url.QueryEscape(token)
+}
+
+// StartPage renders the payment hand-off page for a minted Sep token.
+// ok=false when the gateway is disabled or the token shape is invalid — the
+// caller then serves the plain failure page instead of a hand-off.
+func (uc *PaymentUsecase) StartPage(token string) ([]byte, bool) {
+	token = strings.TrimSpace(token)
+	if uc == nil || uc.saman == nil || !hexSepToken(token) {
+		return nil, false
+	}
+	return uc.saman.StartFormHTML(token), true
+}
+
+// hexSepToken checks the Sep OnlinePG token shape: 32 lowercase hex chars.
+func hexSepToken(token string) bool {
+	if len(token) != 32 {
+		return false
+	}
+	for _, r := range token {
+		if !((r >= '0' && r <= '9') || (r >= 'a' && r <= 'f')) {
+			return false
+		}
+	}
+	return true
 }
 
 // walletResultURL builds the frontend landing URL after gateway round-trip.
@@ -186,7 +223,7 @@ func (uc *PaymentUsecase) CreateBookingPayment(ctx context.Context, user *domain
 	}
 	return &TopupResult{
 		ResNum:      order.ResNum,
-		RedirectURL: uc.saman.PayURL(token),
+		RedirectURL: uc.startURL(token),
 		Amount:      order.Amount,
 	}, nil
 }

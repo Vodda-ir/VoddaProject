@@ -644,6 +644,22 @@ func (h *Handler) SamanCallback(c *gin.Context) {
         c.Redirect(http.StatusFound, target)
 }
 
+// SamanStart serves the self-submitting hand-off page that carries a freshly
+// minted Sep token into the OnlinePG payment UI. The token must be POSTed to
+// sep.shaparak.ir from a vodda.ir document so the gateway sees the registered
+// Referer. Token shape is validated defensively; anything malformed gets a
+// plain failure page instead of a hand-off.
+func (h *Handler) SamanStart(c *gin.Context) {
+        c.Header("Cache-Control", "no-store")
+        c.Header("X-Robots-Tag", "noindex")
+        page, okd := h.Payment.StartPage(c.Query("token"))
+        if !okd {
+                c.Data(http.StatusBadRequest, "text/html; charset=utf-8", payment.FailureStartHTML())
+                return
+        }
+        c.Data(http.StatusOK, "text/html; charset=utf-8", page)
+}
+
 func (h *Handler) Notifications(c *gin.Context) {
         notifications, err := h.Notif.ForUser(c, userID(c), queryInt(c, "limit", 30))
         if err != nil {

@@ -1,8 +1,13 @@
 // Package payment implements thin HTTP clients for Iranian payment gateways.
-// Saman Sep (سامان‌سپ) uses the modern Sep-24 REST flow:
+// Saman Sep (سامان‌سپ) uses the modern Sep-24 (OnlinePG) REST flow:
 //
 //  1. POST {base}/onlinepg/onlinepg  {"action":"token",...}  → {"status":1,"token":...}
-//  2. Redirect the payer to {base}/payment.aspx?token=<token>
+//  2. Serve the payer a self-submitting HTML form that POSTs {token} to
+//     {base}/OnlinePG/OnlinePG. The legacy payment.aspx entry is dead for
+//     newer terminals: it answers 302 → ErrorPage «بروز خطای ناشناخته». The
+//     OnlinePG UI also rejects requests whose Referer is missing or differs
+//     from the merchant's registered site («آدرس ارجاع دهنده دریافت نشد»),
+//     so the hand-off page must be served from vodda.ir itself.
 //  3. The gateway posts the result back to RedirectURL (State=OK|NOK form fields)
 //  4. POST {base}/verify.aspx with panel credentials → "Success" / "Failed"
 package payment
@@ -135,9 +140,76 @@ func (s *Saman) RequestToken(ctx context.Context, amountRial int64, resNum, redi
 	return parsed.Token, nil
 }
 
-// PayURL is the page where the payer completes the transaction.
-func (s *Saman) PayURL(token string) string {
-	return s.cfg.BaseURL + "/payment.aspx?token=" + url.QueryEscape(token)
+// PayFormURL is the OnlinePG entry point that accepts the token as a POST
+// form field. (payment.aspx — the old GET entry — is decommissioned and
+// bounces every token to the generic error page.)
+func (s *Saman) PayFormURL() string {
+	return s.cfg.BaseURL + "/OnlinePG/OnlinePG"
+}
+
+// StartFormHTML renders the self-submitting payment hand-off page. The payer's
+// browser loads it from vodda.ir and immediately POSTs the token to the Sep
+// OnlinePG UI, carrying the vodda.ir Referer the gateway requires.
+func (s *Saman) StartFormHTML(token string) []byte {
+	page := `<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>انتقال به درگاه پرداخت سامان‌سپ — وُدّا</title>
+<style>
+  body{margin:0;min-height:100vh;display:grid;place-items:center;background:#faf7f0;font-family:Vazirmatn,Tahoma,sans-serif;color:#3d4a33}
+  .card{max-width:420px;margin:20px;padding:32px 28px;background:#fff;border-radius:20px;box-shadow:0 10px 30px rgba(61,74,51,.12);text-align:center}
+  .ring{width:72px;height:72px;margin:0 auto 18px;border-radius:50%;background:#eef2e6;display:grid;place-items:center}
+  .ring span{width:34px;height:34px;border-radius:50%;border:4px solid #5e7e8c;border-top-color:transparent;animation:s .8s linear infinite;display:block}
+  @keyframes s{to{transform:rotate(360deg)}}
+  h1{font-size:18px;margin:0 0 10px}
+  p{font-size:13px;line-height:2;color:#8a9480;margin:0}
+  button{margin-top:18px;padding:11px 22px;border:0;border-radius:999px;background:#5e7e8c;color:#fff;font-size:14px;font-family:inherit;cursor:pointer}
+</style>
+</head>
+<body>
+<main class="card">
+  <div class="ring" aria-hidden="true"><span></span></div>
+  <h1>در حال انتقال به درگاه پرداخت سامان‌سپ…</h1>
+  <p>لطفاً چند لحظه صبر کنید. اگر انتقال خودکار انجام نشد، دکمهٔ زیر را بزنید.</p>
+  <form method="post" action="` + s.PayFormURL() + `" id="payform">
+    <input type="hidden" name="token" value="` + token + `">
+    <noscript><button type="submit">رفتن به درگاه پرداخت</button></noscript>
+  </form>
+</main>
+<script>
+  document.getElementById('payform').submit();
+</script>
+</body>
+</html>`
+	return []byte(page)
+}
+
+// FailureStartHTML is the plain error page served instead of the hand-off when
+// the token shape is invalid or the gateway is disabled.
+func FailureStartHTML() []byte {
+	page := `<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>نشست پرداخت معتبر نیست — وُدّا</title>
+<style>
+  body{margin:0;min-height:100vh;display:grid;place-items:center;background:#faf7f0;font-family:Vazirmatn,Tahoma,sans-serif;color:#3d4a33}
+  .card{max-width:420px;margin:20px;padding:32px 28px;background:#fff;border-radius:20px;box-shadow:0 10px 30px rgba(61,74,51,.12);text-align:center}
+  h1{font-size:17px;margin:0 0 10px}
+  p{font-size:13px;line-height:2;color:#8a9480;margin:0}
+</style>
+</head>
+<body>
+<main class="card">
+  <h1>نشست پرداخت معتبر نیست</h1>
+  <p>لینک پرداخت منقضی شده یا ناقص است. لطفاً از پنل خود، دکمهٔ پرداخت جلسه یا شارژ کیف پول را دوباره بزنید.</p>
+</main>
+</body>
+</html>`
+	return []byte(page)
 }
 
 // CallbackForm carries the fields the gateway posts back to RedirectURL.
