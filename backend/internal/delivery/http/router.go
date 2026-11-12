@@ -151,6 +151,22 @@ func NewRouter(cfg *config.Config, h *Handler, tm *token.Manager, readiness func
                         dispatch.POST("/calls/:id/decline", dispatchLimiter.Middleware("dispatch-decline"), h.DeclineDispatchOffer)
                         dispatch.POST("/calls/:id/cancel", dispatchLimiter.Middleware("dispatch-cancel"), h.CancelDispatchCall)
                 }
+
+                // خدمات حضوری قرآنی — organizer-side ceremony calls and contracts.
+                ceremony := authed.Group("/ceremony")
+                {
+                        ceremony.POST("/calls", dispatchLimiter.Middleware("ceremony-create"), h.CreateCeremonyCall)
+                        ceremony.GET("/calls", h.MyCeremonyCalls)
+                        ceremony.GET("/calls/:id", h.CeremonyCallDetail)
+                        ceremony.POST("/calls/:id/choose", financialLimiter.Middleware("ceremony-choose"), h.ChooseCeremonyOffer)
+                        ceremony.POST("/calls/:id/cancel", dispatchLimiter.Middleware("ceremony-cancel"), h.CancelCeremonyCall)
+                        ceremony.POST("/bookings/direct", financialLimiter.Middleware("ceremony-direct"), h.DirectCeremonyBooking)
+                        ceremony.GET("/bookings", h.MyCeremonyBookings)
+                        ceremony.GET("/bookings/:id", h.CeremonyBookingDetail)
+                        ceremony.POST("/bookings/:id/pay", financialLimiter.Middleware("financial"), h.PayCeremonyDeposit)
+                        ceremony.POST("/bookings/:id/confirm", financialLimiter.Middleware("financial"), h.ConfirmCeremonyBooking)
+                        ceremony.POST("/bookings/:id/cancel", financialLimiter.Middleware("financial"), h.CancelCeremonyBooking)
+                }
         }
 
         teacher := api.Group("/teacher")
@@ -179,10 +195,24 @@ func NewRouter(cfg *config.Config, h *Handler, tm *token.Manager, readiness func
                 teacher.POST("/dispatch/calls/:id/accept", dispatchLimiter.Middleware("dispatch-accept"), h.TeacherDispatchAccept)
                 teacher.POST("/dispatch/calls/:id/reject", dispatchLimiter.Middleware("dispatch-reject"), h.TeacherDispatchReject)
                 teacher.POST("/dispatch/offers/:id/withdraw", dispatchLimiter.Middleware("dispatch-withdraw"), h.TeacherDispatchWithdraw)
+
+                // خدمات حضوری قرآنی — reciter (قاری) side: inbox, acceptance
+                // and presence services management.
+                teacher.GET("/ceremony/inbox", h.TeacherCeremonyInbox)
+                teacher.POST("/ceremony/calls/:id/accept", dispatchLimiter.Middleware("ceremony-accept"), h.TeacherCeremonyAccept)
+                teacher.POST("/ceremony/offers/:id/withdraw", dispatchLimiter.Middleware("ceremony-withdraw"), h.TeacherCeremonyWithdraw)
+                teacher.GET("/presence-services", h.MyPresenceServices)
+                teacher.POST("/presence-services", mutationLimiter.Middleware("teacher-presence"), h.AddPresenceService)
+                teacher.PUT("/presence-services/:id", mutationLimiter.Middleware("teacher-presence"), h.UpdatePresenceService)
+                teacher.DELETE("/presence-services/:id", mutationLimiter.Middleware("teacher-presence"), h.DeletePresenceService)
         }
 
         api.GET("/settings", h.PublicSettings)
         api.GET("/catalog/services", publicLimiter.Middleware("catalog-services"), h.CatalogServices)
+
+        // خدمات حضوری قرآنی — public presence catalog of reciters.
+        api.GET("/presence/providers", publicLimiter.Middleware("presence-list"), h.PresenceProviders)
+        api.GET("/presence/providers/:id", publicLimiter.Middleware("presence-detail"), h.PresenceProviderDetail)
 
         admin := api.Group("/admin")
         admin.Use(AuthRequired(tm, operations.Users), RequireRole(domain.RoleAdmin), adminLimiter.Middleware("admin"))

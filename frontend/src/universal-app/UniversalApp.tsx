@@ -5,6 +5,15 @@ import { createUniversalAppConfig, type UniversalAppConfig } from "./config";
 import { LoginScreen, SessionBootstrap } from "./features/auth/AuthExperience";
 import { ProfileCompletionScreen } from "./features/auth/ProfileCompletionScreen";
 import { LearnerBookingScreen } from "./features/booking/LearnerBookingScreen";
+import { CallHubScreen } from "./features/ceremony/CallHubScreen";
+import { CeremonyBookingScreen } from "./features/ceremony/CeremonyBookingScreen";
+import { CeremonyCallScreen } from "./features/ceremony/CeremonyCallScreen";
+import { CeremonyCallsScreen } from "./features/ceremony/CeremonyCallsScreen";
+import { CeremonyNewScreen } from "./features/ceremony/CeremonyNewScreen";
+import { PresenceProviderScreen } from "./features/ceremony/PresenceProviderScreen";
+import { PresenceScreen } from "./features/ceremony/PresenceScreen";
+import { TeacherCeremonyScreen } from "./features/ceremony/TeacherCeremonyScreen";
+import { TeacherPresenceScreen } from "./features/ceremony/TeacherPresenceScreen";
 import { LearnerDispatchScreen } from "./features/dispatch/LearnerDispatchScreen";
 import { LearnerHomeScreen } from "./features/home/LearnerHomeScreen";
 import { LearnerProfileScreen } from "./features/profile/LearnerProfileScreen";
@@ -43,6 +52,13 @@ const routeTitles: Record<AppRouteName, string> = {
   profile: "پروفایل",
   "profile-edit": "ویرایش پروفایل",
   dispatch: "فراخوان اساتید",
+  "call-hub": "فراخوان‌ها",
+  "ceremony-new": "فراخوان مراسم",
+  "ceremony-calls": "فراخوان‌های من",
+  "ceremony-call": "فراخوان مراسم",
+  "ceremony-booking": "قرارداد مراسم",
+  presence: "قاریان حضوری",
+  "presence-provider": "پروفایل قاری",
   "teacher-home": "داشبورد استاد",
   "teacher-requests": "درخواست‌های جلسه",
   "teacher-sessions": "جلسات استاد",
@@ -53,6 +69,8 @@ const routeTitles: Record<AppRouteName, string> = {
   "teacher-profile": "پروفایل استاد",
   "teacher-reviews": "نظرها",
   "teacher-dispatch": "فراخوان‌های زنده",
+  "teacher-ceremony": "پذیرش مراسم",
+  "teacher-presence": "خدمات حضوری",
   "not-found": "صفحه پیدا نشد",
 };
 
@@ -67,6 +85,8 @@ const teacherRoutes = new Set<AppRouteName>([
   "teacher-profile",
   "teacher-reviews",
   "teacher-dispatch",
+  "teacher-ceremony",
+  "teacher-presence",
 ]);
 
 function RoutePlaceholder({
@@ -137,6 +157,20 @@ function UniversalAppContent({ config, runtime }: { config: UniversalAppConfig; 
     <LearnerProfileScreen config={config} />
   ) : route.name === "dispatch" ? (
     <LearnerDispatchScreen config={config} />
+  ) : route.name === "call-hub" ? (
+    <CallHubScreen config={config} />
+  ) : route.name === "ceremony-new" ? (
+    <CeremonyNewScreen config={config} />
+  ) : route.name === "ceremony-calls" ? (
+    <CeremonyCallsScreen config={config} />
+  ) : route.name === "ceremony-call" ? (
+    <CeremonyCallScreen callId={route.params.id ?? ""} config={config} />
+  ) : route.name === "ceremony-booking" ? (
+    <CeremonyBookingScreen bookingId={route.params.id ?? ""} config={config} />
+  ) : route.name === "presence" ? (
+    <PresenceScreen config={config} />
+  ) : route.name === "presence-provider" ? (
+    <PresenceProviderScreen providerId={route.params.id ?? ""} config={config} />
   ) : route.name === "teacher-home" ? (
     <TeacherDashboardScreen config={config} />
   ) : route.name === "teacher-requests" ? (
@@ -157,6 +191,10 @@ function UniversalAppContent({ config, runtime }: { config: UniversalAppConfig; 
     <TeacherReviewsScreen />
   ) : route.name === "teacher-dispatch" ? (
     <TeacherDispatchScreen config={config} />
+  ) : route.name === "teacher-ceremony" ? (
+    <TeacherCeremonyScreen config={config} />
+  ) : route.name === "teacher-presence" ? (
+    <TeacherPresenceScreen config={config} />
   ) : (
     <RoutePlaceholder routeName={route.name} pathname={route.pathname} config={config} />
   );

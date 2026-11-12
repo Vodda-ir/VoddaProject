@@ -46,6 +46,8 @@ func fail(c *gin.Context, err error) {
 		status, msg = http.StatusBadRequest, "موجودی کیف پول کافی نیست"
 	case errors.Is(err, domain.ErrTeacherNotReady):
 		status, msg = http.StatusBadRequest, "پروفایل استاد هنوز تأیید نشده است"
+	case errors.Is(err, domain.ErrSampleRequired):
+		status, msg = http.StatusBadRequest, "برای پذیرش این مراسم، حداقل یک نمونه صوت در پروفایل شما لازم است"
 	case errors.Is(err, domain.ErrTeacherProfileRequired):
 		status, msg = http.StatusForbidden, "برای این حساب پروفایل استاد فعال نیست"
 	case errors.Is(err, domain.ErrSelfBooking):

@@ -77,14 +77,18 @@ func main() {
         paymentRepo := repository.NewPaymentRepository(db)
         samanClient := payment.NewSaman(cfg.Saman.TerminalID, cfg.Saman.SiteURL, cfg.Saman.BaseURL)
 
+        ceremonyRepo := repository.NewCeremonyRepository(db)
         paymentUsecase := usecase.NewPaymentUsecase(
                 paymentRepo, financialRepo, userRepo, teacherRepo, notifRepo, sessionRepo,
-                samanClient, cfg,
+                ceremonyRepo, samanClient, cfg,
         )
 
         sessionUsecase := usecase.NewSessionUsecase(sessionRepo, teacherRepo, userRepo, walletRepo, notifRepo, cfg, financialRepo).WithBookingGateway(paymentUsecase)
         dispatchUsecase := usecase.NewDispatchUsecase(
                 repository.NewDispatchRepository(db), teacherRepo, userRepo, sessionUsecase, notifRepo,
+        )
+        ceremonyUsecase := usecase.NewCeremonyUsecase(
+                ceremonyRepo, teacherRepo, userRepo, financialRepo, paymentUsecase, notifRepo, cfg,
         )
 
         h := &delivery.Handler{
@@ -94,6 +98,7 @@ func main() {
                 Teacher:      usecase.NewTeacherUsecase(teacherRepo, reviewRepo, userRepo),
                 Session:      sessionUsecase,
                 Dispatch:     dispatchUsecase,
+                Ceremony:     ceremonyUsecase,
                 Wallet: usecase.NewWalletUsecaseWithFinancial(
                         walletRepo, userRepo, teacherRepo, notifRepo, financialRepo,
                         cfg.DevWalletChargeEnabled && !cfg.IsProduction(),
@@ -147,6 +152,9 @@ func main() {
                         case <-ticker.C:
                                 if err := dispatchUsecase.ExpireSweep(context.Background()); err != nil {
                                         log.Printf("dispatch sweep: %v", err)
+                                }
+                                if err := ceremonyUsecase.ExpireSweep(context.Background()); err != nil {
+                                        log.Printf("ceremony sweep: %v", err)
                                 }
                         case <-quit:
                                 return

@@ -61,8 +61,8 @@ func landingPath(returnPath, fallback string) string {
         return fallback
 }
 
-// PaymentUsecase coordinates gateway payments (wallet top-ups and session
-// bookings) through Saman Sep.
+// PaymentUsecase coordinates gateway payments (wallet top-ups, session
+// bookings and ceremony deposits) through Saman Sep.
 type PaymentUsecase struct {
         payments    domain.PaymentOrderStore
         financial   domain.FinancialRepository
@@ -70,6 +70,7 @@ type PaymentUsecase struct {
         teachers    domain.TeacherRepository
         notifs      domain.NotificationRepository
         sessions    domain.SessionRepository
+        ceremonies  domain.CeremonyRepository
         saman       *payment.Saman
         frontendURL string
 }
@@ -82,6 +83,7 @@ func NewPaymentUsecase(
         teachers domain.TeacherRepository,
         notifs domain.NotificationRepository,
         sessions domain.SessionRepository,
+        ceremonies domain.CeremonyRepository,
         saman *payment.Saman,
         cfg *config.Config,
 ) *PaymentUsecase {
@@ -92,6 +94,7 @@ func NewPaymentUsecase(
                 teachers:    teachers,
                 notifs:      notifs,
                 sessions:    sessions,
+                ceremonies:  ceremonies,
                 saman:       saman,
                 frontendURL: strings.TrimRight(cfg.FrontendBaseURL, "/"),
         }
@@ -216,6 +219,13 @@ func (uc *PaymentUsecase) bookingResultURLFor(order *domain.PaymentOrder, status
         return uc.resultURL(landingPath(order.ReturnPath, "/panel/user/sessions"), status, refNum)
 }
 
+// ceremonyResultURLFor lands the payer back on their ceremony booking in
+// the universal app.
+func (uc *PaymentUsecase) ceremonyResultURLFor(order *domain.PaymentOrder, status, refNum string) string {
+        fallback := "/app/ceremony/bookings/" + strconv.FormatUint(uint64(order.RefID), 10)
+        return uc.resultURL(landingPath(order.ReturnPath, fallback), status, refNum)
+}
+
 func (uc *PaymentUsecase) resultURL(path, status, refNum string) string {
         target := uc.frontendURL + path + "?payment=" + url.QueryEscape(status)
         if refNum != "" {
@@ -273,6 +283,64 @@ func (uc *PaymentUsecase) CreateBookingPayment(ctx context.Context, user *domain
         }, nil
 }
 
+// CreateCeremonyDepositPayment opens a pending order attached to a ceremony
+// booking's escrow deposit and returns the Sep token for the client-side
+// form post. Amount equals the booking deposit.
+func (uc *PaymentUsecase) CreateCeremonyDepositPayment(ctx context.Context, user *domain.User, booking *domain.CeremonyBooking, returnPath string) (*TopupResult, error) {
+        if !uc.GatewayReady() {
+                return nil, domain.ErrForbidden
+        }
+        if user == nil || booking == nil || booking.DepositAmount <= 0 {
+                return nil, domain.ErrValidation
+        }
+        if !user.Active || user.ID != booking.OrganizerID {
+                return nil, domain.ErrForbidden
+        }
+        cfg, cfgErr := uc.saman.GatewayConfig()
+        if cfgErr != nil {
+                return nil, gatewayNotReadyErr()
+        }
+
+        order := &domain.PaymentOrder{
+                UserID:     user.ID,
+                Gateway:    "saman",
+                OrderType:  domain.PaymentOrderCeremony,
+                RefID:      booking.ID,
+                ResNum:     newResNum(),
+                Amount:     booking.DepositAmount,
+                Status:     domain.PaymentPending,
+                ReturnPath: sanitizeReturnPath(returnPath),
+        }
+        if err := uc.payments.Create(ctx, order); err != nil {
+                return nil, err
+        }
+
+        // Saman works in Rial; the platform prices are denominated in Toman.
+        token, err := uc.saman.RequestPaymentToken(ctx, order.ResNum, order.Amount*10, cfg.CallbackURL)
+        if err != nil {
+                uc.failOrder(ctx, order, "token: "+err.Error())
+                return nil, fmt.Errorf("درگاه پرداخت موقتاً در دسترس نیست؛ لطفاً چند دقیقه دیگر تلاش کنید")
+        }
+        if err := uc.payments.BindBankToken(ctx, order.ID, token); err != nil {
+                uc.failOrder(ctx, order, "bind token: "+err.Error())
+                return nil, fmt.Errorf("درگاه پرداخت موقتاً در دسترس نیست؛ لطفاً چند دقیقه دیگر تلاش کنید")
+        }
+        return &TopupResult{
+                ResNum: order.ResNum,
+                Token:  token,
+                Amount: order.Amount,
+        }, nil
+}
+
+// FailPendingCeremonyOrders closes stale pending ceremony deposit orders
+// raised for one booking before the organizer re-initiates payment.
+func (uc *PaymentUsecase) FailPendingCeremonyOrders(ctx context.Context, bookingID uint) error {
+        if uc.financial == nil {
+                return nil
+        }
+        return uc.financial.FailPendingCeremonyOrders(ctx, bookingID, "ثبت درخواست پرداخت جدید")
+}
+
 // HandleCallback processes the gateway POST/GET back-channel, rebuilt as an
 // exact port of the Monafaseh handlePaymentCallback sequence:
 //
@@ -307,9 +375,12 @@ func (uc *PaymentUsecase) HandleCallback(ctx context.Context, form payment.Callb
                 return uc.walletResultURL("failed", "")
         }
         isBooking := order.OrderType == domain.PaymentOrderBooking
+        isCeremony := order.OrderType == domain.PaymentOrderCeremony
         failureURL := uc.topupResultURL(order, "failed", "")
         if isBooking {
                 failureURL = uc.bookingResultURLFor(order, "failed", "")
+        } else if isCeremony {
+                failureURL = uc.ceremonyResultURLFor(order, "failed", "")
         }
         if order.Token == "" || order.Token != form.Token {
                 // A bank token must belong to this exact order.
@@ -336,6 +407,9 @@ func (uc *PaymentUsecase) HandleCallback(ctx context.Context, form payment.Callb
                 refNum := order.RefNum
                 if isBooking {
                         return uc.bookingResultURLFor(order, "success", refNum)
+                }
+                if isCeremony {
+                        return uc.ceremonyResultURLFor(order, "success", refNum)
                 }
                 return uc.topupResultURL(order, "success", refNum)
         }
@@ -390,11 +464,31 @@ func (uc *PaymentUsecase) HandleCallback(ctx context.Context, form payment.Callb
                 if isBooking {
                         return uc.bookingResultURLFor(order, "verify", refNum)
                 }
+                if isCeremony {
+                        return uc.ceremonyResultURLFor(order, "verify", refNum)
+                }
                 return uc.topupResultURL(order, "verify", refNum)
         }
 
         // 9. Settlement — atomic claim, credit and ledger (topup) or booking
         // activation (booking). Duplicate callbacks settle at most once.
+        if isCeremony {
+                settled, err := uc.financial.SettleCeremonyDepositOrder(ctx, order.ID, refNum, form.TraceNo, form.SecurePan)
+                if err != nil {
+                        switch {
+                                case errors.Is(err, domain.ErrConflict):
+                                log.Printf("%s: ceremony replay/conflict resnum=%s refnum=%s", failurePrefix, form.CRN, refNum)
+                        default:
+                                log.Printf("%s: ceremony settle error resnum=%s: %v", failurePrefix, form.CRN, err)
+                        }
+                return failureURL
+                }
+                log.Printf("[payment] settled ceremony deposit order=%d booking=%d user=%d amount=%d toman refnum=%s trace=%s",
+                        settled.ID, settled.RefID, settled.UserID, settled.Amount, settled.RefNum, settled.TraceNo)
+                uc.notifyCeremonyDepositSettled(ctx, settled)
+                return uc.ceremonyResultURLFor(order, "success", settled.RefNum)
+        }
+
         if isBooking {
                 settled, err := uc.financial.SettleBookingPaymentOrder(ctx, order.ID, refNum, form.TraceNo, form.SecurePan)
                 if err != nil {
@@ -454,6 +548,28 @@ func (uc *PaymentUsecase) sessionsByID(ctx context.Context, id uint) (*domain.Se
                 return nil, domain.ErrNotFound
         }
         return uc.sessions.ByID(ctx, id)
+}
+
+// notifyCeremonyDepositSettled tells both sides the ceremony became firm:
+// the deposit is in escrow and venue/contact details unlocked.
+func (uc *PaymentUsecase) notifyCeremonyDepositSettled(ctx context.Context, order *domain.PaymentOrder) {
+        if uc.ceremonies == nil || uc.notifs == nil || order.RefID == 0 {
+                return
+        }
+        booking, err := uc.ceremonies.BookingByID(ctx, order.RefID)
+        if err != nil || booking == nil {
+                return
+        }
+        _ = uc.notifs.Create(ctx, &domain.Notification{
+                UserID: booking.ProviderUserID,
+                Title:  "مراسم قطعی شد",
+                Body:   "ودیعه قرارداد «" + booking.ServiceTitle + "» پرداخت شد؛ جزئیات مکان و زمان در قرارداد فعال است.",
+        })
+        _ = uc.notifs.Create(ctx, &domain.Notification{
+                UserID: booking.OrganizerID,
+                Title:  "مراسم قطعی شد",
+                Body:   "قرارداد «" + booking.ServiceTitle + "» قطعی شد؛ آدرس و شماره تماس قاری در صفحه قرارداد فعال است.",
+        })
 }
 
 // RecentTopups lists the user's latest gateway orders.

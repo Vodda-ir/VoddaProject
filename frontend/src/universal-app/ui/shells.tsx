@@ -1,6 +1,6 @@
 import type { CSSProperties, MouseEvent, ReactNode } from "react";
 import type { UniversalAppConfig } from "../config";
-import { appRouteUrl, navigateAppRoute, type AppRouteName } from "../router";
+import { appRouteUrl, navigateAppRoute, type AppRouteName, type StaticAppRouteName } from "../router";
 import { Icon } from "./Icon";
 import { colors, gradients, radii, shadows, spacing, typography } from "./theme";
 
@@ -8,30 +8,29 @@ type IconName = Parameters<typeof Icon>[0]["name"];
 
 type NavigationItem = {
   label: string;
-  target: Exclude<AppRouteName, "teacher" | "book" | "not-found">;
+  target: StaticAppRouteName;
   icon: IconName;
   routes: AppRouteName[];
 };
 
 /**
- * دکمه فراخوان (Call to action) وسط نوار ناوبری.
- * فعلاً جریان «فراخوان اساتید» را باز می‌کند؛ برنامه‌های بعدی هم از همین
- * نقطه پیاده‌سازی می‌شوند تا دکمه به هاب اصلی اکشن‌های کاربر تبدیل شود.
+ * دکمه فراخوان (Call to action) وسط نوار ناوبری — هاب اصلی اکشن‌های کاربر:
+ * استاد آنلاین (فراخوان اساتید) و مراسم حضوری قرآنی.
  */
 type NavigationCta = {
   label: string;
   ariaLabel: string;
   icon: IconName;
-  target: Exclude<AppRouteName, "teacher" | "book" | "not-found">;
+  target: StaticAppRouteName;
   activeRoutes: AppRouteName[];
 };
 
 const learnerCallToAction: NavigationCta = {
   label: "فراخوان",
-  ariaLabel: "فراخوان اساتید — درخواست زنده استاد",
+  ariaLabel: "فراخوان — درخواست استاد آنلاین و مراسم حضوری",
   icon: "bell",
-  target: "dispatch",
-  activeRoutes: ["dispatch"],
+  target: "call-hub",
+  activeRoutes: ["call-hub", "dispatch", "ceremony-new", "ceremony-calls", "ceremony-call"],
 };
 
 type AppShellProps = {

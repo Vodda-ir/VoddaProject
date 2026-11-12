@@ -366,6 +366,55 @@ function DispatchBanner({ config }: { config: UniversalAppConfig }) {
   );
 }
 
+function PresencePromoCard({ config }: { config: UniversalAppConfig }) {
+  return (
+    <button
+      type="button"
+      onClick={() => navigateApp("/presence", config)}
+      className="vodda-card vodda-card--interactive vodda-tappable vodda-enter vodda-neon-gold"
+      aria-label="مراسم حضوری قرآنی — رزرو قاری و فراخوان مراسم"
+      style={{
+        width: "100%",
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        padding: "14px 16px",
+        borderRadius: 20,
+        border: `1px solid ${colors.goldSoft}`,
+        background: "linear-gradient(135deg, #f7efd9 0%, #fffaf0 62%)",
+        boxShadow: shadows.sm,
+        color: colors.ink,
+        cursor: "pointer",
+        fontFamily: typography.fontFamily,
+        textAlign: "right",
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
+      <span
+        aria-hidden="true"
+        style={{
+          display: "grid", placeItems: "center", width: 42, height: 42,
+          borderRadius: 14, flex: "0 0 42px",
+          background: "linear-gradient(145deg, #d4ab52 0%, #bf9540 100%)", color: colors.surface,
+          boxShadow: "0 8px 18px rgba(191,149,64,.32)",
+        }}
+      >
+        <Icon name="calendar" size={20} stroke={1.9} />
+      </span>
+      <span style={{ flex: 1, minWidth: 0 }}>
+        <strong style={{ display: "block", fontSize: 14, fontWeight: 800 }}>
+          مراسم حضوری قرآنی <span style={{ color: colors.goldDark }}>جدید</span>
+        </strong>
+        <span style={{ display: "block", fontSize: 11.5, color: colors.inkMuted, marginTop: 2, lineHeight: 1.7 }}>
+          قاری برای تلاوت و ختم بیابید یا فراخوان بگذارید
+        </span>
+      </span>
+      <Icon name="chevronL" size={16} style={{ flex: "0 0 auto", color: colors.goldDark }} />
+    </button>
+  );
+}
+
 function OnboardingChecklist({ user, config }: { user: AuthUser; config: UniversalAppConfig }) {
   const profileDone = Boolean(user.avatar_url && user.city?.trim() && user.bio?.trim());
   const steps = [
@@ -1154,6 +1203,7 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
       <VerseStrip />
       <SearchPill config={config} />
       <DispatchBanner config={config} />
+      <PresencePromoCard config={config} />
 
       {sessionArea === "loading" ? (
         <Skeleton style={{ height: 120, borderRadius: radii.xl }} />

@@ -639,3 +639,293 @@ func (r *financialRepo) SettleBookingPaymentOrder(ctx context.Context, orderID u
 	}
 	return &settled, nil
 }
+
+// ── خدمات حضوری قرآنی — ceremony escrow lifecycle ──
+
+// PayCeremonyDepositFromWallet settles a ceremony booking's escrow deposit
+// from the organizer's wallet in one transaction. The deposit is NOT the
+// provider's money yet: it is platform-held escrow released at settlement or
+// returned by the cancellation policy.
+func (r *financialRepo) PayCeremonyDepositFromWallet(ctx context.Context, bookingID, organizerID uint, amount int64) (*domain.CeremonyBooking, error) {
+	var out *domain.CeremonyBooking
+	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		booking, err := lockCeremonyBooking(tx, bookingID)
+		if err != nil {
+			return err
+		}
+		if booking.OrganizerID != organizerID || booking.Status != domain.CeremonyBookingDepositPending {
+			return domain.ErrConflict
+		}
+		if amount != booking.DepositAmount || amount <= 0 {
+			return domain.ErrValidation
+		}
+		var user domain.User
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&user, organizerID).Error; err != nil {
+			return recordError(err)
+		}
+		if !user.Active {
+			return domain.ErrForbidden
+		}
+		result := tx.Model(&domain.User{}).
+			Where("id = ? AND wallet >= ?", organizerID, amount).
+			UpdateColumn("wallet", gorm.Expr("wallet - ?", amount))
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected != 1 {
+			return domain.ErrInsufficient
+		}
+		if err := tx.Create(&domain.Transaction{
+			UserID: organizerID,
+			Type:   domain.TxSession,
+			Title:  "ودیعه قرارداد مراسم: " + booking.ServiceTitle,
+			Amount: -amount,
+			RefID:  booking.ID,
+		}).Error; err != nil {
+			return err
+		}
+		if err := tx.Model(&domain.CeremonyBooking{}).
+			Where("id = ? AND status = ?", booking.ID, domain.CeremonyBookingDepositPending).
+			Update("status", domain.CeremonyBookingDepositPaid).Error; err != nil {
+			return err
+		}
+		booking.Status = domain.CeremonyBookingDepositPaid
+		out = booking
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// SettleCeremonyDepositOrder finalizes a gateway-paid ceremony deposit in one
+// transaction: the order is marked paid and the booking is firmed up
+// (deposit_pending → deposit_paid). The money is escrow — no wallet balance
+// moves. If the booking can no longer be firmed up (cancelled meanwhile),
+// the paid amount lands in the payer's wallet as a compensating charge.
+func (r *financialRepo) SettleCeremonyDepositOrder(ctx context.Context, orderID uint, refNum, traceNo, cardPan string) (*domain.PaymentOrder, error) {
+	var settled domain.PaymentOrder
+	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var order domain.PaymentOrder
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&order, orderID).Error; err != nil {
+			return recordError(err)
+		}
+		if order.Status == domain.PaymentPaid {
+			settled = order
+			return nil
+		}
+		if order.Status != domain.PaymentPending || order.OrderType != domain.PaymentOrderCeremony {
+			return domain.ErrConflict
+		}
+		var replay int64
+		if err := tx.Model(&domain.PaymentOrder{}).
+			Where("gateway = ? AND ref_num = ? AND id <> ? AND status = ?", order.Gateway, refNum, order.ID, domain.PaymentPaid).
+			Count(&replay).Error; err != nil {
+			return err
+		}
+		if replay > 0 {
+			return domain.ErrConflict
+		}
+		var user domain.User
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&user, order.UserID).Error; err != nil {
+			return recordError(err)
+		}
+		if !user.Active {
+			return domain.ErrForbidden
+		}
+
+		updates := map[string]any{
+			"status":     domain.PaymentPaid,
+			"ref_num":    refNum,
+			"trace_no":   traceNo,
+			"card_pan":   cardPan,
+			"updated_at": time.Now(),
+		}
+		if err := tx.Model(&domain.PaymentOrder{}).Where("id = ?", order.ID).Updates(updates).Error; err != nil {
+			return err
+		}
+
+		booking, err := lockCeremonyBooking(tx, order.RefID)
+		if err != nil {
+			return err
+		}
+		if booking.OrganizerID != order.UserID || booking.Status != domain.CeremonyBookingDepositPending {
+			// Booking no longer firmable — refund into the wallet so the
+			// gateway money stays reachable by the payer.
+			if err := tx.Model(&domain.User{}).Where("id = ?", order.UserID).
+				UpdateColumn("wallet", gorm.Expr("wallet + ?", order.Amount)).Error; err != nil {
+				return err
+			}
+			if err := tx.Create(&domain.Transaction{
+				UserID: order.UserID,
+				Type:   domain.TxCharge,
+				Title:  "شارژ کیف پول (قرارداد مراسم قابل قطعی‌سازی نبود)",
+				Amount: order.Amount,
+				RefID:  order.ID,
+			}).Error; err != nil {
+				return err
+			}
+		} else {
+			if err := tx.Model(&domain.CeremonyBooking{}).
+				Where("id = ? AND status = ?", booking.ID, domain.CeremonyBookingDepositPending).
+				Update("status", domain.CeremonyBookingDepositPaid).Error; err != nil {
+				return err
+			}
+			booking.Status = domain.CeremonyBookingDepositPaid
+		}
+
+		order.Status = domain.PaymentPaid
+		order.RefNum = refNum
+		order.TraceNo = traceNo
+		order.CardPan = cardPan
+		settled = order
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &settled, nil
+}
+
+// FailPendingCeremonyOrders closes every still-pending ceremony order raised
+// for one booking, e.g. before the organizer re-initiates payment.
+func (r *financialRepo) FailPendingCeremonyOrders(ctx context.Context, bookingID uint, reason string) error {
+	result := r.db.WithContext(ctx).Model(&domain.PaymentOrder{}).
+		Where("order_type = ? AND ref_id = ? AND status = ?", domain.PaymentOrderCeremony, bookingID, domain.PaymentPending).
+		Updates(map[string]any{
+			"status":      domain.PaymentFailed,
+			"fail_reason": reason,
+			"updated_at":  time.Now(),
+		})
+	return result.Error
+}
+
+// CancelCeremonyBooking terminates a booking and applies the refund policy in
+// one transaction: organizerRefund returns to the organizer's wallet,
+// providerShare credits the provider's wallet. Zero amounts skip the move.
+func (r *financialRepo) CancelCeremonyBooking(ctx context.Context, bookingID uint, organizerRefund, providerShare int64) (*domain.CeremonyBooking, error) {
+	var out *domain.CeremonyBooking
+	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		booking, err := lockCeremonyBooking(tx, bookingID)
+		if err != nil {
+			return err
+		}
+		if booking.Status != domain.CeremonyBookingDepositPaid && booking.Status != domain.CeremonyBookingDepositPending {
+			return domain.ErrConflict
+		}
+		deposit := booking.DepositAmount
+		if booking.Status == domain.CeremonyBookingDepositPending {
+			deposit = 0
+		}
+		if organizerRefund+providerShare > deposit {
+			return domain.ErrValidation
+		}
+		if err := tx.Model(&domain.CeremonyBooking{}).
+			Where("id = ?", booking.ID).
+			Updates(map[string]any{
+				"status":     domain.CeremonyBookingCancelled,
+				"updated_at": time.Now(),
+			}).Error; err != nil {
+			return err
+		}
+		booking.Status = domain.CeremonyBookingCancelled
+
+		if organizerRefund > 0 {
+			if err := tx.Model(&domain.User{}).Where("id = ?", booking.OrganizerID).
+				UpdateColumn("wallet", gorm.Expr("wallet + ?", organizerRefund)).Error; err != nil {
+				return err
+			}
+			if err := tx.Create(&domain.Transaction{
+				UserID: booking.OrganizerID,
+				Type:   domain.TxCharge,
+				Title:  "بازگشت ودیعه مراسم: " + booking.ServiceTitle,
+				Amount: organizerRefund,
+				RefID:  booking.ID,
+			}).Error; err != nil {
+				return err
+			}
+		}
+		if providerShare > 0 {
+			if err := tx.Model(&domain.User{}).Where("id = ?", booking.ProviderUserID).
+				UpdateColumn("wallet", gorm.Expr("wallet + ?", providerShare)).Error; err != nil {
+				return err
+			}
+			if err := tx.Create(&domain.Transaction{
+				UserID: booking.ProviderUserID,
+				Type:   domain.TxEarning,
+				Title:  "ودیعه به‌دلیل لغو مراسم: " + booking.ServiceTitle,
+				Amount: providerShare,
+				RefID:  booking.ID,
+			}).Error; err != nil {
+				return err
+			}
+		}
+		out = booking
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// SettleCeremonyBooking pays the provider for an executed ceremony in one
+// transaction — mirror of CompleteAndSettleSession: booking → settled,
+// provider wallet credited with the payout and earning/commission ledger
+// rows are written.
+func (r *financialRepo) SettleCeremonyBooking(ctx context.Context, bookingID, providerUserID uint, payout, commission, gross int64) (*domain.CeremonyBooking, error) {
+	var out *domain.CeremonyBooking
+	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		booking, err := lockCeremonyBooking(tx, bookingID)
+		if err != nil {
+			return err
+		}
+		if booking.Status != domain.CeremonyBookingDepositPaid {
+			return domain.ErrConflict
+		}
+		now := time.Now()
+		if err := tx.Model(&domain.CeremonyBooking{}).
+			Where("id = ? AND status = ?", booking.ID, domain.CeremonyBookingDepositPaid).
+			Updates(map[string]any{
+				"status":     domain.CeremonyBookingSettled,
+				"settled_at": now,
+				"updated_at": now,
+			}).Error; err != nil {
+			return err
+		}
+		booking.Status = domain.CeremonyBookingSettled
+		booking.SettledAt = &now
+
+		if err := tx.Model(&domain.User{}).Where("id = ?", providerUserID).
+			UpdateColumn("wallet", gorm.Expr("wallet + ?", payout)).Error; err != nil {
+			return err
+		}
+		if err := tx.Create(&domain.Transaction{
+			UserID: providerUserID,
+			Type:   domain.TxEarning,
+			Title:  "درآمد مراسم: " + booking.ServiceTitle,
+			Amount: gross,
+			RefID:  booking.ID,
+		}).Error; err != nil {
+			return err
+		}
+		if commission > 0 {
+			if err := tx.Create(&domain.Transaction{
+				UserID: providerUserID,
+				Type:   domain.TxCommission,
+				Title:  "کارمزد پلتفرم",
+				Amount: -commission,
+				RefID:  booking.ID,
+			}).Error; err != nil {
+				return err
+			}
+		}
+		out = booking
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}

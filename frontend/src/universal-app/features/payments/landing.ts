@@ -11,3 +11,11 @@
 // کلاینت‌های قدیمی.
 export const APP_LANDING_SESSIONS = "/app/sessions";
 export const APP_LANDING_WALLET = "/app/wallet";
+// قرارداد مراسم حضوری: بعد از راند‌تریپ درگاه، کاربر روی جزئیات همان قرارداد
+// برمی‌گردد (‎?payment=success|verify|failed‎ توسط PaymentResultBanner خوانده می‌شود).
+export const APP_LANDING_CEREMONY_BOOKINGS = "/app/ceremony/bookings";
+
+/** مسیر بازگشت از درگاه برای قرارداد مراسم با شناسهٔ مشخص. */
+export function ceremonyBookingLanding(bookingId: number): string {
+  return `${APP_LANDING_CEREMONY_BOOKINGS}/${bookingId}`;
+}

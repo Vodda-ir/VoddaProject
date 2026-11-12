@@ -25,6 +25,7 @@ type Handler struct {
         Teacher      *usecase.TeacherUsecase
         Session      *usecase.SessionUsecase
         Dispatch     *usecase.DispatchUsecase
+        Ceremony     *usecase.CeremonyUsecase
         Wallet       *usecase.WalletUsecase
         Payment      *usecase.PaymentUsecase
         Review       *usecase.ReviewUsecase

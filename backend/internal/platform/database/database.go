@@ -95,5 +95,9 @@ func Migrate(db *gorm.DB) error {
                 &domain.DispatchCall{},
                 &domain.DispatchOffer{},
                 &domain.DispatchIgnore{},
+                &domain.CeremonyCall{},
+                &domain.CeremonyOffer{},
+                &domain.CeremonyBooking{},
+                &domain.PresenceService{},
         )
 }

@@ -325,6 +325,23 @@ func (h *Handler) CatalogServices(c *gin.Context) {
 		fail(c, err)
 		return
 	}
+	// mode=in_person returns a flat array (presence catalog clients);
+	// the default grouped shape stays untouched for the online flow.
+	if mode := c.Query("mode"); mode == "in_person" || mode == "online" {
+		flat := make([]gin.H, 0, len(rows))
+		for _, row := range rows {
+			if row.Mode != mode || !row.Active {
+				continue
+			}
+			flat = append(flat, gin.H{
+				"id": row.ID, "category": row.Category, "title": row.Title,
+				"description": row.Description, "icon": row.Icon, "mode": row.Mode,
+				"requires_audio": row.RequiresAudio, "group_capable": row.GroupCapable,
+			})
+		}
+		ok(c, flat)
+		return
+	}
 	grouped := make([]gin.H, 0, 8)
 	order := make([]string, 0, 8)
 	byCategory := make(map[string][]gin.H, 8)

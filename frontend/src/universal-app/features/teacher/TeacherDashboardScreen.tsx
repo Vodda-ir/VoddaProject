@@ -358,6 +358,8 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
             ["clock" as const, "زمان‌های کاری", "/t/work-times"],
             ["wallet" as const, "کیف پول", "/t/wallet"],
             ["calendar" as const, "همهٔ جلسات", "/t/sessions"],
+            ["users" as const, "پذیرش مراسم", "/t/ceremony"],
+            ["mic" as const, "خدمات حضوری", "/t/presence"],
           ] as const).map(([icon, label, path]) => (
             <button
               key={path}

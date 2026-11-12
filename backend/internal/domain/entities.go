@@ -144,6 +144,8 @@ type Service struct {
 // OfficialService is a platform-approved service catalog entry. Teachers can
 // only publish bookable services by selecting one of these entries, which
 // guarantees every service title on the marketplace is official and verified.
+// Mode separates online teaching ("online") from in-person services
+// ("in_person" — مراسم تلاوت، ختم، اذان…).
 type OfficialService struct {
         ID          uint      `gorm:"primaryKey" json:"id"`
         Category    string    `gorm:"size:60;index" json:"category"`
@@ -152,6 +154,13 @@ type OfficialService struct {
         Icon        string    `gorm:"size:30" json:"icon"`
         SortOrder   int       `json:"sort_order"`
         Active      bool      `gorm:"default:true" json:"active"`
+        Mode        string    `gorm:"size:16;default:online;index" json:"mode"`
+        // RequiresAudio forces reciters to attach a work sample when accepting
+        // in-person calls of this entry (quality bar for ceremonies).
+        RequiresAudio bool     `gorm:"default:false" json:"requires_audio"`
+        // GroupCapable marks entries a group of reciters can perform together
+        // (ختم گروهی، تواشیح) — reciters_needed > 1 is meaningful.
+        GroupCapable bool      `gorm:"default:false" json:"group_capable"`
         CreatedAt   time.Time `json:"created_at"`
         UpdatedAt   time.Time `json:"updated_at"`
 }
@@ -272,8 +281,9 @@ type PaymentOrder struct {
 
 // Payment order purposes.
 const (
-        PaymentOrderTopup   = "topup"
-        PaymentOrderBooking = "booking"
+        PaymentOrderTopup    = "topup"
+        PaymentOrderBooking  = "booking"
+        PaymentOrderCeremony = "ceremony"
 )
 
 // OTPCode is a one-time password issued for mobile verification. Code stores a
