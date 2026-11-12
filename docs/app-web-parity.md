@@ -27,6 +27,10 @@
 - DNS/CDN: هر دو ساب‌دامین از بیرون پاسخ می‌دهند (app: 200، api: `/health` OK).
 - `UNIVERSAL_APP_ROOT_HOST=app.vodda.ir` و `BFF_ALLOWED_HOSTS=vodda.ir,www.vodda.ir,app.vodda.ir,…`
   روی کانتینر فرانت ست شده است.
+- کوکی سشن با `SESSION_COOKIE_DOMAIN=.vodda.ir` بین هر دو دامنهٔ وب مشترک است —
+  چون کال‌بک بانک همیشه به `https://vodda.ir/api/payments/saman/callback`
+  فرود می‌آید، کاربرِ `app.vodda.ir` هم بعد از پرداخت لاگ‌این می‌ماند.
+  (روی `frontend/src/lib/server/session-cookies.ts` — خالی = host-only)
 - `CORS_ALLOWED_ORIGINS=https://vodda.ir,https://app.vodda.ir,https://localhost,capacitor://localhost`
   روی بک‌اند ست شده است (اپ اندروید/iOS آینده همین مبدأها را استفاده می‌کند).
 - درگاه سامان: `SAMAN_TERMINAL_ID` و `SITE_URL=https://vodda.ir`؛ وریفای با

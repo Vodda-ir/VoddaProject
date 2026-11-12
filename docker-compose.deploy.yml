@@ -103,6 +103,9 @@ services:
       SERVER_API_URL: ${SERVER_API_URL:-http://backend:3420/api/v1}
       UNIVERSAL_APP_ROOT_HOST: ${UNIVERSAL_APP_ROOT_HOST:-app.vodda.ir}
       BFF_ALLOWED_HOSTS: ${BFF_ALLOWED_HOSTS:-vodda.ir,www.vodda.ir,app.vodda.ir,localhost,127.0.0.1}
+      # سشن مشترک بین vodda.ir و app.vodda.ir — برگشت از درگاه بانک همیشه به
+      # مبدأ عمومی vodda.ir فرود می‌آید و باید کاربر لاگ‌این را ببیند.
+      SESSION_COOKIE_DOMAIN: ${SESSION_COOKIE_DOMAIN:-.vodda.ir}
     ports:
       - "127.0.0.1:${FRONTEND_PORT:-3421}:${FRONTEND_INTERNAL_PORT:-3421}"
     healthcheck:

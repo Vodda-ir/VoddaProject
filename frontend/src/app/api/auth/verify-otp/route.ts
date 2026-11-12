@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isSameOriginMutation } from '@/lib/server/same-origin';
+import { sessionCookieDomain } from '@/lib/server/session-cookies';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -50,6 +51,7 @@ export async function POST(request: NextRequest): Promise<Response> {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
+      domain: sessionCookieDomain(),
       path: '/',
       maxAge: SESSION_MAX_AGE,
     });
@@ -57,6 +59,7 @@ export async function POST(request: NextRequest): Promise<Response> {
       httpOnly: false,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
+      domain: sessionCookieDomain(),
       path: '/',
       maxAge: SESSION_MAX_AGE,
     });

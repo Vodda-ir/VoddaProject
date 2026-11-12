@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { sessionCookieDomain } from '@/lib/server/session-cookies';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,6 +10,7 @@ export async function POST(): Promise<Response> {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
+    domain: sessionCookieDomain(),
     path: '/',
     maxAge: 0,
   });
@@ -16,6 +18,7 @@ export async function POST(): Promise<Response> {
     httpOnly: false,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
+    domain: sessionCookieDomain(),
     path: '/',
     maxAge: 0,
   });
