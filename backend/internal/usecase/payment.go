@@ -285,19 +285,24 @@ func (uc *PaymentUsecase) HandleCallback(ctx context.Context, form payment.Callb
 		return failureURL
 	}
 
-	// Remote verification when panel credentials are configured.
-	if uc.saman.VerifyConfigured() {
-		verified, raw, verifyErr := uc.saman.Verify(ctx, form)
-		if verifyErr != nil || !verified {
-			log.Printf("%s: verify failed resnum=%s raw=%s err=%v", failurePrefix, resNum, raw, verifyErr)
-			_ = uc.financial.MarkPaymentOrderFailed(ctx, order.ID, "تأیید درگاه ناموفق بود")
-			if isBooking {
-				_ = uc.financial.CancelBookingSession(ctx, order.RefID, "پرداخت آنلاین انجام نشد")
-			}
-			return failureURL
+	// Bank-side verification, fail-closed (Monafaseh-proven path): the
+	// VerifyTransaction REST call needs only the terminal number — no panel
+	// credentials. A bank rejection, any mismatched detail, or an unreachable
+	// verify endpoint voids the settlement; the receipt stays recorded for
+	// bank follow-up.
+	verified, raw, verifyErr := uc.saman.VerifyTransaction(ctx, form.RefNum, order.Amount*10)
+	if verifyErr != nil && uc.saman.VerifyConfigured() {
+		// Transport failure — deployments that DO have panel credentials get
+		// a second chance through the legacy verify.aspx handshake.
+		verified, raw, verifyErr = uc.saman.Verify(ctx, form)
+	}
+	if verifyErr != nil || !verified {
+		log.Printf("%s: verify failed resnum=%s refnum=%s raw=%s err=%v", failurePrefix, resNum, form.RefNum, raw, verifyErr)
+		_ = uc.financial.MarkPaymentOrderFailed(ctx, order.ID, "تأیید درگاه ناموفق بود؛ رسید برای پیگیری بانک حفظ شد")
+		if isBooking {
+			_ = uc.financial.CancelBookingSession(ctx, order.RefID, "پرداخت آنلاین انجام نشد")
 		}
-	} else {
-		log.Printf("[payment] verify credentials absent — settling callback with strict validation only (resnum=%s)", resNum)
+		return failureURL
 	}
 
 	if isBooking {
