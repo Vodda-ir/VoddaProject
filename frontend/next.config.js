@@ -27,7 +27,13 @@ const nextConfig = {
       { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
       {
         key: 'Content-Security-Policy',
-        value: "base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'",
+        // form-action must whitelist the Saman-Sep gateway: every payment flow
+        // POSTs the bank token form straight to OnlinePG from the payer's own
+        // browser (the Monafaseh-proven hand-off). Without this entry the
+        // browser silently blocks the form navigation and the user never
+        // reaches the bank page.
+        value:
+          "base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self' https://sep.shaparak.ir",
       },
     ];
     if (process.env.NODE_ENV === 'production') {
