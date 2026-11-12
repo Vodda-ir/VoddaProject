@@ -16,6 +16,7 @@ import {
   SectionHeader,
   Sheet,
   StatusPill,
+  todayJalaliLabel,
   colors,
   radii,
   shadows,
@@ -69,16 +70,7 @@ function greetingLabel() {
 }
 
 function todayLabel() {
-  try {
-    return new Intl.DateTimeFormat("fa-IR-u-ca-persian", {
-      timeZone: "Asia/Tehran",
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-    }).format(new Date());
-  } catch {
-    return "";
-  }
+  return todayJalaliLabel();
 }
 
 function dayOfYearIndex() {

@@ -39,3 +39,11 @@ export {
 } from "./theme";
 
 export { digitsOnly, toFaDigits, toLatinDigits } from "./persian";
+export {
+  formatJalaliDate,
+  formatJalaliDateTime,
+  persianWeekdayIndex,
+  persianWeekdayName,
+  todayJalaliLabel,
+  toJalali,
+} from "./jalali";

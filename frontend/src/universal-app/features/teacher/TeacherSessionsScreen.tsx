@@ -11,6 +11,7 @@ import {
   Dialog,
   EmptyState,
   ErrorState,
+  formatJalaliDate,
   Icon,
   LoadingState,
   SectionHeader,
@@ -98,7 +99,7 @@ async function completeTeacherSession(runtime: PlatformRuntime, sessionId: numbe
 
 function officialTime(session: TeacherSession): string {
   if (!session.localDate || !session.localStart || !session.localEnd) return "زمان رسمی جلسه دریافت نشد";
-  return `${toFaDigits(session.localDate.replaceAll("-", "/"))} · ${toFaDigits(session.localStart)} تا ${toFaDigits(session.localEnd)}`;
+  return `${formatJalaliDate(session.localDate)} · ${toFaDigits(session.localStart)} تا ${toFaDigits(session.localEnd)}`;
 }
 
 function canCompleteSession(session: TeacherSession): boolean {

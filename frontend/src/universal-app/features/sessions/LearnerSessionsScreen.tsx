@@ -9,6 +9,7 @@ import {
   Dialog,
   EmptyState,
   ErrorState,
+  formatJalaliDate,
   Icon,
   LoadingState,
   SectionHeader,
@@ -47,7 +48,7 @@ const statusLabels: Record<string, string> = {
 
 function officialTime(session: LearnerSession): string {
   if (!hasOfficialSessionTime(session)) return "زمان رسمی جلسه دریافت نشد";
-  return `${toFaDigits(session.localDate.replaceAll("-", "/"))} · ${toFaDigits(session.localStart)} تا ${toFaDigits(session.localEnd)}`;
+  return `${formatJalaliDate(session.localDate)} · ${toFaDigits(session.localStart)} تا ${toFaDigits(session.localEnd)}`;
 }
 
 function canCancel(session: LearnerSession): boolean {

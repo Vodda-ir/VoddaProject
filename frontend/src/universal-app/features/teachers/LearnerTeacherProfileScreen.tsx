@@ -10,6 +10,7 @@ import {
   Card,
   EmptyState,
   ErrorState,
+  formatJalaliDateTime,
   Icon,
   IconBadge,
   LoadingState,
@@ -26,9 +27,7 @@ import type { TeacherDetail, TeacherReview, TeacherService } from "./types";
 
 function reviewDate(value: string) {
   if (!value) return "";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  return new Intl.DateTimeFormat("fa-IR", { year: "numeric", month: "long", day: "numeric" }).format(date);
+  return formatJalaliDateTime(value, { withTime: false });
 }
 
 /* ═══ «دربارهٔ استاد» — بازچینش ساختاریافته (هم‌الگو با نسخهٔ وب) ═══ */

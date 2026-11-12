@@ -1,4 +1,4 @@
-import { Card, Icon, colors, spacing, toFaDigits, typography } from "../../ui";
+import { Card, formatJalaliDateTime, Icon, colors, spacing, toFaDigits, typography } from "../../ui";
 import type { WalletTransaction } from "./types";
 
 export { toFaDigits } from "../../ui";
@@ -8,11 +8,7 @@ export function formatWalletAmount(value: number): string {
 }
 
 function transactionDate(value: string): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  const label = new Intl.DateTimeFormat("fa-IR", { day: "numeric", month: "short" }).format(date);
-  const time = new Intl.DateTimeFormat("fa-IR", { hour: "2-digit", minute: "2-digit" }).format(date);
-  return toFaDigits(`${label} · ${time}`);
+  return formatJalaliDateTime(value, { withYear: false });
 }
 
 type TxVisual = { icon: "coins" | "video" | "trending" | "download" | "x" | "info"; label: string; ink: string; background: string };

@@ -12,6 +12,7 @@ import {
   Card,
   EmptyState,
   ErrorState,
+  formatJalaliDateTime,
   Icon,
   LoadingState,
   colors,
@@ -51,14 +52,7 @@ function timeLabelOf(call: { flexible: boolean; scheduled_at?: string | null }):
   const now = new Date();
   const diffMin = Math.round((at.getTime() - now.getTime()) / 60000);
   if (diffMin < 60 && diffMin > -60) return `⚡ حدود ${fa(Math.max(0, diffMin))} دقیقه دیگر`;
-  const local = at.toLocaleString("fa-IR", {
-    weekday: "long",
-    hour: "2-digit",
-    minute: "2-digit",
-    month: "long",
-    day: "numeric",
-  });
-  return `📅 ${local}`;
+  return `📅 ${formatJalaliDateTime(call.scheduled_at, { withWeekday: true })}`;
 }
 
 function remainingSeconds(expiresAt: string): number {

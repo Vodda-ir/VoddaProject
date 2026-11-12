@@ -9,6 +9,7 @@ import {
   Button,
   Card,
   EmptyState,
+  formatJalaliDateTime,
   Icon,
   LoadingState,
   colors,
@@ -63,9 +64,7 @@ function countdownLabel(total: number): string {
 
 function whenLabel(call: TeacherInboxCall["call"]): string {
   if (call.flexible || !call.scheduled_at) return "⚡ در اسرع وقت";
-  const at = new Date(call.scheduled_at);
-  if (Number.isNaN(at.getTime())) return "⚡ در اسرع وقت";
-  return `📅 ${at.toLocaleString("fa-IR", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}`;
+  return `📅 ${formatJalaliDateTime(call.scheduled_at, { withWeekday: true })}`;
 }
 
 const chipStyle: React.CSSProperties = {

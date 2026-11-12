@@ -6,7 +6,7 @@ import { asArray, asNumber, asRecord, asString, type ApiEnvelope } from "../../p
 import { usePlatform } from "../../platform/context";
 import type { PlatformRuntime } from "../../platform/types";
 import { navigateApp } from "../../router";
-import { Button, Card, EmptyState, ErrorState, Icon, LoadingState, SectionHeader, StatusPill, colors, digitsOnly, radii, spacing, toFaDigits, toLatinDigits, typography } from "../../ui";
+import { Button, Card, EmptyState, ErrorState, formatJalaliDateTime, Icon, LoadingState, SectionHeader, StatusPill, colors, digitsOnly, radii, spacing, toFaDigits, toLatinDigits, typography } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
 import { getWalletSnapshot } from "../wallet/api";
 import { formatWalletAmount } from "../wallet/WalletTransactionCard";
@@ -63,9 +63,7 @@ function cardDisplay(value: string): string {
 }
 
 function dateLabel(value: string): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  return toFaDigits(`${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`);
+  return formatJalaliDateTime(value, { withTime: false });
 }
 
 function statusLabel(status: string): string {

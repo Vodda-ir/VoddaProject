@@ -14,6 +14,7 @@ import {
   Button,
   Card,
   ErrorState,
+  formatJalaliDate,
   Icon,
   LoadingState,
   SectionHeader,
@@ -107,7 +108,7 @@ function officialTime(session: TeacherSession): string {
   if (!session.localDate || !session.localStart || !session.localEnd) {
     return "زمان رسمی جلسه دریافت نشد";
   }
-  return `${toFaDigits(session.localDate.replaceAll("-", "/"))} · ${toFaDigits(session.localStart)} تا ${toFaDigits(session.localEnd)}`;
+  return `${formatJalaliDate(session.localDate)} · ${toFaDigits(session.localStart)} تا ${toFaDigits(session.localEnd)}`;
 }
 
 export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig }) {

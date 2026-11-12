@@ -7,7 +7,7 @@ import { usePlatform } from "../../platform/context";
 import { navigateApp } from "../../router";
 import { getTeacherDetail } from "../teachers/api";
 import type { Teacher, TeacherService } from "../teachers/types";
-import { Avatar, Button, Card, EmptyState, ErrorState, Icon, LoadingState, colors, radii, shadows, spacing, typography } from "../../ui";
+import { Avatar, Button, Card, EmptyState, ErrorState, formatJalaliDate, Icon, LoadingState, colors, radii, shadows, spacing, typography } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
 import { formatWalletAmount } from "../wallet/WalletTransactionCard";
 import { createBooking, getBookingAvailability, getBookingMe, type BookingPaymentMethod } from "./api";
@@ -16,22 +16,6 @@ import type { BookingSlot } from "./types";
 
 const weekdays = ["شنبه", "یکشنبه", "دوشنبه", "سه‌شنبه", "چهارشنبه", "پنجشنبه", "جمعه"];
 const numberFormatter = new Intl.NumberFormat("fa-IR");
-
-function dateLabel(localDate: string, weekday: number) {
-  const parts = localDate.split("-");
-  const day = parts[2] ?? localDate;
-  const month = parts[1] ?? "";
-  const prefix = weekdays[weekday] ?? "";
-  return `${prefix}${prefix ? " · " : ""}${numberFormatter.format(Number(day) || 0)}/${numberFormatter.format(Number(month) || 0)}`;
-}
-
-function fullDateLabel(localDate: string, weekday: number) {
-  const parts = localDate.split("-");
-  if (parts.length !== 3) return dateLabel(localDate, weekday);
-  const [year, month, day] = parts;
-  const prefix = weekdays[weekday] ?? "";
-  return `${prefix}${prefix ? " " : ""}${numberFormatter.format(Number(day) || 0)}/${numberFormatter.format(Number(month) || 0)}/${numberFormatter.format(Number(year) || 0)}`;
-}
 
 function BookingStepHeader({ number, title }: { number: number; title: string }) {
   return (
@@ -361,7 +345,7 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
                       {weekdays[group.weekday] ?? "روز"}
                     </strong>
                     <span style={{ display: "block", marginTop: 4, opacity: 0.82, fontSize: 10.5 }}>
-                      {dateLabel(group.localDate, -1)} · {numberFormatter.format(group.slots.length)} زمان
+                      {formatJalaliDate(group.localDate, { withYear: false })} · {numberFormatter.format(group.slots.length)} زمان
                     </span>
                   </button>
                 );
@@ -411,7 +395,7 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
             {[
               ["استاد", teacher.name],
               ["خدمت", service.title],
-              ["تاریخ", fullDateLabel(slot.localDate, slot.weekday)],
+              ["تاریخ", formatJalaliDate(slot.localDate, { withWeekday: slot.weekday })],
               ["ساعت", `${slot.localStart} تا ${slot.localEnd}`],
               ["مدت", `${numberFormatter.format(service.duration)} دقیقه`],
               ["مبلغ", `${formatWalletAmount(Math.max(0, service.price))} تومان`],
