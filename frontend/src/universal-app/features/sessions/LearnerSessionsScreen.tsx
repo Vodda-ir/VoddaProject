@@ -23,6 +23,7 @@ import {
 import { messageOf } from "../../ui/errorMessage";
 import { toFaDigits } from "../wallet/WalletTransactionCard";
 import { payBooking } from "../booking/api";
+import { payViaSamanGate } from "../../../lib/saman-gate";
 import {
   cancelLearnerSession,
   createSessionReview,
@@ -203,11 +204,8 @@ export function LearnerSessionsScreen() {
     setError(null);
     try {
       const gateway = await payBooking(runtime, session.id);
-      if (runtime.kind === "native") {
-        window.open(gateway.redirect_url, "_blank");
-      } else {
-        window.location.href = gateway.redirect_url;
-      }
+      // پست فرم توکن به OnlinePG از مرورگر کاربر — دقیقاً مثل منافسه، در همان تب
+      payViaSamanGate(gateway.token);
     } catch (payError) {
       setError(messageOf(payError));
     } finally {

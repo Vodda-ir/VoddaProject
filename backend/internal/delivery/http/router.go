@@ -103,14 +103,13 @@ func NewRouter(cfg *config.Config, h *Handler, tm *token.Manager, readiness func
         // Payment gateway back-channel. The payer's browser lands here straight
         // from sep.shaparak.ir — no session cookie exists yet, so the route stays
         // public and the usecase validates the payload against the stored order.
-        // /saman/start serves the token hand-off page to the payer's browser
-        // (BFF path: /api/backend/payments/saman/start).
+        // The Sep token itself is handed to the authed frontend inside the JSON
+        // answers of booking/topup/pay endpoints (Monafaseh create semantics).
         paymentLimiter := NewRateLimiter(30, time.Minute)
         payments := api.Group("/payments")
         {
                 payments.POST("/saman/callback", paymentLimiter.Middleware("saman-callback"), h.SamanCallback)
                 payments.GET("/saman/callback", paymentLimiter.Middleware("saman-callback"), h.SamanCallback)
-                payments.GET("/saman/start", paymentLimiter.Middleware("saman-start"), h.SamanStart)
         }
 
         // Online classroom signaling. The WebSocket accepts a short-lived

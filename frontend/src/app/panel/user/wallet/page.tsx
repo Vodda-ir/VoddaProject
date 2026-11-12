@@ -12,6 +12,7 @@ import {
 import { BarsChart } from '@/components/admin/charts';
 import { SearchInput, exportCsv, FilterTabs } from '@/components/admin/AdminUI';
 import { api, type LearnerAnalytics, type Transaction } from '@/lib/api';
+import { payViaSamanGate } from '@/lib/saman-gate';
 import { getToken } from '@/lib/auth';
 import { formatFaNumber } from '@/lib/persian';
 
@@ -139,7 +140,8 @@ export default function UserWalletPage() {
     setTopupError('');
     try {
       const response = await api.walletTopup(token, parsedTopup);
-      window.location.href = response.data.redirect_url;
+      // پست فرم توکن به OnlinePG از مرورگر کاربر — دقیقاً مثل منافسه، در همان تب
+      payViaSamanGate(response.data.token);
     } catch (cause) {
       setTopupError(cause instanceof Error ? cause.message : 'اتصال به درگاه پرداخت برقرار نشد.');
       setTopupBusy(false);

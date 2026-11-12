@@ -18,11 +18,12 @@ type BookingGateway interface {
         CreateBookingPayment(ctx context.Context, user *domain.User, session *domain.Session) (*TopupResult, error)
 }
 
-// BookResult carries the created session plus, for online payments, the
-// gateway hand-off data the client must redirect to.
+// BookResult carries the created session plus, for online payments, the Sep
+// token the client posts to OnlinePG (Monafaseh create semantics — the token
+// never travels in a URL).
 type BookResult struct {
         Session       *domain.Session `json:"session"`
-        RedirectURL   string          `json:"redirect_url,omitempty"`
+        Token         string          `json:"token,omitempty"`
         ResNum        string          `json:"res_num,omitempty"`
         PaidViaWallet bool            `json:"paid_via_wallet"`
 }
@@ -158,7 +159,7 @@ func (uc *SessionUsecase) Book(ctx context.Context, learnerID uint, in BookInput
                         uc.cancelAwaitingSession(ctx, s.ID, "شروع پرداخت ناموفق بود")
                         return nil, err
                 }
-                return &BookResult{Session: s, RedirectURL: payment.RedirectURL, ResNum: payment.ResNum, PaidViaWallet: false}, nil
+                return &BookResult{Session: s, Token: payment.Token, ResNum: payment.ResNum, PaidViaWallet: false}, nil
         }
 
         if uc.financial != nil {

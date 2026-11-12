@@ -29,15 +29,6 @@ const (
 // served by the BFF (public, no session) and forwarded to the backend.
 const PaymentCallbackURL = "/api/payments/saman/callback"
 
-// PaymentStartPath is the public BFF route serving the self-submitting
-// payment hand-off page (SamanStart). The payer's browser loads it from
-// vodda.ir so the Sep OnlinePG UI receives the vodda.ir Referer it enforces;
-// the Monafaseh reference builds the same POST form client-side, but Vodda's
-// universal app also runs on app.vodda.ir and inside the Capacitor webview —
-// a server-rendered page on the registered origin keeps the Referer right
-// for both web and app.
-const PaymentStartPath = "/api/backend/payments/saman/start"
-
 // PaymentUsecase coordinates gateway payments (wallet top-ups and session
 // bookings) through Saman Sep.
 type PaymentUsecase struct {
@@ -79,11 +70,14 @@ func (uc *PaymentUsecase) GatewayReady() bool {
         return uc != nil && uc.saman != nil && uc.saman.Enabled()
 }
 
-// TopupResult gives the frontend everything needed to hand the payer to Sep.
+// TopupResult gives the frontend everything needed to hand the payer to Sep —
+// Monafaseh create semantics: the minted token travels in the JSON answer and
+// the purchaser's own browser POSTs the form to OnlinePG. The token never
+// rides in a URL.
 type TopupResult struct {
-        ResNum      string `json:"res_num"`
-        RedirectURL string `json:"redirect_url"`
-        Amount      int64  `json:"amount"`
+        ResNum string `json:"res_num"`
+        Token  string `json:"token"`
+        Amount int64  `json:"amount"`
 }
 
 // newResNum mints a collision-safe merchant reference number.
@@ -105,7 +99,8 @@ func gatewayNotReadyErr() error {
         return fmt.Errorf("درگاه پرداخت در حال آماده‌سازی است؛ لطفاً بعداً تلاش کنید")
 }
 
-// CreateTopup opens a pending order and returns the Sep payment page URL.
+// CreateTopup opens a pending order and mints the Sep payment token that the
+// frontend posts to OnlinePG (Monafaseh create semantics).
 func (uc *PaymentUsecase) CreateTopup(ctx context.Context, userID uint, amount int64) (*TopupResult, error) {
         if !uc.GatewayReady() {
                 return nil, domain.ErrForbidden
@@ -149,9 +144,9 @@ func (uc *PaymentUsecase) CreateTopup(ctx context.Context, userID uint, amount i
                 return nil, fmt.Errorf("درگاه پرداخت موقتاً در دسترس نیست؛ لطفاً چند دقیقه دیگر تلاش کنید")
         }
         return &TopupResult{
-                ResNum:      order.ResNum,
-                RedirectURL: uc.startURL(token),
-                Amount:      order.Amount,
+                ResNum: order.ResNum,
+                Token:  token,
+                Amount: order.Amount,
         }, nil
 }
 
@@ -160,23 +155,6 @@ func (uc *PaymentUsecase) failOrder(ctx context.Context, order *domain.PaymentOr
         if markErr := uc.financial.MarkPaymentOrderFailed(ctx, order.ID, reason); markErr != nil {
                 log.Printf("[payment] order %d mark-failed error: %v", order.ID, markErr)
         }
-}
-
-// startURL points the payer at the vodda.ir hand-off page that carries the
-// freshly minted Sep token into the OnlinePG payment UI.
-func (uc *PaymentUsecase) startURL(token string) string {
-        return uc.frontendURL + PaymentStartPath + "?token=" + url.QueryEscape(token)
-}
-
-// StartPage renders the payment hand-off page for a minted Sep token.
-// ok=false when the gateway is disabled or the token shape is invalid — the
-// caller then serves the plain failure page instead of a hand-off.
-func (uc *PaymentUsecase) StartPage(token string) ([]byte, bool) {
-        token = strings.TrimSpace(token)
-        if uc == nil || uc.saman == nil || !payment.ValidHandoffToken(token) {
-                return nil, false
-        }
-        return uc.saman.StartFormHTML(token), true
 }
 
 // walletResultURL builds the frontend landing URL after gateway round-trip.
@@ -199,7 +177,8 @@ func (uc *PaymentUsecase) resultURL(path, status, refNum string) string {
 }
 
 // CreateBookingPayment opens a pending order attached to a reserved session
-// and returns the Sep payment page URL. Amount equals the session price.
+// and returns the Sep payment token for the client-side form post. Amount
+// equals the session price.
 func (uc *PaymentUsecase) CreateBookingPayment(ctx context.Context, user *domain.User, session *domain.Session) (*TopupResult, error) {
         if !uc.GatewayReady() {
                 return nil, domain.ErrForbidden
@@ -239,9 +218,9 @@ func (uc *PaymentUsecase) CreateBookingPayment(ctx context.Context, user *domain
                 return nil, fmt.Errorf("درگاه پرداخت موقتاً در دسترس نیست؛ لطفاً چند دقیقه دیگر تلاش کنید")
         }
         return &TopupResult{
-                ResNum:      order.ResNum,
-                RedirectURL: uc.startURL(token),
-                Amount:      order.Amount,
+                ResNum: order.ResNum,
+                Token:  token,
+                Amount: order.Amount,
         }, nil
 }
 

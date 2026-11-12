@@ -11,10 +11,11 @@
 //     {base}/onlinepg/onlinepg — exactly the Monafaseh payload: no MerchantId,
 //     no CellNumber. A dropped connection is retried once with the same order;
 //     a bank rejection is returned immediately.
-//  3. The payer's browser loads a self-submitting hand-off page served from
-//     the vodda.ir origin and POSTs the token (field «Token») to
-//     {base}/OnlinePG/OnlinePG. (A direct GET redirect with ?token= does not
-//     work, and the gateway enforces the merchant's registered Referer.)
+//  3. The frontend receives the minted token inside its JSON answer and the
+//     purchaser's own browser POSTs it (field «Token») to
+//     {base}/OnlinePG/OnlinePG from the app page — exactly the Monafaseh
+//     client flow (buy-credits-view). A direct GET redirect with ?token=
+//     does not work; the token never travels in a URL.
 //  4. The gateway posts the result back to RedirectUrl: State=OK|NOK plus a
 //     Token echo, ResNum, RefNum, Amount, TerminalId/MID fields.
 //  5. VerifyTransaction POSTs {"RefNum","TerminalNumber":<number>} to
@@ -38,11 +39,6 @@ import (
 
 // TokenURL is the Sep OnlinePG token endpoint.
 const TokenURL = "/onlinepg/onlinepg"
-
-// PayFormURLPath is the OnlinePG entry point that accepts the token as a POST
-// form field. (payment.aspx — the old GET entry — is decommissioned and
-// bounces every token to the generic error page.)
-const PayFormURLPath = "/OnlinePG/OnlinePG"
 
 // VerifyURL is the credential-free verify endpoint — the same REST call the
 // Monafaseh service proved in production. Only the terminal number is
@@ -196,77 +192,6 @@ func (s *Saman) RequestPaymentToken(ctx context.Context, resNum string, amountRi
 		return parsed.Token, nil
 	}
 	return "", fmt.Errorf("درگاه درخواست پرداخت را نپذیرفت؛ لطفاً بعداً تلاش کنید")
-}
-
-// PayFormURL is the absolute OnlinePG entry point for the hand-off form.
-func (s *Saman) PayFormURL() string {
-	return s.baseURL + PayFormURLPath
-}
-
-// StartFormHTML renders the self-submitting payment hand-off page. The
-// payer's browser loads it from the vodda.ir origin and immediately POSTs the
-// token (field «Token», per Sep documentation) to the Sep OnlinePG UI,
-// carrying the registered Referer the gateway enforces.
-func (s *Saman) StartFormHTML(token string) []byte {
-	page := `<!DOCTYPE html>
-<html lang="fa" dir="rtl">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>انتقال به درگاه پرداخت سامان‌سپ — وُدّا</title>
-<style>
-  body{margin:0;min-height:100vh;display:grid;place-items:center;background:#faf7f0;font-family:Vazirmatn,Tahoma,sans-serif;color:#3d4a33}
-  .card{max-width:420px;margin:20px;padding:32px 28px;background:#fff;border-radius:20px;box-shadow:0 10px 30px rgba(61,74,51,.12);text-align:center}
-  .ring{width:72px;height:72px;margin:0 auto 18px;border-radius:50%;background:#eef2e6;display:grid;place-items:center}
-  .ring span{width:34px;height:34px;border-radius:50%;border:4px solid #5e7e8c;border-top-color:transparent;animation:s .8s linear infinite;display:block}
-  @keyframes s{to{transform:rotate(360deg)}}
-  h1{font-size:18px;margin:0 0 10px}
-  p{font-size:13px;line-height:2;color:#8a9480;margin:0}
-  button{margin-top:18px;padding:11px 22px;border:0;border-radius:999px;background:#5e7e8c;color:#fff;font-size:14px;font-family:inherit;cursor:pointer}
-</style>
-</head>
-<body>
-<main class="card">
-  <div class="ring" aria-hidden="true"><span></span></div>
-  <h1>در حال انتقال به درگاه پرداخت سامان‌سپ…</h1>
-  <p>لطفاً چند لحظه صبر کنید. اگر انتقال خودکار انجام نشد، دکمهٔ زیر را بزنید.</p>
-  <form method="post" action="` + s.PayFormURL() + `" id="payform">
-    <input type="hidden" name="Token" value="` + token + `">
-    <noscript><button type="submit">رفتن به درگاه پرداخت</button></noscript>
-  </form>
-</main>
-<script>
-  document.getElementById('payform').submit();
-</script>
-</body>
-</html>`
-	return []byte(page)
-}
-
-// FailureStartHTML is the plain error page served instead of the hand-off when
-// the token shape is invalid or the gateway is disabled.
-func FailureStartHTML() []byte {
-	page := `<!DOCTYPE html>
-<html lang="fa" dir="rtl">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>نشست پرداخت معتبر نیست — وُدّا</title>
-<style>
-  body{margin:0;min-height:100vh;display:grid;place-items:center;background:#faf7f0;font-family:Vazirmatn,Tahoma,sans-serif;color:#3d4a33}
-  .card{max-width:420px;margin:20px;padding:32px 28px;background:#fff;border-radius:20px;box-shadow:0 10px 30px rgba(61,74,51,.12);text-align:center}
-  h1{font-size:17px;margin:0 0 10px}
-  p{font-size:13px;line-height:2;color:#8a9480;margin:0}
-</style>
-</head>
-<body>
-<main class="card">
-  <h1>نشست پرداخت معتبر نیست</h1>
-  <p>لینک پرداخت منقضی شده یا ناقص است. لطفاً از پنل خود، دکمهٔ پرداخت جلسه یا شارژ کیف پول را دوباره بزنید.</p>
-</main>
-</body>
-</html>`
-	return []byte(page)
 }
 
 // CallbackForm carries the fields the gateway posts back to RedirectUrl —
@@ -441,25 +366,6 @@ func isDigits(s string) bool {
 		}
 	}
 	return true
-}
-
-// hexSepToken checks the Sep OnlinePG token shape: 32 lowercase hex chars.
-func hexSepToken(token string) bool {
-	if len(token) != 32 {
-		return false
-	}
-	for _, r := range token {
-		if !((r >= '0' && r <= '9') || (r >= 'a' && r <= 'f')) {
-			return false
-		}
-	}
-	return true
-}
-
-// ValidHandoffToken reports whether the token shape can be handed to the
-// bank's payment UI (used by the start-page guard).
-func ValidHandoffToken(token string) bool {
-	return hexSepToken(strings.TrimSpace(token))
 }
 
 func truncate(b []byte, max int) string {

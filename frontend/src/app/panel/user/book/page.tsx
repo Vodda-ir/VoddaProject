@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { api, type AvailabilitySlot, type BookingResult, type PaymentMethod, type Teacher, type TeacherService } from '@/lib/api';
+import { payViaSamanGate } from '@/lib/saman-gate';
 import { authApi, fullUrl, getToken, type AuthUser } from '@/lib/auth';
 import { Icon } from '@/components/Icon';
 import { Avatar } from '@/components/web/ui';
@@ -150,11 +151,12 @@ export default function BookingPage() {
         payment_method: paymentMethod,
       });
       const result: BookingResult = response.data;
-      if (result.redirect_url) {
-        // Gateway payment: hand the payer to Saman Sep. The session now exists
-        // in «awaiting_payment» and activates automatically after settlement.
+      if (result.token) {
+        // پرداخت درگاه: فرم توکن از مرورگر خود کاربر به OnlinePG پست می‌شود —
+        // دقیقاً مثل منافسه، در همان تب. جلسه در حالت «awaiting_payment»
+        // نگه داشته می‌شود و بعد از تسویه خودکار فعال می‌شود.
         setRedirecting(true);
-        window.location.href = result.redirect_url;
+        payViaSamanGate(result.token);
         return;
       }
       setDone(true);

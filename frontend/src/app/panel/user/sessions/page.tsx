@@ -14,6 +14,7 @@ import {
 } from '@/components/panel/PanelUI';
 import { SearchInput, exportCsv } from '@/components/admin/AdminUI';
 import { api, type SessionListItem } from '@/lib/api';
+import { payViaSamanGate } from '@/lib/saman-gate';
 import { fullUrl, getToken } from '@/lib/auth';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
 
@@ -95,7 +96,8 @@ export default function UserSessionsPage() {
     setError('');
     try {
       const response = await api.paySession(token, session.id);
-      window.location.href = response.data.redirect_url;
+      // پست فرم توکن به OnlinePG از مرورگر کاربر — دقیقاً مثل منافسه، در همان تب
+      payViaSamanGate(response.data.token);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'شروع پرداخت انجام نشد.');
       setBusyId(null);
