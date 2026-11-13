@@ -246,6 +246,7 @@ export async function getTeacherCeremonyInbox(runtime: PlatformRuntime): Promise
         return {
           call,
           accepted: entry.accepted === true,
+          matches_services: entry.matches_services === true,
           my_offer: parseCeremonyOffer(entry.my_offer),
         };
       })

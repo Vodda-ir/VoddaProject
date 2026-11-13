@@ -20,10 +20,13 @@ const (
         CeremonyDeadlineMax = 72 * time.Hour
         // CeremonyDeadlineBeforeEvent closes the race this long before the event.
         CeremonyDeadlineBeforeEvent = 6 * time.Hour
-        // CeremonyDeadlineFloor keeps ultra-late calls actionable for a while.
-        CeremonyDeadlineFloor = 30 * time.Minute
+        // CeremonyDeadlineFloor keeps ultra-late calls actionable long enough
+        // for reciters to actually see and answer the race.
+        CeremonyDeadlineFloor = 2 * time.Hour
         // CeremonyMaxSearchingCalls limits an organizer's simultaneous open calls.
         CeremonyMaxSearchingCalls = 3
+        // CeremonyBroadcastLimit caps one call's fan-out to reciters.
+        CeremonyBroadcastLimit = 500
         // CeremonyDepositRate is the escrow share of the agreed price.
         CeremonyDepositRate = 50
         // CeremonyCancelFreeHours is the full-refund boundary.
@@ -167,58 +170,35 @@ func (uc *CeremonyUsecase) CreateCall(ctx context.Context, organizerID uint, in 
                 return nil, err
         }
 
-        // Best-effort broadcast to reciters publishing this in-person service.
+        // Best-effort broadcast to every eligible reciter on the platform —
+        // not just those with a registered presence service, otherwise a fresh
+        // marketplace would never deliver its first ceremony call.
         broadcast := "🔔 فراخوان مراسم: " + svc.Title
         body := "یک مراسم «" + svc.Title + "» در " + in.City + " ثبت شد. اگر آمادگی دارید، با قیمت خود پذیرش دهید."
-        for _, provider := range uc.audienceForService(ctx, svc.ID, in.Audience, organizerID) {
+        for _, provider := range uc.broadcastAudience(ctx, in.Audience, organizerID) {
                 uc.notify(ctx, provider.UserID, broadcast, body)
         }
         return uc.callView(ctx, call)
 }
 
-// audienceForService loads approved teachers with an active presence service
-// for the official entry, respecting the audience gender rule.
-func (uc *CeremonyUsecase) audienceForService(ctx context.Context, officialServiceID uint, audience string, excludeUserID uint) []*domain.Teacher {
-        ids, err := uc.ceremonies.PresenceServiceTeacherIDs(ctx, 200)
+// broadcastAudience loads approved, available teachers the audience gender
+// rule admits, excluding the organizer; used for ceremony call fan-out.
+func (uc *CeremonyUsecase) broadcastAudience(ctx context.Context, audience string, excludeUserID uint) []*domain.Teacher {
+        teachers, _, err := uc.teachers.List(ctx, domain.TeacherFilter{Status: domain.TeacherApproved, Limit: CeremonyBroadcastLimit})
         if err != nil {
-                log.Printf("ceremony: audience lookup: %v", err)
+                log.Printf("ceremony: broadcast audience lookup: %v", err)
                 return nil
         }
         var out []*domain.Teacher
-        for _, id := range ids {
-                teacher, err := uc.teachers.ByID(ctx, id)
-                if err != nil || teacher == nil || teacher.Status != domain.TeacherApproved || !teacher.Available {
-                        continue
-                }
-                if teacher.UserID == excludeUserID {
+        for i := range teachers {
+                teacher := &teachers[i]
+                if !teacher.Available || teacher.UserID == excludeUserID {
                         continue
                 }
                 if !audienceAdmits(audience, teacher.Female) {
                         continue
                 }
-                matches := false
-                for i := range teacher.Services {
-                        if teacher.Services[i].OfficialServiceID != nil &&
-                                *teacher.Services[i].OfficialServiceID == officialServiceID {
-                                matches = true
-                                break
-                        }
-                }
-                // Presence services live in the ceremony store; check it too.
-                if !matches {
-                        presence, perr := uc.ceremonies.PresenceServicesOfTeacher(ctx, teacher.ID)
-                        if perr == nil {
-                                for i := range presence {
-                                        if presence[i].Active && presence[i].OfficialServiceID == officialServiceID {
-                                                matches = true
-                                                break
-                                        }
-                                }
-                        }
-                }
-                if matches {
-                        out = append(out, teacher)
-                }
+                out = append(out, teacher)
         }
         return out
 }
@@ -836,13 +816,13 @@ func (uc *CeremonyUsecase) TeacherCeremonyInbox(ctx context.Context, userID uint
         if err != nil {
                 return nil, err
         }
-        ids := make([]uint, 0, len(services))
+        matched := make(map[uint]bool, len(services))
         for i := range services {
                 if services[i].Active {
-                        ids = append(ids, services[i].OfficialServiceID)
+                        matched[services[i].OfficialServiceID] = true
                 }
         }
-        open, err := uc.ceremonies.OpenCallsForTeacher(ctx, ids, teacher.Female, teacher.UserID, 30)
+        open, err := uc.ceremonies.OpenCalls(ctx, teacher.Female, teacher.UserID, 30)
         if err != nil {
                 return nil, err
         }
@@ -850,7 +830,10 @@ func (uc *CeremonyUsecase) TeacherCeremonyInbox(ctx context.Context, userID uint
                 call := &open[i]
                 // Venue stays confidential until a firm contract exists.
                 call.VenueHint = ""
-                view := domain.TeacherCeremonyCallView{Call: call}
+                view := domain.TeacherCeremonyCallView{
+                        Call:            call,
+                        MatchesServices: matched[call.OfficialServiceID],
+                }
                 if myOffer, err := uc.ceremonies.MyOfferOfCall(ctx, call.ID, teacher.ID); err == nil && myOffer != nil {
                         view.Accepted = true
                         offerView := uc.offerView(myOffer)
@@ -895,17 +878,13 @@ func (uc *CeremonyUsecase) TeacherAccept(ctx context.Context, userID, callID uin
                 return uc.offerView(existing), nil // idempotent re-accept
         }
 
-        // Quality bar: audio-bearing ceremonies demand a published work sample.
+        // Quality note: audio-bearing ceremonies prefer reciters with published
+        // work samples, but samples cannot be uploaded anywhere in the product
+        // yet — a hard gate here would deadlock every accept. The organizer
+        // still reviews profile, rating and reviews before choosing.
         full, err := uc.teachers.ByID(ctx, teacher.ID)
         if err != nil {
                 return nil, err
-        }
-        catalogEntry, err := uc.teachers.OfficialServiceByID(ctx, call.OfficialServiceID)
-        if err != nil || catalogEntry == nil {
-                return nil, domain.ErrValidation
-        }
-        if catalogEntry.RequiresAudio && len(full.Samples) == 0 {
-                return nil, domain.ErrSampleRequired
         }
 
         agreed := int64(0)

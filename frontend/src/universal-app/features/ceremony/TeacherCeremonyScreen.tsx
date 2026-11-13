@@ -65,6 +65,11 @@ function OpenCallCard({
             {ceremonyWhenLabel(call)} · 📍 {call.city || "شهر نامشخص"}
           </span>
         </div>
+        {item.matches_services ? (
+          <span style={{ flex: "0 0 auto", fontSize: 10.5, fontWeight: 800, color: colors.olive700, background: colors.olive50, border: `1px solid ${colors.olive200}`, borderRadius: 999, padding: "3px 9px", whiteSpace: "nowrap" }}>
+            خدمات شما ✓
+          </span>
+        ) : null}
       </div>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
@@ -210,7 +215,12 @@ export function TeacherCeremonyScreen({ config }: { config: UniversalAppConfig }
     };
   }, [refresh]);
 
-  const openCalls = useMemo(() => inbox?.calls ?? [], [inbox]);
+  const openCalls = useMemo(() => {
+    const items = [...(inbox?.calls ?? [])];
+    // فراخوان‌های منطبق با خدمات حضوری قاری اول دیده شوند؛ بعدی تازه‌ترین‌ها.
+    items.sort((a, b) => Number(b.matches_services) - Number(a.matches_services));
+    return items;
+  }, [inbox]);
   const myOffers = useMemo(() => inbox?.offers ?? [], [inbox]);
   const waitingCount = useMemo(() => myOffers.filter((offer) => offer.status === "waiting").length, [myOffers]);
 
@@ -230,10 +240,16 @@ export function TeacherCeremonyScreen({ config }: { config: UniversalAppConfig }
 
   const submitAccept = useCallback(async () => {
     if (!sheetCall || sheetSaving) return;
+    const hasService = myServices.some((service) => service.active && service.official_service_id === sheetCall.official_service_id);
+    const price = Number(digitsOnly(sheetPrice) || 0);
+    if (!hasService && !(price > 0)) {
+      // بدون خدمات حضوری، قیمت پیش‌فرضی وجود ندارد؛ برگزارکننده باید رقم را ببیند.
+      setSheetError("برای پذیرش، مبلغ حق‌الزحمه را به تومان وارد کنید (خدمت حضوری ثبت‌شده‌ای برای این موضوع ندارید).");
+      return;
+    }
     setSheetSaving(true);
     setSheetError("");
     try {
-      const price = Number(digitsOnly(sheetPrice) || 0);
       await acceptTeacherCeremonyCall(runtime, sheetCall.id, {
         price: price > 0 ? price : undefined,
         message: sheetMessage.trim() ? sheetMessage.trim() : undefined,
@@ -246,7 +262,7 @@ export function TeacherCeremonyScreen({ config }: { config: UniversalAppConfig }
     } finally {
       setSheetSaving(false);
     }
-  }, [refresh, runtime, sheetCall, sheetMessage, sheetPrice, sheetSaving]);
+  }, [myServices, refresh, runtime, sheetCall, sheetMessage, sheetPrice, sheetSaving]);
 
   const withdraw = useCallback(
     async (offerId: number) => {
@@ -412,7 +428,9 @@ export function TeacherCeremonyScreen({ config }: { config: UniversalAppConfig }
               onChange={setSheetPrice}
               presets={sheetPresets}
               ariaLabel="حق‌الزحمهٔ پیشنهادی به تومان"
-              emptyHint="خالی بگذارید تا قیمت خدمت حضوری شما برای این موضوع اعمال شود."
+              emptyHint={sheetPresets.length > 0
+                ? "خالی بگذارید تا قیمت خدمت حضوری شما برای این موضوع اعمال شود."
+                : "قیمت پیشنهادی خود را به تومان وارد کنید."}
             />
             <label style={{ display: "grid", gap: 7, ...typography.bodySmall }}>
               <span style={{ fontWeight: 800, color: colors.inkSecondary }}>پیام به برگزارکننده (اختیاری)</span>

@@ -9,6 +9,7 @@ import { navigateApp } from "../../router";
 import { messageOf } from "../../ui/errorMessage";
 import { RoleModeSheet } from "../auth/RoleModeSheet";
 import { getTeacherDispatchInbox } from "../dispatch/api";
+import { NotificationsBell } from "../notifications/NotificationsBell";
 import {
   Avatar,
   Button,
@@ -168,34 +169,39 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
 
   return (
     <section className="vodda-screen" style={{ display: "grid", gap: spacing.xl }}>
-      <button
-        type="button"
-        className="vodda-tappable vodda-enter"
-        onClick={() => setRoleSheetOpen(true)}
-        aria-label="تغییر به فضای قرآن‌آموز"
-        style={{
-          width: "100%",
-          display: "flex",
-          alignItems: "center",
-          gap: 11,
-          padding: "4px 0",
-          textAlign: "right",
-          border: 0,
-          color: colors.ink,
-          background: "transparent",
-          fontFamily: typography.fontFamily,
-          cursor: "pointer",
-        }}
-      >
-        <Avatar name={teacher?.name} src={teacher?.avatarUrl} size={46} ring />
-        <span style={{ minWidth: 0, flex: 1 }}>
-          <span style={{ ...typography.caption, display: "block", color: colors.inkMuted }}>پنل استاد · {firstName}</span>
-          <strong style={{ ...typography.body, display: "inline-flex", alignItems: "center", gap: 5, color: colors.olive700 }}>
-            تغییر حساب
-            <Icon name="refresh" size={15} stroke={1.9} />
-          </strong>
-        </span>
-      </button>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <button
+          type="button"
+          className="vodda-tappable vodda-enter"
+          onClick={() => setRoleSheetOpen(true)}
+          aria-label="تغییر به فضای قرآن‌آموز"
+          style={{
+            width: "100%",
+            minWidth: 0,
+            flex: 1,
+            display: "flex",
+            alignItems: "center",
+            gap: 11,
+            padding: "4px 0",
+            textAlign: "right",
+            border: 0,
+            color: colors.ink,
+            background: "transparent",
+            fontFamily: typography.fontFamily,
+            cursor: "pointer",
+          }}
+        >
+          <Avatar name={teacher?.name} src={teacher?.avatarUrl} size={46} ring />
+          <span style={{ minWidth: 0, flex: 1 }}>
+            <span style={{ ...typography.caption, display: "block", color: colors.inkMuted }}>پنل استاد · {firstName}</span>
+            <strong style={{ ...typography.body, display: "inline-flex", alignItems: "center", gap: 5, color: colors.olive700 }}>
+              تغییر حساب
+              <Icon name="refresh" size={15} stroke={1.9} />
+            </strong>
+          </span>
+        </button>
+        <NotificationsBell config={config} />
+      </div>
 
       {loading ? (
         <LoadingState label="در حال دریافت داشبورد استاد…" style={{ minHeight: 180 }} />

@@ -134,6 +134,8 @@ export type PresenceProvider = {
 export type TeacherCeremonyInboxCall = {
   call: CeremonyCall;
   accepted: boolean;
+  /** فراخوان با یکی از خدمات حضوری فعال قاری منطبق است. */
+  matches_services: boolean;
   my_offer: CeremonyOffer | null;
 };
 

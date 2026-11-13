@@ -252,10 +252,13 @@ type CeremonyBookingView struct {
 
 // TeacherCeremonyCallView is the reciter-facing open call in their inbox.
 // VenueHint is stripped (confidential until the contract is firm).
+// MatchesServices marks calls whose official service is one of the reciter's
+// active presence services (price default + relevance ranking on the client).
 type TeacherCeremonyCallView struct {
-        Call     *CeremonyCall      `json:"call"`
-        Accepted bool               `json:"accepted"`
-        MyOffer  *CeremonyOfferView `json:"my_offer,omitempty"`
+        Call            *CeremonyCall      `json:"call"`
+        Accepted        bool               `json:"accepted"`
+        MatchesServices bool               `json:"matches_services"`
+        MyOffer         *CeremonyOfferView `json:"my_offer,omitempty"`
 }
 
 // CeremonyTeacherInbox is the reciter's پذیرش payload: open calls plus the
@@ -274,10 +277,11 @@ type CeremonyRepository interface {
         CallsForOrganizer(ctx context.Context, organizerID uint, limit int) ([]CeremonyCall, error)
         SearchingCallsForOrganizer(ctx context.Context, organizerID uint) ([]CeremonyCall, error)
         ExpireStaleCalls(ctx context.Context, now time.Time) (int64, error)
-        // OpenCallsForTeacher returns searching calls whose official service is
-        // one of presenceServiceIDs, matching the audience rules, deadline still
-        // open, excluding calls owned by the teacher's own user account.
-        OpenCallsForTeacher(ctx context.Context, presenceServiceIDs []uint, female bool, selfUserID uint, limit int) ([]CeremonyCall, error)
+        // OpenCalls returns every searching call whose deadline is still open
+        // and whose audience rule admits the given gender, excluding calls owned
+        // by the teacher's own user account. Relevance to the teacher's presence
+        // services is ranked by the usecase, not the store.
+        OpenCalls(ctx context.Context, female bool, selfUserID uint, limit int) ([]CeremonyCall, error)
 
         CountOffers(ctx context.Context, callID uint) (int64, error)
         ChosenOfferCount(ctx context.Context, callID uint) (int64, error)
