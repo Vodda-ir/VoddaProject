@@ -92,7 +92,7 @@ function PairCard({ eyebrow, title, description, ctaLabel, ariaLabel, onClick, t
         color: colors.surface,
         background: olive
           ? `linear-gradient(150deg, ${colors.olive950} 0%, ${colors.olive800} 62%, ${colors.olive700} 100%)`
-          : "linear-gradient(150deg, #8b681f 0%, #bf9540 55%, #d4ab52 100%)",
+          : gradients.goldRich,
         boxShadow: olive ? shadows.olive : "0 16px 38px rgba(139,104,31,.3)",
       }}
     >

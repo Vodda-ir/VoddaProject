@@ -1,6 +1,6 @@
 "use client";
 
-import type { KeyboardEvent } from "react";
+import type { MouseEvent } from "react";
 import type { UniversalAppConfig } from "../../config";
 import { navigateApp } from "../../router";
 import { resolveAssetUrl } from "../../platform/asset";
@@ -29,19 +29,18 @@ export function TeacherCard({
     Math.max(0, teacher.price30 / 1000),
   );
 
-  function handleKey(event: KeyboardEvent<HTMLDivElement>) {
-    if (event.key !== "Enter" && event.key !== " ") return;
-    event.preventDefault();
+  /* کلیک روی بدنهٔ کارت فقط برای اشاره‌گر است؛ اهداف واقعی و مستقل دو دکمهٔ
+     «مشاهدهٔ پروفایل» و «رزرو جلسه» هستند تا نقض تعامل تو در تو رخ ندهد (A4). */
+  function handleCardClick(event: MouseEvent<HTMLDivElement>) {
+    const target = event.target as HTMLElement;
+    if (target.closest("button, a")) return;
     goToTeacher();
   }
 
   return (
     <div
-      role="button"
-      tabIndex={0}
-      className="vodda-card vodda-card--interactive vodda-tappable"
-      onClick={goToTeacher}
-      onKeyDown={handleKey}
+      className="vodda-card vodda-card--interactive"
+      onClick={handleCardClick}
       style={{
         width: wide ? "100%" : 232,
         flex: wide ? undefined : "0 0 232px",
@@ -104,7 +103,25 @@ export function TeacherCard({
         </div>
 
         <div style={{ minWidth: 0, flex: 1 }}>
-          <span style={{ display: "flex", alignItems: "center", gap: 5, minWidth: 0 }}>
+          {/* دکمهٔ واقعی و مستقل «مشاهدهٔ پروفایل» — هدف اصلی صفحه‌خوان و کیبورد */}
+          <button
+            type="button"
+            onClick={goToTeacher}
+            className="vodda-tappable"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 5,
+              minWidth: 0,
+              maxWidth: "100%",
+              border: 0,
+              background: "transparent",
+              padding: 0,
+              fontFamily: typography.fontFamily,
+              cursor: "pointer",
+              textAlign: "right",
+            }}
+          >
             <strong
               style={{
                 overflow: "hidden",
@@ -112,12 +129,13 @@ export function TeacherCard({
                 whiteSpace: "nowrap",
                 fontSize: 14.5,
                 fontWeight: 800,
+                color: colors.ink,
               }}
             >
               {teacher.name}
             </strong>
             <TierBadge tier={teacher.tier} />
-          </span>
+          </button>
           <span
             style={{
               display: "block",
@@ -125,12 +143,29 @@ export function TeacherCard({
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
-              fontSize: 11.5,
+              fontSize: 12.5,
               fontWeight: 600,
               color: colors.olive600,
             }}
           >
             {teacher.field}
+          </span>
+          {/* وضعیت دسترس‌پذیری با برچسب متنی، نه فقط رنگ (B6) */}
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 4,
+              marginTop: 4,
+              padding: "2px 8px",
+              borderRadius: 999,
+              fontSize: 11.5,
+              fontWeight: 700,
+              color: teacher.available ? colors.olive700 : colors.danger,
+              background: teacher.available ? colors.olive50 : colors.dangerBackground,
+            }}
+          >
+            {teacher.available ? "آمادهٔ رزرو" : "غیرفعال"}
           </span>
         </div>
       </div>
@@ -141,12 +176,12 @@ export function TeacherCard({
           alignItems: "center",
           gap: 7,
           minWidth: 0,
-          fontSize: 11.5,
+          fontSize: 12,
           color: colors.inkMuted,
         }}
       >
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 3, color: colors.gold, fontWeight: 800 }}>
-          <Icon name="star" size={13} fill />
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 3, color: colors.goldDark, fontWeight: 800 }}>
+          <Icon name="star" size={13} fill style={{ color: colors.gold }} />
           {teacher.rating.toLocaleString("fa-IR", { maximumFractionDigits: 1 })}
           {teacher.reviews > 0 ? (
             <span style={{ fontWeight: 600 }}>({teacher.reviews.toLocaleString("fa-IR")})</span>
@@ -157,7 +192,7 @@ export function TeacherCard({
           <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{teacher.city}</span>
         </span>
       </div>
-      <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, color: colors.inkMuted }}>
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: colors.inkMuted }}>
         <Icon name="award" size={12} />
         {teacher.sessions.toLocaleString("fa-IR")} جلسهٔ موفق
       </span>
@@ -173,8 +208,8 @@ export function TeacherCard({
         }}
       >
         <span>
-          <span style={{ display: "block", fontSize: 10, color: colors.inkFaint }}>هر جلسه از</span>
-          <strong style={{ display: "block", marginTop: 1, fontSize: 13, fontWeight: 800, color: colors.ink }}>
+          <span style={{ display: "block", fontSize: 12, color: colors.inkMuted }}>هر جلسه از</span>
+          <strong style={{ display: "block", marginTop: 1, fontSize: 13.5, fontWeight: 800, color: colors.ink }}>
             {priceFrom} هزار تومان
           </strong>
         </span>
@@ -183,7 +218,7 @@ export function TeacherCard({
             event.stopPropagation();
             goToTeacher();
           }}
-          style={{ minHeight: 34, padding: "6px 13px", fontSize: 12.5 }}
+          style={{ minHeight: 44, padding: "8px 14px", fontSize: 13 }}
         >
           رزرو جلسه
         </Button>

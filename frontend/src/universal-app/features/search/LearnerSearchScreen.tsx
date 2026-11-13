@@ -273,7 +273,7 @@ function ServiceRow({
       <span style={{ minWidth: 0, flex: 1 }}>
         <strong style={{ display: "block", fontSize: 13.5, fontWeight: 800, color: colors.ink }}>{title}</strong>
         {description ? (
-          <span style={{ display: "block", marginTop: 2, fontSize: 11.5, color: colors.inkMuted, lineHeight: 1.7, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <span style={{ display: "block", marginTop: 2, fontSize: 12.5, color: colors.inkMuted, lineHeight: 1.7, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {description}
           </span>
         ) : null}
@@ -745,7 +745,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
               flex: "0 0 auto", minHeight: 36, padding: "0 13px",
               borderRadius: 999, border: 0, cursor: "pointer",
               background: colors.olive600, color: colors.surface,
-              fontSize: 11.5, fontWeight: 800, fontFamily: typography.fontFamily,
+              fontSize: 12.5, fontWeight: 800, fontFamily: typography.fontFamily,
             }}
           >
             🔔 فراخوان
@@ -849,8 +849,8 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
 
       {!filters.query && recent.length > 0 ? (
         <div
-          className="vodda-scroll-rail vodda-enter"
-          style={{ display: "flex", gap: 8, overflowX: "auto", marginInline: -spacing.xl, paddingInline: spacing.xl, minHeight: 36 }}
+          className="vodda-scroll-rail vodda-fade-edge vodda-enter"
+          style={{ display: "flex", gap: 8, overflowX: "auto", marginInline: -spacing.xl, paddingInline: spacing.xl, minHeight: 44 }}
         >
           {recent.map((item) => (
             <span key={item} style={{ display: "inline-flex", alignItems: "center", gap: 2 }}>
@@ -858,7 +858,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
                 type="button"
                 className="vodda-tappable"
                 onClick={() => setFilters((current) => ({ ...current, query: item }))}
-                style={{ ...chipStyle(false), background: colors.sand50, minHeight: 32, padding: "5px 11px", fontSize: 11.5 }}
+                style={{ ...chipStyle(false), background: colors.sand50, minHeight: 36, padding: "5px 11px", fontSize: 12.5 }}
               >
                 <Icon name="clock" size={13} />
                 {item}
@@ -867,9 +867,10 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
                 type="button"
                 aria-label={`حذف ${item} از جستجوهای اخیر`}
                 onClick={() => removeRecent(item)}
+                className="vodda-hit"
                 style={{
-                  width: 22,
-                  height: 22,
+                  width: 26,
+                  height: 26,
                   display: "grid",
                   placeItems: "center",
                   padding: 0,
@@ -888,8 +889,8 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
       ) : null}
 
       <div
-        className="vodda-scroll-rail"
-        style={{ display: "flex", gap: 8, overflowX: "auto", marginInline: -spacing.xl, paddingInline: spacing.xl, minHeight: 40 }}
+        className="vodda-scroll-rail vodda-fade-edge"
+        style={{ display: "flex", gap: 8, overflowX: "auto", marginInline: -spacing.xl, paddingInline: spacing.xl, minHeight: 44 }}
       >
         {fieldPresets.map(([field, label]) => (
           <button
@@ -905,8 +906,8 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
       </div>
 
       <div
-        className="vodda-scroll-rail"
-        style={{ display: "flex", gap: 8, overflowX: "auto", marginInline: -spacing.xl, paddingInline: spacing.xl, minHeight: 38 }}
+        className="vodda-scroll-rail vodda-fade-edge"
+        style={{ display: "flex", gap: 8, overflowX: "auto", marginInline: -spacing.xl, paddingInline: spacing.xl, minHeight: 44 }}
       >
         {SORT_PRESETS.map(([value, label]) => (
           <button
@@ -914,7 +915,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
             type="button"
             className="vodda-tappable"
             onClick={() => setFilters((current) => ({ ...current, sort: value }))}
-            style={{ ...chipStyle(filters.sort === value), fontSize: 11.5, minHeight: 34, padding: "6px 11px" }}
+            style={{ ...chipStyle(filters.sort === value), fontSize: 12.5, minHeight: 38, padding: "6px 11px" }}
           >
             <Icon name={filters.sort === value ? "check" : "trending"} size={13} stroke={2} />
             {label}
@@ -923,14 +924,14 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
       </div>
 
       <div
-        className="vodda-scroll-rail"
-        style={{ display: "flex", gap: 8, overflowX: "auto", marginInline: -spacing.xl, paddingInline: spacing.xl, minHeight: 38 }}
+        className="vodda-scroll-rail vodda-fade-edge"
+        style={{ display: "flex", gap: 8, overflowX: "auto", marginInline: -spacing.xl, paddingInline: spacing.xl, minHeight: 44 }}
       >
         <button
           type="button"
           className="vodda-tappable"
           onClick={() => setFilters((current) => ({ ...current, availableOnly: !current.availableOnly }))}
-          style={{ ...chipStyle(filters.availableOnly), fontSize: 11.5, minHeight: 34, padding: "6px 11px" }}
+          style={{ ...chipStyle(filters.availableOnly), fontSize: 12.5, minHeight: 38, padding: "6px 11px" }}
         >
           <Icon name="checkCircle" size={13} stroke={2} />
           فقط آمادهٔ رزرو
@@ -941,7 +942,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
             type="button"
             className="vodda-tappable"
             onClick={() => setFilters((current) => ({ ...current, tier: value }))}
-            style={{ ...chipStyle(filters.tier === value), fontSize: 11.5, minHeight: 34, padding: "6px 11px" }}
+            style={{ ...chipStyle(filters.tier === value), fontSize: 12.5, minHeight: 38, padding: "6px 11px" }}
           >
             {color ? (
               <span

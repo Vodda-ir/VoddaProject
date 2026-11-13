@@ -18,6 +18,7 @@ import {
   StatusPill,
   todayJalaliLabel,
   colors,
+  gradients,
   radii,
   shadows,
   spacing,
@@ -175,7 +176,7 @@ function Skeleton({ style }: { style?: CSSProperties }) {
 
 function HomeSkeleton() {
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 26 }} aria-label="در حال بارگذاری">
+    <div role="status" aria-label="در حال بارگذاری" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 26 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
         <Skeleton style={{ width: 48, height: 48, borderRadius: "50%" }} />
         <div style={{ display: "grid", gap: 7, flex: 1 }}>
@@ -221,7 +222,7 @@ function TrustStrip() {
             border: `1px solid ${colors.olive100}`,
             background: colors.olive50,
             color: colors.olive700,
-            fontSize: 11.5,
+            fontSize: 12,
             fontWeight: 700,
           }}
         >
@@ -282,7 +283,7 @@ function VerseStrip() {
       <Icon name="quran" size={18} style={{ color: colors.olive700, flex: "0 0 auto" }} />
       <p style={{ margin: 0, minWidth: 0, flex: 1, fontSize: 12.5, lineHeight: 1.9, color: colors.ink, fontWeight: 600 }}>
         {isQuran ? "﴿" : "«"} {quote.text} {isQuran ? "﴾" : "»"}
-        <span style={{ color: colors.olive700, fontWeight: 800, fontSize: 11 }}> — {quote.source}</span>
+        <span style={{ color: colors.olive700, fontWeight: 800, fontSize: 12 }}> — {quote.source}</span>
       </p>
     </div>
   );
@@ -506,7 +507,7 @@ function NextSessionCard({ session, config }: { session: LearnerSession; config:
                 borderRadius: 999,
                 background: colors.goldBackground,
                 color: colors.goldDark,
-                fontSize: 10.5,
+                fontSize: 11.5,
                 fontWeight: 800,
               }}
             >
@@ -606,10 +607,9 @@ function FeaturedTeacher({ teacher, config }: { teacher: Teacher; config: Univer
   };
 
   return (
-    <button
-      type="button"
-      className="vodda-tappable vodda-enter"
+    <div
       onClick={() => navigateApp(`/teacher/${teacher.id}`, config)}
+      className="vodda-enter"
       style={{
         width: "100%",
         position: "relative",
@@ -620,8 +620,7 @@ function FeaturedTeacher({ teacher, config }: { teacher: Teacher; config: Univer
         padding: spacing.lg,
         textAlign: "right",
         color: colors.surface,
-        background: `linear-gradient(145deg, ${colors.olive900}, ${colors.olive800})`,
-        border: 0,
+        background: gradients.deep,
         borderRadius: radii.xl,
         boxShadow: shadows.md,
         cursor: "pointer",
@@ -640,76 +639,92 @@ function FeaturedTeacher({ teacher, config }: { teacher: Teacher; config: Univer
           background: "rgba(255,255,255,.06)",
         }}
       />
-      <div
-        aria-hidden="true"
-        style={{
-          width: 78,
-          height: 96,
-          flex: "0 0 78px",
-          display: "grid",
-          placeItems: "center",
-          borderRadius: radii.md,
-          background: "rgba(255,255,255,0.1)",
-          border: "1px solid rgba(255,255,255,0.16)",
-          fontSize: 34,
-        }}
-      >
-        {"📖"}
+      {/* چهرهٔ استاد به‌جای ایموجی (C3) — با حلقهٔ طلایی و نشان پخش نمونهٔ صوت */}
+      <div style={{ position: "relative", flex: "0 0 auto" }}>
+        <Avatar
+          name={teacher.name}
+          src={teacher.avatarUrl || undefined}
+          size={76}
+          ring={false}
+          style={{
+            border: "2px solid rgba(231,213,168,.85)",
+            boxShadow: "0 6px 18px rgba(0,0,0,.35)",
+            background: colors.olive800,
+          }}
+        />
+        {sample ? (
+          <button
+            type="button"
+            aria-label={playing ? "توقف نمونه‌صوت" : `پخش نمونه‌صوت: ${sample.title}`}
+            onClick={toggleSample}
+            style={{
+              position: "absolute",
+              bottom: -6,
+              insetInlineEnd: -6,
+              width: 32,
+              height: 32,
+              display: "grid",
+              placeItems: "center",
+              borderRadius: "50%",
+              background: gradients.goldRich,
+              border: `2px solid ${colors.surface}`,
+              color: colors.surface,
+              cursor: "pointer",
+              boxShadow: shadows.sm,
+            }}
+          >
+            {playing ? (
+              <span aria-hidden="true" style={{ width: 10, height: 10, background: "currentColor", borderRadius: 2 }} />
+            ) : (
+              <Icon name="play" size={14} fill />
+            )}
+          </button>
+        ) : null}
       </div>
       <div style={{ minWidth: 0, flex: 1, position: "relative" }}>
         <p style={{ ...typography.caption, display: "flex", alignItems: "center", gap: 5, margin: 0, color: colors.goldSoft, fontWeight: 800 }}>
-          <Icon name="checkCircle" size={14} stroke={2} />
+          <Icon name="sparkle" size={14} stroke={2} />
           استاد ویژهٔ امروز
         </p>
         <h2 style={{ ...typography.title, margin: `${spacing.sm}px 0 0`, color: colors.surface }}>{teacher.name}</h2>
-        <p style={{ ...typography.bodySmall, margin: "3px 0 0", color: "rgba(255,255,255,0.7)" }}>
+        <p style={{ ...typography.bodySmall, margin: "3px 0 0", color: "rgba(255,255,255,0.72)" }}>
           {teacherSubtitle(teacher) || "مشاهده خدمات و زمان‌های قابل رزرو"}
         </p>
         <p style={{ ...typography.caption, display: "flex", alignItems: "center", gap: 8, margin: `${spacing.sm}px 0 0`, color: colors.goldSoft, fontWeight: 800 }}>
-          {sample ? (
-            <span
-              role="button"
-              tabIndex={0}
-              aria-label={playing ? "توقف نمونه‌صوت" : `پخش نمونه‌صوت: ${sample.title}`}
-              className="vodda-tappable"
-              onClick={toggleSample}
-              onKeyDown={(event) => {
-                if (event.key !== "Enter" && event.key !== " ") return;
-                event.preventDefault();
-                toggleSample(event);
-              }}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: 26,
-                height: 26,
-                borderRadius: "50%",
-                background: "rgba(255,255,255,.16)",
-                border: "1px solid rgba(255,255,255,.32)",
-                color: colors.surface,
-                cursor: "pointer",
-              }}
-            >
-              {playing ? (
-                <span aria-hidden="true" style={{ width: 9, height: 9, background: "currentColor", borderRadius: 2 }} />
-              ) : (
-                <Icon name="play" size={13} />
-              )}
-            </span>
-          ) : null}
           <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>
             <Icon name="star" size={13} fill />
             {faNumber(teacher.rating)}
           </span>
           {teacher.reviews > 0 ? <span>({faNumber(teacher.reviews, 0)} نظر)</span> : null}
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 3, color: colors.surface }}>
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              navigateApp(`/teacher/${teacher.id}`, config);
+            }}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 3,
+              marginInlineStart: "auto",
+              border: "1px solid rgba(231,213,168,.55)",
+              borderRadius: 999,
+              padding: "6px 12px",
+              background: "rgba(255,255,255,.08)",
+              color: colors.surface,
+              fontSize: 12,
+              fontWeight: 800,
+              fontFamily: typography.fontFamily,
+              cursor: "pointer",
+              minHeight: 32,
+            }}
+          >
             مشاهده و رزرو
             <Icon name="chevronL" size={14} />
-          </span>
+          </button>
         </p>
       </div>
-    </button>
+    </div>
   );
 }
 
@@ -811,7 +826,7 @@ function NotificationsBell({
               border: `2px solid ${colors.surface}`,
               background: colors.danger,
               color: colors.surface,
-              fontSize: 10.5,
+              fontSize: 11,
               fontWeight: 800,
               lineHeight: 1,
             }}
@@ -1065,7 +1080,7 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
                 fontWeight: 900,
               }}
             >
-              {firstName} جان 🌿
+              {user?.name?.trim() ? `${firstName} جان` : "کاربر عزیز"} 🌿
             </strong>
             {canUseTeacherMode ? (
               <span style={{ display: "block", marginTop: 1, fontSize: 11.5, color: colors.olive700, fontWeight: 600 }}>
@@ -1097,7 +1112,7 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
             }}
           >
             <Icon name="wallet" size={18} />
-            <span style={{ fontSize: 9.5, fontWeight: 700, lineHeight: 1, whiteSpace: "nowrap" }}>
+            <span style={{ fontSize: 12, fontWeight: 700, lineHeight: 1, whiteSpace: "nowrap" }}>
               {user && user.wallet > 0 ? walletShort(user.wallet) : "کیف پول"}
             </span>
           </button>

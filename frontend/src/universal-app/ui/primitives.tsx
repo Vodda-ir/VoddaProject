@@ -5,7 +5,9 @@ import type {
   ImgHTMLAttributes,
   InputHTMLAttributes,
   ReactNode,
+  RefObject,
 } from "react";
+import { useEffect, useRef, useState } from "react";
 import { resolveAssetUrl } from "../platform/asset";
 import { colors, gradients, radii, shadows, spacing, typography } from "./theme";
 
@@ -355,7 +357,64 @@ export type OverlayProps = {
   closeLabel?: string;
 };
 
+/**
+ * رفتار استاندارد مودال (A5): قفل اسکرول پس‌زمینه، بستن با Escape،
+ * محبوس‌کردن فوکوس درون پنجره و بازگرداندن فوکوس به محل پیشین.
+ */
+function useOverlayBehavior(open: boolean, onClose: () => void, containerRef: RefObject<HTMLDivElement | null>) {
+  useEffect(() => {
+    if (!open) return;
+    const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const focusablesIn = (root: HTMLElement) =>
+      Array.from(
+        root.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      );
+
+    window.setTimeout(() => containerRef.current?.focus({ preventScroll: true }), 0);
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.stopPropagation();
+        onClose();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const container = containerRef.current;
+      if (!container) return;
+      const items = focusablesIn(container);
+      if (items.length === 0) {
+        event.preventDefault();
+        return;
+      }
+      const first = items[0] as HTMLElement;
+      const last = items.at(-1) as HTMLElement;
+      const active = document.activeElement;
+      if (event.shiftKey && (active === first || active === container)) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", onKeyDown);
+      previouslyFocused?.focus?.({ preventScroll: true });
+    };
+  }, [open, onClose, containerRef]);
+}
+
 export function Dialog({ open, title, children, onClose, closeLabel = "بستن" }: OverlayProps) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  useOverlayBehavior(open, onClose, containerRef);
   if (!open) return null;
   return (
     <div
@@ -376,9 +435,11 @@ export function Dialog({ open, title, children, onClose, closeLabel = "بستن"
       }}
     >
       <div
+        ref={containerRef}
         role="dialog"
         aria-modal="true"
         aria-label={typeof title === "string" ? title : undefined}
+        tabIndex={-1}
         className="vodda-dialog"
         style={{
           width: "min(100%, 460px)",
@@ -391,11 +452,12 @@ export function Dialog({ open, title, children, onClose, closeLabel = "بستن"
           borderRadius: radii.xl,
           boxShadow: shadows.lg,
           fontFamily: typography.fontFamily,
+          outline: "none",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: spacing.md }}>
           {title ? <strong style={typography.title}>{title}</strong> : <span />}
-          <Button variant="ghost" onClick={onClose} aria-label={closeLabel} style={{ width: 40, minHeight: 40, padding: 0 }}>
+          <Button variant="ghost" onClick={onClose} aria-label={closeLabel} style={{ width: 44, minHeight: 44, padding: 0 }}>
             ×
           </Button>
         </div>
@@ -406,6 +468,10 @@ export function Dialog({ open, title, children, onClose, closeLabel = "بستن"
 }
 
 export function Sheet({ open, title, children, onClose, closeLabel = "بستن" }: OverlayProps) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const dragStartY = useRef<number | null>(null);
+  const [dragOffset, setDragOffset] = useState(0);
+  useOverlayBehavior(open, onClose, containerRef);
   if (!open) return null;
   return (
     <div
@@ -425,9 +491,11 @@ export function Sheet({ open, title, children, onClose, closeLabel = "بستن" 
       }}
     >
       <div
+        ref={containerRef}
         role="dialog"
         aria-modal="true"
         aria-label={typeof title === "string" ? title : undefined}
+        tabIndex={-1}
         className="vodda-sheet"
         style={{
           width: "min(100%, 640px)",
@@ -440,12 +508,49 @@ export function Sheet({ open, title, children, onClose, closeLabel = "بستن" 
           borderRadius: `${radii.xl}px ${radii.xl}px 0 0`,
           boxShadow: shadows.lg,
           fontFamily: typography.fontFamily,
+          outline: "none",
+          transform: dragOffset > 0 ? `translateY(${dragOffset}px)` : undefined,
+          transition: dragOffset > 0 ? "none" : undefined,
         }}
       >
-        <div style={{ width: 42, height: 5, margin: "2px auto 14px", borderRadius: radii.pill, background: colors.sand200 }} />
+        <div
+          role="button"
+          aria-label={closeLabel}
+          className="vodda-hit"
+          onClick={() => onClose()}
+          onPointerDown={(event) => {
+            dragStartY.current = event.clientY;
+          }}
+          onPointerMove={(event) => {
+            if (dragStartY.current === null) return;
+            const delta = event.clientY - dragStartY.current;
+            if (delta > 0) setDragOffset(delta);
+          }}
+          onPointerUp={() => {
+            if (dragOffset > 72) onClose();
+            dragStartY.current = null;
+            setDragOffset(0);
+          }}
+          onPointerCancel={() => {
+            dragStartY.current = null;
+            setDragOffset(0);
+          }}
+          style={{
+            width: 64,
+            height: 24,
+            margin: "0 auto 10px",
+            display: "grid",
+            placeItems: "center",
+            borderRadius: radii.pill,
+            cursor: "grab",
+            touchAction: "none" as const,
+          }}
+        >
+          <span style={{ width: 42, height: 5, borderRadius: radii.pill, background: colors.sand200 }} />
+        </div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: spacing.md }}>
           {title ? <strong style={typography.title}>{title}</strong> : <span />}
-          <Button variant="ghost" onClick={onClose} aria-label={closeLabel} style={{ width: 40, minHeight: 40, padding: 0 }}>
+          <Button variant="ghost" onClick={onClose} aria-label={closeLabel} style={{ width: 44, minHeight: 44, padding: 0 }}>
             ×
           </Button>
         </div>

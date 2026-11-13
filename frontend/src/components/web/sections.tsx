@@ -409,9 +409,44 @@ export function Categories() {
     {
       icon: 'quran' as const,
       title: 'آموزش قرآن کریم',
-      desc: 'روخوانی، روان‌خوانی، تجوید، صوت و لحن و حفظ قرآن با استاد مناسب.',
+      desc: 'روخوانی، روان‌خوانی و حفظ قرآن با استاد مناسب.',
       href: '/search?field=%D8%A2%D9%85%D9%88%D8%B2%D8%B4+%D9%82%D8%B1%D8%A2%D9%86+%DA%A9%D8%B1%DB%8C%D9%85',
       meta: 'قرآن',
+    },
+    {
+      icon: 'headphones' as const,
+      title: 'تجوید و صوت و لحن',
+      desc: 'اصلاح لهجه، رعایت احکام تجوید و زیبایی تلاوت.',
+      href: '/search',
+      meta: 'هنر تلاوت',
+    },
+    {
+      icon: 'book' as const,
+      title: 'حفظ قرآن کریم',
+      desc: 'برنامهٔ حفظ جزء‌به‌جزء با پشتیبانی و مرور منظیم.',
+      href: '/search',
+      meta: 'حفظ',
+    },
+    {
+      icon: 'doc' as const,
+      title: 'علوم و معارف قرآنی',
+      desc: 'تدبر، مفاهیم و احکام با نگاه کاربردی.',
+      href: '/search',
+      meta: 'معارف',
+    },
+    {
+      icon: 'mic' as const,
+      title: 'قاریان مراسم حضوری',
+      desc: 'رزرو مستقیم قاری تأییدشده برای مراسم شما.',
+      href: '/app/presence',
+      meta: 'مراسم',
+    },
+    {
+      icon: 'bell' as const,
+      title: 'فراخوان زنده',
+      desc: 'درخواست خود را ثبت کنید و از پاسخ‌ها انتخاب کنید.',
+      href: '/dispatch',
+      meta: 'مناقصه',
     },
   ];
 
@@ -562,10 +597,6 @@ export function WhyVodda() {
   );
 }
 
-export function Testimonials() {
-  return null;
-}
-
 function TeacherDashboardPreview() {
   return (
     <div className="teacher-preview-card" aria-hidden="true">
@@ -676,7 +707,7 @@ export function Footer() {
 
         <div className="public-footer-bottom">
           <span>© {toFaDigits(new Date().getFullYear())} وُدّا</span>
-          <span>طراحی‌شده با تمرکز بر تجربه فارسی و RTL</span>
+          <span>همراه فارسی آموزش و خدمات قرآن کریم</span>
         </div>
       </div>
     </footer>

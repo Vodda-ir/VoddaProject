@@ -175,7 +175,7 @@ export function WalletHero({
         padding: 22,
         borderRadius: 30,
         color: colors.surface,
-        background: "linear-gradient(145deg, #3c472b 0%, #5e6e43 100%)",
+        background: gradients.oliveCard,
         boxShadow: "0 10px 28px rgba(94,110,67,.28)",
       }}
     >

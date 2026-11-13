@@ -27,8 +27,9 @@ export const colors = {
   olive50: "#f2f5ea",
   ink: "#2a2820",
   inkSecondary: "#565247",
-  inkMuted: "#8c8675",
-  inkFaint: "#aba593",
+  /* توکن‌های متن ثانویه برای عبور از حد WCAG AA (۴٫۵:۱) روی سطح سفید/کرم تیره شده‌اند */
+  inkMuted: "#6f6a5b",
+  inkFaint: "#7a7463",
   gold: "#bf9540",
   goldDark: "#8b681f",
   goldSoft: "#e7d5a8",
@@ -46,6 +47,8 @@ export const colors = {
 export const gradients = {
   hero: "linear-gradient(145deg, #4c5a36 0%, #5e6e43 52%, #728350 100%)",
   deep: "linear-gradient(145deg, #2e3622 0%, #3c472b 58%, #4c5a36 100%)",
+  /* کارت‌های روحانی تیره (کیف پول و…) — شروع روشن‌تر از deep تا گوشه سیاه‌نما نشود */
+  oliveCard: "linear-gradient(150deg, #4c5a36 0%, #5e6e43 55%, #6e7f4d 100%)",
   soft: "linear-gradient(145deg, #f2f5ea 0%, #ffffff 72%)",
   gold: "linear-gradient(145deg, #f7efd9 0%, #fffaf0 100%)",
   goldRich: "linear-gradient(145deg, #d4ab52 0%, #bf9540 52%, #8b681f 100%)",
@@ -84,7 +87,7 @@ export const spacing = {
 
 export const typography = {
   fontFamily: "'IRANYekanXFaNum', 'Yekan Bakh', 'Vazirmatn', system-ui, sans-serif",
-  caption: { fontSize: 11.5, lineHeight: 1.7 },
+  caption: { fontSize: 12.5, lineHeight: 1.7 },
   bodySmall: { fontSize: 13, lineHeight: 1.8 },
   body: { fontSize: 14, lineHeight: 1.9 },
   label: { fontSize: 13, lineHeight: 1.6, fontWeight: 700 },

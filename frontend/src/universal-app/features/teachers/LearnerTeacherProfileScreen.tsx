@@ -38,7 +38,22 @@ function ServiceCard({ service }: { service: TeacherService }) {
         <IconBadge icon={service.icon.includes("mic") ? "mic" : "book"} tone={service.icon.includes("mic") ? "clay" : "olive"} size={44} />
         <div style={{ minWidth: 0, flex: 1 }}>
           <strong style={{ ...typography.body, display: "block", color: colors.ink, fontWeight: 900 }}>{service.title}</strong>
-          <span style={{ ...typography.caption, color: colors.inkMuted }}>
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 4,
+              marginTop: 4,
+              padding: "2px 9px",
+              borderRadius: 999,
+              background: colors.olive50,
+              border: `1px solid ${colors.olive100}`,
+              color: colors.olive700,
+              fontSize: 11.5,
+              fontWeight: 700,
+            }}
+          >
+            <Icon name="clock" size={12} stroke={2} />
             {formatWalletAmount(service.duration)} دقیقه
           </span>
         </div>

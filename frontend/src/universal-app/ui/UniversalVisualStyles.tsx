@@ -89,7 +89,7 @@ export function UniversalVisualStyles() {
       }
       .vodda-input::placeholder,
       .vodda-textarea::placeholder {
-        color: #aba593;
+        color: #7a7463;
       }
       .vodda-card {
         transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
@@ -224,6 +224,69 @@ export function UniversalVisualStyles() {
       }
       .vodda-sheet {
         animation: vodda-sheet-in 190ms ease-out;
+      }
+      /* ── ورود نرم کارت‌ها و بخش‌ها (A7/C1) ── */
+      .vodda-enter {
+        animation: vodda-enter 340ms cubic-bezier(.2,.7,.3,1) both;
+      }
+      .vodda-enter-delay-1 { animation-delay: 60ms; }
+      .vodda-enter-delay-2 { animation-delay: 120ms; }
+      .vodda-enter-delay-3 { animation-delay: 180ms; }
+      @keyframes vodda-enter {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: none; }
+      }
+      /* بازخورد فشار همهٔ عناصر تعاملی */
+      .vodda-tappable {
+        transition: transform 140ms ease, opacity 140ms ease;
+      }
+      .vodda-tappable:active {
+        transform: scale(0.97);
+      }
+      /* گسترش ناحیهٔ لمسی عناصر کوچک تا ۴۴px بدون تغییر ظاهر (A6) */
+      .vodda-hit {
+        position: relative;
+      }
+      .vodda-hit::after {
+        content: "";
+        position: absolute;
+        inset: -9px;
+      }
+      /* محو لبهٔ نوارهای اسکرول افقی در RTL (B7) */
+      .vodda-fade-edge {
+        -webkit-mask-image: linear-gradient(to left, black calc(100% - 26px), transparent);
+        mask-image: linear-gradient(to left, black calc(100% - 26px), transparent);
+      }
+      /* ── Toast موفقیت (C2) ── */
+      .vodda-toast {
+        position: fixed;
+        right: 50%;
+        bottom: calc(96px + env(safe-area-inset-bottom));
+        transform: translateX(50%);
+        z-index: 200;
+        max-width: min(92vw, 520px);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 18px;
+        border-radius: 999px;
+        color: #ffffff;
+        background: linear-gradient(145deg, #3c472b, #4c5a36);
+        box-shadow: 0 14px 34px rgba(42, 40, 32, 0.28);
+        font-size: 13.5px;
+        font-weight: 700;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        animation: vodda-toast-in 220ms ease-out both;
+        pointer-events: none;
+      }
+      @keyframes vodda-toast-in {
+        from { opacity: 0; transform: translateX(50%) translateY(14px); }
+        to { opacity: 1; transform: translateX(50%) translateY(0); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .vodda-toast { animation: none; opacity: 1; }
       }
       @keyframes vodda-spin { to { transform: rotate(360deg); } }
       @keyframes vodda-fade-in { from { opacity: 0; } to { opacity: 1; } }

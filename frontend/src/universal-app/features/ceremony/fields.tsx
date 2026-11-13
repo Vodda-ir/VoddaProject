@@ -906,7 +906,8 @@ export function CitiesChipsField({
                 type="button"
                 aria-label={`حذف ${city}`}
                 onClick={() => remove(city)}
-                style={{ width: 20, height: 20, display: "grid", placeItems: "center", padding: 0, border: 0, borderRadius: "50%", color: colors.olive600, background: "transparent", cursor: "pointer", fontFamily: typography.fontFamily }}
+                className="vodda-hit"
+                style={{ width: 24, height: 24, display: "grid", placeItems: "center", padding: 0, border: 0, borderRadius: "50%", color: colors.olive600, background: "transparent", cursor: "pointer", fontFamily: typography.fontFamily }}
               >
                 <Icon name="x" size={12} stroke={2.4} />
               </button>

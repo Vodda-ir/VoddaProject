@@ -2,6 +2,7 @@ import type { CSSProperties, MouseEvent, ReactNode } from "react";
 import type { UniversalAppConfig } from "../config";
 import { appRouteUrl, navigateAppRoute, type AppRouteName, type StaticAppRouteName } from "../router";
 import { Icon } from "./Icon";
+import { ToastHost } from "./toast";
 import { colors, gradients, radii, shadows, spacing, typography } from "./theme";
 
 type IconName = Parameters<typeof Icon>[0]["name"];
@@ -135,7 +136,7 @@ function BottomNavigation({
           color: active ? colors.olive700 : colors.inkMuted,
           background: "transparent",
           textDecoration: "none",
-          fontSize: 10.5,
+          fontSize: 11.5,
           fontWeight: active ? 800 : 600,
         }}
       >
@@ -227,7 +228,7 @@ function BottomNavigation({
           </span>
           <span
             style={{
-              fontSize: 10.5,
+              fontSize: 11.5,
               fontWeight: 800,
               lineHeight: 1.2,
               color: ctaActive ? colors.goldDark : colors.olive700,
@@ -329,6 +330,7 @@ function Shell({
           ariaLabel={mode === "teacher" ? "ناوبری اصلی استاد" : "ناوبری اصلی قرآن‌آموز"}
         />
       </div>
+      <ToastHost />
     </div>
   );
 }

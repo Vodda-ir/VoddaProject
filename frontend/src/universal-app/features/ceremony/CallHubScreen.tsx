@@ -6,7 +6,7 @@
 import type { UniversalAppConfig } from "../../config";
 import { navigateApp } from "../../router";
 import { Icon } from "../../ui/Icon";
-import { colors, gradients, shadows, spacing, typography } from "../../ui/theme";
+import { colors, shadows, spacing, typography } from "../../ui/theme";
 import { DispatchPairCards } from "../dispatch/DispatchPairCards";
 
 function SecondaryLink({
@@ -72,26 +72,11 @@ function SecondaryLink({
 export function CallHubScreen({ config }: { config: UniversalAppConfig }) {
   return (
     <div className="vodda-screen" style={{ display: "grid", gap: spacing.lg }}>
-      <div
-        className="vodda-enter"
-        style={{
-          borderRadius: 22,
-          padding: 22,
-          color: colors.surface,
-          background: gradients.deep,
-          boxShadow: shadows.olive,
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <div style={{ display: "grid", placeItems: "center", width: 46, height: 46, borderRadius: 15, background: "rgba(255,255,255,.14)" }}>
-            <Icon name="bell" size={24} />
-          </div>
-          <div>
-            <h1 style={{ margin: 0, fontSize: 19, fontWeight: 800 }}>فراخوان‌ها</h1>
-            <span style={{ fontSize: 12.5, opacity: 0.85 }}>استاد آنلاین برای یادگیری، قاری حضوری برای مراسم</span>
-          </div>
-        </div>
-      </div>
+      {/* معرفی کوتاه — عنوان صفحه در هدر وُدّا تکرار نمی‌شود (B4) */}
+      <p className="vodda-enter" style={{ margin: 0, ...typography.body, color: colors.inkSecondary, lineHeight: 2 }}>
+        دو مسیر دارید: یک <strong style={{ color: colors.olive700 }}>استاد آنلاین</strong> برای یادگیری، یا یک{" "}
+        <strong style={{ color: colors.goldDark }}>قاری حضوری</strong> برای مراسم. فراخوان ثبت کنید و از پاسخ‌ها انتخاب کنید.
+      </p>
 
       <DispatchPairCards config={config} />
 
@@ -112,8 +97,8 @@ export function CallHubScreen({ config }: { config: UniversalAppConfig }) {
         />
       </div>
 
-      <p style={{ margin: 0, fontSize: 11.5, color: colors.inkMuted, lineHeight: 1.9 }}>
-        در فراخوان مراسم، قاریان حق‌الزحمهٔ خود را اعلام می‌کنند؛ یکی را انتخاب می‌کنید، ودیعه را از طریق درگاه امن پرداخت می‌کنید و پس از برگزاری مراسم، تسویه نهایی انجام می‌شود.
+      <p style={{ margin: 0, fontSize: 12, color: colors.inkMuted, lineHeight: 1.9 }}>
+        در فراخوان مراسم، قاریان حق‌الزحمهٔ خود را اعلام می‌کنند؛ یکی را انتخاب می‌کنید، ودیعه را از طریق درگاه امن پرداخت می‌کنید و پس از برگزاری مراسم، تسویهٔ نهایی انجام می‌شود.
       </p>
     </div>
   );

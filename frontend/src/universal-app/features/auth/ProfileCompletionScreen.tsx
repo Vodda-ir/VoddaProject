@@ -8,6 +8,7 @@ import type { AuthUser } from "../../platform/types";
 import { navigateApp } from "../../router";
 import { Avatar, Icon, LoadingState, colors, radii, toFaDigits, typography } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
+import { showToast } from "../../ui/toast";
 import { defaultRouteForUser } from "./AuthExperience";
 
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
@@ -139,6 +140,7 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
         return;
       }
       setUser(updated);
+      showToast(avatar ? "پروفایل و تصویر شما ذخیره شد" : "پروفایل ذخیره شد");
       navigateApp(onboarding ? defaultRouteForUser(updated) : "/profile", config, { replace: true });
     } catch (saveError) {
       setError(messageOf(saveError, "ذخیره پروفایل انجام نشد. دوباره تلاش کنید."));
@@ -289,13 +291,13 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
               rows={4}
               value={bio}
               disabled={saving}
-              maxLength={200}
+              maxLength={400}
               placeholder="چند خط دربارهٔ خودتان بنویسید…"
               onChange={(event) => setBio(event.target.value)}
               className="vodda-textarea"
               style={{ width: "100%", resize: "vertical", padding: 14, border: `1px solid ${colors.sand200}`, borderRadius: 16, outline: "none", color: colors.ink, background: colors.surface, fontFamily: typography.fontFamily, fontSize: 15, fontWeight: 500, lineHeight: 1.8 }}
             />
-            <span style={{ fontSize: 11, color: colors.inkFaint, textAlign: "left" }}>{bio.length}/200</span>
+            <span style={{ fontSize: 12, color: colors.inkFaint, textAlign: "left" }}>{bio.length}/400</span>
           </label>
 
           {onboarding ? (

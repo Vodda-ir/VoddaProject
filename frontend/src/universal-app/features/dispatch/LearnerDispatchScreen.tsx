@@ -5,7 +5,6 @@ import type { UniversalAppConfig } from "../../config";
 import { PlatformHttpError } from "../../platform/http";
 import { usePlatform } from "../../platform/context";
 import { navigateApp } from "../../router";
-import { toFaDigits } from "../../ui/persian";
 import {
   Avatar,
   Button,
@@ -23,8 +22,17 @@ import {
   typography,
 } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
+import { showToast } from "../../ui/toast";
 import { payViaSamanGate } from "../../../lib/saman-gate";
 import { formatWalletAmount } from "../wallet/WalletTransactionCard";
+import { SelectField } from "../ceremony/fields";
+import {
+  isWhenInFuture,
+  tehranWallToRfc3339,
+  upcomingJalaliDays,
+  type WhenValue,
+} from "../ceremony/schedule";
+import { toFaDigits } from "../../ui/persian";
 import {
   cancelDispatchCall,
   chooseDispatchOffer,
@@ -46,13 +54,13 @@ function priceLabel(n: number): string {
 }
 
 function timeLabelOf(call: { flexible: boolean; scheduled_at?: string | null }): string {
-  if (call.flexible || !call.scheduled_at) return "⚡ در اسرع وقت";
+  if (call.flexible || !call.scheduled_at) return "در اسرع وقت";
   const at = new Date(call.scheduled_at);
-  if (Number.isNaN(at.getTime())) return "⚡ در اسرع وقت";
+  if (Number.isNaN(at.getTime())) return "در اسرع وقت";
   const now = new Date();
   const diffMin = Math.round((at.getTime() - now.getTime()) / 60000);
-  if (diffMin < 60 && diffMin > -60) return `⚡ حدود ${fa(Math.max(0, diffMin))} دقیقه دیگر`;
-  return `📅 ${formatJalaliDateTime(call.scheduled_at, { withWeekday: true })}`;
+  if (diffMin < 60 && diffMin > -60) return `حدود ${fa(Math.max(0, diffMin))} دقیقهٔ دیگر`;
+  return formatJalaliDateTime(call.scheduled_at, { withWeekday: true });
 }
 
 function remainingSeconds(expiresAt: string): number {
@@ -192,7 +200,10 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
   const [selectedTopic, setSelectedTopic] = useState<OfficialService | null>(null);
   const [note, setNote] = useState("");
   const [whenMode, setWhenMode] = useState<"now" | "later">("now");
-  const [laterAt, setLaterAt] = useState("");
+  const [when, setWhen] = useState<WhenValue>(() => {
+    const nowHour = new Date().getHours();
+    return { localDate: upcomingJalaliDays(1)[0]?.localDate ?? "", hh: Math.min(Math.max(nowHour + 2, 8), 22), mm: 0 };
+  });
   const [creating, setCreating] = useState(false);
   const [actionError, setActionError] = useState("");
   const [view, setView] = useState<DispatchCallView | null>(null);
@@ -271,26 +282,53 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
     return [...groups.entries()];
   }, [filteredCatalog]);
 
+  /* گزینه‌های شمسی «زمان مشخص» — هم‌سو با فرم مراسم (A3/B1) */
+  const dayOptions = useMemo(
+    () =>
+      upcomingJalaliDays(7).map((day, index) => ({
+        value: day.localDate,
+        label: `${index === 0 ? "امروز" : index === 1 ? "فردا" : day.weekday} — ${day.dayLabel}`,
+      })),
+    [],
+  );
+
+  const timeOptions = useMemo(() => {
+    const options: Array<{ value: string; label: string }> = [];
+    for (let hh = 8; hh <= 23; hh += 1) {
+      for (const mm of [0, 30]) {
+        options.push({
+          value: `${hh}:${mm}`,
+          label: `${toFaDigits(String(hh).padStart(2, "0"))}:${toFaDigits(String(mm).padStart(2, "0"))}`,
+        });
+      }
+    }
+    return options;
+  }, []);
+
   const start = useCallback(async () => {
     if (!selectedTopic || creating) return;
+    if (whenMode === "later" && !isWhenInFuture(when)) {
+      setActionError("زمان انتخاب‌شده باید حداقل ۱۵ دقیقه در آینده باشد.");
+      return;
+    }
     setCreating(true);
     setActionError("");
     try {
-      const scheduledAt =
-        whenMode === "later" && laterAt ? new Date(laterAt).toISOString() : null;
+      const scheduledAt = whenMode === "later" ? tehranWallToRfc3339(when) || null : null;
       const created = await createDispatchCall(runtime, {
         officialServiceId: selectedTopic.id,
         note,
         scheduledAt,
         flexible: whenMode === "now",
       });
+      showToast("فراخوان شما برای اساتید این موضوع ارسال شد");
       setView(created);
     } catch (error) {
       setActionError(messageOf(error, "ثبت فراخوان انجام نشد."));
     } finally {
       setCreating(false);
     }
-  }, [creating, laterAt, note, runtime, selectedTopic, whenMode]);
+  }, [creating, note, runtime, selectedTopic, when, whenMode]);
 
   const cancel = useCallback(async () => {
     if (!call || canceling) return;
@@ -419,7 +457,7 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
               <strong dir="ltr" style={{ display: "block", fontSize: 19, fontVariantNumeric: "tabular-nums" }}>
                 {countdownLabel(secondsLeft)}
               </strong>
-              <span style={{ fontSize: 10, opacity: 0.75 }}>مهلت فراخوان</span>
+              <span style={{ fontSize: 11.5, opacity: 0.78 }}>مهلت فراخوان</span>
             </div>
           </div>
           <p style={{ margin: "14px 0 0", fontSize: 13, lineHeight: 1.9, opacity: 0.92 }}>
@@ -450,8 +488,8 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
           style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, padding: 6, borderRadius: 16, border: `1px solid ${colors.border}`, background: colors.surface }}
         >
           {([
-            ["gateway", "💳 پرداخت آنلاین (سامان)"],
-            ["wallet", "👛 پرداخت از کیف پول"],
+            ["gateway", "پرداخت آنلاین (سامان)"],
+            ["wallet", "پرداخت از کیف پول"],
           ] as const).map(([value, label]) => (
             <button
               key={value}
@@ -556,7 +594,7 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
           ].map((step) => (
             <div key={step.text} style={{ background: "rgba(255,255,255,.1)", borderRadius: 13, padding: "10px 8px", textAlign: "center" }}>
               <Icon name={step.icon} size={18} style={{ opacity: 0.9 }} />
-              <span style={{ display: "block", fontSize: 10.5, marginTop: 5, lineHeight: 1.6, opacity: 0.92 }}>{step.text}</span>
+              <span style={{ display: "block", fontSize: 12, marginTop: 5, lineHeight: 1.6, opacity: 0.92 }}>{step.text}</span>
             </div>
           ))}
         </div>
@@ -587,26 +625,36 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
           <div>
             <strong style={{ fontSize: 13.5, color: colors.ink, display: "block", marginBottom: 8 }}>چه زمانی؟</strong>
             <div style={{ display: "flex", gap: spacing.sm, flexWrap: "wrap" }}>
-              <button type="button" aria-pressed={whenMode === "now"} onClick={() => setWhenMode("now")} style={whenChip(whenMode === "now")}>
-                ⚡ در اسرع وقت
+              <button type="button" aria-pressed={whenMode === "now"} onClick={() => setWhenMode("now")} className="vodda-tappable" style={whenChip(whenMode === "now")}>
+                <Icon name="sparkle" size={14} style={{ marginInlineEnd: 5 }} /> در اسرع وقت
               </button>
-              <button type="button" aria-pressed={whenMode === "later"} onClick={() => setWhenMode("later")} style={whenChip(whenMode === "later")}>
-                📅 زمان مشخص
+              <button type="button" aria-pressed={whenMode === "later"} onClick={() => setWhenMode("later")} className="vodda-tappable" style={whenChip(whenMode === "later")}>
+                <Icon name="calendar" size={14} style={{ marginInlineEnd: 5 }} /> زمان مشخص
               </button>
             </div>
             {whenMode === "later" ? (
-              <input
-                type="datetime-local"
-                value={laterAt}
-                min={new Date(Date.now() + 3600000).toISOString().slice(0, 16)}
-                onChange={(event) => setLaterAt(event.target.value)}
-                style={inputStyle}
-                dir="ltr"
-                aria-label="زمان جلسه"
-              />
+              <div style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr", gap: spacing.sm, marginTop: 10 }}>
+                <SelectField
+                  ariaLabel="روز جلسه"
+                  value={when.localDate}
+                  onChange={(next) => setWhen((previous) => ({ ...previous, localDate: next }))}
+                  options={dayOptions}
+                />
+                <SelectField
+                  ariaLabel="ساعت جلسه"
+                  value={`${when.hh}:${when.mm}`}
+                  onChange={(next) => {
+                    const [hh, mm] = next.split(":").map(Number);
+                    setWhen((previous) => ({ ...previous, hh, mm }));
+                  }}
+                  options={timeOptions}
+                />
+              </div>
             ) : null}
-            <p style={{ margin: "8px 0 0", fontSize: 11.5, color: colors.inkMuted, lineHeight: 1.8 }}>
-              در «در اسرع وقت» ساعت نهایی با توافق استاد مشخص می‌شود.
+            <p style={{ margin: "8px 0 0", fontSize: 12, color: colors.inkMuted, lineHeight: 1.8 }}>
+              {whenMode === "later"
+                ? "ساعت‌ها به وقت تهران است؛ زمان نهایی با تأیید استاد قطعی می‌شود."
+                : "در «در اسرع وقت» ساعت نهایی با توافق استاد مشخص می‌شود."}
             </p>
           </div>
 
@@ -695,6 +743,8 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
 }
 
 const whenChip = (active: boolean): React.CSSProperties => ({
+  display: "inline-flex",
+  alignItems: "center",
   padding: "9px 14px",
   borderRadius: 999,
   fontSize: 13,

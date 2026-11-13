@@ -104,7 +104,7 @@ export function LearnerProfileScreen({ config }: LearnerProfileScreenProps) {
             </span>
           </div>
           <button type="button" aria-label="ویرایش پروفایل" onClick={() => navigateApp("/profile/edit", config)} className="vodda-tappable"
-            style={{ width: 40, height: 40, display: "grid", placeItems: "center", flex: "0 0 40px", padding: 0, border: 0, borderRadius: 12, color: colors.olive700, background: colors.olive50, cursor: "pointer" }}>
+            style={{ width: 44, height: 44, display: "grid", placeItems: "center", flex: "0 0 44px", padding: 0, border: 0, borderRadius: 12, color: colors.olive700, background: colors.olive50, cursor: "pointer" }}>
             <Icon name="edit" size={19} />
           </button>
         </div>
@@ -138,6 +138,23 @@ export function LearnerProfileScreen({ config }: LearnerProfileScreenProps) {
         ))}
       </Card>
 
+      {/* پشتیبانی و اطلاعات (B3) — صفحات راهنما در وب وُدّا */}
+      <Card className="vodda-enter vodda-enter-delay-2" style={{ padding: 0, overflow: "hidden", borderRadius: 24 }}>
+        {[
+          { icon: "phone" as const, label: "پشتیبانی و تماس با ما", href: "/contact" },
+          { icon: "quran" as const, label: "دربارهٔ وُدّا", href: "/about" },
+          { icon: "doc" as const, label: "پرسش‌های پرتکرار", href: "/faq" },
+          { icon: "shield" as const, label: "قوانین و حریم خصوصی", href: "/privacy" },
+        ].map((row, index, rows) => (
+          <a key={row.href} href={row.href} target="_blank" rel="noreferrer" className="vodda-tappable"
+            style={{ width: "100%", minHeight: 58, display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", textAlign: "right", textDecoration: "none", borderBottom: index < rows.length - 1 ? `1px solid ${colors.sand100}` : 0, color: colors.ink, background: colors.surface }}>
+            <Icon name={row.icon} size={21} style={{ color: colors.olive600 }} />
+            <span style={{ flex: 1, fontSize: 14.5, fontWeight: 600 }}>{row.label}</span>
+            <Icon name="chevronL" size={18} style={{ color: colors.inkFaint }} />
+          </a>
+        ))}
+      </Card>
+
       {error ? (
         <div role="alert" style={{ display: "flex", alignItems: "center", gap: spacing.sm, padding: spacing.md, borderRadius: radii.md, background: colors.dangerBackground, color: colors.danger, ...typography.bodySmall }}>
           <Icon name="info" size={18} />
@@ -150,7 +167,7 @@ export function LearnerProfileScreen({ config }: LearnerProfileScreenProps) {
         خروج از حساب
       </Button>
 
-      <p style={{ fontSize: 11, margin: "4px 0 0", textAlign: "center", color: colors.inkFaint }}>
+      <p style={{ fontSize: 12, margin: "4px 0 0", textAlign: "center", color: colors.inkFaint }}>
         وُدّا · نسخهٔ ۱٫۰٫۰
       </p>
     </div>

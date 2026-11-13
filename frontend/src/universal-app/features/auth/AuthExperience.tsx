@@ -67,7 +67,7 @@ export function LaunchScreen() {
           style={{ width: 150, height: "auto", display: "block" }}
         />
         <strong style={{ fontSize: 14, fontWeight: 900, color: colors.ink }}>
-          نرم افزار تخصصی آموزش قرآن کریم
+          پلتفرم آموزش و خدمات آنلاین قرآن کریم
         </strong>
       </div>
     </main>
@@ -194,6 +194,7 @@ export function LoginScreen({ config }: LoginScreenProps) {
   const [codeSent, setCodeSent] = useState(false);
   const [loading, setLoading] = useState<"otp" | "verify" | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [resendCooldown, setResendCooldown] = useState(0);
 
   const mobileValid = useMemo(() => /^09\d{9}$/.test(mobile), [mobile]);
   const codeValid = code.length === 5;
@@ -203,6 +204,15 @@ export function LoginScreen({ config }: LoginScreenProps) {
     const timer = window.setTimeout(() => otpRef.current?.focus(), 120);
     return () => window.clearTimeout(timer);
   }, [codeSent]);
+
+  // شمارش معکوس ۹۰ ثانیه‌ای ارسال مجدد کد (B2)
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = window.setInterval(() => {
+      setResendCooldown((value) => (value > 0 ? value - 1 : 0));
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [resendCooldown]);
 
   async function requestOtp(event?: FormEvent) {
     event?.preventDefault();
@@ -217,6 +227,7 @@ export function LoginScreen({ config }: LoginScreenProps) {
       await platform.requestOtp(mobile);
       setCodeSent(true);
       setCode("");
+      setResendCooldown(90);
     } catch (requestError) {
       setError(messageOf(requestError, "ارتباط با سرور برقرار نشد. دوباره تلاش کنید."));
     } finally {
@@ -249,6 +260,7 @@ export function LoginScreen({ config }: LoginScreenProps) {
     setCodeSent(false);
     setCode("");
     setError(null);
+    setResendCooldown(0);
   }
 
   return (
@@ -270,10 +282,13 @@ export function LoginScreen({ config }: LoginScreenProps) {
         style={{
           width: "100%",
           maxWidth: 440,
-          padding: "max(28px, env(safe-area-inset-top)) 28px max(28px, env(safe-area-inset-bottom))",
+          minHeight: "100dvh",
+          display: "flex",
+          flexDirection: "column",
+          padding: "max(28px, env(safe-area-inset-top)) 28px max(20px, env(safe-area-inset-bottom))",
         }}
       >
-        <div className="vodda-enter" style={{ display: "grid", justifyItems: "center", paddingTop: 8 }}>
+        <div className="vodda-enter" style={{ display: "grid", justifyItems: "center", marginTop: "8dvh" }}>
           <img
             src="/vodda-logo.svg"
             alt="وُدّا"
@@ -281,15 +296,15 @@ export function LoginScreen({ config }: LoginScreenProps) {
             height={111}
             style={{ width: 96, height: "auto", display: "block" }}
           />
-          <p style={{ margin: "12px 0 0", color: colors.ink, fontSize: 14, fontWeight: 900, textAlign: "center" }}>
-            نرم افزار تخصصی آموزش قرآن کریم
+          <p style={{ margin: "12px 0 0", color: colors.ink, fontSize: 14.5, fontWeight: 900, textAlign: "center" }}>
+            پلتفرم آموزش و خدمات آنلاین قرآن کریم
           </p>
         </div>
 
         <form
           onSubmit={codeSent ? verifyOtp : requestOtp}
           className="vodda-enter vodda-enter-delay-1"
-          style={{ display: "grid", gap: 16, marginTop: 32 }}
+          style={{ display: "grid", gap: 16, marginTop: 28 }}
         >
           <label style={{ display: "grid", gap: 8 }}>
             <span style={{ fontSize: 13, fontWeight: 600, color: codeSent ? colors.inkFaint : colors.inkSecondary }}>
@@ -418,19 +433,23 @@ export function LoginScreen({ config }: LoginScreenProps) {
               <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 12 }}>
                 <button
                   type="button"
-                  disabled={loading !== null}
+                  disabled={loading !== null || resendCooldown > 0}
                   onClick={() => void requestOtp()}
                   style={{
-                    padding: "8px 2px",
+                    padding: "12px 2px",
                     border: 0,
-                    color: colors.olive600,
+                    color: resendCooldown > 0 ? colors.inkFaint : colors.olive600,
                     background: "transparent",
                     fontFamily: typography.fontFamily,
                     fontWeight: 600,
-                    cursor: loading ? "not-allowed" : "pointer",
+                    cursor: loading !== null || resendCooldown > 0 ? "not-allowed" : "pointer",
                   }}
                 >
-                  ارسال مجدد کد
+                  {resendCooldown > 0
+                    ? `ارسال مجدد کد تا ${toFaDigits(
+                        `${String(Math.floor(resendCooldown / 60)).padStart(2, "0")}:${String(resendCooldown % 60).padStart(2, "0")}`,
+                      )}`
+                    : "ارسال مجدد کد"}
                 </button>
                 <span aria-hidden="true" style={{ width: 3, height: 3, borderRadius: "50%", background: colors.sand200 }} />
                 <button
@@ -438,7 +457,7 @@ export function LoginScreen({ config }: LoginScreenProps) {
                   disabled={loading !== null}
                   onClick={resetMobile}
                   style={{
-                    padding: "8px 2px",
+                    padding: "12px 2px",
                     border: 0,
                     color: colors.inkMuted,
                     background: "transparent",
@@ -472,6 +491,44 @@ export function LoginScreen({ config }: LoginScreenProps) {
             </div>
           ) : null}
         </form>
+
+        {/* نوار اعتماد پایین صفحهٔ ورود (C7) */}
+        <div
+          className="vodda-enter vodda-enter-delay-2"
+          style={{
+            marginTop: "auto",
+            paddingTop: 26,
+            paddingBottom: 10,
+            display: "grid",
+            gridTemplateColumns: "repeat(3, 1fr)",
+            gap: 8,
+            borderTop: `1px solid ${colors.sand150}`,
+          }}
+        >
+          {[
+            { icon: "shield" as const, label: "پرداخت امن" },
+            { icon: "award" as const, label: "اساتید تأییدشده" },
+            { icon: "headphones" as const, label: "پشتیبانی پاسخ‌گو" },
+          ].map((item) => (
+            <div key={item.label} style={{ display: "grid", justifyItems: "center", gap: 5, textAlign: "center" }}>
+              <span
+                aria-hidden="true"
+                style={{
+                  width: 34,
+                  height: 34,
+                  display: "grid",
+                  placeItems: "center",
+                  borderRadius: 12,
+                  background: colors.olive50,
+                  color: colors.olive600,
+                }}
+              >
+                <Icon name={item.icon} size={17} />
+              </span>
+              <span style={{ fontSize: 11.5, fontWeight: 600, color: colors.inkMuted }}>{item.label}</span>
+            </div>
+          ))}
+        </div>
       </section>
     </main>
   );

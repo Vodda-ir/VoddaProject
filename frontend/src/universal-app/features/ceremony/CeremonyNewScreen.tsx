@@ -18,11 +18,13 @@ import {
   Icon,
   LoadingState,
   colors,
+  gradients,
   radii,
   spacing,
   typography,
 } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
+import { showToast } from "../../ui/toast";
 import { createCeremonyCall, getInPersonCatalog } from "./api";
 import {
   JalaliWhenPicker,
@@ -176,6 +178,7 @@ export function CeremonyNewScreen({ config }: { config: UniversalAppConfig }) {
         audience,
       });
       if (created.call) {
+        showToast("فراخوان مراسم ثبت شد و برای قاریان ارسال گردید");
         navigateApp(`/ceremony/calls/${created.call.id}`, config);
       }
     } catch (error) {
@@ -193,7 +196,7 @@ export function CeremonyNewScreen({ config }: { config: UniversalAppConfig }) {
           borderRadius: 22,
           padding: 20,
           color: colors.surface,
-          background: "linear-gradient(145deg, #8b681f 0%, #bf9540 60%, #d4ab52 100%)",
+          background: gradients.goldRich,
           boxShadow: "0 14px 34px rgba(139,104,31,.3)",
         }}
       >

@@ -27,6 +27,7 @@ export {
 } from "./patterns";
 export { UniversalVisualStyles } from "./UniversalVisualStyles";
 export { MobileAppShell, TeacherAppShell } from "./shells";
+export { ToastHost, showToast } from "./toast";
 export {
   appTheme,
   colors,

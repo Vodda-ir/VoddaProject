@@ -287,7 +287,24 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
                 >
                   <span>
                     <strong style={{ display: "block", ...typography.body }}>{item.title}</strong>
-                    <span style={{ ...typography.caption, color: colors.inkMuted }}>{numberFormatter.format(item.duration)} دقیقه</span>
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 4,
+                        marginTop: 4,
+                        padding: "2px 9px",
+                        borderRadius: 999,
+                        background: colors.surface,
+                        border: `1px solid ${colors.sand200}`,
+                        color: colors.inkSecondary,
+                        fontSize: 11.5,
+                        fontWeight: 700,
+                      }}
+                    >
+                      <Icon name="clock" size={12} stroke={2} />
+                      {numberFormatter.format(item.duration)} دقیقه
+                    </span>
                   </span>
                   <strong style={{ ...typography.bodySmall, color: colors.olive700 }}>{formatWalletAmount(Math.max(0, item.price))} تومان</strong>
                 </button>

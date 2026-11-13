@@ -22,6 +22,7 @@ import {
   typography,
 } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
+import { showToast } from "../../ui/toast";
 import { TierBadge } from "../teachers/TierBadge";
 import { AmountPicker, CityPicker } from "../ceremony/fields";
 import { formatWalletAmount } from "../wallet/WalletTransactionCard";
@@ -218,6 +219,7 @@ export function TeacherProfileScreen({ config }: { config: UniversalAppConfig })
       setTeacher(updated);
       setForm(toForm(updated));
       setNotice("اطلاعات حرفه‌ای استاد ذخیره شد.");
+      showToast("اطلاعات حرفه‌ای ذخیره شد");
       setEditorOpen(false);
     } catch (saveError) {
       setNotice(messageOf(saveError));

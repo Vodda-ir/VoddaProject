@@ -16,6 +16,7 @@ import {
   Icon,
   LoadingState,
   colors,
+  gradients,
   shadows,
   spacing,
   typography,
@@ -143,7 +144,7 @@ export function PresenceScreen({ config }: { config: UniversalAppConfig }) {
           borderRadius: 22,
           padding: 20,
           color: colors.surface,
-          background: "linear-gradient(145deg, #8b681f 0%, #bf9540 60%, #d4ab52 100%)",
+          background: gradients.goldRich,
           boxShadow: "0 14px 34px rgba(139,104,31,.3)",
         }}
       >
