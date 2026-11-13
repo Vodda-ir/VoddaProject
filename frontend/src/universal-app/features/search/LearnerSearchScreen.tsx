@@ -273,7 +273,18 @@ function ServiceRow({
       <span style={{ minWidth: 0, flex: 1 }}>
         <strong style={{ display: "block", fontSize: 13.5, fontWeight: 800, color: colors.ink }}>{title}</strong>
         {description ? (
-          <span style={{ display: "block", marginTop: 2, fontSize: 12.5, color: colors.inkMuted, lineHeight: 1.7, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <span
+            style={{
+              display: "-webkit-box",
+              WebkitBoxOrient: "vertical",
+              WebkitLineClamp: 2,
+              marginTop: 2,
+              fontSize: 12.5,
+              color: colors.inkMuted,
+              lineHeight: 1.7,
+              overflow: "hidden",
+            }}
+          >
             {description}
           </span>
         ) : null}
@@ -594,7 +605,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
   }
 
   return (
-    <section style={{ display: "grid", gap: 14 }}>
+    <section className="vodda-screen" style={{ display: "grid", gap: 14 }}>
       <header className="vodda-enter" style={{ paddingTop: 2 }}>
         <h1 style={{ fontSize: 24, fontWeight: 800, margin: 0, color: colors.ink }}>جستجو</h1>
         <p style={{ fontSize: 12.5, margin: "5px 0 0", color: colors.inkMuted }}>
