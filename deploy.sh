@@ -327,6 +327,12 @@ deploy_to_server() {
     upload_bashar_source
     ssh_cmd "$SERVER_USER@$SERVER_IP" "cd '$SERVER_PATH' && DOCKER_BUILDKIT=1 docker build --platform linux/amd64 --target runner --tag vodda-bashar:prod --file bashar/Dockerfile bashar && DOCKER_BUILDKIT=1 docker build --platform linux/amd64 --target migrator --tag vodda-bashar-migrator:prod --file bashar/Dockerfile bashar"
 
+    print_step "[6c/7] Fixing uploads volume ownership (backend runs as uid 10001)..."
+    # کانتینر بک‌اند با کاربر 10001 اجرا می‌شود؛ اگر پوشهٔ data/uploads روی هاست
+    # توسط docker با مالکیت root ساخته شده باشد، آپلود آواتار/نمونه‌صوتی با
+    # Permission Denied و خطای 500 شکست می‌خورد. این گام مالکیت را همیشه تضمین می‌کند.
+    ssh_cmd "$SERVER_USER@$SERVER_IP" "mkdir -p '$SERVER_PATH/data/uploads' && chown -R 10001:10001 '$SERVER_PATH/data/uploads' && chmod -R u+rwX '$SERVER_PATH/data/uploads'"
+
     print_step "[7/7] Starting services..."
     ssh_cmd "$SERVER_USER@$SERVER_IP" "cd '$SERVER_PATH' && docker image inspect vodda-backend:prod vodda-frontend:prod vodda-monafaseh:prod vodda-monafaseh-migrator:prod vodda-bashar:prod mysql:8.0 >/dev/null && legacy_running=\$(docker inspect -f '{{.State.Running}}' monafaseh 2>/dev/null || true) && (docker stop monafaseh >/dev/null 2>&1 || true) && docker volume create monafaseh_monafaseh-db >/dev/null && if ! docker run --rm --user 0:0 --volume monafaseh_monafaseh-db:/app/db -e DATABASE_URL=file:/app/db/custom.db --entrypoint /bin/sh vodda-monafaseh-migrator:prod -c 'node ./node_modules/prisma/build/index.js db push --accept-data-loss && chown -R 1001:1001 /app/db'; then if [ \"\$legacy_running\" = true ]; then docker start monafaseh >/dev/null; fi; exit 1; fi && docker volume create bashar_bashar-db >/dev/null && if ! docker run --rm --user 0:0 --volume bashar_bashar-db:/app/db -e DATABASE_URL=file:/app/db/custom.db --entrypoint /bin/sh vodda-bashar-migrator:prod -c 'node ./node_modules/prisma/build/index.js db push --accept-data-loss && chown -R 1001:1001 /app/db'; then if [ \"\$legacy_running\" = true ]; then docker start monafaseh >/dev/null; fi; exit 1; fi && if docker compose -f docker-compose.deploy.yml --env-file .env.production up -d --pull never --wait; then docker rm monafaseh >/dev/null 2>&1 || true; docker image rm vodda-monafaseh-migrator:prod >/dev/null 2>&1 || true; docker image rm vodda-bashar-migrator:prod >/dev/null 2>&1 || true; else if [ \"\$legacy_running\" = true ]; then docker start monafaseh >/dev/null; fi; exit 1; fi"
 

@@ -14,7 +14,6 @@ import {
   Input,
   LoadingState,
   colors,
-  digitsOnly,
   radii,
   Sheet,
   shadows,
@@ -24,6 +23,7 @@ import {
 } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
 import { TierBadge } from "../teachers/TierBadge";
+import { AmountPicker, CityPicker } from "../ceremony/fields";
 import { formatWalletAmount } from "../wallet/WalletTransactionCard";
 
 type UserProfile = {
@@ -115,6 +115,10 @@ function toForm(teacher: TeacherProfile): TeacherForm {
     price60: teacher.price60 > 0 ? String(teacher.price60) : "",
   };
 }
+
+// قالب پیشنهادی «دربارهٔ استاد» — با ایموجی‌های ساختاری که صفحهٔ نمایش پروفایل
+// آن‌ها را به بند/چیپ مرتب تبدیل می‌کند؛ نتیجه همیشه خوش‌فرم می‌ماند.
+const BIO_TEMPLATE = "📖 معرفی کوتاه خود را اینجا بنویسید؛ سابقه، سبک تدریس و دستاورد‌ها…\n🎯 زمینه‌های تدریس:\n• روخوانی و تجوید قرآن کریم\n• حفظ قرآن به روش تکرار هوشمند\n• آموزش مقدماتی تجوید\n📍 مدرک یا اجازه | شهر";
 
 function validate(form: TeacherForm): string | null {
   if (form.field.trim().length > 60) return "حوزه تخصص حداکثر ۶۰ کاراکتر است.";
@@ -461,23 +465,66 @@ export function TeacherProfileScreen({ config }: { config: UniversalAppConfig })
           <Input label="حوزه تخصص" value={form.field} maxLength={60} onChange={(event) => setForm({ ...form, field: event.target.value })} />
           <Input label="عنوان استاد" value={form.tag} maxLength={60} onChange={(event) => setForm({ ...form, tag: event.target.value })} />
           <Input label="سطح" value={form.level} maxLength={30} onChange={(event) => setForm({ ...form, level: event.target.value })} />
-          <Input label="شهر" value={form.city} maxLength={80} onChange={(event) => setForm({ ...form, city: event.target.value })} />
+          <CityPicker
+            label="شهر"
+            hint={undefined}
+            value={form.city}
+            onChange={(next) => setForm({ ...form, city: next.slice(0, 80) })}
+          />
           <label style={{ display: "grid", gap: spacing.xs }}>
             <span style={{ ...typography.bodySmall, color: colors.inkSecondary }}>معرفی استاد</span>
+            <span style={{ ...typography.caption, color: colors.inkMuted, lineHeight: 1.8 }}>
+              ساختار پیشنهادی: بند معرفی، سپس فهرست زمینه‌های تدریس با نشانهٔ • در خط جدا، و در پایان سطر مشخصات با «|»؛ صفحهٔ عمومی همین ساختار را مرتب نمایش می‌دهد.
+            </span>
             <textarea
               value={form.bio}
               maxLength={1000}
-              rows={5}
+              rows={7}
               onChange={(event) => setForm({ ...form, bio: event.target.value })}
               className="vodda-textarea"
-              style={{ width: "100%", resize: "vertical", padding: spacing.md, borderRadius: radii.md, border: `1px solid ${colors.line}`, outline: "none", boxShadow: shadows.xs, font: "inherit", background: colors.surface, color: colors.ink }}
+              style={{ width: "100%", resize: "vertical", padding: spacing.md, borderRadius: radii.md, border: `1px solid ${colors.line}`, outline: "none", boxShadow: shadows.xs, font: "inherit", background: colors.surface, color: colors.ink, lineHeight: 1.9 }}
             />
+            <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: spacing.sm }}>
+              <span style={{ ...typography.caption, color: colors.inkFaint }}>{toFaDigits(String(form.bio.length))}/۱۰۰۰</span>
+              {!form.bio.trim() ? (
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, bio: BIO_TEMPLATE })}
+                  style={{
+                    minHeight: 34,
+                    padding: "0 12px",
+                    borderRadius: 999,
+                    border: `1px solid ${colors.olive200}`,
+                    background: colors.olive50,
+                    color: colors.olive700,
+                    fontSize: 11.5,
+                    fontWeight: 800,
+                    cursor: "pointer",
+                    fontFamily: typography.fontFamily,
+                  }}
+                >
+                  درج قالب پیشنهادی
+                </button>
+              ) : null}
+            </span>
           </label>
           <Input label="مهارت‌ها" hint="با ویرگول جدا کنید؛ حداکثر ۲۰ مورد" value={form.skills} onChange={(event) => setForm({ ...form, skills: event.target.value })} />
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: spacing.sm }}>
-            <Input label="تعرفه ۳۰ دقیقه (تومان)" inputMode="numeric" value={toFaDigits(form.price30)} onChange={(event) => setForm({ ...form, price30: digitsOnly(event.target.value) })} />
-            <Input label="تعرفه ۶۰ دقیقه (تومان)" inputMode="numeric" value={toFaDigits(form.price60)} onChange={(event) => setForm({ ...form, price60: digitsOnly(event.target.value) })} />
-          </div>
+          <AmountPicker
+            label="تعرفهٔ جلسهٔ ۳۰ دقیقه‌ای"
+            hint="تومان"
+            ariaLabel="تعرفه ۳۰ دقیقه به تومان"
+            value={form.price30}
+            onChange={(next) => setForm({ ...form, price30: next })}
+            presets={[100_000, 150_000, 200_000, 300_000, 400_000, 500_000]}
+          />
+          <AmountPicker
+            label="تعرفهٔ جلسهٔ ۶۰ دقیقه‌ای"
+            hint="تومان"
+            ariaLabel="تعرفه ۶۰ دقیقه به تومان"
+            value={form.price60}
+            onChange={(next) => setForm({ ...form, price60: next })}
+            presets={[150_000, 200_000, 300_000, 450_000, 600_000, 800_000]}
+          />
           {teacher.price30 > 0 || teacher.price60 > 0 ? (
             <p style={{ ...typography.caption, margin: 0, color: colors.inkMuted }}>
               تعرفه فعلی: ۳۰ دقیقه {formatWalletAmount(teacher.price30)} تومان · ۶۰ دقیقه {formatWalletAmount(teacher.price60)} تومان

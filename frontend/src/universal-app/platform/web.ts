@@ -1,4 +1,5 @@
 import { normalizeAuthUser, type AuthUserPayload } from "./auth";
+import { setAssetOriginFromApiBase } from "./asset";
 import { joinUrl, PlatformHttpError, requestJson } from "./http";
 import type {
   PlatformRequestInit,
@@ -23,6 +24,10 @@ export function createWebPlatformRuntime(
 ): PlatformRuntime {
   const apiBaseUrl = options.apiBaseUrl ?? "/api/backend";
   const authBaseUrl = options.authBaseUrl ?? "/api/auth";
+
+  // آدرس نسبی آپلودها در وب هم‌مبدأ است؛ اگر runtime با API مطلق ساخته شود،
+  // مبدأ همان API به آدرس‌های نسبی می‌چسبد (استفاده در پیش‌نمایش وب خارجی).
+  setAssetOriginFromApiBase(apiBaseUrl);
 
   const request = <T>(path: string, init?: PlatformRequestInit) =>
     requestJson<T>(joinUrl(apiBaseUrl, path), {

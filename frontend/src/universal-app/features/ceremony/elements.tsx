@@ -8,6 +8,7 @@ import { useMemo } from "react";
 import type { CSSProperties } from "react";
 import { formatJalaliDate, formatJalaliDateTime } from "../../ui/jalali";
 import { Icon } from "../../ui/Icon";
+import { resolveAssetUrl } from "../../platform/asset";
 import { colors, radii, spacing, typography } from "../../ui/theme";
 import { toFaDigits } from "../../ui/persian";
 import type { IconName } from "../../../components/Icon";
@@ -261,7 +262,7 @@ export function SampleAudioList({ samples, compact = false }: { samples: SampleV
             {sample.length ? <span style={{ color: colors.inkFaint, fontWeight: 500 }}>· {toFaDigits(sample.length)}</span> : null}
           </span>
           {sample.url ? (
-            <audio controls preload="none" src={sample.url} style={{ width: "100%", direction: "ltr", height: 36 }}>
+            <audio controls preload="none" src={resolveAssetUrl(sample.url)} style={{ width: "100%", direction: "ltr", height: 36 }}>
               <track kind="captions" />
               مرورگر شما از پخش صوت پشتیبانی نمی‌کند.
             </audio>

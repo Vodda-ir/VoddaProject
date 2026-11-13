@@ -1,4 +1,5 @@
 import { normalizeAuthUser, type AuthUserPayload } from "./auth";
+import { setAssetOriginFromApiBase } from "./asset";
 import { joinUrl, PlatformHttpError, requestJson } from "./http";
 import type {
   PlatformCapabilities,
@@ -27,6 +28,10 @@ export function createNativePlatformRuntime({
   tokenStorage,
   capabilities,
 }: NativePlatformOptions): PlatformRuntime {
+  // آواتار و نمونه‌صوتی‌ها با آدرس نسبی می‌آیند؛ در WebView مبدأ سند
+  // capacitor است و بدون چسباندن مبدأ API تصویر نشان داده نمی‌شود.
+  setAssetOriginFromApiBase(apiBaseUrl);
+
   const request = async <T>(path: string, init: PlatformRequestInit = {}) => {
     const headers = new Headers(init.headers);
     const token = await tokenStorage.getToken();

@@ -24,6 +24,8 @@ import {
   typography,
 } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
+import { resolveAssetUrl } from "../../platform/asset";
+import { DispatchPairCards } from "../dispatch/DispatchPairCards";
 import { RoleModeSheet } from "../auth/RoleModeSheet";
 import {
   getNotifications,
@@ -201,9 +203,9 @@ function HomeSkeleton() {
 
 function TrustStrip() {
   const items = [
-    { icon: "checkCircle" as const, label: "استادها تأییدشده‌ان" },
-    { icon: "shield" as const, label: "پرداخت امن با کیف پول" },
-    { icon: "refresh" as const, label: "لغو آزاد تا قبل از جلسه" },
+    { icon: "checkCircle" as const, label: "اساتید تأییدشده" },
+    { icon: "shield" as const, label: "پرداخت امن با درگاه و کیف پول" },
+    { icon: "refresh" as const, label: "لغو آزاد تا پیش از جلسه" },
   ];
   return (
     <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }} className="vodda-enter vodda-enter-delay-1">
@@ -254,7 +256,7 @@ function ProfileNudgeBar({ config }: { config: UniversalAppConfig }) {
     >
       <IconBadge icon="edit" tone="gold" size={34} />
       <span style={{ flex: 1, minWidth: 0, ...typography.caption, color: colors.inkMuted, fontWeight: 600 }}>
-        پروفایلت رو کامل کن تا استادها بهتر بشناسنت
+        پروفایل خود را کامل کنید تا اساتید شما را بهتر بشناسند
       </span>
       <Icon name="chevronL" size={16} style={{ color: colors.inkMuted }} />
     </button>
@@ -310,107 +312,9 @@ function SearchPill({ config }: { config: UniversalAppConfig }) {
     >
       <Icon name="search" size={18} style={{ color: colors.olive700, flex: "0 0 auto" }} />
       <span style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 600 }}>
-        دنبال کدوم استاد قرآن هستی؟
+        به دنبال کدام استاد قرآن هستید؟
       </span>
       <Icon name="chevronL" size={16} style={{ flex: "0 0 auto" }} />
-    </button>
-  );
-}
-
-function DispatchBanner({ config }: { config: UniversalAppConfig }) {
-  return (
-    <button
-      type="button"
-      onClick={() => navigateApp("/dispatch", config)}
-      className="vodda-card vodda-card--interactive vodda-tappable vodda-enter vodda-neon-gold"
-      aria-label="فراخوان اساتید — درخواست زنده استاد"
-      style={{
-        width: "100%",
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
-        padding: "14px 16px",
-        borderRadius: 20,
-        border: `1px solid ${colors.olive200}`,
-        background: "linear-gradient(135deg, #f2f5ea 0%, #ffffff 62%)",
-        boxShadow: shadows.sm,
-        color: colors.ink,
-        cursor: "pointer",
-        fontFamily: typography.fontFamily,
-        textAlign: "right",
-        position: "relative",
-        overflow: "hidden",
-      }}
-    >
-      <span
-        aria-hidden="true"
-        style={{
-          display: "grid", placeItems: "center", width: 42, height: 42,
-          borderRadius: 14, flex: "0 0 42px",
-          background: colors.olive600, color: colors.surface,
-          boxShadow: "0 8px 18px rgba(94,110,67,.28)",
-        }}
-      >
-        <Icon name="bell" size={20} stroke={1.9} />
-      </span>
-      <span style={{ flex: 1, minWidth: 0 }}>
-        <strong style={{ display: "block", fontSize: 14, fontWeight: 800 }}>
-          فراخوان اساتید <span style={{ color: colors.goldDark }}>جدید</span>
-        </strong>
-        <span style={{ display: "block", fontSize: 11.5, color: colors.inkMuted, marginTop: 2, lineHeight: 1.7 }}>
-          موضوعت را بگو؛ اساتید اعلام آمادگی کنند، تو انتخاب کن
-        </span>
-      </span>
-      <Icon name="chevronL" size={16} style={{ flex: "0 0 auto", color: colors.olive700 }} />
-    </button>
-  );
-}
-
-function PresencePromoCard({ config }: { config: UniversalAppConfig }) {
-  return (
-    <button
-      type="button"
-      onClick={() => navigateApp("/presence", config)}
-      className="vodda-card vodda-card--interactive vodda-tappable vodda-enter vodda-neon-gold"
-      aria-label="مراسم حضوری قرآنی — رزرو قاری و فراخوان مراسم"
-      style={{
-        width: "100%",
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
-        padding: "14px 16px",
-        borderRadius: 20,
-        border: `1px solid ${colors.goldSoft}`,
-        background: "linear-gradient(135deg, #f7efd9 0%, #fffaf0 62%)",
-        boxShadow: shadows.sm,
-        color: colors.ink,
-        cursor: "pointer",
-        fontFamily: typography.fontFamily,
-        textAlign: "right",
-        position: "relative",
-        overflow: "hidden",
-      }}
-    >
-      <span
-        aria-hidden="true"
-        style={{
-          display: "grid", placeItems: "center", width: 42, height: 42,
-          borderRadius: 14, flex: "0 0 42px",
-          background: "linear-gradient(145deg, #d4ab52 0%, #bf9540 100%)", color: colors.surface,
-          boxShadow: "0 8px 18px rgba(191,149,64,.32)",
-        }}
-      >
-        <Icon name="calendar" size={20} stroke={1.9} />
-      </span>
-      <span style={{ flex: 1, minWidth: 0 }}>
-        <strong style={{ display: "block", fontSize: 14, fontWeight: 800 }}>
-          مراسم حضوری قرآنی <span style={{ color: colors.goldDark }}>جدید</span>
-        </strong>
-        <span style={{ display: "block", fontSize: 11.5, color: colors.inkMuted, marginTop: 2, lineHeight: 1.7 }}>
-          قاری برای تلاوت و ختم بیابید یا فراخوان بگذارید
-        </span>
-      </span>
-      <Icon name="chevronL" size={16} style={{ flex: "0 0 auto", color: colors.goldDark }} />
     </button>
   );
 }
@@ -478,8 +382,8 @@ function OnboardingChecklist({ user, config }: { user: AuthUser; config: Univers
       })}
       <span style={{ ...typography.caption, color: colors.inkMuted }}>
         {remaining > 0
-          ? `${faNumber(remaining, 0)} قدم مانده تا آماده شدن برای اولین جلسه`
-          : "همه‌چیز آماده‌ست — وقت رزرو اولین جلسه!"}
+          ? `${faNumber(remaining, 0)} گام تا آماده شدن برای نخستین جلسه باقی مانده است`
+          : "همه‌چیز آماده است؛ زمان رزرو نخستین جلسه فرا رسیده است."}
       </span>
     </Card>
   );
@@ -629,8 +533,8 @@ function RebookBanner({ config }: { config: UniversalAppConfig }) {
     <Card elevated className="vodda-enter" style={{ display: "flex", alignItems: "center", gap: spacing.md, padding: spacing.lg }}>
       <IconBadge icon="sparkle" tone="gold" size={46} />
       <span style={{ minWidth: 0, flex: 1, display: "grid", gap: 3 }}>
-        <strong style={{ ...typography.body, color: colors.ink }}>یه جلسه دیگه رزرو می‌کنی؟</strong>
-        <span style={{ ...typography.caption, color: colors.inkMuted }}>زمان‌های آزاد جدید استادها منتظرته.</span>
+        <strong style={{ ...typography.body, color: colors.ink }}>جلسه دیگری رزرو می‌کنید؟</strong>
+        <span style={{ ...typography.caption, color: colors.inkMuted }}>زمان‌های آزاد جدید اساتید در انتظار شماست.</span>
       </span>
       <Button onClick={() => navigateApp("/search", config)} style={{ minHeight: 40, padding: "8px 16px", fontSize: 13 }}>
         جستجوی استاد
@@ -689,7 +593,7 @@ function FeaturedTeacher({ teacher, config }: { teacher: Teacher; config: Univer
     event.stopPropagation();
     if (!sample) return;
     if (!audioRef.current) {
-      audioRef.current = new Audio(sample.url);
+      audioRef.current = new Audio(resolveAssetUrl(sample.url) ?? sample.url);
       audioRef.current.addEventListener("ended", () => setPlaying(false));
     }
     if (playing) {
@@ -1165,7 +1069,7 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
             </strong>
             {canUseTeacherMode ? (
               <span style={{ display: "block", marginTop: 1, fontSize: 11.5, color: colors.olive700, fontWeight: 600 }}>
-                برای تغییر پنل روی پروفایل بزنید
+                برای تغییر پنل، به پروفایل بروید
               </span>
             ) : null}
           </span>
@@ -1202,8 +1106,7 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
 
       <VerseStrip />
       <SearchPill config={config} />
-      <DispatchBanner config={config} />
-      <PresencePromoCard config={config} />
+      <DispatchPairCards config={config} />
 
       {sessionArea === "loading" ? (
         <Skeleton style={{ height: 120, borderRadius: radii.xl }} />
@@ -1216,8 +1119,8 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
       ) : (
         <HeroPanel
           eyebrow="به وُدّا خوش آمدید"
-          title={"استاد قرآن‌ات را\nپیدا و زمان آزادش را رزرو کن"}
-          description="پروفایل استادان تأییدشده و خدمات قابل رزرو را ببین."
+          title={"استاد قرآن خود را بیابید\nو زمان آزاد ایشان را رزرو کنید"}
+          description="پروفایل استادان تأییدشده و خدمات قابل رزرو را ببینید."
         >
           <Button
             onClick={() => navigateApp("/search", config)}

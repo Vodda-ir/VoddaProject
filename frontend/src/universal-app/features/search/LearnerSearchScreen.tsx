@@ -18,10 +18,13 @@ import {
 import { messageOf } from "../../ui/errorMessage";
 import { navigateApp } from "../../router";
 import { getCatalog } from "../dispatch/api";
+import { getInPersonCatalog } from "../ceremony/api";
 import { searchTeachersPage } from "../teachers/api";
 import { getAllTeachersCached, getTeacherCities } from "../teachers/cached";
 import { TeacherCard } from "../teachers/TeacherCard";
 import type { Teacher } from "../teachers/types";
+import type { OfficialService } from "../dispatch/types";
+import type { OfficialInPersonService } from "../ceremony/types";
 
 const PAGE_SIZE = 10;
 const RECENT_KEY = "vodda_recent_searches";
@@ -29,6 +32,7 @@ const RECENT_LIMIT = 5;
 
 type SortKey = "recommended" | "rating" | "sessions" | "newest";
 type TierKey = "" | "international" | "grade2" | "grade3";
+type SearchMode = "teachers" | "services";
 
 type SearchFilters = {
   query: string;
@@ -157,6 +161,133 @@ function Skeleton({ style }: { style?: CSSProperties }) {
   return <span aria-hidden="true" className="vodda-skeleton" style={{ display: "block", ...style }} />;
 }
 
+/** کنترل سگمنتی «اساتید / خدمات» — دو مسیر هم‌ارزِ جستجو. */
+function ModeTabs({ mode, onChange }: { mode: SearchMode; onChange: (next: SearchMode) => void }) {
+  const tabs: Array<[SearchMode, string, string]> = [
+    ["teachers", "اساتید", "users"],
+    ["services", "خدمات", "quran"],
+  ];
+  return (
+    <div
+      role="tablist"
+      aria-label="نوع جستجو"
+      style={{
+        display: "grid",
+        gridTemplateColumns: "1fr 1fr",
+        gap: 6,
+        padding: 5,
+        borderRadius: 17,
+        background: colors.sand100,
+        border: `1px solid ${colors.sand150}`,
+      }}
+    >
+      {tabs.map(([value, label, icon]) => {
+        const active = mode === value;
+        return (
+          <button
+            key={value}
+            type="button"
+            role="tab"
+            aria-selected={active}
+            onClick={() => onChange(value)}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 7,
+              minHeight: 42,
+              borderRadius: 13,
+              fontSize: 13.5,
+              fontWeight: 800,
+              fontFamily: typography.fontFamily,
+              cursor: "pointer",
+              border: 0,
+              color: active ? colors.surface : colors.inkSecondary,
+              background: active ? colors.olive600 : "transparent",
+              boxShadow: active ? "0 6px 16px rgba(94,110,67,.22)" : "none",
+            }}
+          >
+            <Icon name={icon as "users"} size={17} stroke={2} />
+            {label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function ServiceRow({
+  icon,
+  title,
+  description,
+  trailing,
+  onClick,
+  index = 0,
+}: {
+  icon: string;
+  title: string;
+  description: string;
+  trailing?: string;
+  onClick: () => void;
+  index?: number;
+}) {
+  const known = new Set([
+    "book", "mic", "quran", "star", "headphones", "award", "sparkle",
+    "doc", "heart", "users", "grid", "list", "trending", "refresh",
+  ]);
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="vodda-tappable vodda-enter"
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 11,
+        width: "100%",
+        padding: "11px 13px",
+        textAlign: "right",
+        background: colors.surface,
+        border: `1px solid ${colors.sand150}`,
+        borderRadius: 16,
+        cursor: "pointer",
+        fontFamily: typography.fontFamily,
+        animationDelay: `${Math.min(index, 8) * 45}ms`,
+      }}
+    >
+      <span
+        aria-hidden="true"
+        style={{
+          display: "grid",
+          placeItems: "center",
+          width: 38,
+          height: 38,
+          borderRadius: 12,
+          flex: "0 0 38px",
+          background: colors.olive50,
+          color: colors.olive600,
+        }}
+      >
+        <Icon name={(known.has(icon) ? icon : "book") as "book"} size={19} />
+      </span>
+      <span style={{ minWidth: 0, flex: 1 }}>
+        <strong style={{ display: "block", fontSize: 13.5, fontWeight: 800, color: colors.ink }}>{title}</strong>
+        {description ? (
+          <span style={{ display: "block", marginTop: 2, fontSize: 11.5, color: colors.inkMuted, lineHeight: 1.7, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {description}
+          </span>
+        ) : null}
+      </span>
+      {trailing ? (
+        <span style={{ flex: "0 0 auto", fontSize: 11, fontWeight: 800, color: colors.goldDark, background: colors.goldBackground, border: "1px solid rgba(191,149,64,.32)", borderRadius: 999, padding: "3px 10px", whiteSpace: "nowrap" }}>
+          {trailing}
+        </span>
+      ) : null}
+      <Icon name="chevronL" size={16} style={{ color: colors.inkFaint, flex: "0 0 auto" }} />
+    </button>
+  );
+}
+
 function SearchSkeleton() {
   return (
     <div style={{ display: "grid", gap: 14 }} aria-label="در حال جستجو">
@@ -180,6 +311,10 @@ function SearchSkeleton() {
 export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) {
   const runtime = usePlatform();
   const initial = useMemo(readInitialFilters, []);
+  const [mode, setMode] = useState<SearchMode>(() => {
+    if (typeof window === "undefined") return "teachers";
+    return new URLSearchParams(window.location.search).get("mode") === "services" ? "services" : "teachers";
+  });
   const [filters, setFilters] = useState<SearchFilters>(initial);
   const [debouncedQuery, setDebouncedQuery] = useState(initial.query);
   const [topicId, setTopicId] = useState<number>(() => {
@@ -200,6 +335,37 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
   const [recent, setRecent] = useState<string[]>(() => readRecentSearches());
   const [fallback, setFallback] = useState<Teacher[]>([]);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+
+  // داده‌های تب «خدمات»: کاتالوگ آنلاین + کاتالوگ حضوری، فقط یک بار
+  const [onlineServices, setOnlineServices] = useState<OfficialService[]>([]);
+  const [presenceServices, setPresenceServices] = useState<OfficialInPersonService[]>([]);
+  const [servicesLoading, setServicesLoading] = useState(false);
+  const [servicesError, setServicesError] = useState("");
+  const [servicesQuery, setServicesQuery] = useState("");
+  const [servicesLoaded, setServicesLoaded] = useState(false);
+
+  useEffect(() => {
+    if (mode !== "services" || servicesLoaded) return;
+    let active = true;
+    setServicesLoading(true);
+    setServicesError("");
+    Promise.all([getCatalog(runtime), getInPersonCatalog(runtime).catch(() => [] as OfficialInPersonService[])])
+      .then(([online, presence]) => {
+        if (!active) return;
+        setOnlineServices(online);
+        setPresenceServices(presence);
+        setServicesLoaded(true);
+      })
+      .catch((reason: unknown) => {
+        if (active) setServicesError(messageOf(reason, "دریافت فهرست خدمات ناموفق بود."));
+      })
+      .finally(() => {
+        if (active) setServicesLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [mode, servicesLoaded, runtime]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => setDebouncedQuery(filters.query.trim()), 350);
@@ -390,15 +556,164 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
     ? cities.filter((city) => city.includes(cityQuery.trim()))
     : cities;
 
+  // فیلتر و گروه‌بندی خدمات (تب خدمات)
+  const needle = servicesQuery.trim();
+  const filteredOnlineServices = useMemo(() => {
+    if (!needle) return onlineServices;
+    return onlineServices.filter((item) =>
+      item.title.includes(needle) || item.category.includes(needle) || item.description.includes(needle));
+  }, [needle, onlineServices]);
+  const filteredPresenceServices = useMemo(() => {
+    if (!needle) return presenceServices;
+    return presenceServices.filter((item) =>
+      item.title.includes(needle) || item.category.includes(needle) || item.description.includes(needle));
+  }, [needle, presenceServices]);
+  const onlineServiceGroups = useMemo(() => {
+    const groups = new Map<string, OfficialService[]>();
+    for (const item of filteredOnlineServices) {
+      const rows = groups.get(item.category) ?? [];
+      rows.push(item);
+      groups.set(item.category, rows);
+    }
+    return [...groups.entries()];
+  }, [filteredOnlineServices]);
+  const presenceServiceGroups = useMemo(() => {
+    const groups = new Map<string, OfficialInPersonService[]>();
+    for (const item of filteredPresenceServices) {
+      const rows = groups.get(item.category) ?? [];
+      rows.push(item);
+      groups.set(item.category, rows);
+    }
+    return [...groups.entries()];
+  }, [filteredPresenceServices]);
+
+  function openServiceTeachers(serviceId: number) {
+    setTopicId(serviceId);
+    setMode("teachers");
+    navigateApp(`/search?topic=${serviceId}`, config);
+  }
+
   return (
     <section style={{ display: "grid", gap: 14 }}>
       <header className="vodda-enter" style={{ paddingTop: 2 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 800, margin: 0, color: colors.ink }}>جستجوی استاد</h1>
+        <h1 style={{ fontSize: 24, fontWeight: 800, margin: 0, color: colors.ink }}>جستجو</h1>
         <p style={{ fontSize: 12.5, margin: "5px 0 0", color: colors.inkMuted }}>
-          نام، تخصص، شهر و جنسیت استاد را جستجو کنید.
+          استاد، خدمت آموزشی و قاری مراسم — همه از یک‌جا.
         </p>
       </header>
 
+      <div className="vodda-enter vodda-enter-delay-1">
+        <ModeTabs mode={mode} onChange={setMode} />
+      </div>
+
+      {mode === "services" ? (
+        <div style={{ display: "grid", gap: 12 }}>
+          <div style={{ position: "relative" }}>
+            <Icon
+              name="search"
+              size={19}
+              stroke={1.8}
+              style={{ position: "absolute", zIndex: 1, insetInlineStart: 14, top: "50%", transform: "translateY(-50%)", color: colors.inkMuted }}
+            />
+            <input
+              type="search"
+              value={servicesQuery}
+              onChange={(event) => setServicesQuery(event.target.value)}
+              placeholder="نام خدمت؛ مثلاً تجوید، حفظ، ختم قرآن…"
+              className="vodda-input"
+              style={{
+                width: "100%",
+                minHeight: 50,
+                padding: "11px 42px 11px 14px",
+                border: 0,
+                borderRadius: 16,
+                outline: "none",
+                color: colors.ink,
+                background: colors.surface,
+                boxShadow: shadows.sm,
+                fontFamily: typography.fontFamily,
+                ...typography.body,
+              }}
+              aria-label="جستجوی خدمت"
+            />
+          </div>
+
+          {servicesLoading ? <SearchSkeleton /> : null}
+          {!servicesLoading && servicesError ? (
+            <ErrorState
+              title="خطا در دریافت خدمات"
+              description={servicesError}
+              action={<Button variant="secondary" onClick={() => setServicesLoaded(false)}>تلاش دوباره</Button>}
+            />
+          ) : null}
+          {!servicesLoading && !servicesError ? (
+            <>
+              {onlineServiceGroups.length > 0 ? (
+                <section style={{ display: "grid", gap: 9 }} aria-label="خدمات آموزش آنلاین">
+                  <strong style={{ fontSize: 13, color: colors.olive700, display: "flex", alignItems: "center", gap: 6 }}>
+                    <Icon name="book" size={15} />
+                    خدمات آموزش آنلاین
+                  </strong>
+                  {onlineServiceGroups.map(([category, items]) => (
+                    <div key={category} style={{ display: "grid", gap: 7 }}>
+                      <span style={{ fontSize: 11, color: colors.inkFaint }}>{category}</span>
+                      {items.map((item, index) => (
+                        <ServiceRow
+                          key={item.id}
+                          icon={item.icon}
+                          title={item.title}
+                          description={item.description}
+                          trailing="اساتید"
+                          index={index}
+                          onClick={() => openServiceTeachers(item.id)}
+                        />
+                      ))}
+                    </div>
+                  ))}
+                </section>
+              ) : null}
+
+              {presenceServiceGroups.length > 0 ? (
+                <section style={{ display: "grid", gap: 9 }} aria-label="خدمات حضوری مراسم">
+                  <strong style={{ fontSize: 13, color: colors.goldDark, display: "flex", alignItems: "center", gap: 6 }}>
+                    <Icon name="mic" size={15} />
+                    خدمات حضوری مراسم
+                  </strong>
+                  {presenceServiceGroups.map(([category, items]) => (
+                    <div key={category} style={{ display: "grid", gap: 7 }}>
+                      <span style={{ fontSize: 11, color: colors.inkFaint }}>{category}</span>
+                      {items.map((item, index) => (
+                        <ServiceRow
+                          key={item.id}
+                          icon={item.icon}
+                          title={item.title}
+                          description={item.description}
+                          trailing="قاریان حضوری"
+                          index={index}
+                          onClick={() => navigateApp(`/presence?service=${item.id}`, config)}
+                        />
+                      ))}
+                    </div>
+                  ))}
+                </section>
+              ) : null}
+
+              {onlineServiceGroups.length === 0 && presenceServiceGroups.length === 0 ? (
+                <EmptyState
+                  icon={<Icon name="quran" size={30} />}
+                  title="خدمتی یافت نشد"
+                  description="عبارت دیگری را جستجو کنید؛ فهرست رسمی خدمات وُدّا همین‌جاست."
+                />
+              ) : (
+                <p style={{ margin: 0, fontSize: 11.5, color: colors.inkMuted, lineHeight: 1.9 }}>
+                  با انتخاب هر خدمت، فهرست اساتید همان خدمت یا قاریان حضوری مرتبط نمایش داده می‌شود؛ از همان‌جا می‌توانید مستقیم رزرو کنید یا فراخوان بگذارید.
+                </p>
+              )}
+            </>
+          ) : null}
+        </div>
+      ) : (
+        <>
       {topicId ? (
         <div
           className="vodda-enter"
@@ -724,7 +1039,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
               )}
               {fallback.length > 0 ? (
                 <div style={{ display: "grid", gap: 12 }}>
-                  <strong style={{ ...typography.bodySmall, color: colors.ink }}>شاید این‌ها به کارت بیایند</strong>
+                  <strong style={{ ...typography.bodySmall, color: colors.ink }}>شاید این گزینه‌ها برای شما مناسب باشند</strong>
                   {fallback.map((teacher) => (
                     <TeacherCard key={teacher.id} teacher={teacher} config={config} wide />
                   ))}
@@ -826,6 +1141,8 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
           <Button fullWidth variant="ghost" onClick={clearAdvancedFilters}>پاک کردن فیلترها</Button>
         </div>
       </Sheet>
+        </>
+      )}
     </section>
   );
 }

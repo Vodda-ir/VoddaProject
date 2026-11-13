@@ -303,7 +303,7 @@ export function TeacherPresenceScreen({ config }: { config: UniversalAppConfig }
           </div>
           <div>
             <h1 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>خدمات حضوری</h1>
-            <span style={{ fontSize: 12.5, opacity: 0.85 }}>در کاتالوگ مراسم دیده شوید و رزرو بگیرید</span>
+            <span style={{ fontSize: 12.5, opacity: 0.85 }}>در کاتالوگ مراسم دیده شوید و رزرو مستقیم دریافت کنید</span>
           </div>
           <div style={{ marginInlineStart: "auto", textAlign: "center" }}>
             <strong style={{ display: "block", fontSize: 22, fontVariantNumeric: "tabular-nums" }}>{toFaDigits(services.length)}</strong>
@@ -353,7 +353,7 @@ export function TeacherPresenceScreen({ config }: { config: UniversalAppConfig }
               <EmptyState
                 icon={<Icon name="mic" size={28} />}
                 title="هنوز خدمت حضوری ثبت نکرده‌اید"
-                description="با ثبت خدمت حضوری، در کاتالوگ «قاریان حضوری» دیده می‌شوید و می‌توانید رزرو مستقیم بگیرید."
+                description="با ثبت خدمت حضوری، در کاتالوگ «قاریان حضوری» نمایش داده می‌شوید و رزرو مستقیم دریافت می‌کنید."
               />
             </Card>
           ) : null}
@@ -495,7 +495,7 @@ export function TeacherPresenceScreen({ config }: { config: UniversalAppConfig }
         onClose={() => { if (!busyId) setDeleteTarget(null); }}
       >
         <p style={{ ...typography.body, marginTop: 0, color: colors.inkSecondary, lineHeight: 2 }}>
-          با حذف، این خدمت از کاتالوگ «قاریان حضوری» برداشته می‌شود و دیگر رزرو مستقیم نمی‌گیرید. قراردادهای قبلی به قوت خود باقی هستند.
+          با حذف، این خدمت از کاتالوگ «قاریان حضوری» برداشته می‌شود و رزرو مستقیم دریافت نخواهید کرد. قراردادهای قبلی به قوت خود باقی هستند.
         </p>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: spacing.sm }}>
           <Button variant="secondary" onClick={() => setDeleteTarget(null)} disabled={Boolean(busyId)}>انصراف</Button>

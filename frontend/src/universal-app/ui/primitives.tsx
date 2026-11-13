@@ -6,6 +6,7 @@ import type {
   InputHTMLAttributes,
   ReactNode,
 } from "react";
+import { resolveAssetUrl } from "../platform/asset";
 import { colors, gradients, radii, shadows, spacing, typography } from "./theme";
 
 function mergeStyle(base: CSSProperties, style?: CSSProperties): CSSProperties {
@@ -214,10 +215,13 @@ function avatarFrame(size: number, ring: boolean, style?: CSSProperties): CSSPro
 }
 
 export function Avatar({ name, size = 48, ring = true, src, alt, style, ...props }: AvatarProps) {
-  if (src) {
+  // آدرس‌های نسبی آپلودها (مثل /uploads/avatars/…) پیش از رندر حل می‌شوند تا
+  // هم در وب هم‌مبدأ و هم در WebView نیتیو درست نمایش داده شوند.
+  const resolvedSrc = resolveAssetUrl(src);
+  if (resolvedSrc) {
     return (
       <img
-        src={src}
+        src={resolvedSrc}
         alt={alt ?? name ?? "تصویر کاربر"}
         width={size}
         height={size}

@@ -545,13 +545,13 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
           </div>
           <div>
             <h1 style={{ margin: 0, fontSize: 19, fontWeight: 800 }}>فراخوان اساتید</h1>
-            <span style={{ fontSize: 12.5, opacity: 0.85 }}>مثل اسنپ؛ اساتید اعلام آمادگی می‌کنند، شما انتخاب می‌کنید</span>
+            <span style={{ fontSize: 12.5, opacity: 0.85 }}>به‌سرعت و بدون تماس تلفنی؛ اساتید اعلام آمادگی می‌کنند و شما انتخاب می‌کنید</span>
           </div>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginTop: 16 }}>
           {[
             { icon: "search" as const, text: "موضوع را انتخاب کنید" },
-            { icon: "bell" as const, text: "فراخوان بزنید" },
+            { icon: "bell" as const, text: "فراخوان را ثبت کنید" },
             { icon: "checkCircle" as const, text: "از پاسخ‌ها انتخاب کنید" },
           ].map((step) => (
             <div key={step.text} style={{ background: "rgba(255,255,255,.1)", borderRadius: 13, padding: "10px 8px", textAlign: "center" }}>
@@ -585,7 +585,7 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
           <div style={{ height: 1, background: colors.sand150 }} />
 
           <div>
-            <strong style={{ fontSize: 13.5, color: colors.ink, display: "block", marginBottom: 8 }}>کی می‌خواهید؟</strong>
+            <strong style={{ fontSize: 13.5, color: colors.ink, display: "block", marginBottom: 8 }}>چه زمانی؟</strong>
             <div style={{ display: "flex", gap: spacing.sm, flexWrap: "wrap" }}>
               <button type="button" aria-pressed={whenMode === "now"} onClick={() => setWhenMode("now")} style={whenChip(whenMode === "now")}>
                 ⚡ در اسرع وقت
@@ -630,10 +630,10 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
 
           <div style={{ display: "grid", gap: spacing.sm }}>
             <Button fullWidth loading={creating} disabled={creating} onClick={() => void start()} style={{ minHeight: 52 }}>
-              🔔 ثبت فراخوان برای اساتید
+              ثبت فراخوان برای اساتید
             </Button>
             <Button variant="secondary" fullWidth onClick={() => navigateApp(`/search?topic=${topic.id}`, config)} style={{ minHeight: 46 }}>
-              یا دیدن اساتید همین موضوع
+              یا مشاهدهٔ اساتید همین موضوع
             </Button>
           </div>
         </Card>

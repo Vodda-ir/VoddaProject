@@ -24,6 +24,7 @@ import { messageOf } from "../../ui/errorMessage";
 import { TierBadge } from "../teachers/TierBadge";
 import { getInPersonCatalog, getPresenceProviders } from "./api";
 import { chipStyle, formatToman, inputStyle } from "./elements";
+import { SelectField } from "./fields";
 import type { OfficialInPersonService, PresenceProvider } from "./types";
 
 function ProviderCard({ provider, onOpen }: { provider: PresenceProvider; onOpen: () => void }) {
@@ -100,7 +101,11 @@ export function PresenceScreen({ config }: { config: UniversalAppConfig }) {
   const [error, setError] = useState("");
   const [cityQuery, setCityQuery] = useState("");
   const [appliedCity, setAppliedCity] = useState("");
-  const [serviceId, setServiceId] = useState(0);
+  // فیلتر خدمت را می‌توان از دیگر صفحات (جستجوی خدمات) با ?service=<id> فرستاد.
+  const [serviceId, setServiceId] = useState(() => {
+    if (typeof window === "undefined") return 0;
+    return Number(new URLSearchParams(window.location.search).get("service") ?? 0) || 0;
+  });
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -148,7 +153,7 @@ export function PresenceScreen({ config }: { config: UniversalAppConfig }) {
           </div>
           <div>
             <h1 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>قاریان حضوری</h1>
-            <span style={{ fontSize: 12.5, opacity: 0.9 }}>قاری مراسمت را ببین، بشنو و مستقیم رزرو کن</span>
+            <span style={{ fontSize: 12.5, opacity: 0.9 }}>قاری مراسم خود را ببینید، بشنوید و مستقیم رزرو کنید</span>
           </div>
         </div>
       </div>
@@ -175,51 +180,16 @@ export function PresenceScreen({ config }: { config: UniversalAppConfig }) {
           </Button>
         </form>
         {catalog.length > 0 ? (
-          <div className="vodda-scroll-rail" style={{ display: "flex", gap: spacing.sm, overflowX: "auto", paddingBottom: spacing.xs }}>
-            <button
-              type="button"
-              aria-pressed={serviceId === 0}
-              onClick={() => setServiceId(0)}
-              style={{
-                flex: "0 0 auto",
-                minHeight: 44,
-                padding: "9px 14px",
-                borderRadius: 999,
-                fontSize: 12.5,
-                fontWeight: 700,
-                cursor: "pointer",
-                fontFamily: "inherit",
-                color: serviceId === 0 ? colors.surface : colors.inkSecondary,
-                background: serviceId === 0 ? colors.olive600 : colors.surface,
-                border: `1px solid ${serviceId === 0 ? colors.olive600 : colors.sand200}`,
-              }}
-            >
-              همهٔ خدمات
-            </button>
-            {catalog.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                aria-pressed={serviceId === item.id}
-                onClick={() => setServiceId(item.id)}
-                style={{
-                  flex: "0 0 auto",
-                  minHeight: 44,
-                  padding: "9px 14px",
-                  borderRadius: 999,
-                  fontSize: 12.5,
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  fontFamily: "inherit",
-                  color: serviceId === item.id ? colors.surface : colors.inkSecondary,
-                  background: serviceId === item.id ? colors.olive600 : colors.surface,
-                  border: `1px solid ${serviceId === item.id ? colors.olive600 : colors.sand200}`,
-                }}
-              >
-                {item.title}
-              </button>
-            ))}
-          </div>
+          <SelectField
+            label="فیلتر خدمت حضوری"
+            ariaLabel="فیلتر خدمت حضوری"
+            value={serviceId === 0 ? "" : String(serviceId)}
+            onChange={(next) => setServiceId(Number(next) || 0)}
+            options={[
+              { value: "", label: "همهٔ خدمات حضوری" },
+              ...catalog.map((item) => ({ value: String(item.id), label: item.title })),
+            ]}
+          />
         ) : null}
         {appliedCity || activeService ? (
           <p style={{ margin: 0, fontSize: 11.5, color: colors.inkMuted }}>
@@ -248,7 +218,7 @@ export function PresenceScreen({ config }: { config: UniversalAppConfig }) {
         <EmptyState
           icon={<Icon name="users" size={30} />}
           title="قاری‌ای پیدا نشد"
-          description="با فیلترهای دیگر جستجو کنید یا بعداً سر بزنید؛ قاریان تازه به‌تدریج اضافه می‌شوند."
+          description="با فیلترهای دیگر جستجو کنید؛ قاریان جدید به‌تدریج به این فهرست افزوده می‌شوند."
         />
       ) : (
         <div style={{ display: "grid", gap: spacing.md }}>
@@ -263,7 +233,7 @@ export function PresenceScreen({ config }: { config: UniversalAppConfig }) {
       )}
 
       <p style={{ ...typography.caption, margin: 0, color: colors.inkMuted, lineHeight: 1.9 }}>
-        برای میزبانی مراسم خود می‌توانید همچنین یک فراخوان بگذارید تا قاریان مناسب، خودشان پذیرش کنند.
+        برای میزبانی مراسم خود می‌توانید فراخوان بگذارید تا قاریان مناسب، خودشان اعلام آمادگی کنند.
         {" "}
         <button
           type="button"

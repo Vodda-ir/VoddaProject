@@ -24,6 +24,7 @@ import {
 } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
 import { TierBadge } from "../teachers/TierBadge";
+import { TeacherBioBlocks } from "../teachers/BioBlocks";
 import { createDirectBooking, getPresenceProvider } from "./api";
 import {
   JalaliWhenPicker,
@@ -31,7 +32,7 @@ import {
   formatToman,
   inputStyle,
 } from "./elements";
-import { TimePresetChips, VenuePicker } from "./fields";
+import { TimePresetSelect, VenuePicker } from "./fields";
 import { isWhenInFuture, tehranWallToRfc3339, type WhenValue } from "./schedule";
 import type { PresenceProvider, PresenceService } from "./types";
 
@@ -92,10 +93,7 @@ function DirectBookingForm({
   return (
     <div style={{ display: "grid", gap: spacing.lg, marginTop: spacing.md, padding: 14, background: colors.surfaceSoft, border: `1px solid ${colors.olive200}`, borderRadius: 16 }}>
       <JalaliWhenPicker value={when} onChange={setWhen} label="تاریخ و ساعت مراسم" />
-      <div style={{ display: "grid", gap: 8 }}>
-        <strong style={{ fontSize: 13.5, color: colors.ink, display: "block" }}>ساعت‌های پیشنهادی</strong>
-        <TimePresetChips hh={when.hh} mm={when.mm} onPick={({ hh, mm }) => setWhen((current) => ({ ...current, hh, mm }))} />
-      </div>
+      <TimePresetSelect hh={when.hh} mm={when.mm} onPick={({ hh, mm }) => setWhen((current) => ({ ...current, hh, mm }))} />
       <VenuePicker
         city={city}
         venue={venue}
@@ -272,8 +270,8 @@ export function PresenceProviderScreen({ providerId, config }: { providerId: str
 
       {provider.bio ? (
         <Card style={{ padding: 15, borderRadius: 20 }}>
-          <strong style={{ display: "block", fontSize: 13.5, color: colors.ink, marginBottom: 6 }}>دربارهٔ قاری</strong>
-          <p style={{ margin: 0, fontSize: 13, color: colors.inkSecondary, lineHeight: 2 }}>{provider.bio}</p>
+          <strong style={{ display: "block", fontSize: 13.5, color: colors.ink }}>دربارهٔ قاری</strong>
+          <TeacherBioBlocks bio={provider.bio} />
         </Card>
       ) : null}
 

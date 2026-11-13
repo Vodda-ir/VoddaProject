@@ -201,7 +201,7 @@ export function TeacherServicesScreen() {
       return;
     }
     if (!Number.isFinite(price) || price <= 0) {
-      setFormError("قیمت معتبر وارد کنید.");
+      setFormError("مبلغ معتبر وارد کنید.");
       return;
     }
 

@@ -108,6 +108,62 @@ export function Chip({
   );
 }
 
+/** فیلد کشویی مرتب — پایهٔ انتخاب‌های تکی؛ جایگزین ردیف‌های طولانی تراشه. */
+export function SelectField({
+  label,
+  hint,
+  value,
+  onChange,
+  options,
+  ariaLabel,
+}: {
+  label?: string;
+  hint?: string;
+  value: string;
+  onChange: (next: string) => void;
+  options: ReadonlyArray<{ value: string; label: string }>;
+  ariaLabel: string;
+}) {
+  const body = (
+    <div style={{ position: "relative" }}>
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        aria-label={ariaLabel}
+        style={{
+          ...inputStyle,
+          minHeight: 48,
+          appearance: "none",
+          WebkitAppearance: "none",
+          fontWeight: 700,
+          cursor: "pointer",
+          paddingInlineEnd: 38,
+        }}
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>{option.label}</option>
+        ))}
+      </select>
+      <Icon
+        name="chevronL"
+        size={16}
+        stroke={2.2}
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          insetInlineEnd: 14,
+          top: "50%",
+          transform: "translateY(-50%) rotate(-90deg)",
+          color: colors.inkMuted,
+          pointerEvents: "none",
+        }}
+      />
+    </div>
+  );
+  if (!label) return body;
+  return <FieldShell label={label} hint={hint}>{body}</FieldShell>;
+}
+
 /* ─────────────────────────  ورودی مبلغ  ───────────────────────── */
 
 export function AmountInput({
@@ -150,7 +206,7 @@ export function AmountInput({
   );
 }
 
-/** مبلغ با پیشنهادهای آماده — انتخاب سریع + ورودی دستی. */
+/** مبلغ با پیشنهادهای آماده — فهرست کشویی انتخاب سریع + ورودی دستی. */
 export function AmountPicker({
   label,
   hint,
@@ -169,27 +225,41 @@ export function AmountPicker({
   emptyHint?: string;
 }) {
   const numeric = Number(digitsOnly(value) || 0);
+  const [customMode, setCustomMode] = useState(false);
   const uniquePresets = useMemo(
     () => [...new Set(presets.filter((preset) => preset > 0))].sort((a, b) => a - b),
     [presets],
   );
+  const showManual = customMode || (numeric > 0 && !uniquePresets.includes(numeric));
+  const selectValue = numeric > 0
+    ? uniquePresets.includes(numeric) && !customMode
+      ? String(numeric)
+      : "__custom__"
+    : "";
   return (
     <FieldShell label={label} hint={hint}>
       {uniquePresets.length > 0 ? (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: spacing.sm }}>
-          {uniquePresets.map((preset) => (
-            <Chip
-              key={preset}
-              accent="gold"
-              active={numeric === preset}
-              onClick={() => onChange(numeric === preset ? "" : String(preset))}
-            >
-              {formatToman(preset)}
-            </Chip>
-          ))}
-        </div>
+        <SelectField
+          ariaLabel={ariaLabel}
+          value={selectValue}
+          onChange={(next) => {
+            if (next === "__custom__") {
+              setCustomMode(true);
+              return;
+            }
+            setCustomMode(false);
+            onChange(next);
+          }}
+          options={[
+            { value: "", label: "مبلغ توافقی — بدون مبلغ ثابت" },
+            ...uniquePresets.map((preset) => ({ value: String(preset), label: formatToman(preset) })),
+            { value: "__custom__", label: "مبلغ دلخواه…" },
+          ]}
+        />
       ) : null}
-      <AmountInput value={value} onChange={onChange} ariaLabel={ariaLabel} />
+      {showManual || uniquePresets.length === 0 ? (
+        <AmountInput value={value} onChange={onChange} ariaLabel={ariaLabel} />
+      ) : null}
       {!value && emptyHint ? (
         <span style={{ display: "block", fontSize: 11, color: colors.inkFaint, lineHeight: 1.8 }}>{emptyHint}</span>
       ) : null}
@@ -219,7 +289,7 @@ function activeBudgetKey(minValue: number, maxValue: number): string {
   return minValue > 0 || maxValue > 0 ? "custom" : "open";
 }
 
-/** بازهٔ حق‌الزحمهٔ فراخوان مراسم — کارت‌های پیشنهادی + بازهٔ دلخواه. */
+/** بازهٔ حق‌الزحمهٔ فراخوان مراسم — فهرست کشویی پیشنهادی + بازهٔ دلخواه. */
 export function PriceRangePicker({
   minValue,
   maxValue,
@@ -244,52 +314,15 @@ export function PriceRangePicker({
   };
   return (
     <FieldShell label="بودجهٔ پیشنهادی" hint="حق‌الزحمهٔ منصفانه برای قاریان">
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: spacing.sm }}>
-        {BUDGET_TIERS.map((tier) => {
-          const active = activeKey === tier.key;
-          return (
-            <button
-              key={tier.key}
-              type="button"
-              role="radio"
-              aria-checked={active}
-              onClick={() => select(tier)}
-              style={{
-                display: "grid",
-                gap: 3,
-                textAlign: "right",
-                padding: "11px 13px",
-                borderRadius: 16,
-                border: `1.5px solid ${active ? colors.goldSoft : colors.sand200}`,
-                background: active ? colors.goldBackground : colors.surface,
-                cursor: "pointer",
-                fontFamily: typography.fontFamily,
-                boxShadow: active ? "0 5px 16px rgba(191,149,64,.16)" : "none",
-              }}
-            >
-              <strong
-                style={{
-                  fontSize: 13,
-                  fontWeight: 800,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                  whiteSpace: "nowrap",
-                  color: active ? colors.goldDark : colors.ink,
-                }}
-              >
-                {active ? (
-                  <Icon name="checkCircle" size={15} style={{ color: colors.goldDark, flex: "0 0 auto" }} />
-                ) : (
-                  <Icon name="coins" size={15} style={{ color: colors.goldDark, flex: "0 0 auto" }} />
-                )}
-                {tier.label}
-              </strong>
-              <span style={{ fontSize: 10.5, color: colors.inkMuted, lineHeight: 1.6 }}>{tier.sub}</span>
-            </button>
-          );
-        })}
-      </div>
+      <SelectField
+        ariaLabel="بازهٔ بودجهٔ پیشنهادی"
+        value={activeKey}
+        onChange={(next) => select(BUDGET_TIERS.find((tier) => tier.key === next) ?? BUDGET_TIERS[0])}
+        options={BUDGET_TIERS.map((tier) => ({
+          value: tier.key,
+          label: tier.key === "custom" ? "بازهٔ دلخواه — تعیین دقیق کف و سقف" : `${tier.label} — ${tier.sub}`,
+        }))}
+      />
 
       {activeKey === "custom" ? (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: spacing.md, marginTop: spacing.xs }}>
@@ -332,6 +365,8 @@ export function CountField({
 }) {
   const numeric = Number(digitsOnly(value) || 0);
   const set = (next: number) => onChange(String(Math.min(max, Math.max(min, Math.round(next)))));
+  const presetOptions = presets.filter((preset) => preset >= min && preset <= max);
+  const isPreset = presetOptions.includes(numeric);
   const stepButtonStyle: CSSProperties = {
     width: 46,
     height: 46,
@@ -347,14 +382,18 @@ export function CountField({
   };
   return (
     <FieldShell label={label} hint={hint}>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: spacing.sm }}>
-        {presets.map((preset) => (
-          <Chip key={preset} active={numeric === preset} onClick={() => set(preset)}>
-            {toFaDigits(preset)}
-            {unit ? ` ${unit}` : ""}
-          </Chip>
-        ))}
-      </div>
+      <SelectField
+        ariaLabel={ariaLabel}
+        value={numeric > 0 ? String(numeric) : ""}
+        onChange={(next) => {
+          if (next) set(Number(next));
+        }}
+        options={[
+          ...(numeric > 0 ? [] : [{ value: "", label: "انتخاب کنید…" }]),
+          ...presetOptions.map((preset) => ({ value: String(preset), label: `${toFaDigits(preset)} ${unit}` })),
+          ...(numeric > 0 && !isPreset ? [{ value: String(numeric), label: `${toFaDigits(numeric)} ${unit} (دلخواه)` }] : []),
+        ]}
+      />
       <div style={{ display: "flex", alignItems: "center", gap: spacing.md }}>
         <button
           type="button"
@@ -407,23 +446,30 @@ export function CityPicker({
   hint?: string;
 }) {
   const trimmed = value.trim();
+  const known = POPULAR_CITIES.includes(trimmed);
+  const selectValue = trimmed === "" ? "" : known ? trimmed : "__other__";
   return (
     <FieldShell label={label} hint={hint}>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: spacing.sm }}>
-        {POPULAR_CITIES.map((cityOption) => (
-          <Chip key={cityOption} active={trimmed === cityOption} onClick={() => onChange(trimmed === cityOption ? "" : cityOption)}>
-            {cityOption}
-          </Chip>
-        ))}
-      </div>
-      <input
-        type="text"
-        value={value}
-        onChange={(event) => onChange(event.target.value.slice(0, 60))}
-        placeholder="یا نام شهر را بنویسید…"
-        style={{ ...inputStyle, minHeight: 46 }}
-        aria-label={label}
+      <SelectField
+        ariaLabel={label}
+        value={selectValue}
+        onChange={(next) => onChange(next === "__other__" ? "" : next)}
+        options={[
+          { value: "", label: "انتخاب شهر…" },
+          ...POPULAR_CITIES.map((cityOption) => ({ value: cityOption, label: cityOption })),
+          { value: "__other__", label: "شهر دیگر…" },
+        ]}
       />
+      {selectValue === "__other__" ? (
+        <input
+          type="text"
+          value={value}
+          onChange={(event) => onChange(event.target.value.slice(0, 60))}
+          placeholder="نام شهر را بنویسید…"
+          style={{ ...inputStyle, minHeight: 46 }}
+          aria-label="نام شهر"
+        />
+      ) : null}
     </FieldShell>
   );
 }
@@ -565,6 +611,7 @@ export function VenuePicker({
   };
 
   const detectedAddress = detected?.address ?? "";
+  const venueTypePrefix = VENUE_TYPES.find((venueType) => venue.trim().startsWith(venueType)) ?? "";
   const applyDetected = () => {
     if (!detected) return;
     if (detected.address) onVenueChange(detected.address.slice(0, 200));
@@ -587,25 +634,24 @@ export function VenuePicker({
       <CityPicker value={city} onChange={onCityChange} label={cityLabel ?? "شهر برگزاری"} hint="اجباری" />
 
       <FieldShell label={label} hint={hint}>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: spacing.sm }}>
-          {VENUE_TYPES.map((venueType) => {
-            const active = venue.trim().startsWith(venueType);
-            return (
-              <Chip
-                key={venueType}
-                active={active}
-                onClick={() => onVenueChange(active ? stripVenuePrefix(venue) : `${venueType} ${stripVenuePrefix(venue)}`.trim())}
-              >
-                {venueType}
-              </Chip>
-            );
-          })}
-        </div>
+        <SelectField
+          label="نوع مکان"
+          hint="برای پرکردن سریع"
+          ariaLabel="نوع مکان مراسم"
+          value={venueTypePrefix}
+          onChange={(next) =>
+            onVenueChange(next ? `${next} ${stripVenuePrefix(venue)}`.trim() : stripVenuePrefix(venue))
+          }
+          options={[
+            { value: "", label: "بدون نوع مشخص…" },
+            ...VENUE_TYPES.map((venueType) => ({ value: venueType, label: venueType })),
+          ]}
+        />
         <input
           type="text"
           value={venue}
           onChange={(event) => onVenueChange(event.target.value.slice(0, 200))}
-          placeholder="مثلاً: مسجد جامع، سالن شماره ۲…"
+          placeholder="نشانی دقیق؛ مثلاً: مسجد جامع، سالن شماره ۲…"
           style={{ ...inputStyle, minHeight: 46 }}
           aria-label={label}
         />
@@ -726,7 +772,8 @@ export function VenuePicker({
 
 /* ─────────────────────────  ساعت‌های پیشنهادی  ───────────────────────── */
 
-export function TimePresetChips({
+/** انتخاب‌گر ساعت پیشنهادی نماز‌محور — فهرست کشویی به‌جای ردیف تراشه‌ها. */
+export function TimePresetSelect({
   hh,
   mm,
   onPick,
@@ -735,18 +782,24 @@ export function TimePresetChips({
   mm: number;
   onPick: (next: { hh: number; mm: number }) => void;
 }) {
+  const value = TIME_PRESETS.some((preset) => preset.hh === hh && preset.mm === mm)
+    ? `${hh}:${mm}`
+    : "__manual__";
   return (
-    <div style={{ display: "flex", flexWrap: "wrap", gap: spacing.sm }}>
-      {TIME_PRESETS.map((preset) => (
-        <Chip
-          key={preset.label}
-          active={hh === preset.hh && mm === preset.mm}
-          onClick={() => onPick({ hh: preset.hh, mm: preset.mm })}
-        >
-          {preset.label}
-        </Chip>
-      ))}
-    </div>
+    <SelectField
+      label="ساعت پیشنهادی"
+      hint="یا از پیکر بالا انتخاب کنید"
+      ariaLabel="ساعت‌های پیشنهادی مراسم"
+      value={value}
+      onChange={(next) => {
+        const preset = TIME_PRESETS.find((item) => `${item.hh}:${item.mm}` === next);
+        if (preset) onPick({ hh: preset.hh, mm: preset.mm });
+      }}
+      options={[
+        ...TIME_PRESETS.map((preset) => ({ value: `${preset.hh}:${preset.mm}`, label: preset.label })),
+        { value: "__manual__", label: "ساعت دلخواه" },
+      ]}
+    />
   );
 }
 
@@ -785,24 +838,32 @@ export function NoteTemplateChips({ value, onChange }: { value: string; onChange
 export function DurationPicker({ value, onChange }: { value: string; onChange: (next: string) => void }) {
   const presets: readonly number[] = [30, 45, 60, 90, 120, 180];
   const numeric = Number(digitsOnly(value) || 0);
+  const isPreset = presets.includes(numeric);
   return (
     <FieldShell label="مدت اجرا" hint="دقیقه">
-      <div style={{ display: "flex", flexWrap: "wrap", gap: spacing.sm }}>
-        {presets.map((preset) => (
-          <Chip key={preset} active={numeric === preset} onClick={() => onChange(String(preset))}>
-            {toFaDigits(preset)} دقیقه
-          </Chip>
-        ))}
-      </div>
-      <input
-        type="text"
-        inputMode="numeric"
-        value={toFaDigits(value)}
-        onChange={(event) => onChange(digitsOnly(event.target.value, 4))}
-        placeholder="یا دقیقهٔ دلخواه…"
-        style={{ ...inputStyle, minHeight: 46 }}
-        aria-label="مدت اجرا به دقیقه"
+      <SelectField
+        ariaLabel="مدت اجرا به دقیقه"
+        value={numeric > 0 && isPreset ? String(numeric) : numeric > 0 ? "__custom__" : ""}
+        onChange={(next) => {
+          if (next && next !== "__custom__") onChange(next);
+        }}
+        options={[
+          { value: "", label: "انتخاب مدت اجرا…" },
+          ...presets.map((preset) => ({ value: String(preset), label: `${toFaDigits(preset)} دقیقه` })),
+          { value: "__custom__", label: "دقیقهٔ دلخواه…" },
+        ]}
       />
+      {numeric > 0 && !isPreset ? (
+        <input
+          type="text"
+          inputMode="numeric"
+          value={toFaDigits(value)}
+          onChange={(event) => onChange(digitsOnly(event.target.value, 4))}
+          placeholder="دقیقهٔ دلخواه…"
+          style={{ ...inputStyle, minHeight: 46 }}
+          aria-label="مدت اجرا به دقیقه"
+        />
+      ) : null}
     </FieldShell>
   );
 }
@@ -822,32 +883,60 @@ export function CitiesChipsField({
     () => value.split(/[،,]/).map((part) => part.trim()).filter(Boolean),
     [value],
   );
-  const toggle = (cityOption: string) => {
-    if (selected.includes(cityOption)) {
-      onChange(selected.filter((city) => city !== cityOption).join("، "));
-    } else {
-      onChange([...selected, cityOption].join("، "));
-    }
-  };
+  const available = POPULAR_CITIES.filter((cityOption) => !selected.includes(cityOption));
+  const add = (cityOption: string) => onChange([...selected, cityOption].join("، "));
+  const remove = (cityOption: string) => onChange(selected.filter((city) => city !== cityOption).join("، "));
+  const customSelected = selected.filter((city) => !POPULAR_CITIES.includes(city));
   return (
-    <FieldShell label={label} hint="با تراشه انتخاب کنید">
-      <div style={{ display: "flex", flexWrap: "wrap", gap: spacing.sm }}>
-        <Chip accent="gold" active={selected.length === 0} onClick={() => onChange("")}>
-          همهٔ شهرها
-        </Chip>
-        {POPULAR_CITIES.map((cityOption) => (
-          <Chip key={cityOption} active={selected.includes(cityOption)} onClick={() => toggle(cityOption)}>
-            {cityOption}
-          </Chip>
-        ))}
-      </div>
+    <FieldShell label={label} hint="از فهرست انتخاب یا بنویسید">
+      {selected.length === 0 ? (
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700, color: colors.olive700, background: colors.olive50, border: `1px solid ${colors.olive200}`, borderRadius: 999, padding: "6px 12px" }}>
+          <Icon name="checkCircle" size={14} />
+          همهٔ شهرها — بدون محدودیت
+        </span>
+      ) : (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+          {selected.map((city, index) => (
+            <span
+              key={`${city}-${index}`}
+              style={{ display: "inline-flex", alignItems: "center", gap: 5, minHeight: 34, padding: "5px 8px 5px 12px", borderRadius: 999, fontSize: 12, fontWeight: 700, color: colors.olive700, background: colors.olive50, border: `1px solid ${colors.olive200}` }}
+            >
+              {city}
+              <button
+                type="button"
+                aria-label={`حذف ${city}`}
+                onClick={() => remove(city)}
+                style={{ width: 20, height: 20, display: "grid", placeItems: "center", padding: 0, border: 0, borderRadius: "50%", color: colors.olive600, background: "transparent", cursor: "pointer", fontFamily: typography.fontFamily }}
+              >
+                <Icon name="x" size={12} stroke={2.4} />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+      {available.length > 0 ? (
+        <SelectField
+          ariaLabel="افزودن شهر پذیرش"
+          value=""
+          onChange={(next) => {
+            if (next) add(next);
+          }}
+          options={[
+            { value: "", label: selected.length === 0 ? "محدود به شهرهای…" : "افزودن شهر…" },
+            ...available.map((cityOption) => ({ value: cityOption, label: cityOption })),
+          ]}
+        />
+      ) : null}
       <input
         type="text"
-        value={value}
-        onChange={(event) => onChange(event.target.value.slice(0, 200))}
-        placeholder="شهرهای دیگر را با ویرگول اضافه کنید…"
+        value={customSelected.join("، ")}
+        onChange={(event) => {
+          const typed = event.target.value.split(/[،,]/).map((part) => part.trim()).filter(Boolean);
+          onChange([...selected.filter((city) => POPULAR_CITIES.includes(city)), ...typed].join("، "));
+        }}
+        placeholder="شهر دیگر را اینجا بنویسید (با ویرگول جدا کنید)…"
         style={{ ...inputStyle, minHeight: 46 }}
-        aria-label={label}
+        aria-label="شهرهای دیگر"
       />
     </FieldShell>
   );

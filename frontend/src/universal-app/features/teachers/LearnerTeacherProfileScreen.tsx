@@ -20,6 +20,7 @@ import {
   typography,
 } from "../../ui";
 import { TierBadge } from "./TierBadge";
+import { TeacherBioBlocks } from "./BioBlocks";
 import { messageOf } from "../../ui/errorMessage";
 import { formatWalletAmount } from "../wallet/WalletTransactionCard";
 import { getTeacherDetail } from "./api";
@@ -28,91 +29,6 @@ import type { TeacherDetail, TeacherReview, TeacherService } from "./types";
 function reviewDate(value: string) {
   if (!value) return "";
   return formatJalaliDateTime(value, { withTime: false });
-}
-
-/* ═══ «دربارهٔ استاد» — بازچینش ساختاریافته (هم‌الگو با نسخهٔ وب) ═══ */
-type BioBlock =
-  | { kind: "para"; emoji: string; text: string }
-  | { kind: "chips"; title: string; items: string[] }
-  | { kind: "meta"; items: string[] };
-
-function parseTeacherBio(bio?: string): BioBlock[] {
-  if (!bio) return [];
-  const blocks: BioBlock[] = [];
-  for (const rawBlock of bio.trim().split(/\n\s*\n/)) {
-    const lines = rawBlock.split("\n").map((line) => line.trim()).filter(Boolean);
-    if (!lines.length) continue;
-    const first = lines[0];
-    if (first.startsWith("🎯")) {
-      const title = first.replace(/^🎯\s*/, "").replace(/:\s*$/, "") || "زمینه‌های تدریس";
-      const items = lines.slice(1).map((line) => line.replace(/^[•\-*]\s*/, "").trim()).filter(Boolean);
-      blocks.push({ kind: "chips", title, items });
-      continue;
-    }
-    if (first.startsWith("📍")) {
-      const merged = lines.map((line) => line.replace(/^📍\s*/, "")).join(" ");
-      blocks.push({ kind: "meta", items: merged.split("|").map((part) => part.trim()).filter(Boolean) });
-      continue;
-    }
-    const emojiMatch = first.match(/^(\p{Extended_Pictographic})/u);
-    const emoji = emojiMatch?.[1] ?? "";
-    const text = emoji ? first.slice(emoji.length).trim() : first;
-    blocks.push({ kind: "para", emoji, text: [text, ...lines.slice(1)].filter(Boolean).join(" ") });
-  }
-  return blocks;
-}
-
-function TeacherBioBlocks({ bio }: { bio?: string }) {
-  const blocks = parseTeacherBio(bio);
-  if (!blocks.length) {
-    return <p style={{ fontSize: 14, lineHeight: 1.9, margin: "8px 0 0", color: colors.inkSecondary }}>اطلاعاتی ثبت نشده است.</p>;
-  }
-  return (
-    <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
-      {blocks.map((block, index) => {
-        if (block.kind === "para") {
-          return (
-            <p key={index} style={{ display: "flex", alignItems: "flex-start", gap: 9, fontSize: 13.5, lineHeight: 2, margin: 0, color: colors.inkSecondary }}>
-              {block.emoji ? (
-                <span
-                  aria-hidden="true"
-                  style={{ display: "grid", placeItems: "center", flex: "0 0 32px", width: 32, height: 32, marginTop: 3, borderRadius: 10, border: `1px solid ${colors.border}`, background: colors.sand50, fontSize: 14 }}
-                >
-                  {block.emoji}
-                </span>
-              ) : null}
-              <span>{block.text}</span>
-            </p>
-          );
-        }
-        if (block.kind === "chips") {
-          return (
-            <div key={index} style={{ padding: "12px 13px", borderRadius: 16, border: `1px solid ${colors.border}`, background: colors.sand50 }}>
-              <strong style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 800, color: colors.olive700 }}>
-                <Icon name="sparkle" size={13} /> {block.title}
-              </strong>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 9 }}>
-                {block.items.map((item) => (
-                  <span key={item} style={{ display: "inline-flex", padding: "5px 10px", borderRadius: 999, fontSize: 11.5, fontWeight: 700, color: colors.olive700, background: colors.olive50, border: `1px solid ${colors.olive200}` }}>
-                    {item}
-                  </span>
-                ))}
-              </div>
-            </div>
-          );
-        }
-        return (
-          <div key={index} style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-            {block.items.map((item) => (
-              <span key={item} style={{ display: "inline-flex", padding: "5px 10px", borderRadius: 999, fontSize: 11.5, fontWeight: 700, color: "#8b681f", background: colors.goldBackground, border: "1px solid rgba(191,149,64,.35)" }}>
-                {item}
-              </span>
-            ))}
-          </div>
-        );
-      })}
-    </div>
-  );
 }
 
 function ServiceCard({ service }: { service: TeacherService }) {

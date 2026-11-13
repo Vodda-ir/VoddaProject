@@ -3,6 +3,7 @@
 import type { KeyboardEvent } from "react";
 import type { UniversalAppConfig } from "../../config";
 import { navigateApp } from "../../router";
+import { resolveAssetUrl } from "../../platform/asset";
 import { Button, Icon, colors, typography } from "../../ui";
 import { TierBadge } from "./TierBadge";
 import type { Teacher } from "./types";
@@ -72,7 +73,7 @@ export function TeacherCard({
           >
             {teacher.avatarUrl ? (
               <img
-                src={teacher.avatarUrl}
+                src={resolveAssetUrl(teacher.avatarUrl)}
                 alt={teacher.name}
                 loading="lazy"
                 style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}

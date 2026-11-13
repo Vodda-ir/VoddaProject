@@ -24,7 +24,13 @@ const nextConfig = {
       { key: 'X-Content-Type-Options', value: 'nosniff' },
       { key: 'X-Frame-Options', value: 'DENY' },
       { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-      { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+      {
+        // geolocation=(self) — the ceremony venue picker needs the device GPS to
+        // auto-fill city/address; a bare () silently disables the API and the
+        // «استفاده از موقعیت من» button always fails.
+        key: 'Permissions-Policy',
+        value: 'camera=(), microphone=(), geolocation=(self)',
+      },
       {
         key: 'Content-Security-Policy',
         // form-action must whitelist the Saman-Sep gateway: every payment flow

@@ -149,7 +149,7 @@ function MyOfferRow({
         </Button>
       ) : offer.status === "chosen" ? (
         <p style={{ margin: 0, fontSize: 12.5, color: colors.olive700, lineHeight: 1.9 }}>
-          🎉 برگزارکننده شما را انتخاب کرد! قرارداد مراسم در «خدمات حضوری» پیگیری می‌شود.
+          برگزارکننده شما را انتخاب کرد؛ قرارداد مراسم در «خدمات حضوری» قابل پیگیری است.
         </p>
       ) : (
         <p style={{ margin: 0, fontSize: 12, color: colors.inkMuted, lineHeight: 1.8 }}>
@@ -286,7 +286,7 @@ export function TeacherCeremonyScreen({ config }: { config: UniversalAppConfig }
           </div>
           <div>
             <h1 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>پذیرش مراسم</h1>
-            <span style={{ fontSize: 12.5, opacity: 0.85 }}>فراخوان‌های مراسم حضوری را ببین و پذیرش کن</span>
+            <span style={{ fontSize: 12.5, opacity: 0.85 }}>فراخوان‌های مراسم حضوری را مشاهده و اعلام پذیرش کنید</span>
           </div>
           <div style={{ marginInlineStart: "auto", textAlign: "center" }}>
             <strong style={{ display: "block", fontSize: 22, fontVariantNumeric: "tabular-nums" }}>{toFaDigits(openCalls.length)}</strong>

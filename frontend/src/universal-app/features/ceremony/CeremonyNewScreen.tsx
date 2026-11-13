@@ -31,7 +31,7 @@ import {
   inputStyle,
 } from "./elements";
 import { isWhenInFuture, tehranWallToRfc3339, type WhenValue } from "./schedule";
-import { Chip, CountField, NoteTemplateChips, PriceRangePicker, TimePresetChips, VenuePicker } from "./fields";
+import { CountField, NoteTemplateChips, PriceRangePicker, SelectField, TimePresetSelect, VenuePicker } from "./fields";
 import type { CeremonyAudience, OfficialInPersonService } from "./types";
 
 function todayLocalDate(): string {
@@ -73,7 +73,7 @@ function whenChip(active: boolean): CSSProperties {
   };
 }
 
-const RECITER_PRESETS: readonly number[] = [1, 2, 3, 4, 5];
+const RECITER_PRESETS: readonly number[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
 function FieldLabel({ children, hint }: { children: string; hint?: string }) {
   return (
@@ -203,14 +203,14 @@ export function CeremonyNewScreen({ config }: { config: UniversalAppConfig }) {
           </div>
           <div>
             <h1 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>فراخوان مراسم</h1>
-            <span style={{ fontSize: 12.5, opacity: 0.9 }}>مراسمت را ثبت کن؛ قاریان حق‌الزحمه‌شان را اعلام می‌کنند</span>
+            <span style={{ fontSize: 12.5, opacity: 0.9 }}>مراسم خود را ثبت کنید؛ قاریان حق‌الزحمهٔ خود را اعلام می‌کنند</span>
           </div>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginTop: 14 }}>
           {[
-            { icon: "doc" as const, text: "جزئیات مراسم را بنویسید" },
-            { icon: "bell" as const, text: "قاریان پذیرش می‌کنند" },
-            { icon: "checkCircle" as const, text: "یکی را قطعی کنید" },
+            { icon: "doc" as const, text: "جزئیات مراسم را ثبت کنید" },
+            { icon: "bell" as const, text: "قاریان اعلام آمادگی می‌کنند" },
+            { icon: "checkCircle" as const, text: "یک را قطعی کنید" },
           ].map((step) => (
             <div key={step.text} style={{ background: "rgba(255,255,255,.12)", borderRadius: 13, padding: "10px 8px", textAlign: "center" }}>
               <Icon name={step.icon} size={18} style={{ opacity: 0.92 }} />
@@ -304,10 +304,7 @@ export function CeremonyNewScreen({ config }: { config: UniversalAppConfig }) {
             </span>
           </div>
           <JalaliWhenPicker value={when} onChange={setWhen} label="تاریخ و ساعت برگزاری" />
-          <div style={{ display: "grid", gap: 8 }}>
-            <strong style={{ fontSize: 13.5, color: colors.ink, display: "block" }}>ساعت‌های پیشنهادی</strong>
-            <TimePresetChips hh={when.hh} mm={when.mm} onPick={({ hh, mm }) => setWhen((current) => ({ ...current, hh, mm }))} />
-          </div>
+          <TimePresetSelect hh={when.hh} mm={when.mm} onPick={({ hh, mm }) => setWhen((current) => ({ ...current, hh, mm }))} />
         </div>
 
         <VenuePicker
@@ -339,45 +336,54 @@ export function CeremonyNewScreen({ config }: { config: UniversalAppConfig }) {
             <strong style={{ fontSize: 13.5, color: colors.ink, display: "block" }}>تعداد قاریان موردنیاز</strong>
             <span style={{ fontSize: 11, color: colors.inkFaint }}>۱ تا ۱۰ قاری</span>
           </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: spacing.sm, marginBottom: spacing.md }}>
-            {RECITER_PRESETS.map((preset) => (
-              <Chip key={preset} active={reciters === preset} onClick={() => setReciters(preset)}>
-                {toFaDigits(preset)} قاری
-              </Chip>
-            ))}
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: spacing.md }}>
-            <button
-              type="button"
-              aria-label="کاهش تعداد قاریان"
-              onClick={() => setReciters((value) => Math.max(1, value - 1))}
-              disabled={reciters <= 1}
-              style={{ ...stepButtonStyle, opacity: reciters <= 1 ? 0.45 : 1 }}
-            >
-              <Icon name="x" size={18} stroke={2.4} />
-            </button>
-            <strong
-              aria-live="polite"
-              style={{
-                flex: 1,
-                textAlign: "center",
-                fontSize: 22,
-                fontWeight: 900,
-                color: colors.olive700,
-                fontVariantNumeric: "tabular-nums",
-              }}
-            >
-              {toFaDigits(reciters)}
-            </strong>
-            <button
-              type="button"
-              aria-label="افزایش تعداد قاریان"
-              onClick={() => setReciters((value) => Math.min(10, value + 1))}
-              disabled={reciters >= 10}
-              style={{ ...stepButtonStyle, opacity: reciters >= 10 ? 0.45 : 1 }}
-            >
-              <Icon name="plus" size={18} stroke={2.4} />
-            </button>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: spacing.md }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <SelectField
+                ariaLabel="تعداد قاریان موردنیاز"
+                value={String(reciters)}
+                onChange={(next) => {
+                  const parsed = Number(next);
+                  if (Number.isInteger(parsed)) setReciters(Math.min(10, Math.max(1, parsed)));
+                }}
+                options={RECITER_PRESETS.map((preset) => ({
+                  value: String(preset),
+                  label: preset === 1 ? "۱ قاری" : `${toFaDigits(preset)} قاری`,
+                }))}
+              />
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "0 0 auto", paddingTop: 0 }}>
+              <button
+                type="button"
+                aria-label="کاهش تعداد قاریان"
+                onClick={() => setReciters((value) => Math.max(1, value - 1))}
+                disabled={reciters <= 1}
+                style={{ ...stepButtonStyle, opacity: reciters <= 1 ? 0.45 : 1 }}
+              >
+                <Icon name="x" size={18} stroke={2.4} />
+              </button>
+              <strong
+                aria-live="polite"
+                style={{
+                  minWidth: 30,
+                  textAlign: "center",
+                  fontSize: 21,
+                  fontWeight: 900,
+                  color: colors.olive700,
+                  fontVariantNumeric: "tabular-nums",
+                }}
+              >
+                {toFaDigits(reciters)}
+              </strong>
+              <button
+                type="button"
+                aria-label="افزایش تعداد قاریان"
+                onClick={() => setReciters((value) => Math.min(10, value + 1))}
+                disabled={reciters >= 10}
+                style={{ ...stepButtonStyle, opacity: reciters >= 10 ? 0.45 : 1 }}
+              >
+                <Icon name="plus" size={18} stroke={2.4} />
+              </button>
+            </div>
           </div>
         </div>
       </Card>
@@ -439,7 +445,7 @@ export function CeremonyNewScreen({ config }: { config: UniversalAppConfig }) {
 
       <div style={{ position: "sticky", zIndex: 12, bottom: "calc(68px + env(safe-area-inset-bottom))", padding: "8px 0 12px", background: colors.sand50 }}>
         <Button fullWidth loading={creating} disabled={creating} onClick={() => void submit()} style={{ minHeight: 52 }}>
-          🔔 ثبت فراخوان مراسم
+          ثبت فراخوان مراسم
         </Button>
       </div>
     </div>
