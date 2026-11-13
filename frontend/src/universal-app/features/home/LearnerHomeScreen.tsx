@@ -442,7 +442,7 @@ function RebookRail({ teachers, config }: { teachers: PastTeacher[]; config: Uni
                 fontFamily: typography.fontFamily,
               }}
             >
-              <Avatar name={teacher.name} src={teacher.avatarUrl || undefined} size={54} ring />
+              <Avatar name={teacher.name} src={teacher.avatarUrl || undefined} size={54} ring tone="gold" />
               <strong
                 style={{
                   maxWidth: "100%",

@@ -83,6 +83,22 @@ export function UniversalVisualStyles() {
       .vodda-button:not(:disabled):hover {
         filter: brightness(.985);
       }
+      /* بازخورد فشار روی دکمه‌ها — حس لمس فیزیکی (فاز جان‌بخشی) */
+      .vodda-button:not(:disabled):active {
+        transform: scale(.97);
+        filter: brightness(.965);
+      }
+      .vodda-button:not(:disabled) {
+        transition: transform 150ms ease, box-shadow 150ms ease, background 150ms ease, opacity 150ms ease, filter 150ms ease;
+      }
+      /* کارت‌های تعاملی روی نشانگرِ دسکتاپ کمی بلند می‌شوند و سایه‌شان عمیق‌تر می‌شود */
+      .vodda-card--interactive:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 3px 6px rgba(46,54,34,.05), 0 16px 32px rgba(46,54,34,.11) !important;
+      }
+      .vodda-card--interactive {
+        transition: transform 180ms ease, box-shadow 180ms ease;
+      }
       .vodda-input:focus,
       .vodda-textarea:focus {
         border-color: #728350 !important;
@@ -103,6 +119,27 @@ export function UniversalVisualStyles() {
       }
       .vodda-bottom-nav {
         transform: translateZ(0);
+      }
+      /* هالهٔ نرم زیر پیل تب فعال — مسیر کاربر همیشه روشن است (فاز نور) */
+      .vodda-bottom-nav a[aria-current="page"] > span {
+        box-shadow: 0 6px 16px rgba(76, 90, 54, .30);
+      }
+      /* هالهٔ طلایی تنفّسی دور دکمهٔ مرکزی فراخوان */
+      .vodda-nav-cta-orb {
+        position: relative;
+      }
+      .vodda-nav-cta-orb::before {
+        content: "";
+        position: absolute;
+        inset: -7px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(191, 149, 64, .28) 0%, rgba(191, 149, 64, 0) 68%);
+        animation: vodda-cta-halo 3.2s ease-in-out infinite;
+        pointer-events: none;
+      }
+      @keyframes vodda-cta-halo {
+        0%, 100% { opacity: .55; transform: scale(.96); }
+        50% { opacity: 1; transform: scale(1.05); }
       }
       .vodda-bottom-nav a {
         transition: color 150ms ease, background 150ms ease, transform 150ms ease;
@@ -287,6 +324,7 @@ export function UniversalVisualStyles() {
       }
       @media (prefers-reduced-motion: reduce) {
         .vodda-toast { animation: none; opacity: 1; }
+        .vodda-nav-cta-orb::before { animation: none; opacity: .7; }
       }
       @keyframes vodda-spin { to { transform: rotate(360deg); } }
       @keyframes vodda-fade-in { from { opacity: 0; } to { opacity: 1; } }
@@ -312,7 +350,8 @@ export function UniversalVisualStyles() {
         .vodda-dispatch-pulse::after,
         .vodda-dispatch-radar,
         .vodda-neon,
-        .vodda-neon-gold {
+        .vodda-neon-gold,
+        .vodda-nav-cta-orb::before {
           animation: none !important;
           transition: none !important;
         }

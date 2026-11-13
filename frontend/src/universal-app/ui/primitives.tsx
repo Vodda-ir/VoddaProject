@@ -38,7 +38,8 @@ export function Button({
       color: colors.surface,
       background: colors.olive600,
       borderColor: colors.olive600,
-      boxShadow: "none",
+      /* درخشش نرم زیتونی — دکمهٔ اصلی حس «فشرده شدن» و عمق می‌گیرد (فاز نور) */
+      boxShadow: "0 8px 20px rgba(76, 90, 54, 0.22), 0 2px 6px rgba(46, 54, 34, 0.10)",
     },
     secondary: {
       color: colors.olive800,
@@ -171,10 +172,11 @@ export function Card({ elevated = false, children, style, className, ...props }:
         {
           padding: spacing.xl,
           color: colors.ink,
-          background: colors.surface,
+          /* سفیدِ گرم با گرادیان ملایم + سایهٔ پیش‌فرض نرم: کارت‌ها از سطح پس‌زمینه «بلند» حس می‌شوند (فاز نور) */
+          background: "linear-gradient(180deg, #ffffff 0%, #fffdf8 100%)",
           border: `1px solid ${colors.border}`,
           borderRadius: radii.lg,
-          boxShadow: elevated ? shadows.md : "none",
+          boxShadow: elevated ? shadows.md : "0 1px 2px rgba(46,54,34,.04), 0 8px 22px rgba(46,54,34,.055)",
           fontFamily: typography.fontFamily,
         },
         style,
@@ -190,6 +192,8 @@ export type AvatarProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "children"> 
   name?: string;
   size?: number;
   ring?: boolean;
+  /** حلقهٔ طلایی برای استادها و نقش‌های ویژه (فاز هویت بصری) */
+  tone?: "olive" | "gold";
 };
 
 function initials(name?: string) {
@@ -198,7 +202,7 @@ function initials(name?: string) {
   return `${parts[0]?.[0] ?? ""}${parts.length > 1 ? parts.at(-1)?.[0] ?? "" : ""}`;
 }
 
-function avatarFrame(size: number, ring: boolean, style?: CSSProperties): CSSProperties {
+function avatarFrame(size: number, ring: boolean, tone: "olive" | "gold", style?: CSSProperties): CSSProperties {
   return mergeStyle(
     {
       display: "inline-grid",
@@ -208,15 +212,23 @@ function avatarFrame(size: number, ring: boolean, style?: CSSProperties): CSSPro
       height: size,
       boxSizing: "border-box",
       borderRadius: "50%",
-      border: ring ? `3px solid ${colors.surface}` : undefined,
-      outline: ring ? `2px solid ${colors.olive200}` : undefined,
-      boxShadow: ring ? shadows.sm : undefined,
+      border: ring
+        ? `3px solid ${tone === "gold" ? colors.goldSoft : colors.surface}`
+        : undefined,
+      outline: ring
+        ? `2px solid ${tone === "gold" ? "rgba(191,149,64,.45)" : colors.olive200}`
+        : undefined,
+      boxShadow: ring
+        ? tone === "gold"
+          ? `0 4px 12px rgba(139,104,31,.18), ${shadows.sm}`
+          : shadows.sm
+        : undefined,
     },
     style,
   );
 }
 
-export function Avatar({ name, size = 48, ring = true, src, alt, style, ...props }: AvatarProps) {
+export function Avatar({ name, size = 48, ring = true, tone = "olive", src, alt, style, ...props }: AvatarProps) {
   // آدرس‌های نسبی آپلودها (مثل /uploads/avatars/…) پیش از رندر حل می‌شوند تا
   // هم در وب هم‌مبدأ و هم در WebView نیتیو درست نمایش داده شوند.
   const resolvedSrc = resolveAssetUrl(src);
@@ -228,7 +240,7 @@ export function Avatar({ name, size = 48, ring = true, src, alt, style, ...props
         width={size}
         height={size}
         style={{
-          ...avatarFrame(size, ring, style),
+          ...avatarFrame(size, ring, tone, style),
           objectFit: "cover",
           background: colors.olive50,
         }}
@@ -242,7 +254,7 @@ export function Avatar({ name, size = 48, ring = true, src, alt, style, ...props
       role="img"
       aria-label={alt ?? name ?? "کاربر"}
       style={{
-        ...avatarFrame(size, ring, style),
+        ...avatarFrame(size, ring, tone, style),
         color: colors.olive800,
         background: gradients.soft,
         fontFamily: typography.fontFamily,

@@ -68,6 +68,10 @@ export function TeacherCard({
               overflow: "hidden",
               border: `2.5px solid ${teacher.available ? colors.olive600 : colors.danger}`,
               background: `linear-gradient(150deg, ${colors.olive100}, ${colors.olive50})`,
+              /* هالهٔ طلایی ظریف دور چهرهٔ استادِ آماده — حس «حلقهٔ نور» (فاز هویت) */
+              boxShadow: teacher.available
+                ? "0 0 0 3px rgba(231,213,168,.5), 0 4px 10px rgba(46,54,34,.10)"
+                : "0 2px 8px rgba(46,54,34,.08)",
             }}
           >
             {teacher.avatarUrl ? (
@@ -226,3 +230,4 @@ export function TeacherCard({
     </div>
   );
 }
+

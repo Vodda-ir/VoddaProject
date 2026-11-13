@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePlatform } from "../../platform/context";
+import { navigateApp } from "../../router";
 import {
   Avatar,
   Button,
@@ -284,7 +285,16 @@ export function LearnerSessionsScreen() {
         />
       ) : null}
       {!loading && !error && sessions.length === 0 ? (
-        <EmptyState icon={<Icon name="calendar" size={30} />} title="جلسه‌ای نیست" description="هنوز جلسه‌ای در این بخش ندارید." />
+        <EmptyState
+          icon={<Icon name="calendar" size={30} />}
+          title="جلسه‌ای نیست"
+          description="هنوز جلسه‌ای در این بخش ندارید."
+          action={
+            <Button onClick={() => navigateApp("/search")} style={{ minWidth: 220 }}>
+              رزرو اولین جلسه
+            </Button>
+          }
+        />
       ) : null}
       {!loading && !error && sessions.length > 0 ? (
         <div style={{ display: "grid", gap: spacing.md }}>
