@@ -8,6 +8,7 @@ import type { CSSProperties } from "react";
 import type { UniversalAppConfig } from "../../config";
 import { usePlatform } from "../../platform/context";
 import { navigateApp } from "../../router";
+import { CornerOrnament } from "../../ui/ornaments";
 import { toFaDigits, digitsOnly } from "../../ui/persian";
 import {
   Button,
@@ -193,6 +194,8 @@ export function CeremonyNewScreen({ config }: { config: UniversalAppConfig }) {
       <div
         className="vodda-enter"
         style={{
+          position: "relative",
+          overflow: "hidden",
           borderRadius: 22,
           padding: 20,
           color: colors.surface,
@@ -200,16 +203,18 @@ export function CeremonyNewScreen({ config }: { config: UniversalAppConfig }) {
           boxShadow: "0 14px 34px rgba(139,104,31,.3)",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        {/* تذهیب گوشه — هویت قرآنی روی هیروی مراسم (فاز ۲) */}
+        <CornerOrnament tone="light" size={120} style={{ insetInlineEnd: -30, top: -34, opacity: 0.85 }} />
+        <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 12 }}>
           <div style={{ display: "grid", placeItems: "center", width: 46, height: 46, borderRadius: 15, background: "rgba(255,255,255,.16)" }}>
             <Icon name="calendar" size={24} />
           </div>
           <div>
-            <h1 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>فراخوان مراسم</h1>
+            <h1 className="vodda-display" style={{ margin: 0, fontSize: 21, lineHeight: 1.9 }}>فراخوان مراسم</h1>
             <span style={{ fontSize: 12.5, opacity: 0.9 }}>مراسم خود را ثبت کنید؛ قاریان حق‌الزحمهٔ خود را اعلام می‌کنند</span>
           </div>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginTop: 14 }}>
+        <div style={{ position: "relative", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginTop: 14 }}>
           {[
             { icon: "doc" as const, text: "جزئیات مراسم را ثبت کنید" },
             { icon: "bell" as const, text: "قاریان اعلام آمادگی می‌کنند" },

@@ -5,6 +5,7 @@ import type { UniversalAppConfig } from "../../config";
 import { PlatformHttpError } from "../../platform/http";
 import { usePlatform } from "../../platform/context";
 import { navigateApp } from "../../router";
+import { CornerOrnament } from "../../ui/ornaments";
 import {
   Avatar,
   Button,
@@ -13,6 +14,7 @@ import {
   ErrorState,
   formatJalaliDateTime,
   Icon,
+  IllustrationDispatch,
   LoadingState,
   colors,
   gradients,
@@ -570,6 +572,8 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
       <div
         className="vodda-enter"
         style={{
+          position: "relative",
+          overflow: "hidden",
           borderRadius: 22,
           padding: 22,
           color: colors.surface,
@@ -577,16 +581,18 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
           boxShadow: shadows.olive,
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        {/* تذهیب گوشه — هویت قرآنی روی هیروی فراخوان (فاز ۲) */}
+        <CornerOrnament tone="light" size={124} style={{ insetInlineEnd: -32, top: -36, opacity: 0.9 }} />
+        <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 12 }}>
           <div style={{ display: "grid", placeItems: "center", width: 46, height: 46, borderRadius: 15, background: "rgba(255,255,255,.15)" }}>
             <Icon name="bell" size={24} />
           </div>
           <div>
-            <h1 style={{ margin: 0, fontSize: 19, fontWeight: 800 }}>فراخوان اساتید</h1>
+            <h1 className="vodda-display" style={{ margin: 0, fontSize: 22, lineHeight: 1.9 }}>فراخوان اساتید</h1>
             <span style={{ fontSize: 12.5, opacity: 0.85 }}>به‌سرعت و بدون تماس تلفنی؛ اساتید اعلام آمادگی می‌کنند و شما انتخاب می‌کنید</span>
           </div>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginTop: 16 }}>
+        <div style={{ position: "relative", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginTop: 16 }}>
           {[
             { icon: "search" as const, text: "موضوع را انتخاب کنید" },
             { icon: "bell" as const, text: "فراخوان را ثبت کنید" },
@@ -708,7 +714,11 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
               action={<Button variant="secondary" onClick={() => void loadCatalog()}>تلاش دوباره</Button>}
             />
           ) : filteredCatalog.length === 0 ? (
-            <EmptyState title="موضوعی پیدا نشد" description="عبارت دیگری را جستجو کنید." />
+            <EmptyState
+              illustration={<IllustrationDispatch size={150} />}
+              title="موضوعی پیدا نشد"
+              description="عبارت دیگری را جستجو کنید."
+            />
           ) : (
             <div style={{ display: "grid", gap: spacing.lg, maxHeight: 520, overflowY: "auto", paddingInlineEnd: 4 }}>
               {grouped.map(([category, items]) => (

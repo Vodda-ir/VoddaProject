@@ -10,6 +10,7 @@ import {
   Dialog,
   EmptyState,
   ErrorState,
+  IllustrationSessions,
   formatJalaliDate,
   Icon,
   LoadingState,
@@ -286,7 +287,7 @@ export function LearnerSessionsScreen() {
       ) : null}
       {!loading && !error && sessions.length === 0 ? (
         <EmptyState
-          icon={<Icon name="calendar" size={30} />}
+          illustration={<IllustrationSessions />}
           title="جلسه‌ای نیست"
           description="هنوز جلسه‌ای در این بخش ندارید."
           action={

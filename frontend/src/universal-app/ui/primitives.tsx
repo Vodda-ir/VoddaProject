@@ -272,10 +272,12 @@ export type StateProps = {
   description?: ReactNode;
   action?: ReactNode;
   icon?: ReactNode;
+  /** تصویرسازی خطی اختصاصی (فاز ۲) — جای دایرهٔ آیکون می‌نشیند و صحنهٔ معنادار می‌سازد */
+  illustration?: ReactNode;
   style?: CSSProperties;
 };
 
-function StateView({ title, description, action, icon, style }: StateProps) {
+function StateView({ title, description, action, icon, illustration, style }: StateProps) {
   return (
     <div
       style={mergeStyle(
@@ -291,24 +293,30 @@ function StateView({ title, description, action, icon, style }: StateProps) {
         style,
       )}
     >
-      <div
-        aria-hidden={!icon}
-        style={{
-          width: 72,
-          height: 72,
-          display: "grid",
-          placeItems: "center",
-          marginBottom: spacing.xs,
-          borderRadius: "50%",
-          color: colors.olive500,
-          background: colors.olive50,
-          boxShadow: `inset 0 0 0 1px ${colors.olive100}`,
-          fontSize: 26,
-          fontWeight: 900,
-        }}
-      >
-        {icon ?? "و"}
-      </div>
+      {illustration ? (
+        <div aria-hidden="true" style={{ marginBottom: spacing.xs }}>
+          {illustration}
+        </div>
+      ) : (
+        <div
+          aria-hidden={!icon}
+          style={{
+            width: 72,
+            height: 72,
+            display: "grid",
+            placeItems: "center",
+            marginBottom: spacing.xs,
+            borderRadius: "50%",
+            color: colors.olive500,
+            background: colors.olive50,
+            boxShadow: `inset 0 0 0 1px ${colors.olive100}`,
+            fontSize: 26,
+            fontWeight: 900,
+          }}
+        >
+          {icon ?? "و"}
+        </div>
+      )}
       <strong style={typography.title}>{title}</strong>
       {description ? <span style={{ maxWidth: 380, color: colors.inkMuted, ...typography.body }}>{description}</span> : null}
       {action ? <div style={{ marginTop: spacing.md }}>{action}</div> : null}

@@ -9,10 +9,12 @@ import {
   Avatar,
   Button,
   Card,
+  CornerOrnament,
   HeroPanel,
   Icon,
   IconBadge,
   LoadingState,
+  OrnamentDivider,
   SectionHeader,
   Sheet,
   StatusPill,
@@ -271,19 +273,50 @@ function VerseStrip() {
     <div
       className="vodda-enter"
       style={{
+        position: "relative",
+        overflow: "hidden",
         display: "flex",
         alignItems: "center",
         gap: spacing.sm,
-        padding: "10px 14px",
+        padding: "12px 16px",
         borderRadius: radii.lg,
-        background: colors.olive50,
-        border: `1px solid ${colors.olive100}`,
+        /* رنگ طلایی کاغذی + خط طلا — لحظهٔ آیه باید از بقیهٔ صفحه متمایز باشد */
+        background: `linear-gradient(150deg, ${colors.goldBackground}, #fffaf0 78%)`,
+        border: `1px solid ${colors.goldSoft}`,
+        boxShadow: "0 4px 14px rgba(191,149,64,.10)",
       }}
     >
-      <Icon name="quran" size={18} style={{ color: colors.olive700, flex: "0 0 auto" }} />
-      <p style={{ margin: 0, minWidth: 0, flex: 1, fontSize: 12.5, lineHeight: 1.9, color: colors.ink, fontWeight: 600 }}>
+      <CornerOrnament tone="olive" size={92} style={{ insetInlineStart: -26, top: -30, opacity: 0.8 }} />
+      <Icon
+        name="quran"
+        size={18}
+        style={{ color: colors.goldDark, flex: "0 0 auto", position: "relative" }}
+      />
+      <p
+        style={{
+          margin: 0,
+          minWidth: 0,
+          flex: 1,
+          position: "relative",
+          fontSize: 13.5,
+          color: colors.ink,
+          fontWeight: 600,
+          ...(isQuran ? { fontFamily: "VoddaQuran, IRANYekanXFaNum, sans-serif", fontSize: 15, fontWeight: 400, lineHeight: 2.05 } : null),
+        }}
+      >
         {isQuran ? "﴿" : "«"} {quote.text} {isQuran ? "﴾" : "»"}
-        <span style={{ color: colors.olive700, fontWeight: 800, fontSize: 12 }}> — {quote.source}</span>
+        <span
+          style={{
+            color: colors.goldDark,
+            fontFamily: "IRANYekanXFaNum, sans-serif",
+            fontWeight: 800,
+            fontSize: 11.5,
+            marginInlineStart: 6,
+            whiteSpace: "nowrap",
+          }}
+        >
+          — {quote.source}
+        </span>
       </p>
     </div>
   );
@@ -627,6 +660,8 @@ function FeaturedTeacher({ teacher, config }: { teacher: Teacher; config: Univer
         fontFamily: typography.fontFamily,
       }}
     >
+      {/* تذهیب گوشه — هویت قرآنی روی کارت استاد ویژه (فاز ۲) */}
+      <CornerOrnament tone="light" size={118} style={{ insetInlineEnd: -30, top: -34, opacity: 0.9 }} />
       <span
         aria-hidden="true"
         style={{
@@ -1217,6 +1252,7 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
           <RebookRail teachers={pastTeachers} config={config} />
           <TeacherRail title="اساتید پیشنهادی" teachers={recommended} config={config} />
           {featured ? <FeaturedTeacher teacher={featured} config={config} /> : null}
+          <OrnamentDivider style={{ margin: `${spacing.xs}px 0 ${spacing.xs}px` }} />
           <TeacherRail title="اساتید بانو" teachers={women} config={config} />
           <TeacherRail title="فعال‌ترین استادها" teachers={mostActive} config={config} />
         </>

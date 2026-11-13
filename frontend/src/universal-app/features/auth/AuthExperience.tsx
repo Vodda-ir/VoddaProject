@@ -66,7 +66,10 @@ export function LaunchScreen() {
           height={173}
           style={{ width: 150, height: "auto", display: "block" }}
         />
-        <strong style={{ fontSize: 14, fontWeight: 900, color: colors.ink }}>
+        <strong
+          className="vodda-display"
+          style={{ fontSize: 17, color: colors.ink, lineHeight: 1.9 }}
+        >
           پلتفرم آموزش و خدمات آنلاین قرآن کریم
         </strong>
       </div>
@@ -296,7 +299,10 @@ export function LoginScreen({ config }: LoginScreenProps) {
             height={111}
             style={{ width: 96, height: "auto", display: "block" }}
           />
-          <p style={{ margin: "12px 0 0", color: colors.ink, fontSize: 14.5, fontWeight: 900, textAlign: "center" }}>
+          <p
+            className="vodda-display"
+            style={{ margin: "10px 0 0", color: colors.ink, fontSize: 16.5, textAlign: "center", lineHeight: 1.9 }}
+          >
             پلتفرم آموزش و خدمات آنلاین قرآن کریم
           </p>
         </div>

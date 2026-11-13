@@ -7,6 +7,7 @@ import {
   EmptyState,
   ErrorState,
   Icon,
+  IllustrationWallet,
   Input,
   LoadingState,
   SectionHeader,
@@ -95,7 +96,7 @@ export function LearnerWalletScreen() {
 
   return (
     <section className="vodda-screen" style={{ display: "grid", gap: spacing.xl }}>
-      <h1 style={{ ...typography.heading, fontSize: 24, margin: 0, color: colors.ink }}>کیف پول</h1>
+      <h1 className="vodda-display" style={{ fontSize: 25, margin: "2px 0 0", color: colors.ink, lineHeight: 1.85 }}>کیف پول</h1>
       <PaymentResultBanner />
       <WalletHero amount={balance === null ? "—" : formatWalletAmount(balance)} />
 
@@ -184,7 +185,7 @@ export function LearnerWalletScreen() {
       ) : null}
       {!loading && !error && transactions.length === 0 ? (
         <EmptyState
-          icon={<Icon name="wallet" size={30} />}
+          illustration={<IllustrationWallet />}
           title="تراکنشی ثبت نشده"
           description="هنوز تراکنشی در کیف پول شما وجود ندارد."
         />

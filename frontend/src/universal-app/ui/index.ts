@@ -27,6 +27,13 @@ export {
 } from "./patterns";
 export { UniversalVisualStyles } from "./UniversalVisualStyles";
 export { MobileAppShell, TeacherAppShell } from "./shells";
+export { CornerOrnament, OrnamentDivider, StarOrnament } from "./ornaments";
+export {
+  IllustrationDispatch,
+  IllustrationQalam,
+  IllustrationSessions,
+  IllustrationWallet,
+} from "./illustrations";
 export { ToastHost, showToast } from "./toast";
 export {
   appTheme,

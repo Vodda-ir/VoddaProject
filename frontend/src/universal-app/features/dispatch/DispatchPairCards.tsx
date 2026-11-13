@@ -9,6 +9,7 @@ import type { CSSProperties } from "react";
 import type { UniversalAppConfig } from "../../config";
 import { navigateApp } from "../../router";
 import { Icon } from "../../ui/Icon";
+import { CornerOrnament } from "../../ui/ornaments";
 import { colors, gradients, shadows, spacing, typography } from "../../ui/theme";
 
 /** ستارهٔ هشت‌پر — موتیف هندسی اسلامی به‌صورت الگوی تکرارشونده و بسیار کم‌رنگ. */
@@ -97,6 +98,8 @@ function PairCard({ eyebrow, title, description, ctaLabel, ariaLabel, onClick, t
       }}
     >
       <GeometricPattern light={olive} />
+      {/* تذهیب گوشه‌ای روی کارت‌های فراخوان — هم‌خانوادهٔ هویت قرآنی (فاز ۲) */}
+      <CornerOrnament tone="light" size={124} style={{ insetInlineStart: -34, bottom: -38, transform: "rotate(180deg)", opacity: 0.75 }} />
       {olive ? <RadarRings /> : (
         <span
           aria-hidden="true"

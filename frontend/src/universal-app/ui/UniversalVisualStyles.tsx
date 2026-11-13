@@ -43,6 +43,42 @@ export function UniversalVisualStyles() {
         font-weight: 900;
         font-display: swap;
       }
+      /* فونت نمایشی نستعلیق (گلزار) — فقط برای تیترهای سطح صفحه و لحظه‌های برند */
+      @font-face {
+        font-family: "VoddaDisplay";
+        src: url("/fonts/VoddaDisplay-Gulzar.woff2") format("woff2");
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+      }
+      /* فونت قرآنی نسخ (امیری) — برای آیات و متون عربی */
+      @font-face {
+        font-family: "VoddaQuran";
+        src: url("/fonts/VoddaQuran-Amiri-Regular.woff2") format("woff2");
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: "VoddaQuran";
+        src: url("/fonts/VoddaQuran-Amiri-Bold.woff2") format("woff2");
+        font-style: normal;
+        font-weight: 700;
+        font-display: swap;
+      }
+      /* کلاس نمایشی: نستعلیق با ارتفاع خط مناسب قلم‌های دست‌نویس */
+      .vodda-display {
+        font-family: "VoddaDisplay", "IRANYekanXFaNum", system-ui, sans-serif;
+        font-weight: 400;
+        line-height: 1.95;
+        letter-spacing: 0;
+      }
+      /* کلاس قرآنی: نسخ امیری برای آیات با اعراب کامل */
+      .vodda-quran {
+        font-family: "VoddaQuran", "IRANYekanXFaNum", system-ui, sans-serif;
+        line-height: 2.1;
+        font-weight: 400;
+      }
       [data-universal-app="vodda"],
       [data-app-shell] {
         font-family: "IRANYekanXFaNum", system-ui, sans-serif;
