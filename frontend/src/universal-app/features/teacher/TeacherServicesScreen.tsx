@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { asArray, asInteger, asRecord, asString, type ApiEnvelope } from "../../platform/api";
 import { usePlatform } from "../../platform/context";
 import type { PlatformRuntime } from "../../platform/types";
@@ -21,6 +21,7 @@ import {
   toFaDigits,
   typography,
 } from "../../ui";
+import { showToast } from "../../ui/toast";
 import { messageOf } from "../../ui/errorMessage";
 import { formatWalletAmount } from "../wallet/WalletTransactionCard";
 import { AmountInput } from "../ceremony/fields";
@@ -37,7 +38,7 @@ type TeacherService = {
   active: boolean;
 };
 
-type OfficialServiceEntry = {
+type CatalogEntry = {
   id: number;
   category: string;
   title: string;
@@ -45,8 +46,12 @@ type OfficialServiceEntry = {
   icon?: string;
 };
 
+type CatalogCategory = {
+  category: string;
+  services: CatalogEntry[];
+};
+
 type ServiceDraft = {
-  officialServiceId: number | null;
   duration: string;
   price: string;
 };
@@ -95,33 +100,70 @@ async function deleteService(runtime: PlatformRuntime, id: number) {
   return runtime.request<ApiEnvelope<unknown>>(`/teacher/services/${id}`, { method: "DELETE" });
 }
 
-async function getCatalog(runtime: PlatformRuntime): Promise<OfficialServiceEntry[]> {
+async function getCatalog(runtime: PlatformRuntime): Promise<CatalogCategory[]> {
   const response = await runtime.request<ApiEnvelope<UnknownRecord>>("/catalog/services");
   const payload = asRecord(response.data);
-  const categories = asArray(payload?.categories);
-  const entries: OfficialServiceEntry[] = [];
-  for (const group of categories) {
+  const categories: CatalogCategory[] = [];
+  for (const group of asArray(payload?.categories)) {
     const row = asRecord(group);
     if (!row) continue;
-    const category = asString(row.category, "خدمات رسمی");
+    const services: CatalogEntry[] = [];
     for (const item of asArray(row.services)) {
       const entry = asRecord(item);
       if (!entry) continue;
       const id = asInteger(entry.id);
       if (id <= 0) continue;
-      entries.push({
+      services.push({
         id,
-        category,
+        category: asString(row.category, "خدمات رسمی"),
         title: asString(entry.title, "خدمت رسمی"),
         description: asString(entry.description, ""),
         icon: entry.icon == null ? undefined : asString(entry.icon, undefined as unknown as string),
       });
     }
+    if (services.length > 0) categories.push({ category: asString(row.category, "خدمات رسمی"), services });
   }
-  return entries;
+  return categories;
 }
 
-const emptyDraft: ServiceDraft = { officialServiceId: null, duration: "30", price: "" };
+/* ── قیمت و مدت پیش‌فرض هر خدمت ─────────────────────────────────────────────
+   استاد با یک لمس خدمت را انتخاب می‌کند؛ این مقادیر بلافاصله ثبت می‌شوند و
+   استاد هر زمان خواست می‌تواند قیمت/مدت را ویرایش کند. */
+type ServiceDefault = { duration: number; price: number };
+
+const CATEGORY_DEFAULTS: Record<string, ServiceDefault> = {
+  "قرآن‌آموزی پایه": { duration: 60, price: 150_000 },
+  "تجوید و علوم قرائت": { duration: 60, price: 200_000 },
+  "حفظ قرآن": { duration: 60, price: 250_000 },
+  "صوت و لحن و هنر قرآنی": { duration: 60, price: 250_000 },
+  "مفاهیم، تفسیر و علوم قرآن": { duration: 60, price: 180_000 },
+  "آموزش‌های ویژه": { duration: 45, price: 200_000 },
+  "آمادگی و مشاوره قرآنی": { duration: 60, price: 300_000 },
+  "خدمات حضوری قرآنی": { duration: 60, price: 1_000_000 },
+};
+
+const SERVICE_DEFAULT_OVERRIDES: Record<number, ServiceDefault> = {
+  8: { duration: 30, price: 150_000 }, // تصحیح تلاوت و اصلاح لهجه
+  15: { duration: 30, price: 150_000 }, // مرور و تثبیت محفوظات
+  40: { duration: 30, price: 150_000 }, // ارزیابی و رتبه‌بندی سطح قرآنی
+};
+
+const FALLBACK_DEFAULT: ServiceDefault = { duration: 60, price: 200_000 };
+
+function defaultFor(entry: CatalogEntry): ServiceDefault {
+  return SERVICE_DEFAULT_OVERRIDES[entry.id] ?? CATEGORY_DEFAULTS[entry.category] ?? FALLBACK_DEFAULT;
+}
+
+/* سبز انتخاب — کنتراست واضح با کارت‌های خنثی، هماهنگ با پالت طبیعی وُدّا */
+const greenTone = {
+  ink: "#2c5e3a",
+  deep: "#24512f",
+  border: "#a9cfb4",
+  chip: "#d9edde",
+  background: "#eef8f1",
+} as const;
+
+const emptyDraft: ServiceDraft = { duration: "60", price: "" };
 
 /** پیشنهادهای آماده — تنظیم یک‌ضربه‌ای مدت و قیمت */
 const DURATION_PRESETS = [30, 45, 60, 90] as const;
@@ -142,17 +184,32 @@ function quickChipStyle(active: boolean): CSSProperties {
   };
 }
 
+function normalizePersian(value: string): string {
+  return value
+    .replace(/[\u200c\u064b-\u0652]/g, "")
+    .replace(/[أإآ]/g, "ا")
+    .replace(/ة/g, "ه")
+    .replace(/ى/g, "ی")
+    .replace(/ك/g, "ک")
+    .trim()
+    .toLowerCase();
+}
+
 export function TeacherServicesScreen() {
   const runtime = usePlatform();
   const [services, setServices] = useState<TeacherService[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [busyId, setBusyId] = useState<number | "new" | null>(null);
-  const [editorTarget, setEditorTarget] = useState<TeacherService | "new" | null>(null);
+  const [categories, setCategories] = useState<CatalogCategory[]>([]);
+  const [catalogLoading, setCatalogLoading] = useState(true);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const [creatingId, setCreatingId] = useState<number | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [manualExpanded, setManualExpanded] = useState<Record<string, boolean>>({});
+  const [editing, setEditing] = useState<TeacherService | null>(null);
   const [draft, setDraft] = useState<ServiceDraft>(emptyDraft);
-  const [catalog, setCatalog] = useState<OfficialServiceEntry[]>([]);
-  const [catalogLoading, setCatalogLoading] = useState(false);
-  const [catalogQuery, setCatalogQuery] = useState("");
+  const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [deactivateTarget, setDeactivateTarget] = useState<TeacherService | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<TeacherService | null>(null);
@@ -170,53 +227,114 @@ export function TeacherServicesScreen() {
     }
   }, [runtime]);
 
+  const loadCatalog = useCallback(async () => {
+    setCatalogLoading(true);
+    setCatalogError(null);
+    try {
+      setCategories(await getCatalog(runtime));
+    } catch (loadError) {
+      setCategories([]);
+      setCatalogError(messageOf(loadError));
+    } finally {
+      setCatalogLoading(false);
+    }
+  }, [runtime]);
+
   useEffect(() => {
     void load();
-  }, [load]);
+    void loadCatalog();
+  }, [load, loadCatalog]);
 
-  const selectedOfficial = draft.officialServiceId == null ? null : catalog.find((entry) => entry.id === draft.officialServiceId) ?? null;
+  /* خدمات استاد بر اساس شناسهٔ خدمت رسمی — برای تشخیص انتخاب‌شده‌ها */
+  const serviceByOfficialId = useMemo(() => {
+    const map = new Map<number, TeacherService>();
+    for (const service of services) {
+      if (service.official_service_id != null) map.set(service.official_service_id, service);
+    }
+    return map;
+  }, [services]);
 
-  const filteredCatalog = (() => {
-    const query = catalogQuery.trim().toLowerCase();
-    if (!query) return catalog;
-    return catalog.filter(
-      (entry) => entry.title.toLowerCase().includes(query) || entry.description.toLowerCase().includes(query),
-    );
-  })();
+  /* خدمت‌های قدیمی بدون تطابق با کاتالوگ — در بخش جداگانه حفظ می‌شوند */
+  const orphanServices = useMemo(() => {
+    const catalogIds = new Set(categories.flatMap((group) => group.services.map((entry) => entry.id)));
+    return services.filter((service) => service.official_service_id == null || !catalogIds.has(service.official_service_id));
+  }, [services, categories]);
 
-  function openEditor(service?: TeacherService) {
-    setEditorTarget(service ?? "new");
-    setDraft(
-      service
-        ? { officialServiceId: service.official_service_id, duration: String(service.duration), price: String(service.price) }
-        : emptyDraft,
-    );
-    setCatalogQuery("");
-    setFormError(null);
-    if (catalog.length === 0) {
-      setCatalogLoading(true);
-      getCatalog(runtime)
-        .then((entries) => setCatalog(entries))
-        .catch(() => setFormError("دریافت فهرست خدمات رسمی ناموفق بود."))
-        .finally(() => setCatalogLoading(false));
+  const activeCount = services.filter((service) => service.active).length;
+
+  const normalizedQuery = normalizePersian(query);
+  const searching = normalizedQuery.length > 0;
+
+  const visibleCategories = useMemo(() => {
+    if (!searching) return categories;
+    return categories
+      .map((group) => ({
+        ...group,
+        services: group.services.filter(
+          (entry) => normalizePersian(entry.title).includes(normalizedQuery) || normalizePersian(entry.description).includes(normalizedQuery),
+        ),
+      }))
+      .filter((group) => group.services.length > 0);
+  }, [categories, searching, normalizedQuery]);
+
+  function isExpanded(group: CatalogCategory): boolean {
+    if (searching) return true;
+    const manual = manualExpanded[group.category];
+    if (manual != null) return manual;
+    return group.services.some((entry) => {
+      const own = serviceByOfficialId.get(entry.id);
+      return own != null && own.active;
+    });
+  }
+
+  /** انتخاب با یک لمس — خدمت بلافاصله با قیمت و مدت پیش‌فرض ثبت و سبز می‌شود */
+  async function selectService(entry: CatalogEntry) {
+    if (creatingId !== null) return;
+    const own = serviceByOfficialId.get(entry.id);
+    if (own) {
+      openEditor(own);
+      return;
+    }
+    const preset = defaultFor(entry);
+    setCreatingId(entry.id);
+    setActionError(null);
+    try {
+      const response = await createService(runtime, {
+        official_service_id: entry.id,
+        duration: preset.duration,
+        price: preset.price,
+      });
+      const created = parseService((response.data as UnknownRecord) ?? null);
+      if (created) {
+        setServices((current) => [...current, created]);
+      } else {
+        await load();
+      }
+      showToast(`«${entry.title}» به خدمات شما اضافه شد`);
+    } catch (mutationError) {
+      setActionError(messageOf(mutationError));
+    } finally {
+      setCreatingId(null);
     }
   }
 
+  function openEditor(service: TeacherService) {
+    setEditing(service);
+    setDraft({ duration: String(service.duration), price: String(service.price) });
+    setFormError(null);
+  }
+
   function closeEditor() {
-    if (busyId !== null) return;
-    setEditorTarget(null);
+    if (saving) return;
+    setEditing(null);
     setFormError(null);
   }
 
   async function saveService() {
-    if (!editorTarget || busyId !== null) return;
+    if (!editing || saving) return;
     const duration = Number.parseInt(draft.duration.trim(), 10);
     const price = Number.parseInt(draft.price.trim(), 10);
 
-    if (draft.officialServiceId == null) {
-      setFormError("یک خدمت رسمی از فهرست انتخاب کنید.");
-      return;
-    }
     if (!Number.isFinite(duration) || duration < 10 || duration > 240) {
       setFormError("مدت خدمت باید بین ۱۰ تا ۲۴۰ دقیقه باشد.");
       return;
@@ -226,62 +344,81 @@ export function TeacherServicesScreen() {
       return;
     }
 
-    const targetId = editorTarget === "new" ? "new" : editorTarget.id;
-    setBusyId(targetId);
+    setSaving(true);
     setFormError(null);
     try {
-      if (editorTarget === "new") {
-        await createService(runtime, { official_service_id: draft.officialServiceId, duration, price });
-      } else {
-        await updateService(runtime, editorTarget.id, { official_service_id: draft.officialServiceId, duration, price });
-      }
-      setEditorTarget(null);
-      await load();
+      await updateService(runtime, editing.id, { duration, price });
+      setServices((current) =>
+        current.map((service) => (service.id === editing.id ? { ...service, duration, price } : service)),
+      );
+      setEditing(null);
+      showToast("تغییرات خدمت ذخیره شد");
     } catch (mutationError) {
       setFormError(messageOf(mutationError));
     } finally {
-      setBusyId(null);
+      setSaving(false);
     }
   }
 
   async function deactivate() {
-    if (!deactivateTarget || busyId !== null) return;
+    if (!deactivateTarget || saving) return;
     const target = deactivateTarget;
-    setBusyId(target.id);
+    setSaving(true);
     setDeactivateTarget(null);
     setError(null);
     try {
       // Deliberately never send active=true. Re-activation is an admin moderation action.
       await updateService(runtime, target.id, { active: false });
-      await load();
+      setServices((current) =>
+        current.map((service) => (service.id === target.id ? { ...service, active: false } : service)),
+      );
+      setEditing(null);
+      showToast("خدمت غیرفعال شد", "info");
     } catch (mutationError) {
       setError(messageOf(mutationError));
     } finally {
-      setBusyId(null);
+      setSaving(false);
     }
   }
 
   async function remove() {
-    if (!deleteTarget || busyId !== null) return;
+    if (!deleteTarget || saving) return;
     const target = deleteTarget;
-    setBusyId(target.id);
+    setSaving(true);
     setDeleteTarget(null);
     setError(null);
     try {
       await deleteService(runtime, target.id);
-      await load();
+      setServices((current) => current.filter((service) => service.id !== target.id));
+      setEditing(null);
+      showToast("خدمت حذف شد", "info");
     } catch (mutationError) {
       setError(messageOf(mutationError));
     } finally {
-      setBusyId(null);
+      setSaving(false);
     }
   }
 
+  const editingIcon = (editing?.official_service_id != null
+    ? categories.flatMap((group) => group.services).find((entry) => entry.id === editing.official_service_id)?.icon
+    : undefined) as "book" | undefined;
+
   return (
-    <section className="vodda-screen" style={{ display: "grid", gap: spacing.xl }}>
-      <p style={{ ...typography.bodySmall, margin: 0, color: colors.inkMuted, lineHeight: 1.9 }}>
-        عنوان خدمت‌ها فقط از میان خدمات رسمی تأییدشدهٔ وُدّا انتخاب می‌شود؛ خدمت ثبت‌شده بلافاصله فعال و قابل رزرو است.
-      </p>
+    <section className="vodda-screen" style={{ display: "grid", gap: spacing.lg }}>
+      {/* خلاصه و راهنما */}
+      <Card style={{ display: "grid", gap: 10, padding: 16, borderRadius: radii.md, background: `linear-gradient(150deg, ${colors.olive50}, #ffffff 78%)`, border: `1px solid ${colors.olive100}` }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <IconBadge icon="checkCircle" tone="olive" size={40} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <strong style={{ ...typography.body, display: "block" }}>
+              {toFaDigits(activeCount)} خدمت فعال دارید
+            </strong>
+            <span style={{ ...typography.caption, color: colors.inkMuted, display: "block", lineHeight: 1.8 }}>
+              برای انتخاب هر خدمت فقط یک بار روی آن بزنید؛ خدمت انتخابی <b style={{ color: greenTone.ink }}>سبز</b> می‌شود و بلافاصله قابل رزرو است. قیمت پیش‌فرض دارد و هر زمان خواستید می‌توانید آن را ویرایش کنید.
+            </span>
+          </div>
+        </div>
+      </Card>
 
       {loading ? <LoadingState label="در حال دریافت خدمات…" /> : null}
       {!loading && error ? (
@@ -291,126 +428,260 @@ export function TeacherServicesScreen() {
           action={<Button onClick={() => void load()}>تلاش دوباره</Button>}
         />
       ) : null}
-      {!loading && !error && services.length === 0 ? (
-        <EmptyState icon={<Icon name="book" size={30} />} title="هنوز خدمتی تعریف نشده است" description="برای شروع، اولین خدمت خود را ثبت کنید." />
-      ) : null}
 
-      {!loading && !error && services.length > 0 ? (
-        <div style={{ display: "grid", gap: spacing.md }}>
-          {services.map((service) => {
-            const busy = busyId === service.id;
-            return (
-              <Card key={service.id} className="vodda-card--interactive" style={{ display: "grid", gap: 12, padding: 14, borderRadius: 18, boxShadow: "0 0 4px rgba(46,54,34,.04)", opacity: busy ? 0.55 : 1 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", gap: spacing.md, alignItems: "flex-start" }}>
-                  <div style={{ minWidth: 0, flex: 1, display: "flex", alignItems: "center", gap: spacing.md }}><IconBadge icon="book" tone={service.active ? "olive" : "info"} size={46} /><div style={{ minWidth: 0 }}>
-                    <strong style={{ ...typography.body, display: "block" }}>{service.title}</strong>
-                    <span style={{ ...typography.caption, color: colors.inkMuted }}>
-                      {toFaDigits(service.duration)} دقیقه · {formatWalletAmount(service.price)} تومان
-                    </span>
-                  </div></div>
-                  <span
-                    style={{
-                      flexShrink: 0,
-                      padding: "3px 8px",
-                      borderRadius: radii.pill,
-                      fontSize: 10,
-                      fontWeight: 700,
-                      color: service.active ? colors.olive700 : colors.gold,
-                      background: service.active ? colors.olive100 : colors.goldBackground,
-                    }}
-                  >
-                    {service.active ? "فعال" : "غیرفعال"}
-                  </span>
-                </div>
+      {!loading && !error ? (
+        <>
+          {/* جستجو */}
+          <div style={{ position: "relative" }}>
+            <span style={{ position: "absolute", insetInlineStart: 14, top: "50%", transform: "translateY(-50%)", color: colors.inkFaint, display: "grid" }}>
+              <Icon name="search" size={17} />
+            </span>
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="جستجوی خدمت…"
+              aria-label="جستجوی خدمت"
+              style={{
+                width: "100%",
+                padding: "12px 42px",
+                border: `1px solid ${colors.sand200}`,
+                borderRadius: radii.sm,
+                background: colors.surface,
+                color: colors.ink,
+                boxShadow: shadows.xs,
+                fontFamily: typography.fontFamily,
+                fontSize: 13.5,
+              }}
+            />
+            {query ? (
+              <button
+                type="button"
+                aria-label="پاک کردن جستجو"
+                onClick={() => setQuery("")}
+                style={{ position: "absolute", insetInlineEnd: 10, top: "50%", transform: "translateY(-50%)", border: 0, background: "transparent", color: colors.inkFaint, cursor: "pointer", display: "grid", padding: 6 }}
+              >
+                <Icon name="x" size={15} />
+              </button>
+            ) : null}
+          </div>
 
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <Button variant="secondary" disabled={busy} onClick={() => openEditor(service)} style={{ minHeight: 40, flex: 1, padding: "7px 12px", fontSize: 13 }}>
-                    <Icon name="edit" size={16} />
-                    ویرایش
-                  </Button>
-                  {service.active ? (
-                    <Button variant="secondary" disabled={busy} onClick={() => setDeactivateTarget(service)} style={{ minHeight: 40, flex: 1, padding: "7px 10px", fontSize: 13 }}>
-                      غیرفعال‌کردن
-                    </Button>
-                  ) : null}
-                  <button
-                    type="button"
-                    aria-label="حذف خدمت"
-                    disabled={busy}
-                    onClick={() => setDeleteTarget(service)}
-                    style={{
-                      width: 40,
-                      height: 40,
-                      display: "grid",
-                      placeItems: "center",
-                      flex: "0 0 40px",
-                      border: 0,
-                      borderRadius: "50%",
-                      color: colors.danger,
-                      background: "transparent",
-                      cursor: busy ? "not-allowed" : "pointer",
-                    }}
-                  >
-                    <Icon name="trash" size={19} />
-                  </button>
-                </div>
-              </Card>
-            );
-          })}
-        </div>
-      ) : null}
-
-      <div style={{ position: "sticky", zIndex: 12, bottom: "calc(68px + env(safe-area-inset-bottom))", padding: "10px 0 12px", background: colors.sand50 }}>
-        <Button fullWidth onClick={() => openEditor()} style={{ minHeight: 52 }}>
-          <Icon name="plus" size={19} />
-          افزودن خدمت جدید
-        </Button>
-      </div>
-
-      <Dialog open={editorTarget !== null} title={editorTarget === "new" ? "خدمت جدید" : "ویرایش خدمت"} onClose={closeEditor}>
-        <div style={{ display: "grid", gap: spacing.md }}>
-          {selectedOfficial ? (
-            <div style={{ border: `1.5px solid ${colors.olive200}`, background: colors.olive50, borderRadius: radii.lg, padding: 14, display: "flex", gap: 10, alignItems: "flex-start" }}>
-              <IconBadge icon={(selectedOfficial.icon as "book") || "book"} tone="olive" size={38} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <strong style={{ ...typography.body, display: "block" }}>{selectedOfficial.title}</strong>
-                {selectedOfficial.description ? (
-                  <span style={{ ...typography.caption, color: colors.inkMuted, display: "block", marginTop: 3, lineHeight: 1.7 }}>{selectedOfficial.description}</span>
-                ) : null}
-                <span style={{ display: "inline-block", marginTop: 6, fontSize: 10, fontWeight: 700, color: colors.olive700, background: colors.olive100, borderRadius: radii.pill, padding: "3px 10px" }}>{selectedOfficial.category}</span>
-              </div>
-              <button type="button" onClick={() => setDraft((current) => ({ ...current, officialServiceId: null }))} style={{ border: 0, background: "transparent", color: colors.olive700, fontWeight: 700, fontSize: 11, cursor: "pointer" }}>تغییر</button>
+          {actionError ? (
+            <div role="alert" style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", borderRadius: radii.sm, background: colors.dangerBackground, color: colors.danger, ...typography.caption }}>
+              <Icon name="info" size={16} />
+              <span style={{ flex: 1 }}>{actionError}</span>
             </div>
-          ) : (
+          ) : null}
+
+          {catalogLoading ? <LoadingState label="در حال دریافت فهرست خدمات رسمی…" /> : null}
+          {!catalogLoading && catalogError ? (
+            <ErrorState
+              title="دریافت فهرست خدمات رسمی ناموفق بود"
+              description={catalogError}
+              action={<Button onClick={() => void loadCatalog()}>تلاش دوباره</Button>}
+            />
+          ) : null}
+
+          {!catalogLoading && !catalogError && visibleCategories.length === 0 ? (
+            <EmptyState icon={<Icon name="search" size={28} />} title="خدمتی یافت نشد" description="عبارت دیگری را جستجو کنید." />
+          ) : null}
+
+          {/* دسته‌بندی‌ها */}
+          {!catalogLoading && !catalogError
+            ? visibleCategories.map((group) => {
+                const expanded = isExpanded(group);
+                const selectedInGroup = group.services.filter((entry) => serviceByOfficialId.has(entry.id)).length;
+                return (
+                  <div key={group.category} style={{ display: "grid", gap: spacing.sm }}>
+                    <button
+                      type="button"
+                      aria-expanded={expanded}
+                      onClick={() => setManualExpanded((current) => ({ ...current, [group.category]: !expanded }))}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        width: "100%",
+                        border: 0,
+                        background: "transparent",
+                        padding: "2px 2px",
+                        cursor: "pointer",
+                        fontFamily: typography.fontFamily,
+                        textAlign: "right",
+                      }}
+                    >
+                      <span style={{ flex: 1, display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                        <strong style={{ ...typography.body, color: colors.ink }}>{group.category}</strong>
+                        {selectedInGroup > 0 ? (
+                          <span style={{ fontSize: 10.5, fontWeight: 800, color: greenTone.ink, background: greenTone.chip, borderRadius: radii.pill, padding: "3px 9px" }}>
+                            {toFaDigits(selectedInGroup)} انتخاب‌شده
+                          </span>
+                        ) : null}
+                      </span>
+                      <span style={{ color: colors.inkFaint, display: "grid", transform: expanded ? "rotate(180deg)" : "none", transition: "transform .18s ease" }}>
+                        <Icon name="chevronUp" size={16} />
+                      </span>
+                    </button>
+
+                    {expanded ? (
+                      <div style={{ display: "grid", gap: 8 }}>
+                        {group.services.map((entry) => {
+                          const own = serviceByOfficialId.get(entry.id);
+                          const busy = creatingId === entry.id;
+                          if (own) {
+                            /* انتخاب‌شده — سبز؛ لمس = ویرایش قیمت و مدت */
+                            const inactive = !own.active;
+                            return (
+                              <button
+                                key={entry.id}
+                                type="button"
+                                onClick={() => openEditor(own)}
+                                aria-label={`ویرایش خدمت ${own.title}`}
+                                style={{
+                                  display: "flex",
+                                  gap: 12,
+                                  alignItems: "center",
+                                  width: "100%",
+                                  textAlign: "right",
+                                  padding: "12px 14px",
+                                  borderRadius: 16,
+                                  cursor: "pointer",
+                                  fontFamily: typography.fontFamily,
+                                  border: `1.5px solid ${inactive ? colors.goldSoft : greenTone.border}`,
+                                  background: inactive ? colors.goldBackground : greenTone.background,
+                                  opacity: busy ? 0.6 : 1,
+                                }}
+                              >
+                                <IconBadge icon={(entry.icon as "book") || "book"} tone={inactive ? "gold" : "olive"} size={40} />
+                                <span style={{ flex: 1, minWidth: 0, display: "grid", gap: 3 }}>
+                                  <strong style={{ ...typography.bodySmall, color: inactive ? colors.goldDark : greenTone.deep }}>{entry.title}</strong>
+                                  <span style={{ ...typography.caption, color: inactive ? colors.goldDark : greenTone.ink, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                                    <span>{toFaDigits(own.duration)} دقیقه · هر جلسه {formatWalletAmount(own.price)} تومان</span>
+                                    <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontWeight: 700, opacity: 0.85 }}>
+                                      <Icon name="edit" size={12} />
+                                      ویرایش
+                                    </span>
+                                  </span>
+                                </span>
+                                {inactive ? (
+                                  <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 800, color: colors.goldDark, background: "#fff", borderRadius: radii.pill, padding: "4px 10px" }}>
+                                    غیرفعال
+                                  </span>
+                                ) : (
+                                  <span style={{ flexShrink: 0, width: 30, height: 30, borderRadius: "50%", display: "grid", placeItems: "center", color: "#fff", background: greenTone.ink }}>
+                                    <Icon name="check" size={15} stroke={2.4} />
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          }
+                          /* انتخاب‌نشده — لمس = افزودن با قیمت پیش‌فرض */
+                          const preset = defaultFor(entry);
+                          return (
+                            <button
+                              key={entry.id}
+                              type="button"
+                              disabled={creatingId !== null}
+                              onClick={() => void selectService(entry)}
+                              aria-label={`افزودن خدمت ${entry.title}`}
+                              style={{
+                                display: "flex",
+                                gap: 12,
+                                alignItems: "center",
+                                width: "100%",
+                                textAlign: "right",
+                                padding: "12px 14px",
+                                borderRadius: 16,
+                                cursor: creatingId !== null ? "wait" : "pointer",
+                                fontFamily: typography.fontFamily,
+                                border: `1.5px dashed ${colors.sand200}`,
+                                background: colors.surface,
+                                opacity: busy ? 0.72 : 1,
+                              }}
+                            >
+                              <IconBadge icon={(entry.icon as "book") || "book"} tone="olive" size={40} />
+                              <span style={{ flex: 1, minWidth: 0, display: "grid", gap: 3 }}>
+                                <strong style={{ ...typography.bodySmall, color: colors.ink }}>{entry.title}</strong>
+                                <span style={{ ...typography.caption, color: colors.inkMuted, display: "block", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                  {entry.description}
+                                </span>
+                                <span style={{ ...typography.caption, color: colors.olive700, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 4 }}>
+                                  پیش‌فرض: {formatToman(preset.price)} · {toFaDigits(preset.duration)} دقیقه
+                                </span>
+                              </span>
+                              <span
+                                aria-hidden="true"
+                                style={{ flexShrink: 0, width: 32, height: 32, borderRadius: "50%", display: "grid", placeItems: "center", color: colors.olive700, border: `1.5px solid ${colors.olive200}`, background: colors.olive50 }}
+                              >
+                                {busy ? <span className="vodda-spinner" style={{ width: 14, height: 14 }} /> : <Icon name="plus" size={16} stroke={2.2} />}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })
+            : null}
+
+          {/* خدمت‌های قدیمی بدون تطابق کاتالوگ */}
+          {!catalogLoading && orphanServices.length > 0 ? (
             <div style={{ display: "grid", gap: spacing.sm }}>
-              <span style={{ fontWeight: 700, ...typography.bodySmall }}>انتخاب خدمت رسمی</span>
-              <input
-                value={catalogQuery}
-                placeholder="جستجو میان خدمات رسمی…"
-                onChange={(event) => setCatalogQuery(event.target.value)}
-                style={{ width: "100%", padding: spacing.md, border: `1px solid ${colors.sand200}`, borderRadius: radii.md, background: colors.surface, color: colors.ink, boxShadow: shadows.xs, fontFamily: typography.fontFamily }}
-              />
-              <div style={{ maxHeight: 240, overflowY: "auto", border: `1px solid ${colors.sand200}`, borderRadius: radii.lg, padding: 8, display: "grid", gap: 6, background: colors.surface }}>
-                {catalogLoading ? <span style={{ ...typography.caption, color: colors.inkMuted, padding: 12, textAlign: "center" }}>در حال دریافت خدمات رسمی…</span> : null}
-                {!catalogLoading && filteredCatalog.length === 0 ? <span style={{ ...typography.caption, color: colors.inkMuted, padding: 12, textAlign: "center" }}>خدمتی یافت نشد.</span> : null}
-                {filteredCatalog.map((entry) => (
-                  <button
-                    key={entry.id}
-                    type="button"
-                    onClick={() => setDraft((current) => ({ ...current, officialServiceId: entry.id }))}
-                    style={{ display: "flex", gap: 10, alignItems: "center", width: "100%", textAlign: "right", border: `1px solid ${colors.sand200}`, borderRadius: radii.md, background: colors.sand50, padding: "9px 12px", cursor: "pointer", fontFamily: typography.fontFamily }}
-                  >
-                    <IconBadge icon={(entry.icon as "book") || "book"} tone="olive" size={34} />
-                    <span style={{ flex: 1, minWidth: 0 }}>
-                      <strong style={{ ...typography.bodySmall, display: "block" }}>{entry.title}</strong>
-                      <span style={{ ...typography.caption, color: colors.inkMuted, display: "block", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{entry.description}</span>
+              <strong style={{ ...typography.body, color: colors.ink }}>سایر خدمات ثبت‌شده</strong>
+              {orphanServices.map((service) => (
+                <button
+                  key={service.id}
+                  type="button"
+                  onClick={() => openEditor(service)}
+                  style={{
+                    display: "flex",
+                    gap: 12,
+                    alignItems: "center",
+                    width: "100%",
+                    textAlign: "right",
+                    padding: "12px 14px",
+                    borderRadius: 16,
+                    cursor: "pointer",
+                    fontFamily: typography.fontFamily,
+                    border: `1.5px solid ${service.active ? greenTone.border : colors.goldSoft}`,
+                    background: service.active ? greenTone.background : colors.goldBackground,
+                  }}
+                >
+                  <IconBadge icon="book" tone={service.active ? "olive" : "gold"} size={40} />
+                  <span style={{ flex: 1, minWidth: 0, display: "grid", gap: 3 }}>
+                    <strong style={{ ...typography.bodySmall }}>{service.title}</strong>
+                    <span style={{ ...typography.caption, color: colors.inkMuted }}>
+                      {toFaDigits(service.duration)} دقیقه · هر جلسه {formatWalletAmount(service.price)} تومان
                     </span>
-                    <span style={{ ...typography.caption, color: colors.olive700, flexShrink: 0 }}>{entry.category}</span>
-                  </button>
-                ))}
+                  </span>
+                  {service.active ? (
+                    <span style={{ flexShrink: 0, width: 30, height: 30, borderRadius: "50%", display: "grid", placeItems: "center", color: "#fff", background: greenTone.ink }}>
+                      <Icon name="check" size={15} stroke={2.4} />
+                    </span>
+                  ) : (
+                    <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 800, color: colors.goldDark, background: "#fff", borderRadius: radii.pill, padding: "4px 10px" }}>
+                      غیرفعال
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </>
+      ) : null}
+
+      {/* ویرایشگر قیمت و مدت */}
+      <Dialog open={editing !== null} title="ویرایش خدمت" onClose={closeEditor}>
+        <div style={{ display: "grid", gap: spacing.md }}>
+          {editing ? (
+            <div style={{ display: "flex", gap: 10, alignItems: "center", border: `1.5px solid ${colors.olive200}`, background: colors.olive50, borderRadius: radii.lg, padding: 12 }}>
+              <IconBadge icon={editingIcon || "book"} tone="olive" size={38} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <strong style={{ ...typography.body, display: "block" }}>{editing.title}</strong>
+                <span style={{ ...typography.caption, color: colors.inkMuted }}>{editing.active ? "فعال و قابل رزرو" : "غیرفعال — تا فعال‌سازی مجدد قابل رزرو نیست"}</span>
               </div>
             </div>
-          )}
+          ) : null}
           <label style={{ display: "grid", gap: spacing.xs, ...typography.bodySmall }}>
             <span style={{ fontWeight: 700 }}>مدت جلسه (دقیقه)</span>
             <div role="group" aria-label="مدت‌های پیشنهادی" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -429,7 +700,7 @@ export function TeacherServicesScreen() {
             <input
               inputMode="numeric"
               value={toFaDigits(draft.duration)}
-              disabled={busyId !== null}
+              disabled={saving}
               onChange={(event) => setDraft((current) => ({ ...current, duration: digitsOnly(event.target.value, 3) }))}
               placeholder="یا مدت دلخواه — بین ۱۰ تا ۲۴۰"
               style={{ width: "100%", padding: spacing.md, border: `1px solid ${colors.sand200}`, borderRadius: radii.md, background: colors.surface, color: colors.ink, boxShadow: shadows.xs, fontFamily: typography.fontFamily }}
@@ -458,28 +729,47 @@ export function TeacherServicesScreen() {
             />
           </div>
           {formError ? <span role="alert" style={{ ...typography.caption, color: colors.danger }}>{formError}</span> : null}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: spacing.sm }}>
-            <Button variant="ghost" disabled={busyId !== null} onClick={closeEditor}>انصراف</Button>
-            <Button loading={busyId !== null} onClick={() => void saveService()}>ذخیره</Button>
-          </div>
+          <Button fullWidth loading={saving} onClick={() => void saveService()}>ذخیره تغییرات</Button>
+          {editing ? (
+            <div style={{ display: "flex", gap: spacing.sm, justifyContent: "center" }}>
+              {editing.active ? (
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={() => setDeactivateTarget(editing)}
+                  style={{ border: 0, background: "transparent", color: colors.goldDark, fontWeight: 700, fontSize: 12, cursor: "pointer", fontFamily: typography.fontFamily, padding: "6px 10px" }}
+                >
+                  غیرفعال‌کردن خدمت
+                </button>
+              ) : null}
+              <button
+                type="button"
+                disabled={saving}
+                onClick={() => setDeleteTarget(editing)}
+                style={{ border: 0, background: "transparent", color: colors.danger, fontWeight: 700, fontSize: 12, cursor: "pointer", fontFamily: typography.fontFamily, padding: "6px 10px" }}
+              >
+                حذف خدمت
+              </button>
+            </div>
+          ) : null}
         </div>
       </Dialog>
 
-      <Dialog open={deactivateTarget !== null} title="غیرفعال‌کردن خدمت" onClose={() => { if (busyId === null) setDeactivateTarget(null); }}>
+      <Dialog open={deactivateTarget !== null} title="غیرفعال‌کردن خدمت" onClose={() => { if (!saving) setDeactivateTarget(null); }}>
         <p style={{ ...typography.body, marginTop: 0, color: colors.inkSecondary }}>
           این خدمت غیرفعال می‌شود و تا فعال‌سازی مجدد قابل رزرو نیست.
         </p>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: spacing.sm }}>
-          <Button variant="secondary" disabled={busyId !== null} onClick={() => setDeactivateTarget(null)}>انصراف</Button>
-          <Button loading={busyId !== null} onClick={() => void deactivate()}>غیرفعال‌کردن</Button>
+          <Button variant="secondary" disabled={saving} onClick={() => setDeactivateTarget(null)}>انصراف</Button>
+          <Button loading={saving} onClick={() => void deactivate()}>غیرفعال‌کردن</Button>
         </div>
       </Dialog>
 
-      <Dialog open={deleteTarget !== null} title="حذف خدمت" onClose={() => { if (busyId === null) setDeleteTarget(null); }}>
+      <Dialog open={deleteTarget !== null} title="حذف خدمت" onClose={() => { if (!saving) setDeleteTarget(null); }}>
         <p style={{ ...typography.body, marginTop: 0, color: colors.inkSecondary }}>این خدمت حذف شود؟</p>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: spacing.sm }}>
-          <Button variant="secondary" disabled={busyId !== null} onClick={() => setDeleteTarget(null)}>انصراف</Button>
-          <Button variant="danger" loading={busyId !== null} onClick={() => void remove()}>حذف</Button>
+          <Button variant="secondary" disabled={saving} onClick={() => setDeleteTarget(null)}>انصراف</Button>
+          <Button variant="danger" loading={saving} onClick={() => void remove()}>حذف</Button>
         </div>
       </Dialog>
     </section>
