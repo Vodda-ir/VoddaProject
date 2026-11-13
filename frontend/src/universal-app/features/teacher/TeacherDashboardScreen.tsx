@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { UniversalAppConfig } from "../../config";
-import { asNumber, asRecord, asString, type ApiEnvelope } from "../../platform/api";
+import { asArray, asNumber, asRecord, asString, type ApiEnvelope } from "../../platform/api";
 import { usePlatform } from "../../platform/context";
 import type { PlatformRuntime } from "../../platform/types";
 import { navigateApp } from "../../router";
@@ -54,6 +54,32 @@ type DashboardSnapshot = {
   pending: TeacherSession[];
   upcoming: TeacherSession[];
 };
+
+/** وضعیت تکمیل پروفایل حرفه‌ای استاد — چک‌لیست راهنمای ورود به کار */
+type CompletionState = {
+  activeServices: number;
+  bioChars: number;
+  hasTitle: boolean;
+  priceSet: boolean;
+  workSlots: number;
+};
+
+async function loadCompletionState(runtime: PlatformRuntime): Promise<CompletionState> {
+  const [teacherResponse, workTimesResponse] = await Promise.all([
+    runtime.request<ApiEnvelope<unknown>>("/teacher/me"),
+    runtime.request<ApiEnvelope<unknown[]>>("/teacher/work-times").catch(() => ({ data: [] as unknown[] })),
+  ]);
+  const row = asRecord(teacherResponse.data) ?? {};
+  const services = asArray(row.services).map(asRecord);
+  const workTimes = Array.isArray(workTimesResponse.data) ? workTimesResponse.data : [];
+  return {
+    activeServices: services.filter((service) => service?.active === true).length,
+    bioChars: asString(row.bio).trim().length,
+    hasTitle: asString(row.field).trim().length > 0 || asString(row.tag).trim().length > 0,
+    priceSet: asNumber(row.price30) > 0 || asNumber(row.price60) > 0,
+    workSlots: workTimes.length,
+  };
+}
 
 function parseTeacherSummary(value: unknown): TeacherSummary | null {
   const user = asRecord(value);
@@ -119,6 +145,7 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
   const [error, setError] = useState<string | null>(null);
   const [roleSheetOpen, setRoleSheetOpen] = useState(false);
   const [dispatchBadge, setDispatchBadge] = useState(0);
+  const [completion, setCompletion] = useState<CompletionState | null>(null);
 
   const loadDispatchBadge = useCallback(async () => {
     try {
@@ -146,9 +173,12 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
   useEffect(() => {
     void load();
     void loadDispatchBadge();
+    void loadCompletionState(runtime)
+      .then((state) => setCompletion(state))
+      .catch(() => setCompletion(null));
     const timer = window.setInterval(() => void loadDispatchBadge(), 12000);
     return () => window.clearInterval(timer);
-  }, [load, loadDispatchBadge]);
+  }, [load, loadDispatchBadge, runtime]);
 
   const nextSession = useMemo(() => {
     if (!snapshot) return null;
@@ -293,6 +323,8 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
         )}
       </button>
 
+      {completion ? <CompletionChecklist state={completion} config={config} /> : null}
+
       {pending.length > 0 ? (
         <button
           type="button"
@@ -406,6 +438,172 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
         config={config}
         onClose={() => setRoleSheetOpen(false)}
       />
+    </section>
+  );
+}
+
+/** چک‌لیست تکمیل پروفایل استادی — تا استاد تازه‌وارد قدم‌به‌قدم حرفه‌ای شود. */
+function CompletionChecklist({ state, config }: { state: CompletionState; config: UniversalAppConfig }) {
+  const items = useMemo(
+    () =>
+      [
+        {
+          icon: "book" as const,
+          title: "ثبت حداقل یک خدمت فعال",
+          hint: "خدمت آنلاین شما را برای رزرو کردن باز می‌کند",
+          done: state.activeServices > 0,
+          meta: state.activeServices > 0 ? `${toFaDigits(state.activeServices)} خدمت فعال` : "ثبت خدمت",
+          path: "/t/services",
+        },
+        {
+          icon: "user" as const,
+          title: "معرفی و تخصص حرفه‌ای",
+          hint: "معرفی حداقل ۴۰ حرفی به‌همراه حوزه تخصص یا عنوان استاد",
+          done: state.bioChars >= 40 && state.hasTitle,
+          meta: state.bioChars >= 40 ? (state.hasTitle ? "کامل شد" : "افزودن عنوان") : "تکمیل معرفی",
+          path: "/t/profile",
+        },
+        {
+          icon: "coins" as const,
+          title: "تعرفهٔ جلسات ۳۰ و ۶۰ دقیقه‌ای",
+          hint: "تعرفهٔ شفاف، شانس ظاهرشدن در فراخوان‌ها را بالا می‌برد",
+          done: state.priceSet,
+          meta: state.priceSet ? "تعریف شده" : "تعیین تعرفه",
+          path: "/t/profile",
+        },
+        {
+          icon: "clock" as const,
+          title: "زمان‌های کاری هفتگی",
+          hint: "ساعات حضور شما برای رزروهای خودکار",
+          done: state.workSlots > 0,
+          meta: state.workSlots > 0 ? `${toFaDigits(state.workSlots)} بازه` : "افزودن بازه",
+          path: "/t/work-times",
+        },
+      ] as const,
+    [state],
+  );
+
+  const doneCount = items.filter((item) => item.done).length;
+  const percent = Math.round((doneCount / items.length) * 100);
+  // پروفایل کامل — نیازی به یادآوری نیست
+  if (percent >= 100) return null;
+
+  return (
+    <section
+      className="vodda-enter"
+      aria-label="تکمیل پروفایل استادی"
+      style={{
+        display: "grid",
+        gap: 12,
+        padding: 16,
+        borderRadius: 22,
+        border: `1px solid ${colors.goldSoft}`,
+        background: `linear-gradient(150deg, ${colors.goldBackground} 0%, ${colors.surface} 55%)`,
+        boxShadow: shadows.sm,
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <span
+          aria-hidden="true"
+          style={{
+            width: 38, height: 38, display: "grid", placeItems: "center", flex: "0 0 38px",
+            borderRadius: 12, background: "linear-gradient(145deg, #d8b869, #b8923c)", color: "#fff",
+          }}
+        >
+          <Icon name="award" size={20} stroke={2} />
+        </span>
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <strong style={{ display: "block", fontSize: 14, fontWeight: 800, color: colors.ink }}>
+            پروفایل استادی خود را کامل کنید
+          </strong>
+          <span style={{ display: "block", fontSize: 11.5, color: colors.inkMuted, marginTop: 1 }}>
+            پروفایل کامل = اعتماد بیشتر و رزروهای بیشتر
+          </span>
+        </div>
+        <strong
+          aria-label={`${percent} درصد تکمیل`}
+          style={{
+            flex: "0 0 auto", minWidth: 44, textAlign: "center",
+            padding: "5px 9px", borderRadius: 999, fontSize: 12.5, fontWeight: 800,
+            color: "#7a5e1e", background: colors.goldBackground, border: `1px solid ${colors.goldSoft}`,
+          }}
+        >
+          ٪{toFaDigits(percent)}
+        </strong>
+      </div>
+
+      <div
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={percent}
+        style={{ height: 6, borderRadius: 999, background: colors.sand100, overflow: "hidden" }}
+      >
+        <span
+          style={{
+            display: "block", height: "100%", borderRadius: 999,
+            width: `${percent}%`,
+            background: "linear-gradient(90deg, #b8923c, #d8b869)",
+            transition: "width 420ms cubic-bezier(.2,.9,.3,1)",
+          }}
+        />
+      </div>
+
+      <div style={{ display: "grid", gap: 7 }}>
+        {items.map((item) => (
+          <button
+            key={item.title}
+            type="button"
+            onClick={() => navigateApp(item.path, config)}
+            className="vodda-tappable"
+            aria-label={`${item.title} — ${item.done ? "انجام شده" : "انجام نشده"}`}
+            style={{
+              display: "flex", alignItems: "center", gap: 10, width: "100%",
+              padding: "10px 12px", textAlign: "right",
+              border: `1px solid ${item.done ? colors.olive100 : colors.sand150}`,
+              borderRadius: 15,
+              background: item.done ? colors.olive50 : colors.surface,
+              color: colors.ink,
+              fontFamily: typography.fontFamily,
+              cursor: "pointer",
+            }}
+          >
+            <span
+              aria-hidden="true"
+              style={{
+                width: 26, height: 26, display: "grid", placeItems: "center", flex: "0 0 26px",
+                borderRadius: "50%",
+                background: item.done ? colors.olive600 : colors.sand100,
+                color: item.done ? colors.surface : colors.inkFaint,
+              }}
+            >
+              <Icon name={item.done ? "check" : item.icon} size={14} stroke={2.4} />
+            </span>
+            <span style={{ minWidth: 0, flex: 1 }}>
+              <strong
+                style={{
+                  display: "block", fontSize: 13, fontWeight: item.done ? 600 : 800,
+                  color: item.done ? colors.olive700 : colors.ink,
+                }}
+              >
+                {item.title}
+              </strong>
+              <span style={{ display: "block", fontSize: 11, color: colors.inkMuted, marginTop: 1, lineHeight: 1.6 }}>
+                {item.hint}
+              </span>
+            </span>
+            <span
+              style={{
+                flex: "0 0 auto", fontSize: 11, fontWeight: 700,
+                color: item.done ? colors.olive600 : "#9a7426",
+              }}
+            >
+              {item.meta}
+            </span>
+            <Icon name="chevronL" size={15} style={{ flex: "0 0 auto", color: colors.inkFaint }} />
+          </button>
+        ))}
+      </div>
     </section>
   );
 }

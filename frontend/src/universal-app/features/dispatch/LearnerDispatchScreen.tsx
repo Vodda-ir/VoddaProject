@@ -215,6 +215,9 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
   const [payMethod, setPayMethod] = useState<"wallet" | "gateway">("gateway");
   const [tick, setTick] = useState(0);
   const pollRef = useRef<number | null>(null);
+  /** فراخوانی که کاربر با «فراخوان جدید» از آن عبور کرده — تا کارت موفقیت
+   *  دوباره روی آهنگ‌ساز تحمیل نشود و بتوان فراخوان تازه ساخت. */
+  const dismissedCallIdRef = useRef(0);
 
   const call = view?.call ?? null;
   const mode: ScreenMode = call ? (call.status === "searching" ? "searching" : "matched") : "idle";
@@ -234,7 +237,13 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
   const refresh = useCallback(async () => {
     try {
       const current = await getCurrentDispatchCall(runtime);
-      setView(current);
+      const dismissed = dismissedCallIdRef.current;
+      if (current.call && dismissed > 0 && current.call.id === dismissed && current.call.status !== "searching") {
+        // کاربر آگاهانه «فراخوان جدید» را زده — آهنگ‌ساز باید باز بماند
+        setView({ call: null, candidates: [] });
+      } else {
+        setView(current);
+      }
     } catch {
       // polling errors are non-fatal
     } finally {
@@ -422,7 +431,15 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
             </div>
           ) : null}
           <Button fullWidth onClick={() => navigateApp("/sessions", config)}>پیگیری در جلسات من</Button>
-          <Button variant="secondary" fullWidth onClick={() => { setView({ call: null, candidates: [] }); setResuming(true); void refresh(); }}>
+          <Button
+            variant="secondary"
+            fullWidth
+            onClick={() => {
+              if (call) dismissedCallIdRef.current = call.id;
+              setView({ call: null, candidates: [] });
+              void refresh();
+            }}
+          >
             فراخوان جدید
           </Button>
         </Card>

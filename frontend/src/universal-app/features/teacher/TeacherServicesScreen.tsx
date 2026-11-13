@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import { asArray, asInteger, asRecord, asString, type ApiEnvelope } from "../../platform/api";
 import { usePlatform } from "../../platform/context";
 import type { PlatformRuntime } from "../../platform/types";
@@ -23,6 +23,8 @@ import {
 } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
 import { formatWalletAmount } from "../wallet/WalletTransactionCard";
+import { AmountInput } from "../ceremony/fields";
+import { formatToman } from "../ceremony/elements";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -120,6 +122,25 @@ async function getCatalog(runtime: PlatformRuntime): Promise<OfficialServiceEntr
 }
 
 const emptyDraft: ServiceDraft = { officialServiceId: null, duration: "30", price: "" };
+
+/** پیشنهادهای آماده — تنظیم یک‌ضربه‌ای مدت و قیمت */
+const DURATION_PRESETS = [30, 45, 60, 90] as const;
+const PRICE_PRESETS = [100_000, 150_000, 200_000, 300_000, 500_000] as const;
+
+function quickChipStyle(active: boolean): CSSProperties {
+  return {
+    minHeight: 38,
+    padding: "0 13px",
+    borderRadius: 999,
+    fontSize: 12.5,
+    fontWeight: active ? 800 : 600,
+    cursor: "pointer",
+    fontFamily: typography.fontFamily,
+    color: active ? colors.surface : colors.inkSecondary,
+    background: active ? colors.olive600 : colors.surface,
+    border: `1px solid ${active ? colors.olive600 : colors.sand200}`,
+  };
+}
 
 export function TeacherServicesScreen() {
   const runtime = usePlatform();
@@ -391,25 +412,51 @@ export function TeacherServicesScreen() {
             </div>
           )}
           <label style={{ display: "grid", gap: spacing.xs, ...typography.bodySmall }}>
-            <span style={{ fontWeight: 700 }}>مدت (۱۰ تا ۲۴۰ دقیقه)</span>
+            <span style={{ fontWeight: 700 }}>مدت جلسه (دقیقه)</span>
+            <div role="group" aria-label="مدت‌های پیشنهادی" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {DURATION_PRESETS.map((preset) => (
+                <button
+                  key={preset}
+                  type="button"
+                  aria-pressed={draft.duration === String(preset)}
+                  onClick={() => setDraft((current) => ({ ...current, duration: String(preset) }))}
+                  style={quickChipStyle(draft.duration === String(preset))}
+                >
+                  {toFaDigits(preset)} دقیقه
+                </button>
+              ))}
+            </div>
             <input
               inputMode="numeric"
               value={toFaDigits(draft.duration)}
               disabled={busyId !== null}
-              onChange={(event) => setDraft((current) => ({ ...current, duration: digitsOnly(event.target.value) }))}
+              onChange={(event) => setDraft((current) => ({ ...current, duration: digitsOnly(event.target.value, 3) }))}
+              placeholder="یا مدت دلخواه — بین ۱۰ تا ۲۴۰"
               style={{ width: "100%", padding: spacing.md, border: `1px solid ${colors.sand200}`, borderRadius: radii.md, background: colors.surface, color: colors.ink, boxShadow: shadows.xs, fontFamily: typography.fontFamily }}
             />
           </label>
-          <label style={{ display: "grid", gap: spacing.xs, ...typography.bodySmall }}>
-            <span style={{ fontWeight: 700 }}>قیمت (تومان)</span>
-            <input
-              inputMode="numeric"
-              value={toFaDigits(draft.price)}
-              disabled={busyId !== null}
-              onChange={(event) => setDraft((current) => ({ ...current, price: digitsOnly(event.target.value) }))}
-              style={{ width: "100%", padding: spacing.md, border: `1px solid ${colors.sand200}`, borderRadius: radii.md, background: colors.surface, color: colors.ink, boxShadow: shadows.xs, fontFamily: typography.fontFamily }}
+          <div style={{ display: "grid", gap: spacing.xs, ...typography.bodySmall }}>
+            <span style={{ fontWeight: 700 }}>قیمت هر جلسه (تومان)</span>
+            <div role="group" aria-label="قیمت‌های پیشنهادی" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {PRICE_PRESETS.map((preset) => (
+                <button
+                  key={preset}
+                  type="button"
+                  aria-pressed={draft.price === String(preset)}
+                  onClick={() => setDraft((current) => ({ ...current, price: String(preset) }))}
+                  style={quickChipStyle(draft.price === String(preset))}
+                >
+                  {formatToman(preset)}
+                </button>
+              ))}
+            </div>
+            <AmountInput
+              value={draft.price}
+              onChange={(next) => setDraft((current) => ({ ...current, price: next }))}
+              ariaLabel="قیمت خدمت به تومان"
+              placeholder="یا مبلغ دلخواه…"
             />
-          </label>
+          </div>
           {formError ? <span role="alert" style={{ ...typography.caption, color: colors.danger }}>{formError}</span> : null}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: spacing.sm }}>
             <Button variant="ghost" disabled={busyId !== null} onClick={closeEditor}>انصراف</Button>

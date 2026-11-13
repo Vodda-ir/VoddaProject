@@ -8,6 +8,7 @@ import type {
   RefObject,
 } from "react";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { resolveAssetUrl } from "../platform/asset";
 import { colors, gradients, radii, shadows, spacing, typography } from "./theme";
 
@@ -380,8 +381,20 @@ export type OverlayProps = {
 /**
  * رفتار استاندارد مودال (A5): قفل اسکرول پس‌زمینه، بستن با Escape،
  * محبوس‌کردن فوکوس درون پنجره و بازگرداندن فوکوس به محل پیشین.
+ *
+ * نکتهٔ حیاتی: «onClose» در کامپوننت‌های میزبان معمولاً تابعی بی‌ثبات است
+ * (هر رندر یک شناسهٔ تازه). اگر مثل قبل در وابستگی‌های useEffect بماند، با هر
+ * فشردن یک حرف در فیلدهای فرم، افکت دوباره اجرا و فوکوس به‌زور به ظرف مودال
+ * برمی‌گشت — یعنی کاربر فقط یک حرف می‌توانست بنویسد. حالا onClose از طریق ref
+ * خوانده می‌شود و افکت فقط با تغییر «open» اجرا می‌شود.
  */
 function useOverlayBehavior(open: boolean, onClose: () => void, containerRef: RefObject<HTMLDivElement | null>) {
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
   useEffect(() => {
     if (!open) return;
     const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -400,7 +413,7 @@ function useOverlayBehavior(open: boolean, onClose: () => void, containerRef: Re
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         event.stopPropagation();
-        onClose();
+        onCloseRef.current();
         return;
       }
       if (event.key !== "Tab") return;
@@ -429,14 +442,17 @@ function useOverlayBehavior(open: boolean, onClose: () => void, containerRef: Re
       document.removeEventListener("keydown", onKeyDown);
       previouslyFocused?.focus?.({ preventScroll: true });
     };
-  }, [open, onClose, containerRef]);
+  }, [open, containerRef]);
 }
 
 export function Dialog({ open, title, children, onClose, closeLabel = "بستن" }: OverlayProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   useOverlayBehavior(open, onClose, containerRef);
-  if (!open) return null;
-  return (
+  if (!open || typeof document === "undefined") return null;
+  // پورتال به body — اگر مودال داخل جدی با transform/filters رندر شود
+  // (مثل هدرهای متحرک vodda-enter)، position:fixed شکسته و پنجره له می‌شود؛
+  // پورتال تضمین می‌کند لایهٔ مودال همیشه نسبت به کل صفحه سوار شود.
+  return createPortal(
     <div
       role="presentation"
       className="vodda-overlay"
@@ -483,7 +499,8 @@ export function Dialog({ open, title, children, onClose, closeLabel = "بستن"
         </div>
         <div style={{ marginTop: title ? spacing.md : 0 }}>{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -492,8 +509,9 @@ export function Sheet({ open, title, children, onClose, closeLabel = "بستن" 
   const dragStartY = useRef<number | null>(null);
   const [dragOffset, setDragOffset] = useState(0);
   useOverlayBehavior(open, onClose, containerRef);
-  if (!open) return null;
-  return (
+  if (!open || typeof document === "undefined") return null;
+  // پورتال به body — همان دلیل Dialog؛ جدّ متحرک position:fixed را می‌شکند
+  return createPortal(
     <div
       role="presentation"
       className="vodda-overlay"
@@ -576,6 +594,7 @@ export function Sheet({ open, title, children, onClose, closeLabel = "بستن" 
         </div>
         <div style={{ marginTop: title ? spacing.md : 0 }}>{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
