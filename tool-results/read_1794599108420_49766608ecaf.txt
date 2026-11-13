@@ -1,0 +1,803 @@
+     1→"use client";
+     2→
+     3→import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+     4→import type { UniversalAppConfig } from "../../config";
+     5→import { PlatformHttpError } from "../../platform/http";
+     6→import { usePlatform } from "../../platform/context";
+     7→import { navigateApp } from "../../router";
+     8→import { CornerOrnament } from "../../ui/ornaments";
+     9→import {
+    10→  Avatar,
+    11→  Button,
+    12→  Card,
+    13→  EmptyState,
+    14→  ErrorState,
+    15→  formatJalaliDateTime,
+    16→  Icon,
+    17→  IllustrationDispatch,
+    18→  LoadingState,
+    19→  colors,
+    20→  gradients,
+    21→  radii,
+    22→  shadows,
+    23→  spacing,
+    24→  typography,
+    25→} from "../../ui";
+    26→import { messageOf } from "../../ui/errorMessage";
+    27→import { showToast } from "../../ui/toast";
+    28→import { payViaSamanGate } from "../../../lib/saman-gate";
+    29→import { formatWalletAmount } from "../wallet/WalletTransactionCard";
+    30→import { SelectField } from "../ceremony/fields";
+    31→import {
+    32→  isWhenInFuture,
+    33→  tehranWallToRfc3339,
+    34→  upcomingJalaliDays,
+    35→  type WhenValue,
+    36→} from "../ceremony/schedule";
+    37→import { toFaDigits } from "../../ui/persian";
+    38→import {
+    39→  cancelDispatchCall,
+    40→  chooseDispatchOffer,
+    41→  createDispatchCall,
+    42→  declineDispatchOffer,
+    43→  getCatalog,
+    44→  getCurrentDispatchCall,
+    45→} from "./api";
+    46→import type { DispatchCandidate, DispatchCallView, OfficialService } from "./types";
+    47→
+    48→const numberFormatter = new Intl.NumberFormat("fa-IR");
+    49→
+    50→function fa(n: number): string {
+    51→  return numberFormatter.format(n);
+    52→}
+    53→
+    54→function priceLabel(n: number): string {
+    55→  return `${formatWalletAmount(Math.max(0, n))} تومان`;
+    56→}
+    57→
+    58→function timeLabelOf(call: { flexible: boolean; scheduled_at?: string | null }): string {
+    59→  if (call.flexible || !call.scheduled_at) return "در اسرع وقت";
+    60→  const at = new Date(call.scheduled_at);
+    61→  if (Number.isNaN(at.getTime())) return "در اسرع وقت";
+    62→  const now = new Date();
+    63→  const diffMin = Math.round((at.getTime() - now.getTime()) / 60000);
+    64→  if (diffMin < 60 && diffMin > -60) return `حدود ${fa(Math.max(0, diffMin))} دقیقهٔ دیگر`;
+    65→  return formatJalaliDateTime(call.scheduled_at, { withWeekday: true });
+    66→}
+    67→
+    68→function remainingSeconds(expiresAt: string): number {
+    69→  const at = new Date(expiresAt).getTime();
+    70→  if (Number.isNaN(at)) return 0;
+    71→  return Math.max(0, Math.round((at - Date.now()) / 1000));
+    72→}
+    73→
+    74→function countdownLabel(total: number): string {
+    75→  const m = Math.floor(total / 60);
+    76→  const s = total % 60;
+    77→  return `${toFaDigits(String(m).padStart(2, "0"))}:${toFaDigits(String(s).padStart(2, "0"))}`;
+    78→}
+    79→
+    80→const tierBadge: Record<string, { label: string; bg: string; color: string }> = {
+    81→  international: { label: "درجه یک بین‌المللی", bg: colors.goldBackground, color: colors.goldDark },
+    82→  grade2: { label: "درجه دو", bg: colors.successBackground, color: colors.olive700 },
+    83→  grade3: { label: "درجه سه", bg: colors.infoBackground, color: colors.info },
+    84→};
+    85→
+    86→function TopicIcon({ icon, size = 22 }: { icon: string; size?: number }) {
+    87→  const known = new Set([
+    88→    "book", "mic", "quran", "star", "headphones", "award", "sparkle",
+    89→    "doc", "heart", "users", "grid", "list", "trending", "refresh",
+    90→  ]);
+    91→  return <Icon name={(known.has(icon) ? icon : "book") as "book"} size={size} />;
+    92→}
+    93→
+    94→function candidateTitle(candidate: DispatchCandidate): string {
+    95→  return candidate.tag || candidate.field || "استاد قرآن";
+    96→}
+    97→
+    98→function CandidateCard({
+    99→  candidate,
+   100→  index,
+   101→  busy,
+   102→  onChoose,
+   103→  onDecline,
+   104→}: {
+   105→  candidate: DispatchCandidate;
+   106→  index: number;
+   107→  busy: boolean;
+   108→  onChoose: () => void;
+   109→  onDecline: () => void;
+   110→}) {
+   111→  const badge = tierBadge[candidate.tier];
+   112→  return (
+   113→    <div
+   114→      className="vodda-enter"
+   115→      style={{
+   116→        border: `1px solid ${colors.sand200}`,
+   117→        borderRadius: 18,
+   118→        padding: 14,
+   119→        display: "grid",
+   120→        gap: 10,
+   121→        background: colors.surface,
+   122→        animationDelay: `${index * 90}ms`,
+   123→        boxShadow: shadows.sm,
+   124→      }}
+   125→    >
+   126→      <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
+   127→        <Avatar name={candidate.name} src={candidate.avatar_url || undefined} size={52} ring={false} />
+   128→        <div style={{ minWidth: 0, flex: 1 }}>
+   129→          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+   130→            <strong style={{ fontSize: 15, fontWeight: 800, color: colors.ink }}>{candidate.name}</strong>
+   131→            {badge ? (
+   132→              <span style={{ fontSize: 10, fontWeight: 700, color: badge.color, background: badge.bg, borderRadius: 999, padding: "2px 8px" }}>
+   133→                {badge.label}
+   134→              </span>
+   135→            ) : null}
+   136→          </div>
+   137→          <span style={{ display: "block", fontSize: 12, color: colors.olive700, marginTop: 2 }}>
+   138→            {candidateTitle(candidate)}
+   139→            {candidate.sessions > 0 ? ` · ${fa(candidate.sessions)} جلسه` : ""}
+   140→            {candidate.reviews > 0 ? ` · ⭐ ${toFaDigits(candidate.rating.toFixed(1))}` : ""}
+   141→          </span>
+   142→        </div>
+   143→        <div
+   144→          aria-hidden="true"
+   145→          style={{
+   146→            width: 30, height: 30, borderRadius: "50%", flex: "0 0 30px",
+   147→            display: "grid", placeItems: "center",
+   148→            background: colors.successBackground, color: colors.olive600,
+   149→          }}
+   150→        >
+   151→          <Icon name="checkCircle" size={16} stroke={2.2} />
+   152→        </div>
+   153→      </div>
+   154→
+   155→      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+   156→        <span style={chipStyle}>{timeLabelOf({ flexible: true })}</span>
+   157→        <span style={chipStyle}>
+   158→          <Icon name="clock" size={11} /> {fa(candidate.duration)} دقیقه
+   159→        </span>
+   160→        <span style={{ ...chipStyle, color: colors.olive700, fontWeight: 800, background: colors.olive50, borderColor: colors.olive200 }}>
+   161→          {priceLabel(candidate.price)}
+   162→        </span>
+   163→      </div>
+   164→
+   165→      <div style={{ display: "flex", gap: spacing.sm }}>
+   166→        <Button
+   167→          variant="secondary"
+   168→          onClick={onDecline}
+   169→          disabled={busy}
+   170→          style={{ minHeight: 44, flex: "0 0 auto", paddingInline: 16 }}
+   171→        >
+   172→          رد
+   173→        </Button>
+   174→        <Button onClick={onChoose} loading={busy} disabled={busy} style={{ minHeight: 44, flex: 1 }}>
+   175→          انتخاب و رزرو این استاد
+   176→        </Button>
+   177→      </div>
+   178→    </div>
+   179→  );
+   180→}
+   181→
+   182→const chipStyle: React.CSSProperties = {
+   183→  display: "inline-flex",
+   184→  alignItems: "center",
+   185→  gap: 4,
+   186→  fontSize: 11.5,
+   187→  color: colors.inkSecondary,
+   188→  background: colors.sand100,
+   189→  border: `1px solid ${colors.sand200}`,
+   190→  borderRadius: 999,
+   191→  padding: "3px 9px",
+   192→};
+   193→
+   194→type ScreenMode = "idle" | "searching" | "matched";
+   195→
+   196→export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }) {
+   197→  const runtime = usePlatform();
+   198→  const [catalog, setCatalog] = useState<OfficialService[]>([]);
+   199→  const [catalogLoading, setCatalogLoading] = useState(true);
+   200→  const [catalogError, setCatalogError] = useState("");
+   201→  const [query, setQuery] = useState("");
+   202→  const [selectedTopic, setSelectedTopic] = useState<OfficialService | null>(null);
+   203→  const [note, setNote] = useState("");
+   204→  const [whenMode, setWhenMode] = useState<"now" | "later">("now");
+   205→  const [when, setWhen] = useState<WhenValue>(() => {
+   206→    const nowHour = new Date().getHours();
+   207→    return { localDate: upcomingJalaliDays(1)[0]?.localDate ?? "", hh: Math.min(Math.max(nowHour + 2, 8), 22), mm: 0 };
+   208→  });
+   209→  const [creating, setCreating] = useState(false);
+   210→  const [actionError, setActionError] = useState("");
+   211→  const [view, setView] = useState<DispatchCallView | null>(null);
+   212→  const [busyOffer, setBusyOffer] = useState(0);
+   213→  const [canceling, setCanceling] = useState(false);
+   214→  const [resuming, setResuming] = useState(true);
+   215→  const [payMethod, setPayMethod] = useState<"wallet" | "gateway">("gateway");
+   216→  const [tick, setTick] = useState(0);
+   217→  const pollRef = useRef<number | null>(null);
+   218→
+   219→  const call = view?.call ?? null;
+   220→  const mode: ScreenMode = call ? (call.status === "searching" ? "searching" : "matched") : "idle";
+   221→
+   222→  const loadCatalog = useCallback(async () => {
+   223→    setCatalogLoading(true);
+   224→    setCatalogError("");
+   225→    try {
+   226→      setCatalog(await getCatalog(runtime));
+   227→    } catch (error) {
+   228→      setCatalogError(messageOf(error, "دریافت فهرست موضوعات ناموفق بود."));
+   229→    } finally {
+   230→      setCatalogLoading(false);
+   231→    }
+   232→  }, [runtime]);
+   233→
+   234→  const refresh = useCallback(async () => {
+   235→    try {
+   236→      const current = await getCurrentDispatchCall(runtime);
+   237→      setView(current);
+   238→    } catch {
+   239→      // polling errors are non-fatal
+   240→    } finally {
+   241→      setResuming(false);
+   242→    }
+   243→  }, [runtime]);
+   244→
+   245→  useEffect(() => {
+   246→    void loadCatalog();
+   247→    void refresh();
+   248→  }, [loadCatalog, refresh]);
+   249→
+   250→  // Live polling while a call is active.
+   251→  useEffect(() => {
+   252→    if (mode === "idle") return;
+   253→    pollRef.current = window.setInterval(() => {
+   254→      void refresh();
+   255→      setTick((value) => value + 1);
+   256→    }, 2500);
+   257→    return () => {
+   258→      if (pollRef.current) window.clearInterval(pollRef.current);
+   259→      pollRef.current = null;
+   260→    };
+   261→  }, [mode, refresh]);
+   262→
+   263→  const secondsLeft = useMemo(
+   264→    () => (call ? remainingSeconds(call.expires_at) : 0),
+   265→    // recompute when the poll tick advances so the countdown stays live
+   266→    [call, tick],
+   267→  );
+   268→
+   269→  const filteredCatalog = useMemo(() => {
+   270→    const q = query.trim();
+   271→    if (!q) return catalog;
+   272→    return catalog.filter(
+   273→      (item) => item.title.includes(q) || item.category.includes(q) || item.description.includes(q),
+   274→    );
+   275→  }, [catalog, query]);
+   276→
+   277→  const grouped = useMemo(() => {
+   278→    const groups = new Map<string, OfficialService[]>();
+   279→    for (const item of filteredCatalog) {
+   280→      const rows = groups.get(item.category) ?? [];
+   281→      rows.push(item);
+   282→      groups.set(item.category, rows);
+   283→    }
+   284→    return [...groups.entries()];
+   285→  }, [filteredCatalog]);
+   286→
+   287→  /* گزینه‌های شمسی «زمان مشخص» — هم‌سو با فرم مراسم (A3/B1) */
+   288→  const dayOptions = useMemo(
+   289→    () =>
+   290→      upcomingJalaliDays(7).map((day, index) => ({
+   291→        value: day.localDate,
+   292→        label: `${index === 0 ? "امروز" : index === 1 ? "فردا" : day.weekday} — ${day.dayLabel}`,
+   293→      })),
+   294→    [],
+   295→  );
+   296→
+   297→  const timeOptions = useMemo(() => {
+   298→    const options: Array<{ value: string; label: string }> = [];
+   299→    for (let hh = 8; hh <= 23; hh += 1) {
+   300→      for (const mm of [0, 30]) {
+   301→        options.push({
+   302→          value: `${hh}:${mm}`,
+   303→          label: `${toFaDigits(String(hh).padStart(2, "0"))}:${toFaDigits(String(mm).padStart(2, "0"))}`,
+   304→        });
+   305→      }
+   306→    }
+   307→    return options;
+   308→  }, []);
+   309→
+   310→  const start = useCallback(async () => {
+   311→    if (!selectedTopic || creating) return;
+   312→    if (whenMode === "later" && !isWhenInFuture(when)) {
+   313→      setActionError("زمان انتخاب‌شده باید حداقل ۱۵ دقیقه در آینده باشد.");
+   314→      return;
+   315→    }
+   316→    setCreating(true);
+   317→    setActionError("");
+   318→    try {
+   319→      const scheduledAt = whenMode === "later" ? tehranWallToRfc3339(when) || null : null;
+   320→      const created = await createDispatchCall(runtime, {
+   321→        officialServiceId: selectedTopic.id,
+   322→        note,
+   323→        scheduledAt,
+   324→        flexible: whenMode === "now",
+   325→      });
+   326→      showToast("فراخوان شما برای اساتید این موضوع ارسال شد");
+   327→      setView(created);
+   328→    } catch (error) {
+   329→      setActionError(messageOf(error, "ثبت فراخوان انجام نشد."));
+   330→    } finally {
+   331→      setCreating(false);
+   332→    }
+   333→  }, [creating, note, runtime, selectedTopic, when, whenMode]);
+   334→
+   335→  const cancel = useCallback(async () => {
+   336→    if (!call || canceling) return;
+   337→    setCanceling(true);
+   338→    setActionError("");
+   339→    try {
+   340→      await cancelDispatchCall(runtime, call.id);
+   341→      setView({ call: null, candidates: [] });
+   342→    } catch (error) {
+   343→      setActionError(messageOf(error, "لغو فراخوان انجام نشد."));
+   344→    } finally {
+   345→      setCanceling(false);
+   346→    }
+   347→  }, [call, canceling, runtime]);
+   348→
+   349→  const choose = useCallback(
+   350→    async (offerId: number) => {
+   351→      if (!call || busyOffer) return;
+   352→      setBusyOffer(offerId);
+   353→      setActionError("");
+   354→      try {
+   355→        const result = await chooseDispatchOffer(runtime, call.id, offerId, payMethod);
+   356→        await refresh();
+   357→        if (result.token) {
+   358→          // پست فرم توکن به OnlinePG از مرورگر کاربر — دقیقاً مثل منافسه، در همان تب
+   359→          payViaSamanGate(result.token);
+   360→        }
+   361→      } catch (error) {
+   362→        if (payMethod === "wallet" && error instanceof PlatformHttpError && error.status === 400) {
+   363→          setActionError("کیف پول شما کافی نیست. ابتدا کیف پول را شارژ کنید یا پرداخت آنلاین را برگزینید.");
+   364→        } else {
+   365→          setActionError(messageOf(error, "ثبت رزرو انجام نشد."));
+   366→        }
+   367→        await refresh();
+   368→      } finally {
+   369→        setBusyOffer(0);
+   370→      }
+   371→    },
+   372→    [busyOffer, call, payMethod, refresh, runtime],
+   373→  );
+   374→
+   375→  const decline = useCallback(
+   376→    async (offerId: number) => {
+   377→      if (!call || busyOffer) return;
+   378→      setBusyOffer(offerId);
+   379→      setActionError("");
+   380→      try {
+   381→        const updated = await declineDispatchOffer(runtime, call.id, offerId);
+   382→        setView(updated);
+   383→      } catch (error) {
+   384→        setActionError(messageOf(error, "رد پاسخ انجام نشد."));
+   385→      } finally {
+   386→        setBusyOffer(0);
+   387→      }
+   388→    },
+   389→    [busyOffer, call, runtime],
+   390→  );
+   391→
+   392→  // ── success state ──
+   393→  if (mode === "matched" && call) {
+   394→    const candidate = (view?.candidates ?? []).find((item) => item.teacher_id === call.matched_teacher_id);
+   395→    return (
+   396→      <div className="vodda-screen" style={{ display: "grid", gap: spacing.xl }}>
+   397→        <Card elevated className="vodda-enter" style={{ display: "grid", gap: spacing.lg, textAlign: "center", padding: 22 }}>
+   398→          <div
+   399→            aria-hidden="true"
+   400→            style={{
+   401→              width: 76, height: 76, display: "grid", placeItems: "center", marginInline: "auto",
+   402→              borderRadius: "50%", color: colors.surface, background: gradients.hero, boxShadow: shadows.olive,
+   403→            }}
+   404→          >
+   405→            <Icon name="checkCircle" size={36} stroke={2.2} />
+   406→          </div>
+   407→          <div>
+   408→            <h2 style={{ ...typography.title, margin: 0 }}>جلسه شما رزرو شد 🎉</h2>
+   409→            <p style={{ ...typography.body, color: colors.inkSecondary, marginBottom: 0, marginTop: 6 }}>
+   410→              موضوع «{call.topic_title}» با استاد {candidate?.name ?? "انتخاب‌شده"} ثبت شد و در انتظار تأیید نهایی استاد است.
+   411→            </p>
+   412→          </div>
+   413→          {candidate ? (
+   414→            <div style={{ display: "flex", alignItems: "center", gap: 12, textAlign: "right", background: colors.sand100, borderRadius: 16, padding: 12 }}>
+   415→              <Avatar name={candidate.name} src={candidate.avatar_url || undefined} size={48} ring={false} />
+   416→              <div style={{ minWidth: 0, flex: 1 }}>
+   417→                <strong style={{ display: "block", fontSize: 14.5, color: colors.ink }}>{candidate.name}</strong>
+   418→                <span style={{ fontSize: 12, color: colors.inkMuted }}>
+   419→                  {priceLabel(candidate.price)} · {timeLabelOf(call)}
+   420→                </span>
+   421→              </div>
+   422→            </div>
+   423→          ) : null}
+   424→          <Button fullWidth onClick={() => navigateApp("/sessions", config)}>پیگیری در جلسات من</Button>
+   425→          <Button variant="secondary" fullWidth onClick={() => { setView({ call: null, candidates: [] }); setResuming(true); void refresh(); }}>
+   426→            فراخوان جدید
+   427→          </Button>
+   428→        </Card>
+   429→      </div>
+   430→    );
+   431→  }
+   432→
+   433→  // ── live searching state ──
+   434→  if (mode === "searching" && call) {
+   435→    return (
+   436→      <div className="vodda-screen" style={{ display: "grid", gap: spacing.lg }}>
+   437→        <div
+   438→          className="vodda-enter"
+   439→          style={{
+   440→            position: "relative",
+   441→            overflow: "hidden",
+   442→            borderRadius: 22,
+   443→            padding: 20,
+   444→            color: colors.surface,
+   445→            background: gradients.deep,
+   446→            boxShadow: shadows.olive,
+   447→          }}
+   448→        >
+   449→          <span aria-hidden="true" className="vodda-dispatch-pulse" style={{ position: "absolute", insetInlineStart: 18, top: 18 }} />
+   450→          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+   451→            <div style={{ display: "grid", placeItems: "center", width: 46, height: 46, borderRadius: 15, background: "rgba(255,255,255,.14)" }}>
+   452→              <TopicIcon icon={call.topic_icon} size={24} />
+   453→            </div>
+   454→            <div style={{ minWidth: 0 }}>
+   455→              <strong style={{ display: "block", fontSize: 16.5, fontWeight: 800 }}>{call.topic_title}</strong>
+   456→              <span style={{ fontSize: 12.5, opacity: 0.85 }}>{timeLabelOf(call)}</span>
+   457→            </div>
+   458→            <div style={{ marginInlineStart: "auto", textAlign: "center" }}>
+   459→              <strong dir="ltr" style={{ display: "block", fontSize: 19, fontVariantNumeric: "tabular-nums" }}>
+   460→                {countdownLabel(secondsLeft)}
+   461→              </strong>
+   462→              <span style={{ fontSize: 11.5, opacity: 0.78 }}>مهلت فراخوان</span>
+   463→            </div>
+   464→          </div>
+   465→          <p style={{ margin: "14px 0 0", fontSize: 13, lineHeight: 1.9, opacity: 0.92 }}>
+   466→            درخواست شما بین همه اساتید این موضوع پخش شد. استادانی که زودتر اعلام آمادگی کنند، همین‌جا زنده نمایش داده می‌شوند.
+   467→          </p>
+   468→        </div>
+   469→
+   470→        {call.note ? (
+   471→          <Card style={{ padding: 14, borderRadius: 18, display: "flex", gap: 9, alignItems: "flex-start" }}>
+   472→            <Icon name="message" size={17} />
+   473→            <p style={{ margin: 0, fontSize: 13, color: colors.inkSecondary, lineHeight: 1.9 }}>{call.note}</p>
+   474→          </Card>
+   475→        ) : null}
+   476→
+   477→        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+   478→          <strong style={{ fontSize: 15, color: colors.ink }}>استادهای آماده</strong>
+   479→          <span style={{ background: colors.olive600, color: colors.surface, borderRadius: 999, fontSize: 12, fontWeight: 800, padding: "2px 10px" }}>
+   480→            {fa((view?.candidates ?? []).length)}
+   481→          </span>
+   482→          <span style={{ marginInlineStart: "auto", display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, color: colors.olive700 }}>
+   483→            <span aria-hidden="true" style={liveDotStyle} /> زنده
+   484→          </span>
+   485→        </div>
+   486→
+   487→        <div
+   488→          role="radiogroup"
+   489→          aria-label="روش پرداخت"
+   490→          style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, padding: 6, borderRadius: 16, border: `1px solid ${colors.border}`, background: colors.surface }}
+   491→        >
+   492→          {([
+   493→            ["gateway", "پرداخت آنلاین (سامان)"],
+   494→            ["wallet", "پرداخت از کیف پول"],
+   495→          ] as const).map(([value, label]) => (
+   496→            <button
+   497→              key={value}
+   498→              type="button"
+   499→              role="radio"
+   500→              aria-checked={payMethod === value}
+   501→              onClick={() => setPayMethod(value)}
+   502→              style={{
+   503→                padding: "10px 8px",
+   504→                borderRadius: 11,
+   505→                fontSize: 12.5,
+   506→                fontWeight: 800,
+   507→                cursor: "pointer",
+   508→                fontFamily: "inherit",
+   509→                color: payMethod === value ? colors.surface : colors.inkSecondary,
+   510→                background: payMethod === value ? colors.olive600 : "transparent",
+   511→                border: "none",
+   512→              }}
+   513→            >
+   514→              {label}
+   515→            </button>
+   516→          ))}
+   517→        </div>
+   518→
+   519→        {(view?.candidates ?? []).length === 0 ? (
+   520→          <Card style={{ padding: 20, borderRadius: 20, textAlign: "center" }}>
+   521→            <div style={{ display: "grid", placeItems: "center", gap: 10 }}>
+   522→              <div
+   523→                aria-hidden="true"
+   524→                style={{
+   525→                  width: 58, height: 58, borderRadius: "50%", display: "grid", placeItems: "center",
+   526→                  background: colors.olive50, color: colors.olive600,
+   527→                }}
+   528→                className="vodda-dispatch-radar"
+   529→              >
+   530→                <Icon name="bell" size={24} />
+   531→              </div>
+   532→              <strong style={{ fontSize: 14.5, color: colors.ink }}>در انتظار نخستین پاسخ…</strong>
+   533→              <p style={{ margin: 0, fontSize: 12.5, color: colors.inkMuted, lineHeight: 1.9 }}>
+   534→                فراخوان شما برای اساتید «{call.topic_title}» ارسال شد. معمولاً نخستین پاسخ‌ها در چند دقیقه می‌رسند.
+   535→              </p>
+   536→            </div>
+   537→          </Card>
+   538→        ) : (
+   539→          <div style={{ display: "grid", gap: spacing.md }}>
+   540→            {(view?.candidates ?? []).map((candidate, index) => (
+   541→              <CandidateCard
+   542→                key={candidate.offer_id}
+   543→                candidate={candidate}
+   544→                index={index}
+   545→                busy={busyOffer === candidate.offer_id}
+   546→                onChoose={() => void choose(candidate.offer_id)}
+   547→                onDecline={() => void decline(candidate.offer_id)}
+   548→              />
+   549→            ))}
+   550→          </div>
+   551→        )}
+   552→
+   553→        {actionError ? (
+   554→          <p role="alert" style={{ ...typography.bodySmall, padding: spacing.md, borderRadius: radii.md, background: colors.dangerBackground, color: colors.danger, margin: 0 }}>
+   555→            {actionError}
+   556→          </p>
+   557→        ) : null}
+   558→
+   559→        <div style={{ position: "sticky", zIndex: 12, bottom: "calc(68px + env(safe-area-inset-bottom))", padding: "8px 0 12px", background: colors.sand50 }}>
+   560→          <Button variant="secondary" fullWidth loading={canceling} disabled={canceling} onClick={() => void cancel()} style={{ minHeight: 50 }}>
+   561→            لغو فراخوان
+   562→          </Button>
+   563→        </div>
+   564→      </div>
+   565→    );
+   566→  }
+   567→
+   568→  // ── idle: topic picker + call composer ──
+   569→  const topic = selectedTopic;
+   570→  return (
+   571→    <div className="vodda-screen" style={{ display: "grid", gap: spacing.lg }}>
+   572→      <div
+   573→        className="vodda-enter"
+   574→        style={{
+   575→          position: "relative",
+   576→          overflow: "hidden",
+   577→          borderRadius: 22,
+   578→          padding: 22,
+   579→          color: colors.surface,
+   580→          background: gradients.hero,
+   581→          boxShadow: shadows.olive,
+   582→        }}
+   583→      >
+   584→        {/* تذهیب گوشه — هویت قرآنی روی هیروی فراخوان (فاز ۲) */}
+   585→        <CornerOrnament tone="light" size={124} style={{ insetInlineEnd: -32, top: -36, opacity: 0.9 }} />
+   586→        <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 12 }}>
+   587→          <div style={{ display: "grid", placeItems: "center", width: 46, height: 46, borderRadius: 15, background: "rgba(255,255,255,.15)" }}>
+   588→            <Icon name="bell" size={24} />
+   589→          </div>
+   590→          <div>
+   591→            <h1 className="vodda-display" style={{ margin: 0, fontSize: 23, lineHeight: 1.65 }}>فراخوان اساتید</h1>
+   592→            <span style={{ fontSize: 12.5, opacity: 0.85 }}>به‌سرعت و بدون تماس تلفنی؛ اساتید اعلام آمادگی می‌کنند و شما انتخاب می‌کنید</span>
+   593→          </div>
+   594→        </div>
+   595→        <div style={{ position: "relative", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginTop: 16 }}>
+   596→          {[
+   597→            { icon: "search" as const, text: "موضوع را انتخاب کنید" },
+   598→            { icon: "bell" as const, text: "فراخوان را ثبت کنید" },
+   599→            { icon: "checkCircle" as const, text: "از پاسخ‌ها انتخاب کنید" },
+   600→          ].map((step) => (
+   601→            <div key={step.text} style={{ background: "rgba(255,255,255,.1)", borderRadius: 13, padding: "10px 8px", textAlign: "center" }}>
+   602→              <Icon name={step.icon} size={18} style={{ opacity: 0.9 }} />
+   603→              <span style={{ display: "block", fontSize: 12, marginTop: 5, lineHeight: 1.6, opacity: 0.92 }}>{step.text}</span>
+   604→            </div>
+   605→          ))}
+   606→        </div>
+   607→      </div>
+   608→
+   609→      {topic ? (
+   610→        <Card className="vodda-enter" style={{ padding: 18, borderRadius: 20, display: "grid", gap: spacing.md }}>
+   611→          <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+   612→            <div style={{ display: "grid", placeItems: "center", width: 42, height: 42, borderRadius: 13, background: colors.olive50, color: colors.olive600, flex: "0 0 42px" }}>
+   613→              <TopicIcon icon={topic.icon} size={21} />
+   614→            </div>
+   615→            <div style={{ minWidth: 0, flex: 1 }}>
+   616→              <strong style={{ display: "block", fontSize: 15, fontWeight: 800, color: colors.ink }}>{topic.title}</strong>
+   617→              <span style={{ fontSize: 12, color: colors.inkMuted, lineHeight: 1.8, display: "block" }}>{topic.description}</span>
+   618→            </div>
+   619→            <button
+   620→              type="button"
+   621→              onClick={() => { setSelectedTopic(null); setActionError(""); }}
+   622→              aria-label="تغییر موضوع"
+   623→              style={{ background: "none", border: "none", color: colors.inkMuted, cursor: "pointer", padding: 4, fontFamily: typography.fontFamily }}
+   624→            >
+   625→              <Icon name="refresh" size={17} />
+   626→            </button>
+   627→          </div>
+   628→
+   629→          <div style={{ height: 1, background: colors.sand150 }} />
+   630→
+   631→          <div>
+   632→            <strong style={{ fontSize: 13.5, color: colors.ink, display: "block", marginBottom: 8 }}>چه زمانی؟</strong>
+   633→            <div style={{ display: "flex", gap: spacing.sm, flexWrap: "wrap" }}>
+   634→              <button type="button" aria-pressed={whenMode === "now"} onClick={() => setWhenMode("now")} className="vodda-tappable" style={whenChip(whenMode === "now")}>
+   635→                <Icon name="sparkle" size={14} style={{ marginInlineEnd: 5 }} /> در اسرع وقت
+   636→              </button>
+   637→              <button type="button" aria-pressed={whenMode === "later"} onClick={() => setWhenMode("later")} className="vodda-tappable" style={whenChip(whenMode === "later")}>
+   638→                <Icon name="calendar" size={14} style={{ marginInlineEnd: 5 }} /> زمان مشخص
+   639→              </button>
+   640→            </div>
+   641→            {whenMode === "later" ? (
+   642→              <div style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr", gap: spacing.sm, marginTop: 10 }}>
+   643→                <SelectField
+   644→                  ariaLabel="روز جلسه"
+   645→                  value={when.localDate}
+   646→                  onChange={(next) => setWhen((previous) => ({ ...previous, localDate: next }))}
+   647→                  options={dayOptions}
+   648→                />
+   649→                <SelectField
+   650→                  ariaLabel="ساعت جلسه"
+   651→                  value={`${when.hh}:${when.mm}`}
+   652→                  onChange={(next) => {
+   653→                    const [hh, mm] = next.split(":").map(Number);
+   654→                    setWhen((previous) => ({ ...previous, hh, mm }));
+   655→                  }}
+   656→                  options={timeOptions}
+   657→                />
+   658→              </div>
+   659→            ) : null}
+   660→            <p style={{ margin: "8px 0 0", fontSize: 12, color: colors.inkMuted, lineHeight: 1.8 }}>
+   661→              {whenMode === "later"
+   662→                ? "ساعت‌ها به وقت تهران است؛ زمان نهایی با تأیید استاد قطعی می‌شود."
+   663→                : "در «در اسرع وقت» ساعت نهایی با توافق استاد مشخص می‌شود."}
+   664→            </p>
+   665→          </div>
+   666→
+   667→          <div>
+   668→            <strong style={{ fontSize: 13.5, color: colors.ink, display: "block", marginBottom: 8 }}>یادداشت برای اساتید (اختیاری)</strong>
+   669→            <textarea
+   670→              value={note}
+   671→              onChange={(event) => setNote(event.target.value.slice(0, 300))}
+   672→              rows={2}
+   673→              placeholder="مثلاً: مبتدی هستم، برای شروع کمکم کنید…"
+   674→              style={{ ...inputStyle, resize: "none", lineHeight: 1.9 }}
+   675→              aria-label="یادداشت فراخوان"
+   676→            />
+   677→          </div>
+   678→
+   679→          {actionError ? (
+   680→            <p role="alert" style={{ ...typography.bodySmall, padding: spacing.md, borderRadius: radii.md, background: colors.dangerBackground, color: colors.danger, margin: 0 }}>
+   681→              {actionError}
+   682→            </p>
+   683→          ) : null}
+   684→
+   685→          <div style={{ display: "grid", gap: spacing.sm }}>
+   686→            <Button fullWidth loading={creating} disabled={creating} onClick={() => void start()} style={{ minHeight: 52 }}>
+   687→              ثبت فراخوان برای اساتید
+   688→            </Button>
+   689→            <Button variant="secondary" fullWidth onClick={() => navigateApp(`/search?topic=${topic.id}`, config)} style={{ minHeight: 46 }}>
+   690→              یا مشاهدهٔ اساتید همین موضوع
+   691→            </Button>
+   692→          </div>
+   693→        </Card>
+   694→      ) : (
+   695→        <Card className="vodda-enter vodda-enter-delay-1" style={{ padding: 18, borderRadius: 20 }}>
+   696→          <strong style={{ fontSize: 15, fontWeight: 800, color: colors.ink, display: "block" }}>۱. موضوع آموزش را انتخاب کنید</strong>
+   697→          <span style={{ fontSize: 12, color: colors.inkMuted, display: "block", margin: "4px 0 12px" }}>
+   698→            از فهرست رسمی خدمات وُدّا — {fa(catalog.length)} موضوع تأییدشده
+   699→          </span>
+   700→          <input
+   701→            type="search"
+   702→            value={query}
+   703→            onChange={(event) => setQuery(event.target.value)}
+   704→            placeholder="جستجو در موضوعات؛ مثلاً تجوید، حفظ، صوت و لحن…"
+   705→            style={{ ...inputStyle, marginBottom: 12 }}
+   706→            aria-label="جستجوی موضوع"
+   707→          />
+   708→          {catalogLoading ? (
+   709→            <LoadingState label="در حال دریافت موضوعات…" />
+   710→          ) : catalogError ? (
+   711→            <ErrorState
+   712→              title="دریافت موضوعات ناموفق بود"
+   713→              description={catalogError}
+   714→              action={<Button variant="secondary" onClick={() => void loadCatalog()}>تلاش دوباره</Button>}
+   715→            />
+   716→          ) : filteredCatalog.length === 0 ? (
+   717→            <EmptyState
+   718→              illustration={<IllustrationDispatch size={150} />}
+   719→              title="موضوعی پیدا نشد"
+   720→              description="عبارت دیگری را جستجو کنید."
+   721→            />
+   722→          ) : (
+   723→            <div style={{ display: "grid", gap: spacing.lg, maxHeight: 520, overflowY: "auto", paddingInlineEnd: 4 }}>
+   724→              {grouped.map(([category, items]) => (
+   725→                <div key={category}>
+   726→                  <strong style={{ display: "block", fontSize: 12.5, color: colors.olive700, margin: "2px 0 8px" }}>{category}</strong>
+   727→                  <div style={{ display: "grid", gap: spacing.sm }}>
+   728→                    {items.map((item) => (
+   729→                      <button
+   730→                        key={item.id}
+   731→                        type="button"
+   732→                        onClick={() => { setSelectedTopic(item); setActionError(""); }}
+   733→                        style={topicRowStyle}
+   734→                      >
+   735→                        <span style={{ display: "grid", placeItems: "center", width: 34, height: 34, borderRadius: 11, background: colors.olive50, color: colors.olive600, flex: "0 0 34px" }}>
+   736→                          <TopicIcon icon={item.icon} size={17} />
+   737→                        </span>
+   738→                        <span style={{ minWidth: 0, flex: 1 }}>
+   739→                          <strong style={{ display: "block", fontSize: 13.5, fontWeight: 700, color: colors.ink }}>{item.title}</strong>
+   740→                        </span>
+   741→                        <Icon name="chevronL" size={15} style={{ color: colors.inkFaint, flex: "0 0 auto" }} />
+   742→                      </button>
+   743→                    ))}
+   744→                  </div>
+   745→                </div>
+   746→              ))}
+   747→            </div>
+   748→          )}
+   749→        </Card>
+   750→      )}
+   751→    </div>
+   752→  );
+   753→}
+   754→
+   755→const whenChip = (active: boolean): React.CSSProperties => ({
+   756→  display: "inline-flex",
+   757→  alignItems: "center",
+   758→  padding: "9px 14px",
+   759→  borderRadius: 999,
+   760→  fontSize: 13,
+   761→  fontWeight: 700,
+   762→  cursor: "pointer",
+   763→  fontFamily: "inherit",
+   764→  color: active ? colors.surface : colors.inkSecondary,
+   765→  background: active ? colors.olive600 : colors.surface,
+   766→  border: `1px solid ${active ? colors.olive600 : colors.sand200}`,
+   767→});
+   768→
+   769→const inputStyle: React.CSSProperties = {
+   770→  width: "100%",
+   771→  padding: "11px 13px",
+   772→  borderRadius: 14,
+   773→  border: `1px solid ${colors.sand200}`,
+   774→  background: colors.surface,
+   775→  color: colors.ink,
+   776→  fontSize: 13.5,
+   777→  fontFamily: "inherit",
+   778→  outline: "none",
+   779→  boxSizing: "border-box",
+   780→};
+   781→
+   782→const topicRowStyle: React.CSSProperties = {
+   783→  display: "flex",
+   784→  alignItems: "center",
+   785→  gap: 10,
+   786→  padding: 10,
+   787→  textAlign: "right",
+   788→  background: colors.sand50,
+   789→  border: `1px solid ${colors.sand200}`,
+   790→  borderRadius: 14,
+   791→  cursor: "pointer",
+   792→  fontFamily: "inherit",
+   793→  width: "100%",
+   794→};
+   795→
+   796→const liveDotStyle: React.CSSProperties = {
+   797→  width: 8,
+   798→  height: 8,
+   799→  borderRadius: "50%",
+   800→  background: colors.olive600,
+   801→  animation: "vodda-live-dot 1.6s ease-out infinite",
+   802→};
+   803→
