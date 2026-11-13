@@ -100,34 +100,37 @@ async function deleteService(runtime: PlatformRuntime, id: number) {
   return runtime.request<ApiEnvelope<unknown>>(`/teacher/services/${id}`, { method: "DELETE" });
 }
 
+/** دستهٔ خدمات حضوری (مراسم) — مسیر ثبتش این صفحه نیست؛ /t/presence است. */
+const IN_PERSON_CATEGORY = "خدمات حضوری قرآنی";
+
 async function getCatalog(runtime: PlatformRuntime): Promise<CatalogCategory[]> {
-  // فقط خدمات آنلاین — خدمات حضوری (مراسم) مسیر مخصوص خودش را دارد:
-  // صفحهٔ «خدمات حضوری» (/t/presence) با موجودیت و قیمتی مستقل. قبلاً
-  // دستهٔ «خدمات حضوری قرآنی» این‌جا هم نمایش داده می‌شد و استادها را
-  // برای ثبت خدمت گیج می‌کرد (دو مسیر برای یک کار).
-  const response = await runtime.request<ApiEnvelope<unknown[]>>("/catalog/services?mode=online");
+  // فقط خدمات آنلاین — دستهٔ «خدمات حضوری قرآنی» حذف می‌شود تا ثبت خدمت
+  // حضوری فقط از مسیر مخصوص خودش («خدمات حضوری» /t/presence با موجودیت و
+  // قیمتی مستقل) انجام شود. قبلاً همین دسته این‌جا هم نمایش داده می‌شد و
+  // استادها را گیج می‌کرد (دو مسیر برای یک کار).
+  const response = await runtime.request<ApiEnvelope<UnknownRecord>>("/catalog/services");
+  const payload = asRecord(response.data);
   const categories: CatalogCategory[] = [];
-  const indexByCategory = new Map<string, number>();
-  for (const item of Array.isArray(response.data) ? response.data : []) {
-    const entry = asRecord(item);
-    if (!entry) continue;
-    const id = asInteger(entry.id);
-    if (id <= 0) continue;
-    const category = asString(entry.category, "خدمات رسمی");
-    const catalogEntry: CatalogEntry = {
-      id,
-      category,
-      title: asString(entry.title, "خدمت رسمی"),
-      description: asString(entry.description, ""),
-      icon: entry.icon == null ? undefined : asString(entry.icon, undefined as unknown as string),
-    };
-    const existing = indexByCategory.get(category);
-    if (existing == null) {
-      indexByCategory.set(category, categories.length);
-      categories.push({ category, services: [catalogEntry] });
-    } else {
-      categories[existing].services.push(catalogEntry);
+  for (const group of asArray(payload?.categories)) {
+    const row = asRecord(group);
+    if (!row) continue;
+    const category = asString(row.category, "خدمات رسمی");
+    if (category === IN_PERSON_CATEGORY) continue;
+    const services: CatalogEntry[] = [];
+    for (const item of asArray(row.services)) {
+      const entry = asRecord(item);
+      if (!entry) continue;
+      const id = asInteger(entry.id);
+      if (id <= 0) continue;
+      services.push({
+        id,
+        category,
+        title: asString(entry.title, "خدمت رسمی"),
+        description: asString(entry.description, ""),
+        icon: entry.icon == null ? undefined : asString(entry.icon, undefined as unknown as string),
+      });
     }
+    if (services.length > 0) categories.push({ category, services });
   }
   return categories;
 }
