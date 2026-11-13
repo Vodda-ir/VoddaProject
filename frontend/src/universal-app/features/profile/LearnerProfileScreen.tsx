@@ -89,7 +89,7 @@ export function LearnerProfileScreen({ config }: LearnerProfileScreenProps) {
 
   return (
     <div className="vodda-screen" style={{ display: "grid", gap: 18 }}>
-      <h1 className="vodda-display" style={{ fontSize: 25, margin: "2px 0 0", color: colors.ink, lineHeight: 1.85 }}>پروفایل</h1>
+      <h1 className="vodda-display" style={{ fontSize: 26, margin: "2px 0 0", color: colors.ink, lineHeight: 1.7 }}>پروفایل</h1>
 
       <Card elevated className="vodda-enter" style={{ padding: 16, borderRadius: 24 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>

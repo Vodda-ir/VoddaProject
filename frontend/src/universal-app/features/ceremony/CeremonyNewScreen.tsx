@@ -210,7 +210,7 @@ export function CeremonyNewScreen({ config }: { config: UniversalAppConfig }) {
             <Icon name="calendar" size={24} />
           </div>
           <div>
-            <h1 className="vodda-display" style={{ margin: 0, fontSize: 21, lineHeight: 1.9 }}>فراخوان مراسم</h1>
+            <h1 className="vodda-display" style={{ margin: 0, fontSize: 22, lineHeight: 1.65 }}>فراخوان مراسم</h1>
             <span style={{ fontSize: 12.5, opacity: 0.9 }}>مراسم خود را ثبت کنید؛ قاریان حق‌الزحمهٔ خود را اعلام می‌کنند</span>
           </div>
         </div>

@@ -4,9 +4,11 @@ import { useEffect, useState } from "react";
 import { Icon } from "./Icon";
 
 /**
- * اعلان کوتاه موفقیت (C2) — یک نمونه در هر لحظه؛ فراخوانی از هر جایی:
+ * اعلان بالا-صفحه (C2) — یک نمونه در هر لحظه؛ فراخوانی از هر جایی:
  *   showToast("پروفایل ذخیره شد");
  * میزبان (ToastHost) در Shell سوار می‌شود تا در همهٔ مسیرها در دسترس باشد.
+ * متن کامل تا سه خط نمایش داده می‌شود (بدون بریدگی) و مدت‌زمان بر اساس
+ * طول پیام به‌صورت خودکار محاسبه می‌شود.
  */
 
 type ToastTone = "success" | "info";
@@ -28,7 +30,12 @@ function emit() {
   for (const listener of listeners) listener(currentToast);
 }
 
-export function showToast(message: string, tone: ToastTone = "success", durationMs = 2600) {
+/** مدت نمایش متناسب با طول پیام: پیام‌های بلند فرصت خواندن بیشتری دارند. */
+function autoDuration(message: string): number {
+  return Math.min(4600, 2500 + message.length * 55);
+}
+
+export function showToast(message: string, tone: ToastTone = "success", durationMs = 0) {
   toastId += 1;
   currentToast = { id: toastId, message, tone };
   emit();
@@ -36,7 +43,7 @@ export function showToast(message: string, tone: ToastTone = "success", duration
   toastTimer = setTimeout(() => {
     currentToast = null;
     emit();
-  }, durationMs);
+  }, durationMs > 0 ? durationMs : autoDuration(message));
 }
 
 export function ToastHost() {
@@ -60,7 +67,7 @@ export function ToastHost() {
       style={toast.tone === "info" ? { background: "linear-gradient(145deg, #5e6e43, #728350)" } : undefined}
     >
       <Icon name={toast.tone === "info" ? "info" : "checkCircle"} size={17} stroke={2.2} />
-      <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{toast.message}</span>
+      <span className="vodda-toast-text">{toast.message}</span>
     </div>
   );
 }

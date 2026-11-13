@@ -1,6 +1,7 @@
 import type { CSSProperties, MouseEvent, ReactNode } from "react";
 import type { UniversalAppConfig } from "../config";
 import { appRouteUrl, navigateAppRoute, type AppRouteName, type StaticAppRouteName } from "../router";
+import { CallAlertBar } from "../features/notifications/CallAlertBar";
 import { Icon } from "./Icon";
 import { ToastHost } from "./toast";
 import { colors, gradients, radii, shadows, spacing, typography } from "./theme";
@@ -331,6 +332,7 @@ function Shell({
         />
       </div>
       <ToastHost />
+      {mode === "teacher" ? <CallAlertBar config={config} /> : null}
     </div>
   );
 }

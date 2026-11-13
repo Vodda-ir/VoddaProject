@@ -607,7 +607,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
   return (
     <section className="vodda-screen" style={{ display: "grid", gap: 14 }}>
       <header className="vodda-enter" style={{ paddingTop: 2 }}>
-        <h1 className="vodda-display" style={{ fontSize: 25, margin: "2px 0 0", color: colors.ink, lineHeight: 1.85 }}>جستجو</h1>
+        <h1 className="vodda-display" style={{ fontSize: 26, margin: "2px 0 0", color: colors.ink, lineHeight: 1.7 }}>جستجو</h1>
         <p style={{ fontSize: 12.5, margin: "5px 0 0", color: colors.inkMuted }}>
           استاد، خدمت آموزشی و قاری مراسم — همه از یک‌جا.
         </p>

@@ -588,7 +588,7 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
             <Icon name="bell" size={24} />
           </div>
           <div>
-            <h1 className="vodda-display" style={{ margin: 0, fontSize: 22, lineHeight: 1.9 }}>فراخوان اساتید</h1>
+            <h1 className="vodda-display" style={{ margin: 0, fontSize: 23, lineHeight: 1.65 }}>فراخوان اساتید</h1>
             <span style={{ fontSize: 12.5, opacity: 0.85 }}>به‌سرعت و بدون تماس تلفنی؛ اساتید اعلام آمادگی می‌کنند و شما انتخاب می‌کنید</span>
           </div>
         </div>

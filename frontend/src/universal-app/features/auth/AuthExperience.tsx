@@ -68,7 +68,7 @@ export function LaunchScreen() {
         />
         <strong
           className="vodda-display"
-          style={{ fontSize: 17, color: colors.ink, lineHeight: 1.9 }}
+          style={{ fontSize: 18, color: colors.ink, lineHeight: 1.7 }}
         >
           پلتفرم آموزش و خدمات آنلاین قرآن کریم
         </strong>
@@ -301,7 +301,7 @@ export function LoginScreen({ config }: LoginScreenProps) {
           />
           <p
             className="vodda-display"
-            style={{ margin: "10px 0 0", color: colors.ink, fontSize: 16.5, textAlign: "center", lineHeight: 1.9 }}
+            style={{ margin: "10px 0 0", color: colors.ink, fontSize: 17.5, textAlign: "center", lineHeight: 1.7 }}
           >
             پلتفرم آموزش و خدمات آنلاین قرآن کریم
           </p>
