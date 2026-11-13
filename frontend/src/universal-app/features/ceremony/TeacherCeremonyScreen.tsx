@@ -1,7 +1,11 @@
 "use client";
 
-// پنل قاری — «پذیرش مراسم»: صندوق فراخوان‌های باز مراسم (پذیرش با قیمت و
+// پنل قاری — صندوق «فراخوان مراسم»: فراخوان‌های باز مراسم (پذیرش با قیمت و
 // پیام) + «پذیرش‌های من» با وضعیت و امکان پس‌گرفتن. پایش زندهٔ هر ۸ ثانیه.
+//
+// این پنل داخل صفحهٔ یکپارچهٔ «فراخوان‌ها» (/t/dispatch) به‌عنوان تب
+// «مراسم حضوری» رندر می‌شود تا استاد برای همهٔ فراخوان‌ها (آنلاین و مراسم)
+// یک مسیر مشخص داشته باشد. مسیر قدیمی /t/ceremony هم به همین تب می‌رسد.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { UniversalAppConfig } from "../../config";
@@ -165,7 +169,7 @@ function MyOfferRow({
   );
 }
 
-export function TeacherCeremonyScreen({ config }: { config: UniversalAppConfig }) {
+export function CeremonyInboxPanel({ config }: { config: UniversalAppConfig }) {
   const runtime = usePlatform();
   const [tab, setTab] = useState<"calls" | "offers">("calls");
   const [inbox, setInbox] = useState<{ calls: TeacherCeremonyInboxCall[]; offers: CeremonyOffer[] } | null>(null);
@@ -301,7 +305,7 @@ export function TeacherCeremonyScreen({ config }: { config: UniversalAppConfig }
             <Icon name="mic" size={23} />
           </div>
           <div>
-            <h1 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>پذیرش مراسم</h1>
+            <h1 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>فراخوان مراسم</h1>
             <span style={{ fontSize: 12.5, opacity: 0.85 }}>فراخوان‌های مراسم حضوری را مشاهده و اعلام پذیرش کنید</span>
           </div>
           <div style={{ marginInlineStart: "auto", textAlign: "center" }}>

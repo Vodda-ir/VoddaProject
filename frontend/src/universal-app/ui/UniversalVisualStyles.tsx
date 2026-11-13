@@ -142,9 +142,25 @@ export function UniversalVisualStyles() {
       .vodda-scroll-rail {
         scrollbar-width: none;
         overscroll-behavior-inline: contain;
+        /* ریل افقی هرگز نباید عرض والدِ گرید را بیشتر از صفحه کند —
+           min-content ریل چیپ‌ها بلند است و بدون این، صفحه در موبایل
+           به‌صورت افقی بیرون می‌زند (باگ «همه‌چی به‌هم می‌ریزد»). */
+        min-width: 0;
+        max-width: 100%;
       }
       .vodda-scroll-rail::-webkit-scrollbar {
         display: none;
+      }
+      /* فرزندان کارت در گرید اجازهٔ جمع‌شدن داشته باشند تا محتوای پهن،
+         کارت را عریض‌تر از صفحه نکند. */
+      .vodda-card > * {
+        min-width: 0;
+      }
+      /* کانتئنر صفحه هرگز اسکرول افقی نمی‌گیرد؛ سرریز احتمالی بریده می‌شود */
+      .vodda-screen {
+        min-width: 0;
+        max-width: 100%;
+        overflow-x: clip;
       }
       .vodda-bottom-nav {
         transform: translateZ(0);

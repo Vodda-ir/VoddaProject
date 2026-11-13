@@ -12,7 +12,6 @@ import { CeremonyCallsScreen } from "./features/ceremony/CeremonyCallsScreen";
 import { CeremonyNewScreen } from "./features/ceremony/CeremonyNewScreen";
 import { PresenceProviderScreen } from "./features/ceremony/PresenceProviderScreen";
 import { PresenceScreen } from "./features/ceremony/PresenceScreen";
-import { TeacherCeremonyScreen } from "./features/ceremony/TeacherCeremonyScreen";
 import { TeacherPresenceScreen } from "./features/ceremony/TeacherPresenceScreen";
 import { LearnerDispatchScreen } from "./features/dispatch/LearnerDispatchScreen";
 import { LearnerHomeScreen } from "./features/home/LearnerHomeScreen";
@@ -68,8 +67,8 @@ const routeTitles: Record<AppRouteName, string> = {
   "teacher-withdraw": "برداشت",
   "teacher-profile": "پروفایل استاد",
   "teacher-reviews": "نظرها",
-  "teacher-dispatch": "فراخوان‌های زنده",
-  "teacher-ceremony": "پذیرش مراسم",
+  "teacher-dispatch": "فراخوان‌ها",
+  "teacher-ceremony": "فراخوان‌ها",
   "teacher-presence": "خدمات حضوری",
   "not-found": "صفحه پیدا نشد",
 };
@@ -192,7 +191,7 @@ function UniversalAppContent({ config, runtime }: { config: UniversalAppConfig; 
   ) : route.name === "teacher-dispatch" ? (
     <TeacherDispatchScreen config={config} />
   ) : route.name === "teacher-ceremony" ? (
-    <TeacherCeremonyScreen config={config} />
+    <TeacherDispatchScreen config={config} initialTab="ceremony" />
   ) : route.name === "teacher-presence" ? (
     <TeacherPresenceScreen config={config} />
   ) : (

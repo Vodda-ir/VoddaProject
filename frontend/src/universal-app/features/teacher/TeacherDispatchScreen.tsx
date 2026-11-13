@@ -5,6 +5,7 @@ import type { UniversalAppConfig } from "../../config";
 import { usePlatform } from "../../platform/context";
 import { navigateApp } from "../../router";
 import { toFaDigits } from "../../ui/persian";
+import type { IconName } from "../../../components/Icon";
 import {
   Button,
   Card,
@@ -20,6 +21,7 @@ import {
   typography,
 } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
+import { CeremonyInboxPanel } from "../ceremony/TeacherCeremonyScreen";
 import { formatWalletAmount } from "../wallet/WalletTransactionCard";
 import {
   acceptDispatchCall,
@@ -208,7 +210,7 @@ function MyOfferCard({
   );
 }
 
-export function TeacherDispatchScreen({ config }: { config: UniversalAppConfig }) {
+function OnlineDispatchPanel({ config, active }: { config: UniversalAppConfig; active: boolean }) {
   const runtime = usePlatform();
   const [inbox, setInbox] = useState<TeacherInbox | null>(null);
   const [loading, setLoading] = useState(true);
@@ -243,7 +245,9 @@ export function TeacherDispatchScreen({ config }: { config: UniversalAppConfig }
   }, [refresh]);
 
   useEffect(() => {
+    // پایش زندهٔ فقط هنگام فعال‌بودن تب آنلاین — در تب مراسم پنل مراسم خودش پایش می‌کند
     pollRef.current = window.setInterval(() => {
+      if (!active) return;
       void refresh();
       setTick((value) => value + 1);
     }, 3500);
@@ -251,7 +255,7 @@ export function TeacherDispatchScreen({ config }: { config: UniversalAppConfig }
       if (pollRef.current) window.clearInterval(pollRef.current);
       pollRef.current = null;
     };
-  }, [refresh]);
+  }, [refresh, active]);
 
   const accept = useCallback(
     async (callId: number) => {
@@ -407,6 +411,68 @@ export function TeacherDispatchScreen({ config }: { config: UniversalAppConfig }
       <p style={{ margin: 0, fontSize: 11.5, color: colors.inkMuted, lineHeight: 1.9 }}>
         نکته: پاسخ سریع‌تر شانس دیده‌شدن شما را بیشتر می‌کند؛ کاربران معمولاً نخستین استادهای آماده را بررسی و انتخاب می‌کنند.
       </p>
+    </div>
+  );
+}
+
+
+/* ── صفحهٔ یکپارچهٔ «فراخوان‌ها» ────────────────────────────────────────────
+   یک مسیر مشخص برای همهٔ فراخوان‌های استاد: جلسهٔ آنلاین و مراسم حضوری.
+   مسیرهای /t/dispatch و /t/ceremony هر دو به همین صفحه می‌رسند. */
+export function TeacherDispatchScreen({
+  config,
+  initialTab = "online",
+}: {
+  config: UniversalAppConfig;
+  initialTab?: "online" | "ceremony";
+}) {
+  const [tab, setTab] = useState<"online" | "ceremony">(initialTab);
+
+  const tabs: Array<["online" | "ceremony", string, IconName]> = [
+    ["online", "جلسهٔ آنلاین", "video"],
+    ["ceremony", "مراسم حضوری", "mic"],
+  ];
+
+  return (
+    <div className="vodda-screen" style={{ display: "grid", gap: spacing.lg }}>
+      <div className="vodda-enter" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+        {tabs.map(([key, label, icon]) => {
+          const selected = tab === key;
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setTab(key)}
+              aria-pressed={selected}
+              style={{
+                minHeight: 46,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 7,
+                border: `1.4px solid ${selected ? colors.olive600 : colors.sand200}`,
+                borderRadius: 14,
+                color: selected ? colors.surface : colors.inkMuted,
+                background: selected ? colors.olive600 : colors.surface,
+                boxShadow: shadows.xs,
+                fontFamily: typography.fontFamily,
+                fontSize: 13.5,
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              <Icon name={icon} size={16} />
+              {label}
+            </button>
+          );
+        })}
+      </div>
+
+      {tab === "online" ? (
+        <OnlineDispatchPanel config={config} active />
+      ) : (
+        <CeremonyInboxPanel config={config} />
+      )}
     </div>
   );
 }

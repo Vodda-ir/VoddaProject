@@ -8,6 +8,7 @@ import type { PlatformRuntime } from "../../platform/types";
 import { navigateApp } from "../../router";
 import { messageOf } from "../../ui/errorMessage";
 import { RoleModeSheet } from "../auth/RoleModeSheet";
+import { getTeacherCeremonyInbox } from "../ceremony/api";
 import { getTeacherDispatchInbox } from "../dispatch/api";
 import { NotificationsBell } from "../notifications/NotificationsBell";
 import {
@@ -148,13 +149,19 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
   const [completion, setCompletion] = useState<CompletionState | null>(null);
 
   const loadDispatchBadge = useCallback(async () => {
-    try {
-      const inbox = await getTeacherDispatchInbox(runtime);
-      const waiting = inbox.offers.filter((offer) => offer.status === "waiting").length;
-      setDispatchBadge(inbox.calls.length + waiting);
-    } catch {
-      // badge is best-effort
-    }
+    // نشانِ فراخوان‌ها = جمعِ فراخوان‌های آنلاین + مراسم حضوری (یک صندوق واحد)
+    const [online, ceremony] = await Promise.all([
+      getTeacherDispatchInbox(runtime).catch(() => null),
+      getTeacherCeremonyInbox(runtime).catch(() => null),
+    ]);
+    const onlineCount = online
+      ? online.calls.length + online.offers.filter((offer) => offer.status === "waiting").length
+      : 0;
+    const ceremonyCount = ceremony
+      ? ceremony.calls.filter((item) => !item.accepted && item.my_offer === null).length +
+        ceremony.offers.filter((offer) => offer.status === "waiting").length
+      : 0;
+    setDispatchBadge(onlineCount + ceremonyCount);
   }, [runtime]);
 
   const load = useCallback(async () => {
@@ -299,12 +306,12 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
         </span>
         <span style={{ flex: 1, minWidth: 0 }}>
           <strong style={{ display: "block", fontSize: 14, fontWeight: 800, color: colors.ink }}>
-            فراخوان‌های زنده
+            فراخوان‌ها
           </strong>
           <span style={{ display: "block", fontSize: 11.5, color: colors.inkMuted, marginTop: 2, lineHeight: 1.7 }}>
             {dispatchBadge > 0
-              ? "🔔 درخواست‌های تازه در موضوع‌های شما — سریع اعلام آمادگی کنید"
-              : "درخواست‌های تدریس لحظه‌ای کاربران در موضوع‌های شما"}
+              ? "🔔 فراخوان تازهٔ جلسهٔ آنلاین یا مراسم — سریع اعلام آمادگی کنید"
+              : "درخواست‌های جلسهٔ آنلاین و مراسم حضوری کاربران — در یک صندوق"}
           </span>
         </span>
         {dispatchBadge > 0 ? (
@@ -396,7 +403,6 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
             ["clock" as const, "زمان‌های کاری", "/t/work-times"],
             ["wallet" as const, "کیف پول", "/t/wallet"],
             ["calendar" as const, "همهٔ جلسات", "/t/sessions"],
-            ["users" as const, "پذیرش مراسم", "/t/ceremony"],
             ["mic" as const, "خدمات حضوری", "/t/presence"],
           ] as const).map(([icon, label, path]) => (
             <button

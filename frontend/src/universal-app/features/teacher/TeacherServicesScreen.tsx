@@ -101,27 +101,33 @@ async function deleteService(runtime: PlatformRuntime, id: number) {
 }
 
 async function getCatalog(runtime: PlatformRuntime): Promise<CatalogCategory[]> {
-  const response = await runtime.request<ApiEnvelope<UnknownRecord>>("/catalog/services");
-  const payload = asRecord(response.data);
+  // فقط خدمات آنلاین — خدمات حضوری (مراسم) مسیر مخصوص خودش را دارد:
+  // صفحهٔ «خدمات حضوری» (/t/presence) با موجودیت و قیمتی مستقل. قبلاً
+  // دستهٔ «خدمات حضوری قرآنی» این‌جا هم نمایش داده می‌شد و استادها را
+  // برای ثبت خدمت گیج می‌کرد (دو مسیر برای یک کار).
+  const response = await runtime.request<ApiEnvelope<unknown[]>>("/catalog/services?mode=online");
   const categories: CatalogCategory[] = [];
-  for (const group of asArray(payload?.categories)) {
-    const row = asRecord(group);
-    if (!row) continue;
-    const services: CatalogEntry[] = [];
-    for (const item of asArray(row.services)) {
-      const entry = asRecord(item);
-      if (!entry) continue;
-      const id = asInteger(entry.id);
-      if (id <= 0) continue;
-      services.push({
-        id,
-        category: asString(row.category, "خدمات رسمی"),
-        title: asString(entry.title, "خدمت رسمی"),
-        description: asString(entry.description, ""),
-        icon: entry.icon == null ? undefined : asString(entry.icon, undefined as unknown as string),
-      });
+  const indexByCategory = new Map<string, number>();
+  for (const item of Array.isArray(response.data) ? response.data : []) {
+    const entry = asRecord(item);
+    if (!entry) continue;
+    const id = asInteger(entry.id);
+    if (id <= 0) continue;
+    const category = asString(entry.category, "خدمات رسمی");
+    const catalogEntry: CatalogEntry = {
+      id,
+      category,
+      title: asString(entry.title, "خدمت رسمی"),
+      description: asString(entry.description, ""),
+      icon: entry.icon == null ? undefined : asString(entry.icon, undefined as unknown as string),
+    };
+    const existing = indexByCategory.get(category);
+    if (existing == null) {
+      indexByCategory.set(category, categories.length);
+      categories.push({ category, services: [catalogEntry] });
+    } else {
+      categories[existing].services.push(catalogEntry);
     }
-    if (services.length > 0) categories.push({ category: asString(row.category, "خدمات رسمی"), services });
   }
   return categories;
 }
@@ -254,10 +260,16 @@ export function TeacherServicesScreen() {
     return map;
   }, [services]);
 
-  /* خدمت‌های قدیمی بدون تطابق با کاتالوگ — در بخش جداگانه حفظ می‌شوند */
+  /* خدمت‌های قدیمی بدون تطابق با کاتالوگ آنلاین — در بخش جداگانه حفظ می‌شوند.
+     ردیف‌های ثبت‌شده روی کاتالوگ حضوری (شناسه‌های ۱۰۱ به بالا) به مسیر
+     «خدمات حضوری» تعلق دارند و این‌جا نمایش داده نمی‌شوند. */
   const orphanServices = useMemo(() => {
     const catalogIds = new Set(categories.flatMap((group) => group.services.map((entry) => entry.id)));
-    return services.filter((service) => service.official_service_id == null || !catalogIds.has(service.official_service_id));
+    return services.filter((service) => {
+      if (service.official_service_id == null) return true;
+      if (service.official_service_id >= 100) return false; // خدمات حضوری → /t/presence
+      return !catalogIds.has(service.official_service_id);
+    });
   }, [services, categories]);
 
   const activeCount = services.filter((service) => service.active).length;
@@ -414,7 +426,7 @@ export function TeacherServicesScreen() {
               {toFaDigits(activeCount)} خدمت فعال دارید
             </strong>
             <span style={{ ...typography.caption, color: colors.inkMuted, display: "block", lineHeight: 1.8 }}>
-              برای انتخاب هر خدمت فقط یک بار روی آن بزنید؛ خدمت انتخابی <b style={{ color: greenTone.ink }}>سبز</b> می‌شود و بلافاصله قابل رزرو است. قیمت پیش‌فرض دارد و هر زمان خواستید می‌توانید آن را ویرایش کنید.
+              اینجا خدمات جلسهٔ آنلاین شماست: برای انتخاب هر خدمت فقط یک بار روی آن بزنید؛ خدمت انتخابی <b style={{ color: greenTone.ink }}>سبز</b> می‌شود، قیمت پیش‌فرض دارد و بلافاصله قابل رزرو است. خدمات حضوری مراسم (تلاوت مجلسی، ختم، اذان و…) مسیر جداگانه‌ای دارد: بخش «خدمات حضوری».
             </span>
           </div>
         </div>

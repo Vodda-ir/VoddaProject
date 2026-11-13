@@ -28,7 +28,6 @@ import {
 } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
 import { resolveAssetUrl } from "../../platform/asset";
-import { DispatchPairCards } from "../dispatch/DispatchPairCards";
 import { RoleModeSheet } from "../auth/RoleModeSheet";
 import {
   getNotifications,
@@ -1156,7 +1155,6 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
 
       <VerseStrip />
       <SearchPill config={config} />
-      <DispatchPairCards config={config} />
 
       {sessionArea === "loading" ? (
         <Skeleton style={{ height: 120, borderRadius: radii.xl }} />
