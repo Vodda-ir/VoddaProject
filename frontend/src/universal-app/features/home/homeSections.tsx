@@ -162,7 +162,7 @@ export function TopicCategoryGrid({ config }: { config: UniversalAppConfig }) {
           <button
             key={category.category}
             type="button"
-            onClick={() => navigateApp(`/search?mode=services&q=${encodeURIComponent(category.category)}`, config)}
+            onClick={() => navigateApp(`/search?mode=services&cat=${encodeURIComponent(category.category)}`, config)}
             className="vodda-tappable vodda-enter"
             aria-label={`ورود به زیردسته‌های ${category.category} — ${faNumber(category.count)} خدمت`}
             style={{

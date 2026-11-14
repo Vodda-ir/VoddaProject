@@ -23,7 +23,7 @@ import { asArray, asRecord } from "../../platform/api";
 import { categoryVisual } from "../home/homeSections";
 import { getCatalog } from "../dispatch/api";
 import { getInPersonCatalog } from "../ceremony/api";
-import { searchTeachersPage } from "../teachers/api";
+import { searchTeachersPage, type TeacherSearchResult } from "../teachers/api";
 import { getAllTeachersCached, getTeacherCities } from "../teachers/cached";
 import { TeacherCard } from "../teachers/TeacherCard";
 import type { Teacher } from "../teachers/types";
@@ -405,6 +405,13 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
     return Number(new URLSearchParams(window.location.search).get("topic") ?? 0) || 0;
   });
   const [topicTitle, setTopicTitle] = useState<string>("");
+  // فیلتر «دستهٔ موضوعی» (کارت‌های دسته‌بندی خانه) — هر دو تبِ اساتید و خدمات
+  // را محدود می‌کند؛ با تعویض تب هم از بین نمی‌رود و هیچ‌گاه اجازه نمی‌دهد
+  // همهٔ اساتید یا همهٔ دسته‌ها نمایش داده شوند.
+  const [catName, setCatName] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return new URLSearchParams(window.location.search).get("cat") ?? "";
+  });
   const [rows, setRows] = useState<Teacher[]>([]);
   const [serverTotal, setServerTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -437,28 +444,36 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
   });
   const [servicesLoaded, setServicesLoaded] = useState(false);
 
+  // خدماتِ دستهٔ فعال (تطبیق دقیق نام دسته — بدون match متنی و نشت خدمات دیگر)
+  const catServices = useMemo(
+    () => (catName ? onlineServices.filter((item) => item.category === catName) : []),
+    [catName, onlineServices],
+  );
+  const catServiceIds = useMemo(() => catServices.map((item) => item.id), [catServices]);
+
+  // دریافت کاتالوگ خدمات — برای تب «خدمات» و همچنین هر زمان که فیلتر دسته یا
+  // موضوع رسمی فعال است (حتی در تب اساتید، برای یافتن اساتید همان دسته).
+  const catalogRequestedRef = useRef(false);
   useEffect(() => {
-    if (mode !== "services" || servicesLoaded) return;
-    let active = true;
+    if (catalogRequestedRef.current || servicesLoaded) return;
+    if (!(mode === "services" || catName || topicId)) return;
+    catalogRequestedRef.current = true;
     setServicesLoading(true);
     setServicesError("");
     Promise.all([getCatalog(runtime), getInPersonCatalog(runtime).catch(() => [] as OfficialInPersonService[])])
       .then(([online, presence]) => {
-        if (!active) return;
         setOnlineServices(online);
         setPresenceServices(presence);
         setServicesLoaded(true);
       })
       .catch((reason: unknown) => {
-        if (active) setServicesError(messageOf(reason, "دریافت فهرست خدمات ناموفق بود."));
+        setServicesError(messageOf(reason, "دریافت فهرست خدمات ناموفق بود."));
+        setServicesLoaded(true);
       })
       .finally(() => {
-        if (active) setServicesLoading(false);
+        setServicesLoading(false);
       });
-    return () => {
-      active = false;
-    };
-  }, [mode, servicesLoaded, runtime]);
+  }, [mode, catName, topicId, servicesLoaded, runtime]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => setDebouncedQuery(filters.query.trim()), 350);
@@ -492,6 +507,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
       params.set("q", mode === "services" ? servicesQuery.trim() : filters.query.trim());
     }
     if (topicId) params.set("topic", String(topicId));
+    if (catName) params.set("cat", catName);
     if (filters.field.trim()) params.set("field", filters.field.trim());
     if (filters.city.trim()) params.set("city", filters.city.trim());
     if (filters.female === "female") params.set("female", "true");
@@ -501,22 +517,54 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
     if (filters.sort !== "recommended") params.set("sort", filters.sort);
     const next = window.location.pathname + (params.size ? "?" + params.toString() : "");
     window.history.replaceState({}, "", next);
-  }, [filters, mode, topicId, freeOnly, servicesQuery]);
+  }, [filters, mode, topicId, catName, freeOnly, servicesQuery]);
 
   useEffect(() => {
+    // وقتی فیلتر دسته فعال است اما فهرست خدمات هنوز نرسیده، صبر می‌کنیم —
+    // تا «همهٔ اساتید» حتی برای یک لحظه نمایش داده نشود.
+    if (catName && !servicesLoaded) {
+      setLoading(true);
+      return;
+    }
     let active = true;
     setLoading(true);
     setError("");
     setVisibleCount(PAGE_SIZE);
-    searchTeachersPage(runtime, {
+    const baseParams = {
       query: debouncedQuery,
       field: filters.field,
       city: filters.city,
       female: filters.female === "all" ? undefined : filters.female === "female",
-      officialServiceId: topicId,
-      limit: 100,
-      offset: 0,
-    })
+    };
+    // موضوع رسمی دقیق‌تر از دسته است؛ بعد از آن، خدماتِ دسته؛ و در نبود هر دو،
+    // جستجوی سراسری. فیلتر دسته هرگز به جستجوی سراسری برنمی‌گردد.
+    const ids = topicId ? [topicId] : catName ? catServiceIds : [];
+    const request: Promise<TeacherSearchResult> =
+      ids.length > 0
+        ? Promise.all(
+            ids.map((id) =>
+              searchTeachersPage(runtime, { ...baseParams, officialServiceId: id, limit: 100, offset: 0 }).catch(
+                () => ({ items: [] as Teacher[], total: 0 }),
+              ),
+            ),
+          ).then((results) => {
+            const seen = new Set<number>();
+            const merged: Teacher[] = [];
+            for (const result of results) {
+              for (const teacher of result.items) {
+                if (MADDAHI_PATTERN.test(teacher.field + " " + teacher.tag)) continue;
+                if (seen.has(teacher.id)) continue;
+                seen.add(teacher.id);
+                merged.push(teacher);
+              }
+            }
+            return { items: merged, total: merged.length };
+          })
+        : catName
+          ? // دسته فعال است اما هیچ خدمتی در آن ثبت نشده → فهرست خالی، نه همهٔ اساتید
+            Promise.resolve({ items: [] as Teacher[], total: 0 })
+          : searchTeachersPage(runtime, { ...baseParams, limit: 100, offset: 0 });
+    request
       .then((result) => {
         if (!active) return;
         const visible = result.items.filter((teacher) => !MADDAHI_PATTERN.test(teacher.field + " " + teacher.tag));
@@ -534,9 +582,9 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
     return () => {
       active = false;
     };
-  }, [runtime, debouncedQuery, filters.field, filters.city, filters.female, topicId, reloadKey]);
+  }, [runtime, debouncedQuery, filters.field, filters.city, filters.female, topicId, catName, catServiceIds, servicesLoaded, reloadKey]);
 
-  // عنوان موضوع فراخوان (برای نشانِ فیلتر فعال)
+  // عنوان موضوع فراخوان (برای نشانِ فیلتر فعال) + زمینهٔ دستهٔ همان خدمت
   useEffect(() => {
     if (!topicId) {
       setTopicTitle("");
@@ -545,7 +593,12 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
     let active = true;
     getCatalog(runtime)
       .then((rows) => {
-        if (active) setTopicTitle(rows.find((row) => row.id === topicId)?.title ?? "");
+        if (!active) return;
+        const found = rows.find((row) => row.id === topicId);
+        setTopicTitle(found?.title ?? "");
+        // دستهٔ خدمت به‌عنوان زمینه حفظ می‌شود تا تب «خدمات» دوباره فهرست
+        // کامل همهٔ دسته‌ها را نشان ندهد (بدون دوباره‌کاری).
+        if (found?.category) setCatName((current) => current || found.category);
       })
       .catch(() => {
         if (active) setTopicTitle("");
@@ -579,15 +632,16 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
   const visible = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]);
   const hasMore = visibleCount < filtered.length;
   const hasAdvancedFilter = Boolean(filters.city || filters.female !== "all" || filters.availableOnly || filters.tier);
-  const hasAnyFilter = Boolean(filters.query || filters.field || hasAdvancedFilter || topicId);
+  const hasAnyFilter = Boolean(filters.query || filters.field || hasAdvancedFilter || topicId || catName);
   const filteredCities = useMemo(() => {
     const needle = cityQuery.trim();
     return needle ? cities.filter((city) => city.includes(needle)) : cities;
   }, [cities, cityQuery]);
 
-  // پیشنهاد جایگزین برای حالت خالی: پرمخاطب‌ترین استادها
+  // پیشنهاد جایگزین برای حالت خالی: پرمخاطب‌ترین استادها — در حالت فیلتر دسته
+  // هیچ استاد نام‌ربوطی پیشنهاد نمی‌شود.
   useEffect(() => {
-    if (loading || error || filtered.length > 0 || !hasAnyFilter) {
+    if (loading || error || filtered.length > 0 || !hasAnyFilter || catName) {
       setFallback([]);
       return;
     }
@@ -601,7 +655,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
     return () => {
       active = false;
     };
-  }, [runtime, loading, error, filtered.length, hasAnyFilter]);
+  }, [runtime, loading, error, filtered.length, hasAnyFilter, catName]);
 
   // بارگذاری خودکار نتایج بعدی هنگام اسکرول
   useEffect(() => {
@@ -640,6 +694,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
   function clearAllFilters() {
     setFilters({ query: "", field: "", city: "", female: "all", tier: "", availableOnly: false, sort: "recommended" });
     setTopicId(0);
+    setCatName("");
   }
 
   function removeRecent(item: string) {
@@ -707,24 +762,55 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
     return presenceServices.filter((item) =>
       item.title.includes(needle) || item.category.includes(needle) || item.description.includes(needle));
   }, [needle, presenceServices]);
+
+  // فهرست پایهٔ خدمات با توجه به دستهٔ فعال — در حالت دسته فقط خدماتِ همان
+  // دسته (تطبیق دقیق) نمایش داده می‌شود؛ جستجوی متنی فقط داخل همان دسته
+  // اعمال می‌شود تا هیچ خدمتی از دسته‌های دیگر نشت نکند.
+  const baseOnlineServices = useMemo(() => {
+    if (!catName) return filteredOnlineServices;
+    const inCategory = onlineServices.filter((item) => item.category === catName);
+    // اگر عبارت جستجو دقیقاً خودِ نام دسته باشد، فیلتر اضافی اعمال نمی‌شود
+    // (لینک‌های قدیمی ?q=نام‌دسته) تا خدمات دسته خالی نمایش داده نشوند.
+    if (!needle || needle === catName) return inCategory;
+    return inCategory.filter((item) => item.title.includes(needle) || item.description.includes(needle));
+  }, [catName, needle, onlineServices, filteredOnlineServices]);
+  const basePresenceServices = useMemo(() => {
+    if (!catName) return filteredPresenceServices;
+    const inCategory = presenceServices.filter((item) => item.category === catName);
+    if (!needle || needle === catName) return inCategory;
+    return inCategory.filter((item) => item.title.includes(needle) || item.description.includes(needle));
+  }, [catName, needle, presenceServices, filteredPresenceServices]);
+
+  // سازگاری با لینک‌های قدیمی (?q=نام‌دسته): اگر عبارت دقیقاً نام یک دسته بود
+  // به فیلتر دسته تبدیل می‌شود تا همان رفتار دقیقِ دسته اعمال شود.
+  useEffect(() => {
+    if (!servicesLoaded || catName) return;
+    const legacy = servicesQuery.trim();
+    if (legacy && onlineServices.some((item) => item.category === legacy)) {
+      setCatName(legacy);
+      // این عبارت مفهوم تب «خدمات» است؛ جستجوی متنی اساتید را مغشوش نکند.
+      setFilters((current) => (current.query === legacy ? { ...current, query: "" } : current));
+      setDebouncedQuery((current) => (current === legacy ? "" : current));
+    }
+  }, [servicesLoaded, onlineServices, catName, servicesQuery]);
   const onlineServiceGroups = useMemo(() => {
     const groups = new Map<string, OfficialService[]>();
-    for (const item of filteredOnlineServices) {
+    for (const item of baseOnlineServices) {
       const rows = groups.get(item.category) ?? [];
       rows.push(item);
       groups.set(item.category, rows);
     }
     return [...groups.entries()];
-  }, [filteredOnlineServices]);
+  }, [baseOnlineServices]);
   const presenceServiceGroups = useMemo(() => {
     const groups = new Map<string, OfficialInPersonService[]>();
-    for (const item of filteredPresenceServices) {
+    for (const item of basePresenceServices) {
       const rows = groups.get(item.category) ?? [];
       rows.push(item);
       groups.set(item.category, rows);
     }
     return [...groups.entries()];
-  }, [filteredPresenceServices]);
+  }, [basePresenceServices]);
 
   // فهرست دسته‌ها (حالت بدون جستجو) — به‌جای کاتالوگ تختِ همهٔ خدمات،
   // کاربر ابتدا دسته را انتخاب می‌کند؛ ورود به هر دسته فقط خدمات همان دسته را نشان می‌دهد.
@@ -743,12 +829,12 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
   const [topicTeachers, setTopicTeachers] = useState<Teacher[]>([]);
   const [topicTeachersLoading, setTopicTeachersLoading] = useState(false);
   useEffect(() => {
-    if (mode !== "services" || !servicesLoaded || !needle) {
+    if (mode !== "services" || !servicesLoaded || (!needle && !catName)) {
       setTopicTeachers([]);
       setTopicTeachersLoading(false);
       return;
     }
-    const ids = filteredOnlineServices.slice(0, 6).map((item) => item.id);
+    const ids = baseOnlineServices.slice(0, 10).map((item) => item.id);
     if (ids.length === 0) {
       setTopicTeachers([]);
       setTopicTeachersLoading(false);
@@ -781,7 +867,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
     return () => {
       active = false;
     };
-  }, [mode, servicesLoaded, runtime, needle, filteredOnlineServices]);
+  }, [mode, servicesLoaded, runtime, needle, catName, baseOnlineServices]);
 
   function openServiceTeachers(serviceId: number) {
     setTopicId(serviceId);
@@ -790,7 +876,12 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
     // قبلی نباید نتایج را خالی یا مغشوش کند.
     setFilters((current) => ({ ...current, query: "" }));
     setDebouncedQuery("");
-    navigateApp(`/search?topic=${serviceId}`, config);
+    // زمینهٔ دسته حفظ می‌شود تا بازگشت به تب «خدمات» دوباره فهرست همهٔ
+    // دسته‌ها را نشان ندهد (بدون دوباره‌کاری).
+    navigateApp(
+      `/search?topic=${serviceId}${catName ? `&cat=${encodeURIComponent(catName)}` : ""}`,
+      config,
+    );
   }
 
   return (
@@ -843,7 +934,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
             <ErrorState
               title="خطا در دریافت خدمات"
               description={servicesError}
-              action={<Button variant="secondary" onClick={() => setServicesLoaded(false)}>تلاش دوباره</Button>}
+              action={<Button variant="secondary" onClick={() => { catalogRequestedRef.current = false; setServicesLoaded(false); }}>تلاش دوباره</Button>}
             />
           ) : null}
           {!servicesLoading && !servicesError && freeOnly ? (
@@ -891,9 +982,9 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
               )}
             </>
           ) : null}
-          {!servicesLoading && !servicesError && !freeOnly && needle ? (
+          {!servicesLoading && !servicesError && !freeOnly && (needle || catName) ? (
             <>
-              {/* نان‌شکنی موضوع — کاربر بداند داخل کدام دسته است و بتواند برگردد */}
+              {/* نان‌شکنی دسته/موضوع — کاربر بداند داخل کدام بخش است و بتواند برگردد */}
               <div
                 className="vodda-enter"
                 style={{
@@ -904,14 +995,17 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
               >
                 <Icon name="quran" size={17} style={{ color: colors.olive700, flex: "0 0 auto" }} />
                 <div style={{ minWidth: 0, flex: 1 }}>
-                  <strong style={{ display: "block", fontSize: 12.5, color: colors.olive700 }}>{needle}</strong>
+                  <strong style={{ display: "block", fontSize: 12.5, color: colors.olive700 }}>{catName || needle}</strong>
                   <span style={{ fontSize: 11, color: colors.inkMuted }}>
-                    {faNumber(filteredOnlineServices.length)} خدمت در این موضوع
+                    {faNumber(baseOnlineServices.length)} خدمت در این بخش
                   </span>
                 </div>
                 <button
                   type="button"
-                  onClick={() => setServicesQuery("")}
+                  onClick={() => {
+                    setCatName("");
+                    setServicesQuery("");
+                  }}
                   aria-label="بازگشت به همهٔ موضوعات"
                   style={{
                     flex: "0 0 auto", minHeight: 36, padding: "0 13px",
@@ -926,7 +1020,9 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
 
               {onlineServiceGroups.map(([category, items]) => (
                 <div key={category} style={{ display: "grid", gap: 7 }}>
-                  <span style={{ fontSize: 11, color: colors.inkFaint }}>{category}</span>
+                  {catName ? null : (
+                    <span style={{ fontSize: 11, color: colors.inkFaint }}>{category}</span>
+                  )}
                   {items.map((item, index) => (
                     <ServiceRow
                       key={item.id}
@@ -943,7 +1039,9 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
 
               {presenceServiceGroups.map(([category, items]) => (
                 <div key={category} style={{ display: "grid", gap: 7 }}>
-                  <span style={{ fontSize: 11, color: colors.inkFaint }}>{category} — حضوری</span>
+                  <span style={{ fontSize: 11, color: colors.inkFaint }}>
+                    {catName ? "خدمات حضوری همین دسته" : `${category} — حضوری`}
+                  </span>
                   {items.map((item, index) => (
                     <ServiceRow
                       key={item.id}
@@ -958,12 +1056,12 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
                 </div>
               ))}
 
-              {/* اساتید این موضوعات — فقط استادان زیردسته‌های فیلترشده، نه همهٔ اساتید */}
-              {filteredOnlineServices.length > 0 ? (
+              {/* اساتید همین بخش — فقط استادان خدمات همین دسته، نه همهٔ اساتید */}
+              {baseOnlineServices.length > 0 ? (
                 <section style={{ display: "grid", gap: 9 }} aria-label="اساتید این موضوعات">
                   <strong style={{ fontSize: 13, color: colors.olive700, display: "flex", alignItems: "center", gap: 6 }}>
                     <Icon name="users" size={15} />
-                    اساتید این موضوعات
+                    {catName ? "اساتید این دسته" : "اساتید این موضوعات"}
                   </strong>
                   {topicTeachersLoading ? (
                     <div style={{ display: "grid", gap: 7 }} aria-label="در حال دریافت اساتید">
@@ -998,8 +1096,8 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
             </>
           ) : null}
 
-          {/* حالت بدون جستجو: دایرکتوری دسته‌ها — ورود به هر دسته فقط خدمات همان دسته را نشان می‌دهد */}
-          {!servicesLoading && !servicesError && !freeOnly && !needle ? (
+          {/* حالت بدون جستجو و بدون دسته: دایرکتوری دسته‌ها — ورود به هر دسته فقط خدمات همان دسته را نشان می‌دهد */}
+          {!servicesLoading && !servicesError && !freeOnly && !needle && !catName ? (
             <>
               <section style={{ display: "grid", gap: 10 }} aria-label="دسته‌بندی موضوعات">
                 <strong style={{ fontSize: 13, color: colors.olive700, display: "flex", alignItems: "center", gap: 6 }}>
@@ -1135,6 +1233,33 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
         </div>
       ) : (
         <>
+      {catName ? (
+        <div
+          className="vodda-enter"
+          style={{
+            display: "flex", alignItems: "center", gap: 9,
+            padding: "11px 14px", borderRadius: 16,
+            background: colors.goldBackground, border: "1px solid rgba(191,149,64,.38)",
+          }}
+        >
+          <Icon name="grid" size={17} style={{ color: colors.goldDark, flex: "0 0 auto" }} />
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <strong style={{ display: "block", fontSize: 12.5, color: colors.goldDark }}>دسته: {catName}</strong>
+            <span style={{ fontSize: 11, color: colors.inkMuted }}>
+              فقط استادان خدمات همین دسته نمایش داده می‌شوند
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setCatName("")}
+            aria-label="حذف فیلتر دسته"
+            style={{ background: "none", border: 0, color: colors.inkMuted, cursor: "pointer", padding: 4, fontFamily: typography.fontFamily }}
+          >
+            <Icon name="x" size={16} />
+          </button>
+        </div>
+      ) : null}
+
       {topicId ? (
         <div
           className="vodda-enter"
@@ -1447,9 +1572,13 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
             <>
               {hasAnyFilter ? (
                 <EmptyState
-                  icon={<Icon name="search" size={30} />}
-                  title="نتیجه‌ای یافت نشد"
-                  description="با این فیلترها استادی پیدا نشد؛ فیلترها را کمتر کنید."
+                  icon={<Icon name={catName ? "grid" : "search"} size={30} />}
+                  title={catName ? "استادی برای این دسته یافت نشد" : "نتیجه‌ای یافت نشد"}
+                  description={
+                    catName
+                      ? "هنوز استادی خدمات این دسته را ثبت نکرده است؛ فیلترها را کمتر کنید یا از فراخوان وُدّا استفاده کنید."
+                      : "با این فیلترها استادی پیدا نشد؛ فیلترها را کمتر کنید."
+                  }
                   action={<Button variant="secondary" onClick={clearAllFilters}>پاک کردن فیلترها</Button>}
                 />
               ) : (

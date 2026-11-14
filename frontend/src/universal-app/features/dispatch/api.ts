@@ -14,7 +14,15 @@ function asObject(value: unknown): Record<string, unknown> & { id?: number; titl
 }
 
 /** Public official service catalog (topic list) — grouped by category. */
+// کش کوتاه‌مدت کاتالوگ — چند سازوکار (خانه، جستجو، فراخوان) در یک نما آن را
+// صدا می‌زنند؛ بدون کش، هر جابجایی تب چند درخواست تکراری می‌سازد.
+let catalogCache: { at: number; rows: OfficialService[] } | null = null;
+const CATALOG_CACHE_TTL = 5 * 60 * 1000;
+
 export async function getCatalog(runtime: PlatformRuntime): Promise<OfficialService[]> {
+  if (catalogCache && Date.now() - catalogCache.at < CATALOG_CACHE_TTL) {
+    return catalogCache.rows;
+  }
   const response = await runtime.request<ApiEnvelope>("/catalog/services");
   const payload = asObject(response.data ?? {});
   const categories = asArray(payload.categories ?? []);
@@ -39,6 +47,7 @@ export async function getCatalog(runtime: PlatformRuntime): Promise<OfficialServ
       }
     }
   }
+  catalogCache = { at: Date.now(), rows: flat };
   return flat;
 }
 
