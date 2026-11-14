@@ -1,0 +1,730 @@
+     1→"use client";
+     2→
+     3→// بخش‌های تصویری صفحهٔ نخست:
+     4→//   ۱) دسته‌بندی موضوعات — یک کادر، شش موضوع تصویری؛ هر کلیک وارد زیردسته‌های تخصصی همان موضوع می‌شود
+     5→//   ۲) خدمات برتر و پراستفاده — کارت خدمات اول صفحه (ریل کارت‌های تصویری خدمات منتخب)
+     6→//   ۳) خدمات رایگان — تابلوی جلسات رایگان اساتید (price = 0)
+     7→// همهٔ بخش‌ها مستقل هستند: خطا یا خالی‌بودن، کل بخش را پنهان می‌کند تا
+     8→// خانهٔ کاربر هرگز به‌خاطر آن‌ها نشکند.
+     9→
+    10→import { useEffect, useState, type CSSProperties } from "react";
+    11→import type { UniversalAppConfig } from "../../config";
+    12→import { navigateApp } from "../../router";
+    13→import {
+    14→  Avatar,
+    15→  Icon,
+    16→  SectionHeader,
+    17→  colors,
+    18→  gradients,
+    19→  shadows,
+    20→  spacing,
+    21→  typography,
+    22→} from "../../ui";
+    23→import { asArray, asRecord } from "../../platform/api";
+    24→
+    25→/* ── نقشهٔ تصویر دسته‌ها ─────────────────────────────────────────────────── */
+    26→
+    27→const CATEGORY_IMAGES: Array<{ match: RegExp; image: string; tint: string }> = [
+    28→  { match: /پایه|الفبا|روخوانی/, image: "/images/home/cat-quran.webp", tint: "linear-gradient(180deg, rgba(38,50,32,0) 34%, rgba(28,38,24,.88) 100%)" },
+    29→  { match: /تجوید|قرائت/, image: "/images/home/cat-tajweed.webp", tint: "linear-gradient(180deg, rgba(56,44,20,0) 34%, rgba(46,36,16,.88) 100%)" },
+    30→  { match: /حفظ/, image: "/images/home/cat-hifz.webp", tint: "linear-gradient(180deg, rgba(38,50,32,0) 34%, rgba(24,40,28,.9) 100%)" },
+    31→  { match: /صوت|لحن|هنر/, image: "/images/home/cat-voice.webp", tint: "linear-gradient(180deg, rgba(46,36,16,0) 34%, rgba(40,30,12,.9) 100%)" },
+    32→  { match: /مفاهیم|تفسیر|علوم/, image: "/images/home/cat-uloom.webp", tint: "linear-gradient(180deg, rgba(40,36,24,0) 34%, rgba(34,30,18,.9) 100%)" },
+    33→  { match: /ویژه/, image: "/images/home/cat-special.webp", tint: "linear-gradient(180deg, rgba(52,40,16,0) 34%, rgba(44,34,12,.9) 100%)" },
+    34→  { match: /مشاوره|آمادگی/, image: "/images/home/cat-advisory.webp", tint: "linear-gradient(180deg, rgba(36,44,30,0) 34%, rgba(28,36,22,.9) 100%)" },
+    35→  { match: /حضوری|مراسم/, image: "/images/home/cat-ceremony.webp", tint: "linear-gradient(180deg, rgba(44,36,16,0) 34%, rgba(36,28,10,.9) 100%)" },
+    36→];
+    37→
+    38→const FALLBACK_IMAGE = "/images/home/cat-quran.webp";
+    39→const FALLBACK_TINT = "linear-gradient(180deg, rgba(38,50,32,0) 34%, rgba(28,38,24,.88) 100%)";
+    40→
+    41→function categoryVisual(category: string): { image: string; tint: string } {
+    42→  for (const row of CATEGORY_IMAGES) {
+    43→    if (row.match.test(category)) return { image: row.image, tint: row.tint };
+    44→  }
+    45→  return { image: FALLBACK_IMAGE, tint: FALLBACK_TINT };
+    46→}
+    47→
+    48→/** ترتیب نمایش موضوع‌ها — مسیر یادگیری: از پایه تا تخصصی؛ هم‌راستا با نقشهٔ تصویر. */
+    49→const CATEGORY_ORDER_HINTS: Array<{ match: RegExp }> = [
+    50→  { match: /پایه|الفبا|روخوانی/ },
+    51→  { match: /تجوید|قرائت/ },
+    52→  { match: /حفظ/ },
+    53→  { match: /صوت|لحن|هنر/ },
+    54→  { match: /مفاهیم|تفسیر|علوم/ },
+    55→  { match: /ویژه/ },
+    56→  { match: /مشاوره|آمادگی/ },
+    57→];
+    58→
+    59→function categoryOrderIndex(name: string) {
+    60→  const index = CATEGORY_ORDER_HINTS.findIndex((hint) => hint.match.test(name));
+    61→  return index === -1 ? CATEGORY_ORDER_HINTS.length : index;
+    62→}
+    63→
+    64→/* ── ابزارها ────────────────────────────────────────────────────────────── */
+    65→
+    66→function faNumber(value: number, maximumFractionDigits = 0) {
+    67→  return new Intl.NumberFormat("fa-IR", { maximumFractionDigits }).format(value);
+    68→}
+    69→
+    70→type CatalogEntry = { id: number; category: string; title: string; description: string };
+    71→
+    72→async function fetchCatalog(): Promise<CatalogEntry[]> {
+    73→  const response = await fetch("/api/backend/catalog/services", { cache: "no-store" });
+    74→  if (!response.ok) throw new Error("catalog failed");
+    75→  const payload = (await response.json()) as { data?: unknown };
+    76→  const data = asRecord(payload.data);
+    77→  const entries: CatalogEntry[] = [];
+    78→  for (const group of asArray(data?.categories)) {
+    79→    const row = asRecord(group);
+    80→    const category = String(row?.category ?? "");
+    81→    for (const item of asArray(row?.services)) {
+    82→      const entry = asRecord(item);
+    83→      const id = Number(entry?.id ?? 0);
+    84→      if (id > 0 && entry?.title) {
+    85→        entries.push({ id, category, title: String(entry.title), description: String(entry.description ?? "") });
+    86→      }
+    87→    }
+    88→  }
+    89→  return entries;
+    90→}
+    91→
+    92→/* ── ۱) دسته‌بندی موضوعات — کارت‌های تصویری ─────────────────────────────── */
+    93→
+    94→type TopicCategory = { category: string; count: number; image: string; tint: string };
+    95→
+    96→export function TopicCategoryGrid({ config }: { config: UniversalAppConfig }) {
+    97→  const [categories, setCategories] = useState<TopicCategory[] | null>(null);
+    98→
+    99→  useEffect(() => {
+   100→    let active = true;
+   101→    fetchCatalog()
+   102→      .then((entries) => {
+   103→        if (!active) return;
+   104→        const counts = new Map<string, number>();
+   105→        for (const entry of entries) {
+   106→          counts.set(entry.category, (counts.get(entry.category) ?? 0) + 1);
+   107→        }
+   108→        const rows: TopicCategory[] = [...counts.entries()]
+   109→          .filter(([category]) => category && category !== "خدمات حضوری قرآنی")
+   110→          .map(([category, count]) => ({ category, count, ...categoryVisual(category) }))
+   111→          .sort((a, b) => categoryOrderIndex(a.category) - categoryOrderIndex(b.category) || b.count - a.count)
+   112→          .slice(0, 6);
+   113→        setCategories(rows);
+   114→      })
+   115→      .catch(() => {
+   116→        if (active) setCategories([]);
+   117→      });
+   118→    return () => {
+   119→      active = false;
+   120→    };
+   121→  }, []);
+   122→
+   123→  if (categories === null) {
+   124→    return (
+   125→      <section aria-label="دسته‌بندی موضوعات" style={{ display: "grid", gap: 12 }}>
+   126→        <span aria-hidden="true" className="vodda-skeleton" style={{ display: "block", width: 150, height: 18 }} />
+   127→        <div
+   128→          aria-hidden="true"
+   129→          className="vodda-skeleton"
+   130→          style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 10, padding: 12, borderRadius: 26 }}
+   131→        >
+   132→          {[0, 1, 2, 3, 4, 5].map((index) => (
+   133→            <span key={index} className="vodda-skeleton" style={{ display: "block", height: 118, borderRadius: 18 }} />
+   134→          ))}
+   135→        </div>
+   136→      </section>
+   137→    );
+   138→  }
+   139→
+   140→  if (categories.length === 0) return null;
+   141→
+   142→  return (
+   143→    <section aria-label="دسته‌بندی موضوعات" className="vodda-enter vodda-enter-delay-1" style={{ display: "grid", gap: 12, minWidth: 0 }}>
+   144→      <SectionHeader
+   145→        title="دسته‌بندی موضوعات"
+   146→        description="موضوع دلخواه را انتخاب کنید تا وارد زیردسته‌های تخصصی آن شوید."
+   147→      />
+   148→      {/* یک کادر واحد با حاشیهٔ طلایی برجسته — شش موضوع، تصویر کوچک و فانتزی + متن واضح */}
+   149→      <div
+   150→        style={{
+   151→          display: "grid",
+   152→          gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+   153→          gap: 10,
+   154→          padding: 12,
+   155→          background: "linear-gradient(180deg, #ffffff, #fffdf8)",
+   156→          border: `1.5px solid ${colors.goldSoft}`,
+   157→          borderRadius: 26,
+   158→          boxShadow: "0 0 0 4px rgba(231,213,168,.22), 0 12px 28px rgba(139,104,31,.13)",
+   159→        }}
+   160→      >
+   161→        {categories.map((category) => (
+   162→          <button
+   163→            key={category.category}
+   164→            type="button"
+   165→            onClick={() => navigateApp(`/search?mode=services&q=${encodeURIComponent(category.category)}`, config)}
+   166→            className="vodda-tappable vodda-enter"
+   167→            aria-label={`ورود به زیردسته‌های ${category.category} — ${faNumber(category.count)} خدمت`}
+   168→            style={{
+   169→              display: "grid",
+   170→              alignContent: "start",
+   171→              justifyItems: "center",
+   172→              gap: 7,
+   173→              padding: "9px 7px 10px",
+   174→              textAlign: "center",
+   175→              border: `1px solid ${colors.sand150}`,
+   176→              borderRadius: 18,
+   177→              background: colors.surface,
+   178→              cursor: "pointer",
+   179→              fontFamily: typography.fontFamily,
+   180→              boxShadow: "0 2px 10px rgba(46,54,34,.06)",
+   181→            }}
+   182→          >
+   183→            {/* تصویر کوچک و فانتزی با حلقهٔ طلایی — متن زیر تصویر کاملاً خواناست */}
+   184→            <span style={{ position: "relative", width: "100%" }}>
+   185→              <span
+   186→                style={{
+   187→                  position: "relative",
+   188→                  display: "block",
+   189→                  height: 58,
+   190→                  borderRadius: 12,
+   191→                  overflow: "hidden",
+   192→                  border: `2px solid ${colors.goldSoft}`,
+   193→                  boxShadow: "0 0 0 3px #ffffff, 0 0 0 4.5px rgba(212,171,82,.35), 0 3px 8px rgba(46,54,34,.12)",
+   194→                  background: colors.olive100,
+   195→                }}
+   196→              >
+   197→                <img
+   198→                  src={category.image}
+   199→                  alt=""
+   200→                  aria-hidden="true"
+   201→                  loading="lazy"
+   202→                  style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+   203→                />
+   204→                <span
+   205→                  aria-hidden="true"
+   206→                  style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(255,255,255,.08), rgba(139,104,31,.20))" }}
+   207→                />
+   208→              </span>
+   209→              {/* نشان طلایی ورود به زیردسته‌های تخصصی */}
+   210→              <span
+   211→                aria-hidden="true"
+   212→                style={{
+   213→                  position: "absolute",
+   214→                  top: -6,
+   215→                  insetInlineEnd: -4,
+   216→                  width: 20,
+   217→                  height: 20,
+   218→                  display: "grid",
+   219→                  placeItems: "center",
+   220→                  borderRadius: "50%",
+   221→                  background: gradients.goldRich,
+   222→                  border: "2px solid #ffffff",
+   223→                  color: "#fffaf0",
+   224→                  boxShadow: "0 2px 6px rgba(139,104,31,.35)",
+   225→                }}
+   226→              >
+   227→                <Icon name="chevronL" size={11} stroke={2.6} />
+   228→              </span>
+   229→            </span>
+   230→            {/* عنوان موضوع — روی زمینهٔ سفید، کاملاً مشخص */}
+   231→            <strong
+   232→              style={{
+   233→                fontSize: 11.3,
+   234→                fontWeight: 900,
+   235→                lineHeight: 1.5,
+   236→                color: colors.ink,
+   237→                display: "-webkit-box",
+   238→                WebkitLineClamp: 2,
+   239→                WebkitBoxOrient: "vertical",
+   240→                overflow: "hidden",
+   241→                minHeight: 34,
+   242→              }}
+   243→            >
+   244→              {category.category}
+   245→            </strong>
+   246→            <span
+   247→              style={{
+   248→                display: "inline-flex",
+   249→                alignItems: "center",
+   250→                gap: 3,
+   251→                padding: "2px 8px",
+   252→                borderRadius: 999,
+   253→                background: colors.olive50,
+   254→                border: `1px solid ${colors.olive100}`,
+   255→                color: colors.olive700,
+   256→                fontSize: 9.8,
+   257→                fontWeight: 800,
+   258→              }}
+   259→            >
+   260→              <Icon name="book" size={10} stroke={2.2} />
+   261→              {faNumber(category.count)} خدمت
+   262→            </span>
+   263→          </button>
+   264→        ))}
+   265→      </div>
+   266→    </section>
+   267→  );
+   268→}
+   269→
+   270→/* ── ۲) خدمات برتر و پراستفاده ──────────────────────────────────────────── */
+   271→
+   272→/** خدمات منتخب — محبوب‌ترین موضوع‌های پلتفرم به‌ترتیب ثابت هویتی. */
+   273→const TOP_SERVICE_IDS = [1, 4, 6, 8, 13, 15, 19, 2];
+   274→
+   275→export function TopServicesRail({ config }: { config: UniversalAppConfig }) {
+   276→  const [services, setServices] = useState<CatalogEntry[] | null>(null);
+   277→
+   278→  useEffect(() => {
+   279→    let active = true;
+   280→    fetchCatalog()
+   281→      .then((entries) => {
+   282→        if (!active) return;
+   283→        const byId = new Map(entries.map((entry) => [entry.id, entry]));
+   284→        const picked: CatalogEntry[] = [];
+   285→        for (const id of TOP_SERVICE_IDS) {
+   286→          const entry = byId.get(id);
+   287→          if (entry) picked.push(entry);
+   288→        }
+   289→        setServices(picked.slice(0, 8));
+   290→      })
+   291→      .catch(() => {
+   292→        if (active) setServices([]);
+   293→      });
+   294→    return () => {
+   295→      active = false;
+   296→    };
+   297→  }, []);
+   298→
+   299→  if (services === null) {
+   300→    return (
+   301→      <section aria-label="خدمات برتر" style={{ display: "grid", gap: 12 }}>
+   302→        <div style={{ display: "flex", gap: 10, overflow: "hidden" }}>
+   303→          {[0, 1, 2, 3].map((index) => (
+   304→            <span key={index} aria-hidden="true" className="vodda-skeleton" style={{ display: "block", flex: "0 0 150px", height: 142, borderRadius: 19 }} />
+   305→          ))}
+   306→        </div>
+   307→      </section>
+   308→    );
+   309→  }
+   310→
+   311→  if (services.length === 0) return null;
+   312→
+   313→  return (
+   314→    <section aria-label="خدمات برتر و پراستفاده" className="vodda-enter vodda-enter-delay-1" style={{ minWidth: 0 }}>
+   315→      <SectionHeader title="خدمات برتر و پراستفاده" description="انتخاب قرآن‌آموزان وُدّا برای شروع مسیر" />
+   316→      <div
+   317→        className="vodda-scroll-rail"
+   318→        style={{
+   319→          display: "flex",
+   320→          width: "100%",
+   321→          minWidth: 0,
+   322→          gap: spacing.sm,
+   323→          overflowX: "auto",
+   324→          marginInline: -spacing.xl,
+   325→          padding: `${spacing.md}px ${spacing.xl}px ${spacing.sm}px`,
+   326→          scrollSnapType: "x proximity",
+   327→        }}
+   328→      >
+   329→        {services.map((service) => {
+   330→          const visual = categoryVisual(service.category);
+   331→          // کلیک روی هر خدمت = فقط اساتید همان خدمت (فیلتر موضوع رسمی)
+   332→          const open = () => navigateApp(`/search?topic=${service.id}`, config);
+   333→          return (
+   334→            <button
+   335→              key={service.id}
+   336→              type="button"
+   337→              onClick={open}
+   338→              className="vodda-tappable vodda-enter"
+   339→              aria-label={`اساتید خدمت ${service.title}`}
+   340→              style={{
+   341→                flex: "0 0 150px",
+   342→                width: 150,
+   343→                scrollSnapAlign: "start",
+   344→                display: "grid",
+   345→                alignContent: "start",
+   346→                justifyItems: "center",
+   347→                gap: 6,
+   348→                padding: "8px 8px 9px",
+   349→                textAlign: "center",
+   350→                border: `1.5px solid ${colors.goldSoft}`,
+   351→                borderRadius: 19,
+   352→                background: "linear-gradient(180deg, #ffffff, #fffdf6)",
+   353→                color: colors.ink,
+   354→                cursor: "pointer",
+   355→                fontFamily: typography.fontFamily,
+   356→                boxShadow: "0 0 0 3px rgba(231,213,168,.16), 0 6px 14px rgba(139,104,31,.10)",
+   357→              }}
+   358→            >
+   359→              {/* تصویر کوچک با حلقهٔ طلایی + نشان فانتزی ورود به اساتید */}
+   360→              <span style={{ position: "relative", width: "100%" }}>
+   361→                <span
+   362→                  style={{
+   363→                    display: "block",
+   364→                    height: 56,
+   365→                    borderRadius: 13,
+   366→                    overflow: "hidden",
+   367→                    border: `2px solid ${colors.goldSoft}`,
+   368→                    boxShadow: "0 0 0 2.5px #ffffff, 0 0 0 4px rgba(212,171,82,.30), 0 3px 8px rgba(46,54,34,.10)",
+   369→                    background: colors.olive100,
+   370→                  }}
+   371→                >
+   372→                  <img
+   373→                    src={visual.image}
+   374→                    alt=""
+   375→                    aria-hidden="true"
+   376→                    loading="lazy"
+   377→                    style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+   378→                  />
+   379→                  <span aria-hidden="true" style={{ position: "absolute", inset: 0, background: visual.tint, opacity: 0.32 }} />
+   380→                </span>
+   381→                <span
+   382→                  aria-hidden="true"
+   383→                  style={{
+   384→                    position: "absolute",
+   385→                    top: -6,
+   386→                    insetInlineEnd: -4,
+   387→                    width: 20,
+   388→                    height: 20,
+   389→                    display: "grid",
+   390→                    placeItems: "center",
+   391→                    borderRadius: "50%",
+   392→                    background: gradients.goldRich,
+   393→                    border: "2px solid #ffffff",
+   394→                    color: "#fffaf0",
+   395→                    boxShadow: "0 2px 6px rgba(139,104,31,.35)",
+   396→                  }}
+   397→                >
+   398→                  <Icon name="chevronL" size={11} stroke={2.6} />
+   399→                </span>
+   400→              </span>
+   401→              {/* عنوان خدمت — روی زمینهٔ سفید، خوانا */}
+   402→              <strong
+   403→                style={{
+   404→                  fontSize: 11.2,
+   405→                  fontWeight: 900,
+   406→                  lineHeight: 1.5,
+   407→                  color: colors.ink,
+   408→                  display: "-webkit-box",
+   409→                  WebkitLineClamp: 2,
+   410→                  WebkitBoxOrient: "vertical",
+   411→                  overflow: "hidden",
+   412→                  minHeight: 34,
+   413→                }}
+   414→              >
+   415→                {service.title}
+   416→              </strong>
+   417→              {/* پانویس کوچک — پرطرفدار + نشان اساتید */}
+   418→              <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 5, width: "100%" }}>
+   419→                <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 9.6, fontWeight: 800, color: colors.goldDark }}>
+   420→                  <Icon name="star" size={10} fill style={{ color: colors.gold }} />
+   421→                  پرطرفدار
+   422→                </span>
+   423→                <span
+   424→                  style={{
+   425→                    display: "inline-flex",
+   426→                    alignItems: "center",
+   427→                    gap: 3,
+   428→                    padding: "2px 8px",
+   429→                    borderRadius: 999,
+   430→                    background: colors.olive50,
+   431→                    border: `1px solid ${colors.olive100}`,
+   432→                    color: colors.olive700,
+   433→                    fontSize: 9.6,
+   434→                    fontWeight: 800,
+   435→                  }}
+   436→                >
+   437→                  <Icon name="users" size={10} stroke={2.2} />
+   438→                  اساتید
+   439→                </span>
+   440→              </span>
+   441→            </button>
+   442→          );
+   443→        })}
+   444→      </div>
+   445→    </section>
+   446→  );
+   447→}
+   448→
+   449→/* ── ۳) خدمات رایگان ────────────────────────────────────────────────────── */
+   450→
+   451→export type FreeServiceCardData = {
+   452→  service_id: number;
+   453→  title: string;
+   454→  duration: number;
+   455→  teacher_id: number;
+   456→  teacher_name: string;
+   457→  avatar_url: string;
+   458→  field: string;
+   459→  tag: string;
+   460→  city: string;
+   461→  rating: number;
+   462→  reviews: number;
+   463→  sessions: number;
+   464→};
+   465→
+   466→async function fetchFreeServices(): Promise<FreeServiceCardData[]> {
+   467→  const response = await fetch("/api/backend/catalog/free?limit=12", { cache: "no-store" });
+   468→  if (!response.ok) throw new Error("free services failed");
+   469→  const payload = (await response.json()) as { data?: unknown };
+   470→  const rows: FreeServiceCardData[] = [];
+   471→  for (const item of asArray(payload.data)) {
+   472→    const row = asRecord(item);
+   473→    const serviceId = Number(row?.service_id ?? 0);
+   474→    const teacherId = Number(row?.teacher_id ?? 0);
+   475→    const title = String(row?.title ?? "");
+   476→    const teacherName = String(row?.teacher_name ?? "");
+   477→    if (serviceId > 0 && teacherId > 0 && title && teacherName) {
+   478→      rows.push({
+   479→        service_id: serviceId,
+   480→        title,
+   481→        duration: Number(row?.duration ?? 0),
+   482→        teacher_id: teacherId,
+   483→        teacher_name: teacherName,
+   484→        avatar_url: String(row?.avatar_url ?? ""),
+   485→        field: String(row?.field ?? ""),
+   486→        tag: String(row?.tag ?? ""),
+   487→        city: String(row?.city ?? ""),
+   488→        rating: Number(row?.rating ?? 0),
+   489→        reviews: Number(row?.reviews ?? 0),
+   490→        sessions: Number(row?.sessions ?? 0),
+   491→      });
+   492→    }
+   493→  }
+   494→  return rows;
+   495→}
+   496→
+   497→function FreeServiceTile({ item, config }: { item: FreeServiceCardData; config: UniversalAppConfig }) {
+   498→  const subtitle = [item.tag || item.field, item.city].filter(Boolean).join(" · ");
+   499→  return (
+   500→    <button
+   501→      type="button"
+   502→      onClick={() => navigateApp(`/book/${item.teacher_id}`, config)}
+   503→      className="vodda-tappable vodda-enter"
+   504→      aria-label={`جلسهٔ رایگان ${item.title} با ${item.teacher_name}`}
+   505→      style={{
+   506→        flex: "0 0 236px",
+   507→        width: 236,
+   508→        scrollSnapAlign: "start",
+   509→        display: "grid",
+   510→        gap: 10,
+   511→        padding: "14px 14px 15px",
+   512→        textAlign: "right",
+   513→        border: `1.4px solid ${colors.gold}`,
+   514→        borderRadius: 22,
+   515→        background: `linear-gradient(170deg, #fffdf6, ${colors.goldBackground})`,
+   516→        boxShadow: "0 8px 22px rgba(139,104,31,.14)",
+   517→        cursor: "pointer",
+   518→        fontFamily: typography.fontFamily,
+   519→      }}
+   520→    >
+   521→      <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+   522→        <span
+   523→          style={{
+   524→            display: "inline-flex",
+   525→            alignItems: "center",
+   526→            gap: 4,
+   527→            padding: "3px 10px",
+   528→            borderRadius: 999,
+   529→            background: gradients.goldRich,
+   530→            color: "#fffaf0",
+   531→            fontSize: 11,
+   532→            fontWeight: 900,
+   533→            boxShadow: "0 3px 8px rgba(139,104,31,.28)",
+   534→          }}
+   535→        >
+   536→          <Icon name="gift" size={12} stroke={2.4} />
+   537→          رایگان
+   538→        </span>
+   539→        <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 11, fontWeight: 700, color: colors.inkMuted }}>
+   540→          <Icon name="clock" size={12} stroke={2} />
+   541→          {faNumber(item.duration)} دقیقه
+   542→        </span>
+   543→      </span>
+   544→      <strong style={{ fontSize: 13.5, fontWeight: 900, lineHeight: 1.6, color: colors.ink, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", minHeight: 43 }}>
+   545→        {item.title}
+   546→      </strong>
+   547→      <span style={{ display: "flex", alignItems: "center", gap: 9, minWidth: 0 }}>
+   548→        <Avatar name={item.teacher_name} src={item.avatar_url || undefined} size={38} ring tone="gold" />
+   549→        <span style={{ minWidth: 0, display: "grid", gap: 1 }}>
+   550→          <strong style={{ fontSize: 12.5, fontWeight: 800, color: colors.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+   551→            {item.teacher_name}
+   552→          </strong>
+   553→          <span style={{ fontSize: 10.5, color: colors.inkMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+   554→            {subtitle || "استاد وُدّا"}
+   555→          </span>
+   556→        </span>
+   557→        {item.reviews > 0 ? (
+   558→          <span style={{ display: "inline-flex", alignItems: "center", gap: 3, marginInlineStart: "auto", fontSize: 11, fontWeight: 800, color: colors.goldDark, flex: "0 0 auto" }}>
+   559→            <Icon name="star" size={12} fill />
+   560→            {new Intl.NumberFormat("fa-IR", { maximumFractionDigits: 1 }).format(item.rating)}
+   561→          </span>
+   562→        ) : null}
+   563→      </span>
+   564→      <span
+   565→        style={{
+   566→          display: "flex",
+   567→          alignItems: "center",
+   568→          justifyContent: "space-between",
+   569→          gap: 8,
+   570→          padding: "8px 12px",
+   571→          borderRadius: 13,
+   572→          background: "rgba(255,255,255,.75)",
+   573→          border: `1px solid ${colors.goldSoft}`,
+   574→          fontSize: 12,
+   575→          fontWeight: 900,
+   576→          color: colors.olive800,
+   577→        }}
+   578→      >
+   579→        رزرو جلسهٔ رایگان
+   580→        <Icon name="chevronL" size={14} stroke={2.4} />
+   581→      </span>
+   582→    </button>
+   583→  );
+   584→}
+   585→
+   586→export function FreeServicesBoard({ config }: { config: UniversalAppConfig }) {
+   587→  const [items, setItems] = useState<FreeServiceCardData[] | null>(null);
+   588→
+   589→  useEffect(() => {
+   590→    let active = true;
+   591→    fetchFreeServices()
+   592→      .then((rows) => {
+   593→        if (active) setItems(rows);
+   594→      })
+   595→      .catch(() => {
+   596→        if (active) setItems([]);
+   597→      });
+   598→    return () => {
+   599→      active = false;
+   600→    };
+   601→  }, []);
+   602→
+   603→  // در حال بارگذاری: اسکلت ظریف؛ خالی: بخش پنهان می‌شود تا صفحه شلوغ نشود.
+   604→  if (items === null) {
+   605→    return (
+   606→      <section aria-label="خدمات رایگان" style={{ display: "grid", gap: 12 }}>
+   607→        <div style={{ display: "flex", gap: 12, overflow: "hidden" }}>
+   608→          {[0, 1].map((index) => (
+   609→            <span key={index} aria-hidden="true" className="vodda-skeleton" style={{ display: "block", flex: "0 0 236px", height: 188, borderRadius: 22 }} />
+   610→          ))}
+   611→        </div>
+   612→      </section>
+   613→    );
+   614→  }
+   615→
+   616→  if (items.length === 0) return null;
+   617→
+   618→  return (
+   619→    <section aria-label="خدمات رایگان اساتید" className="vodda-enter vodda-enter-delay-1" style={{ minWidth: 0 }}>
+   620→      <SectionHeader
+   621→        title="خدمات رایگان اساتید"
+   622→        description="جلسات رایگانی که اساتید برای شما برگزار می‌کنند — بدون هزینه شروع کنید."
+   623→      />
+   624→      <div
+   625→        className="vodda-scroll-rail"
+   626→        style={{
+   627→          display: "flex",
+   628→          width: "100%",
+   629→          minWidth: 0,
+   630→          gap: spacing.md,
+   631→          overflowX: "auto",
+   632→          marginInline: -spacing.xl,
+   633→          padding: `${spacing.sm}px ${spacing.xl}px ${spacing.sm}px`,
+   634→          scrollSnapType: "x proximity",
+   635→        }}
+   636→      >
+   637→        {items.map((item) => (
+   638→          <FreeServiceTile key={item.service_id} item={item} config={config} />
+   639→        ))}
+   640→      </div>
+   641→    </section>
+   642→  );
+   643→}
+   644→
+   645→/* ── بنر طلایی خدمات رایگان (وقتی هیچ جلسهٔ رایگانی فعال نیست پنهان است) ── */
+   646→
+   647→export function FreeServicesBanner({ config }: { config: UniversalAppConfig }) {
+   648→  const [hasFree, setHasFree] = useState<boolean | null>(null);
+   649→
+   650→  useEffect(() => {
+   651→    let active = true;
+   652→    fetchFreeServices()
+   653→      .then((rows) => {
+   654→        if (active) setHasFree(rows.length > 0);
+   655→      })
+   656→      .catch(() => {
+   657→        if (active) setHasFree(false);
+   658→      });
+   659→    return () => {
+   660→      active = false;
+   661→    };
+   662→  }, []);
+   663→
+   664→  if (hasFree === null || !hasFree) return null;
+   665→
+   666→  return (
+   667→    <button
+   668→      type="button"
+   669→      onClick={() => navigateApp("/search?mode=services&q=", config)}
+   670→      className="vodda-tappable vodda-enter"
+   671→      aria-label="مشاهدهٔ جلسات رایگان اساتید"
+   672→      style={{
+   673→        position: "relative",
+   674→        overflow: "hidden",
+   675→        width: "100%",
+   676→        display: "flex",
+   677→        alignItems: "center",
+   678→        gap: spacing.md,
+   679→        padding: "0",
+   680→        textAlign: "right",
+   681→        border: 0,
+   682→        borderRadius: 22,
+   683→        background: colors.olive950,
+   684→        cursor: "pointer",
+   685→        fontFamily: typography.fontFamily,
+   686→        boxShadow: shadows.olive,
+   687→      }}
+   688→    >
+   689→      <img
+   690→        src="/images/home/free-banner.webp"
+   691→        alt=""
+   692→        aria-hidden="true"
+   693→        loading="lazy"
+   694→        style={{ position: "absolute", insetInlineEnd: 0, top: 0, height: "100%", width: "42%", objectFit: "cover", opacity: 0.9 }}
+   695→      />
+   696→      <span aria-hidden="true" style={{ position: "absolute", inset: 0, background: "linear-gradient(270deg, rgba(20,28,16,0) 30%, rgba(20,28,16,.94) 62%)" }} />
+   697→      <span style={{ position: "relative", display: "grid", gap: 4, padding: "18px 18px 18px", flex: 1, minWidth: 0 }}>
+   698→        <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 900, color: colors.goldSoft }}>
+   699→          <Icon name="gift" size={13} stroke={2.4} />
+   700→          هدیهٔ اساتید وُدّا
+   701→        </span>
+   702→        <strong style={{ fontSize: 15.5, fontWeight: 900, color: colors.surface, lineHeight: 1.6 }}>
+   703→          جلسات رایگان یادگیری قرآن
+   704→        </strong>
+   705→        <span style={{ fontSize: 11.5, fontWeight: 600, color: "rgba(255,255,255,.75)", lineHeight: 1.8 }}>
+   706→          اساتیدی که خدمتشان را رایگان ارائه می‌کنند را ببینید
+   707→        </span>
+   708→      </span>
+   709→      <span
+   710→        aria-hidden="true"
+   711→        style={{
+   712→          position: "relative",
+   713→          flex: "0 0 auto",
+   714→          marginInlineEnd: 14,
+   715→          width: 34,
+   716→          height: 34,
+   717→          display: "grid",
+   718→          placeItems: "center",
+   719→          borderRadius: "50%",
+   720→          background: "rgba(255,255,255,.12)",
+   721→          border: "1px solid rgba(212,171,82,.4)",
+   722→          color: colors.goldSoft,
+   723→        }}
+   724→      >
+   725→        <Icon name="chevronL" size={16} stroke={2.4} />
+   726→      </span>
+   727→    </button>
+   728→  );
+   729→}
+   730→
