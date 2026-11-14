@@ -17,7 +17,6 @@ import {
   OrnamentDivider,
   SectionHeader,
   Sheet,
-  StatusPill,
   todayJalaliLabel,
   colors,
   gradients,
@@ -36,7 +35,7 @@ import {
   type AppNotification,
 } from "../notifications/api";
 import { getLearnerSessions } from "../sessions/api";
-import { isUpcomingSession, type LearnerSession } from "../sessions/types";
+import { isUpcomingSession } from "../sessions/types";
 import { searchTeachers } from "../teachers/api";
 import { TeacherCard } from "../teachers/TeacherCard";
 import type { Teacher } from "../teachers/types";
@@ -82,24 +81,6 @@ function dayOfYearIndex() {
   const now = new Date();
   const start = new Date(now.getFullYear(), 0, 0);
   return Math.floor((now.getTime() - start.getTime()) / 86_400_000);
-}
-
-function tehranDayKey(dateIso: string) {
-  if (!dateIso) return "";
-  try {
-    return new Intl.DateTimeFormat("en-US", {
-      timeZone: "Asia/Tehran",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    }).format(new Date(dateIso));
-  } catch {
-    return "";
-  }
-}
-
-function isTodayInTehran(dateIso: string) {
-  return dateIso !== "" && tehranDayKey(dateIso) === tehranDayKey(new Date().toISOString());
 }
 
 /* آیه و حدیث روز — فقط متون معروف و معتبر درباره علم و آموزش؛ چرخش روزانه */
@@ -175,38 +156,6 @@ function HomeSkeleton() {
           ))}
         </div>
       </div>
-    </div>
-  );
-}
-
-function TrustStrip() {
-  const items = [
-    { icon: "checkCircle" as const, label: "اساتید تأییدشده" },
-    { icon: "shield" as const, label: "پرداخت امن با درگاه و کیف پول" },
-    { icon: "refresh" as const, label: "لغو آزاد تا پیش از جلسه" },
-  ];
-  return (
-    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }} className="vodda-enter vodda-enter-delay-1">
-      {items.map((item) => (
-        <span
-          key={item.label}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 5,
-            padding: "6px 11px",
-            borderRadius: 999,
-            border: `1px solid ${colors.olive100}`,
-            background: colors.olive50,
-            color: colors.olive700,
-            fontSize: 12,
-            fontWeight: 700,
-          }}
-        >
-          <Icon name={item.icon} size={13} stroke={2} />
-          {item.label}
-        </span>
-      ))}
     </div>
   );
 }
@@ -294,37 +243,6 @@ function VerseStrip() {
         </span>
       </p>
     </div>
-  );
-}
-
-function SearchPill({ config }: { config: UniversalAppConfig }) {
-  return (
-    <button
-      type="button"
-      onClick={() => navigateApp("/search", config)}
-      className="vodda-card vodda-card--interactive vodda-tappable vodda-enter"
-      style={{
-        width: "100%",
-        display: "flex",
-        alignItems: "center",
-        gap: 10,
-        padding: "13px 16px",
-        borderRadius: 999,
-        border: `1px solid ${colors.sand150}`,
-        background: colors.surface,
-        boxShadow: shadows.sm,
-        color: colors.inkMuted,
-        cursor: "pointer",
-        fontFamily: typography.fontFamily,
-        textAlign: "right",
-      }}
-    >
-      <Icon name="search" size={18} style={{ color: colors.olive700, flex: "0 0 auto" }} />
-      <span style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 600 }}>
-        به دنبال کدام استاد قرآن هستید؟
-      </span>
-      <Icon name="chevronL" size={16} style={{ flex: "0 0 auto" }} />
-    </button>
   );
 }
 
@@ -472,68 +390,6 @@ function RebookRail({ teachers, config }: { teachers: PastTeacher[]; config: Uni
         })}
       </div>
     </section>
-  );
-}
-
-function NextSessionCard({ session, config }: { session: LearnerSession; config: UniversalAppConfig }) {
-  const today = isTodayInTehran(session.scheduledAt);
-  const time = today && session.localStart
-    ? `امروز · ${session.localStart}`
-    : [session.localDate, session.localStart].filter(Boolean).join(" · ");
-  return (
-    <button
-      type="button"
-      onClick={() => navigateApp("/sessions", config)}
-      className="vodda-card vodda-card--interactive vodda-tappable vodda-enter"
-      style={{
-        width: "100%",
-        display: "flex",
-        alignItems: "center",
-        gap: spacing.md,
-        padding: spacing.lg,
-        textAlign: "right",
-        color: colors.ink,
-        background: colors.surface,
-        border: `1px solid ${today ? colors.gold : colors.olive100}`,
-        borderRadius: radii.xl,
-        boxShadow: shadows.md,
-        cursor: "pointer",
-        fontFamily: typography.fontFamily,
-      }}
-    >
-      <IconBadge icon="calendar" tone="olive" size={46} />
-      <span style={{ minWidth: 0, flex: 1, display: "grid", gap: 4 }}>
-        <span style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
-          <span style={{ ...typography.caption, color: colors.olive700, fontWeight: 800 }}>جلسه بعدی تو</span>
-          {today ? (
-            <span
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 4,
-                padding: "2px 8px",
-                borderRadius: 999,
-                background: colors.goldBackground,
-                color: colors.goldDark,
-                fontSize: 11.5,
-                fontWeight: 800,
-              }}
-            >
-              امروز!
-            </span>
-          ) : null}
-          <StatusPill status={session.status} />
-        </span>
-        <strong style={{ ...typography.body, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: colors.ink }}>
-          {session.service || "جلسه آموزشی"} با {session.teacherName}
-        </strong>
-        <span style={{ ...typography.caption, display: "inline-flex", alignItems: "center", gap: 4, color: colors.inkMuted }}>
-          <Icon name="clock" size={13} />
-          {time || "زمان از دفتر استاد پیگیری شود"}
-        </span>
-      </span>
-      <Icon name="chevronL" size={18} style={{ color: colors.inkMuted, flex: "0 0 auto" }} />
-    </button>
   );
 }
 
@@ -899,7 +755,8 @@ function NotificationsBell({
 
 /* ─────────────────────────  صفحه خانه  ───────────────────────── */
 
-type SessionAreaState = "loading" | "next" | "rebook" | "hero";
+// «جلسه بعدی تو» و نوار چیپ‌ها حذف شدند؛ ناحیهٔ جلسه فقط بنر رزرو دوباره را نشان می‌دهد.
+type SessionAreaState = "loading" | "rebook" | "ready";
 
 export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
   const runtime = usePlatform();
@@ -910,7 +767,6 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
   const [reloadKey, setReloadKey] = useState(0);
   const [roleSheetOpen, setRoleSheetOpen] = useState(false);
   const [sessionArea, setSessionArea] = useState<SessionAreaState>("loading");
-  const [nextSession, setNextSession] = useState<LearnerSession | null>(null);
   const [pastTeachers, setPastTeachers] = useState<PastTeacher[]>([]);
 
   useEffect(() => {
@@ -960,8 +816,7 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
 
   useEffect(() => {
     if (!user) {
-      setSessionArea("hero");
-      setNextSession(null);
+      setSessionArea("ready");
       setPastTeachers([]);
       return;
     }
@@ -973,10 +828,7 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
           getLearnerSessions(runtime, "past"),
         ]);
         if (!active) return;
-        const soonest = upcoming
-          .filter(isUpcomingSession)
-          .sort((a, b) => a.scheduledAt.localeCompare(b.scheduledAt))[0] ?? null;
-        setNextSession(soonest);
+        const hasSoon = upcoming.some(isUpcomingSession);
         const seen = new Set<number>();
         const unique: PastTeacher[] = [];
         for (const session of [...past].sort((a, b) => b.scheduledAt.localeCompare(a.scheduledAt))) {
@@ -986,12 +838,10 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
           }
         }
         setPastTeachers(unique.slice(0, 8));
-        setSessionArea(soonest ? "next" : past.length > 0 ? "rebook" : "hero");
+        // کاربر دارای سابقهٔ جلسه → بنر رزرو دوباره؛ تازه‌کار → چک‌لیست شروع.
+        setSessionArea(hasSoon || past.length > 0 ? "rebook" : "ready");
       } catch {
-        if (active) {
-          setNextSession(null);
-          setSessionArea("hero");
-        }
+        if (active) setSessionArea("ready");
       }
     })();
     return () => {
@@ -1117,18 +967,15 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
       </header>
 
       <VerseStrip />
-      <SearchPill config={config} />
 
-      {sessionArea === "loading" ? (
-        <Skeleton style={{ height: 120, borderRadius: radii.xl }} />
-      ) : sessionArea === "next" && nextSession ? (
-        <NextSessionCard session={nextSession} config={config} />
-      ) : sessionArea === "rebook" ? (
+      {/* کارت «جلسه بعدی تو»، نوار جستجو و چیپ‌های اعتماد حذف شدند — صفحهٔ آرام‌تر */}
+      {sessionArea === "rebook" ? (
         <RebookBanner config={config} />
-      ) : user ? (
-        <OnboardingChecklist user={user} config={config} />
-      ) : (
-        <HeroPanel
+      ) : sessionArea === "ready" ? (
+        user ? (
+          <OnboardingChecklist user={user} config={config} />
+        ) : (
+          <HeroPanel
           eyebrow="به وُدّا خوش آمدید"
           title={"استاد قرآن خود را بیابید\nو زمان آزاد ایشان را رزرو کنید"}
           description="پروفایل استادان تأییدشده و خدمات قابل رزرو را ببینید."
@@ -1146,14 +993,17 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
             <Icon name="search" size={18} />
             جستجوی استاد
           </Button>
-        </HeroPanel>
-      )}
-      <TrustStrip />
+          </HeroPanel>
+        )
+      ) : null}
 
       {needsProfileNudge ? <ProfileNudgeBar config={config} /> : null}
 
-      {/* دسته‌بندی موضوعات — کارت‌های تصویری دسته‌های رسمی (بازطراحی تصویری) */}
+      {/* دسته‌بندی موضوعات — یک کادر، شش موضوع تصویری؛ ورود به زیردسته‌های تخصصی */}
       <TopicCategoryGrid config={config} />
+
+      {/* خدمات برتر و پراستفاده — کارت خدمات اول صفحه، بلافاصله پس از دسته‌ها */}
+      <TopServicesRail config={config} />
 
       {/* خدمات رایگان اساتید — جلسات صفر تومانی فعال (D-3) */}
       {user ? <FreeServicesBoard config={config} /> : null}
@@ -1182,9 +1032,6 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
           <RebookRail teachers={pastTeachers} config={config} />
           <TeacherRail title="اساتید پیشنهادی" teachers={recommended} config={config} />
           {featured ? <FeaturedTeacher teacher={featured} config={config} /> : null}
-
-          {/* خدمات برتر و پراستفاده — کارت‌های تصویری خدمات منتخب */}
-          <TopServicesRail config={config} />
 
           <OrnamentDivider style={{ margin: `${spacing.xs}px 0 ${spacing.xs}px` }} />
           <TeacherRail title="اساتید بانو" teachers={women} config={config} />

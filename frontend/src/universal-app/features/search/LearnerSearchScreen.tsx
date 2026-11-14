@@ -352,7 +352,12 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
   const [presenceServices, setPresenceServices] = useState<OfficialInPersonService[]>([]);
   const [servicesLoading, setServicesLoading] = useState(false);
   const [servicesError, setServicesError] = useState("");
-  const [servicesQuery, setServicesQuery] = useState("");
+  const [servicesQuery, setServicesQuery] = useState(() => {
+    // لینک‌های عمیق دسته‌ها (q=) فیلتر خدمات را از همان ابتدا پر می‌کنند —
+    // تا کلیک روی هر موضوع در خانه، وارد زیردسته‌های تخصصی همان موضوع شود.
+    if (typeof window === "undefined") return "";
+    return new URLSearchParams(window.location.search).get("q") ?? "";
+  });
   const [servicesLoaded, setServicesLoaded] = useState(false);
 
   useEffect(() => {

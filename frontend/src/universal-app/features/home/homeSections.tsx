@@ -1,10 +1,10 @@
 "use client";
 
-// بخش‌های تصویری صفحهٔ نخست (بازطراحی به سبک نسخهٔ پیشین — با تصاویر):
-//   ۱) دسته‌بندی موضوعات — کارت‌های تصویری دسته‌های رسمی خدمات
-//   ۲) خدمات برتر و پراستفاده — ریل کارت‌های تصویری خدمات منتخب
+// بخش‌های تصویری صفحهٔ نخست:
+//   ۱) دسته‌بندی موضوعات — یک کادر، شش موضوع تصویری؛ هر کلیک وارد زیردسته‌های تخصصی همان موضوع می‌شود
+//   ۲) خدمات برتر و پراستفاده — کارت خدمات اول صفحه (ریل کارت‌های تصویری خدمات منتخب)
 //   ۳) خدمات رایگان — تابلوی جلسات رایگان اساتید (price = 0)
-// همهٔ بخش‌ها مست tolerant هستند: خطا یا خالی‌بودن، کل بخش را پنهان می‌کند تا
+// همهٔ بخش‌ها مستقل هستند: خطا یا خالی‌بودن، کل بخش را پنهان می‌کند تا
 // خانهٔ کاربر هرگز به‌خاطر آن‌ها نشکند.
 
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
@@ -47,6 +47,22 @@ function categoryVisual(category: string): { image: string; tint: string } {
     if (row.match.test(category)) return { image: row.image, tint: row.tint };
   }
   return { image: FALLBACK_IMAGE, tint: FALLBACK_TINT };
+}
+
+/** ترتیب نمایش موضوع‌ها — مسیر یادگیری: از پایه تا تخصصی؛ هم‌راستا با نقشهٔ تصویر. */
+const CATEGORY_ORDER_HINTS: Array<{ match: RegExp }> = [
+  { match: /پایه|الفبا|روخوانی/ },
+  { match: /تجوید|قرائت/ },
+  { match: /حفظ/ },
+  { match: /صوت|لحن|هنر/ },
+  { match: /مفاهیم|تفسیر|علوم/ },
+  { match: /ویژه/ },
+  { match: /مشاوره|آمادگی/ },
+];
+
+function categoryOrderIndex(name: string) {
+  const index = CATEGORY_ORDER_HINTS.findIndex((hint) => hint.match.test(name));
+  return index === -1 ? CATEGORY_ORDER_HINTS.length : index;
 }
 
 /* ── ابزارها ────────────────────────────────────────────────────────────── */
@@ -95,9 +111,9 @@ export function TopicCategoryGrid({ config }: { config: UniversalAppConfig }) {
         }
         const rows: TopicCategory[] = [...counts.entries()]
           .filter(([category]) => category && category !== "خدمات حضوری قرآنی")
-          .sort((a, b) => b[1] - a[1])
-          .slice(0, 6)
-          .map(([category, count]) => ({ category, count, ...categoryVisual(category) }));
+          .map(([category, count]) => ({ category, count, ...categoryVisual(category) }))
+          .sort((a, b) => categoryOrderIndex(a.category) - categoryOrderIndex(b.category) || b.count - a.count)
+          .slice(0, 6);
         setCategories(rows);
       })
       .catch(() => {
@@ -111,9 +127,14 @@ export function TopicCategoryGrid({ config }: { config: UniversalAppConfig }) {
   if (categories === null) {
     return (
       <section aria-label="دسته‌بندی موضوعات" style={{ display: "grid", gap: 12 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
-          {[0, 1, 2, 3].map((index) => (
-            <span key={index} aria-hidden="true" className="vodda-skeleton" style={{ display: "block", height: 148, borderRadius: 22 }} />
+        <span aria-hidden="true" className="vodda-skeleton" style={{ display: "block", width: 150, height: 18 }} />
+        <div
+          aria-hidden="true"
+          className="vodda-skeleton"
+          style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8, padding: 10, borderRadius: 24 }}
+        >
+          {[0, 1, 2, 3, 4, 5].map((index) => (
+            <span key={index} className="vodda-skeleton" style={{ display: "block", aspectRatio: "1 / 1.14", borderRadius: 16 }} />
           ))}
         </div>
       </section>
@@ -126,32 +147,44 @@ export function TopicCategoryGrid({ config }: { config: UniversalAppConfig }) {
     <section aria-label="دسته‌بندی موضوعات" className="vodda-enter vodda-enter-delay-1" style={{ display: "grid", gap: 12, minWidth: 0 }}>
       <SectionHeader
         title="دسته‌بندی موضوعات"
-        description="از کجا می‌خواهید شروع کنید؟ مسیر یادگیری خود را انتخاب کنید."
+        description="موضوع دلخواه را انتخاب کنید تا وارد زیردسته‌های تخصصی آن شوید."
       />
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
+      {/* یک کادر واحد — شش موضوع با تصاویر زیبا (۳×۲) */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+          gap: 8,
+          padding: 10,
+          background: "linear-gradient(180deg, #ffffff, #fffdf8)",
+          border: `1px solid ${colors.sand150}`,
+          borderRadius: 24,
+          boxShadow: shadows.sm,
+        }}
+      >
         {categories.map((category) => (
           <button
             key={category.category}
             type="button"
             onClick={() => navigateApp(`/search?mode=services&q=${encodeURIComponent(category.category)}`, config)}
             className="vodda-tappable vodda-enter"
-            aria-label={`دستهٔ ${category.category} — ${faNumber(category.count)} خدمت`}
+            aria-label={`ورود به زیردسته‌های ${category.category} — ${faNumber(category.count)} خدمت`}
             style={{
               position: "relative",
               overflow: "hidden",
               display: "grid",
-              minHeight: 148,
+              aspectRatio: "1 / 1.14",
               padding: 0,
               textAlign: "right",
               border: 0,
-              borderRadius: 22,
+              borderRadius: 16,
               cursor: "pointer",
               fontFamily: typography.fontFamily,
-              boxShadow: shadows.sm,
+              boxShadow: "0 2px 8px rgba(46,54,34,.10)",
               background: colors.olive900,
             }}
           >
-            {/* تصویر دسته */}
+            {/* تصویر زیبای موضوع */}
             <img
               src={category.image}
               alt=""
@@ -161,14 +194,33 @@ export function TopicCategoryGrid({ config }: { config: UniversalAppConfig }) {
             />
             {/* گرادیان خوانایی متن */}
             <span aria-hidden="true" style={{ position: "absolute", inset: 0, background: category.tint }} />
-            {/* محتوا */}
-            <span style={{ position: "relative", display: "grid", alignContent: "end", gap: 3, padding: "12px 14px 13px", color: colors.surface }}>
-              <strong style={{ fontSize: 14.5, fontWeight: 900, lineHeight: 1.55, textShadow: "0 1px 8px rgba(0,0,0,.35)" }}>
+            {/* نشان ورود به زیردسته‌های تخصصی */}
+            <span
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                top: 7,
+                insetInlineEnd: 7,
+                width: 21,
+                height: 21,
+                display: "grid",
+                placeItems: "center",
+                borderRadius: "50%",
+                background: "rgba(255,255,255,.20)",
+                border: "1px solid rgba(255,255,255,.34)",
+                color: colors.surface,
+              }}
+            >
+              <Icon name="chevronL" size={12} stroke={2.4} />
+            </span>
+            {/* عنوان و تعداد خدمت‌ها */}
+            <span style={{ position: "relative", display: "grid", alignContent: "end", gap: 2, padding: "9px 10px 10px", color: colors.surface }}>
+              <strong style={{ fontSize: 12, fontWeight: 900, lineHeight: 1.55, textShadow: "0 1px 8px rgba(0,0,0,.4)" }}>
                 {category.category}
               </strong>
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11.5, fontWeight: 700, color: colors.goldSoft }}>
-                <Icon name="book" size={12} stroke={2.2} />
-                {faNumber(category.count)} خدمت رسمی
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10, fontWeight: 700, color: colors.goldSoft }}>
+                <Icon name="book" size={10} stroke={2.2} />
+                {faNumber(category.count)} خدمت
               </span>
             </span>
           </button>
