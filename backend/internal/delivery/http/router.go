@@ -209,6 +209,8 @@ func NewRouter(cfg *config.Config, h *Handler, tm *token.Manager, readiness func
 
         api.GET("/settings", h.PublicSettings)
         api.GET("/catalog/services", publicLimiter.Middleware("catalog-services"), h.CatalogServices)
+        // «خدمات رایگان» — public board of zero-price services (homepage).
+        api.GET("/catalog/free", publicLimiter.Middleware("catalog-free"), h.FreeServices)
 
         // خدمات حضوری قرآنی — public presence catalog of reciters.
         api.GET("/presence/providers", publicLimiter.Middleware("presence-list"), h.PresenceProviders)

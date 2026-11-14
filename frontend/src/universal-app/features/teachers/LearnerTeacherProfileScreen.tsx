@@ -57,9 +57,31 @@ function ServiceCard({ service }: { service: TeacherService }) {
             {formatWalletAmount(service.duration)} دقیقه
           </span>
         </div>
-        <strong style={{ ...typography.bodySmall, flexShrink: 0, color: colors.olive800, whiteSpace: "nowrap" }}>
-          {formatWalletAmount(service.price)} تومان
-        </strong>
+        {service.price === 0 ? (
+          <span
+            style={{
+              flexShrink: 0,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 4,
+              padding: "4px 11px",
+              borderRadius: 999,
+              background: colors.goldBackground,
+              border: `1px solid ${colors.gold}`,
+              color: colors.goldDark,
+              fontSize: 11.5,
+              fontWeight: 900,
+              whiteSpace: "nowrap",
+            }}
+          >
+            <Icon name="gift" size={12} stroke={2.4} />
+            رایگان
+          </span>
+        ) : (
+          <strong style={{ ...typography.bodySmall, flexShrink: 0, color: colors.olive800, whiteSpace: "nowrap" }}>
+            {formatWalletAmount(service.price)} تومان
+          </strong>
+        )}
       </div>
     </Card>
   );

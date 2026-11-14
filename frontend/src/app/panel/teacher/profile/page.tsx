@@ -98,7 +98,7 @@ export default function TeacherProfilePage() {
         <section className="ops-data-surface"><div style={{ padding: 42, textAlign: 'center', color: 'var(--ink-3)', fontSize: 12 }}>در حال بارگذاری پروفایل…</div></section>
       ) : (
         <>
-          <div className="ops-metric-grid" style={{ gridTemplateColumns: 'repeat(3,minmax(0,1fr))' }}>
+          <div className="ops-metric-grid">
             <article className="ops-metric-card">
               <span className="ops-metric-icon"><Icon name="award" size={20} /></span>
               <div><small>وضعیت پروفایل</small><strong style={{ fontSize: 13 }}><PanelStatus status={statusKey}>{teacher.status === 'approved' ? 'تأییدشده' : teacher.status === 'rejected' ? 'ردشده' : 'در انتظار بررسی'}</PanelStatus></strong><span>نمایش عمومی: {teacher.status === 'approved' ? 'فعال' : 'محدود'}</span></div>

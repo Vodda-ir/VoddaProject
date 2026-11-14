@@ -91,7 +91,7 @@ export default function TeacherWorkTimesPage() {
         actions={<PanelButton icon="refresh" onClick={() => void load()}>به‌روزرسانی</PanelButton>}
       />
 
-      <div className="ops-metric-grid" style={{ gridTemplateColumns: 'repeat(2,minmax(0,1fr))' }}>
+      <div className="ops-metric-grid">
         <PanelMetric icon="calendar" label="روزهای فعال" value={toFaDigits(activeDays)} hint="روز دارای حداقل یک بازه" tone="info" />
         <PanelMetric icon="clock" label="کل بازه‌های کاری" value={toFaDigits(totalRanges)} hint="بازه ثبت‌شده" />
       </div>

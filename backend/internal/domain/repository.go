@@ -64,6 +64,9 @@ type TeacherRepository interface {
         OfficialServices(ctx context.Context) ([]OfficialService, error)
         OfficialServiceByID(ctx context.Context, id uint) (*OfficialService, error)
         OfficialServiceByTitle(ctx context.Context, title string) (*OfficialService, error)
+        // FreePublicServices lists active zero-price services of public,
+        // approved, verified, available teachers for the «خدمات رایگان» board.
+        FreePublicServices(ctx context.Context, limit int) ([]FreeServiceCard, error)
 
         SetWorkTimes(ctx context.Context, teacherID uint, wt []WorkTime) error
         WorkTimes(ctx context.Context, teacherID uint) ([]WorkTime, error)

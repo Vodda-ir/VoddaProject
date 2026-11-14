@@ -180,6 +180,48 @@ func (r *teacherRepo) OfficialServices(ctx context.Context) ([]domain.OfficialSe
         return rows, err
 }
 
+// FreePublicServices lists active zero-price (رایگان) services of public,
+// approved, verified and available teachers — the data behind the homepage
+// «خدمات رایگان» board.
+func (r *teacherRepo) FreePublicServices(ctx context.Context, limit int) ([]domain.FreeServiceCard, error) {
+        if limit <= 0 || limit > 50 {
+                limit = 20
+        }
+        var rows []domain.FreeServiceCard
+        err := r.db.WithContext(ctx).Raw(`
+                SELECT s.id AS service_id,
+                       s.official_service_id AS official_id,
+                       s.title AS title,
+                       s.icon AS icon,
+                       os.category AS category,
+                       s.duration AS duration,
+                       t.id AS teacher_id,
+                       users.name AS teacher_name,
+                       users.avatar_url AS avatar_url,
+                       t.field AS field,
+                       t.tag AS tag,
+                       t.city AS city,
+                       t.level AS level,
+                       t.tier AS tier,
+                       t.female AS female,
+                       t.rating AS rating,
+                       t.reviews AS reviews,
+                       t.sessions AS sessions
+                FROM services s
+                JOIN teachers t ON t.id = s.teacher_id
+                JOIN users ON users.id = t.user_id
+                LEFT JOIN official_services os ON os.id = s.official_service_id
+                WHERE s.active = ? AND s.price = 0
+                  AND t.status = ? AND t.verified = ? AND t.available = ?
+                  AND users.active = ?
+                  AND t.field NOT LIKE ?
+                ORDER BY t.rating DESC, t.sessions DESC, s.id DESC
+                LIMIT ?`,
+                true, domain.TeacherApproved, true, true, true, "%مداح%", limit,
+        ).Scan(&rows).Error
+        return rows, err
+}
+
 func (r *teacherRepo) OfficialServiceByID(ctx context.Context, id uint) (*domain.OfficialService, error) {
         var row domain.OfficialService
         err := r.db.WithContext(ctx).First(&row, id).Error

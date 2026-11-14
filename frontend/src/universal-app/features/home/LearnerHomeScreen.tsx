@@ -29,6 +29,7 @@ import {
 import { messageOf } from "../../ui/errorMessage";
 import { resolveAssetUrl } from "../../platform/asset";
 import { RoleModeSheet } from "../auth/RoleModeSheet";
+import { TopicCategoryGrid, TopServicesRail, FreeServicesBoard } from "./homeSections";
 import {
   getNotifications,
   markNotificationRead,
@@ -134,35 +135,10 @@ function recommendationScore(teacher: Teacher) {
 
 /* ─────────────────────────  دسته‌بندی‌های سریع داده‌محور  ───────────────────────── */
 
-type CategoryMeta = { title: string; description: string; icon: "quran" | "mic" | "book" | "doc" | "headphones"; tone: "olive" | "clay" | "gold" | "info" };
-
-// آیکون/رنگ هر دسته بر اساس کلیدواژه‌های نام رشته انتخاب می‌شود؛ عنوان همیشه
-// همان نام واقعی رشته در دیتابیس است تا فیلتر جستجو دقیق کار کند.
-// (پلتفرم فعلاً تخصصاً قرآنی است — رشته مداحی پنهان شده)
-const CATEGORY_KEYWORDS: Array<{ match: RegExp; meta: Omit<CategoryMeta, "title"> }> = [
-  { match: /تلاوت|صوت/, meta: { description: "اصوات و آوای قرآنی", icon: "headphones", tone: "gold" } },
-  { match: /قران|قرآن|تجوید|روخوانی|حفظ/, meta: { description: "روخوانی، تجوید و حفظ", icon: "quran", tone: "olive" } },
-  { match: /احکام|فقه/, meta: { description: "مسائل شرعی روزمره", icon: "doc", tone: "info" } },
-];
-
-// استادهای مداحی فعلاً از تمام سطوح کاربری پنهان می‌شوند (پلتفرم تخصصاً قرآنی).
 const MADDAHI_PATTERN = /مداح|هم‌نوا|همنوا/;
 
 function isMaddahiTeacher(teacher: Teacher) {
   return MADDAHI_PATTERN.test(teacher.field) || MADDAHI_PATTERN.test(teacher.tag);
-}
-
-const CATEGORY_FALLBACK_META: Omit<CategoryMeta, "title"> = {
-  description: "جلسه‌های آموزشی",
-  icon: "book",
-  tone: "olive",
-};
-
-function categoryMetaFor(field: string): CategoryMeta {
-  for (const { match, meta } of CATEGORY_KEYWORDS) {
-    if (match.test(field)) return { title: field, ...meta };
-  }
-  return { title: field, ...CATEGORY_FALLBACK_META };
 }
 
 function teacherSubtitle(teacher: Teacher) {
@@ -1045,19 +1021,6 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
     return pool[dayOfYearIndex() % pool.length];
   }, [teachers, recommended]);
 
-  const categories = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const teacher of teachers) {
-      const field = teacher.field?.trim();
-      if (!field) continue;
-      counts.set(field, (counts.get(field) ?? 0) + 1);
-    }
-    return [...counts.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 3)
-      .map(([field, count]) => ({ field, count, meta: categoryMetaFor(field) }));
-  }, [teachers]);
-
   const firstName = user?.name?.trim().split(/\s+/)[0] || "دوست";
   const canUseTeacherMode = user?.role === "teacher" || user?.role === "admin";
   const needsProfileNudge =
@@ -1189,42 +1152,11 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
 
       {needsProfileNudge ? <ProfileNudgeBar config={config} /> : null}
 
-      {!teachersLoading && !teachersError && categories.length > 0 ? (
-        <section className="vodda-enter vodda-enter-delay-1">
-          <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(categories.length, 3)}, minmax(0, 1fr))`, gap: 10 }}>
-            {categories.map((category) => (
-              <button
-                key={category.field}
-                type="button"
-                onClick={() => navigateApp(`/search?field=${encodeURIComponent(category.field)}`, config)}
-                className="vodda-card vodda-card--interactive vodda-tappable"
-                style={{
-                  minHeight: 142,
-                  display: "grid",
-                  justifyItems: "center",
-                  alignContent: "center",
-                  gap: spacing.sm,
-                  padding: spacing.lg,
-                  textAlign: "center",
-                  color: colors.ink,
-                  background: colors.surface,
-                  border: `1px solid ${colors.sand150}`,
-                  borderRadius: radii.lg,
-                  boxShadow: shadows.sm,
-                  cursor: "pointer",
-                  fontFamily: typography.fontFamily,
-                }}
-              >
-                <IconBadge icon={category.meta.icon} tone={category.meta.tone} size={50} />
-                <strong style={{ ...typography.body, color: colors.ink, fontWeight: 900 }}>{category.meta.title}</strong>
-                <span style={{ ...typography.caption, color: colors.inkMuted }}>
-                  {faNumber(category.count, 0)} استاد فعال
-                </span>
-              </button>
-            ))}
-          </div>
-        </section>
-      ) : null}
+      {/* دسته‌بندی موضوعات — کارت‌های تصویری دسته‌های رسمی (بازطراحی تصویری) */}
+      <TopicCategoryGrid config={config} />
+
+      {/* خدمات رایگان اساتید — جلسات صفر تومانی فعال (D-3) */}
+      {user ? <FreeServicesBoard config={config} /> : null}
 
       {teachersLoading && teachers.length === 0 ? (
         <HomeSkeleton />
@@ -1250,6 +1182,10 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
           <RebookRail teachers={pastTeachers} config={config} />
           <TeacherRail title="اساتید پیشنهادی" teachers={recommended} config={config} />
           {featured ? <FeaturedTeacher teacher={featured} config={config} /> : null}
+
+          {/* خدمات برتر و پراستفاده — کارت‌های تصویری خدمات منتخب */}
+          <TopServicesRail config={config} />
+
           <OrnamentDivider style={{ margin: `${spacing.xs}px 0 ${spacing.xs}px` }} />
           <TeacherRail title="اساتید بانو" teachers={women} config={config} />
           <TeacherRail title="فعال‌ترین استادها" teachers={mostActive} config={config} />

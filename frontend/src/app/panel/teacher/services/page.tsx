@@ -88,7 +88,7 @@ export default function TeacherServicesPage() {
         actions={<PanelButton tone="primary" icon="book" onClick={() => setDialog({ mode: 'add' })}>خدمت جدید</PanelButton>}
       />
 
-      <div className="ops-metric-grid" style={{ gridTemplateColumns: 'repeat(2,minmax(0,1fr))' }}>
+      <div className="ops-metric-grid">
         <article className="ops-metric-card">
           <span className="ops-metric-icon"><Icon name="checkCircle" size={20} /></span>
           <div><small>قابل رزرو</small><strong>{toFaDigits(activeCount)}</strong><span>خدمت تأییدشده و فعال</span></div>

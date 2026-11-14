@@ -6,7 +6,7 @@ export type IconName =
   | 'book' | 'mic' | 'star' | 'heart' | 'chevronL' | 'chevronUp' | 'arrowL' | 'arrowDownLeft' | 'arrowUpRight' | 'play'
   | 'check' | 'checkCircle' | 'bell' | 'message' | 'pin' | 'clock' | 'info' | 'shield'
   | 'award' | 'users' | 'sparkle' | 'download' | 'quran' | 'headphones'
-  | 'settings' | 'filter' | 'refresh' | 'plus' | 'logout' | 'edit' | 'grid' | 'list' | 'trending' | 'coins' | 'doc' | 'x' | 'trash';
+  | 'settings' | 'filter' | 'refresh' | 'plus' | 'logout' | 'edit' | 'grid' | 'list' | 'trending' | 'coins' | 'doc' | 'x' | 'trash' | 'gift';
 
 export function Icon({
   name,
@@ -78,6 +78,7 @@ export function Icon({
     doc: <><path {...p} d="M7 3.5h7l4 4V19a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 6 19V5A1.5 1.5 0 0 1 7.5 3.5Z" /><path {...p} d="M13.5 3.5v4.5H18M9 13h6M9 16h4" /></>,
     x: <path {...p} d="m6 6 12 12M18 6 6 18" />,
     trash: <><path {...p} d="M4 7h16" /><path {...p} d="M19 7l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 7" /><path {...p} d="M10 3h4a1 1 0 0 1 1 1v3H9V4a1 1 0 0 1 1-1Z" /><path {...p} d="M10 11v6" /><path {...p} d="M14 11v6" /></>,
+    gift: <><path {...p} d="M20 12v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-9" /><path {...p} d="M2.5 8.5h19v3.5h-19z" /><path {...p} d="M12 8.5V22" /><path {...p} d="M12 8.5S10.8 3 8 3a2.5 2.5 0 0 0 0 5.5Z" /><path {...p} d="M12 8.5S13.2 3 16 3a2.5 2.5 0 0 1 0 5.5Z" /></>,
   };
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" style={style} aria-hidden="true">

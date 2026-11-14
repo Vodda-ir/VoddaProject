@@ -10,6 +10,10 @@ import (
 // retry and must reject stale lifecycle states rather than duplicating money moves.
 type FinancialRepository interface {
         CreateFundedSession(ctx context.Context, session *Session) error
+        // CreateFreeSession stores a zero-price (خدمات رایگان) booking in one
+        // transaction: identical slot/eligibility guards as funded bookings but
+        // no wallet movement and no ledger rows.
+        CreateFreeSession(ctx context.Context, session *Session) error
         // CreateAwaitingSession reserves the slot for a gateway-paid booking: the
         // session is stored as awaiting_payment and no wallet money moves yet.
         CreateAwaitingSession(ctx context.Context, session *Session) error

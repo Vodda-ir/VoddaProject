@@ -77,7 +77,7 @@ export async function chooseDispatchOffer(
   runtime: PlatformRuntime,
   callId: number,
   offerId: number,
-  paymentMethod: "wallet" | "gateway",
+  paymentMethod: "wallet" | "gateway" | "", // "" = پاسخ رایگان
 ): Promise<ChooseOfferResult> {
   const response = await runtime.request<ApiEnvelope>(`/dispatch/calls/${callId}/choose`, {
     method: "POST",

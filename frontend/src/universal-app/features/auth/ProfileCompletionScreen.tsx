@@ -13,6 +13,61 @@ import { defaultRouteForUser } from "./AuthExperience";
 
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
 
+const SUPPORTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+
+/**
+ * تصویر پروفایل باید JPG/PNG/WebP باشد (اعتبارسنجی بایت‌محور سمت سرور).
+ * عکس‌های آیفون معمولاً HEIC هستند؛ اینجا هر تصویر پشتیبانی‌نشده‌ای را که
+ * مرورگر بتواند باز کند با canvas به JPEG تبدیل می‌کنیم تا «عوض نمی‌شود»
+ * کاربر تجربه نشود. اگر مرورگر نتوانست باز کند، خطای شفاف فارسی برمی‌گردد.
+ */
+async function normalizeAvatarFile(file: File): Promise<File> {
+  if (SUPPORTED_IMAGE_TYPES.includes(file.type)) return file;
+
+  let bitmap: ImageBitmap | HTMLImageElement;
+  try {
+    if (typeof createImageBitmap === "function") {
+      bitmap = await createImageBitmap(file);
+    } else {
+      bitmap = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const image = new Image();
+        const url = URL.createObjectURL(file);
+        image.onload = () => {
+          URL.revokeObjectURL(url);
+          resolve(image);
+        };
+        image.onerror = () => {
+          URL.revokeObjectURL(url);
+          reject(new Error("decode failed"));
+        };
+        image.src = url;
+      });
+    }
+  } catch {
+    throw new Error("فرمت تصویر پشتیبانی نمی‌شود. لطفاً تصویر را با فرمت JPG یا PNG انتخاب کنید.");
+  }
+
+  const width = "width" in bitmap ? bitmap.width : 0;
+  const height = "height" in bitmap ? bitmap.height : 0;
+  if (!width || !height) {
+    throw new Error("فرمت تصویر پشتیبانی نمی‌شود. لطفاً تصویر را با فرمت JPG یا PNG انتخاب کنید.");
+  }
+
+  // محدود به ۱۴۴۰ پیکسل — کیفیت کافی برای آواتار و حجم سبک
+  const scale = Math.min(1, 1440 / Math.max(width, height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(width * scale));
+  canvas.height = Math.max(1, Math.round(height * scale));
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("پردازش تصویر ممکن نشد. لطفاً تصویر دیگری انتخاب کنید.");
+  context.drawImage(bitmap as CanvasImageSource, 0, 0, canvas.width, canvas.height);
+  if ("close" in bitmap && typeof bitmap.close === "function") bitmap.close();
+
+  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.9));
+  if (!blob) throw new Error("پردازش تصویر ممکن نشد. لطفاً تصویر دیگری انتخاب کنید.");
+  return new File([blob], "avatar.jpg", { type: "image/jpeg" });
+}
+
 function normalizeUser(payload: unknown): AuthUser | null {
   if (!payload || typeof payload !== "object") return null;
   const record = payload as Record<string, unknown>;
@@ -85,20 +140,26 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
   const nameValid = useMemo(() => name.trim().length >= 2, [name]);
   const canSubmit = nameValid && !saving && !loading;
 
-  function selectAvatar(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0] ?? null;
+  async function selectAvatar(event: ChangeEvent<HTMLInputElement>) {
+    const picked = event.target.files?.[0] ?? null;
     event.target.value = "";
-    if (!file) return;
-    if (!file.type.startsWith("image/")) {
+    if (!picked) return;
+    if (!picked.type.startsWith("image/") && !/\.(heic|heif)$/i.test(picked.name)) {
       setError("فایل انتخاب‌شده باید تصویر باشد.");
       return;
     }
-    if (file.size > MAX_AVATAR_BYTES) {
-      setError("حجم تصویر پروفایل نباید بیشتر از ۵ مگابایت باشد.");
-      return;
-    }
     setError(null);
-    setAvatar(file);
+    try {
+      // HEIC و فرمت‌های غیرمتعارف خودکار به JPEG تبدیل می‌شوند
+      const file = await normalizeAvatarFile(picked);
+      if (file.size > MAX_AVATAR_BYTES) {
+        setError("حجم تصویر پروفایل نباید بیشتر از ۵ مگابایت باشد.");
+        return;
+      }
+      setAvatar(file);
+    } catch (convertError) {
+      setError(messageOf(convertError, "تصویر انتخاب‌شده قابل استفاده نیست."));
+    }
   }
 
   async function submit(event: FormEvent) {

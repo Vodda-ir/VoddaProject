@@ -14,6 +14,7 @@ import {
   IconBadge,
   LoadingState,
   colors,
+  gradients,
   digitsOnly,
   radii,
   shadows,
@@ -354,7 +355,8 @@ export function TeacherServicesScreen() {
       setFormError("مدت خدمت باید بین ۱۰ تا ۲۴۰ دقیقه باشد.");
       return;
     }
-    if (!Number.isFinite(price) || price <= 0) {
+    // قیمت صفر = خدمت رایگان (جلسات رایگان اساتید)
+    if (!Number.isFinite(price) || price < 0) {
       setFormError("مبلغ معتبر وارد کنید.");
       return;
     }
@@ -413,6 +415,9 @@ export function TeacherServicesScreen() {
       setSaving(false);
     }
   }
+
+  /* خدمت رایگان — قیمت صفر تومانی (جلسات رایگان اساتید) */
+  const isFreeService = draft.price.trim() === "0";
 
   const editingIcon = (editing?.official_service_id != null
     ? categories.flatMap((group) => group.services).find((entry) => entry.id === editing.official_service_id)?.icon
@@ -570,7 +575,7 @@ export function TeacherServicesScreen() {
                                 <span style={{ flex: 1, minWidth: 0, display: "grid", gap: 3 }}>
                                   <strong style={{ ...typography.bodySmall, color: inactive ? colors.goldDark : greenTone.deep }}>{entry.title}</strong>
                                   <span style={{ ...typography.caption, color: inactive ? colors.goldDark : greenTone.ink, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                                    <span>{toFaDigits(own.duration)} دقیقه · هر جلسه {formatWalletAmount(own.price)} تومان</span>
+                                    <span>{toFaDigits(own.duration)} دقیقه · {own.price === 0 ? "هر جلسه رایگان" : `هر جلسه ${formatWalletAmount(own.price)} تومان`}</span>
                                     <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontWeight: 700, opacity: 0.85 }}>
                                       <Icon name="edit" size={12} />
                                       ویرایش
@@ -666,7 +671,7 @@ export function TeacherServicesScreen() {
                   <span style={{ flex: 1, minWidth: 0, display: "grid", gap: 3 }}>
                     <strong style={{ ...typography.bodySmall }}>{service.title}</strong>
                     <span style={{ ...typography.caption, color: colors.inkMuted }}>
-                      {toFaDigits(service.duration)} دقیقه · هر جلسه {formatWalletAmount(service.price)} تومان
+                      {toFaDigits(service.duration)} دقیقه · {service.price === 0 ? "هر جلسه رایگان" : `هر جلسه ${formatWalletAmount(service.price)} تومان`}
                     </span>
                   </span>
                   {service.active ? (
@@ -723,25 +728,77 @@ export function TeacherServicesScreen() {
           </label>
           <div style={{ display: "grid", gap: spacing.xs, ...typography.bodySmall }}>
             <span style={{ fontWeight: 700 }}>قیمت هر جلسه (تومان)</span>
-            <div role="group" aria-label="قیمت‌های پیشنهادی" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-              {PRICE_PRESETS.map((preset) => (
-                <button
-                  key={preset}
-                  type="button"
-                  aria-pressed={draft.price === String(preset)}
-                  onClick={() => setDraft((current) => ({ ...current, price: String(preset) }))}
-                  style={quickChipStyle(draft.price === String(preset))}
-                >
-                  {formatToman(preset)}
-                </button>
-              ))}
-            </div>
-            <AmountInput
-              value={draft.price}
-              onChange={(next) => setDraft((current) => ({ ...current, price: next }))}
-              ariaLabel="قیمت خدمت به تومان"
-              placeholder="یا مبلغ دلخواه…"
-            />
+            <button
+              type="button"
+              role="switch"
+              aria-checked={isFreeService}
+              onClick={() => setDraft((current) => ({ ...current, price: isFreeService ? "" : "0" }))}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                padding: "11px 13px",
+                textAlign: "right",
+                borderRadius: radii.md,
+                cursor: "pointer",
+                fontFamily: typography.fontFamily,
+                border: isFreeService ? `1.6px solid ${colors.gold}` : `1px solid ${colors.sand200}`,
+                background: isFreeService ? colors.goldBackground : colors.surface,
+              }}
+            >
+              <span
+                aria-hidden="true"
+                style={{
+                  flexShrink: 0,
+                  width: 20,
+                  height: 20,
+                  display: "grid",
+                  placeItems: "center",
+                  borderRadius: 7,
+                  border: isFreeService ? "none" : `1.6px solid ${colors.sand200}`,
+                  background: isFreeService ? gradients.goldRich : colors.surface,
+                  color: "#fffaf0",
+                }}
+              >
+                {isFreeService ? <Icon name="check" size={13} stroke={3} /> : null}
+              </span>
+              <span style={{ flex: 1, minWidth: 0, display: "grid", gap: 1 }}>
+                <strong style={{ fontSize: 13, fontWeight: 800, color: isFreeService ? colors.goldDark : colors.ink }}>
+                  ارائهٔ رایگان این خدمت
+                </strong>
+                <span style={{ fontSize: 11.5, color: colors.inkMuted, lineHeight: 1.7 }}>
+                  با فعال‌کردن این گزینه، قرآن‌آموزان بدون پرداخت هزینه رزرو می‌کنند و جلسه در بخش «خدمات رایگان» صفحهٔ نخست نمایش داده می‌شود.
+                </span>
+              </span>
+            </button>
+            {isFreeService ? (
+              <span style={{ ...typography.caption, color: colors.goldDark, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 4 }}>
+                <Icon name="gift" size={13} />
+                این خدمت رایگان ارائه می‌شود (۰ تومان)
+              </span>
+            ) : (
+              <>
+                <div role="group" aria-label="قیمت‌های پیشنهادی" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {PRICE_PRESETS.map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      aria-pressed={draft.price === String(preset)}
+                      onClick={() => setDraft((current) => ({ ...current, price: String(preset) }))}
+                      style={quickChipStyle(draft.price === String(preset))}
+                    >
+                      {formatToman(preset)}
+                    </button>
+                  ))}
+                </div>
+                <AmountInput
+                  value={draft.price}
+                  onChange={(next) => setDraft((current) => ({ ...current, price: next }))}
+                  ariaLabel="قیمت خدمت به تومان"
+                  placeholder="یا مبلغ دلخواه…"
+                />
+              </>
+            )}
           </div>
           {formError ? <span role="alert" style={{ ...typography.caption, color: colors.danger }}>{formError}</span> : null}
           <Button fullWidth loading={saving} onClick={() => void saveService()}>ذخیره تغییرات</Button>

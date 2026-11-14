@@ -165,6 +165,29 @@ type OfficialService struct {
         UpdatedAt   time.Time `json:"updated_at"`
 }
 
+// FreeServiceCard is one row of the public «خدمات رایگان» board: an active
+// zero-price service of a public, approved, verified and available teacher.
+type FreeServiceCard struct {
+        ServiceID   uint    `json:"service_id"`
+        OfficialID  uint    `json:"official_id"`
+        Title       string  `json:"title"`
+        Icon        string  `json:"icon"`
+        Category    string  `json:"category"`
+        Duration    int     `json:"duration"`
+        TeacherID   uint    `json:"teacher_id"`
+        TeacherName string  `json:"teacher_name"`
+        AvatarURL   string  `json:"avatar_url"`
+        Field       string  `json:"field"`
+        Tag         string  `json:"tag"`
+        City        string  `json:"city"`
+        Level       string  `json:"level"`
+        Tier        string  `json:"tier"`
+        Female      bool    `json:"female"`
+        Rating      float64 `json:"rating"`
+        Reviews     int     `json:"reviews"`
+        Sessions    int     `json:"sessions"`
+}
+
 // Sample is an audio work sample of a teacher.
 type Sample struct {
         ID        uint   `gorm:"primaryKey" json:"id"`

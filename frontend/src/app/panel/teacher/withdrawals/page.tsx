@@ -87,7 +87,7 @@ export default function TeacherWithdrawalsPage() {
         actions={<PanelButton icon="refresh" onClick={() => void load()}>به‌روزرسانی</PanelButton>}
       />
 
-      <div className="ops-metric-grid" style={{ gridTemplateColumns: 'repeat(2,minmax(0,1fr))' }}>
+      <div className="ops-metric-grid">
         <PanelMetric icon="wallet" label="موجودی قابل برداشت" value={loading ? '—' : `${formatFaNumber(wallet)} ت`} hint="موجودی فعلی" />
         <PanelMetric icon="clock" label="درخواست در انتظار" value={toFaDigits(pendingCount)} hint="هنوز تعیین تکلیف نشده" tone={pendingCount ? 'gold' : 'olive'} />
       </div>

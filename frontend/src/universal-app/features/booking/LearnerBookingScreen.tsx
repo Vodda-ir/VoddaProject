@@ -155,14 +155,15 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
 
   const services = teacher?.services.filter((item) => item.active && item.id > 0) ?? [];
   const isSelfTeacher = Boolean(teacher?.userId && meId && teacher.userId === meId);
+  const isFreeService = service ? service.price === 0 : false;
   const walletCovers = wallet !== null && service ? wallet >= service.price : false;
 
   // Keep the sensible default as the selection changes: wallet when it covers
   // the price, otherwise the online gateway is the only viable method.
   useEffect(() => {
-    if (!service) return;
+    if (!service || service.price === 0) return;
     setPaymentMethod(walletCovers ? "wallet" : "gateway");
-  }, [service?.id, walletCovers]);
+  }, [service?.id, service?.price, walletCovers]);
 
   const submit = useCallback(async () => {
     if (!teacher || !service || !slot || saving) return;
@@ -179,7 +180,8 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
         // startAt is emitted by the authoritative backend in UTC. Do not rebuild
         // scheduled_at from the device timezone or the local display fields.
         scheduledAt: slot.startAt,
-        paymentMethod,
+        // خدمات رایگان: روش پرداخت ارسال نمی‌شود — رزرو بدون تراکنش ثبت می‌شود.
+        paymentMethod: service.price === 0 ? "" : paymentMethod,
       });
       if (response.data?.token) {
         // پرداخت درگاه: فرم توکن از مرورگر خود کاربر به OnlinePG پست می‌شود —
@@ -306,7 +308,28 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
                       {numberFormatter.format(item.duration)} دقیقه
                     </span>
                   </span>
-                  <strong style={{ ...typography.bodySmall, color: colors.olive700 }}>{formatWalletAmount(Math.max(0, item.price))} تومان</strong>
+                  {item.price === 0 ? (
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 4,
+                        padding: "4px 11px",
+                        borderRadius: 999,
+                        background: colors.goldBackground,
+                        border: `1px solid ${colors.gold}`,
+                        color: colors.goldDark,
+                        fontSize: 11.5,
+                        fontWeight: 900,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      <Icon name="gift" size={12} stroke={2.4} />
+                      رایگان
+                    </span>
+                  ) : (
+                    <strong style={{ ...typography.bodySmall, color: colors.olive700 }}>{formatWalletAmount(Math.max(0, item.price))} تومان</strong>
+                  )}
                 </button>
               );
             })}
@@ -415,7 +438,7 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
               ["تاریخ", formatJalaliDate(slot.localDate, { withWeekday: slot.weekday })],
               ["ساعت", `${slot.localStart} تا ${slot.localEnd}`],
               ["مدت", `${numberFormatter.format(service.duration)} دقیقه`],
-              ["مبلغ", `${formatWalletAmount(Math.max(0, service.price))} تومان`],
+              ["مبلغ", service.price === 0 ? "رایگان — بدون پرداخت" : `${formatWalletAmount(Math.max(0, service.price))} تومان`],
             ].map(([label, value]) => (
               <div key={label} style={{ display: "flex", justifyContent: "space-between", gap: spacing.md, paddingBlock: 8 }}>
                 <span style={{ color: colors.inkMuted }}>{label}</span>
@@ -423,6 +446,31 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
               </div>
             ))}
             <div style={{ height: 1, marginBlock: 4, background: colors.sand150 }} />
+            {service.price === 0 ? (
+              <div
+                role="status"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 9,
+                  padding: "11px 13px",
+                  borderRadius: 16,
+                  background: colors.goldBackground,
+                  border: `1px solid ${colors.gold}`,
+                  color: colors.goldDark,
+                  fontSize: 12.5,
+                  fontWeight: 700,
+                  lineHeight: 1.8,
+                  marginBlock: spacing.md,
+                }}
+              >
+                <Icon name="gift" size={17} stroke={2.2} style={{ flex: "0 0 auto" }} />
+                <span>
+                  این جلسه <b>رایگان</b> است؛ بدون پرداخت هزینه و بدون کسر از کیف پول، درخواست شما مستقیم برای استاد ارسال می‌شود.
+                </span>
+              </div>
+            ) : (
+            <>
             <div role="radiogroup" aria-label="روش پرداخت" style={{ display: "grid", gap: spacing.sm, marginBlock: spacing.md }}>
               <button
                 type="button"
@@ -485,6 +533,8 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
                 : "مبلغ هنگام ثبت رزرو از کیف پول کسر می‌شود."}{" "}
               زمان‌ها با timezone رسمی سامانه و تداخل جلسات فعال محاسبه شده‌اند. ممکن است تا لحظهٔ ثبت توسط کاربر دیگری رزرو شوند.
             </p>
+            </>
+            )}
           </div>
         )}
       </Card>
@@ -497,7 +547,7 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
       {submitError ? <p role="alert" style={{ ...typography.bodySmall, padding: spacing.md, borderRadius: radii.md, background: colors.dangerBackground, color: colors.danger, margin: 0 }}>{submitError}</p> : null}
       <div style={{ position: "sticky", zIndex: 12, bottom: "calc(68px + env(safe-area-inset-bottom))", padding: "8px 0 12px", background: colors.sand50 }}>
         <Button fullWidth loading={saving} disabled={!service || !slot || isSelfTeacher} onClick={() => void submit()} style={{ minHeight: 52 }}>
-          {paymentMethod === "gateway" ? "پرداخت و ثبت رزرو" : "ثبت درخواست رزرو"}
+          {service && service.price === 0 ? "ثبت درخواست جلسهٔ رایگان" : paymentMethod === "gateway" ? "پرداخت و ثبت رزرو" : "ثبت درخواست رزرو"}
         </Button>
       </div>
     </div>

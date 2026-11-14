@@ -52,7 +52,7 @@ function fa(n: number): string {
 }
 
 function priceLabel(n: number): string {
-  return `${formatWalletAmount(Math.max(0, n))} تومان`;
+  return n === 0 ? "رایگان" : `${formatWalletAmount(Math.max(0, n))} تومان`;
 }
 
 function timeLabelOf(call: { flexible: boolean; scheduled_at?: string | null }): string {
@@ -361,7 +361,10 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
       setBusyOffer(offerId);
       setActionError("");
       try {
-        const result = await chooseDispatchOffer(runtime, call.id, offerId, payMethod);
+        // پاسخ رایگان (قیمت صفر) بدون انتخاب روش پرداخت رزرو می‌شود.
+        const offer = (view?.candidates ?? []).find((item) => item.offer_id === offerId);
+        const method = offer && offer.price === 0 ? "" : payMethod;
+        const result = await chooseDispatchOffer(runtime, call.id, offerId, method);
         await refresh();
         if (result.token) {
           // پست فرم توکن به OnlinePG از مرورگر کاربر — دقیقاً مثل منافسه، در همان تب
@@ -378,7 +381,7 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
         setBusyOffer(0);
       }
     },
-    [busyOffer, call, payMethod, refresh, runtime],
+    [busyOffer, call, payMethod, refresh, runtime, view],
   );
 
   const decline = useCallback(
@@ -501,37 +504,59 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
           </span>
         </div>
 
-        <div
-          role="radiogroup"
-          aria-label="روش پرداخت"
-          style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, padding: 6, borderRadius: 16, border: `1px solid ${colors.border}`, background: colors.surface }}
-        >
-          {([
-            ["gateway", "پرداخت آنلاین (سامان)"],
-            ["wallet", "پرداخت از کیف پول"],
-          ] as const).map(([value, label]) => (
-            <button
-              key={value}
-              type="button"
-              role="radio"
-              aria-checked={payMethod === value}
-              onClick={() => setPayMethod(value)}
-              style={{
-                padding: "10px 8px",
-                borderRadius: 11,
-                fontSize: 12.5,
-                fontWeight: 800,
-                cursor: "pointer",
-                fontFamily: "inherit",
-                color: payMethod === value ? colors.surface : colors.inkSecondary,
-                background: payMethod === value ? colors.olive600 : "transparent",
-                border: "none",
-              }}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+        {(view?.candidates ?? []).length > 0 && (view?.candidates ?? []).every((item) => item.price === 0) ? (
+          <div
+            role="status"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 9,
+              padding: "11px 13px",
+              borderRadius: 16,
+              background: colors.goldBackground,
+              border: `1px solid ${colors.gold}`,
+              color: colors.goldDark,
+              fontSize: 12.5,
+              fontWeight: 700,
+              lineHeight: 1.8,
+            }}
+          >
+            <Icon name="gift" size={17} stroke={2.2} style={{ flex: "0 0 auto" }} />
+            <span>همهٔ پاسخ‌های این فراخوان <b>رایگان</b> هستند؛ با انتخاب استاد، جلسه بدون پرداخت ثبت می‌شود.</span>
+          </div>
+        ) : (
+          <div
+            role="radiogroup"
+            aria-label="روش پرداخت"
+            style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, padding: 6, borderRadius: 16, border: `1px solid ${colors.border}`, background: colors.surface }}
+          >
+            {([
+              ["gateway", "پرداخت آنلاین (سامان)"],
+              ["wallet", "پرداخت از کیف پول"],
+            ] as const).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                role="radio"
+                aria-checked={payMethod === value}
+                onClick={() => setPayMethod(value)}
+                style={{
+                  padding: "10px 8px",
+                  borderRadius: 11,
+                  fontSize: 12.5,
+                  fontWeight: 800,
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  color: payMethod === value ? colors.surface : colors.inkSecondary,
+                  background: payMethod === value ? colors.olive600 : "transparent",
+                  border: "none",
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
 
         {(view?.candidates ?? []).length === 0 ? (
           <Card style={{ padding: 20, borderRadius: 20, textAlign: "center" }}>

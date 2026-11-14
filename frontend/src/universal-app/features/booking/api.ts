@@ -32,7 +32,7 @@ export async function getBookingAvailability(
     );
 }
 
-export type BookingPaymentMethod = "wallet" | "gateway";
+export type BookingPaymentMethod = "wallet" | "gateway" | ""; // "" = جلسهٔ رایگان
 
 export type BookingGatewayResult = {
   session: unknown;

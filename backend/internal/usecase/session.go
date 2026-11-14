@@ -103,7 +103,7 @@ func (uc *SessionUsecase) Book(ctx context.Context, learnerID uint, in BookInput
         }
 
         svc, err := uc.teachers.ServiceByID(ctx, in.ServiceID)
-        if err != nil || svc.TeacherID != teacher.ID || !svc.Active || svc.Price <= 0 || svc.Duration <= 0 || svc.Duration > 240 {
+        if err != nil || svc.TeacherID != teacher.ID || !svc.Active || svc.Price < 0 || svc.Duration <= 0 || svc.Duration > 240 {
                 return nil, domain.ErrValidation
         }
         if len(in.Note) > 500 {
@@ -164,6 +164,23 @@ func (uc *SessionUsecase) Book(ctx context.Context, learnerID uint, in BookInput
                         return nil, err
                 }
                 return &BookResult{Session: s, Token: payment.Token, ResNum: payment.ResNum, PaidViaWallet: false}, nil
+        }
+
+        // خدمات رایگان — جلسهٔ صفر تومانی: بدون کسر کیف پول، بدون درگاه؛
+        // درخواست مستقیم به صف تأیید استاد می‌رود.
+        if svc.Price == 0 {
+                if uc.financial != nil {
+                        if err := uc.financial.CreateFreeSession(ctx, s); err != nil {
+                                return nil, err
+                        }
+                } else {
+                        if err := uc.sessions.Create(ctx, s); err != nil {
+                                return nil, err
+                        }
+                }
+                uc.notify(ctx, teacher.UserID, "درخواست جلسهٔ رایگان",
+                        "یک قرآن‌آموز جلسهٔ رایگان شما را رزرو کرد؛ از بخش درخواست‌های جلسه تأیید کنید.")
+                return &BookResult{Session: s, PaidViaWallet: false}, nil
         }
 
         if uc.financial != nil {
