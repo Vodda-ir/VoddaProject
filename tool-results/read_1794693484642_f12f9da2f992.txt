@@ -1,0 +1,1571 @@
+     1→"use client";
+     2→
+     3→import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+     4→import type { UniversalAppConfig } from "../../config";
+     5→import { usePlatform } from "../../platform/context";
+     6→import {
+     7→  Avatar,
+     8→  Button,
+     9→  EmptyState,
+    10→  ErrorState,
+    11→  Icon,
+    12→  Sheet,
+    13→  colors,
+    14→  gradients,
+    15→  radii,
+    16→  shadows,
+    17→  spacing,
+    18→  typography,
+    19→} from "../../ui";
+    20→import { messageOf } from "../../ui/errorMessage";
+    21→import { navigateApp } from "../../router";
+    22→import { asArray, asRecord } from "../../platform/api";
+    23→import { categoryVisual } from "../home/homeSections";
+    24→import { getCatalog } from "../dispatch/api";
+    25→import { getInPersonCatalog } from "../ceremony/api";
+    26→import { searchTeachersPage } from "../teachers/api";
+    27→import { getAllTeachersCached, getTeacherCities } from "../teachers/cached";
+    28→import { TeacherCard } from "../teachers/TeacherCard";
+    29→import type { Teacher } from "../teachers/types";
+    30→import type { OfficialService } from "../dispatch/types";
+    31→import type { OfficialInPersonService } from "../ceremony/types";
+    32→
+    33→const PAGE_SIZE = 10;
+    34→const RECENT_KEY = "vodda_recent_searches";
+    35→const RECENT_LIMIT = 5;
+    36→
+    37→type SortKey = "recommended" | "rating" | "sessions" | "newest";
+    38→type TierKey = "" | "international" | "grade2" | "grade3";
+    39→type SearchMode = "teachers" | "services";
+    40→
+    41→type SearchFilters = {
+    42→  query: string;
+    43→  field: string;
+    44→  city: string;
+    45→  female: "all" | "female" | "male";
+    46→  tier: TierKey;
+    47→  availableOnly: boolean;
+    48→  sort: SortKey;
+    49→};
+    50→
+    51→type AdvancedDraft = Pick<SearchFilters, "city" | "female">;
+    52→
+    53→const SORT_PRESETS: Array<[SortKey, string]> = [
+    54→  ["recommended", "پیشنهادی وُدّا"],
+    55→  ["rating", "بالاترین امتیاز"],
+    56→  ["sessions", "بیشترین جلسه"],
+    57→  ["newest", "جدیدترین"],
+    58→];
+    59→
+    60→const TIER_PRESETS: Array<[TierKey, string, string]> = [
+    61→  ["", "همه درجه‌ها", ""],
+    62→  ["international", "بین‌المللی", "#0095f6"],
+    63→  ["grade2", "کشوری", "#12b76a"],
+    64→  ["grade3", "استانی", "#e0245e"],
+    65→];
+    66→
+    67→const TIER_LABELS: Record<string, string> = {
+    68→  international: "بین‌المللی",
+    69→  grade2: "کشوری",
+    70→  grade3: "استانی",
+    71→};
+    72→
+    73→const fieldPresets = [
+    74→  ["", "همه"],
+    75→  ["آموزش قرآن کریم", "آموزش قرآن"],
+    76→] as const;
+    77→
+    78→// استادهای مداحی فعلاً از تمام سطوح کاربری پنهان می‌شوند (پلتفرم تخصصاً قرآنی).
+    79→const MADDAHI_PATTERN = /مداح|هم‌نوا|همنوا/;
+    80→
+    81→/** ترتیب نمایش دسته‌ها — هم‌راستا با خانه (مسیر یادگیری: از پایه تا تخصصی). */
+    82→const CATEGORY_ORDER_HINTS: Array<{ match: RegExp }> = [
+    83→  { match: /پایه|الفبا|روخوانی/ },
+    84→  { match: /تجوید|قرائت/ },
+    85→  { match: /حفظ/ },
+    86→  { match: /صوت|لحن|هنر/ },
+    87→  { match: /مفاهیم|تفسیر|علوم/ },
+    88→  { match: /ویژه/ },
+    89→  { match: /مشاوره|آمادگی/ },
+    90→];
+    91→
+    92→function categoryOrderIndex(name: string) {
+    93→  const index = CATEGORY_ORDER_HINTS.findIndex((hint) => hint.match.test(name));
+    94→  return index === -1 ? CATEGORY_ORDER_HINTS.length : index;
+    95→}
+    96→
+    97→function recommendationScore(teacher: Teacher) {
+    98→  return teacher.rating * Math.log10(10 + Math.max(0, teacher.sessions));
+    99→}
+   100→
+   101→function sortTeachers(rows: Teacher[], sort: SortKey): Teacher[] {
+   102→  const copy = [...rows];
+   103→  switch (sort) {
+   104→    case "rating":
+   105→      return copy.sort((a, b) => b.rating - a.rating);
+   106→    case "sessions":
+   107→      return copy.sort((a, b) => b.sessions - a.sessions);
+   108→    case "newest":
+   109→      return copy.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+   110→    default:
+   111→      return copy.sort((a, b) => recommendationScore(b) - recommendationScore(a));
+   112→  }
+   113→}
+   114→
+   115→function faNumber(value: number, maximumFractionDigits = 0) {
+   116→  return new Intl.NumberFormat("fa-IR", { maximumFractionDigits }).format(value);
+   117→}
+   118→
+   119→function readInitialFilters(): SearchFilters {
+   120→  const empty: SearchFilters = {
+   121→    query: "",
+   122→    field: "",
+   123→    city: "",
+   124→    female: "all",
+   125→    tier: "",
+   126→    availableOnly: false,
+   127→    sort: "recommended",
+   128→  };
+   129→  if (typeof window === "undefined") return empty;
+   130→  const params = new URLSearchParams(window.location.search);
+   131→  const femaleParam = params.get("female");
+   132→  const tierParam = params.get("tier");
+   133→  const sortParam = params.get("sort");
+   134→  return {
+   135→    query: params.get("q") ?? "",
+   136→    field: params.get("field") ?? "",
+   137→    city: params.get("city") ?? "",
+   138→    female: femaleParam === "true" ? "female" : femaleParam === "false" ? "male" : "all",
+   139→    tier: (["international", "grade2", "grade3"].includes(tierParam ?? "") ? tierParam : "") as TierKey,
+   140→    availableOnly: params.get("available") === "true",
+   141→    sort: (["recommended", "rating", "sessions", "newest"].includes(sortParam ?? "")
+   142→      ? sortParam
+   143→      : "recommended") as SortKey,
+   144→  };
+   145→}
+   146→
+   147→function readRecentSearches(): string[] {
+   148→  if (typeof window === "undefined") return [];
+   149→  try {
+   150→    const raw = window.localStorage.getItem(RECENT_KEY);
+   151→    const parsed = raw ? JSON.parse(raw) : [];
+   152→    return Array.isArray(parsed)
+   153→      ? parsed.filter((item): item is string => typeof item === "string" && item.length > 0).slice(0, RECENT_LIMIT)
+   154→      : [];
+   155→  } catch {
+   156→    return [];
+   157→  }
+   158→}
+   159→
+   160→function chipStyle(active: boolean) {
+   161→  return {
+   162→    minHeight: 36,
+   163→    padding: "7px 13px",
+   164→    border: active ? "1px solid " + colors.olive600 : "1px solid " + colors.sand200,
+   165→    borderRadius: radii.pill,
+   166→    color: active ? colors.surface : colors.inkSecondary,
+   167→    background: active ? colors.olive600 : colors.surface,
+   168→    boxShadow: active ? "0 5px 14px rgba(94,110,67,.14)" : shadows.xs,
+   169→    fontFamily: typography.fontFamily,
+   170→    fontSize: 12,
+   171→    fontWeight: 800,
+   172→    cursor: "pointer",
+   173→    whiteSpace: "nowrap" as const,
+   174→    display: "inline-flex",
+   175→    alignItems: "center",
+   176→    gap: 6,
+   177→  };
+   178→}
+   179→
+   180→function Skeleton({ style }: { style?: CSSProperties }) {
+   181→  return <span aria-hidden="true" className="vodda-skeleton" style={{ display: "block", ...style }} />;
+   182→}
+   183→
+   184→/** کنترل سگمنتی «اساتید / خدمات» — دو مسیر هم‌ارزِ جستجو. */
+   185→function ModeTabs({ mode, onChange }: { mode: SearchMode; onChange: (next: SearchMode) => void }) {
+   186→  const tabs: Array<[SearchMode, string, string]> = [
+   187→    ["teachers", "اساتید", "users"],
+   188→    ["services", "خدمات", "quran"],
+   189→  ];
+   190→  return (
+   191→    <div
+   192→      role="tablist"
+   193→      aria-label="نوع جستجو"
+   194→      style={{
+   195→        display: "grid",
+   196→        gridTemplateColumns: "1fr 1fr",
+   197→        gap: 6,
+   198→        padding: 5,
+   199→        borderRadius: 17,
+   200→        background: colors.sand100,
+   201→        border: `1px solid ${colors.sand150}`,
+   202→      }}
+   203→    >
+   204→      {tabs.map(([value, label, icon]) => {
+   205→        const active = mode === value;
+   206→        return (
+   207→          <button
+   208→            key={value}
+   209→            type="button"
+   210→            role="tab"
+   211→            aria-selected={active}
+   212→            onClick={() => onChange(value)}
+   213→            style={{
+   214→              display: "inline-flex",
+   215→              alignItems: "center",
+   216→              justifyContent: "center",
+   217→              gap: 7,
+   218→              minHeight: 42,
+   219→              borderRadius: 13,
+   220→              fontSize: 13.5,
+   221→              fontWeight: 800,
+   222→              fontFamily: typography.fontFamily,
+   223→              cursor: "pointer",
+   224→              border: 0,
+   225→              color: active ? colors.surface : colors.inkSecondary,
+   226→              background: active ? colors.olive600 : "transparent",
+   227→              boxShadow: active ? "0 6px 16px rgba(94,110,67,.22)" : "none",
+   228→            }}
+   229→          >
+   230→            <Icon name={icon as "users"} size={17} stroke={2} />
+   231→            {label}
+   232→          </button>
+   233→        );
+   234→      })}
+   235→    </div>
+   236→  );
+   237→}
+   238→
+   239→function ServiceRow({
+   240→  icon,
+   241→  title,
+   242→  description,
+   243→  trailing,
+   244→  onClick,
+   245→  index = 0,
+   246→}: {
+   247→  icon: string;
+   248→  title: string;
+   249→  description: string;
+   250→  trailing?: string;
+   251→  onClick: () => void;
+   252→  index?: number;
+   253→}) {
+   254→  const known = new Set([
+   255→    "book", "mic", "quran", "star", "headphones", "award", "sparkle",
+   256→    "doc", "heart", "users", "grid", "list", "trending", "refresh",
+   257→  ]);
+   258→  return (
+   259→    <button
+   260→      type="button"
+   261→      onClick={onClick}
+   262→      className="vodda-tappable vodda-enter"
+   263→      style={{
+   264→        display: "flex",
+   265→        alignItems: "center",
+   266→        gap: 11,
+   267→        width: "100%",
+   268→        padding: "11px 13px",
+   269→        textAlign: "right",
+   270→        background: colors.surface,
+   271→        border: `1px solid ${colors.sand150}`,
+   272→        borderRadius: 16,
+   273→        cursor: "pointer",
+   274→        fontFamily: typography.fontFamily,
+   275→        animationDelay: `${Math.min(index, 8) * 45}ms`,
+   276→      }}
+   277→    >
+   278→      <span
+   279→        aria-hidden="true"
+   280→        style={{
+   281→          display: "grid",
+   282→          placeItems: "center",
+   283→          width: 38,
+   284→          height: 38,
+   285→          borderRadius: 12,
+   286→          flex: "0 0 38px",
+   287→          background: colors.olive50,
+   288→          color: colors.olive600,
+   289→        }}
+   290→      >
+   291→        <Icon name={(known.has(icon) ? icon : "book") as "book"} size={19} />
+   292→      </span>
+   293→      <span style={{ minWidth: 0, flex: 1 }}>
+   294→        <strong style={{ display: "block", fontSize: 13.5, fontWeight: 800, color: colors.ink }}>{title}</strong>
+   295→        {description ? (
+   296→          <span
+   297→            style={{
+   298→              display: "-webkit-box",
+   299→              WebkitBoxOrient: "vertical",
+   300→              WebkitLineClamp: 2,
+   301→              marginTop: 2,
+   302→              fontSize: 12.5,
+   303→              color: colors.inkMuted,
+   304→              lineHeight: 1.7,
+   305→              overflow: "hidden",
+   306→            }}
+   307→          >
+   308→            {description}
+   309→          </span>
+   310→        ) : null}
+   311→      </span>
+   312→      {trailing ? (
+   313→        <span style={{ flex: "0 0 auto", fontSize: 11, fontWeight: 800, color: colors.goldDark, background: colors.goldBackground, border: "1px solid rgba(191,149,64,.32)", borderRadius: 999, padding: "3px 10px", whiteSpace: "nowrap" }}>
+   314→          {trailing}
+   315→        </span>
+   316→      ) : null}
+   317→      <Icon name="chevronL" size={16} style={{ color: colors.inkFaint, flex: "0 0 auto" }} />
+   318→    </button>
+   319→  );
+   320→}
+   321→
+   322→/** ردیف فشردهٔ استاد در بخش «اساتید این موضوعات» (تب خدمات). */
+   323→function TopicTeacherRow({
+   324→  teacher,
+   325→  config,
+   326→  index = 0,
+   327→}: {
+   328→  teacher: Teacher;
+   329→  config: UniversalAppConfig;
+   330→  index?: number;
+   331→}) {
+   332→  const subtitle = [teacher.tag || teacher.field, teacher.city].filter(Boolean).join(" · ");
+   333→  return (
+   334→    <button
+   335→      type="button"
+   336→      onClick={() => navigateApp(`/teacher/${teacher.id}`, config)}
+   337→      className="vodda-tappable vodda-enter"
+   338→      aria-label={`پروفایل استاد ${teacher.name}`}
+   339→      style={{
+   340→        display: "flex",
+   341→        alignItems: "center",
+   342→        gap: 10,
+   343→        width: "100%",
+   344→        padding: "9px 12px",
+   345→        textAlign: "right",
+   346→        background: colors.surface,
+   347→        border: `1px solid ${colors.sand150}`,
+   348→        borderRadius: 16,
+   349→        cursor: "pointer",
+   350→        fontFamily: typography.fontFamily,
+   351→        animationDelay: `${Math.min(index, 8) * 45}ms`,
+   352→      }}
+   353→    >
+   354→      <Avatar name={teacher.name} src={teacher.avatarUrl || undefined} size={38} ring tone={teacher.female ? "gold" : "olive"} />
+   355→      <span style={{ minWidth: 0, flex: 1 }}>
+   356→        <strong style={{ display: "block", fontSize: 12.8, fontWeight: 800, color: colors.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+   357→          {teacher.name}
+   358→        </strong>
+   359→        <span style={{ display: "block", fontSize: 11, color: colors.inkMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+   360→          {subtitle || "استاد وُدّا"}
+   361→        </span>
+   362→      </span>
+   363→      {teacher.reviews > 0 ? (
+   364→        <span style={{ flex: "0 0 auto", display: "inline-flex", alignItems: "center", gap: 3, fontSize: 11, fontWeight: 800, color: colors.goldDark }}>
+   365→          <Icon name="star" size={11} fill />
+   366→          {faNumber(teacher.rating, 1)}
+   367→        </span>
+   368→      ) : null}
+   369→      <Icon name="chevronL" size={16} style={{ color: colors.inkFaint, flex: "0 0 auto" }} />
+   370→    </button>
+   371→  );
+   372→}
+   373→
+   374→function SearchSkeleton() {
+   375→  return (
+   376→    <div style={{ display: "grid", gap: 14 }} aria-label="در حال جستجو">
+   377→      {[0, 1, 2].map((index) => (
+   378→        <div
+   379→          key={index}
+   380→          style={{ display: "flex", gap: 12, padding: 14, background: colors.surface, borderRadius: 24, boxShadow: shadows.sm }}
+   381→        >
+   382→          <Skeleton style={{ width: 62, height: 62, borderRadius: 18, flex: "0 0 auto" }} />
+   383→          <div style={{ display: "grid", gap: 9, flex: 1, alignContent: "center" }}>
+   384→            <Skeleton style={{ width: "55%", height: 14 }} />
+   385→            <Skeleton style={{ width: "38%", height: 12 }} />
+   386→            <Skeleton style={{ width: "70%", height: 12 }} />
+   387→          </div>
+   388→        </div>
+   389→      ))}
+   390→    </div>
+   391→  );
+   392→}
+   393→
+   394→export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) {
+   395→  const runtime = usePlatform();
+   396→  const initial = useMemo(readInitialFilters, []);
+   397→  const [mode, setMode] = useState<SearchMode>(() => {
+   398→    if (typeof window === "undefined") return "teachers";
+   399→    return new URLSearchParams(window.location.search).get("mode") === "services" ? "services" : "teachers";
+   400→  });
+   401→  const [filters, setFilters] = useState<SearchFilters>(initial);
+   402→  const [debouncedQuery, setDebouncedQuery] = useState(initial.query);
+   403→  const [topicId, setTopicId] = useState<number>(() => {
+   404→    if (typeof window === "undefined") return 0;
+   405→    return Number(new URLSearchParams(window.location.search).get("topic") ?? 0) || 0;
+   406→  });
+   407→  const [topicTitle, setTopicTitle] = useState<string>("");
+   408→  const [rows, setRows] = useState<Teacher[]>([]);
+   409→  const [serverTotal, setServerTotal] = useState(0);
+   410→  const [loading, setLoading] = useState(true);
+   411→  const [error, setError] = useState("");
+   412→  const [reloadKey, setReloadKey] = useState(0);
+   413→  const [filtersOpen, setFiltersOpen] = useState(false);
+   414→  const [advancedDraft, setAdvancedDraft] = useState<AdvancedDraft>({ city: initial.city, female: initial.female });
+   415→  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+   416→  const [cities, setCities] = useState<string[]>([]);
+   417→  const [cityQuery, setCityQuery] = useState("");
+   418→  const [recent, setRecent] = useState<string[]>(() => readRecentSearches());
+   419→  const [fallback, setFallback] = useState<Teacher[]>([]);
+   420→  const sentinelRef = useRef<HTMLDivElement | null>(null);
+   421→
+   422→  // داده‌های تب «خدمات»: کاتالوگ آنلاین + کاتالوگ حضوری، فقط یک بار
+   423→  const [onlineServices, setOnlineServices] = useState<OfficialService[]>([]);
+   424→  const [presenceServices, setPresenceServices] = useState<OfficialInPersonService[]>([]);
+   425→  const [servicesLoading, setServicesLoading] = useState(false);
+   426→  const [servicesError, setServicesError] = useState("");
+   427→  const [servicesQuery, setServicesQuery] = useState(() => {
+   428→    // لینک‌های عمیق دسته‌ها (q=) فیلتر خدمات را از همان ابتدا پر می‌کنند —
+   429→    // تا کلیک روی هر موضوع در خانه، وارد زیردسته‌های تخصصی همان موضوع شود.
+   430→    if (typeof window === "undefined") return "";
+   431→    return new URLSearchParams(window.location.search).get("q") ?? "";
+   432→  });
+   433→  // بنر «خدمات رایگان» با ?free=1 باز می‌شود — فقط خدمات رایگان، نه همهٔ کاتالوگ.
+   434→  const [freeOnly, setFreeOnly] = useState(() => {
+   435→    if (typeof window === "undefined") return false;
+   436→    return new URLSearchParams(window.location.search).get("free") === "1";
+   437→  });
+   438→  const [servicesLoaded, setServicesLoaded] = useState(false);
+   439→
+   440→  useEffect(() => {
+   441→    if (mode !== "services" || servicesLoaded) return;
+   442→    let active = true;
+   443→    setServicesLoading(true);
+   444→    setServicesError("");
+   445→    Promise.all([getCatalog(runtime), getInPersonCatalog(runtime).catch(() => [] as OfficialInPersonService[])])
+   446→      .then(([online, presence]) => {
+   447→        if (!active) return;
+   448→        setOnlineServices(online);
+   449→        setPresenceServices(presence);
+   450→        setServicesLoaded(true);
+   451→      })
+   452→      .catch((reason: unknown) => {
+   453→        if (active) setServicesError(messageOf(reason, "دریافت فهرست خدمات ناموفق بود."));
+   454→      })
+   455→      .finally(() => {
+   456→        if (active) setServicesLoading(false);
+   457→      });
+   458→    return () => {
+   459→      active = false;
+   460→    };
+   461→  }, [mode, servicesLoaded, runtime]);
+   462→
+   463→  useEffect(() => {
+   464→    const timer = window.setTimeout(() => setDebouncedQuery(filters.query.trim()), 350);
+   465→    return () => window.clearTimeout(timer);
+   466→  }, [filters.query]);
+   467→
+   468→  // ثبت جستجوهای اخیر
+   469→  useEffect(() => {
+   470→    const query = debouncedQuery;
+   471→    if (!query) return;
+   472→    setRecent((current) => {
+   473→      const next = [query, ...current.filter((item) => item !== query)].slice(0, RECENT_LIMIT);
+   474→      try {
+   475→        window.localStorage.setItem(RECENT_KEY, JSON.stringify(next));
+   476→      } catch {
+   477→        // حافظه محلی در دسترس نیست — بی‌اهمیت
+   478→      }
+   479→      return next;
+   480→    });
+   481→  }, [debouncedQuery]);
+   482→
+   483→  useEffect(() => {
+   484→    const params = new URLSearchParams();
+   485→    // تب فعال در URL می‌ماند تا هر باز-راه‌اندازی دوبارهٔ صفحه (حتی با فاصلهٔ
+   486→    // کم پس از ناوبری برنامه‌ای) تب «خدمات» را گم نکند؛ فیلتر موضوع رسمی
+   487→    // (topic) نیز در URL حفظ می‌شود تا لینک اساتید هر خدمت پایدار بماند.
+   488→    if (mode === "services") params.set("mode", "services");
+   489→    if (freeOnly) params.set("free", "1");
+   490→    // در تب «خدمات» فیلتر جستجو همان موضوع فعال است؛ در تب اساتید، متن جستجوی استاد
+   491→    if (mode === "services" ? servicesQuery.trim() : filters.query.trim()) {
+   492→      params.set("q", mode === "services" ? servicesQuery.trim() : filters.query.trim());
+   493→    }
+   494→    if (topicId) params.set("topic", String(topicId));
+   495→    if (filters.field.trim()) params.set("field", filters.field.trim());
+   496→    if (filters.city.trim()) params.set("city", filters.city.trim());
+   497→    if (filters.female === "female") params.set("female", "true");
+   498→    if (filters.female === "male") params.set("female", "false");
+   499→    if (filters.tier) params.set("tier", filters.tier);
+   500→    if (filters.availableOnly) params.set("available", "true");
+   501→    if (filters.sort !== "recommended") params.set("sort", filters.sort);
+   502→    const next = window.location.pathname + (params.size ? "?" + params.toString() : "");
+   503→    window.history.replaceState({}, "", next);
+   504→  }, [filters, mode, topicId, freeOnly, servicesQuery]);
+   505→
+   506→  useEffect(() => {
+   507→    let active = true;
+   508→    setLoading(true);
+   509→    setError("");
+   510→    setVisibleCount(PAGE_SIZE);
+   511→    searchTeachersPage(runtime, {
+   512→      query: debouncedQuery,
+   513→      field: filters.field,
+   514→      city: filters.city,
+   515→      female: filters.female === "all" ? undefined : filters.female === "female",
+   516→      officialServiceId: topicId,
+   517→      limit: 100,
+   518→      offset: 0,
+   519→    })
+   520→      .then((result) => {
+   521→        if (!active) return;
+   522→        const visible = result.items.filter((teacher) => !MADDAHI_PATTERN.test(teacher.field + " " + teacher.tag));
+   523→        setRows(visible);
+   524→        setServerTotal(result.total);
+   525→      })
+   526→      .catch((reason: unknown) => {
+   527→        if (!active) return;
+   528→        setRows([]);
+   529→        setError(messageOf(reason, "دریافت فهرست استادان با خطا روبه‌رو شد."));
+   530→      })
+   531→      .finally(() => {
+   532→        if (active) setLoading(false);
+   533→      });
+   534→    return () => {
+   535→      active = false;
+   536→    };
+   537→  }, [runtime, debouncedQuery, filters.field, filters.city, filters.female, topicId, reloadKey]);
+   538→
+   539→  // عنوان موضوع فراخوان (برای نشانِ فیلتر فعال)
+   540→  useEffect(() => {
+   541→    if (!topicId) {
+   542→      setTopicTitle("");
+   543→      return;
+   544→    }
+   545→    let active = true;
+   546→    getCatalog(runtime)
+   547→      .then((rows) => {
+   548→        if (active) setTopicTitle(rows.find((row) => row.id === topicId)?.title ?? "");
+   549→      })
+   550→      .catch(() => {
+   551→        if (active) setTopicTitle("");
+   552→      });
+   553→    return () => {
+   554→      active = false;
+   555→    };
+   556→  }, [runtime, topicId]);
+   557→
+   558→  // شهرها فقط وقتی شیت فیلتر باز می‌شود دریافت می‌شوند (کش ۵ دقیقه‌ای)
+   559→  useEffect(() => {
+   560→    if (!filtersOpen || cities.length > 0) return;
+   561→    let active = true;
+   562→    getTeacherCities(runtime)
+   563→      .then((list) => {
+   564→        if (active) setCities(list);
+   565→      })
+   566→      .catch(() => {});
+   567→    return () => {
+   568→      active = false;
+   569→    };
+   570→  }, [filtersOpen, cities.length, runtime]);
+   571→
+   572→  const filtered = useMemo(() => {
+   573→    let out = rows;
+   574→    if (filters.tier) out = out.filter((teacher) => teacher.tier === filters.tier);
+   575→    if (filters.availableOnly) out = out.filter((teacher) => teacher.available);
+   576→    return sortTeachers(out, filters.sort);
+   577→  }, [rows, filters.tier, filters.availableOnly, filters.sort]);
+   578→
+   579→  const visible = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]);
+   580→  const hasMore = visibleCount < filtered.length;
+   581→  const hasAdvancedFilter = Boolean(filters.city || filters.female !== "all" || filters.availableOnly || filters.tier);
+   582→  const hasAnyFilter = Boolean(filters.query || filters.field || hasAdvancedFilter || topicId);
+   583→  const filteredCities = useMemo(() => {
+   584→    const needle = cityQuery.trim();
+   585→    return needle ? cities.filter((city) => city.includes(needle)) : cities;
+   586→  }, [cities, cityQuery]);
+   587→
+   588→  // پیشنهاد جایگزین برای حالت خالی: پرمخاطب‌ترین استادها
+   589→  useEffect(() => {
+   590→    if (loading || error || filtered.length > 0 || !hasAnyFilter) {
+   591→      setFallback([]);
+   592→      return;
+   593→    }
+   594→    let active = true;
+   595→    getAllTeachersCached(runtime)
+   596→      .then((items) => {
+   597→        if (!active) return;
+   598→        setFallback(sortTeachers(items, "rating").slice(0, 4));
+   599→      })
+   600→      .catch(() => {});
+   601→    return () => {
+   602→      active = false;
+   603→    };
+   604→  }, [runtime, loading, error, filtered.length, hasAnyFilter]);
+   605→
+   606→  // بارگذاری خودکار نتایج بعدی هنگام اسکرول
+   607→  useEffect(() => {
+   608→    const node = sentinelRef.current;
+   609→    if (!node || !hasMore || loading) return;
+   610→    const observer = new IntersectionObserver(
+   611→      (entries) => {
+   612→        if (entries.some((entry) => entry.isIntersecting)) setVisibleCount((current) => current + PAGE_SIZE);
+   613→      },
+   614→      { rootMargin: "240px" },
+   615→    );
+   616→    observer.observe(node);
+   617→    return () => observer.disconnect();
+   618→  }, [hasMore, loading, visibleCount]);
+   619→
+   620→  function openFilters() {
+   621→    setAdvancedDraft({ city: filters.city, female: filters.female });
+   622→    setFiltersOpen(true);
+   623→  }
+   624→
+   625→  function applyAdvancedFilters() {
+   626→    setFilters((current) => ({
+   627→      ...current,
+   628→      city: advancedDraft.city.trim(),
+   629→      female: advancedDraft.female,
+   630→    }));
+   631→    setFiltersOpen(false);
+   632→  }
+   633→
+   634→  function clearAdvancedFilters() {
+   635→    setAdvancedDraft({ city: "", female: "all" });
+   636→    setFilters((current) => ({ ...current, city: "", female: "all" }));
+   637→    setFiltersOpen(false);
+   638→  }
+   639→
+   640→  function clearAllFilters() {
+   641→    setFilters({ query: "", field: "", city: "", female: "all", tier: "", availableOnly: false, sort: "recommended" });
+   642→    setTopicId(0);
+   643→  }
+   644→
+   645→  function removeRecent(item: string) {
+   646→    setRecent((current) => {
+   647→      const next = current.filter((entry) => entry !== item);
+   648→      try {
+   649→        window.localStorage.setItem(RECENT_KEY, JSON.stringify(next));
+   650→      } catch {
+   651→        // بی‌اهمیت
+   652→      }
+   653→      return next;
+   654→    });
+   655→  }
+   656→
+   657→  const filteredCitiesList = cityQuery.trim()
+   658→    ? cities.filter((city) => city.includes(cityQuery.trim()))
+   659→    : cities;
+   660→
+   661→  // فیلتر و گروه‌بندی خدمات (تب خدمات)
+   662→  const needle = servicesQuery.trim();
+   663→  // کاتالوگ جلسات رایگان — در حالت free=1 فقط همین‌ها نمایش داده می‌شود.
+   664→  const [freeRows, setFreeRows] = useState<Array<{ service_id: number; teacher_id: number; title: string; teacher_name: string; avatar_url: string; duration: number; tag: string; city: string; rating: number }>>([]);
+   665→  useEffect(() => {
+   666→    if (mode !== "services" || !freeOnly) return;
+   667→    let active = true;
+   668→    fetch("/api/backend/catalog/free?limit=50", { cache: "no-store" })
+   669→      .then((response) => (response.ok ? response.json() : Promise.reject(new Error("free failed"))))
+   670→      .then((payload: { data?: unknown }) => {
+   671→        if (!active) return;
+   672→        const rows: Array<{ service_id: number; teacher_id: number; title: string; teacher_name: string; avatar_url: string; duration: number; tag: string; city: string; rating: number }> = [];
+   673→        for (const item of asArray(payload.data)) {
+   674→          const row = asRecord(item);
+   675→          const serviceId = Number(row?.service_id ?? 0);
+   676→          const teacherId = Number(row?.teacher_id ?? 0);
+   677→          if (serviceId > 0 && teacherId > 0) {
+   678→            rows.push({
+   679→              service_id: serviceId,
+   680→              teacher_id: teacherId,
+   681→              title: String(row?.title ?? ""),
+   682→              teacher_name: String(row?.teacher_name ?? ""),
+   683→              avatar_url: String(row?.avatar_url ?? ""),
+   684→              duration: Number(row?.duration ?? 0),
+   685→              tag: String(row?.tag ?? ""),
+   686→              city: String(row?.city ?? ""),
+   687→              rating: Number(row?.rating ?? 0),
+   688→            });
+   689→          }
+   690→        }
+   691→        setFreeRows(rows);
+   692→      })
+   693→      .catch(() => {
+   694→        if (active) setFreeRows([]);
+   695→      });
+   696→    return () => {
+   697→      active = false;
+   698→    };
+   699→  }, [mode, freeOnly]);
+   700→  const filteredOnlineServices = useMemo(() => {
+   701→    if (!needle) return onlineServices;
+   702→    return onlineServices.filter((item) =>
+   703→      item.title.includes(needle) || item.category.includes(needle) || item.description.includes(needle));
+   704→  }, [needle, onlineServices]);
+   705→  const filteredPresenceServices = useMemo(() => {
+   706→    if (!needle) return presenceServices;
+   707→    return presenceServices.filter((item) =>
+   708→      item.title.includes(needle) || item.category.includes(needle) || item.description.includes(needle));
+   709→  }, [needle, presenceServices]);
+   710→  const onlineServiceGroups = useMemo(() => {
+   711→    const groups = new Map<string, OfficialService[]>();
+   712→    for (const item of filteredOnlineServices) {
+   713→      const rows = groups.get(item.category) ?? [];
+   714→      rows.push(item);
+   715→      groups.set(item.category, rows);
+   716→    }
+   717→    return [...groups.entries()];
+   718→  }, [filteredOnlineServices]);
+   719→  const presenceServiceGroups = useMemo(() => {
+   720→    const groups = new Map<string, OfficialInPersonService[]>();
+   721→    for (const item of filteredPresenceServices) {
+   722→      const rows = groups.get(item.category) ?? [];
+   723→      rows.push(item);
+   724→      groups.set(item.category, rows);
+   725→    }
+   726→    return [...groups.entries()];
+   727→  }, [filteredPresenceServices]);
+   728→
+   729→  // فهرست دسته‌ها (حالت بدون جستجو) — به‌جای کاتالوگ تختِ همهٔ خدمات،
+   730→  // کاربر ابتدا دسته را انتخاب می‌کند؛ ورود به هر دسته فقط خدمات همان دسته را نشان می‌دهد.
+   731→  const serviceCategories = useMemo(() => {
+   732→    const counts = new Map<string, number>();
+   733→    for (const item of onlineServices) {
+   734→      counts.set(item.category, (counts.get(item.category) ?? 0) + 1);
+   735→    }
+   736→    return [...counts.entries()]
+   737→      .map(([category, count]) => ({ category, count, ...categoryVisual(category) }))
+   738→      .sort((a, b) => categoryOrderIndex(a.category) - categoryOrderIndex(b.category) || b.count - a.count);
+   739→  }, [onlineServices]);
+   740→
+   741→  // اساتید موضوعات فیلترشده (تب خدمات) — ورود به هر موضوع از خانه، زیردسته‌ها
+   742→  // و همزمان اساتید همان زیردسته‌ها را نشان می‌دهد، نه همهٔ اساتید.
+   743→  const [topicTeachers, setTopicTeachers] = useState<Teacher[]>([]);
+   744→  const [topicTeachersLoading, setTopicTeachersLoading] = useState(false);
+   745→  useEffect(() => {
+   746→    if (mode !== "services" || !servicesLoaded || !needle) {
+   747→      setTopicTeachers([]);
+   748→      setTopicTeachersLoading(false);
+   749→      return;
+   750→    }
+   751→    const ids = filteredOnlineServices.slice(0, 6).map((item) => item.id);
+   752→    if (ids.length === 0) {
+   753→      setTopicTeachers([]);
+   754→      setTopicTeachersLoading(false);
+   755→      return;
+   756→    }
+   757→    let active = true;
+   758→    setTopicTeachersLoading(true);
+   759→    Promise.all(
+   760→      ids.map((id) =>
+   761→        searchTeachersPage(runtime, { officialServiceId: id, limit: 6 }).catch(() => ({ items: [] as Teacher[], total: 0 })),
+   762→      ),
+   763→    )
+   764→      .then((results) => {
+   765→        if (!active) return;
+   766→        const seen = new Set<number>();
+   767→        const merged: Teacher[] = [];
+   768→        for (const result of results) {
+   769→          for (const teacher of result.items) {
+   770→            if (MADDAHI_PATTERN.test(teacher.field + " " + teacher.tag)) continue;
+   771→            if (seen.has(teacher.id)) continue;
+   772→            seen.add(teacher.id);
+   773→            merged.push(teacher);
+   774→          }
+   775→        }
+   776→        setTopicTeachers(merged.slice(0, 8));
+   777→      })
+   778→      .finally(() => {
+   779→        if (active) setTopicTeachersLoading(false);
+   780→      });
+   781→    return () => {
+   782→      active = false;
+   783→    };
+   784→  }, [mode, servicesLoaded, runtime, needle, filteredOnlineServices]);
+   785→
+   786→  function openServiceTeachers(serviceId: number) {
+   787→    setTopicId(serviceId);
+   788→    setMode("teachers");
+   789→    // ورود به اساتید یک خدمت = فقط فیلتر موضوع رسمی؛ جستجوی متنی از دستهٔ
+   790→    // قبلی نباید نتایج را خالی یا مغشوش کند.
+   791→    setFilters((current) => ({ ...current, query: "" }));
+   792→    setDebouncedQuery("");
+   793→    navigateApp(`/search?topic=${serviceId}`, config);
+   794→  }
+   795→
+   796→  return (
+   797→    <section className="vodda-screen" style={{ display: "grid", gap: 14 }}>
+   798→      <header className="vodda-enter" style={{ paddingTop: 2 }}>
+   799→        <h1 className="vodda-display" style={{ fontSize: 26, margin: "2px 0 0", color: colors.ink, lineHeight: 1.7 }}>جستجو</h1>
+   800→        <p style={{ fontSize: 12.5, margin: "5px 0 0", color: colors.inkMuted }}>
+   801→          استاد، خدمت آموزشی و قاری مراسم — همه از یک‌جا.
+   802→        </p>
+   803→      </header>
+   804→
+   805→      <div className="vodda-enter vodda-enter-delay-1">
+   806→        <ModeTabs mode={mode} onChange={setMode} />
+   807→      </div>
+   808→
+   809→      {mode === "services" ? (
+   810→        <div style={{ display: "grid", gap: 12 }}>
+   811→          <div style={{ position: "relative" }}>
+   812→            <Icon
+   813→              name="search"
+   814→              size={19}
+   815→              stroke={1.8}
+   816→              style={{ position: "absolute", zIndex: 1, insetInlineStart: 14, top: "50%", transform: "translateY(-50%)", color: colors.inkMuted }}
+   817→            />
+   818→            <input
+   819→              type="search"
+   820→              value={servicesQuery}
+   821→              onChange={(event) => setServicesQuery(event.target.value)}
+   822→              placeholder="نام خدمت؛ مثلاً تجوید، حفظ، ختم قرآن…"
+   823→              className="vodda-input"
+   824→              style={{
+   825→                width: "100%",
+   826→                minHeight: 50,
+   827→                padding: "11px 42px 11px 14px",
+   828→                border: 0,
+   829→                borderRadius: 16,
+   830→                outline: "none",
+   831→                color: colors.ink,
+   832→                background: colors.surface,
+   833→                boxShadow: shadows.sm,
+   834→                fontFamily: typography.fontFamily,
+   835→                ...typography.body,
+   836→              }}
+   837→              aria-label="جستجوی خدمت"
+   838→            />
+   839→          </div>
+   840→
+   841→          {servicesLoading ? <SearchSkeleton /> : null}
+   842→          {!servicesLoading && servicesError ? (
+   843→            <ErrorState
+   844→              title="خطا در دریافت خدمات"
+   845→              description={servicesError}
+   846→              action={<Button variant="secondary" onClick={() => setServicesLoaded(false)}>تلاش دوباره</Button>}
+   847→            />
+   848→          ) : null}
+   849→          {!servicesLoading && !servicesError && freeOnly ? (
+   850→            <>
+   851→              <div
+   852→                className="vodda-enter"
+   853→                style={{
+   854→                  display: "flex", alignItems: "center", gap: 9,
+   855→                  padding: "11px 14px", borderRadius: 16,
+   856→                  background: colors.goldBackground, border: "1px solid rgba(191,149,64,.38)",
+   857→                }}
+   858→              >
+   859→                <Icon name="gift" size={17} style={{ color: colors.goldDark, flex: "0 0 auto" }} />
+   860→                <div style={{ minWidth: 0, flex: 1 }}>
+   861→                  <strong style={{ display: "block", fontSize: 12.5, color: colors.goldDark }}>فقط خدمات رایگان</strong>
+   862→                  <span style={{ fontSize: 11, color: colors.inkMuted }}>جلسات رایگانی که اساتید برای شروع رایگان برگزار می‌کنند</span>
+   863→                </div>
+   864→                <button
+   865→                  type="button"
+   866→                  onClick={() => setFreeOnly(false)}
+   867→                  aria-label="نمایش همهٔ خدمات"
+   868→                  style={{ background: "none", border: 0, color: colors.inkMuted, cursor: "pointer", padding: 4, fontFamily: typography.fontFamily }}
+   869→                >
+   870→                  <Icon name="x" size={16} />
+   871→                </button>
+   872→              </div>
+   873→              {freeRows.length === 0 ? (
+   874→                <EmptyState
+   875→                  icon={<Icon name="gift" size={30} />}
+   876→                  title="فعلاً جلسهٔ رایگانی فعال نیست"
+   877→                  description="به‌محض فعال‌شدن جلسات رایگان اساتید، همین‌جا نمایش داده می‌شود."
+   878→                />
+   879→              ) : (
+   880→                freeRows.map((row, index) => (
+   881→                  <ServiceRow
+   882→                    key={`${row.teacher_id}-${row.service_id}`}
+   883→                    icon="gift"
+   884→                    title={row.title || "جلسهٔ رایگان"}
+   885→                    description={[row.tag, row.city].filter(Boolean).join(" · ") || `استاد ${row.teacher_name}`}
+   886→                    trailing="رایگان"
+   887→                    index={index}
+   888→                    onClick={() => navigateApp(`/book/${row.teacher_id}?free=1`, config)}
+   889→                  />
+   890→                ))
+   891→              )}
+   892→            </>
+   893→          ) : null}
+   894→          {!servicesLoading && !servicesError && !freeOnly && needle ? (
+   895→            <>
+   896→              {/* نان‌شکنی موضوع — کاربر بداند داخل کدام دسته است و بتواند برگردد */}
+   897→              <div
+   898→                className="vodda-enter"
+   899→                style={{
+   900→                  display: "flex", alignItems: "center", gap: 9,
+   901→                  padding: "11px 14px", borderRadius: 16,
+   902→                  background: colors.olive50, border: `1px solid ${colors.olive200}`,
+   903→                }}
+   904→              >
+   905→                <Icon name="quran" size={17} style={{ color: colors.olive700, flex: "0 0 auto" }} />
+   906→                <div style={{ minWidth: 0, flex: 1 }}>
+   907→                  <strong style={{ display: "block", fontSize: 12.5, color: colors.olive700 }}>{needle}</strong>
+   908→                  <span style={{ fontSize: 11, color: colors.inkMuted }}>
+   909→                    {faNumber(filteredOnlineServices.length)} خدمت در این موضوع
+   910→                  </span>
+   911→                </div>
+   912→                <button
+   913→                  type="button"
+   914→                  onClick={() => setServicesQuery("")}
+   915→                  aria-label="بازگشت به همهٔ موضوعات"
+   916→                  style={{
+   917→                    flex: "0 0 auto", minHeight: 36, padding: "0 13px",
+   918→                    borderRadius: 999, border: 0, cursor: "pointer",
+   919→                    background: colors.olive600, color: colors.surface,
+   920→                    fontSize: 12, fontWeight: 800, fontFamily: typography.fontFamily,
+   921→                  }}
+   922→                >
+   923→                  همهٔ موضوعات
+   924→                </button>
+   925→              </div>
+   926→
+   927→              {onlineServiceGroups.map(([category, items]) => (
+   928→                <div key={category} style={{ display: "grid", gap: 7 }}>
+   929→                  <span style={{ fontSize: 11, color: colors.inkFaint }}>{category}</span>
+   930→                  {items.map((item, index) => (
+   931→                    <ServiceRow
+   932→                      key={item.id}
+   933→                      icon={item.icon}
+   934→                      title={item.title}
+   935→                      description={item.description}
+   936→                      trailing="اساتید"
+   937→                      index={index}
+   938→                      onClick={() => openServiceTeachers(item.id)}
+   939→                    />
+   940→                  ))}
+   941→                </div>
+   942→              ))}
+   943→
+   944→              {presenceServiceGroups.map(([category, items]) => (
+   945→                <div key={category} style={{ display: "grid", gap: 7 }}>
+   946→                  <span style={{ fontSize: 11, color: colors.inkFaint }}>{category} — حضوری</span>
+   947→                  {items.map((item, index) => (
+   948→                    <ServiceRow
+   949→                      key={item.id}
+   950→                      icon={item.icon}
+   951→                      title={item.title}
+   952→                      description={item.description}
+   953→                      trailing="قاریان حضوری"
+   954→                      index={index}
+   955→                      onClick={() => navigateApp(`/presence?service=${item.id}`, config)}
+   956→                    />
+   957→                  ))}
+   958→                </div>
+   959→              ))}
+   960→
+   961→              {/* اساتید این موضوعات — فقط استادان زیردسته‌های فیلترشده، نه همهٔ اساتید */}
+   962→              {filteredOnlineServices.length > 0 ? (
+   963→                <section style={{ display: "grid", gap: 9 }} aria-label="اساتید این موضوعات">
+   964→                  <strong style={{ fontSize: 13, color: colors.olive700, display: "flex", alignItems: "center", gap: 6 }}>
+   965→                    <Icon name="users" size={15} />
+   966→                    اساتید این موضوعات
+   967→                  </strong>
+   968→                  {topicTeachersLoading ? (
+   969→                    <div style={{ display: "grid", gap: 7 }} aria-label="در حال دریافت اساتید">
+   970→                      {[0, 1, 2].map((index) => (
+   971→                        <span
+   972→                          key={index}
+   973→                          aria-hidden="true"
+   974→                          className="vodda-skeleton"
+   975→                          style={{ display: "block", height: 56, borderRadius: 16 }}
+   976→                        />
+   977→                      ))}
+   978→                    </div>
+   979→                  ) : topicTeachers.length === 0 ? (
+   980→                    <p style={{ margin: 0, fontSize: 11.5, color: colors.inkMuted, lineHeight: 1.9 }}>
+   981→                      هنوز استادی برای این موضوعات ثبت‌نام نکرده است؛ می‌توانید از فراخوان استفاده کنید.
+   982→                    </p>
+   983→                  ) : (
+   984→                    topicTeachers.map((teacher, index) => (
+   985→                      <TopicTeacherRow key={teacher.id} teacher={teacher} config={config} index={index} />
+   986→                    ))
+   987→                  )}
+   988→                </section>
+   989→              ) : null}
+   990→
+   991→              {onlineServiceGroups.length === 0 && presenceServiceGroups.length === 0 ? (
+   992→                <EmptyState
+   993→                  icon={<Icon name="quran" size={30} />}
+   994→                  title="خدمتی یافت نشد"
+   995→                  description="عبارت دیگری را جستجو کنید؛ فهرست رسمی خدمات وُدّا همین‌جاست."
+   996→                />
+   997→              ) : null}
+   998→            </>
+   999→          ) : null}
+  1000→
+  1001→          {/* حالت بدون جستجو: دایرکتوری دسته‌ها — ورود به هر دسته فقط خدمات همان دسته را نشان می‌دهد */}
+  1002→          {!servicesLoading && !servicesError && !freeOnly && !needle ? (
+  1003→            <>
+  1004→              <section style={{ display: "grid", gap: 10 }} aria-label="دسته‌بندی موضوعات">
+  1005→                <strong style={{ fontSize: 13, color: colors.olive700, display: "flex", alignItems: "center", gap: 6 }}>
+  1006→                  <Icon name="grid" size={15} />
+  1007→                  موضوع خود را انتخاب کنید
+  1008→                </strong>
+  1009→                <div
+  1010→                  style={{
+  1011→                    display: "grid",
+  1012→                    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+  1013→                    gap: 10,
+  1014→                    padding: 12,
+  1015→                    background: "linear-gradient(180deg, #ffffff, #fffdf8)",
+  1016→                    border: `1.5px solid ${colors.goldSoft}`,
+  1017→                    borderRadius: 26,
+  1018→                    boxShadow: "0 0 0 4px rgba(231,213,168,.22), 0 12px 28px rgba(139,104,31,.13)",
+  1019→                  }}
+  1020→                >
+  1021→                  {serviceCategories.map((category) => (
+  1022→                    <button
+  1023→                      key={category.category}
+  1024→                      type="button"
+  1025→                      onClick={() => setServicesQuery(category.category)}
+  1026→                      className="vodda-tappable vodda-enter"
+  1027→                      aria-label={`ورود به ${category.category} — ${faNumber(category.count)} خدمت`}
+  1028→                      style={{
+  1029→                        display: "grid",
+  1030→                        alignContent: "start",
+  1031→                        justifyItems: "center",
+  1032→                        gap: 6,
+  1033→                        padding: "9px 7px 10px",
+  1034→                        textAlign: "center",
+  1035→                        border: `1px solid ${colors.sand150}`,
+  1036→                        borderRadius: 18,
+  1037→                        background: colors.surface,
+  1038→                        cursor: "pointer",
+  1039→                        fontFamily: typography.fontFamily,
+  1040→                        boxShadow: "0 2px 10px rgba(46,54,34,.06)",
+  1041→                      }}
+  1042→                    >
+  1043→                      <span
+  1044→                        style={{
+  1045→                          display: "block",
+  1046→                          width: "100%",
+  1047→                          height: 54,
+  1048→                          borderRadius: 12,
+  1049→                          overflow: "hidden",
+  1050→                          border: `2px solid ${colors.goldSoft}`,
+  1051→                          boxShadow: "0 0 0 2.5px #ffffff, 0 0 0 4px rgba(212,171,82,.3), 0 3px 8px rgba(46,54,34,.12)",
+  1052→                          background: colors.olive100,
+  1053→                          position: "relative",
+  1054→                        }}
+  1055→                      >
+  1056→                        <img
+  1057→                          src={category.image}
+  1058→                          alt=""
+  1059→                          aria-hidden="true"
+  1060→                          loading="lazy"
+  1061→                          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+  1062→                        />
+  1063→                      </span>
+  1064→                      <strong
+  1065→                        style={{
+  1066→                          fontSize: 11,
+  1067→                          fontWeight: 900,
+  1068→                          lineHeight: 1.5,
+  1069→                          color: colors.ink,
+  1070→                          display: "-webkit-box",
+  1071→                          WebkitLineClamp: 2,
+  1072→                          WebkitBoxOrient: "vertical",
+  1073→                          overflow: "hidden",
+  1074→                          minHeight: 33,
+  1075→                        }}
+  1076→                      >
+  1077→                        {category.category}
+  1078→                      </strong>
+  1079→                      <span
+  1080→                        style={{
+  1081→                          display: "inline-flex",
+  1082→                          alignItems: "center",
+  1083→                          gap: 3,
+  1084→                          padding: "2px 8px",
+  1085→                          borderRadius: 999,
+  1086→                          background: colors.olive50,
+  1087→                          border: `1px solid ${colors.olive100}`,
+  1088→                          color: colors.olive700,
+  1089→                          fontSize: 9.6,
+  1090→                          fontWeight: 800,
+  1091→                        }}
+  1092→                      >
+  1093→                        {faNumber(category.count)} خدمت
+  1094→                      </span>
+  1095→                    </button>
+  1096→                  ))}
+  1097→                </div>
+  1098→              </section>
+  1099→
+  1100→              {presenceServices.length > 0 ? (
+  1101→                <button
+  1102→                  type="button"
+  1103→                  onClick={() => navigateApp("/presence", config)}
+  1104→                  className="vodda-tappable vodda-enter"
+  1105→                  style={{
+  1106→                    display: "flex",
+  1107→                    alignItems: "center",
+  1108→                    gap: 11,
+  1109→                    width: "100%",
+  1110→                    padding: "12px 14px",
+  1111→                    textAlign: "right",
+  1112→                    background: "linear-gradient(170deg, #fffdf6, " + colors.goldBackground + ")",
+  1113→                    border: "1.4px solid " + colors.gold,
+  1114→                    borderRadius: 18,
+  1115→                    cursor: "pointer",
+  1116→                    fontFamily: typography.fontFamily,
+  1117→                    boxShadow: "0 6px 16px rgba(139,104,31,.12)",
+  1118→                  }}
+  1119→                >
+  1120→                  <span
+  1121→                    aria-hidden="true"
+  1122→                    style={{ display: "grid", placeItems: "center", width: 40, height: 40, borderRadius: 13, flex: "0 0 40px", background: gradients.goldRich, color: "#fffaf0" }}
+  1123→                  >
+  1124→                    <Icon name="mic" size={19} />
+  1125→                  </span>
+  1126→                  <span style={{ minWidth: 0, flex: 1 }}>
+  1127→                    <strong style={{ display: "block", fontSize: 13, fontWeight: 900, color: colors.ink }}>خدمات حضوری مراسم</strong>
+  1128→                    <span style={{ fontSize: 11.5, color: colors.inkMuted }}>تلاوت مجلسی، اذان، ختم قرآن و تواشیح</span>
+  1129→                  </span>
+  1130→                  <Icon name="chevronL" size={16} style={{ color: colors.inkFaint, flex: "0 0 auto" }} />
+  1131→                </button>
+  1132→              ) : null}
+  1133→            </>
+  1134→          ) : null}
+  1135→        </div>
+  1136→      ) : (
+  1137→        <>
+  1138→      {topicId ? (
+  1139→        <div
+  1140→          className="vodda-enter"
+  1141→          style={{
+  1142→            display: "flex", alignItems: "center", gap: 9,
+  1143→            padding: "11px 14px", borderRadius: 16,
+  1144→            background: colors.olive50, border: `1px solid ${colors.olive200}`,
+  1145→          }}
+  1146→        >
+  1147→          <Icon name="quran" size={17} style={{ color: colors.olive700, flex: "0 0 auto" }} />
+  1148→          <div style={{ minWidth: 0, flex: 1 }}>
+  1149→            <strong style={{ display: "block", fontSize: 12.5, color: colors.olive700 }}>
+  1150→              موضوع: {topicTitle || `#${topicId}`}
+  1151→            </strong>
+  1152→            <span style={{ fontSize: 11, color: colors.inkMuted }}>اساتیدی که این موضوع رسمی را تدریس می‌کنند</span>
+  1153→          </div>
+  1154→          <button
+  1155→            type="button"
+  1156→            onClick={() => setTopicId(0)}
+  1157→            aria-label="حذف فیلتر موضوع"
+  1158→            style={{ background: "none", border: 0, color: colors.inkMuted, cursor: "pointer", padding: 4, fontFamily: typography.fontFamily }}
+  1159→          >
+  1160→            <Icon name="x" size={16} />
+  1161→          </button>
+  1162→          <button
+  1163→            type="button"
+  1164→            onClick={() => navigateApp("/dispatch", config)}
+  1165→            style={{
+  1166→              flex: "0 0 auto", minHeight: 36, padding: "0 13px",
+  1167→              borderRadius: 999, border: 0, cursor: "pointer",
+  1168→              background: colors.olive600, color: colors.surface,
+  1169→              fontSize: 12.5, fontWeight: 800, fontFamily: typography.fontFamily,
+  1170→            }}
+  1171→          >
+  1172→            🔔 فراخوان
+  1173→          </button>
+  1174→        </div>
+  1175→      ) : null}
+  1176→
+  1177→      <div className="vodda-enter" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+  1178→        <div style={{ position: "relative", minWidth: 0, flex: 1 }}>
+  1179→          <Icon
+  1180→            name="search"
+  1181→            size={20}
+  1182→            stroke={1.8}
+  1183→            style={{ position: "absolute", zIndex: 1, insetInlineStart: 14, top: "50%", transform: "translateY(-50%)", color: colors.inkMuted }}
+  1184→          />
+  1185→          <input
+  1186→            value={filters.query}
+  1187→            onChange={(event) => setFilters((current) => ({ ...current, query: event.target.value }))}
+  1188→            placeholder="نام استاد یا تخصص…"
+  1189→            className="vodda-input"
+  1190→            style={{
+  1191→              width: "100%",
+  1192→              minHeight: 50,
+  1193→              padding: "11px 42px 11px 44px",
+  1194→              border: 0,
+  1195→              borderRadius: 16,
+  1196→              outline: "none",
+  1197→              color: colors.ink,
+  1198→              background: colors.surface,
+  1199→              boxShadow: shadows.sm,
+  1200→              fontFamily: typography.fontFamily,
+  1201→              ...typography.body,
+  1202→            }}
+  1203→          />
+  1204→          {filters.query ? (
+  1205→            <button
+  1206→              type="button"
+  1207→              aria-label="پاک کردن جستجو"
+  1208→              onClick={() => setFilters((current) => ({ ...current, query: "" }))}
+  1209→              style={{
+  1210→                position: "absolute",
+  1211→                insetInlineEnd: 10,
+  1212→                top: "50%",
+  1213→                transform: "translateY(-50%)",
+  1214→                width: 32,
+  1215→                height: 32,
+  1216→                display: "grid",
+  1217→                placeItems: "center",
+  1218→                padding: 0,
+  1219→                border: 0,
+  1220→                borderRadius: "50%",
+  1221→                color: colors.inkMuted,
+  1222→                background: "transparent",
+  1223→                cursor: "pointer",
+  1224→              }}
+  1225→            >
+  1226→              <Icon name="x" size={17} />
+  1227→            </button>
+  1228→          ) : null}
+  1229→        </div>
+  1230→
+  1231→        <div style={{ position: "relative", flex: "0 0 auto" }}>
+  1232→          <button
+  1233→            type="button"
+  1234→            aria-label="فیلتر شهر و جنسیت"
+  1235→            onClick={openFilters}
+  1236→            className="vodda-tappable"
+  1237→            style={{
+  1238→              width: 50,
+  1239→              height: 50,
+  1240→              display: "grid",
+  1241→              placeItems: "center",
+  1242→              padding: 0,
+  1243→              border: 0,
+  1244→              borderRadius: 16,
+  1245→              color: colors.surface,
+  1246→              background: colors.olive600,
+  1247→              boxShadow: shadows.sm,
+  1248→              cursor: "pointer",
+  1249→            }}
+  1250→          >
+  1251→            <Icon name="filter" size={21} stroke={1.9} />
+  1252→          </button>
+  1253→          {hasAdvancedFilter ? (
+  1254→            <span
+  1255→              aria-hidden="true"
+  1256→              style={{
+  1257→                position: "absolute",
+  1258→                top: -2,
+  1259→                insetInlineEnd: -2,
+  1260→                width: 10,
+  1261→                height: 10,
+  1262→                border: "2px solid " + colors.sand50,
+  1263→                borderRadius: "50%",
+  1264→                background: colors.gold,
+  1265→              }}
+  1266→            />
+  1267→          ) : null}
+  1268→        </div>
+  1269→      </div>
+  1270→
+  1271→      {!filters.query && recent.length > 0 ? (
+  1272→        <div
+  1273→          className="vodda-scroll-rail vodda-fade-edge vodda-enter"
+  1274→          style={{ display: "flex", gap: 8, overflowX: "auto", marginInline: -spacing.xl, paddingInline: spacing.xl, minHeight: 44 }}
+  1275→        >
+  1276→          {recent.map((item) => (
+  1277→            <span key={item} style={{ display: "inline-flex", alignItems: "center", gap: 2 }}>
+  1278→              <button
+  1279→                type="button"
+  1280→                className="vodda-tappable"
+  1281→                onClick={() => setFilters((current) => ({ ...current, query: item }))}
+  1282→                style={{ ...chipStyle(false), background: colors.sand50, minHeight: 36, padding: "5px 11px", fontSize: 12.5 }}
+  1283→              >
+  1284→                <Icon name="clock" size={13} />
+  1285→                {item}
+  1286→              </button>
+  1287→              <button
+  1288→                type="button"
+  1289→                aria-label={`حذف ${item} از جستجوهای اخیر`}
+  1290→                onClick={() => removeRecent(item)}
+  1291→                className="vodda-hit"
+  1292→                style={{
+  1293→                  width: 26,
+  1294→                  height: 26,
+  1295→                  display: "grid",
+  1296→                  placeItems: "center",
+  1297→                  padding: 0,
+  1298→                  border: 0,
+  1299→                  borderRadius: "50%",
+  1300→                  color: colors.inkFaint,
+  1301→                  background: "transparent",
+  1302→                  cursor: "pointer",
+  1303→                }}
+  1304→              >
+  1305→                <Icon name="x" size={13} />
+  1306→              </button>
+  1307→            </span>
+  1308→          ))}
+  1309→        </div>
+  1310→      ) : null}
+  1311→
+  1312→      <div
+  1313→        className="vodda-scroll-rail vodda-fade-edge"
+  1314→        style={{ display: "flex", gap: 8, overflowX: "auto", marginInline: -spacing.xl, paddingInline: spacing.xl, minHeight: 44 }}
+  1315→      >
+  1316→        {fieldPresets.map(([field, label]) => (
+  1317→          <button
+  1318→            key={field || "all"}
+  1319→            type="button"
+  1320→            className="vodda-tappable"
+  1321→            onClick={() => setFilters((current) => ({ ...current, field }))}
+  1322→            style={chipStyle(filters.field === field)}
+  1323→          >
+  1324→            {label}
+  1325→          </button>
+  1326→        ))}
+  1327→      </div>
+  1328→
+  1329→      <div
+  1330→        className="vodda-scroll-rail vodda-fade-edge"
+  1331→        style={{ display: "flex", gap: 8, overflowX: "auto", marginInline: -spacing.xl, paddingInline: spacing.xl, minHeight: 44 }}
+  1332→      >
+  1333→        {SORT_PRESETS.map(([value, label]) => (
+  1334→          <button
+  1335→            key={value}
+  1336→            type="button"
+  1337→            className="vodda-tappable"
+  1338→            onClick={() => setFilters((current) => ({ ...current, sort: value }))}
+  1339→            style={{ ...chipStyle(filters.sort === value), fontSize: 12.5, minHeight: 38, padding: "6px 11px" }}
+  1340→          >
+  1341→            <Icon name={filters.sort === value ? "check" : "trending"} size={13} stroke={2} />
+  1342→            {label}
+  1343→          </button>
+  1344→        ))}
+  1345→      </div>
+  1346→
+  1347→      <div
+  1348→        className="vodda-scroll-rail vodda-fade-edge"
+  1349→        style={{ display: "flex", gap: 8, overflowX: "auto", marginInline: -spacing.xl, paddingInline: spacing.xl, minHeight: 44 }}
+  1350→      >
+  1351→        <button
+  1352→          type="button"
+  1353→          className="vodda-tappable"
+  1354→          onClick={() => setFilters((current) => ({ ...current, availableOnly: !current.availableOnly }))}
+  1355→          style={{ ...chipStyle(filters.availableOnly), fontSize: 12.5, minHeight: 38, padding: "6px 11px" }}
+  1356→        >
+  1357→          <Icon name="checkCircle" size={13} stroke={2} />
+  1358→          فقط آمادهٔ رزرو
+  1359→        </button>
+  1360→        {TIER_PRESETS.map(([value, label, color]) => (
+  1361→          <button
+  1362→            key={value || "all-tiers"}
+  1363→            type="button"
+  1364→            className="vodda-tappable"
+  1365→            onClick={() => setFilters((current) => ({ ...current, tier: value }))}
+  1366→            style={{ ...chipStyle(filters.tier === value), fontSize: 12.5, minHeight: 38, padding: "6px 11px" }}
+  1367→          >
+  1368→            {color ? (
+  1369→              <span
+  1370→                aria-hidden="true"
+  1371→                style={{ width: 9, height: 9, borderRadius: "50%", background: color, flex: "0 0 auto" }}
+  1372→              />
+  1373→            ) : null}
+  1374→            {label}
+  1375→          </button>
+  1376→        ))}
+  1377→      </div>
+  1378→
+  1379→      {hasAdvancedFilter ? (
+  1380→        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+  1381→          {filters.city ? (
+  1382→            <button
+  1383→              type="button"
+  1384→              className="vodda-tappable"
+  1385→              onClick={() => setFilters((current) => ({ ...current, city: "" }))}
+  1386→              style={{ ...chipStyle(false), background: colors.sand100 }}
+  1387→            >
+  1388→              شهر: {filters.city}
+  1389→              <Icon name="x" size={14} />
+  1390→            </button>
+  1391→          ) : null}
+  1392→          {filters.female !== "all" ? (
+  1393→            <button
+  1394→              type="button"
+  1395→              className="vodda-tappable"
+  1396→              onClick={() => setFilters((current) => ({ ...current, female: "all" }))}
+  1397→              style={{ ...chipStyle(false), background: colors.sand100 }}
+  1398→            >
+  1399→              {filters.female === "female" ? "استاد خانم" : "استاد آقا"}
+  1400→              <Icon name="x" size={14} />
+  1401→            </button>
+  1402→          ) : null}
+  1403→          {filters.tier ? (
+  1404→            <button
+  1405→              type="button"
+  1406→              className="vodda-tappable"
+  1407→              onClick={() => setFilters((current) => ({ ...current, tier: "" }))}
+  1408→              style={{ ...chipStyle(false), background: colors.sand100 }}
+  1409→            >
+  1410→              درجه: {TIER_LABELS[filters.tier]}
+  1411→              <Icon name="x" size={14} />
+  1412→            </button>
+  1413→          ) : null}
+  1414→          {filters.availableOnly ? (
+  1415→            <button
+  1416→              type="button"
+  1417→              className="vodda-tappable"
+  1418→              onClick={() => setFilters((current) => ({ ...current, availableOnly: false }))}
+  1419→              style={{ ...chipStyle(false), background: colors.sand100 }}
+  1420→            >
+  1421→              فقط آمادهٔ رزرو
+  1422→              <Icon name="x" size={14} />
+  1423→            </button>
+  1424→          ) : null}
+  1425→        </div>
+  1426→      ) : null}
+  1427→
+  1428→      <div style={{ height: 2 }} />
+  1429→
+  1430→      {loading ? <SearchSkeleton /> : null}
+  1431→      {!loading && error ? (
+  1432→        <ErrorState
+  1433→          title="خطا در جستجو"
+  1434→          description={error}
+  1435→          action={<Button variant="secondary" onClick={() => setReloadKey((value) => value + 1)}>تلاش دوباره</Button>}
+  1436→        />
+  1437→      ) : null}
+  1438→      {!loading && !error ? (
+  1439→        <>
+  1440→          <div style={{ ...typography.bodySmall, color: colors.inkMuted }}>
+  1441→            {faNumber(filtered.length)} استاد یافت شد
+  1442→            {serverTotal > filtered.length ? (
+  1443→              <span> (از {faNumber(serverTotal)} استاد پلتفرم)</span>
+  1444→            ) : null}
+  1445→          </div>
+  1446→          {filtered.length === 0 ? (
+  1447→            <>
+  1448→              {hasAnyFilter ? (
+  1449→                <EmptyState
+  1450→                  icon={<Icon name="search" size={30} />}
+  1451→                  title="نتیجه‌ای یافت نشد"
+  1452→                  description="با این فیلترها استادی پیدا نشد؛ فیلترها را کمتر کنید."
+  1453→                  action={<Button variant="secondary" onClick={clearAllFilters}>پاک کردن فیلترها</Button>}
+  1454→                />
+  1455→              ) : (
+  1456→                <EmptyState
+  1457→                  icon={<Icon name="users" size={30} />}
+  1458→                  title="هنوز استادی منتشر نشده"
+  1459→                  description="پس از تأیید اولین استاد، پروفایل او اینجا نمایش داده می‌شود."
+  1460→                />
+  1461→              )}
+  1462→              {fallback.length > 0 ? (
+  1463→                <div style={{ display: "grid", gap: 12 }}>
+  1464→                  <strong style={{ ...typography.bodySmall, color: colors.ink }}>شاید این گزینه‌ها برای شما مناسب باشند</strong>
+  1465→                  {fallback.map((teacher) => (
+  1466→                    <TeacherCard key={teacher.id} teacher={teacher} config={config} wide />
+  1467→                  ))}
+  1468→                </div>
+  1469→              ) : null}
+  1470→            </>
+  1471→          ) : (
+  1472→            <>
+  1473→              <div style={{ display: "grid", gap: 14 }}>
+  1474→                {visible.map((teacher) => (
+  1475→                  <TeacherCard key={teacher.id} teacher={teacher} config={config} wide />
+  1476→                ))}
+  1477→              </div>
+  1478→              {hasMore ? (
+  1479→                <div style={{ display: "grid", gap: 10 }}>
+  1480→                  <Button
+  1481→                    variant="secondary"
+  1482→                    fullWidth
+  1483→                    onClick={() => setVisibleCount((current) => current + PAGE_SIZE)}
+  1484→                  >
+  1485→                    نمایش بیشتر ({faNumber(filtered.length - visibleCount)} نفر مانده)
+  1486→                  </Button>
+  1487→                  <div ref={sentinelRef} style={{ height: 1 }} />
+  1488→                </div>
+  1489→              ) : null}
+  1490→            </>
+  1491→          )}
+  1492→        </>
+  1493→      ) : null}
+  1494→
+  1495→      <Sheet open={filtersOpen} title="فیلترهای جستجو" onClose={() => setFiltersOpen(false)}>
+  1496→        <div style={{ display: "grid", gap: spacing.lg }}>
+  1497→          <div style={{ display: "grid", gap: 8 }}>
+  1498→            <strong style={{ ...typography.bodySmall }}>شهر</strong>
+  1499→            {cities.length > 8 ? (
+  1500→              <input
+  1501→                value={cityQuery}
+  1502→                onChange={(event) => setCityQuery(event.target.value)}
+  1503→                placeholder="جستجوی شهر…"
+  1504→                className="vodda-input"
+  1505→                style={{
+  1506→                  width: "100%",
+  1507→                  minHeight: 46,
+  1508→                  padding: "10px 14px",
+  1509→                  border: "1px solid " + colors.sand200,
+  1510→                  borderRadius: 16,
+  1511→                  outline: "none",
+  1512→                  color: colors.ink,
+  1513→                  background: colors.surface,
+  1514→                  fontFamily: typography.fontFamily,
+  1515→                }}
+  1516→              />
+  1517→            ) : null}
+  1518→            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, maxHeight: 190, overflowY: "auto" }}>
+  1519→              {cities.length === 0 ? (
+  1520→                <span style={{ ...typography.caption, color: colors.inkMuted }}>در حال دریافت شهرها…</span>
+  1521→              ) : filteredCitiesList.length === 0 ? (
+  1522→                <span style={{ ...typography.caption, color: colors.inkMuted }}>شهری با این نام پیدا نشد.</span>
+  1523→              ) : (
+  1524→                filteredCitiesList.map((city) => (
+  1525→                  <button
+  1526→                    key={city}
+  1527→                    type="button"
+  1528→                    className="vodda-tappable"
+  1529→                    onClick={() =>
+  1530→                      setAdvancedDraft((current) => ({ ...current, city: current.city === city ? "" : city }))
+  1531→                    }
+  1532→                    style={chipStyle(advancedDraft.city === city)}
+  1533→                  >
+  1534→                    {city}
+  1535→                  </button>
+  1536→                ))
+  1537→              )}
+  1538→            </div>
+  1539→          </div>
+  1540→
+  1541→          <div style={{ display: "grid", gap: 8 }}>
+  1542→            <strong style={{ ...typography.bodySmall }}>جنسیت استاد</strong>
+  1543→            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+  1544→              {[
+  1545→                ["all", "فرقی ندارد"],
+  1546→                ["male", "آقا"],
+  1547→                ["female", "خانم"],
+  1548→              ].map(([value, label]) => (
+  1549→                <button
+  1550→                  key={value}
+  1551→                  type="button"
+  1552→                  className="vodda-tappable"
+  1553→                  onClick={() => setAdvancedDraft((current) => ({ ...current, female: value as AdvancedDraft["female"] }))}
+  1554→                  style={chipStyle(advancedDraft.female === value)}
+  1555→                >
+  1556→                  {label}
+  1557→                </button>
+  1558→              ))}
+  1559→            </div>
+  1560→          </div>
+  1561→
+  1562→          <Button fullWidth onClick={applyAdvancedFilters}>اعمال فیلتر</Button>
+  1563→          <Button fullWidth variant="ghost" onClick={clearAdvancedFilters}>پاک کردن فیلترها</Button>
+  1564→        </div>
+  1565→      </Sheet>
+  1566→        </>
+  1567→      )}
+  1568→    </section>
+  1569→  );
+  1570→}
+  1571→
