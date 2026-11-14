@@ -11,6 +11,7 @@ import {
   Icon,
   Sheet,
   colors,
+  gradients,
   radii,
   shadows,
   spacing,
@@ -19,6 +20,7 @@ import {
 import { messageOf } from "../../ui/errorMessage";
 import { navigateApp } from "../../router";
 import { asArray, asRecord } from "../../platform/api";
+import { categoryVisual } from "../home/homeSections";
 import { getCatalog } from "../dispatch/api";
 import { getInPersonCatalog } from "../ceremony/api";
 import { searchTeachersPage } from "../teachers/api";
@@ -75,6 +77,22 @@ const fieldPresets = [
 
 // استادهای مداحی فعلاً از تمام سطوح کاربری پنهان می‌شوند (پلتفرم تخصصاً قرآنی).
 const MADDAHI_PATTERN = /مداح|هم‌نوا|همنوا/;
+
+/** ترتیب نمایش دسته‌ها — هم‌راستا با خانه (مسیر یادگیری: از پایه تا تخصصی). */
+const CATEGORY_ORDER_HINTS: Array<{ match: RegExp }> = [
+  { match: /پایه|الفبا|روخوانی/ },
+  { match: /تجوید|قرائت/ },
+  { match: /حفظ/ },
+  { match: /صوت|لحن|هنر/ },
+  { match: /مفاهیم|تفسیر|علوم/ },
+  { match: /ویژه/ },
+  { match: /مشاوره|آمادگی/ },
+];
+
+function categoryOrderIndex(name: string) {
+  const index = CATEGORY_ORDER_HINTS.findIndex((hint) => hint.match.test(name));
+  return index === -1 ? CATEGORY_ORDER_HINTS.length : index;
+}
 
 function recommendationScore(teacher: Teacher) {
   return teacher.rating * Math.log10(10 + Math.max(0, teacher.sessions));
@@ -469,7 +487,10 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
     // (topic) نیز در URL حفظ می‌شود تا لینک اساتید هر خدمت پایدار بماند.
     if (mode === "services") params.set("mode", "services");
     if (freeOnly) params.set("free", "1");
-    if (filters.query.trim()) params.set("q", filters.query.trim());
+    // در تب «خدمات» فیلتر جستجو همان موضوع فعال است؛ در تب اساتید، متن جستجوی استاد
+    if (mode === "services" ? servicesQuery.trim() : filters.query.trim()) {
+      params.set("q", mode === "services" ? servicesQuery.trim() : filters.query.trim());
+    }
     if (topicId) params.set("topic", String(topicId));
     if (filters.field.trim()) params.set("field", filters.field.trim());
     if (filters.city.trim()) params.set("city", filters.city.trim());
@@ -480,7 +501,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
     if (filters.sort !== "recommended") params.set("sort", filters.sort);
     const next = window.location.pathname + (params.size ? "?" + params.toString() : "");
     window.history.replaceState({}, "", next);
-  }, [filters, mode, topicId, freeOnly]);
+  }, [filters, mode, topicId, freeOnly, servicesQuery]);
 
   useEffect(() => {
     let active = true;
@@ -705,6 +726,18 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
     return [...groups.entries()];
   }, [filteredPresenceServices]);
 
+  // فهرست دسته‌ها (حالت بدون جستجو) — به‌جای کاتالوگ تختِ همهٔ خدمات،
+  // کاربر ابتدا دسته را انتخاب می‌کند؛ ورود به هر دسته فقط خدمات همان دسته را نشان می‌دهد.
+  const serviceCategories = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const item of onlineServices) {
+      counts.set(item.category, (counts.get(item.category) ?? 0) + 1);
+    }
+    return [...counts.entries()]
+      .map(([category, count]) => ({ category, count, ...categoryVisual(category) }))
+      .sort((a, b) => categoryOrderIndex(a.category) - categoryOrderIndex(b.category) || b.count - a.count);
+  }, [onlineServices]);
+
   // اساتید موضوعات فیلترشده (تب خدمات) — ورود به هر موضوع از خانه، زیردسته‌ها
   // و همزمان اساتید همان زیردسته‌ها را نشان می‌دهد، نه همهٔ اساتید.
   const [topicTeachers, setTopicTeachers] = useState<Teacher[]>([]);
@@ -858,60 +891,75 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
               )}
             </>
           ) : null}
-          {!servicesLoading && !servicesError && !freeOnly ? (
+          {!servicesLoading && !servicesError && !freeOnly && needle ? (
             <>
-              {onlineServiceGroups.length > 0 ? (
-                <section style={{ display: "grid", gap: 9 }} aria-label="خدمات آموزش آنلاین">
-                  <strong style={{ fontSize: 13, color: colors.olive700, display: "flex", alignItems: "center", gap: 6 }}>
-                    <Icon name="book" size={15} />
-                    خدمات آموزش آنلاین
-                  </strong>
-                  {onlineServiceGroups.map(([category, items]) => (
-                    <div key={category} style={{ display: "grid", gap: 7 }}>
-                      <span style={{ fontSize: 11, color: colors.inkFaint }}>{category}</span>
-                      {items.map((item, index) => (
-                        <ServiceRow
-                          key={item.id}
-                          icon={item.icon}
-                          title={item.title}
-                          description={item.description}
-                          trailing="اساتید"
-                          index={index}
-                          onClick={() => openServiceTeachers(item.id)}
-                        />
-                      ))}
-                    </div>
-                  ))}
-                </section>
-              ) : null}
+              {/* نان‌شکنی موضوع — کاربر بداند داخل کدام دسته است و بتواند برگردد */}
+              <div
+                className="vodda-enter"
+                style={{
+                  display: "flex", alignItems: "center", gap: 9,
+                  padding: "11px 14px", borderRadius: 16,
+                  background: colors.olive50, border: `1px solid ${colors.olive200}`,
+                }}
+              >
+                <Icon name="quran" size={17} style={{ color: colors.olive700, flex: "0 0 auto" }} />
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <strong style={{ display: "block", fontSize: 12.5, color: colors.olive700 }}>{needle}</strong>
+                  <span style={{ fontSize: 11, color: colors.inkMuted }}>
+                    {faNumber(filteredOnlineServices.length)} خدمت در این موضوع
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setServicesQuery("")}
+                  aria-label="بازگشت به همهٔ موضوعات"
+                  style={{
+                    flex: "0 0 auto", minHeight: 36, padding: "0 13px",
+                    borderRadius: 999, border: 0, cursor: "pointer",
+                    background: colors.olive600, color: colors.surface,
+                    fontSize: 12, fontWeight: 800, fontFamily: typography.fontFamily,
+                  }}
+                >
+                  همهٔ موضوعات
+                </button>
+              </div>
 
-              {presenceServiceGroups.length > 0 ? (
-                <section style={{ display: "grid", gap: 9 }} aria-label="خدمات حضوری مراسم">
-                  <strong style={{ fontSize: 13, color: colors.goldDark, display: "flex", alignItems: "center", gap: 6 }}>
-                    <Icon name="mic" size={15} />
-                    خدمات حضوری مراسم
-                  </strong>
-                  {presenceServiceGroups.map(([category, items]) => (
-                    <div key={category} style={{ display: "grid", gap: 7 }}>
-                      <span style={{ fontSize: 11, color: colors.inkFaint }}>{category}</span>
-                      {items.map((item, index) => (
-                        <ServiceRow
-                          key={item.id}
-                          icon={item.icon}
-                          title={item.title}
-                          description={item.description}
-                          trailing="قاریان حضوری"
-                          index={index}
-                          onClick={() => navigateApp(`/presence?service=${item.id}`, config)}
-                        />
-                      ))}
-                    </div>
+              {onlineServiceGroups.map(([category, items]) => (
+                <div key={category} style={{ display: "grid", gap: 7 }}>
+                  <span style={{ fontSize: 11, color: colors.inkFaint }}>{category}</span>
+                  {items.map((item, index) => (
+                    <ServiceRow
+                      key={item.id}
+                      icon={item.icon}
+                      title={item.title}
+                      description={item.description}
+                      trailing="اساتید"
+                      index={index}
+                      onClick={() => openServiceTeachers(item.id)}
+                    />
                   ))}
-                </section>
-              ) : null}
+                </div>
+              ))}
+
+              {presenceServiceGroups.map(([category, items]) => (
+                <div key={category} style={{ display: "grid", gap: 7 }}>
+                  <span style={{ fontSize: 11, color: colors.inkFaint }}>{category} — حضوری</span>
+                  {items.map((item, index) => (
+                    <ServiceRow
+                      key={item.id}
+                      icon={item.icon}
+                      title={item.title}
+                      description={item.description}
+                      trailing="قاریان حضوری"
+                      index={index}
+                      onClick={() => navigateApp(`/presence?service=${item.id}`, config)}
+                    />
+                  ))}
+                </div>
+              ))}
 
               {/* اساتید این موضوعات — فقط استادان زیردسته‌های فیلترشده، نه همهٔ اساتید */}
-              {needle && filteredOnlineServices.length > 0 ? (
+              {filteredOnlineServices.length > 0 ? (
                 <section style={{ display: "grid", gap: 9 }} aria-label="اساتید این موضوعات">
                   <strong style={{ fontSize: 13, color: colors.olive700, display: "flex", alignItems: "center", gap: 6 }}>
                     <Icon name="users" size={15} />
@@ -946,11 +994,142 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
                   title="خدمتی یافت نشد"
                   description="عبارت دیگری را جستجو کنید؛ فهرست رسمی خدمات وُدّا همین‌جاست."
                 />
-              ) : (
-                <p style={{ margin: 0, fontSize: 11.5, color: colors.inkMuted, lineHeight: 1.9 }}>
-                  با انتخاب هر خدمت، فهرست اساتید همان خدمت یا قاریان حضوری مرتبط نمایش داده می‌شود؛ از همان‌جا می‌توانید مستقیم رزرو کنید یا فراخوان بگذارید.
-                </p>
-              )}
+              ) : null}
+            </>
+          ) : null}
+
+          {/* حالت بدون جستجو: دایرکتوری دسته‌ها — ورود به هر دسته فقط خدمات همان دسته را نشان می‌دهد */}
+          {!servicesLoading && !servicesError && !freeOnly && !needle ? (
+            <>
+              <section style={{ display: "grid", gap: 10 }} aria-label="دسته‌بندی موضوعات">
+                <strong style={{ fontSize: 13, color: colors.olive700, display: "flex", alignItems: "center", gap: 6 }}>
+                  <Icon name="grid" size={15} />
+                  موضوع خود را انتخاب کنید
+                </strong>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+                    gap: 10,
+                    padding: 12,
+                    background: "linear-gradient(180deg, #ffffff, #fffdf8)",
+                    border: `1.5px solid ${colors.goldSoft}`,
+                    borderRadius: 26,
+                    boxShadow: "0 0 0 4px rgba(231,213,168,.22), 0 12px 28px rgba(139,104,31,.13)",
+                  }}
+                >
+                  {serviceCategories.map((category) => (
+                    <button
+                      key={category.category}
+                      type="button"
+                      onClick={() => setServicesQuery(category.category)}
+                      className="vodda-tappable vodda-enter"
+                      aria-label={`ورود به ${category.category} — ${faNumber(category.count)} خدمت`}
+                      style={{
+                        display: "grid",
+                        alignContent: "start",
+                        justifyItems: "center",
+                        gap: 6,
+                        padding: "9px 7px 10px",
+                        textAlign: "center",
+                        border: `1px solid ${colors.sand150}`,
+                        borderRadius: 18,
+                        background: colors.surface,
+                        cursor: "pointer",
+                        fontFamily: typography.fontFamily,
+                        boxShadow: "0 2px 10px rgba(46,54,34,.06)",
+                      }}
+                    >
+                      <span
+                        style={{
+                          display: "block",
+                          width: "100%",
+                          height: 54,
+                          borderRadius: 12,
+                          overflow: "hidden",
+                          border: `2px solid ${colors.goldSoft}`,
+                          boxShadow: "0 0 0 2.5px #ffffff, 0 0 0 4px rgba(212,171,82,.3), 0 3px 8px rgba(46,54,34,.12)",
+                          background: colors.olive100,
+                          position: "relative",
+                        }}
+                      >
+                        <img
+                          src={category.image}
+                          alt=""
+                          aria-hidden="true"
+                          loading="lazy"
+                          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+                        />
+                      </span>
+                      <strong
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 900,
+                          lineHeight: 1.5,
+                          color: colors.ink,
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical",
+                          overflow: "hidden",
+                          minHeight: 33,
+                        }}
+                      >
+                        {category.category}
+                      </strong>
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 3,
+                          padding: "2px 8px",
+                          borderRadius: 999,
+                          background: colors.olive50,
+                          border: `1px solid ${colors.olive100}`,
+                          color: colors.olive700,
+                          fontSize: 9.6,
+                          fontWeight: 800,
+                        }}
+                      >
+                        {faNumber(category.count)} خدمت
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </section>
+
+              {presenceServices.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => navigateApp("/presence", config)}
+                  className="vodda-tappable vodda-enter"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 11,
+                    width: "100%",
+                    padding: "12px 14px",
+                    textAlign: "right",
+                    background: "linear-gradient(170deg, #fffdf6, " + colors.goldBackground + ")",
+                    border: "1.4px solid " + colors.gold,
+                    borderRadius: 18,
+                    cursor: "pointer",
+                    fontFamily: typography.fontFamily,
+                    boxShadow: "0 6px 16px rgba(139,104,31,.12)",
+                  }}
+                >
+                  <span
+                    aria-hidden="true"
+                    style={{ display: "grid", placeItems: "center", width: 40, height: 40, borderRadius: 13, flex: "0 0 40px", background: gradients.goldRich, color: "#fffaf0" }}
+                  >
+                    <Icon name="mic" size={19} />
+                  </span>
+                  <span style={{ minWidth: 0, flex: 1 }}>
+                    <strong style={{ display: "block", fontSize: 13, fontWeight: 900, color: colors.ink }}>خدمات حضوری مراسم</strong>
+                    <span style={{ fontSize: 11.5, color: colors.inkMuted }}>تلاوت مجلسی، اذان، ختم قرآن و تواشیح</span>
+                  </span>
+                  <Icon name="chevronL" size={16} style={{ color: colors.inkFaint, flex: "0 0 auto" }} />
+                </button>
+              ) : null}
             </>
           ) : null}
         </div>

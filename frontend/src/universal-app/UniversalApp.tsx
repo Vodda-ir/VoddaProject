@@ -33,6 +33,7 @@ import { PlatformProvider } from "./platform/context";
 import type { PlatformRuntime } from "./platform/types";
 import { createWebPlatformRuntime } from "./platform/web";
 import { navigateApp, useAppRoute, type AppRouteName } from "./router";
+import { useBuildRefresh } from "./useBuildRefresh";
 import { MobileAppShell, TeacherAppShell, Card, UniversalVisualStyles, colors, typography } from "./ui";
 
 export type UniversalAppProps = {
@@ -122,6 +123,8 @@ function RoutePlaceholder({
 
 function UniversalAppContent({ config, runtime }: { config: UniversalAppConfig; runtime: PlatformRuntime }) {
   const route = useAppRoute(config);
+  // اگر استقرار جدیدی انجام شده باشد، نسخهٔ کهنهٔ در حافظهٔ کاربر خودکار نوسازی می‌شود
+  useBuildRefresh();
 
   if (route.name === "login") {
     return (

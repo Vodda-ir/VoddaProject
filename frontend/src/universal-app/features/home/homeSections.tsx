@@ -38,7 +38,7 @@ const CATEGORY_IMAGES: Array<{ match: RegExp; image: string; tint: string }> = [
 const FALLBACK_IMAGE = "/images/home/cat-quran.webp";
 const FALLBACK_TINT = "linear-gradient(180deg, rgba(38,50,32,0) 34%, rgba(28,38,24,.88) 100%)";
 
-function categoryVisual(category: string): { image: string; tint: string } {
+export function categoryVisual(category: string): { image: string; tint: string } {
   for (const row of CATEGORY_IMAGES) {
     if (row.match.test(category)) return { image: row.image, tint: row.tint };
   }
