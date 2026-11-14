@@ -202,6 +202,29 @@ export function LearnerTeacherProfileScreen({
         <p style={{ fontSize: 13, fontWeight: 600, margin: 0, color: colors.olive600 }}>
           {teacher.tag || teacher.field || "استاد وُدّا"}
         </p>
+        {/* چراغ وضعیت استاد — آنلاین: سبز تپنده، آفلاین: قرمز چشمک‌زن */}
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 5,
+            marginTop: 6,
+            padding: "3px 11px",
+            borderRadius: 999,
+            fontSize: 11.5,
+            fontWeight: 800,
+            color: teacher.available ? colors.olive700 : colors.danger,
+            background: teacher.available ? colors.olive50 : colors.dangerBackground,
+            border: `1px solid ${teacher.available ? colors.olive100 : "rgba(224,36,94,.25)"}`,
+          }}
+        >
+          <span
+            aria-hidden="true"
+            className={teacher.available ? "vodda-live-dot" : "vodda-offline-dot"}
+            style={{ width: 8, height: 8, borderRadius: "50%", flex: "0 0 auto", background: teacher.available ? colors.olive600 : colors.danger, color: teacher.available ? colors.olive600 : colors.danger }}
+          />
+          {teacher.available ? "آنلاین — آمادهٔ رزرو" : "آفلاین"}
+        </span>
       </div>
 
       <div className="vodda-enter vodda-enter-delay-1" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
