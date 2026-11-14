@@ -22,6 +22,10 @@ export async function getCatalog(runtime: PlatformRuntime): Promise<OfficialServ
   for (const group of categories) {
     const row = asObject(group);
     const category = String(row.category ?? "");
+    // خدمات حضوری قرآنی از فراخوان آنلاین حذف می‌شود — این موضوعات از مسیر
+    // «مراسم» پیگیری می‌شوند و هیچ استادی برای فراخوان آنلاین آن‌ها آماده نیست؛
+    // نمایش‌شان همیشه به خطای «هنوز استادی…» می‌رسید (باگ فراخوان).
+    if (!category || category === "خدمات حضوری قرآنی") continue;
     for (const item of asArray(row.services)) {
       const entry = asObject(item);
       if (Number(entry.id) > 0 && entry.title) {

@@ -9,8 +9,6 @@ import { LiveClient, type LiveEvent, type LiveStatus } from '@/lib/live/client';
 import { LiveEngine, type EngineRole } from '@/lib/live/engine';
 
 type ChatMessage = { id: string; from: number; role: string; text: string; at: number; mine: boolean };
-type StrokePoint = { x: number; y: number };
-type Stroke = { id: string; points: StrokePoint[]; color: string; width: number };
 type Reaction = { id: string; emoji: string; at: number };
 
 const REACTIONS = ['👍', '❤️', '👏', '🎉', '🤲', '✨'];
@@ -34,10 +32,14 @@ const QURAN_SNIPPETS: Array<{ label: string; text: string }> = [
   },
 ];
 
-const STROKE_COLORS = ['#1f2d1f', '#0f766e', '#b45309', '#be123c', '#4d7c0f'];
-
 function uid(): string {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
+}
+
+/** ساعت پیام چت به‌صورت فارسی — «۱۴:۰۵» */
+function chatTime(at: number): string {
+  const date = new Date(at);
+  return `${faDigits(String(date.getHours()).padStart(2, '0'))}:${faDigits(String(date.getMinutes()).padStart(2, '0'))}`;
 }
 
 export default function LiveClassroomPage() {
@@ -68,14 +70,17 @@ export default function LiveClassroomPage() {
   const [peerOnline, setPeerOnline] = useState(false);
 
   // panels
-  const [sideTab, setSideTab] = useState<'none' | 'chat' | 'board' | 'reading'>('none');
+  const [sideTab, setSideTab] = useState<'none' | 'chat' | 'settings' | 'reading'>('none');
   const [chat, setChat] = useState<ChatMessage[]>([]);
   const [chatDraft, setChatDraft] = useState('');
   const [unread, setUnread] = useState(0);
-  const [strokes, setStrokes] = useState<Stroke[]>([]);
-  const [strokeColor, setStrokeColor] = useState(STROKE_COLORS[0]);
-  const [strokeWidth, setStrokeWidth] = useState(3);
   const [readingText, setReadingText] = useState('');
+  // in-call device settings (تنظیمات جلسات ویدیویی — موبایل و دسکتاپ)
+  const [liveDevices, setLiveDevices] = useState<MediaDeviceInfo[]>([]);
+  const [settingsBusy, setSettingsBusy] = useState(false);
+  const [facing, setFacing] = useState<'user' | 'environment'>('user');
+  // چیدمان موبایل — پنل کنار در صفحهٔ باریک زیر ویدیو می‌رود
+  const [narrow, setNarrow] = useState(false);
   const [reactions, setReactions] = useState<Reaction[]>([]);
   const [handRaised, setHandRaised] = useState(false);
   const [notice, setNotice] = useState('');
@@ -86,10 +91,8 @@ export default function LiveClassroomPage() {
   const engineRef = useRef<LiveEngine | null>(null);
   const localVideoRef = useRef<HTMLVideoElement | null>(null);
   const remoteVideoRef = useRef<HTMLVideoElement | null>(null);
-  const boardRef = useRef<HTMLCanvasElement | null>(null);
-  const boardWrapperRef = useRef<HTMLDivElement | null>(null);
-  const drawingRef = useRef<{ stroke: Stroke } | null>(null);
   const liveStreamRef = useRef<MediaStream | null>(null);
+  const chatBodyRef = useRef<HTMLDivElement | null>(null);
   const screenRef = useRef<MediaStream | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const myIdRef = useRef<number>(0);
@@ -236,13 +239,6 @@ export default function LiveClassroomPage() {
         setUnread((count) => count + 1);
         break;
       }
-      case 'wb': {
-        const payload = event.payload as { action: string; stroke?: Stroke } | undefined;
-        if (payload?.action === 'clear') setStrokes([]);
-        else if (payload?.action === 'undo') setStrokes((items) => items.slice(0, -1));
-        else if (payload?.action === 'draw' && payload.stroke) setStrokes((items) => [...items, payload.stroke!]);
-        break;
-      }
       case 'reading': {
         const payload = event.payload as { text?: string } | undefined;
         setReadingText(String(payload?.text ?? ''));
@@ -301,40 +297,127 @@ export default function LiveClassroomPage() {
     return () => clearInterval(timer);
   }, [session]);
 
-  /* ---------------- board rendering ---------------- */
+  /* ---------------- classroom countdown ---------------- */
   useEffect(() => {
-    const canvas = boardRef.current;
-    const wrapper = boardWrapperRef.current;
-    if (!canvas || !wrapper || sideTab !== 'board') return;
-    const resize = () => {
-      const rect = wrapper.getBoundingClientRect();
-      if (canvas.width !== rect.width || canvas.height !== rect.height) {
-        canvas.width = rect.width;
-        canvas.height = rect.height;
-      }
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-      for (const stroke of strokes) {
-        ctx.strokeStyle = stroke.color;
-        ctx.lineWidth = stroke.width;
-        ctx.beginPath();
-        stroke.points.forEach((point, index) => {
-          const x = point.x * canvas.width;
-          const y = point.y * canvas.height;
-          if (index === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
-        });
-        ctx.stroke();
-      }
+    if (!session?.scheduled_at) return;
+    const endAt = new Date(session.scheduled_at).getTime() + (session.duration || 60) * 60_000;
+    const tick = () => {
+      const diff = endAt - Date.now();
+      if (diff <= 0) { setCountdown('به پایان زمان جلسه رسیده است'); return; }
+      const minutes = Math.floor(diff / 60_000);
+      const seconds = Math.floor((diff % 60_000) / 1000);
+      setCountdown(`${faDigits(minutes)}:${faDigits(String(seconds).padStart(2, '0'))} باقی‌مانده`);
     };
-    resize();
-    const observer = new ResizeObserver(resize);
-    observer.observe(wrapper);
-    return () => observer.disconnect();
-  }, [strokes, sideTab]);
+    tick();
+    const timer = setInterval(tick, 1000);
+    return () => clearInterval(timer);
+  }, [session]);
+
+  /* ---------------- responsive layout (موبایل) ---------------- */
+  useEffect(() => {
+    const query = window.matchMedia('(max-width: 860px)');
+    const apply = () => setNarrow(query.matches);
+    apply();
+    query.addEventListener('change', apply);
+    return () => query.removeEventListener('change', apply);
+  }, []);
+
+  /* ---------------- chat auto-scroll ---------------- */
+  useEffect(() => {
+    const body = chatBodyRef.current;
+    if (body) body.scrollTop = body.scrollHeight;
+  }, [chat, sideTab]);
+
+  /* ---------------- in-call device switching (تنظیمات ویدیویی) ---------------- */
+  const refreshLiveDevices = useCallback(async () => {
+    try {
+      const list = await navigator.mediaDevices.enumerateDevices();
+      setLiveDevices(list.filter((device) => device.kind !== 'audiooutput'));
+    } catch { /* non-fatal */ }
+  }, []);
+
+  useEffect(() => {
+    if (phase === 'live') void refreshLiveDevices();
+  }, [phase, refreshLiveDevices]);
+
+  /** جایگزینی تراک ویدیو در ارسال‌کنندهٔ P2P بدون قطع جلسه. */
+  const replaceVideoTrack = useCallback(async (videoTrack: MediaStreamTrack) => {
+    const engine = engineRef.current;
+    const stream = liveStreamRef.current;
+    if (!engine || !stream) return;
+    stream.getVideoTracks().forEach((track) => track.stop());
+    stream.removeTrack(stream.getVideoTracks()[0]);
+    stream.addTrack(videoTrack);
+    await engine.setLocalMedia(stream);
+    if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+  }, []);
+
+  /** جایگزینی تراک میکروفون بدون قطع جلسه. */
+  const replaceAudioTrack = useCallback(async (audioTrack: MediaStreamTrack) => {
+    const engine = engineRef.current;
+    const stream = liveStreamRef.current;
+    if (!engine || !stream) return;
+    stream.getAudioTracks().forEach((track) => track.stop());
+    stream.removeTrack(stream.getAudioTracks()[0]);
+    stream.addTrack(audioTrack);
+    await engine.setLocalMedia(stream);
+  }, []);
+
+  async function switchCameraDevice(deviceId: string) {
+    if (settingsBusy) return;
+    setSettingsBusy(true);
+    try {
+      const media = await navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: deviceId } } });
+      const [track] = media.getVideoTracks();
+      if (track) await replaceVideoTrack(track);
+      else media.getTracks().forEach((item) => item.stop());
+    } catch {
+      setNotice('تغییر دوربین انجام نشد.');
+      setTimeout(() => setNotice(''), 3000);
+    } finally {
+      setSettingsBusy(false);
+      void refreshLiveDevices();
+    }
+  }
+
+  async function switchMicDevice(deviceId: string) {
+    if (settingsBusy) return;
+    setSettingsBusy(true);
+    try {
+      const media = await navigator.mediaDevices.getUserMedia({ audio: { deviceId: { exact: deviceId }, echoCancellation: true, noiseSuppression: true } });
+      const [track] = media.getAudioTracks();
+      if (track) await replaceAudioTrack(track);
+      else media.getTracks().forEach((item) => item.stop());
+    } catch {
+      setNotice('تغییر میکروفون انجام نشد.');
+      setTimeout(() => setNotice(''), 3000);
+    } finally {
+      setSettingsBusy(false);
+      void refreshLiveDevices();
+    }
+  }
+
+  /** چرخش دوربین جلو/عقب — کلید اصلی موبایل. */
+  async function flipCamera() {
+    if (settingsBusy) return;
+    const next = facing === 'user' ? 'environment' : 'user';
+    setSettingsBusy(true);
+    try {
+      const media = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: next }, width: { ideal: 1280 } } });
+      const [track] = media.getVideoTracks();
+      if (track) {
+        await replaceVideoTrack(track);
+        setFacing(next);
+      } else {
+        media.getTracks().forEach((item) => item.stop());
+      }
+    } catch {
+      setNotice('دوربین دیگری در دسترس نیست.');
+      setTimeout(() => setNotice(''), 3000);
+    } finally {
+      setSettingsBusy(false);
+    }
+  }
 
   /* ---------------- lifecycle ---------------- */
   useEffect(() => () => {
@@ -344,7 +427,7 @@ export default function LiveClassroomPage() {
     void audioCtxRef.current?.close();
   }, []);
 
-  const openSide = (tab: 'chat' | 'board' | 'reading') => {
+  const openSide = (tab: 'chat' | 'settings' | 'reading') => {
     setSideTab((current) => (current === tab ? 'none' : tab));
     if (tab === 'chat') setUnread(0);
   };
@@ -543,7 +626,7 @@ export default function LiveClassroomPage() {
 
       {notice && <div role="status" style={{ marginBottom: 10, padding: '10px 14px', borderRadius: 12, background: 'var(--gold-bg)', color: 'var(--gold)', fontSize: 12.5, fontWeight: 700 }}>{notice}</div>}
 
-      <div style={{ display: 'grid', gridTemplateColumns: sideTab === 'none' ? '1fr' : 'minmax(0, 1.6fr) minmax(280px, 1fr)', gap: 12, alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: sideTab === 'none' || narrow ? '1fr' : 'minmax(0, 1.6fr) minmax(280px, 1fr)', gap: 12, alignItems: 'start' }}>
         {/* stage */}
         <section style={{ background: '#0e130e', borderRadius: 18, overflow: 'hidden', position: 'relative', aspectRatio: '16 / 10' }}>
           <video ref={remoteVideoRef} autoPlay playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -556,8 +639,8 @@ export default function LiveClassroomPage() {
               </div>
             </div>
           )}
-          <div style={{ position: 'absolute', bottom: 12, left: 12, width: 168, aspectRatio: '16 / 10', borderRadius: 12, overflow: 'hidden', background: '#1a211a', border: '1px solid rgba(255,255,255,.14)' }}>
-            <video ref={localVideoRef} autoPlay muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', transform: sharing ? 'none' : 'scaleX(-1)' }} />
+          <div style={{ position: 'absolute', bottom: 12, left: 12, width: narrow ? 128 : 168, aspectRatio: '16 / 10', borderRadius: 12, overflow: 'hidden', background: '#1a211a', border: '1px solid rgba(255,255,255,.14)' }}>
+            <video ref={localVideoRef} autoPlay muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', transform: sharing ? 'none' : facing === 'environment' ? 'none' : 'scaleX(-1)' }} />
           </div>
           {reactions.map((reaction) => (
             <span key={reaction.id} style={{ position: 'absolute', left: `${20 + (parseInt(reaction.id.slice(-2), 16) % 60)}%`, bottom: 90, fontSize: 34, animation: 'floatUp 2.6s ease-out forwards' }}>{reaction.emoji}</span>
@@ -566,68 +649,85 @@ export default function LiveClassroomPage() {
 
         {/* side panel */}
         {sideTab !== 'none' && (
-          <section style={{ background: '#fff', borderRadius: 18, border: '1px solid var(--sand-150)', boxShadow: 'var(--sh-sm)', display: 'flex', flexDirection: 'column', height: 520, overflow: 'hidden' }}>
+          <section style={{ background: '#fff', borderRadius: 18, border: '1px solid var(--sand-150)', boxShadow: 'var(--sh-sm)', display: 'flex', flexDirection: 'column', height: narrow ? 430 : 520, overflow: 'hidden' }}>
             <div style={{ display: 'flex', borderBottom: '1px solid var(--sand-150)' }}>
-              {([['chat', 'گفت‌وگو'], ['board', 'وایت‌برد'], ['reading', 'متن قرآنی']] as const).map(([key, label]) => (
+              {([['chat', 'گفت‌وگو'], ['settings', 'تنظیمات'], ['reading', 'متن قرآنی']] as const).map(([key, label]) => (
                 <button key={key} type="button" onClick={() => setSideTab(key)} style={{ flex: 1, padding: '11px 0', border: 0, cursor: 'pointer', fontSize: 13, fontWeight: 700, background: sideTab === key ? 'var(--olive-100)' : 'transparent', color: sideTab === key ? 'var(--olive-700)' : 'var(--ink-3)' }}>{label}</button>
               ))}
             </div>
 
             {sideTab === 'chat' && (
               <>
-                <div style={{ flex: 1, overflowY: 'auto', padding: 14, display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 420 }}>
-                  {chat.map((message) => (
-                    <div key={message.id} style={{ alignSelf: message.mine ? 'flex-start' : 'flex-end', maxWidth: '82%', padding: '8px 12px', borderRadius: 14, background: message.role === 'system' ? 'var(--sand-100)' : message.mine ? 'var(--olive-600)' : 'var(--olive-100)', color: message.role === 'system' ? 'var(--ink-3)' : message.mine ? '#fff' : 'var(--ink-2)', fontSize: 13, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
+                <div ref={chatBodyRef} style={{ flex: 1, overflowY: 'auto', padding: 14, display: 'flex', flexDirection: 'column', gap: 10, minHeight: 0 }}>
+                  {chat.map((message) => message.role === 'system' ? (
+                    <div key={message.id} style={{ alignSelf: 'center', maxWidth: '90%', padding: '5px 14px', borderRadius: 999, background: 'var(--sand-100)', color: 'var(--ink-3)', fontSize: 11.5, fontWeight: 600 }}>
                       {message.text}
                     </div>
+                  ) : (
+                    <div key={message.id} style={{ alignSelf: message.mine ? 'flex-start' : 'flex-end', maxWidth: '82%', display: 'grid', gap: 3 }}>
+                      <span style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--ink-3)', padding: '0 6px' }}>{message.mine ? 'شما' : isTeacherSide ? 'قرآن‌آموز' : 'استاد'}</span>
+                      <div style={{ padding: '9px 13px', borderRadius: message.mine ? '16px 16px 16px 4px' : '16px 16px 4px 16px', background: message.mine ? 'var(--olive-600)' : 'var(--olive-100)', color: message.mine ? '#fff' : 'var(--ink-2)', fontSize: 13.5, lineHeight: 1.8, whiteSpace: 'pre-wrap', boxShadow: 'var(--sh-sm)' }}>
+                        {message.text}
+                      </div>
+                      <span style={{ fontSize: 10, color: 'var(--ink-3)', padding: '0 6px', textAlign: message.mine ? 'right' : 'left' }}>{chatTime(message.at)}</span>
+                    </div>
                   ))}
-                  {chat.length === 0 && <div style={{ margin: 'auto', color: 'var(--ink-3)', fontSize: 12.5 }}>پیامی نیست. سلام کنید! 👋</div>}
+                  {chat.length === 0 && (
+                    <div style={{ margin: 'auto', textAlign: 'center', color: 'var(--ink-3)', fontSize: 12.5, display: 'grid', gap: 6, justifyItems: 'center' }}>
+                      <span style={{ fontSize: 30 }}>💬</span>
+                      <span>پیامی نیست؛ سلام کنید و گفت‌وگو را شروع کنید.</span>
+                    </div>
+                  )}
                 </div>
                 <div style={{ display: 'flex', gap: 8, padding: 12, borderTop: '1px solid var(--sand-150)' }}>
-                  <input value={chatDraft} onChange={(event) => setChatDraft(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') sendChat(); }} placeholder="پیام خود را بنویسید…" style={{ flex: 1, padding: '10px 12px', borderRadius: 12, border: '1px solid var(--sand-150)', fontSize: 13, background: 'var(--surface)' }} />
-                  <button type="button" onClick={sendChat} style={{ border: 0, borderRadius: 12, padding: '0 18px', background: 'var(--olive-600)', color: '#fff', fontWeight: 800, cursor: 'pointer' }}>ارسال</button>
+                  <input value={chatDraft} onChange={(event) => setChatDraft(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') sendChat(); }} placeholder="پیام خود را بنویسید…" maxLength={1000} style={{ flex: 1, padding: '11px 14px', borderRadius: 14, border: '1px solid var(--sand-150)', fontSize: 13.5, background: 'var(--surface)' }} />
+                  <button type="button" onClick={sendChat} disabled={!chatDraft.trim()} style={{ border: 0, borderRadius: 14, padding: '0 20px', background: chatDraft.trim() ? 'var(--olive-600)' : 'var(--sand-100)', color: chatDraft.trim() ? '#fff' : 'var(--ink-3)', fontWeight: 800, cursor: chatDraft.trim() ? 'pointer' : 'default' }}>ارسال</button>
                 </div>
               </>
             )}
 
-            {sideTab === 'board' && (
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '10px 12px', borderBottom: '1px solid var(--sand-150)', flexWrap: 'wrap' }}>
-                  {STROKE_COLORS.map((color) => (
-                    <button key={color} type="button" aria-label={`رنگ ${color}`} onClick={() => setStrokeColor(color)} style={{ width: 24, height: 24, borderRadius: 999, background: color, border: strokeColor === color ? '2px solid var(--olive-700)' : '2px solid transparent', cursor: 'pointer' }} />
-                  ))}
-                  <input type="range" min={2} max={10} value={strokeWidth} onChange={(event) => setStrokeWidth(Number(event.target.value))} aria-label="ضخامت قلم" style={{ width: 90 }} />
-                  <button type="button" onClick={() => { setStrokes((items) => items.slice(0, -1)); clientRef.current?.send('wb', { action: 'undo' }); }} style={{ border: '1px solid var(--sand-150)', background: 'var(--surface)', borderRadius: 10, padding: '6px 12px', fontSize: 12, cursor: 'pointer' }}>برگشت</button>
-                  <button type="button" onClick={() => { setStrokes([]); clientRef.current?.send('wb', { action: 'clear' }); }} style={{ border: '1px solid var(--clay)', background: 'var(--clay-bg)', color: 'var(--rose)', borderRadius: 10, padding: '6px 12px', fontSize: 12, cursor: 'pointer' }}>پاک کردن همه</button>
+            {sideTab === 'settings' && (
+              <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'grid', gap: 14, alignContent: 'start' }}>
+                <div style={{ display: 'grid', gap: 8 }}>
+                  <strong style={{ fontSize: 13.5, color: 'var(--ink-2)' }}>تنظیمات دوربین و میکروفون</strong>
+                  <span style={{ fontSize: 12, color: 'var(--ink-3)', lineHeight: 1.9 }}>
+                    دوربین و میکروفون را بدون خروج از کلاس عوض کنید؛ روی موبایل می‌توانید بین دوربین جلو و عقب جابه‌جا شوید.
+                  </span>
                 </div>
-                <div ref={boardWrapperRef} style={{ flex: 1, position: 'relative', minHeight: 0 }}>
-                  <canvas
-                    ref={boardRef}
-                    style={{ position: 'absolute', inset: 0, touchAction: 'none', cursor: 'crosshair' }}
-                    onPointerDown={(event) => {
-                      const rect = event.currentTarget.getBoundingClientRect();
-                      const stroke: Stroke = { id: uid(), points: [{ x: (event.clientX - rect.left) / rect.width, y: (event.clientY - rect.top) / rect.height }], color: strokeColor, width: strokeWidth };
-                      drawingRef.current = { stroke };
-                      event.currentTarget.setPointerCapture(event.pointerId);
-                    }}
-                    onPointerMove={(event) => {
-                      if (!drawingRef.current) return;
-                      const rect = event.currentTarget.getBoundingClientRect();
-                      drawingRef.current.stroke.points.push({ x: (event.clientX - rect.left) / rect.width, y: (event.clientY - rect.top) / rect.height });
-                      setStrokes((items) => {
-                        const active = drawingRef.current?.stroke;
-                        if (!active) return items;
-                        const exists = items.some((item) => item.id === active.id);
-                        return exists ? items : [...items, active];
-                      });
-                    }}
-                    onPointerUp={() => {
-                      const active = drawingRef.current?.stroke;
-                      drawingRef.current = null;
-                      if (active) clientRef.current?.send('wb', { action: 'draw', stroke: active });
-                    }}
-                  />
-                </div>
+                <button type="button" onClick={() => void flipCamera()} disabled={settingsBusy} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '13px 15px', borderRadius: 14, border: '1px solid var(--sand-150)', background: 'var(--surface)', cursor: settingsBusy ? 'wait' : 'pointer' }}>
+                  <span style={{ display: 'grid', justifyItems: 'start', gap: 2 }}>
+                    <span style={{ fontSize: 13.5, fontWeight: 800, color: 'var(--ink-2)' }}>چرخش دوربین (جلو / عقب)</span>
+                    <span style={{ fontSize: 11.5, color: 'var(--ink-3)' }}>مناسب موبایل — تصویر بلافاصله برای طرف مقابل عوض می‌شود.</span>
+                  </span>
+                  <span style={{ fontSize: 20 }}>🔄</span>
+                </button>
+                <label style={{ display: 'grid', gap: 6 }}>
+                  <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--ink-3)' }}>دوربین</span>
+                  <select
+                    value={(liveDevices.find((device) => device.kind === 'videoinput' && device.deviceId === liveStreamRef.current?.getVideoTracks()[0]?.getSettings().deviceId)?.deviceId) ?? ''}
+                    onChange={(event) => void switchCameraDevice(event.target.value)}
+                    disabled={settingsBusy}
+                    style={{ padding: '11px 12px', borderRadius: 12, border: '1px solid var(--sand-150)', background: 'var(--surface)', fontSize: 13 }}
+                  >
+                    {liveDevices.filter((device) => device.kind === 'videoinput').map((device) => (
+                      <option key={device.deviceId} value={device.deviceId}>{device.label || 'دوربین'}</option>
+                    ))}
+                  </select>
+                </label>
+                <label style={{ display: 'grid', gap: 6 }}>
+                  <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--ink-3)' }}>میکروفون</span>
+                  <select
+                    value={(liveDevices.find((device) => device.kind === 'audioinput' && device.deviceId === liveStreamRef.current?.getAudioTracks()[0]?.getSettings().deviceId)?.deviceId) ?? ''}
+                    onChange={(event) => void switchMicDevice(event.target.value)}
+                    disabled={settingsBusy}
+                    style={{ padding: '11px 12px', borderRadius: 12, border: '1px solid var(--sand-150)', background: 'var(--surface)', fontSize: 13 }}
+                  >
+                    {liveDevices.filter((device) => device.kind === 'audioinput').map((device) => (
+                      <option key={device.deviceId} value={device.deviceId}>{device.label || 'میکروفون'}</option>
+                    ))}
+                  </select>
+                </label>
+                {settingsBusy && <div style={{ padding: '9px 13px', borderRadius: 12, background: 'var(--gold-bg)', color: 'var(--gold)', fontSize: 12, fontWeight: 700 }}>در حال اعمال تغییرات…</div>}
               </div>
             )}
 
@@ -657,7 +757,7 @@ export default function LiveClassroomPage() {
         <ControlButton active={handRaised} label={handRaised ? 'پایین آوردن دست' : 'اجازه صحبت'} emoji="✋" onClick={toggleHand} />
         {REACTIONS.map((emoji) => <ControlButton key={emoji} active={false} label={`واکنش ${emoji}`} emoji={emoji} onClick={() => sendReaction(emoji)} small />)}
         <ControlButton active={sideTab === 'chat'} label="گفت‌وگو" emoji="💬" onClick={() => openSide('chat')} badge={unread > 0 && sideTab !== 'chat' ? unread : 0} />
-        <ControlButton active={sideTab === 'board'} label="وایت‌برد" emoji="📝" onClick={() => openSide('board')} />
+        <ControlButton active={sideTab === 'settings'} label="تنظیمات دوربین و صدا" emoji="⚙️" onClick={() => openSide('settings')} />
         <ControlButton active={sideTab === 'reading'} label="متن قرآنی" emoji="📖" onClick={() => openSide('reading')} />
         <ControlButton active={false} label={isTeacherSide ? 'پایان کلاس و تسویه' : 'خروج از کلاس'} emoji="🔚" danger onClick={() => { if (window.confirm(isTeacherSide ? 'کلاس پایان یابد و تسویهٔ جلسه انجام شود؟' : 'از کلاس خارج می‌شوید؟')) void leaveClassroom(isTeacherSide); }} />
       </div>
