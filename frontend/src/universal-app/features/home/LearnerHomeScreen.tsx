@@ -246,76 +246,6 @@ function VerseStrip() {
   );
 }
 
-function OnboardingChecklist({ user, config }: { user: AuthUser; config: UniversalAppConfig }) {
-  const profileDone = Boolean(user.avatar_url && user.city?.trim() && user.bio?.trim());
-  const steps = [
-    { done: true, label: "ساخت حساب وُدّا", icon: "user" as const, target: "" },
-    { done: profileDone, label: "تکمیل پروفایل", icon: "edit" as const, target: "/profile/edit" },
-    { done: false, label: "اولین رزرو جلسه", icon: "calendar" as const, target: "/search" },
-  ];
-  const remaining = steps.filter((step) => !step.done).length;
-  return (
-    <Card elevated className="vodda-enter" style={{ display: "grid", gap: 10 }}>
-      <strong style={{ ...typography.body, color: colors.ink }}>سه قدم تا جلسهٔ اول</strong>
-      {steps.map((step) => {
-        const content = (
-          <>
-            <Icon
-              name={step.icon}
-              size={20}
-              stroke={step.done ? 2 : 1.7}
-              style={{ color: step.done ? colors.olive600 : colors.inkFaint, flex: "0 0 auto" }}
-            />
-            <span
-              style={{
-                flex: 1,
-                minWidth: 0,
-                ...typography.bodySmall,
-                color: step.done ? colors.inkMuted : colors.ink,
-                fontWeight: step.done ? 600 : 800,
-                textDecoration: step.done ? "line-through" : "none",
-              }}
-            >
-              {step.label}
-            </span>
-            {!step.done && step.target ? <Icon name="chevronL" size={16} style={{ color: colors.inkFaint }} /> : null}
-          </>
-        );
-        if (step.done || !step.target) {
-          return <div key={step.label} style={{ display: "flex", alignItems: "center", gap: 10 }}>{content}</div>;
-        }
-        return (
-          <button
-            key={step.label}
-            type="button"
-            onClick={() => navigateApp(step.target, config)}
-            className="vodda-tappable"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              padding: 0,
-              border: 0,
-              background: "transparent",
-              cursor: "pointer",
-              fontFamily: typography.fontFamily,
-              textAlign: "right",
-              color: colors.ink,
-            }}
-          >
-            {content}
-          </button>
-        );
-      })}
-      <span style={{ ...typography.caption, color: colors.inkMuted }}>
-        {remaining > 0
-          ? `${faNumber(remaining, 0)} گام تا آماده شدن برای نخستین جلسه باقی مانده است`
-          : "همه‌چیز آماده است؛ زمان رزرو نخستین جلسه فرا رسیده است."}
-      </span>
-    </Card>
-  );
-}
-
 type PastTeacher = { id: number; name: string; avatarUrl: string };
 
 function RebookRail({ teachers, config }: { teachers: PastTeacher[]; config: UniversalAppConfig }) {
@@ -755,7 +685,8 @@ function NotificationsBell({
 
 /* ─────────────────────────  صفحه خانه  ───────────────────────── */
 
-// «جلسه بعدی تو» و نوار چیپ‌ها حذف شدند؛ ناحیهٔ جلسه فقط بنر رزرو دوباره را نشان می‌دهد.
+// «جلسه بعدی تو»، نوار چیپ‌ها و کادر «سه قدم تا جلسهٔ اول» حذف شدند؛
+// ناحیهٔ جلسه فقط بنر رزرو دوباره را نشان می‌دهد و مهمان‌ها پنل خوش‌آمد می‌بینند.
 type SessionAreaState = "loading" | "rebook" | "ready";
 
 export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
@@ -968,14 +899,11 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
 
       <VerseStrip />
 
-      {/* کارت «جلسه بعدی تو»، نوار جستجو و چیپ‌های اعتماد حذف شدند — صفحهٔ آرام‌تر */}
+      {/* کادر «سه قدم تا جلسهٔ اول» حذف شد — فقط بنر رزرو دوباره یا پنل خوش‌آمد مهمان */}
       {sessionArea === "rebook" ? (
         <RebookBanner config={config} />
-      ) : sessionArea === "ready" ? (
-        user ? (
-          <OnboardingChecklist user={user} config={config} />
-        ) : (
-          <HeroPanel
+      ) : sessionArea === "ready" && !user ? (
+        <HeroPanel
           eyebrow="به وُدّا خوش آمدید"
           title={"استاد قرآن خود را بیابید\nو زمان آزاد ایشان را رزرو کنید"}
           description="پروفایل استادان تأییدشده و خدمات قابل رزرو را ببینید."
@@ -993,8 +921,7 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
             <Icon name="search" size={18} />
             جستجوی استاد
           </Button>
-          </HeroPanel>
-        )
+        </HeroPanel>
       ) : null}
 
       {needsProfileNudge ? <ProfileNudgeBar config={config} /> : null}

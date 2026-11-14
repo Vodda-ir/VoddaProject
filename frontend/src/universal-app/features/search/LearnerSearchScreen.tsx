@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import type { UniversalAppConfig } from "../../config";
 import { usePlatform } from "../../platform/context";
 import {
+  Avatar,
   Button,
   EmptyState,
   ErrorState,
@@ -299,6 +300,58 @@ function ServiceRow({
   );
 }
 
+/** ردیف فشردهٔ استاد در بخش «اساتید این موضوعات» (تب خدمات). */
+function TopicTeacherRow({
+  teacher,
+  config,
+  index = 0,
+}: {
+  teacher: Teacher;
+  config: UniversalAppConfig;
+  index?: number;
+}) {
+  const subtitle = [teacher.tag || teacher.field, teacher.city].filter(Boolean).join(" · ");
+  return (
+    <button
+      type="button"
+      onClick={() => navigateApp(`/teacher/${teacher.id}`, config)}
+      className="vodda-tappable vodda-enter"
+      aria-label={`پروفایل استاد ${teacher.name}`}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        width: "100%",
+        padding: "9px 12px",
+        textAlign: "right",
+        background: colors.surface,
+        border: `1px solid ${colors.sand150}`,
+        borderRadius: 16,
+        cursor: "pointer",
+        fontFamily: typography.fontFamily,
+        animationDelay: `${Math.min(index, 8) * 45}ms`,
+      }}
+    >
+      <Avatar name={teacher.name} src={teacher.avatarUrl || undefined} size={38} ring tone={teacher.female ? "gold" : "olive"} />
+      <span style={{ minWidth: 0, flex: 1 }}>
+        <strong style={{ display: "block", fontSize: 12.8, fontWeight: 800, color: colors.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {teacher.name}
+        </strong>
+        <span style={{ display: "block", fontSize: 11, color: colors.inkMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {subtitle || "استاد وُدّا"}
+        </span>
+      </span>
+      {teacher.reviews > 0 ? (
+        <span style={{ flex: "0 0 auto", display: "inline-flex", alignItems: "center", gap: 3, fontSize: 11, fontWeight: 800, color: colors.goldDark }}>
+          <Icon name="star" size={11} fill />
+          {faNumber(teacher.rating, 1)}
+        </span>
+      ) : null}
+      <Icon name="chevronL" size={16} style={{ color: colors.inkFaint, flex: "0 0 auto" }} />
+    </button>
+  );
+}
+
 function SearchSkeleton() {
   return (
     <div style={{ display: "grid", gap: 14 }} aria-label="در حال جستجو">
@@ -406,9 +459,11 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
   useEffect(() => {
     const params = new URLSearchParams();
     // تب فعال در URL می‌ماند تا هر باز-راه‌اندازی دوبارهٔ صفحه (حتی با فاصلهٔ
-    // کم پس از ناوبری برنامه‌ای) تب «خدمات» را گم نکند.
+    // کم پس از ناوبری برنامه‌ای) تب «خدمات» را گم نکند؛ فیلتر موضوع رسمی
+    // (topic) نیز در URL حفظ می‌شود تا لینک اساتید هر خدمت پایدار بماند.
     if (mode === "services") params.set("mode", "services");
     if (filters.query.trim()) params.set("q", filters.query.trim());
+    if (topicId) params.set("topic", String(topicId));
     if (filters.field.trim()) params.set("field", filters.field.trim());
     if (filters.city.trim()) params.set("city", filters.city.trim());
     if (filters.female === "female") params.set("female", "true");
@@ -418,7 +473,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
     if (filters.sort !== "recommended") params.set("sort", filters.sort);
     const next = window.location.pathname + (params.size ? "?" + params.toString() : "");
     window.history.replaceState({}, "", next);
-  }, [filters, mode]);
+  }, [filters, mode, topicId]);
 
   useEffect(() => {
     let active = true;
@@ -606,9 +661,58 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
     return [...groups.entries()];
   }, [filteredPresenceServices]);
 
+  // اساتید موضوعات فیلترشده (تب خدمات) — ورود به هر موضوع از خانه، زیردسته‌ها
+  // و همزمان اساتید همان زیردسته‌ها را نشان می‌دهد، نه همهٔ اساتید.
+  const [topicTeachers, setTopicTeachers] = useState<Teacher[]>([]);
+  const [topicTeachersLoading, setTopicTeachersLoading] = useState(false);
+  useEffect(() => {
+    if (mode !== "services" || !servicesLoaded || !needle) {
+      setTopicTeachers([]);
+      setTopicTeachersLoading(false);
+      return;
+    }
+    const ids = filteredOnlineServices.slice(0, 6).map((item) => item.id);
+    if (ids.length === 0) {
+      setTopicTeachers([]);
+      setTopicTeachersLoading(false);
+      return;
+    }
+    let active = true;
+    setTopicTeachersLoading(true);
+    Promise.all(
+      ids.map((id) =>
+        searchTeachersPage(runtime, { officialServiceId: id, limit: 6 }).catch(() => ({ items: [] as Teacher[], total: 0 })),
+      ),
+    )
+      .then((results) => {
+        if (!active) return;
+        const seen = new Set<number>();
+        const merged: Teacher[] = [];
+        for (const result of results) {
+          for (const teacher of result.items) {
+            if (MADDAHI_PATTERN.test(teacher.field + " " + teacher.tag)) continue;
+            if (seen.has(teacher.id)) continue;
+            seen.add(teacher.id);
+            merged.push(teacher);
+          }
+        }
+        setTopicTeachers(merged.slice(0, 8));
+      })
+      .finally(() => {
+        if (active) setTopicTeachersLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [mode, servicesLoaded, runtime, needle, filteredOnlineServices]);
+
   function openServiceTeachers(serviceId: number) {
     setTopicId(serviceId);
     setMode("teachers");
+    // ورود به اساتید یک خدمت = فقط فیلتر موضوع رسمی؛ جستجوی متنی از دستهٔ
+    // قبلی نباید نتایج را خالی یا مغشوش کند.
+    setFilters((current) => ({ ...current, query: "" }));
+    setDebouncedQuery("");
     navigateApp(`/search?topic=${serviceId}`, config);
   }
 
@@ -714,6 +818,36 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
                       ))}
                     </div>
                   ))}
+                </section>
+              ) : null}
+
+              {/* اساتید این موضوعات — فقط استادان زیردسته‌های فیلترشده، نه همهٔ اساتید */}
+              {needle && filteredOnlineServices.length > 0 ? (
+                <section style={{ display: "grid", gap: 9 }} aria-label="اساتید این موضوعات">
+                  <strong style={{ fontSize: 13, color: colors.olive700, display: "flex", alignItems: "center", gap: 6 }}>
+                    <Icon name="users" size={15} />
+                    اساتید این موضوعات
+                  </strong>
+                  {topicTeachersLoading ? (
+                    <div style={{ display: "grid", gap: 7 }} aria-label="در حال دریافت اساتید">
+                      {[0, 1, 2].map((index) => (
+                        <span
+                          key={index}
+                          aria-hidden="true"
+                          className="vodda-skeleton"
+                          style={{ display: "block", height: 56, borderRadius: 16 }}
+                        />
+                      ))}
+                    </div>
+                  ) : topicTeachers.length === 0 ? (
+                    <p style={{ margin: 0, fontSize: 11.5, color: colors.inkMuted, lineHeight: 1.9 }}>
+                      هنوز استادی برای این موضوعات ثبت‌نام نکرده است؛ می‌توانید از فراخوان استفاده کنید.
+                    </p>
+                  ) : (
+                    topicTeachers.map((teacher, index) => (
+                      <TopicTeacherRow key={teacher.id} teacher={teacher} config={config} index={index} />
+                    ))
+                  )}
                 </section>
               ) : null}
 

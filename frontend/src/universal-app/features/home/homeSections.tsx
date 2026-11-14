@@ -7,24 +7,19 @@
 // همهٔ بخش‌ها مستقل هستند: خطا یا خالی‌بودن، کل بخش را پنهان می‌کند تا
 // خانهٔ کاربر هرگز به‌خاطر آن‌ها نشکند.
 
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import type { UniversalAppConfig } from "../../config";
-import { usePlatform } from "../../platform/context";
 import { navigateApp } from "../../router";
 import {
   Avatar,
-  Button,
   Icon,
-  IconBadge,
   SectionHeader,
   colors,
   gradients,
-  radii,
   shadows,
   spacing,
   typography,
 } from "../../ui";
-import { messageOf } from "../../ui/errorMessage";
 import { asArray, asRecord } from "../../platform/api";
 
 /* ── نقشهٔ تصویر دسته‌ها ─────────────────────────────────────────────────── */
@@ -304,9 +299,9 @@ export function TopServicesRail({ config }: { config: UniversalAppConfig }) {
   if (services === null) {
     return (
       <section aria-label="خدمات برتر" style={{ display: "grid", gap: 12 }}>
-        <div style={{ display: "flex", gap: 12, overflow: "hidden" }}>
-          {[0, 1, 2].map((index) => (
-            <span key={index} aria-hidden="true" className="vodda-skeleton" style={{ display: "block", flex: "0 0 208px", height: 252, borderRadius: 24 }} />
+        <div style={{ display: "flex", gap: 10, overflow: "hidden" }}>
+          {[0, 1, 2, 3].map((index) => (
+            <span key={index} aria-hidden="true" className="vodda-skeleton" style={{ display: "block", flex: "0 0 150px", height: 142, borderRadius: 19 }} />
           ))}
         </div>
       </section>
@@ -324,7 +319,7 @@ export function TopServicesRail({ config }: { config: UniversalAppConfig }) {
           display: "flex",
           width: "100%",
           minWidth: 0,
-          gap: spacing.md,
+          gap: spacing.sm,
           overflowX: "auto",
           marginInline: -spacing.xl,
           padding: `${spacing.md}px ${spacing.xl}px ${spacing.sm}px`,
@@ -333,110 +328,117 @@ export function TopServicesRail({ config }: { config: UniversalAppConfig }) {
       >
         {services.map((service) => {
           const visual = categoryVisual(service.category);
-          const open = () => navigateApp(`/search?mode=services&q=${encodeURIComponent(service.title)}`, config);
+          // کلیک روی هر خدمت = فقط اساتید همان خدمت (فیلتر موضوع رسمی)
+          const open = () => navigateApp(`/search?topic=${service.id}`, config);
           return (
-            <div
+            <button
               key={service.id}
-              role="button"
-              tabIndex={0}
-              onClick={(event) => {
-                const target = event.target as HTMLElement;
-                if (target.closest("button, a")) return;
-                open();
-              }}
-              onKeyDown={(event) => {
-                if (event.key !== "Enter" && event.key !== " ") return;
-                event.preventDefault();
-                open();
-              }}
-              className="vodda-card vodda-card--interactive vodda-tappable vodda-enter"
-              aria-label={`خدمت ${service.title}`}
+              type="button"
+              onClick={open}
+              className="vodda-tappable vodda-enter"
+              aria-label={`اساتید خدمت ${service.title}`}
               style={{
-                flex: "0 0 208px",
-                width: 208,
+                flex: "0 0 150px",
+                width: 150,
                 scrollSnapAlign: "start",
-                display: "flex",
-                flexDirection: "column",
-                gap: 9,
-                padding: 12,
-                textAlign: "right",
-                border: 0,
-                borderRadius: 24,
-                background: colors.surface,
+                display: "grid",
+                alignContent: "start",
+                justifyItems: "center",
+                gap: 6,
+                padding: "8px 8px 9px",
+                textAlign: "center",
+                border: `1.5px solid ${colors.goldSoft}`,
+                borderRadius: 19,
+                background: "linear-gradient(180deg, #ffffff, #fffdf6)",
                 color: colors.ink,
                 cursor: "pointer",
                 fontFamily: typography.fontFamily,
-                boxShadow: "0 6px 22px rgba(46,54,34,.07)",
+                boxShadow: "0 0 0 3px rgba(231,213,168,.16), 0 6px 14px rgba(139,104,31,.10)",
               }}
             >
-              {/* تصویر خدمت با حلقهٔ طلایی — هم‌سبک چهرهٔ اساتید در کارت‌های برتر */}
-              <span
-                style={{
-                  position: "relative",
-                  display: "block",
-                  height: 96,
-                  borderRadius: 18,
-                  overflow: "hidden",
-                  border: `2.5px solid ${colors.goldSoft}`,
-                  boxShadow: "0 0 0 3px rgba(231,213,168,.5), 0 4px 10px rgba(46,54,34,.10)",
-                  background: colors.olive100,
-                }}
-              >
-                <img
-                  src={visual.image}
-                  alt=""
+              {/* تصویر کوچک با حلقهٔ طلایی + نشان فانتزی ورود به اساتید */}
+              <span style={{ position: "relative", width: "100%" }}>
+                <span
+                  style={{
+                    display: "block",
+                    height: 56,
+                    borderRadius: 13,
+                    overflow: "hidden",
+                    border: `2px solid ${colors.goldSoft}`,
+                    boxShadow: "0 0 0 2.5px #ffffff, 0 0 0 4px rgba(212,171,82,.30), 0 3px 8px rgba(46,54,34,.10)",
+                    background: colors.olive100,
+                  }}
+                >
+                  <img
+                    src={visual.image}
+                    alt=""
+                    aria-hidden="true"
+                    loading="lazy"
+                    style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                  <span aria-hidden="true" style={{ position: "absolute", inset: 0, background: visual.tint, opacity: 0.32 }} />
+                </span>
+                <span
                   aria-hidden="true"
-                  loading="lazy"
-                  style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
-                />
-                <span aria-hidden="true" style={{ position: "absolute", inset: 0, background: visual.tint, opacity: 0.42 }} />
+                  style={{
+                    position: "absolute",
+                    top: -6,
+                    insetInlineEnd: -4,
+                    width: 20,
+                    height: 20,
+                    display: "grid",
+                    placeItems: "center",
+                    borderRadius: "50%",
+                    background: gradients.goldRich,
+                    border: "2px solid #ffffff",
+                    color: "#fffaf0",
+                    boxShadow: "0 2px 6px rgba(139,104,31,.35)",
+                  }}
+                >
+                  <Icon name="chevronL" size={11} stroke={2.6} />
+                </span>
               </span>
-              {/* برچسب دسته — هم‌سبک نشان «آمادهٔ رزرو» در کارت اساتید */}
-              <span
-                style={{
-                  alignSelf: "flex-start",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 4,
-                  padding: "2px 9px",
-                  borderRadius: 999,
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: colors.olive700,
-                  background: colors.olive50,
-                  border: `1px solid ${colors.olive100}`,
-                }}
-              >
-                <Icon name="book" size={11} stroke={2.2} />
-                {service.category}
-              </span>
+              {/* عنوان خدمت — روی زمینهٔ سفید، خوانا */}
               <strong
                 style={{
-                  fontSize: 13.8,
+                  fontSize: 11.2,
                   fontWeight: 900,
-                  lineHeight: 1.6,
+                  lineHeight: 1.5,
                   color: colors.ink,
                   display: "-webkit-box",
                   WebkitLineClamp: 2,
                   WebkitBoxOrient: "vertical",
                   overflow: "hidden",
-                  minHeight: 44,
+                  minHeight: 34,
                 }}
               >
                 {service.title}
               </strong>
-              {/* ردپای پایانی — دکمهٔ واقعی و مستقل، هم‌تراز کارت اساتید */}
-              <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: "auto", paddingTop: 2 }}>
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11.5, fontWeight: 800, color: colors.goldDark }}>
-                  <Icon name="star" size={12} fill style={{ color: colors.gold }} />
+              {/* پانویس کوچک — پرطرفدار + نشان اساتید */}
+              <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 5, width: "100%" }}>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 9.6, fontWeight: 800, color: colors.goldDark }}>
+                  <Icon name="star" size={10} fill style={{ color: colors.gold }} />
                   پرطرفدار
                 </span>
-                <Button onClick={open} style={{ minHeight: 40, padding: "7px 13px", fontSize: 12.5 }}>
-                  مشاهدهٔ اساتید
-                  <Icon name="chevronL" size={14} stroke={2.4} />
-                </Button>
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 3,
+                    padding: "2px 8px",
+                    borderRadius: 999,
+                    background: colors.olive50,
+                    border: `1px solid ${colors.olive100}`,
+                    color: colors.olive700,
+                    fontSize: 9.6,
+                    fontWeight: 800,
+                  }}
+                >
+                  <Icon name="users" size={10} stroke={2.2} />
+                  اساتید
+                </span>
               </span>
-            </div>
+            </button>
           );
         })}
       </div>
