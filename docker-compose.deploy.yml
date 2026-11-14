@@ -101,6 +101,9 @@ services:
       HOSTNAME: 0.0.0.0
       NODE_ENV: production
       SERVER_API_URL: ${SERVER_API_URL:-http://backend:3420/api/v1}
+      # هوش مصنوعی (DeepSeek) — کلید فقط سمت سرور؛ از .env کنار همین فایل خوانده می‌شود
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      DEEPSEEK_MODEL: ${DEEPSEEK_MODEL:-deepseek-chat}
       UNIVERSAL_APP_ROOT_HOST: ${UNIVERSAL_APP_ROOT_HOST:-app.vodda.ir}
       BFF_ALLOWED_HOSTS: ${BFF_ALLOWED_HOSTS:-vodda.ir,www.vodda.ir,app.vodda.ir,localhost,127.0.0.1}
       # سشن مشترک بین vodda.ir و app.vodda.ir — برگشت از درگاه بانک همیشه به

@@ -153,6 +153,39 @@ export function TeacherProfileScreen({ config }: { config: UniversalAppConfig })
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [editorOpen, setEditorOpen] = useState(false);
+  // دستیار هوش مصنوعی بازنویسی «معرفی استاد» طبق الگوی وُدّا
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiPreview, setAiPreview] = useState<string | null>(null);
+  const [aiError, setAiError] = useState("");
+
+  async function polishBioWithAi() {
+    if (!form || aiBusy) return;
+    const text = form.bio.trim();
+    if (text.length < 10) {
+      setAiError("برای بازنویسی، متن معرفی را بنویسید (حداقل چند جمله).");
+      return;
+    }
+    setAiBusy(true);
+    setAiError("");
+    setAiPreview(null);
+    try {
+      const response = await fetch("/api/ai/polish", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ kind: "bio", text }),
+      });
+      const payload = (await response.json().catch(() => ({}))) as { ok?: boolean; text?: string; reply?: string };
+      if (response.ok && payload.ok && typeof payload.text === "string" && payload.text.trim()) {
+        setAiPreview(payload.text.trim());
+      } else {
+        setAiError(typeof payload.reply === "string" && payload.reply ? payload.reply : "الان امکان بازنویسی نیست؛ کمی بعد دوباره تلاش کنید.");
+      }
+    } catch {
+      setAiError("ارتباط با دستیار هوشمند برقرار نشد؛ اتصال را بررسی کنید.");
+    } finally {
+      setAiBusy(false);
+    }
+  }
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -488,27 +521,122 @@ export function TeacherProfileScreen({ config }: { config: UniversalAppConfig })
             />
             <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: spacing.sm }}>
               <span style={{ ...typography.caption, color: colors.inkFaint }}>{toFaDigits(String(form.bio.length))}/۱۰۰۰</span>
-              {!form.bio.trim() ? (
-                <button
-                  type="button"
-                  onClick={() => setForm({ ...form, bio: BIO_TEMPLATE })}
-                  style={{
-                    minHeight: 34,
-                    padding: "0 12px",
-                    borderRadius: 999,
-                    border: `1px solid ${colors.olive200}`,
-                    background: colors.olive50,
-                    color: colors.olive700,
-                    fontSize: 11.5,
-                    fontWeight: 800,
-                    cursor: "pointer",
-                    fontFamily: typography.fontFamily,
-                  }}
-                >
-                  درج قالب پیشنهادی
-                </button>
-              ) : null}
+              <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                {form.bio.trim() ? (
+                  <button
+                    type="button"
+                    onClick={() => void polishBioWithAi()}
+                    disabled={aiBusy}
+                    aria-label="بهبود متن معرفی با هوش مصنوعی"
+                    style={{
+                      minHeight: 34,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 5,
+                      padding: "0 12px",
+                      borderRadius: 999,
+                      border: "1px solid rgba(191,149,64,.4)",
+                      background: colors.goldBackground,
+                      color: colors.goldDark,
+                      fontSize: 11.5,
+                      fontWeight: 800,
+                      cursor: aiBusy ? "default" : "pointer",
+                      opacity: aiBusy ? 0.7 : 1,
+                      fontFamily: typography.fontFamily,
+                    }}
+                  >
+                    <Icon name="sparkle" size={13} stroke={2} />
+                    {aiBusy ? "در حال بازنویسی…" : "بهبود با هوش مصنوعی"}
+                  </button>
+                ) : null}
+                {!form.bio.trim() ? (
+                  <button
+                    type="button"
+                    onClick={() => setForm({ ...form, bio: BIO_TEMPLATE })}
+                    style={{
+                      minHeight: 34,
+                      padding: "0 12px",
+                      borderRadius: 999,
+                      border: `1px solid ${colors.olive200}`,
+                      background: colors.olive50,
+                      color: colors.olive700,
+                      fontSize: 11.5,
+                      fontWeight: 800,
+                      cursor: "pointer",
+                      fontFamily: typography.fontFamily,
+                    }}
+                  >
+                    درج قالب پیشنهادی
+                  </button>
+                ) : null}
+              </span>
             </span>
+            {aiError ? (
+              <span style={{ ...typography.caption, color: "#b3261e", lineHeight: 1.8 }}>{aiError}</span>
+            ) : null}
+            {aiPreview ? (
+              <span
+                style={{
+                  display: "grid",
+                  gap: 8,
+                  padding: spacing.md,
+                  borderRadius: radii.md,
+                  border: "1px solid rgba(191,149,64,.45)",
+                  background: colors.goldBackground,
+                }}
+              >
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 5, ...typography.caption, color: colors.goldDark, fontWeight: 800 }}>
+                  <Icon name="sparkle" size={13} stroke={2} />
+                  پیشنهاد هوش مصنوعی — طبق الگوی وُدّا
+                </span>
+                <span style={{ ...typography.caption, color: colors.ink, lineHeight: 1.9, whiteSpace: "pre-wrap" }}>
+                  {aiPreview}
+                </span>
+                <span style={{ display: "flex", gap: 8 }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForm({ ...form, bio: aiPreview.slice(0, 1000) });
+                      setAiPreview(null);
+                      setAiError("");
+                    }}
+                    style={{
+                      minHeight: 36,
+                      flex: 1,
+                      padding: "0 12px",
+                      borderRadius: 999,
+                      border: 0,
+                      background: colors.goldDark,
+                      color: "#fffaf0",
+                      fontSize: 12,
+                      fontWeight: 800,
+                      cursor: "pointer",
+                      fontFamily: typography.fontFamily,
+                    }}
+                  >
+                    جایگزینی با این متن
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAiPreview(null)}
+                    style={{
+                      minHeight: 36,
+                      padding: "0 14px",
+                      borderRadius: 999,
+                      border: `1px solid ${colors.line}`,
+                      background: colors.surface,
+                      color: colors.inkSecondary,
+                      fontSize: 12,
+                      fontWeight: 800,
+                      cursor: "pointer",
+                      fontFamily: typography.fontFamily,
+                    }}
+                  >
+                    انصراف
+                  </button>
+                </span>
+              </span>
+            ) : null}
           </label>
           <Input label="مهارت‌ها" hint="با ویرگول جدا کنید؛ حداکثر ۲۰ مورد" value={form.skills} onChange={(event) => setForm({ ...form, skills: event.target.value })} />
           <AmountPicker
