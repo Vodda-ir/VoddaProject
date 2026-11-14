@@ -667,7 +667,8 @@ export function FreeServicesBanner({ config }: { config: UniversalAppConfig }) {
   return (
     <button
       type="button"
-      onClick={() => navigateApp("/search?mode=services&q=", config)}
+      // free=1 → صفحهٔ خدمات فقط جلسات رایگان را نشان می‌دهد، نه همهٔ کاتالوگ را
+      onClick={() => navigateApp("/search?mode=services&free=1", config)}
       className="vodda-tappable vodda-enter"
       aria-label="مشاهدهٔ جلسات رایگان اساتید"
       style={{

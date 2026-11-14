@@ -18,6 +18,7 @@ import {
 } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
 import { navigateApp } from "../../router";
+import { asArray, asRecord } from "../../platform/api";
 import { getCatalog } from "../dispatch/api";
 import { getInPersonCatalog } from "../ceremony/api";
 import { searchTeachersPage } from "../teachers/api";
@@ -411,6 +412,11 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
     if (typeof window === "undefined") return "";
     return new URLSearchParams(window.location.search).get("q") ?? "";
   });
+  // بنر «خدمات رایگان» با ?free=1 باز می‌شود — فقط خدمات رایگان، نه همهٔ کاتالوگ.
+  const [freeOnly, setFreeOnly] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return new URLSearchParams(window.location.search).get("free") === "1";
+  });
   const [servicesLoaded, setServicesLoaded] = useState(false);
 
   useEffect(() => {
@@ -462,6 +468,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
     // کم پس از ناوبری برنامه‌ای) تب «خدمات» را گم نکند؛ فیلتر موضوع رسمی
     // (topic) نیز در URL حفظ می‌شود تا لینک اساتید هر خدمت پایدار بماند.
     if (mode === "services") params.set("mode", "services");
+    if (freeOnly) params.set("free", "1");
     if (filters.query.trim()) params.set("q", filters.query.trim());
     if (topicId) params.set("topic", String(topicId));
     if (filters.field.trim()) params.set("field", filters.field.trim());
@@ -473,7 +480,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
     if (filters.sort !== "recommended") params.set("sort", filters.sort);
     const next = window.location.pathname + (params.size ? "?" + params.toString() : "");
     window.history.replaceState({}, "", next);
-  }, [filters, mode, topicId]);
+  }, [filters, mode, topicId, freeOnly]);
 
   useEffect(() => {
     let active = true;
@@ -632,6 +639,43 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
 
   // فیلتر و گروه‌بندی خدمات (تب خدمات)
   const needle = servicesQuery.trim();
+  // کاتالوگ جلسات رایگان — در حالت free=1 فقط همین‌ها نمایش داده می‌شود.
+  const [freeRows, setFreeRows] = useState<Array<{ service_id: number; teacher_id: number; title: string; teacher_name: string; avatar_url: string; duration: number; tag: string; city: string; rating: number }>>([]);
+  useEffect(() => {
+    if (mode !== "services" || !freeOnly) return;
+    let active = true;
+    fetch("/api/backend/catalog/free?limit=50", { cache: "no-store" })
+      .then((response) => (response.ok ? response.json() : Promise.reject(new Error("free failed"))))
+      .then((payload: { data?: unknown }) => {
+        if (!active) return;
+        const rows: Array<{ service_id: number; teacher_id: number; title: string; teacher_name: string; avatar_url: string; duration: number; tag: string; city: string; rating: number }> = [];
+        for (const item of asArray(payload.data)) {
+          const row = asRecord(item);
+          const serviceId = Number(row?.service_id ?? 0);
+          const teacherId = Number(row?.teacher_id ?? 0);
+          if (serviceId > 0 && teacherId > 0) {
+            rows.push({
+              service_id: serviceId,
+              teacher_id: teacherId,
+              title: String(row?.title ?? ""),
+              teacher_name: String(row?.teacher_name ?? ""),
+              avatar_url: String(row?.avatar_url ?? ""),
+              duration: Number(row?.duration ?? 0),
+              tag: String(row?.tag ?? ""),
+              city: String(row?.city ?? ""),
+              rating: Number(row?.rating ?? 0),
+            });
+          }
+        }
+        setFreeRows(rows);
+      })
+      .catch(() => {
+        if (active) setFreeRows([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, [mode, freeOnly]);
   const filteredOnlineServices = useMemo(() => {
     if (!needle) return onlineServices;
     return onlineServices.filter((item) =>
@@ -769,7 +813,52 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
               action={<Button variant="secondary" onClick={() => setServicesLoaded(false)}>تلاش دوباره</Button>}
             />
           ) : null}
-          {!servicesLoading && !servicesError ? (
+          {!servicesLoading && !servicesError && freeOnly ? (
+            <>
+              <div
+                className="vodda-enter"
+                style={{
+                  display: "flex", alignItems: "center", gap: 9,
+                  padding: "11px 14px", borderRadius: 16,
+                  background: colors.goldBackground, border: "1px solid rgba(191,149,64,.38)",
+                }}
+              >
+                <Icon name="gift" size={17} style={{ color: colors.goldDark, flex: "0 0 auto" }} />
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <strong style={{ display: "block", fontSize: 12.5, color: colors.goldDark }}>فقط خدمات رایگان</strong>
+                  <span style={{ fontSize: 11, color: colors.inkMuted }}>جلسات رایگانی که اساتید برای شروع رایگان برگزار می‌کنند</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setFreeOnly(false)}
+                  aria-label="نمایش همهٔ خدمات"
+                  style={{ background: "none", border: 0, color: colors.inkMuted, cursor: "pointer", padding: 4, fontFamily: typography.fontFamily }}
+                >
+                  <Icon name="x" size={16} />
+                </button>
+              </div>
+              {freeRows.length === 0 ? (
+                <EmptyState
+                  icon={<Icon name="gift" size={30} />}
+                  title="فعلاً جلسهٔ رایگانی فعال نیست"
+                  description="به‌محض فعال‌شدن جلسات رایگان اساتید، همین‌جا نمایش داده می‌شود."
+                />
+              ) : (
+                freeRows.map((row, index) => (
+                  <ServiceRow
+                    key={`${row.teacher_id}-${row.service_id}`}
+                    icon="gift"
+                    title={row.title || "جلسهٔ رایگان"}
+                    description={[row.tag, row.city].filter(Boolean).join(" · ") || `استاد ${row.teacher_name}`}
+                    trailing="رایگان"
+                    index={index}
+                    onClick={() => navigateApp(`/book/${row.teacher_id}?free=1`, config)}
+                  />
+                ))
+              )}
+            </>
+          ) : null}
+          {!servicesLoading && !servicesError && !freeOnly ? (
             <>
               {onlineServiceGroups.length > 0 ? (
                 <section style={{ display: "grid", gap: 9 }} aria-label="خدمات آموزش آنلاین">
