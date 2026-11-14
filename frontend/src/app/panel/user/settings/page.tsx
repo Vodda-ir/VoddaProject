@@ -13,6 +13,7 @@ import {
 import { KeyValueRow } from '@/components/admin/AdminUI';
 import { fullUrl, getToken } from '@/lib/auth';
 import { toFaDigits } from '@/lib/persian';
+import { AvatarPrepareError, prepareAvatarUpload } from '@/lib/avatarImage';
 
 type MeState = {
   name: string;
@@ -105,17 +106,19 @@ export default function UserSettingsPage() {
     }
   }
 
-  async function uploadAvatar(file: File) {
-    if (!token || !file) return;
+  async function uploadAvatar(rawFile: File) {
+    if (!token || !rawFile) return;
     setUploading(true);
     setMsg('');
     setError('');
-    const form = new FormData();
-    form.append('name', name);
-    form.append('city', city);
-    form.append('bio', bio);
-    form.append('avatar', file);
     try {
+      // HEIC/عکس‌های بزرگ به JPEG استاندارد تبدیل و تصاویر خالی رد می‌شوند (مشاهدهٔ lib).
+      const file = await prepareAvatarUpload(rawFile);
+      const form = new FormData();
+      form.append('name', name);
+      form.append('city', city);
+      form.append('bio', bio);
+      form.append('avatar', file, file.name || 'avatar.jpg');
       const response = await fetch('/api/backend/me', { method: 'PUT', body: form });
       const body = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(body.error || 'بارگذاری تصویر انجام نشد.');
@@ -175,7 +178,7 @@ export default function UserSettingsPage() {
                 <input
                   ref={fileRef}
                   type="file"
-                  accept="image/png,image/jpeg,image/webp"
+                  accept="image/png,image/jpeg,image/webp,image/heic,image/heif,.heic,.heif"
                   style={{ display: 'none' }}
                   onChange={(event) => {
                     const file = event.target.files?.[0];
@@ -189,7 +192,7 @@ export default function UserSettingsPage() {
                   {me?.mobile ? toFaDigits(me.mobile) : ''}
                 </div>
                 <div style={{ fontSize: 10, color: 'var(--ink-4)', marginTop: 3 }}>
-                  {uploading ? 'در حال بارگذاری تصویر…' : 'برای تغییر تصویر روی دوربین بزنید (حداکثر ۵ مگابایت)'}
+                  {uploading ? 'در حال بارگذاری تصویر…' : 'برای تغییر تصویر روی دوربین بزنید (حداکثر ۵ مگابایت — JPG، PNG و HEIC)'}
                 </div>
               </div>
             </div>

@@ -13,6 +13,7 @@ import { usePlatform } from "../../platform/context";
 import { navigateApp } from "../../router";
 import {
   Avatar,
+  Button,
   Icon,
   IconBadge,
   SectionHeader,
@@ -131,10 +132,10 @@ export function TopicCategoryGrid({ config }: { config: UniversalAppConfig }) {
         <div
           aria-hidden="true"
           className="vodda-skeleton"
-          style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8, padding: 10, borderRadius: 24 }}
+          style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 10, padding: 12, borderRadius: 26 }}
         >
           {[0, 1, 2, 3, 4, 5].map((index) => (
-            <span key={index} className="vodda-skeleton" style={{ display: "block", aspectRatio: "1 / 1.14", borderRadius: 16 }} />
+            <span key={index} className="vodda-skeleton" style={{ display: "block", height: 118, borderRadius: 18 }} />
           ))}
         </div>
       </section>
@@ -149,17 +150,17 @@ export function TopicCategoryGrid({ config }: { config: UniversalAppConfig }) {
         title="دسته‌بندی موضوعات"
         description="موضوع دلخواه را انتخاب کنید تا وارد زیردسته‌های تخصصی آن شوید."
       />
-      {/* یک کادر واحد — شش موضوع با تصاویر زیبا (۳×۲) */}
+      {/* یک کادر واحد با حاشیهٔ طلایی برجسته — شش موضوع، تصویر کوچک و فانتزی + متن واضح */}
       <div
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-          gap: 8,
-          padding: 10,
+          gap: 10,
+          padding: 12,
           background: "linear-gradient(180deg, #ffffff, #fffdf8)",
-          border: `1px solid ${colors.sand150}`,
-          borderRadius: 24,
-          boxShadow: shadows.sm,
+          border: `1.5px solid ${colors.goldSoft}`,
+          borderRadius: 26,
+          boxShadow: "0 0 0 4px rgba(231,213,168,.22), 0 12px 28px rgba(139,104,31,.13)",
         }}
       >
         {categories.map((category) => (
@@ -170,58 +171,99 @@ export function TopicCategoryGrid({ config }: { config: UniversalAppConfig }) {
             className="vodda-tappable vodda-enter"
             aria-label={`ورود به زیردسته‌های ${category.category} — ${faNumber(category.count)} خدمت`}
             style={{
-              position: "relative",
-              overflow: "hidden",
               display: "grid",
-              aspectRatio: "1 / 1.14",
-              padding: 0,
-              textAlign: "right",
-              border: 0,
-              borderRadius: 16,
+              alignContent: "start",
+              justifyItems: "center",
+              gap: 7,
+              padding: "9px 7px 10px",
+              textAlign: "center",
+              border: `1px solid ${colors.sand150}`,
+              borderRadius: 18,
+              background: colors.surface,
               cursor: "pointer",
               fontFamily: typography.fontFamily,
-              boxShadow: "0 2px 8px rgba(46,54,34,.10)",
-              background: colors.olive900,
+              boxShadow: "0 2px 10px rgba(46,54,34,.06)",
             }}
           >
-            {/* تصویر زیبای موضوع */}
-            <img
-              src={category.image}
-              alt=""
-              aria-hidden="true"
-              loading="lazy"
-              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
-            />
-            {/* گرادیان خوانایی متن */}
-            <span aria-hidden="true" style={{ position: "absolute", inset: 0, background: category.tint }} />
-            {/* نشان ورود به زیردسته‌های تخصصی */}
-            <span
-              aria-hidden="true"
+            {/* تصویر کوچک و فانتزی با حلقهٔ طلایی — متن زیر تصویر کاملاً خواناست */}
+            <span style={{ position: "relative", width: "100%" }}>
+              <span
+                style={{
+                  position: "relative",
+                  display: "block",
+                  height: 58,
+                  borderRadius: 12,
+                  overflow: "hidden",
+                  border: `2px solid ${colors.goldSoft}`,
+                  boxShadow: "0 0 0 3px #ffffff, 0 0 0 4.5px rgba(212,171,82,.35), 0 3px 8px rgba(46,54,34,.12)",
+                  background: colors.olive100,
+                }}
+              >
+                <img
+                  src={category.image}
+                  alt=""
+                  aria-hidden="true"
+                  loading="lazy"
+                  style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+                />
+                <span
+                  aria-hidden="true"
+                  style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(255,255,255,.08), rgba(139,104,31,.20))" }}
+                />
+              </span>
+              {/* نشان طلایی ورود به زیردسته‌های تخصصی */}
+              <span
+                aria-hidden="true"
+                style={{
+                  position: "absolute",
+                  top: -6,
+                  insetInlineEnd: -4,
+                  width: 20,
+                  height: 20,
+                  display: "grid",
+                  placeItems: "center",
+                  borderRadius: "50%",
+                  background: gradients.goldRich,
+                  border: "2px solid #ffffff",
+                  color: "#fffaf0",
+                  boxShadow: "0 2px 6px rgba(139,104,31,.35)",
+                }}
+              >
+                <Icon name="chevronL" size={11} stroke={2.6} />
+              </span>
+            </span>
+            {/* عنوان موضوع — روی زمینهٔ سفید، کاملاً مشخص */}
+            <strong
               style={{
-                position: "absolute",
-                top: 7,
-                insetInlineEnd: 7,
-                width: 21,
-                height: 21,
-                display: "grid",
-                placeItems: "center",
-                borderRadius: "50%",
-                background: "rgba(255,255,255,.20)",
-                border: "1px solid rgba(255,255,255,.34)",
-                color: colors.surface,
+                fontSize: 11.3,
+                fontWeight: 900,
+                lineHeight: 1.5,
+                color: colors.ink,
+                display: "-webkit-box",
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: "vertical",
+                overflow: "hidden",
+                minHeight: 34,
               }}
             >
-              <Icon name="chevronL" size={12} stroke={2.4} />
-            </span>
-            {/* عنوان و تعداد خدمت‌ها */}
-            <span style={{ position: "relative", display: "grid", alignContent: "end", gap: 2, padding: "9px 10px 10px", color: colors.surface }}>
-              <strong style={{ fontSize: 12, fontWeight: 900, lineHeight: 1.55, textShadow: "0 1px 8px rgba(0,0,0,.4)" }}>
-                {category.category}
-              </strong>
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10, fontWeight: 700, color: colors.goldSoft }}>
-                <Icon name="book" size={10} stroke={2.2} />
-                {faNumber(category.count)} خدمت
-              </span>
+              {category.category}
+            </strong>
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 3,
+                padding: "2px 8px",
+                borderRadius: 999,
+                background: colors.olive50,
+                border: `1px solid ${colors.olive100}`,
+                color: colors.olive700,
+                fontSize: 9.8,
+                fontWeight: 800,
+              }}
+            >
+              <Icon name="book" size={10} stroke={2.2} />
+              {faNumber(category.count)} خدمت
             </span>
           </button>
         ))}
@@ -264,7 +306,7 @@ export function TopServicesRail({ config }: { config: UniversalAppConfig }) {
       <section aria-label="خدمات برتر" style={{ display: "grid", gap: 12 }}>
         <div style={{ display: "flex", gap: 12, overflow: "hidden" }}>
           {[0, 1, 2].map((index) => (
-            <span key={index} aria-hidden="true" className="vodda-skeleton" style={{ display: "block", flex: "0 0 190px", height: 196, borderRadius: 22 }} />
+            <span key={index} aria-hidden="true" className="vodda-skeleton" style={{ display: "block", flex: "0 0 208px", height: 252, borderRadius: 24 }} />
           ))}
         </div>
       </section>
@@ -285,37 +327,61 @@ export function TopServicesRail({ config }: { config: UniversalAppConfig }) {
           gap: spacing.md,
           overflowX: "auto",
           marginInline: -spacing.xl,
-          padding: `${spacing.sm}px ${spacing.xl}px ${spacing.sm}px`,
+          padding: `${spacing.md}px ${spacing.xl}px ${spacing.sm}px`,
           scrollSnapType: "x proximity",
         }}
       >
         {services.map((service) => {
           const visual = categoryVisual(service.category);
+          const open = () => navigateApp(`/search?mode=services&q=${encodeURIComponent(service.title)}`, config);
           return (
-            <button
+            <div
               key={service.id}
-              type="button"
-              onClick={() => navigateApp(`/search?mode=services&q=${encodeURIComponent(service.title)}`, config)}
-              className="vodda-tappable vodda-enter"
+              role="button"
+              tabIndex={0}
+              onClick={(event) => {
+                const target = event.target as HTMLElement;
+                if (target.closest("button, a")) return;
+                open();
+              }}
+              onKeyDown={(event) => {
+                if (event.key !== "Enter" && event.key !== " ") return;
+                event.preventDefault();
+                open();
+              }}
+              className="vodda-card vodda-card--interactive vodda-tappable vodda-enter"
               aria-label={`خدمت ${service.title}`}
               style={{
-                position: "relative",
-                flex: "0 0 196px",
-                width: 196,
+                flex: "0 0 208px",
+                width: 208,
                 scrollSnapAlign: "start",
-                display: "grid",
-                padding: 0,
+                display: "flex",
+                flexDirection: "column",
+                gap: 9,
+                padding: 12,
                 textAlign: "right",
-                overflow: "hidden",
-                border: `1px solid ${colors.sand150}`,
-                borderRadius: 22,
+                border: 0,
+                borderRadius: 24,
                 background: colors.surface,
+                color: colors.ink,
                 cursor: "pointer",
                 fontFamily: typography.fontFamily,
-                boxShadow: shadows.sm,
+                boxShadow: "0 6px 22px rgba(46,54,34,.07)",
               }}
             >
-              <span style={{ position: "relative", display: "block", height: 104, overflow: "hidden" }}>
+              {/* تصویر خدمت با حلقهٔ طلایی — هم‌سبک چهرهٔ اساتید در کارت‌های برتر */}
+              <span
+                style={{
+                  position: "relative",
+                  display: "block",
+                  height: 96,
+                  borderRadius: 18,
+                  overflow: "hidden",
+                  border: `2.5px solid ${colors.goldSoft}`,
+                  boxShadow: "0 0 0 3px rgba(231,213,168,.5), 0 4px 10px rgba(46,54,34,.10)",
+                  background: colors.olive100,
+                }}
+              >
                 <img
                   src={visual.image}
                   alt=""
@@ -323,36 +389,54 @@ export function TopServicesRail({ config }: { config: UniversalAppConfig }) {
                   loading="lazy"
                   style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
                 />
-                <span aria-hidden="true" style={{ position: "absolute", inset: 0, background: visual.tint, opacity: 0.55 }} />
-                <span
-                  style={{
-                    position: "absolute",
-                    bottom: 8,
-                    insetInlineStart: 8,
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 4,
-                    padding: "3px 9px",
-                    borderRadius: 999,
-                    background: "rgba(255,255,255,.92)",
-                    color: colors.olive800,
-                    fontSize: 10.5,
-                    fontWeight: 800,
-                  }}
-                >
-                  {service.category}
-                </span>
+                <span aria-hidden="true" style={{ position: "absolute", inset: 0, background: visual.tint, opacity: 0.42 }} />
               </span>
-              <span style={{ display: "grid", gap: 4, padding: "11px 13px 13px" }}>
-                <strong style={{ fontSize: 13.5, fontWeight: 900, lineHeight: 1.6, color: colors.ink, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-                  {service.title}
-                </strong>
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11.5, fontWeight: 800, color: colors.olive700 }}>
-                  مشاهده اساتید
-                  <Icon name="chevronL" size={13} stroke={2.4} />
-                </span>
+              {/* برچسب دسته — هم‌سبک نشان «آمادهٔ رزرو» در کارت اساتید */}
+              <span
+                style={{
+                  alignSelf: "flex-start",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 4,
+                  padding: "2px 9px",
+                  borderRadius: 999,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: colors.olive700,
+                  background: colors.olive50,
+                  border: `1px solid ${colors.olive100}`,
+                }}
+              >
+                <Icon name="book" size={11} stroke={2.2} />
+                {service.category}
               </span>
-            </button>
+              <strong
+                style={{
+                  fontSize: 13.8,
+                  fontWeight: 900,
+                  lineHeight: 1.6,
+                  color: colors.ink,
+                  display: "-webkit-box",
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: "vertical",
+                  overflow: "hidden",
+                  minHeight: 44,
+                }}
+              >
+                {service.title}
+              </strong>
+              {/* ردپای پایانی — دکمهٔ واقعی و مستقل، هم‌تراز کارت اساتید */}
+              <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: "auto", paddingTop: 2 }}>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11.5, fontWeight: 800, color: colors.goldDark }}>
+                  <Icon name="star" size={12} fill style={{ color: colors.gold }} />
+                  پرطرفدار
+                </span>
+                <Button onClick={open} style={{ minHeight: 40, padding: "7px 13px", fontSize: 12.5 }}>
+                  مشاهدهٔ اساتید
+                  <Icon name="chevronL" size={14} stroke={2.4} />
+                </Button>
+              </span>
+            </div>
           );
         })}
       </div>
