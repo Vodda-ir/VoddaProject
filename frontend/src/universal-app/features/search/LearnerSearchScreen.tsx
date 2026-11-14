@@ -400,6 +400,9 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
 
   useEffect(() => {
     const params = new URLSearchParams();
+    // تب فعال در URL می‌ماند تا هر باز-راه‌اندازی دوبارهٔ صفحه (حتی با فاصلهٔ
+    // کم پس از ناوبری برنامه‌ای) تب «خدمات» را گم نکند.
+    if (mode === "services") params.set("mode", "services");
     if (filters.query.trim()) params.set("q", filters.query.trim());
     if (filters.field.trim()) params.set("field", filters.field.trim());
     if (filters.city.trim()) params.set("city", filters.city.trim());
@@ -410,7 +413,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
     if (filters.sort !== "recommended") params.set("sort", filters.sort);
     const next = window.location.pathname + (params.size ? "?" + params.toString() : "");
     window.history.replaceState({}, "", next);
-  }, [filters]);
+  }, [filters, mode]);
 
   useEffect(() => {
     let active = true;
