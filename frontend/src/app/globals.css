@@ -5003,6 +5003,14 @@ a.blog-card:hover .blog-card-action {
   opacity: 0;
   animation: vodda-web-pulse 2s ease-out infinite;
 }
+/* چراغ آفلاین استاد — چشمک‌زن قرمز (درخواست کاربر: استاد آفلاین چراغ قرمز چشمک‌زن دارد) */
+.vodda-offline-dot {
+  animation: vodda-offline-blink 1.15s ease-in-out infinite;
+}
+@keyframes vodda-offline-blink {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(224, 36, 94, .40); }
+  50% { opacity: .38; box-shadow: 0 0 0 5px rgba(224, 36, 94, 0); }
+}
 @keyframes vodda-web-pulse {
   0% { transform: scale(.5); opacity: .45; }
   70% { transform: scale(1.4); opacity: 0; }
@@ -5018,7 +5026,8 @@ a.blog-card:hover .blog-card-action {
 }
 @media (prefers-reduced-motion: reduce) {
   .vodda-live-dot::after,
-  .vodda-dispatch-radar {
+  .vodda-dispatch-radar,
+  .vodda-offline-dot {
     animation: none !important;
   }
 }

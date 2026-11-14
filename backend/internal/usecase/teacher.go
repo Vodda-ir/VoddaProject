@@ -340,8 +340,11 @@ func (uc *TeacherUsecase) teacherForUser(ctx context.Context, userID uint) (*dom
         return t, err
 }
 
+// publicTeacher decides whether a profile is publicly viewable. Offline
+// (available=false) teachers remain viewable — the UI marks them with a
+// blinking red light — while booking and فراخوان guard availability separately.
 func publicTeacher(t *domain.Teacher) bool {
-        return t != nil && t.Status == domain.TeacherApproved && t.Verified && t.Available && t.User != nil && t.User.Active
+        return t != nil && t.Status == domain.TeacherApproved && t.Verified && t.User != nil && t.User.Active
 }
 
 func validateTeacherProfileInput(in BecomeTeacherInput) error {

@@ -499,7 +499,8 @@ function FreeServiceTile({ item, config }: { item: FreeServiceCardData; config: 
   return (
     <button
       type="button"
-      onClick={() => navigateApp(`/book/${item.teacher_id}`, config)}
+      // ?free=1 → صفحهٔ رزرو فقط خدمات رایگان همین استاد را نشان می‌دهد، نه خدمات پولی را
+      onClick={() => navigateApp(`/book/${item.teacher_id}?free=1`, config)}
       className="vodda-tappable vodda-enter"
       aria-label={`جلسهٔ رایگان ${item.title} با ${item.teacher_name}`}
       style={{

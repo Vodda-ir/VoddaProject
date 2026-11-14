@@ -281,7 +281,7 @@ function AppPreview() {
 
       <div className="landing-floating-card landing-floating-card-top">
         <span className="landing-floating-icon"><Icon name="checkCircle" size={18} /></span>
-        <span><strong>استاد درجه‌دار</strong><small>مهر بین‌المللی، درجه ۲ و درجه ۳</small></span>
+        <span><strong>استاد درجه‌دار</strong><small>تیک بین‌المللی، کشوری و استانی</small></span>
       </div>
       <div className="landing-floating-card landing-floating-card-bottom">
         <span className="landing-floating-icon gold"><Icon name="calendar" size={18} /></span>

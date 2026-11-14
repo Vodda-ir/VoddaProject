@@ -20,9 +20,9 @@ import { formatFaNumber, toFaDigits } from '@/lib/persian';
 type Phase = 'idle' | 'searching' | 'matched';
 
 const TIER_BADGE: Record<string, { label: string; bg: string; color: string }> = {
-  international: { label: 'درجه یک بین‌المللی', bg: 'var(--gold-bg, #f7efd9)', color: '#8b681f' },
-  grade2: { label: 'درجه دو', bg: 'var(--olive-50, #f2f5ea)', color: '#4c5a36' },
-  grade3: { label: 'درجه سه', bg: 'var(--info-bg, #edf3f5)', color: '#5e7e8c' },
+  international: { label: 'استاد بین‌المللی', bg: 'rgba(0,149,246,.10)', color: '#0095f6' },
+  grade2: { label: 'استاد کشوری', bg: 'rgba(18,183,106,.12)', color: '#0e9f5e' },
+  grade3: { label: 'استاد استانی', bg: 'rgba(224,36,94,.10)', color: '#e0245e' },
 };
 
 function countdown(total: number) {

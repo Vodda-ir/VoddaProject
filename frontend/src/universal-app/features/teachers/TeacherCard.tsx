@@ -91,7 +91,7 @@ export function TeacherCard({
           </div>
           <span
             aria-hidden="true"
-            className={teacher.available ? "vodda-live-dot" : undefined}
+            className={teacher.available ? "vodda-live-dot" : "vodda-offline-dot"}
             style={{
               position: "absolute",
               bottom: -3,
@@ -154,7 +154,7 @@ export function TeacherCard({
           >
             {teacher.field}
           </span>
-          {/* وضعیت دسترس‌پذیری با برچسب متنی، نه فقط رنگ (B6) */}
+          {/* وضعیت دسترس‌پذیری با برچسب متنی، نه فقط رنگ (B6) — آفلاین = چراغ قرمز چشمک‌زن */}
           <span
             style={{
               display: "inline-flex",
@@ -169,7 +169,18 @@ export function TeacherCard({
               background: teacher.available ? colors.olive50 : colors.dangerBackground,
             }}
           >
-            {teacher.available ? "آمادهٔ رزرو" : "غیرفعال"}
+            <span
+              aria-hidden="true"
+              className={teacher.available ? undefined : "vodda-offline-dot"}
+              style={{
+                width: 7,
+                height: 7,
+                borderRadius: "50%",
+                flex: "0 0 auto",
+                background: teacher.available ? colors.olive600 : colors.danger,
+              }}
+            />
+            {teacher.available ? "آنلاین — آمادهٔ رزرو" : "آفلاین"}
           </span>
         </div>
       </div>
@@ -224,7 +235,8 @@ export function TeacherCard({
           }}
           style={{ minHeight: 44, padding: "8px 14px", fontSize: 13 }}
         >
-          رزرو جلسه
+          {/* استاد آفلاین قابل رزرو نیست — دکمه فقط به پروفایل می‌رود تا درخواست بی‌جواب نماند */}
+          {teacher.available ? "رزرو جلسه" : "مشاهدهٔ پروفایل"}
         </Button>
       </div>
     </div>

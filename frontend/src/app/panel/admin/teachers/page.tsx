@@ -57,16 +57,16 @@ const FILTERS: Array<{ value: TeacherStatus; label: string }> = [
 ];
 
 const TIER_BADGE: Record<string, { label: string; tone: string }> = {
-  international: { label: 'بین‌المللی (درجه ۱)', tone: 'info' },
-  grade2: { label: 'استاد درجه ۲', tone: 'green' },
-  grade3: { label: 'استاد درجه ۳', tone: 'clay' },
+  international: { label: 'بین‌المللی (تیک آبی)', tone: 'info' },
+  grade2: { label: 'کشوری (تیک سبز)', tone: 'green' },
+  grade3: { label: 'استانی (تیک قرمز)', tone: 'rose' },
 };
 
 const TIER_OPTIONS: Array<{ value: TeacherTier; label: string }> = [
   { value: '', label: 'بدون نشان' },
-  { value: 'international', label: 'بین‌المللی (درجه ۱)' },
-  { value: 'grade2', label: 'استاد درجه ۲' },
-  { value: 'grade3', label: 'استاد درجه ۳' },
+  { value: 'international', label: 'بین‌المللی — تیک آبی (درجه ۱)' },
+  { value: 'grade2', label: 'کشوری — تیک سبز (درجه ۲)' },
+  { value: 'grade3', label: 'استانی — تیک قرمز (درجه ۳)' },
 ];
 
 const STATUS_BADGE: Record<string, { label: string; tone: string }> = {

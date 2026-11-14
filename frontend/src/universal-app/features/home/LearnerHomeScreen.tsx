@@ -108,10 +108,58 @@ function walletShort(wallet: number) {
   return `${faNumber(Math.round(wallet / 1000), 0)} هزار`;
 }
 
-/* ─────────────────────────  منطق پیشنهاد و استاد ویژه  ───────────────────────── */
+/* ─────────────────────────  منطق انتخاب اساتید صفحهٔ نخست  ───────────────────────── */
 
-function recommendationScore(teacher: Teacher) {
-  return teacher.rating * Math.log10(10 + Math.max(0, teacher.sessions));
+/** وزن رتبهٔ استاد — بین‌المللی (۳) > کشوری (۲) > استانی (۱). */
+const TIER_WEIGHT: Record<string, number> = { international: 3, grade2: 2, grade3: 1 };
+
+/**
+ * امتیاز عملکرد کلی استاد — ترکیب رتبه + عملکرد + فعالیت:
+ *   رتبه (تیک): بین‌المللی/کشوری/استانی
+ *   عملکرد: امتیاز رضایت و تعداد نظرها
+ *   فعالیت: تعداد جلسات موفق + آمادهٔ رزرو بودن امروز
+ */
+function performanceScore(teacher: Teacher) {
+  const tier = TIER_WEIGHT[teacher.tier] ?? 0;
+  const rating = Math.max(0, teacher.rating);
+  const reviews = Math.log10(10 + Math.max(0, teacher.reviews));
+  const sessions = Math.log10(10 + Math.max(0, teacher.sessions));
+  const availability = teacher.available ? 0.6 : 0;
+  return tier * 2.4 + rating * 1.3 + sessions * 1.9 + reviews * 0.9 + availability;
+}
+
+const SPOTLIGHT_POOL_SIZE = 24;
+const SPOTLIGHT_COUNT = 7;
+
+/** مولد شبه‌تصادفی با seed — چیدمان هر بازدید متفاوت اما تابع خالص (بدون خطای hydration). */
+function mulberry32(seed: number) {
+  let state = seed >>> 0;
+  return () => {
+    state = (state + 0x6d2b79f5) | 0;
+    let t = Math.imul(state ^ (state >>> 15), 1 | state);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/**
+ * انتخاب ۷ استاد صفحهٔ نخست: از میان ۲۴ استادِ برتر (بر اساس عملکرد، رتبه و فعالیت)،
+ * هر بار ۷ نفر به‌صورت رندوم؛ ترتیب نمایش هم بر اساس همان امتیاز.
+ */
+function pickSpotlight(teachers: Teacher[], seed: number): Teacher[] {
+  const pool = [...teachers]
+    .sort((a, b) => performanceScore(b) - performanceScore(a))
+    .slice(0, SPOTLIGHT_POOL_SIZE);
+  const random = mulberry32(seed);
+  for (let i = pool.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  return pool.slice(0, SPOTLIGHT_COUNT).sort((a, b) => performanceScore(b) - performanceScore(a));
+}
+
+function newSpotlightSeed() {
+  return Math.floor(Math.random() * 2147483647);
 }
 
 /* ─────────────────────────  دسته‌بندی‌های سریع داده‌محور  ───────────────────────── */
@@ -366,6 +414,42 @@ function TeacherRail({
         }}
       >
         {teachers.map((teacher) => (
+          <div key={teacher.id} style={{ flex: "0 0 auto", scrollSnapAlign: "start" }}>
+            <TeacherCard teacher={teacher} config={config} />
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/** اساتید منتخب صفحهٔ نخست — ۷ استادِ رندوم از میان برترین‌ها (عملکرد + رتبه + فعالیت). */
+function SpotlightSection({ teachers, config }: { teachers: Teacher[]; config: UniversalAppConfig }) {
+  const [seed, setSeed] = useState(newSpotlightSeed);
+  const spotlight = useMemo(() => pickSpotlight(teachers, seed), [teachers, seed]);
+  if (spotlight.length === 0) return null;
+  return (
+    <section aria-label="اساتید منتخب وُدّا" className="vodda-enter" style={{ minWidth: 0 }}>
+      <SectionHeader
+        title="اساتید منتخب وُدّا"
+        description="هر بار منتخبی متفاوت از توانمندترین استادان — بر پایهٔ عملکرد، رتبه و فعالیت"
+        action="چیدمان تازه"
+        onAction={() => setSeed(newSpotlightSeed())}
+      />
+      <div
+        className="vodda-scroll-rail"
+        style={{
+          display: "flex",
+          width: "100%",
+          minWidth: 0,
+          gap: spacing.md,
+          overflowX: "auto",
+          marginInline: -spacing.xl,
+          padding: `${spacing.md}px ${spacing.xl}px ${spacing.sm}px`,
+          scrollSnapType: "x proximity",
+        }}
+      >
+        {spotlight.map((teacher) => (
           <div key={teacher.id} style={{ flex: "0 0 auto", scrollSnapAlign: "start" }}>
             <TeacherCard teacher={teacher} config={config} />
           </div>
@@ -780,15 +864,8 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
     };
   }, [runtime, user]);
 
-  const women = useMemo(() => teachers.filter((teacher) => teacher.female), [teachers]);
-
   const recommended = useMemo(
-    () => [...teachers].sort((a, b) => recommendationScore(b) - recommendationScore(a)).slice(0, 12),
-    [teachers],
-  );
-
-  const mostActive = useMemo(
-    () => [...teachers].sort((a, b) => b.sessions - a.sessions).slice(0, 12),
+    () => [...teachers].sort((a, b) => performanceScore(b) - performanceScore(a)).slice(0, 12),
     [teachers],
   );
 
@@ -957,12 +1034,13 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
       ) : (
         <>
           <RebookRail teachers={pastTeachers} config={config} />
-          <TeacherRail title="اساتید پیشنهادی" teachers={recommended} config={config} />
+
+          {/* اساتید منتخب — هر بار ۷ استادِ رندوم از میان برترین‌ها (عملکرد، رتبه، فعالیت) */}
+          <SpotlightSection teachers={teachers} config={config} />
+
           {featured ? <FeaturedTeacher teacher={featured} config={config} /> : null}
 
           <OrnamentDivider style={{ margin: `${spacing.xs}px 0 ${spacing.xs}px` }} />
-          <TeacherRail title="اساتید بانو" teachers={women} config={config} />
-          <TeacherRail title="فعال‌ترین استادها" teachers={mostActive} config={config} />
         </>
       )}
 

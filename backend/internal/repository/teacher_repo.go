@@ -70,10 +70,16 @@ func (r *teacherRepo) List(ctx context.Context, f domain.TeacherFilter) ([]domai
                 q = q.Where("teachers.status = ?", f.Status)
         }
         if f.PublicOnly {
-                q = q.Where("teachers.status = ? AND teachers.verified = ? AND teachers.available = ? AND users.active = ?",
-                        domain.TeacherApproved, true, true, true)
+                // Offline (available=false) teachers stay visible in public lists —
+                // the UI marks them with a blinking red light; booking is blocked
+                // downstream. AvailableOnly narrows to bookable teachers (فراخوان).
+                q = q.Where("teachers.status = ? AND teachers.verified = ? AND users.active = ?",
+                        domain.TeacherApproved, true, true)
                 // پلتفرم فعلاً تخصصاً قرآنی است؛ استادهای مداحی از فهرست عمومی پنهان می‌شوند.
                 q = q.Where("teachers.field NOT LIKE ?", "%مداح%")
+        }
+        if f.AvailableOnly {
+                q = q.Where("teachers.available = ?", true)
         }
         if f.Field != "" {
                 q = q.Where("teachers.field = ?", f.Field)

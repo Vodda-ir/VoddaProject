@@ -429,7 +429,8 @@ export default function AdminDashboard() {
                     <strong>
                       {teacher.name || 'استاد'}
                       {teacher.tier === 'international' && <span className="adm-badge" data-tone="info">بین‌المللی</span>}
-                      {teacher.tier === 'grade2' && <span className="adm-badge" data-tone="green">درجه ۲</span>}
+                      {teacher.tier === 'grade2' && <span className="adm-badge" data-tone="green">کشوری</span>}
+                      {teacher.tier === 'grade3' && <span className="adm-badge" data-tone="rose">استانی</span>}
                     </strong>
                     <small>{teacher.field || '—'}{teacher.city ? ` · ${teacher.city}` : ''}</small>
                   </div>

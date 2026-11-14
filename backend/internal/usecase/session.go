@@ -95,8 +95,11 @@ func (uc *SessionUsecase) Book(ctx context.Context, learnerID uint, in BookInput
         if err != nil {
                 return nil, err
         }
-        if teacher.Status != domain.TeacherApproved || !teacher.Verified || !teacher.Available {
+        if teacher.Status != domain.TeacherApproved || !teacher.Verified {
                 return nil, domain.ErrTeacherNotReady
+        }
+        if !teacher.Available {
+                return nil, domain.ErrTeacherOffline
         }
         if teacher.UserID == learnerID {
                 return nil, domain.ErrSelfBooking

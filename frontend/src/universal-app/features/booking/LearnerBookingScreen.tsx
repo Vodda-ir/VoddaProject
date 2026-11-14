@@ -67,6 +67,11 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
   const [meId, setMeId] = useState(0);
   const [wallet, setWallet] = useState<number | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<BookingPaymentMethod>("wallet");
+  // ?free=1 → ورود از کارت «خدمات رایگان» خانه؛ فقط خدمات رایگان این استاد نمایش داده می‌شود
+  const [freeOnly, setFreeOnly] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return new URLSearchParams(window.location.search).get("free") === "1";
+  });
   const availabilityRequest = useRef(0);
 
   const loadTeacher = useCallback(async () => {
@@ -153,7 +158,12 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
     [dateGroups, localDate],
   );
 
-  const services = teacher?.services.filter((item) => item.active && item.id > 0) ?? [];
+  const allServices = teacher?.services.filter((item) => item.active && item.id > 0) ?? [];
+  // فیلتر خدمات رایگان: وقتی از کارت جلسهٔ رایگان آمده‌ایم، خدمات پولی نمایش داده نمی‌شوند
+  const services = useMemo(
+    () => (freeOnly ? allServices.filter((item) => item.price === 0) : allServices),
+    [allServices, freeOnly],
+  );
   const isSelfTeacher = Boolean(teacher?.userId && meId && teacher.userId === meId);
   const isFreeService = service ? service.price === 0 : false;
   const walletCovers = wallet !== null && service ? wallet >= service.price : false;
@@ -255,14 +265,79 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
         <div style={{ minWidth: 0, flex: 1 }}>
           <strong style={{ fontSize: 16, fontWeight: 800, display: "block", color: colors.ink }}>{teacher.name}</strong>
           <span style={{ fontSize: 12.5, color: colors.olive700 }}>{teacher.tag || teacher.field}</span>
+          {!teacher.available ? (
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+                marginTop: 4,
+                padding: "2px 8px",
+                borderRadius: 999,
+                fontSize: 11,
+                fontWeight: 700,
+                color: colors.danger,
+                background: colors.dangerBackground,
+              }}
+            >
+              <span aria-hidden="true" className="vodda-offline-dot" style={{ width: 7, height: 7, borderRadius: "50%", flex: "0 0 auto", background: colors.danger }} />
+              استاد آفلاین است — فعلاً زمان آزاد ندارد
+            </span>
+          ) : null}
         </div>
       </Card>
 
       <Card className="vodda-enter vodda-enter-delay-1" style={{ padding: 18, borderRadius: 20, borderColor: colors.sand200, boxShadow: "none" }}>
         <BookingStepHeader number={1} title="انتخاب خدمت" />
-        <div style={{ height: 16 }} />
+        {freeOnly ? (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              marginTop: 12,
+              padding: "9px 12px",
+              borderRadius: 14,
+              background: colors.goldBackground,
+              border: `1px solid ${colors.gold}`,
+            }}
+          >
+            <Icon name="gift" size={15} stroke={2.3} style={{ color: colors.goldDark, flex: "0 0 auto" }} />
+            <span style={{ flex: 1, minWidth: 0, fontSize: 12, fontWeight: 700, color: colors.goldDark, lineHeight: 1.7 }}>
+              فقط خدمات رایگان این استاد نمایش داده می‌شود
+            </span>
+            <button
+              type="button"
+              onClick={() => setFreeOnly(false)}
+              style={{
+                flex: "0 0 auto",
+                padding: "5px 10px",
+                borderRadius: 999,
+                border: `1px solid ${colors.gold}`,
+                background: colors.surface,
+                color: colors.goldDark,
+                fontSize: 11,
+                fontWeight: 800,
+                cursor: "pointer",
+                fontFamily: typography.fontFamily,
+              }}
+            >
+              نمایش همهٔ خدمات
+            </button>
+          </div>
+        ) : (
+          <div style={{ height: 16 }} />
+        )}
         {services.length === 0 ? (
-          <EmptyState title="خدمت قابل رزرو وجود ندارد" description="این استاد فعلاً خدمت فعال و قابل رزروی ندارد." />
+          freeOnly ? (
+            <EmptyState
+              title="خدمت رایگان فعالی ندارد"
+              description="این استاد در حال حاضر خدمت رایگان فعالی ندارد؛ می‌توانید همهٔ خدمات او را ببینید."
+              action={<Button variant="secondary" onClick={() => setFreeOnly(false)}>نمایش همهٔ خدمات</Button>}
+            />
+          ) : (
+            <EmptyState title="خدمت قابل رزرو وجود ندارد" description="این استاد فعلاً خدمت فعال و قابل رزروی ندارد." />
+          )
         ) : (
           <div style={{ display: "grid", gap: spacing.sm }}>
             {services.map((item) => {

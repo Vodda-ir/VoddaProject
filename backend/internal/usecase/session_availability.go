@@ -44,8 +44,12 @@ func (uc *SessionUsecase) availableSlotsAt(ctx context.Context, teacherID, servi
         if err != nil {
                 return nil, err
         }
-        if teacher.Status != domain.TeacherApproved || !teacher.Verified || !teacher.Available || teacher.User == nil || !teacher.User.Active {
+        if teacher.Status != domain.TeacherApproved || !teacher.Verified || teacher.User == nil || !teacher.User.Active {
                 return nil, domain.ErrNotFound
+        }
+        // استاد آفلاین برنامه‌اش دیده می‌شود ولی هیچ زمان قابل رزروی ندارد.
+        if !teacher.Available {
+                return []AvailabilitySlot{}, nil
         }
 
         service, err := uc.teachers.ServiceByID(ctx, serviceID)

@@ -46,6 +46,8 @@ func fail(c *gin.Context, err error) {
                 status, msg = http.StatusBadRequest, "موجودی کیف پول کافی نیست"
         case errors.Is(err, domain.ErrTeacherNotReady):
                 status, msg = http.StatusBadRequest, "پروفایل استاد هنوز تأیید نشده است"
+        case errors.Is(err, domain.ErrTeacherOffline):
+                status, msg = http.StatusBadRequest, "این استاد در حال حاضر آفلاین است؛ وقتی چراغ سبز پروفایلش روشن شد دوباره تلاش کنید"
         case errors.Is(err, domain.ErrCallActive):
                 status, msg = http.StatusConflict, "شما یک فراخوان فعال دارید؛ ابتدا همان فراخوان را لغو کنید یا منتظر پاسخ اساتید بمانید"
         case errors.Is(err, domain.ErrNoTeachersForTopic):

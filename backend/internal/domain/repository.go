@@ -13,8 +13,13 @@ type TeacherFilter struct {
         Female     *bool
         Status     TeacherStatus
         PublicOnly bool
-        Limit      int
-        Offset     int
+        // AvailableOnly keeps only teachers currently accepting bookings (available
+        // = true). Public search intentionally shows offline teachers too — marked
+        // with a blinking red light in the UI — but فراخوان audience must stay
+        // online-only, so dispatch sets this flag.
+        AvailableOnly bool
+        Limit         int
+        Offset        int
         // OfficialServiceID keeps only teachers that publish an active service
         // bound to this official catalog entry (topic browsing / فراخوان).
         OfficialServiceID uint

@@ -78,9 +78,9 @@ function countdownLabel(total: number): string {
 }
 
 const tierBadge: Record<string, { label: string; bg: string; color: string }> = {
-  international: { label: "درجه یک بین‌المللی", bg: colors.goldBackground, color: colors.goldDark },
-  grade2: { label: "درجه دو", bg: colors.successBackground, color: colors.olive700 },
-  grade3: { label: "درجه سه", bg: colors.infoBackground, color: colors.info },
+  international: { label: "استاد بین‌المللی", bg: "rgba(0,149,246,.10)", color: "#0095f6" },
+  grade2: { label: "استاد کشوری", bg: "rgba(18,183,106,.12)", color: "#0e9f5e" },
+  grade3: { label: "استاد استانی", bg: "rgba(224,36,94,.10)", color: "#e0245e" },
 };
 
 function TopicIcon({ icon, size = 22 }: { icon: string; size?: number }) {

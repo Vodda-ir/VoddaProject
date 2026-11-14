@@ -95,6 +95,7 @@ func (uc *DispatchUsecase) CreateCall(ctx context.Context, learnerID uint, in Cr
         // publish an active service bound to this official topic.
         audience, _, err := uc.teachers.List(ctx, domain.TeacherFilter{
                 PublicOnly:        true,
+                AvailableOnly:     true,
                 OfficialServiceID: in.OfficialServiceID,
                 Limit:             200,
         })
