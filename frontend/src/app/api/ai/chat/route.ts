@@ -150,15 +150,14 @@ async function fetchTeacherPage(offset: number): Promise<{ rows: unknown[]; tota
 function rosterLines(briefs: TeacherBrief[]): string {
   return briefs
     .map((teacher) => {
-      const tier = TIER_LABELS[teacher.tier] ?? 'بدون درجه';
+      const tier = TIER_LABELS[teacher.tier] ?? '—';
       const services = teacher.services
-        .slice(0, 4)
+        .slice(0, 3)
         .map((service) => service.title)
         .join('، ');
-      const readiness = teacher.available ? '' : ' | الان آمادهٔ جلسه فوری نیست';
-      return `- ${teacher.name} | درجه: ${tier} | شهر: ${teacher.city || '—'} | رشته: ${
-        teacher.field || '—'
-      } | خدمات: ${services || '—'}${readiness}`;
+      const field = teacher.field.length > 30 ? `${teacher.field.slice(0, 30)}…` : teacher.field;
+      const readiness = teacher.available ? '' : ' | فعلاً آماده نیست';
+      return `- ${teacher.name} | ${tier} | ${teacher.city || '—'} | ${field || '—'} | ${services || '—'}${readiness}`;
     })
     .join('\n');
 }

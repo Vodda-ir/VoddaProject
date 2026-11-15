@@ -49,7 +49,7 @@ const COOLDOWN_BALANCE_MS = 6 * 60 * 60 * 1000; // اعتبار تمام — ۶ 
 const COOLDOWN_RATE_MS = 90 * 1000; // محدودیت نرخ — خنک کوتاه
 const COOLDOWN_BASE_MS = 3 * 60 * 1000; // خطای دیگر — خنک نمایی
 const COOLDOWN_MAX_MS = 30 * 60 * 1000;
-const PER_ATTEMPT_TIMEOUT_MS = 25_000;
+const PER_ATTEMPT_TIMEOUT_MS = 40_000;
 // سرویس‌های بدون کلید (Pollinations) سقف نرخ سخت‌گیری دارند؛ فاصلهٔ حداقل
 // بین دو فراخوان + یک تلاش دوبارهٔ کوتاه، از خطای FREE_LIMIT جلوگیری می‌کند.
 const KEYLESS_GAP_MS = 8_000;
@@ -231,7 +231,7 @@ export async function aiComplete(
     return { ok: false, reason: 'disabled', detail: 'no AI provider configured (AI_DISABLE=1 or no key)' };
   }
 
-  const deadline = Date.now() + (opts.timeoutMs ?? 45_000);
+  const deadline = Date.now() + (opts.timeoutMs ?? 75_000);
   const errors: Array<{ reason: AiErrorReason; detail: string }> = [];
 
   for (const provider of runtimes) {
