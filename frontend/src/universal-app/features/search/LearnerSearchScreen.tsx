@@ -45,6 +45,8 @@ type SearchFilters = {
   female: "all" | "female" | "male";
   tier: TierKey;
   availableOnly: boolean;
+  /** فقط اساتیدی که «جلسهٔ فوری» فعال کرده‌اند — رزرو همین‌لحظه. */
+  instantOnly: boolean;
   sort: SortKey;
 };
 
@@ -124,6 +126,7 @@ function readInitialFilters(): SearchFilters {
     female: "all",
     tier: "",
     availableOnly: false,
+    instantOnly: false,
     sort: "recommended",
   };
   if (typeof window === "undefined") return empty;
@@ -138,6 +141,7 @@ function readInitialFilters(): SearchFilters {
     female: femaleParam === "true" ? "female" : femaleParam === "false" ? "male" : "all",
     tier: (["international", "grade2", "grade3"].includes(tierParam ?? "") ? tierParam : "") as TierKey,
     availableOnly: params.get("available") === "true",
+    instantOnly: params.get("instant") === "true",
     sort: (["recommended", "rating", "sessions", "newest"].includes(sortParam ?? "")
       ? sortParam
       : "recommended") as SortKey,
@@ -514,6 +518,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
     if (filters.female === "male") params.set("female", "false");
     if (filters.tier) params.set("tier", filters.tier);
     if (filters.availableOnly) params.set("available", "true");
+    if (filters.instantOnly) params.set("instant", "true");
     if (filters.sort !== "recommended") params.set("sort", filters.sort);
     const next = window.location.pathname + (params.size ? "?" + params.toString() : "");
     window.history.replaceState({}, "", next);
@@ -626,12 +631,13 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
     let out = rows;
     if (filters.tier) out = out.filter((teacher) => teacher.tier === filters.tier);
     if (filters.availableOnly) out = out.filter((teacher) => teacher.available);
+    if (filters.instantOnly) out = out.filter((teacher) => teacher.instantEnabled);
     return sortTeachers(out, filters.sort);
-  }, [rows, filters.tier, filters.availableOnly, filters.sort]);
+  }, [rows, filters.tier, filters.availableOnly, filters.instantOnly, filters.sort]);
 
   const visible = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]);
   const hasMore = visibleCount < filtered.length;
-  const hasAdvancedFilter = Boolean(filters.city || filters.female !== "all" || filters.availableOnly || filters.tier);
+  const hasAdvancedFilter = Boolean(filters.city || filters.female !== "all" || filters.availableOnly || filters.instantOnly || filters.tier);
   const hasAnyFilter = Boolean(filters.query || filters.field || hasAdvancedFilter || topicId || catName);
   const filteredCities = useMemo(() => {
     const needle = cityQuery.trim();
@@ -692,7 +698,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
   }
 
   function clearAllFilters() {
-    setFilters({ query: "", field: "", city: "", female: "all", tier: "", availableOnly: false, sort: "recommended" });
+    setFilters({ query: "", field: "", city: "", female: "all", tier: "", availableOnly: false, instantOnly: false, sort: "recommended" });
     setTopicId(0);
     setCatName("");
   }
@@ -1482,6 +1488,22 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
           <Icon name="checkCircle" size={13} stroke={2} />
           فقط آمادهٔ رزرو
         </button>
+        <button
+          type="button"
+          className="vodda-tappable"
+          aria-label="فقط اساتیدی که جلسهٔ فوری فعال کرده‌اند"
+          onClick={() => setFilters((current) => ({ ...current, instantOnly: !current.instantOnly }))}
+          style={{
+            ...chipStyle(filters.instantOnly),
+            fontSize: 12.5,
+            minHeight: 38,
+            padding: "6px 11px",
+            ...(filters.instantOnly ? { borderColor: "#d8b869", color: "#7a5e1e", background: "#fdf6e3" } : null),
+          }}
+        >
+          <Icon name="sparkle" size={13} stroke={2} />
+          جلسهٔ فوری
+        </button>
         {TIER_PRESETS.map(([value, label, color]) => (
           <button
             key={value || "all-tiers"}
@@ -1547,6 +1569,17 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
               <Icon name="x" size={14} />
             </button>
           ) : null}
+          {filters.instantOnly ? (
+            <button
+              type="button"
+              className="vodda-tappable"
+              onClick={() => setFilters((current) => ({ ...current, instantOnly: false }))}
+              style={{ ...chipStyle(false), background: colors.sand100 }}
+            >
+              جلسهٔ فوری
+              <Icon name="x" size={14} />
+            </button>
+          ) : null}
         </div>
       ) : null}
 
@@ -1572,12 +1605,20 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
             <>
               {hasAnyFilter ? (
                 <EmptyState
-                  icon={<Icon name={catName ? "grid" : "search"} size={30} />}
-                  title={catName ? "استادی برای این دسته یافت نشد" : "نتیجه‌ای یافت نشد"}
+                  icon={<Icon name={catName ? "grid" : filters.instantOnly ? "sparkle" : "search"} size={30} />}
+                  title={
+                    filters.instantOnly
+                      ? "فعلاً استادی با جلسهٔ فوری فعال پیدا نشد"
+                      : catName
+                        ? "استادی برای این دسته یافت نشد"
+                        : "نتیجه‌ای یافت نشد"
+                  }
                   description={
-                    catName
-                      ? "هنوز استادی خدمات این دسته را ثبت نکرده است؛ فیلترها را کمتر کنید یا از فراخوان وُدّا استفاده کنید."
-                      : "با این فیلترها استادی پیدا نشد؛ فیلترها را کمتر کنید."
+                    filters.instantOnly
+                      ? "اساتید با کلید جلسهٔ فوری روشن اینجا دیده می‌شوند؛ می‌توانید فراخوان فوری ثبت کنید تا به اساتید آمادهٔ همین لحظه برسد، یا فیلتر را بردارید."
+                      : catName
+                        ? "هنوز استادی خدمات این دسته را ثبت نکرده است؛ فیلترها را کمتر کنید یا از فراخوان وُدّا استفاده کنید."
+                        : "با این فیلترها استادی پیدا نشد؛ فیلترها را کمتر کنید."
                   }
                   action={<Button variant="secondary" onClick={clearAllFilters}>پاک کردن فیلترها</Button>}
                 />

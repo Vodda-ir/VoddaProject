@@ -114,10 +114,20 @@ function QuickFeatureToggles({ runtime }: { runtime: PlatformRuntime }) {
     setError(null);
     setState({ ...state, [key === "available" ? "available" : key === "instant_enabled" ? "instantEnabled" : "freeEnabled"]: next });
     try {
-      await runtime.request("/teacher/me", {
+      const response = await runtime.request<ApiEnvelope<unknown>>("/teacher/me", {
         method: "PUT",
         body: JSON.stringify({ [key]: next }),
       });
+      // همگام‌سازی با پاسخ سرور — وضعیت سوییچ‌ها همیشه همان چیزی است که در
+      // پایگاه‌داده ثبت شده؛ حتی اگر به هر دلیل مقدار دیگری ذخیره شده باشد.
+      const row = asRecord(response.data);
+      if (row) {
+        setState({
+          available: row.available !== false,
+          instantEnabled: row.instant_enabled === true,
+          freeEnabled: row.free_enabled !== false,
+        });
+      }
     } catch {
       setState(previous);
       setError("تغییر وضعیت انجام نشد؛ دوباره تلاش کنید.");

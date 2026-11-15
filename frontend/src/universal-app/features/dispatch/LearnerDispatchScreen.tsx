@@ -56,7 +56,7 @@ function priceLabel(n: number): string {
 }
 
 function timeLabelOf(call: { flexible: boolean; scheduled_at?: string | null }): string {
-  if (call.flexible || !call.scheduled_at) return "در اسرع وقت";
+  if (call.flexible || !call.scheduled_at) return "جلسهٔ فوری — همین حالا";
   const at = new Date(call.scheduled_at);
   if (Number.isNaN(at.getTime())) return "در اسرع وقت";
   const now = new Date();
@@ -673,13 +673,38 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
           <div>
             <strong style={{ fontSize: 13.5, color: colors.ink, display: "block", marginBottom: 8 }}>چه زمانی؟</strong>
             <div style={{ display: "flex", gap: spacing.sm, flexWrap: "wrap" }}>
-              <button type="button" aria-pressed={whenMode === "now"} onClick={() => setWhenMode("now")} className="vodda-tappable" style={whenChip(whenMode === "now")}>
-                <Icon name="sparkle" size={14} style={{ marginInlineEnd: 5 }} /> در اسرع وقت
+              <button type="button" aria-pressed={whenMode === "now"} onClick={() => setWhenMode("now")} className="vodda-tappable" style={whenChip(whenMode === "now", true)}>
+                <Icon name="sparkle" size={14} style={{ marginInlineEnd: 5 }} /> جلسهٔ فوری — همین حالا
               </button>
-              <button type="button" aria-pressed={whenMode === "later"} onClick={() => setWhenMode("later")} className="vodda-tappable" style={whenChip(whenMode === "later")}>
+              <button type="button" aria-pressed={whenMode === "later"} onClick={() => setWhenMode("later")} className="vodda-tappable" style={whenChip(whenMode === "later", false)}>
                 <Icon name="calendar" size={14} style={{ marginInlineEnd: 5 }} /> زمان مشخص
               </button>
             </div>
+            {whenMode === "now" ? (
+              <div
+                role="note"
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: 9,
+                  marginTop: 10,
+                  padding: "10px 12px",
+                  borderRadius: 14,
+                  border: "1px solid #ecd9a8",
+                  background: "linear-gradient(150deg,#fdf6e3,#fffdf8 75%)",
+                }}
+              >
+                <span aria-hidden="true" style={{ width: 30, height: 30, display: "grid", placeItems: "center", flex: "0 0 30px", borderRadius: 10, background: "linear-gradient(145deg,#d8b869,#b8923c)", color: "#fffaf0" }}>
+                  <Icon name="sparkle" size={15} stroke={2.2} />
+                </span>
+                <span style={{ minWidth: 0 }}>
+                  <strong style={{ display: "block", fontSize: 12.5, fontWeight: 800, color: "#7a5e1e" }}>فراخوان فوری فقط به اساتید آمادهٔ همین لحظه می‌رسد</strong>
+                  <span style={{ display: "block", fontSize: 11.5, color: "#9a7426", lineHeight: 1.8, marginTop: 2 }}>
+                    این فراخوان فقط برای اساتیدی ارسال می‌شود که «جلسهٔ فوری» را فعال کرده‌اند و معمولاً در چند دقیقه پاسخ می‌گیرید؛ ساعت دقیق با توافق استاد مشخص می‌شود.
+                  </span>
+                </span>
+              </div>
+            ) : null}
             {whenMode === "later" ? (
               <div style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr", gap: spacing.sm, marginTop: 10 }}>
                 <SelectField
@@ -702,7 +727,7 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
             <p style={{ margin: "8px 0 0", fontSize: 12, color: colors.inkMuted, lineHeight: 1.8 }}>
               {whenMode === "later"
                 ? "ساعت‌ها به وقت تهران است؛ زمان نهایی با تأیید استاد قطعی می‌شود."
-                : "در «در اسرع وقت» ساعت نهایی با توافق استاد مشخص می‌شود."}
+                : "بعد از ثبت، اساتید آماده اعلام حضور می‌کنند و شما یکی را انتخاب می‌کنید."}
             </p>
           </div>
 
@@ -794,7 +819,7 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
   );
 }
 
-const whenChip = (active: boolean): React.CSSProperties => ({
+const whenChip = (active: boolean, gold = false): React.CSSProperties => ({
   display: "inline-flex",
   alignItems: "center",
   padding: "9px 14px",
@@ -803,9 +828,10 @@ const whenChip = (active: boolean): React.CSSProperties => ({
   fontWeight: 700,
   cursor: "pointer",
   fontFamily: "inherit",
-  color: active ? colors.surface : colors.inkSecondary,
-  background: active ? colors.olive600 : colors.surface,
-  border: `1px solid ${active ? colors.olive600 : colors.sand200}`,
+  color: active ? (gold ? "#7a5e1e" : colors.surface) : colors.inkSecondary,
+  background: active ? (gold ? "#fdf6e3" : colors.olive600) : colors.surface,
+  border: `1px solid ${active ? (gold ? "#d8b869" : colors.olive600) : colors.sand200}`,
+  boxShadow: active && gold ? "0 0 0 3px rgba(231,213,168,.28)" : "none",
 });
 
 const inputStyle: React.CSSProperties = {

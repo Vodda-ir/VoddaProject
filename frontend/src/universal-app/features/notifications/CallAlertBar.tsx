@@ -14,10 +14,16 @@ import { getNotifications, markNotificationRead } from "./api";
 
 const CHIME_SRC = "/sounds/vodda-summon-chime.wav";
 const POLL_MS = 15000;
-const AUTO_HIDE_MS = 14000;
-/** فقط فراخوان‌های تازه (نیم‌ساعت اخیر) نوار اعلان را می‌آورند؛
- *  بدهی اعلان‌های قدیمی در زنگ اعلان‌ها می‌ماند و آزاردهنده نمی‌شود. */
-const FRESH_WINDOW_MS = 30 * 60 * 1000;
+/** پنجرهٔ تازگی هر نوع اعلان — کارت تا وقتی خوانده‌نشده و تازه است روی صفحه
+ *  می‌ماند (بدون پنهان‌شدن خودکار)؛ dismissed فقط با بستن دستی ثبت می‌شود.
+ *  فراخوان/جلسهٔ فوری عمر کوتاه دارند، اما درخواست جلسهٔ معمولی و مراسم
+ *  ممکن است دقایقی بعد از بازکردن اپ دیده شوند؛ پنجرهٔ آنان بلندتر است. */
+const FRESH_WINDOW_BY_KIND: Record<CallAlert["kind"], number> = {
+  dispatch: 30 * 60 * 1000,
+  instant: 30 * 60 * 1000,
+  session: 6 * 60 * 60 * 1000,
+  ceremony: 6 * 60 * 60 * 1000,
+};
 const LS_CHIME = "vodda:call-alert:last-chime";
 const LS_DISMISSED = "vodda:call-alert:dismissed";
 
@@ -56,65 +62,98 @@ function lastChimeId(): number {
   }
 }
 
+/** باز کردن پخش صدا در WebView (سیاست autoplay) — با اولین لمس کاربر،
+ *  یک پخش بی‌صدا اجرا می‌شود تا از آن پس زنگ اعلان بدون gesture هم پخش شود.
+ *  بدون این، زنگ فراخوان در اپ عملاً هرگز صدا نمی‌داد. */
+let audioUnlocked = false;
+function unlockAudio() {
+  if (audioUnlocked) return;
+  audioUnlocked = true;
+  try {
+    const audio = new Audio(CHIME_SRC);
+    audio.volume = 0;
+    audio.muted = true;
+    const finished = () => {
+      try {
+        audio.pause();
+        audio.currentTime = 0;
+        audio.muted = false;
+      } catch {
+        // بی‌اهمیت
+      }
+    };
+    void audio.play().then(finished, finished);
+  } catch {
+    // پخش صدا اختیاری است
+  }
+}
+
 function playChime() {
   try {
     const audio = new Audio(CHIME_SRC);
     audio.volume = 0.85;
     void audio.play().catch(() => {
-      // پخش خودکار توسط مرورگر مسدود شده — نوار همچنان دیده می‌شود
+      // پخش خودکار هنوز مسدود است — نوار همچنان دیده می‌شود؛
+      // پس از اولین لمس کاربر، زنگ‌های بعدی صدا خواهند داشت.
     });
   } catch {
     // پخش صدا اختیاری است
   }
 }
 
-/** اعلان فراخوان/جلسهٔ قابل‌اقدام: تازه و خوانده‌نشده؛ قدیمی‌ها نادیده گرفته می‌شوند. */
+/** اعلان فراخوان/جلسهٔ قابل‌اقدام: خوانده‌نشده و تازه؛ قدیمی‌ها فقط در زنگ اعلان‌ها می‌مانند. */
 function toCallAlert(id: number, title: string, body: string, read: boolean, createdAt: string): CallAlert | null {
   if (read) return null;
   const createdMs = Date.parse(createdAt);
-  if (!Number.isFinite(createdMs) || Date.now() - createdMs > FRESH_WINDOW_MS) return null;
-  if (title.includes("فراخوان مراسم")) {
-    return { id, name: title.split(":").slice(1).join(":").trim() || "مراسم حضوری", body, kind: "ceremony" };
-  }
-  if (title.includes("فراخوان جدید")) {
-    return { id, name: title.split(":").slice(1).join(":").trim() || "درخواست جلسه", body, kind: "dispatch" };
-  }
-  // جلسهٔ فوری — رزرو همین‌لحظه توسط قرآن‌آموز
-  if (title.includes("جلسهٔ فوری") || title.includes("جلسه فوری")) {
-    return { id, name: title.split(":").slice(1).join(":").trim() || "جلسهٔ فوری", body, kind: "instant" };
-  }
-  // درخواست جلسهٔ معمولی یا رایگان ثبت‌شده توسط قرآن‌آموز
-  if (title.includes("درخواست جلسه")) {
-    return { id, name: title.split(":").slice(1).join(":").trim() || "درخواست جلسه", body, kind: "session" };
-  }
-  return null;
+  if (!Number.isFinite(createdMs)) return null;
+  const kind: CallAlert["kind"] | "" = title.includes("فراخوان مراسم")
+    ? "ceremony"
+    : title.includes("فراخوان جدید")
+      ? "dispatch"
+      : title.includes("جلسهٔ فوری") || title.includes("جلسه فوری")
+        ? "instant"
+        : title.includes("درخواست جلسه")
+          ? "session"
+          : "";
+  if (kind === "") return null;
+  if (Date.now() - createdMs > FRESH_WINDOW_BY_KIND[kind]) return null;
+  const name = title.split(":").slice(1).join(":").trim() ||
+    (kind === "ceremony" ? "مراسم حضوری" : kind === "instant" ? "جلسهٔ فوری" : "درخواست جلسه");
+  return { id, name, body, kind };
 }
 
 export function CallAlertBar({ config }: { config: UniversalAppConfig }) {
   const runtime = usePlatform();
   const [alert, setAlert] = useState<CallAlert | null>(null);
   const alertRef = useRef<CallAlert | null>(null);
-  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const clearHideTimer = useCallback(() => {
-    if (hideTimer.current) {
-      clearTimeout(hideTimer.current);
-      hideTimer.current = null;
-    }
+  // باز کردن پخش صدا با اولین تعامل کاربر — شرط پخش زنگ در WebView
+  useEffect(() => {
+    const onFirstInteraction = () => {
+      unlockAudio();
+      window.removeEventListener("pointerdown", onFirstInteraction);
+      window.removeEventListener("keydown", onFirstInteraction);
+    };
+    window.addEventListener("pointerdown", onFirstInteraction);
+    window.addEventListener("keydown", onFirstInteraction);
+    return () => {
+      window.removeEventListener("pointerdown", onFirstInteraction);
+      window.removeEventListener("keydown", onFirstInteraction);
+    };
   }, []);
 
   const dismiss = useCallback(() => {
+    // بستن دستی (دکمهٔ ✕) — فقط اینجا در فهرست dismissed ثبت می‌شود تا
+    // اعلان دوباره بالا نیاید؛ بدون پنهان‌سازی خودکار دیگر اعلان‌ها گم نمی‌شوند.
     const current = alertRef.current;
     if (current) rememberDismissed(current.id);
-    clearHideTimer();
     setAlert(null);
     alertRef.current = null;
-  }, [clearHideTimer]);
+  }, []);
 
   const open = useCallback(() => {
     const current = alertRef.current;
     if (!current) return;
-    clearHideTimer();
     setAlert(null);
     alertRef.current = null;
     void markNotificationRead(runtime, current.id).catch(() => {
@@ -127,7 +166,7 @@ export function CallAlertBar({ config }: { config: UniversalAppConfig }) {
           ? "/t/dispatch"
           : "/t/sessions"; // جلسهٔ فوری و درخواست جلسهٔ معمولی → فهرست جلسات استاد
     navigateApp(target, config);
-  }, [clearHideTimer, config, runtime]);
+  }, [config, runtime]);
 
   useEffect(() => {
     let active = true;
@@ -147,8 +186,6 @@ export function CallAlertBar({ config }: { config: UniversalAppConfig }) {
           if (next.id !== alertRef.current?.id) {
             setAlert(next);
             alertRef.current = next;
-            clearHideTimer();
-            hideTimer.current = setTimeout(dismiss, AUTO_HIDE_MS);
             if (next.id > lastChimeId()) {
               try {
                 window.localStorage.setItem(LS_CHIME, String(next.id));
@@ -160,7 +197,6 @@ export function CallAlertBar({ config }: { config: UniversalAppConfig }) {
           }
         } else if (alertRef.current) {
           // اعلان فعلی دیگر معتبر نیست (خوانده/حذف شده) — نوار جمع می‌شود
-          clearHideTimer();
           setAlert(null);
           alertRef.current = null;
         }
@@ -171,12 +207,18 @@ export function CallAlertBar({ config }: { config: UniversalAppConfig }) {
 
     void check();
     const timer = window.setInterval(() => void check(), POLL_MS);
+    // بازگشت به پیش‌زمینهٔ اپ — بلافاصله بررسی می‌شود تا اعلان‌هایی که در
+    // پس‌زمینه رسیده‌اند همان لحظه دیده شوند (نه تا تیک بعدیِ ۱۵ ثانیه‌ای).
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void check();
+    };
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
       active = false;
       window.clearInterval(timer);
-      if (hideTimer.current) clearTimeout(hideTimer.current);
+      document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [clearHideTimer, dismiss, runtime]);
+  }, [runtime]);
 
   if (!alert) return null;
 

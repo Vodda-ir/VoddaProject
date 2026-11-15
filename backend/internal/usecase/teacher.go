@@ -111,6 +111,15 @@ func (uc *TeacherUsecase) UpdateMine(ctx context.Context, userID uint, in Become
         if in.Available != nil {
                 t.Available = *in.Available
         }
+        // کلیدهای سریع داشبورد استاد — جلسهٔ فوری و جلسات رایگان. این دو فیلد
+        // قبلاً از ورودی خوانده می‌شدند اما هرگز روی رکورد اعمال نمی‌شدند و
+        // سوییچ‌ها پس از خروج از داشبورد به حالت قبل برمی‌گشتند.
+        if in.InstantEnabled != nil {
+                t.InstantEnabled = *in.InstantEnabled
+        }
+        if in.FreeEnabled != nil {
+                t.FreeEnabled = *in.FreeEnabled
+        }
         if err := uc.teachers.Update(ctx, t); err != nil {
                 return nil, err
         }
