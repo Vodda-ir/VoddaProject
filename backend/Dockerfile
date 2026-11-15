@@ -3,6 +3,9 @@ FROM golang:1.25-bookworm AS build
 WORKDIR /src
 
 COPY go.mod go.sum ./
+# GOPROXY قابل override است — در شبکه‌های محدود از میرور (مثلاً goproxy.cn) استفاده کنید.
+ARG GOPROXY=https://proxy.golang.org,direct
+ENV GOPROXY=${GOPROXY}
 RUN go mod download
 
 COPY . .
