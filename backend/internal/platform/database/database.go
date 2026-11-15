@@ -82,6 +82,7 @@ func Migrate(db *gorm.DB) error {
                 &domain.Sample{},
                 &domain.WorkTime{},
                 &domain.Session{},
+                &domain.SessionMessage{},
                 &domain.Review{},
                 &domain.Transaction{},
                 &domain.Withdrawal{},

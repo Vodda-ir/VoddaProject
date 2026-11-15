@@ -1,7 +1,9 @@
-import type { CSSProperties, MouseEvent, ReactNode } from "react";
+import { useEffect, useState, type CSSProperties, type MouseEvent, type ReactNode } from "react";
 import type { UniversalAppConfig } from "../config";
 import { appRouteUrl, navigateAppRoute, type AppRouteName, type StaticAppRouteName } from "../router";
 import { CallAlertBar } from "../features/notifications/CallAlertBar";
+import { getTeacherUnseenSessionCount } from "../features/session-detail/api";
+import { usePlatform } from "../platform/context";
 import { AssistantChat } from "../features/assistant/AssistantChat";
 import { Icon } from "./Icon";
 import { ToastHost } from "./toast";
@@ -105,20 +107,53 @@ function navigate(
   navigateAppRoute(target, config);
 }
 
+/** شمارندهٔ قرمز جلسات ثبت‌شده و دیده‌نشدهٔ استاد — هر ۱۵ ثانیه نوسازی می‌شود. */
+function useTeacherUnseenCount(enabled: boolean): number {
+  const runtime = usePlatform();
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    if (!enabled) return;
+    let active = true;
+    const load = () => {
+      getTeacherUnseenSessionCount(runtime)
+        .then((value) => {
+          if (active) setCount(value);
+        })
+        .catch(() => {
+          if (active) setCount(0);
+        });
+    };
+    load();
+    const timer = window.setInterval(load, 15_000);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") load();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [enabled, runtime]);
+  return count;
+}
+
 function BottomNavigation({
   items,
   cta,
   routeName,
   config,
   ariaLabel,
+  badgeFor,
 }: {
   items: NavigationItem[];
   cta?: NavigationCta;
   routeName: AppRouteName;
   config: UniversalAppConfig;
   ariaLabel: string;
+  badgeFor?: (item: NavigationItem) => number | undefined;
 }) {
-  const renderTab = (item: NavigationItem) => {
+  const renderTab = (item: NavigationItem, badge?: number) => {
     const active = item.routes.includes(routeName);
     return (
       <a
@@ -156,7 +191,32 @@ function BottomNavigation({
         >
           <Icon name={item.icon} size={19} stroke={active ? 2 : 1.7} />
         </span>
-        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }}>
+        <span style={{ position: "relative", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }}>
+          {badge !== undefined && badge > 0 ? (
+            <span
+              aria-label={`${badge} مورد دیده نشده`}
+              style={{
+                position: "absolute",
+                top: -30,
+                insetInlineEnd: 2,
+                minWidth: 18,
+                height: 18,
+                display: "grid",
+                placeItems: "center",
+                padding: "0 5px",
+                borderRadius: 999,
+                background: colors.danger,
+                border: "2px solid #ffffff",
+                color: "#ffffff",
+                fontSize: 9.5,
+                fontWeight: 900,
+                lineHeight: 1,
+                boxShadow: "0 3px 8px rgba(179,64,58,.4)",
+              }}
+            >
+              {badge > 99 ? "+۹۹" : new Intl.NumberFormat("fa-IR").format(badge)}
+            </span>
+          ) : null}
           {item.label}
         </span>
       </a>
@@ -189,7 +249,7 @@ function BottomNavigation({
         boxShadow: "0 -6px 24px rgba(46,54,34,.055)",
       }}
     >
-      {leadingTabs.map(renderTab)}
+      {leadingTabs.map((item) => renderTab(item, badgeFor?.(item)))}
       {cta ? (
         <a
           key="nav-cta"
@@ -240,7 +300,7 @@ function BottomNavigation({
           </span>
         </a>
       ) : null}
-      {trailingTabs.map(renderTab)}
+      {trailingTabs.map((item) => renderTab(item, badgeFor?.(item)))}
     </nav>
   );
 }
@@ -309,6 +369,11 @@ function Shell({
   mode,
 }: AppShellProps & { mode: "learner" | "teacher" }) {
   const items = mode === "teacher" ? teacherNavigation : learnerNavigation;
+  const unseenCount = useTeacherUnseenCount(mode === "teacher");
+  const badgeFor = (item: NavigationItem): number | undefined => {
+    if (mode === "teacher" && item.target === "teacher-sessions") return unseenCount;
+    return undefined;
+  };
   return (
     <div dir="rtl" data-app-shell={mode} style={rootStyle}>
       <div
@@ -329,6 +394,7 @@ function Shell({
           cta={mode === "learner" ? learnerCallToAction : undefined}
           routeName={routeName}
           config={config}
+          badgeFor={badgeFor}
           ariaLabel={mode === "teacher" ? "ناوبری اصلی استاد" : "ناوبری اصلی قرآن‌آموز"}
         />
       </div>

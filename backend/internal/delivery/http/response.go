@@ -56,6 +56,12 @@ func fail(c *gin.Context, err error) {
                 status, msg = http.StatusBadRequest, "برای پذیرش این مراسم، حداقل یک نمونه صوت در پروفایل شما لازم است"
         case errors.Is(err, domain.ErrTeacherProfileRequired):
                 status, msg = http.StatusForbidden, "برای این حساب پروفایل استاد فعال نیست"
+        case errors.Is(err, domain.ErrInstantUnavailable):
+                status, msg = http.StatusBadRequest, "جلسهٔ فوری برای این استاد فعال نیست؛ پس از روشن‌کردن آن از سوی استاد می‌توانید رزرو فوری بزنید"
+        case errors.Is(err, domain.ErrFreeUnavailable):
+                status, msg = http.StatusBadRequest, "جلسات رایگان این استاد در حال حاضر غیرفعال است"
+        case errors.Is(err, domain.ErrNoInstantTeachers):
+                status, msg = http.StatusBadRequest, "هنوز استادی با جلسهٔ فوریِ فعال برای این موضوع نیست؛ کمی بعد دوباره تلاش کنید"
         case errors.Is(err, domain.ErrSelfBooking):
                 status, msg = http.StatusBadRequest, "نمی‌توانید استاد خودتان را رزرو کنید؛ برای رزرو با حساب قرآن‌آموز وارد شوید"
         }

@@ -93,6 +93,12 @@ type Teacher struct {
         Female    bool     `json:"female"`
         Verified  bool     `json:"verified"`
         Available bool     `gorm:"default:true" json:"available"`
+        // InstantEnabled اجازهٔ رزرو فوری (همین لحظه) را می‌دهد؛ وقتی خاموش باشد
+        // درخواست‌های فوری و فراخوان‌های فوری به این استاد نمی‌رسند.
+        InstantEnabled bool `gorm:"default:false" json:"instant_enabled"`
+        // FreeEnabled کلید اصلی جلسات رایگان است؛ وقتی خاموش باشد خدمات صفر
+        // تومانی این استاد از تابلوی رایگان حذف و رزرو رایگان بسته می‌شود.
+        FreeEnabled bool `gorm:"default:true" json:"free_enabled"`
         // Tier رتبه‌بندی کیفی استاد: "" | "international" (درجه یک/بین‌المللی)
         // | "grade2" | "grade3" — تیک نشان کنار نام استاد از همین تعیین می‌شود.
         Tier   string        `gorm:"size:16;default:''" json:"tier"`
@@ -220,12 +226,31 @@ type Session struct {
         Status      SessionStatus `gorm:"size:16;default:pending;index" json:"status"`
         Note        string        `gorm:"size:500" json:"note"`
         RejectNote  string        `gorm:"size:255" json:"reject_note"`
+        // Instant marks an immediate (جلسهٔ فوری) booking created minutes before
+        // its start; such sessions bypass the weekly work-time template.
+        Instant bool `gorm:"default:false;index" json:"instant"`
+        // TeacherSeenAt is set the first time the owning teacher views the session
+        // (list or detail) — the base of the unseen counter badge.
+        TeacherSeenAt *time.Time `gorm:"index" json:"teacher_seen_at,omitempty"`
+        // Unseen is a transient response-only flag (never persisted) telling the
+        // client this session was unseen at the moment of listing.
+        Unseen      bool          `gorm:"-" json:"unseen,omitempty"`
         Rated       bool          `gorm:"default:false" json:"rated"`
         CreatedAt   time.Time     `json:"created_at"`
         UpdatedAt   time.Time     `json:"updated_at"`
 
         Learner *User    `gorm:"foreignKey:LearnerID" json:"learner,omitempty"`
         Teacher *Teacher `gorm:"foreignKey:TeacherID" json:"teacher,omitempty"`
+}
+
+// SessionMessage is one persisted chat message exchanged between the learner
+// and the teacher of a session to coordinate before/after the live class.
+type SessionMessage struct {
+        ID        uint      `gorm:"primaryKey" json:"id"`
+        SessionID uint      `gorm:"index:idx_session_messages_session" json:"session_id"`
+        SenderID  uint      `gorm:"index" json:"sender_id"`
+        Body      string    `gorm:"size:1000" json:"body"`
+        CreatedAt time.Time `json:"created_at"`
 }
 
 // Review is a learner rating + comment for a teacher after a session.

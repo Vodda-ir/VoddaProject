@@ -218,12 +218,13 @@ func (r *teacherRepo) FreePublicServices(ctx context.Context, limit int) ([]doma
                 JOIN users ON users.id = t.user_id
                 LEFT JOIN official_services os ON os.id = s.official_service_id
                 WHERE s.active = ? AND s.price = 0
+                  AND t.free_enabled = ?
                   AND t.status = ? AND t.verified = ? AND t.available = ?
                   AND users.active = ?
                   AND t.field NOT LIKE ?
                 ORDER BY t.rating DESC, t.sessions DESC, s.id DESC
                 LIMIT ?`,
-                true, domain.TeacherApproved, true, true, true, "%مداح%", limit,
+                true, true, domain.TeacherApproved, true, true, true, "%مداح%", limit,
         ).Scan(&rows).Error
         return rows, err
 }

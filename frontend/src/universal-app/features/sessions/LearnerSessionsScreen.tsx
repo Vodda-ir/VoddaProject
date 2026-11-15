@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import type { UniversalAppConfig } from "../../config";
 import { usePlatform } from "../../platform/context";
 import { navigateApp } from "../../router";
 import {
@@ -62,20 +63,33 @@ function canCancel(session: LearnerSession): boolean {
 function SessionCard({
   session,
   busy,
+  onOpen,
   onCancel,
   onRate,
   onPay,
 }: {
   session: LearnerSession;
   busy: boolean;
+  onOpen: () => void;
   onCancel: () => void;
   onRate: () => void;
   onPay: () => void;
 }) {
   return (
-    <Card className="vodda-card--interactive" style={{ display: "grid", gap: 13, borderRadius: 24, padding: 15, boxShadow: "0 0 6px rgba(46,54,34,.04)" }}>
+    <Card
+      className="vodda-card--interactive"
+      style={{ display: "grid", gap: 13, borderRadius: 24, padding: 15, boxShadow: "0 0 6px rgba(46,54,34,.04)", cursor: "pointer" }}
+      onClick={onOpen}
+    >
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: spacing.md }}>
-        <StatusPill status={session.status} label={statusLabels[session.status] ?? session.status} />
+        <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+          <StatusPill status={session.status} label={statusLabels[session.status] ?? session.status} />
+          {session.instant ? (
+            <span aria-label="جلسهٔ فوری" style={{ padding: "3px 9px", borderRadius: radii.pill, color: "#fffaf0", background: "linear-gradient(145deg,#d8b869,#b8923c)", fontSize: 10, fontWeight: 800 }}>
+              فوری
+            </span>
+          ) : null}
+        </div>
         <span style={{ ...typography.caption, color: colors.inkMuted }}>
           {toFaDigits(session.duration)} دقیقه
         </span>
@@ -112,7 +126,7 @@ function SessionCard({
       ) : null}
 
       {session.status === "awaiting_payment" ? (
-        <div style={{ display: "grid", gap: spacing.sm }}>
+        <div style={{ display: "grid", gap: spacing.sm }} onClick={(event) => event.stopPropagation()}>
           <span style={{ ...typography.caption, color: colors.goldDark }}>
             پرداخت آنلاین تکمیل نشده؛ با تکمیل پرداخت، درخواست برای استاد ارسال می‌شود.
           </span>
@@ -124,10 +138,10 @@ function SessionCard({
       ) : null}
 
       {session.status === "pending" || session.status === "confirmed" ? (
-        <div style={{ display: "grid", gap: spacing.sm }}>
+        <div style={{ display: "grid", gap: spacing.sm }} onClick={(event) => event.stopPropagation()}>
           <span style={{ ...typography.caption, color: colors.inkMuted }}>
             {session.status === "confirmed"
-              ? "جلسه تأیید شده است. جزئیات برگزاری را با استاد هماهنگ کنید."
+              ? "جلسه تأیید شده است. برای هماهنگی و ورود به کلاس، جزئیات جلسه را باز کنید."
               : "در انتظار تأیید استاد"}
           </span>
           {canCancel(session) ? (
@@ -140,16 +154,18 @@ function SessionCard({
       ) : null}
 
       {session.status === "done" && !session.rated ? (
-        <Button fullWidth onClick={onRate} style={{ background: colors.gold, borderColor: colors.gold }}>
-          ثبت امتیاز و نظر
-        </Button>
+        <div onClick={(event) => event.stopPropagation()}>
+          <Button fullWidth onClick={onRate} style={{ background: colors.gold, borderColor: colors.gold }}>
+            ثبت امتیاز و نظر
+          </Button>
+        </div>
       ) : null}
 
     </Card>
   );
 }
 
-export function LearnerSessionsScreen() {
+export function LearnerSessionsScreen({ config }: { config?: UniversalAppConfig }) {
   const runtime = usePlatform();
   const [when, setWhen] = useState<LearnerSessionsWhen>("upcoming");
   const [sessions, setSessions] = useState<LearnerSession[]>([]);
@@ -304,6 +320,7 @@ export function LearnerSessionsScreen() {
               key={session.id}
               session={session}
               busy={busyId === session.id}
+              onOpen={() => navigateApp(`/session/${session.id}`, config)}
               onCancel={() => setCancelTarget(session)}
               onRate={() => openRating(session)}
               onPay={() => void paySession(session)}

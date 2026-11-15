@@ -37,6 +37,10 @@ export type Teacher = {
   female: boolean;
   verified: boolean;
   available: boolean;
+  /** کلید جلسهٔ فوری — استاد پذیرای رزرو همین‌لحظه است. */
+  instantEnabled: boolean;
+  /** کلید جلسات رایگان — خدمات صفر تومانی استاد فعال‌اند. */
+  freeEnabled: boolean;
   tier: string;
   rating: number;
   reviews: number;
@@ -125,6 +129,8 @@ export function parseTeacher(value: unknown): Teacher {
     female: booleanValue(data.female),
     verified: booleanValue(data.verified),
     available: booleanValue(data.available, true),
+    instantEnabled: booleanValue(data.instant_enabled),
+    freeEnabled: booleanValue(data.free_enabled, true),
     tier: stringValue(data.tier),
     rating: numberValue(data.rating),
     reviews: numberValue(data.reviews),

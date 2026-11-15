@@ -29,6 +29,194 @@ import {
 } from "../../ui";
 import { formatWalletAmount, toFaDigits } from "../wallet/WalletTransactionCard";
 
+/** وضعیت کلیدهای سریع استاد — از /teacher/me خوانده می‌شود. */
+type FeatureSwitches = {
+  available: boolean;
+  instantEnabled: boolean;
+  freeEnabled: boolean;
+};
+
+async function loadFeatureSwitches(runtime: PlatformRuntime): Promise<FeatureSwitches> {
+  const response = await runtime.request<ApiEnvelope<unknown>>("/teacher/me");
+  const row = asRecord(response.data) ?? {};
+  return {
+    available: row.available !== false,
+    instantEnabled: row.instant_enabled === true,
+    freeEnabled: row.free_enabled !== false,
+  };
+}
+
+/** سوییچ زیبا با دستهٔ متحرک — پایهٔ کارت‌های امکانات. */
+function FeatureSwitch({ checked, label, onChange }: { checked: boolean; label: string; onChange: () => void }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      onClick={onChange}
+      style={{
+        width: 52,
+        height: 30,
+        flex: "0 0 52px",
+        display: "grid",
+        alignItems: "center",
+        padding: 0,
+        border: 0,
+        borderRadius: 999,
+        cursor: "pointer",
+        background: checked ? "linear-gradient(145deg,#8fa873,#5f7a48)" : colors.sand200,
+        boxShadow: checked ? "0 4px 12px rgba(95,122,72,.35)" : "none",
+        transition: "background 240ms cubic-bezier(.2,.9,.3,1)",
+      }}
+    >
+      <span
+        aria-hidden="true"
+        style={{
+          display: "block",
+          width: 24,
+          height: 24,
+          marginInlineEnd: checked ? 3 : 25,
+          borderRadius: "50%",
+          background: "#ffffff",
+          boxShadow: "0 2px 6px rgba(46,54,34,.25)",
+          transition: "margin 240ms cubic-bezier(.2,.9,.3,1)",
+        }}
+      />
+    </button>
+  );
+}
+
+/** کارت امکانات مهم استاد — جلسات فوری، جلسات رایگان و پذیرش رزرو. */
+function QuickFeatureToggles({ runtime }: { runtime: PlatformRuntime }) {
+  const [state, setState] = useState<FeatureSwitches | null>(null);
+  const [busyKey, setBusyKey] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    loadFeatureSwitches(runtime)
+      .then((value) => {
+        if (active) setState(value);
+      })
+      .catch(() => {
+        if (active) setState(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [runtime]);
+
+  const toggle = async (key: "available" | "instant_enabled" | "free_enabled", next: boolean) => {
+    if (state === null || busyKey !== null) return;
+    const previous = state;
+    setBusyKey(key);
+    setError(null);
+    setState({ ...state, [key === "available" ? "available" : key === "instant_enabled" ? "instantEnabled" : "freeEnabled"]: next });
+    try {
+      await runtime.request("/teacher/me", {
+        method: "PUT",
+        body: JSON.stringify({ [key]: next }),
+      });
+    } catch {
+      setState(previous);
+      setError("تغییر وضعیت انجام نشد؛ دوباره تلاش کنید.");
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
+  if (state === null) return null;
+
+  const rows = [
+    {
+      key: "instant_enabled" as const,
+      icon: "sparkle" as const,
+      title: "جلسات فوری",
+      hint: state.instantEnabled
+        ? "فعال است — کاربران می‌توانند همین حالا با شما جلسه بگذارند"
+        : "خاموش — با فعال‌کردن، رزروهای همین‌لحظه به شما می‌رسد",
+      checked: state.instantEnabled,
+      gold: true,
+    },
+    {
+      key: "free_enabled" as const,
+      icon: "gift" as const,
+      title: "جلسات رایگان",
+      hint: state.freeEnabled
+        ? "فعال است — خدمات صفر تومانی شما در تابلوی رایگان دیده می‌شود"
+        : "خاموش — خدمات رایگان شما مخفی و رزرو رایگان بسته است",
+      checked: state.freeEnabled,
+      gold: false,
+    },
+    {
+      key: "available" as const,
+      icon: "checkCircle" as const,
+      title: "پذیرش درخواست جدید",
+      hint: state.available
+        ? "چراغ سبز شما روشن است و در جستجو و فراخوان‌ها دیده می‌شوید"
+        : "آفلاین — پروفایل شما به کاربران رزرو نشان نمی‌دهد",
+      checked: state.available,
+      gold: false,
+    },
+  ];
+
+  return (
+    <section aria-label="امکانات سریع" className="vodda-enter" style={{ display: "grid", gap: 12, padding: 16, borderRadius: 24, border: `1.5px solid ${colors.goldSoft}`, background: `linear-gradient(150deg, ${colors.goldBackground}, #fffdf8 70%)`, boxShadow: shadows.sm }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <span aria-hidden="true" style={{ width: 38, height: 38, display: "grid", placeItems: "center", flex: "0 0 38px", borderRadius: 12, background: "linear-gradient(145deg,#d8b869,#b8923c)", color: "#fff" }}>
+          <Icon name="settings" size={19} stroke={2} />
+        </span>
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <strong style={{ display: "block", fontSize: 14, fontWeight: 800, color: colors.ink }}>امکانات مهم استادی</strong>
+          <span style={{ display: "block", fontSize: 11, color: colors.inkMuted, marginTop: 1 }}>با یک لمس فعال یا غیرفعال کنید</span>
+        </div>
+      </div>
+
+      {error ? (
+        <span role="alert" style={{ fontSize: 11.5, color: colors.danger }}>
+          {error}
+        </span>
+      ) : null}
+
+      <div style={{ display: "grid", gap: 9 }}>
+        {rows.map((row) => (
+          <div
+            key={row.key}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 11,
+              padding: "11px 13px",
+              borderRadius: 16,
+              background: colors.surface,
+              border: `1px solid ${row.gold && row.checked ? colors.goldSoft : colors.sand150}`,
+              boxShadow: row.gold && row.checked ? "0 0 0 3px rgba(231,213,168,.28)" : "none",
+            }}
+          >
+            <span
+              aria-hidden="true"
+              style={{
+                width: 36, height: 36, display: "grid", placeItems: "center", flex: "0 0 36px", borderRadius: 12,
+                background: row.gold ? "linear-gradient(145deg,#f7ecd0,#fffaf0)" : colors.olive50,
+                border: `1px solid ${row.gold ? colors.goldSoft : colors.olive100}`,
+                color: row.gold ? colors.goldDark : colors.olive700,
+              }}
+            >
+              <Icon name={row.icon} size={18} stroke={2} />
+            </span>
+            <span style={{ minWidth: 0, flex: 1 }}>
+              <strong style={{ display: "block", fontSize: 13, fontWeight: 800, color: colors.ink }}>{row.title}</strong>
+              <span style={{ display: "block", fontSize: 10.5, color: colors.inkMuted, marginTop: 2, lineHeight: 1.7 }}>{row.hint}</span>
+            </span>
+            <FeatureSwitch checked={row.checked} label={row.title} onChange={() => void toggle(row.key, !row.checked)} />
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 type TeacherSummary = {
   id: number;
   name: string;
@@ -331,6 +519,8 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
       </button>
 
       {completion ? <CompletionChecklist state={completion} config={config} /> : null}
+
+      <QuickFeatureToggles runtime={runtime} />
 
       {pending.length > 0 ? (
         <button

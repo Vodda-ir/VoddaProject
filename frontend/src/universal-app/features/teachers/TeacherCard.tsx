@@ -182,6 +182,27 @@ export function TeacherCard({
             />
             {teacher.available ? "آنلاین — آمادهٔ رزرو" : "آفلاین"}
           </span>
+          {teacher.instantEnabled ? (
+            <span
+              aria-label="جلسهٔ فوری فعال"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 3,
+                marginTop: 4,
+                padding: "2px 8px",
+                borderRadius: 999,
+                fontSize: 10.5,
+                fontWeight: 800,
+                color: "#7a5e1e",
+                background: colors.goldBackground,
+                border: `1px solid ${colors.goldSoft}`,
+              }}
+            >
+              <Icon name="sparkle" size={11} stroke={2.4} style={{ color: colors.goldDark }} />
+              فوری
+            </span>
+          ) : null}
         </div>
       </div>
 

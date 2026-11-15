@@ -261,6 +261,9 @@ func (h *Handler) UpdateMyTeacher(c *gin.Context) {
                 Price30   int64    `json:"price30"`
                 Price60   int64    `json:"price60"`
                 Available *bool    `json:"available"`
+        // کلیدهای سریع داشبورد استاد — جلسهٔ فوری و جلسات رایگان.
+        InstantEnabled *bool `json:"instant_enabled"`
+        FreeEnabled    *bool `json:"free_enabled"`
         }
         if err := c.ShouldBindJSON(&in); err != nil {
                 fail(c, domain.ErrValidation)
@@ -269,7 +272,7 @@ func (h *Handler) UpdateMyTeacher(c *gin.Context) {
         t, err := h.Teacher.UpdateMine(c, userID(c), usecase.BecomeTeacherInput{
                 Field: in.Field, Tag: in.Tag, Level: in.Level, City: in.City,
                 Bio: in.Bio, Skills: in.Skills, Price30: in.Price30, Price60: in.Price60,
-                Available: in.Available,
+                Available: in.Available, InstantEnabled: in.InstantEnabled, FreeEnabled: in.FreeEnabled,
         })
         if err != nil {
                 fail(c, err)
@@ -431,6 +434,7 @@ func (h *Handler) Book(c *gin.Context) {
                 Note          string `json:"note"`
                 PaymentMethod string `json:"payment_method"`
                 ReturnTo      string `json:"return_to"`
+                Instant       bool   `json:"instant"`
         }
         if err := c.ShouldBindJSON(&in); err != nil {
                 fail(c, domain.ErrValidation)
@@ -448,6 +452,7 @@ func (h *Handler) Book(c *gin.Context) {
                 Note:          in.Note,
                 PaymentMethod: in.PaymentMethod,
                 ReturnPath:    in.ReturnTo,
+                Instant:       in.Instant,
         })
         if err != nil {
                 fail(c, err)

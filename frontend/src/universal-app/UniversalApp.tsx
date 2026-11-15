@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createUniversalAppConfig, type UniversalAppConfig } from "./config";
 import { LoginScreen, SessionBootstrap } from "./features/auth/AuthExperience";
 import { ProfileCompletionScreen } from "./features/auth/ProfileCompletionScreen";
@@ -18,6 +18,7 @@ import { LearnerHomeScreen } from "./features/home/LearnerHomeScreen";
 import { LearnerProfileScreen } from "./features/profile/LearnerProfileScreen";
 import { LearnerSearchScreen } from "./features/search/LearnerSearchScreen";
 import { LearnerSessionsScreen } from "./features/sessions/LearnerSessionsScreen";
+import { SessionDetailScreen } from "./features/session-detail/SessionDetailScreen";
 import { TeacherDashboardScreen } from "./features/teacher/TeacherDashboardScreen";
 import { TeacherDispatchScreen } from "./features/teacher/TeacherDispatchScreen";
 import { TeacherProfileScreen } from "./features/teacher/TeacherProfileScreen";
@@ -47,6 +48,7 @@ const routeTitles: Record<AppRouteName, string> = {
   teacher: "پروفایل استاد",
   book: "رزرو جلسه",
   sessions: "جلسات من",
+  session: "جزئیات جلسه",
   wallet: "کیف پول",
   profile: "پروفایل",
   "profile-edit": "ویرایش پروفایل",
@@ -122,6 +124,11 @@ function RoutePlaceholder({
 
 function UniversalAppContent({ config, runtime }: { config: UniversalAppConfig; runtime: PlatformRuntime }) {
   const route = useAppRoute(config);
+  // نقش نمایشگر جلسه — برای انتخاب پوستهٔ درست (استاد/قرآن‌آموز) در مسیر /session/:id
+  const [sessionRole, setSessionRole] = useState<"learner" | "teacher">("learner");
+  useEffect(() => {
+    if (route.name !== "session") setSessionRole("learner");
+  }, [route.name]);
 
   if (route.name === "login") {
     return (
@@ -139,7 +146,7 @@ function UniversalAppContent({ config, runtime }: { config: UniversalAppConfig; 
     );
   }
 
-  const teacherMode = teacherRoutes.has(route.name);
+  const teacherMode = teacherRoutes.has(route.name) || (route.name === "session" && sessionRole === "teacher");
   const routeContent = route.name === "home" ? (
     <LearnerHomeScreen config={config} />
   ) : route.name === "search" ? (
@@ -149,7 +156,9 @@ function UniversalAppContent({ config, runtime }: { config: UniversalAppConfig; 
   ) : route.name === "book" ? (
     <LearnerBookingScreen teacherId={route.params.id ?? ""} config={config} />
   ) : route.name === "sessions" ? (
-    <LearnerSessionsScreen />
+    <LearnerSessionsScreen config={config} />
+  ) : route.name === "session" ? (
+    <SessionDetailScreen sessionId={route.params.id ?? ""} config={config} onRoleResolved={setSessionRole} />
   ) : route.name === "wallet" ? (
     <LearnerWalletScreen />
   ) : route.name === "profile" ? (
@@ -173,9 +182,9 @@ function UniversalAppContent({ config, runtime }: { config: UniversalAppConfig; 
   ) : route.name === "teacher-home" ? (
     <TeacherDashboardScreen config={config} />
   ) : route.name === "teacher-requests" ? (
-    <TeacherSessionsScreen mode="requests" />
+    <TeacherSessionsScreen mode="requests" config={config} />
   ) : route.name === "teacher-sessions" ? (
-    <TeacherSessionsScreen mode="sessions" />
+    <TeacherSessionsScreen mode="sessions" config={config} />
   ) : route.name === "teacher-services" ? (
     <TeacherServicesScreen />
   ) : route.name === "teacher-work-times" ? (

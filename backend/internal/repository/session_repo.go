@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"time"
 	"errors"
 
 	"gorm.io/gorm"
@@ -91,4 +92,49 @@ func (r *sessionRepo) Count(ctx context.Context, status domain.SessionStatus) (i
 	}
 	var n int64
 	return n, q.Count(&n).Error
+}
+
+// MarkSessionsSeen stamps teacher_seen_at on the given sessions (idempotent;
+// rows that already carry a stamp are left untouched).
+func (r *sessionRepo) MarkSessionsSeen(ctx context.Context, ids []uint) error {
+        if len(ids) == 0 {
+                return nil
+        }
+        return r.db.WithContext(ctx).Model(&domain.Session{}).
+                Where("id IN ? AND teacher_seen_at IS NULL", ids).
+                Update("teacher_seen_at", time.Now().UTC()).Error
+}
+
+// CountTeacherUnseen counts the teacher's active (pending/confirmed) sessions
+// that were never viewed — the red counter on the sessions tab.
+func (r *sessionRepo) CountTeacherUnseen(ctx context.Context, teacherID uint) (int64, error) {
+        var n int64
+        err := r.db.WithContext(ctx).Model(&domain.Session{}).
+                Where("teacher_id = ? AND teacher_seen_at IS NULL AND status IN ?",
+                        teacherID, []domain.SessionStatus{domain.SessionPending, domain.SessionConfirmed}).
+                Count(&n).Error
+        return n, err
+}
+
+// SessionMessages returns the latest coordination messages of a session in
+// chronological order (oldest first) so clients can append naturally.
+func (r *sessionRepo) SessionMessages(ctx context.Context, sessionID uint, limit int) ([]domain.SessionMessage, error) {
+        if limit <= 0 || limit > 300 {
+                limit = 200
+        }
+        var rows []domain.SessionMessage
+        err := r.db.WithContext(ctx).
+                Where("session_id = ?", sessionID).
+                Order("id desc").Limit(limit).Find(&rows).Error
+        if err != nil {
+                return nil, err
+        }
+        for i, j := 0, len(rows)-1; i < j; i, j = i+1, j-1 {
+                rows[i], rows[j] = rows[j], rows[i]
+        }
+        return rows, nil
+}
+
+func (r *sessionRepo) CreateSessionMessage(ctx context.Context, m *domain.SessionMessage) error {
+        return r.db.WithContext(ctx).Create(m).Error
 }

@@ -1,9 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import type { UniversalAppConfig } from "../../config";
 import { asInteger, asRecord, asString, type ApiEnvelope } from "../../platform/api";
 import { usePlatform } from "../../platform/context";
 import type { PlatformRuntime } from "../../platform/types";
+import { navigateApp } from "../../router";
 import {
   Avatar,
   Button,
@@ -43,6 +45,10 @@ type TeacherSession = {
   status: string;
   note: string;
   rejectNote: string;
+  /** جلسهٔ فوری — رزرو همین‌لحظه. */
+  instant: boolean;
+  /** در لحظهٔ دریافت فهرست هنوز دیده‌نشده بود — با نشان قرمز مشخص می‌شود. */
+  unseen: boolean;
 };
 
 const statusLabels: Record<string, string> = {
@@ -73,6 +79,8 @@ function parseTeacherSession(value: unknown): TeacherSession | null {
     status: asString(row.status, "pending"),
     note: asString(row.note),
     rejectNote: asString(row.reject_note),
+    instant: row.instant === true,
+    unseen: row.unseen === true,
   };
 }
 
@@ -112,6 +120,7 @@ function SessionCard({
   session,
   busy,
   mode,
+  onOpen,
   onAccept,
   onReject,
   onComplete,
@@ -119,6 +128,7 @@ function SessionCard({
   session: TeacherSession;
   busy: boolean;
   mode: TeacherSessionsMode;
+  onOpen: () => void;
   onAccept: () => void;
   onReject: () => void;
   onComplete: () => void;
@@ -133,29 +143,33 @@ function SessionCard({
 
   if (mode === "requests") {
     return (
-      <Card className="vodda-card--interactive" style={commonCardStyle}>
+      <Card className="vodda-card--interactive" style={{ ...commonCardStyle, cursor: "pointer" }} onClick={onOpen}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <Avatar name={session.learnerName} src={session.learnerAvatar || undefined} size={46} ring={false} />
           <div style={{ minWidth: 0, flex: 1 }}>
             <strong style={{ display: "block", fontSize: 14.5, fontWeight: 800, color: colors.ink }}>{session.learnerName}</strong>
             <span style={{ display: "block", marginTop: 3, fontSize: 12.5, color: colors.inkSecondary }}>{session.service}</span>
           </div>
-          <span style={{ padding: "4px 10px", borderRadius: radii.pill, color: colors.clay, background: colors.clayBackground, fontSize: 11, fontWeight: 800 }}>
-            جدید
-          </span>
+          {session.instant ? (
+            <span style={{ padding: "4px 10px", borderRadius: radii.pill, color: "#fffaf0", background: "linear-gradient(145deg,#d8b869,#b8923c)", fontSize: 10.5, fontWeight: 800 }}>فوری</span>
+          ) : (
+            <span style={{ padding: "4px 10px", borderRadius: radii.pill, color: colors.clay, background: colors.clayBackground, fontSize: 11, fontWeight: 800 }}>
+              جدید
+            </span>
+          )}
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "11px 14px", borderRadius: 13, background: colors.sand50 }}>
           <Icon name="calendar" size={16} style={{ flex: "0 0 auto", color: colors.olive500 }} />
           <span style={{ minWidth: 0, flex: 1, fontSize: 12.5, color: colors.inkSecondary }}>{officialTime(session)}</span>
           <strong style={{ flex: "0 0 auto", fontSize: 12.5, fontWeight: 800, color: colors.olive700 }}>
-            {formatWalletAmount(session.price)} ت
+            {session.price === 0 ? "رایگان" : `${formatWalletAmount(session.price)} ت`}
           </strong>
         </div>
 
         {session.note ? <p style={{ margin: 0, fontSize: 12, color: colors.inkMuted }}>یادداشت: {session.note}</p> : null}
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 9 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 9 }} onClick={(event) => event.stopPropagation()}>
           <Button variant="secondary" disabled={busy} onClick={onReject}>رد</Button>
           <Button loading={busy} onClick={onAccept}>تأیید</Button>
         </div>
@@ -166,11 +180,19 @@ function SessionCard({
   const canComplete = session.status === "confirmed" && canCompleteSession(session);
 
   return (
-    <Card className="vodda-card--interactive" style={commonCardStyle}>
+    <Card className="vodda-card--interactive" style={{ ...commonCardStyle, cursor: "pointer", borderColor: session.unseen ? "rgba(216,184,105,.9)" : undefined, borderWidth: session.unseen ? 1.5 : undefined }} onClick={onOpen}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: spacing.md }}>
-        <StatusPill status={session.status} label={statusLabels[session.status] ?? session.status} />
+        <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+          <StatusPill status={session.status} label={statusLabels[session.status] ?? session.status} />
+          {session.instant ? (
+            <span style={{ padding: "3px 9px", borderRadius: radii.pill, color: "#fffaf0", background: "linear-gradient(145deg,#d8b869,#b8923c)", fontSize: 10, fontWeight: 800 }}>فوری</span>
+          ) : null}
+          {session.unseen ? (
+            <span aria-label="جلسهٔ دیده‌نشده" style={{ padding: "3px 9px", borderRadius: radii.pill, color: "#ffffff", background: colors.danger, fontSize: 10, fontWeight: 800 }}>جدید</span>
+          ) : null}
+        </div>
         <span style={{ fontSize: 12, color: colors.inkMuted, fontWeight: 600 }}>
-          {toFaDigits(session.duration)} دقیقه · {formatWalletAmount(session.price)} ت
+          {toFaDigits(session.duration)} دقیقه · {session.price === 0 ? "رایگان" : `${formatWalletAmount(session.price)} ت`}
         </span>
       </div>
 
@@ -180,6 +202,7 @@ function SessionCard({
           <strong style={{ display: "block", fontSize: 14.5, fontWeight: 800, color: colors.ink }}>{session.learnerName}</strong>
           <span style={{ display: "block", marginTop: 3, fontSize: 12.5, color: colors.inkSecondary }}>{session.service}</span>
         </div>
+        <Icon name="chevronL" size={18} style={{ flex: "0 0 auto", marginInlineStart: "auto", color: colors.inkFaint }} />
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "11px 14px", borderRadius: 13, background: colors.sand50, color: colors.inkSecondary, fontSize: 12.5 }}>
@@ -191,21 +214,23 @@ function SessionCard({
       {session.rejectNote ? <p style={{ margin: 0, fontSize: 12, color: colors.clay }}>دلیل رد: {session.rejectNote}</p> : null}
 
       {session.status === "confirmed" ? (
-        <Button
-          fullWidth
-          disabled={!canComplete || busy}
-          loading={busy}
-          onClick={onComplete}
-        >
-          <Icon name="checkCircle" size={18} />
-          {canComplete ? "ثبت برگزاری جلسه" : "پس از پایان جلسه قابل ثبت است"}
-        </Button>
+        <div onClick={(event) => event.stopPropagation()}>
+          <Button
+            fullWidth
+            disabled={!canComplete || busy}
+            loading={busy}
+            onClick={onComplete}
+          >
+            <Icon name="checkCircle" size={18} />
+            {canComplete ? "ثبت برگزاری جلسه" : "پس از پایان جلسه قابل ثبت است"}
+          </Button>
+        </div>
       ) : null}
     </Card>
   );
 }
 
-export function TeacherSessionsScreen({ mode }: { mode: TeacherSessionsMode }) {
+export function TeacherSessionsScreen({ mode, config }: { mode: TeacherSessionsMode; config: UniversalAppConfig }) {
   const runtime = usePlatform();
   const [when, setWhen] = useState<TeacherSessionsWhen>(mode === "requests" ? "pending" : "upcoming");
   const [sessions, setSessions] = useState<TeacherSession[]>([]);
@@ -327,6 +352,7 @@ export function TeacherSessionsScreen({ mode }: { mode: TeacherSessionsMode }) {
               session={session}
               busy={busyId === session.id}
               mode={mode}
+              onOpen={() => navigateApp(`/session/${session.id}`, config)}
               onAccept={() => void accept(session)}
               onReject={() => openReject(session)}
               onComplete={() => setCompleteTarget(session)}
@@ -356,7 +382,7 @@ export function TeacherSessionsScreen({ mode }: { mode: TeacherSessionsMode }) {
 
       <Dialog open={completeTarget !== null} title="ثبت انجام جلسه" onClose={() => { if (busyId === null) setCompleteTarget(null); }}>
         <p style={{ ...typography.body, marginTop: 0, color: colors.inkSecondary }}>
-          بعد از ثبت انجام جلسه، settlement مطابق policy بک‌اند انجام می‌شود. این عملیات را فقط پس از پایان واقعی جلسه تأیید کنید.
+          با ثبت انجام جلسه، درآمد آن پس از کسر کارمزد پلتفرم به کیف پول شما واریز می‌شود و از شاگرد نظرسنجی گرفته می‌شود. این عملیات را فقط پس از پایان واقعی جلسه تأیید کنید.
         </p>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: spacing.sm }}>
           <Button variant="secondary" disabled={busyId !== null} onClick={() => setCompleteTarget(null)}>انصراف</Button>

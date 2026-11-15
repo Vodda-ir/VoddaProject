@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"log"
 	"time"
 
 	"vodda/backend/internal/domain"
@@ -58,7 +59,11 @@ func (uc *SessionUsecase) LearnerSessionDisplays(ctx context.Context, learnerID 
 }
 
 // TeacherSessionDisplays lists teacher sessions with official local date/time.
-func (uc *SessionUsecase) TeacherSessionDisplays(ctx context.Context, userID uint, statuses []domain.SessionStatus) ([]SessionDisplay, error) {
+// The first view stamps teacher_seen_at; the response still flags what was
+// unseen at fetch time (unseen:true) so the UI can highlight fresh rows.
+// markSeen=true فقط از فهرست/جزئیات جلسات استاد فرستاده می‌شود تا بازکردن
+// داشبورد باعث پاک‌شدن شمارندهٔ «دیده‌نشده» نشود.
+func (uc *SessionUsecase) TeacherSessionDisplays(ctx context.Context, userID uint, statuses []domain.SessionStatus, markSeen bool) ([]SessionDisplay, error) {
 	teacher, err := uc.teacherProfileForUser(ctx, userID)
 	if err != nil {
 		return nil, err
@@ -67,7 +72,35 @@ func (uc *SessionUsecase) TeacherSessionDisplays(ctx context.Context, userID uin
 	if err != nil {
 		return nil, err
 	}
-	return uc.displaySessions(sessions)
+	// unseen tracking — first view marks seen; response still flags fresh rows.
+	var unseenIDs []uint
+	for i := range sessions {
+		if sessions[i].TeacherSeenAt == nil &&
+			(sessions[i].Status == domain.SessionPending || sessions[i].Status == domain.SessionConfirmed) {
+			unseenIDs = append(unseenIDs, sessions[i].ID)
+		}
+	}
+	if markSeen && len(unseenIDs) > 0 {
+		if err := uc.sessions.MarkSessionsSeen(ctx, unseenIDs); err != nil {
+			log.Printf("session: mark seen: %v", err)
+		}
+	}
+	displays, err := uc.displaySessions(sessions)
+	if err != nil {
+		return nil, err
+	}
+	if len(unseenIDs) > 0 {
+		unseen := make(map[uint]bool, len(unseenIDs))
+		for _, id := range unseenIDs {
+			unseen[id] = true
+		}
+		for i := range displays {
+			if unseen[displays[i].ID] {
+				displays[i].Unseen = true
+			}
+		}
+	}
+	return displays, nil
 }
 
 // AdminSessionDisplays lists all sessions for operational reporting with the

@@ -113,6 +113,12 @@ type SessionRepository interface {
         ForTeacher(ctx context.Context, teacherID uint, statuses []SessionStatus) ([]Session, error)
         List(ctx context.Context, status SessionStatus, limit, offset int) ([]Session, int64, error)
         Count(ctx context.Context, status SessionStatus) (int64, error)
+        // Unseen-session tracking: sessions with NULL teacher_seen_at.
+        MarkSessionsSeen(ctx context.Context, ids []uint) error
+        CountTeacherUnseen(ctx context.Context, teacherID uint) (int64, error)
+        // Persisted per-session coordination chat.
+        SessionMessages(ctx context.Context, sessionID uint, limit int) ([]SessionMessage, error)
+        CreateSessionMessage(ctx context.Context, m *SessionMessage) error
 }
 
 // ReviewRepository persists ratings.

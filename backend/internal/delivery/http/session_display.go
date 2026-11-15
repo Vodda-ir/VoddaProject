@@ -29,7 +29,7 @@ func teacherSessionDisplaysHandler(sessions *usecase.SessionUsecase) gin.Handler
 		case "past":
 			statuses = []domain.SessionStatus{domain.SessionDone, domain.SessionCanceled}
 		}
-		items, err := sessions.TeacherSessionDisplays(c, userID(c), statuses)
+		items, err := sessions.TeacherSessionDisplays(c, userID(c), statuses, c.Query("mark_seen") == "1")
 		if err != nil {
 			fail(c, err)
 			return

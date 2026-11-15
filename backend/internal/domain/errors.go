@@ -17,6 +17,10 @@ var (
         ErrSampleRequired         = errors.New("a work sample is required for this service")
         ErrTeacherProfileRequired = errors.New("teacher profile required")
         ErrSelfBooking            = errors.New("self booking is not allowed")
+        // جلسهٔ فوری و جلسات رایگان — کلیدهای استاد و محدودیت‌های رزرو فوری.
+        ErrInstantUnavailable = errors.New("instant sessions are disabled for this teacher")
+        ErrFreeUnavailable    = errors.New("free sessions are disabled for this teacher")
+        ErrNoInstantTeachers  = errors.New("no teacher with instant sessions for this topic")
         ErrInternal               = errors.New("internal server error")
         // فراخوان-specific errors with learner-friendly wording (dispatch UX).
         ErrCallActive             = errors.New("an active dispatch call already exists")

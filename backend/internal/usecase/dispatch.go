@@ -102,7 +102,20 @@ func (uc *DispatchUsecase) CreateCall(ctx context.Context, learnerID uint, in Cr
         if err != nil {
                 return nil, err
         }
+        // جلسهٔ فوری فقط به اساتیدی می‌رسد که کلید جلسهٔ فوری آنان روشن است.
+        if in.Flexible {
+                instant := audience[:0]
+                for _, t := range audience {
+                        if t.InstantEnabled {
+                                instant = append(instant, t)
+                        }
+                }
+                audience = instant
+        }
         if len(audience) == 0 {
+                if in.Flexible {
+                        return nil, domain.ErrNoInstantTeachers
+                }
                 return nil, domain.ErrNoTeachersForTopic
         }
 

@@ -3,6 +3,8 @@ package usecase
 import (
         "context"
         "errors"
+        "log"
+        "strings"
         "time"
 
         "vodda/backend/internal/config"
@@ -75,6 +77,10 @@ type BookInput struct {
         // in by accepting the call, so the learner's chosen hour stands even if
         // it falls outside the weekly template. Overlap checks still apply.
         SkipWorkTimeCheck bool
+        // Instant marks a جلسهٔ فوری — an immediate booking created minutes
+        // before start. Requires the teacher's instant switch to be on and
+        // ignores the weekly template.
+        Instant bool
 }
 
 // Book creates a booking: the wallet method charges the learner's wallet up
@@ -101,6 +107,9 @@ func (uc *SessionUsecase) Book(ctx context.Context, learnerID uint, in BookInput
         if !teacher.Available {
                 return nil, domain.ErrTeacherOffline
         }
+        if in.Instant && !teacher.InstantEnabled {
+                return nil, domain.ErrInstantUnavailable
+        }
         if teacher.UserID == learnerID {
                 return nil, domain.ErrSelfBooking
         }
@@ -112,12 +121,20 @@ func (uc *SessionUsecase) Book(ctx context.Context, learnerID uint, in BookInput
         if len(in.Note) > 500 {
                 return nil, domain.ErrValidation
         }
+        if svc.Price == 0 && !teacher.FreeEnabled {
+                return nil, domain.ErrFreeUnavailable
+        }
 
         now := time.Now()
-        if in.ScheduledAt.Before(now.Add(5*time.Minute)) || in.ScheduledAt.After(now.AddDate(0, 6, 0)) {
+        if in.Instant {
+                // جلسهٔ فوری — رزرو همین لحظه: پنجرهٔ آغاز کوتاه و بدون قالب هفتگی.
+                if in.ScheduledAt.Before(now.Add(-time.Minute)) || in.ScheduledAt.After(now.Add(15*time.Minute)) {
+                        return nil, domain.ErrValidation
+                }
+        } else if in.ScheduledAt.Before(now.Add(5*time.Minute)) || in.ScheduledAt.After(now.AddDate(0, 6, 0)) {
                 return nil, domain.ErrValidation
         }
-        if !in.SkipWorkTimeCheck {
+        if !in.SkipWorkTimeCheck && !in.Instant {
                 if err := uc.ensureWithinWorkTime(ctx, teacher.ID, in.ScheduledAt, svc.Duration); err != nil {
                         return nil, err
                 }
@@ -137,6 +154,18 @@ func (uc *SessionUsecase) Book(ctx context.Context, learnerID uint, in BookInput
                 return nil, domain.ErrInsufficient
         }
 
+        // Title/body of the teacher notification — the mobile client rings the
+        // summon chime for these titles (see CallAlertBar matching).
+        notifyTitle := "درخواست جلسه جدید: " + svc.Title
+        notifyBody := "یک قرآن‌آموز برای «" + svc.Title + "» درخواست جلسه ثبت کرد؛ از بخش درخواست‌ها تأیید یا رد کنید."
+        if in.Instant {
+                notifyTitle = "جلسهٔ فوری جدید: " + svc.Title
+                notifyBody = "یک قرآن‌آموز همین حالا درخواست جلسهٔ فوری ثبت کرد؛ سریع تأیید کنید تا کلاس آغاز شود."
+        } else if svc.Price == 0 {
+                notifyTitle = "درخواست جلسهٔ رایگان: " + svc.Title
+                notifyBody = "یک قرآن‌آموز جلسهٔ رایگان شما را رزرو کرد؛ از بخش درخواست‌های جلسه تأیید کنید."
+        }
+
         s := &domain.Session{
                 LearnerID:   learnerID,
                 TeacherID:   teacher.ID,
@@ -147,6 +176,7 @@ func (uc *SessionUsecase) Book(ctx context.Context, learnerID uint, in BookInput
                 Price:       svc.Price,
                 Status:      domain.SessionPending,
                 Note:        in.Note,
+                Instant:     in.Instant,
         }
 
         if gatewayPayment {
@@ -181,8 +211,7 @@ func (uc *SessionUsecase) Book(ctx context.Context, learnerID uint, in BookInput
                                 return nil, err
                         }
                 }
-                uc.notify(ctx, teacher.UserID, "درخواست جلسهٔ رایگان",
-                        "یک قرآن‌آموز جلسهٔ رایگان شما را رزرو کرد؛ از بخش درخواست‌های جلسه تأیید کنید.")
+                uc.notify(ctx, teacher.UserID, notifyTitle, notifyBody)
                 return &BookResult{Session: s, PaidViaWallet: false}, nil
         }
 
@@ -210,7 +239,7 @@ func (uc *SessionUsecase) Book(ctx context.Context, learnerID uint, in BookInput
                 }
         }
 
-        uc.notify(ctx, teacher.UserID, "درخواست جلسه‌ی جدید", "یک درخواست جلسه‌ی جدید دریافت کردید.")
+        uc.notify(ctx, teacher.UserID, notifyTitle, notifyBody)
         return &BookResult{Session: s, PaidViaWallet: true}, nil
 }
 
@@ -338,7 +367,9 @@ func (uc *SessionUsecase) Complete(ctx context.Context, userID, sessionID uint) 
         if s.Status != domain.SessionConfirmed {
                 return nil, domain.ErrConflict
         }
-        if time.Now().Before(s.ScheduledAt.Add(time.Duration(s.Duration) * time.Minute)) {
+        // پایان جلسه پس از آغاز رسمی مجاز است (جلسه ممکن است زودتر از مدت
+        // رزروشده تمام شود)؛ پیش از آغاز رسمی خیر.
+        if time.Now().Before(s.ScheduledAt) {
                 return nil, domain.ErrConflict
         }
 
@@ -558,4 +589,78 @@ func parseClock(value string) (int, bool) {
 
 func overlaps(aStart, aEnd, bStart, bEnd time.Time) bool {
         return aStart.Before(bEnd) && aEnd.After(bStart)
+}
+
+// SessionDetail is the role-aware single-session payload of the detail screen.
+type SessionDetail struct {
+        SessionDisplay
+        ViewerRole string `json:"viewer_role"`
+}
+
+// SessionDetailFor returns one session with full display fields when the
+// caller is its learner, its teacher, or an admin. A teacher view stamps
+// teacher_seen_at so the unseen counter clears once opened.
+func (uc *SessionUsecase) SessionDetailFor(ctx context.Context, callerID uint, callerRole domain.Role, sessionID uint) (*SessionDetail, error) {
+        s, role, err := uc.LiveAccess(ctx, callerID, callerRole, sessionID)
+        if err != nil {
+                return nil, err
+        }
+        if role == domain.RoleTeacher && s.TeacherSeenAt == nil &&
+                (s.Status == domain.SessionPending || s.Status == domain.SessionConfirmed) {
+                if err := uc.sessions.MarkSessionsSeen(ctx, []uint{s.ID}); err != nil {
+                        log.Printf("session: mark seen: %v", err)
+                }
+                now := time.Now().UTC()
+                s.TeacherSeenAt = &now
+        }
+        location, err := uc.displayLocation()
+        if err != nil {
+                return nil, err
+        }
+        return &SessionDetail{SessionDisplay: uc.sessionDisplay(*s, location), ViewerRole: string(role)}, nil
+}
+
+// SessionMessages lists the persisted coordination chat of a session.
+func (uc *SessionUsecase) SessionMessages(ctx context.Context, callerID uint, callerRole domain.Role, sessionID uint, limit int) ([]domain.SessionMessage, error) {
+        if _, _, err := uc.LiveAccess(ctx, callerID, callerRole, sessionID); err != nil {
+                return nil, err
+        }
+        return uc.sessions.SessionMessages(ctx, sessionID, limit)
+}
+
+// SendSessionMessage appends a coordination message and notifies the
+// counterpart (best effort) so neither side misses it.
+func (uc *SessionUsecase) SendSessionMessage(ctx context.Context, callerID uint, callerRole domain.Role, sessionID uint, body string) (*domain.SessionMessage, error) {
+        body = strings.TrimSpace(body)
+        if len(body) == 0 || len(body) > 1000 {
+                return nil, domain.ErrValidation
+        }
+        s, role, err := uc.LiveAccess(ctx, callerID, callerRole, sessionID)
+        if err != nil {
+                return nil, err
+        }
+        if s.Status == domain.SessionCanceled {
+                return nil, domain.ErrConflict
+        }
+        message := &domain.SessionMessage{SessionID: s.ID, SenderID: callerID, Body: body}
+        if err := uc.sessions.CreateSessionMessage(ctx, message); err != nil {
+                return nil, err
+        }
+        if role == domain.RoleLearner {
+                if teacher, terr := uc.teachers.ByID(ctx, s.TeacherID); terr == nil {
+                        uc.notify(ctx, teacher.UserID, "پیام جدید در جلسه", "قرآن‌آموز برای جلسه «"+s.Title+"» پیامی فرستاد.")
+                }
+        } else if role == domain.RoleTeacher {
+                uc.notify(ctx, s.LearnerID, "پیام جدید از استاد", "استاد برای جلسه «"+s.Title+"» پیامی فرستاد.")
+        }
+        return message, nil
+}
+
+// TeacherUnseenSessionCount powers the red counter on the teacher sessions tab.
+func (uc *SessionUsecase) TeacherUnseenSessionCount(ctx context.Context, userID uint) (int64, error) {
+        teacher, err := uc.teacherProfileForUser(ctx, userID)
+        if err != nil {
+                return 0, err
+        }
+        return uc.sessions.CountTeacherUnseen(ctx, teacher.ID)
 }

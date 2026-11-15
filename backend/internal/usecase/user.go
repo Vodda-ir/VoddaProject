@@ -100,6 +100,10 @@ type BecomeTeacherInput struct {
 	Price60   int64
 	Female    bool
 	Available *bool
+	// Optional master-switches surfaced in the teacher dashboard. Nil =
+	// leave the stored value untouched.
+	InstantEnabled *bool
+	FreeEnabled    *bool
 }
 
 // BecomeTeacher promotes a learner to a pending teacher profile. In production,

@@ -26,7 +26,7 @@ type CallAlert = {
   /** نام فراخوان — بخش بعد از «:» در تیتر اعلان */
   name: string;
   body: string;
-  kind: "ceremony" | "dispatch";
+  kind: "ceremony" | "dispatch" | "session" | "instant";
 };
 
 function dismissedIds(): number[] {
@@ -68,7 +68,7 @@ function playChime() {
   }
 }
 
-/** اعلان فراخوانِ قابل‌اقدام: تازه و خوانده‌نشده؛ غیرفراخوانی‌ها و قدیمی‌ها نادیده گرفته می‌شوند. */
+/** اعلان فراخوان/جلسهٔ قابل‌اقدام: تازه و خوانده‌نشده؛ قدیمی‌ها نادیده گرفته می‌شوند. */
 function toCallAlert(id: number, title: string, body: string, read: boolean, createdAt: string): CallAlert | null {
   if (read) return null;
   const createdMs = Date.parse(createdAt);
@@ -78,6 +78,14 @@ function toCallAlert(id: number, title: string, body: string, read: boolean, cre
   }
   if (title.includes("فراخوان جدید")) {
     return { id, name: title.split(":").slice(1).join(":").trim() || "درخواست جلسه", body, kind: "dispatch" };
+  }
+  // جلسهٔ فوری — رزرو همین‌لحظه توسط قرآن‌آموز
+  if (title.includes("جلسهٔ فوری") || title.includes("جلسه فوری")) {
+    return { id, name: title.split(":").slice(1).join(":").trim() || "جلسهٔ فوری", body, kind: "instant" };
+  }
+  // درخواست جلسهٔ معمولی یا رایگان ثبت‌شده توسط قرآن‌آموز
+  if (title.includes("درخواست جلسه")) {
+    return { id, name: title.split(":").slice(1).join(":").trim() || "درخواست جلسه", body, kind: "session" };
   }
   return null;
 }
@@ -112,7 +120,13 @@ export function CallAlertBar({ config }: { config: UniversalAppConfig }) {
     void markNotificationRead(runtime, current.id).catch(() => {
       // خواندن ناموفق؛ هدایت همچنان انجام می‌شود
     });
-    navigateApp(current.kind === "ceremony" ? "/t/ceremony" : "/t/dispatch", config);
+    const target =
+      current.kind === "ceremony"
+        ? "/t/ceremony"
+        : current.kind === "dispatch"
+          ? "/t/dispatch"
+          : "/t/sessions"; // جلسهٔ فوری و درخواست جلسهٔ معمولی → فهرست جلسات استاد
+    navigateApp(target, config);
   }, [clearHideTimer, config, runtime]);
 
   useEffect(() => {
@@ -166,7 +180,13 @@ export function CallAlertBar({ config }: { config: UniversalAppConfig }) {
 
   if (!alert) return null;
 
-  const label = alert.kind === "ceremony" ? "فراخوان مراسم" : "درخواست جلسهٔ آنلاین";
+  const labelByKind: Record<CallAlert["kind"], string> = {
+    ceremony: "فراخوان مراسم",
+    dispatch: "درخواست جلسهٔ آنلاین",
+    session: "درخواست جلسهٔ جدید",
+    instant: "جلسهٔ فوری — همین حالا",
+  };
+  const label = labelByKind[alert.kind];
 
   return (
     <div className="vodda-call-alert" role="alert">

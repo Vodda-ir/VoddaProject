@@ -7,7 +7,7 @@ import { usePlatform } from "../../platform/context";
 import { navigateApp } from "../../router";
 import { getTeacherDetail } from "../teachers/api";
 import type { Teacher, TeacherService } from "../teachers/types";
-import { Avatar, Button, Card, EmptyState, ErrorState, formatJalaliDate, Icon, LoadingState, colors, radii, shadows, spacing, typography } from "../../ui";
+import { Avatar, Button, Card, EmptyState, ErrorState, formatJalaliDate, Icon, LoadingState, Sheet, colors, radii, shadows, spacing, typography } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
 import { formatWalletAmount } from "../wallet/WalletTransactionCard";
 import { createBooking, getBookingAvailability, getBookingMe, type BookingPaymentMethod } from "./api";
@@ -64,6 +64,10 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
   const [submitError, setSubmitError] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
+  // جلسهٔ فوری — رزرو همین‌لحظه (فقط وقتی استاد کلید آن را روشن کرده)
+  const [instantSheet, setInstantSheet] = useState(false);
+  const [wasInstant, setWasInstant] = useState(false);
+  const [instantSessionId, setInstantSessionId] = useState(0);
   const [meId, setMeId] = useState(0);
   const [wallet, setWallet] = useState<number | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<BookingPaymentMethod>("wallet");
@@ -217,6 +221,40 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
     }
   }, [isSelfTeacher, loadAvailability, paymentMethod, runtime, saving, service, slot, teacher]);
 
+  /** ثبت جلسهٔ فوری — زمان آغاز: دو دقیقه بعد از همین لحظه. */
+  const submitInstant = useCallback(async () => {
+    if (!teacher || !service || saving) return;
+    if (isSelfTeacher) {
+      setSubmitError("نمی‌توانید استاد خودتان را رزرو کنید.");
+      return;
+    }
+    setSaving(true);
+    setSubmitError("");
+    try {
+      const response = await createBooking(runtime, {
+        teacherId: teacher.id,
+        serviceId: service.id,
+        scheduledAt: new Date(Date.now() + 2 * 60_000).toISOString(),
+        paymentMethod: service.price === 0 ? "" : paymentMethod,
+        instant: true,
+      });
+      const createdId = (response.data?.session as { id?: number } | undefined)?.id ?? 0;
+      setInstantSessionId(createdId);
+      if (response.data?.token) {
+        setRedirecting(true);
+        payViaSamanGate(response.data.token);
+        return;
+      }
+      setWasInstant(true);
+      setSubmitted(true);
+    } catch (error) {
+      setInstantSheet(false);
+      setSubmitError(messageOf(error, "ثبت جلسهٔ فوری انجام نشد."));
+    } finally {
+      setSaving(false);
+    }
+  }, [isSelfTeacher, paymentMethod, runtime, saving, service, teacher]);
+
   if (teacherLoading) return <LoadingState label="در حال دریافت اطلاعات استاد…" />;
   if (teacherError || !teacher) {
     return (
@@ -233,12 +271,23 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
       <Card elevated style={{ display: "grid", gap: spacing.lg, textAlign: "center" }}>
         <div aria-hidden="true" style={{ width: 68, height: 68, display: "grid", placeItems: "center", marginInline: "auto", borderRadius: "50%", color: colors.surface, background: colors.olive600, boxShadow: shadows.olive }}><Icon name="check" size={30} stroke={2.5} /></div>
         <div>
-          <h2 style={{ ...typography.title, margin: 0 }}>درخواست جلسه ثبت شد</h2>
+          <h2 style={{ ...typography.title, margin: 0 }}>{wasInstant ? "جلسهٔ فوری ثبت شد" : "درخواست جلسه ثبت شد"}</h2>
           <p style={{ ...typography.body, color: colors.inkSecondary, marginBottom: 0 }}>
-            تأیید، رد یا بازگشت وجه را از بخش «جلسات من» پیگیری کنید.
+            {wasInstant
+              ? "درخواست شما همین حالا برای استاد ارسال شد. به‌محض تأیید، از جزئیات جلسه وارد کلاس تصویری شوید و برای هماهنگی چت در دسترس است."
+              : "تأیید، رد یا بازگشت وجه را از بخش «جلسات من» پیگیری کنید."}
           </p>
         </div>
-        <Button fullWidth onClick={() => navigateApp("/sessions", config)}>مشاهده جلسات من</Button>
+        <Button
+          fullWidth
+          onClick={() =>
+            wasInstant && instantSessionId > 0
+              ? navigateApp(`/session/${instantSessionId}`, config)
+              : navigateApp("/sessions", config)
+          }
+        >
+          {wasInstant ? "مشاهدهٔ جزئیات جلسه" : "مشاهده جلسات من"}
+        </Button>
       </Card>
     );
   }
@@ -286,6 +335,46 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
           ) : null}
         </div>
       </Card>
+
+      {teacher.instantEnabled ? (
+        <Card
+          className="vodda-enter vodda-enter-delay-1"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            padding: "14px 16px",
+            borderRadius: 20,
+            border: `1.5px solid ${colors.goldSoft}`,
+            background: `linear-gradient(150deg, ${colors.goldBackground}, #fffdf8 72%)`,
+            boxShadow: "0 0 0 4px rgba(231,213,168,.18), 0 10px 24px rgba(139,104,31,.10)",
+          }}
+        >
+          <span
+            aria-hidden="true"
+            style={{
+              width: 42, height: 42, display: "grid", placeItems: "center", flex: "0 0 42px", borderRadius: 14,
+              background: "linear-gradient(145deg,#d8b869,#b8923c)", color: "#fffaf0",
+              boxShadow: "0 6px 14px rgba(139,104,31,.35)",
+            }}
+          >
+            <Icon name="sparkle" size={21} stroke={2.2} />
+          </span>
+          <span style={{ minWidth: 0, flex: 1, display: "grid", gap: 2 }}>
+            <strong style={{ fontSize: 13.5, fontWeight: 800, color: "#7a5e1e" }}>همین حالا وقت می‌خواهید؟</strong>
+            <span style={{ fontSize: 11, color: "#9a7426", lineHeight: 1.7 }}>
+              این استاد جلسهٔ فوری فعال کرده — درخواست شما مستقیم و فوری برایش ارسال می‌شود.
+            </span>
+          </span>
+          <Button
+            onClick={() => setInstantSheet(true)}
+            disabled={!service}
+            style={{ flex: "0 0 auto", minHeight: 44, padding: "0 16px", fontSize: 12.5 }}
+          >
+            جلسهٔ فوری
+          </Button>
+        </Card>
+      ) : null}
 
       <Card className="vodda-enter vodda-enter-delay-1" style={{ padding: 18, borderRadius: 20, borderColor: colors.sand200, boxShadow: "none" }}>
         <BookingStepHeader number={1} title="انتخاب خدمت" />
@@ -620,6 +709,39 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
         </p>
       ) : null}
       {submitError ? <p role="alert" style={{ ...typography.bodySmall, padding: spacing.md, borderRadius: radii.md, background: colors.dangerBackground, color: colors.danger, margin: 0 }}>{submitError}</p> : null}
+
+      {/* شیت تأیید جلسهٔ فوری */}
+      <Sheet open={instantSheet} title="درخواست جلسهٔ فوری" onClose={() => { if (!saving) setInstantSheet(false); }}>
+        {service ? (
+          <div style={{ display: "grid", gap: spacing.md }}>
+            <p style={{ ...typography.body, margin: 0, color: colors.inkSecondary, lineHeight: 2 }}>
+              با تأیید، درخواست جلسه <b>همین حالا</b> برای {teacher.name} ارسال می‌شود و زمان آغاز دو دقیقه بعد در نظر گرفته می‌شود. به‌محض تأیید استاد می‌توانید وارد کلاس تصویری شوید.
+            </p>
+            <div style={{ display: "grid", gap: 0, padding: "4px 14px", borderRadius: 14, background: colors.sand50 }}>
+              {[
+                ["خدمت", service.title],
+                ["مدت", `${numberFormatter.format(service.duration)} دقیقه`],
+                ["مبلغ", service.price === 0 ? "رایگان — بدون پرداخت" : `${formatWalletAmount(Math.max(0, service.price))} تومان`],
+                ["پرداخت", service.price === 0 ? "بدون تراکنش" : paymentMethod === "wallet" ? "از کیف پول" : "درگاه سامان‌سپ"],
+              ].map(([label, value]) => (
+                <div key={label} style={{ display: "flex", justifyContent: "space-between", gap: spacing.md, paddingBlock: 8 }}>
+                  <span style={{ color: colors.inkMuted, fontSize: 12.5 }}>{label}</span>
+                  <strong style={{ textAlign: "left", fontSize: 12.5 }}>{value}</strong>
+                </div>
+              ))}
+            </div>
+            {service.price > 0 && paymentMethod === "wallet" && !walletCovers ? (
+              <p role="alert" style={{ margin: 0, fontSize: 12, color: colors.danger }}>
+                موجودی کیف پول کافی نیست؛ در مرحلهٔ بعد به درگاه پرداخت منتقل می‌شوید.
+              </p>
+            ) : null}
+            <Button fullWidth loading={saving} onClick={() => void submitInstant()} style={{ minHeight: 50, background: colors.gold, borderColor: colors.gold }}>
+              <Icon name="sparkle" size={18} />
+              ارسال درخواست جلسهٔ فوری
+            </Button>
+          </div>
+        ) : null}
+      </Sheet>
       <div style={{ position: "sticky", zIndex: 12, bottom: "calc(68px + env(safe-area-inset-bottom))", padding: "8px 0 12px", background: colors.sand50 }}>
         <Button fullWidth loading={saving} disabled={!service || !slot || isSelfTeacher} onClick={() => void submit()} style={{ minHeight: 52 }}>
           {service && service.price === 0 ? "ثبت درخواست جلسهٔ رایگان" : paymentMethod === "gateway" ? "پرداخت و ثبت رزرو" : "ثبت درخواست رزرو"}
