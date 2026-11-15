@@ -1,0 +1,721 @@
+     1→     1→package usecase
+     2→     2→
+     3→     3→import (
+     4→     4→        "context"
+     5→     5→        "errors"
+     6→     6→        "log"
+     7→     7→        "strings"
+     8→     8→        "time"
+     9→     9→
+    10→    10→        "vodda/backend/internal/config"
+    11→    11→        "vodda/backend/internal/domain"
+    12→    12→)
+    13→    13→
+    14→    14→// AwaitingPaymentWindow bounds how long a gateway reservation holds its slot
+    15→    15→// before the lazy sweep cancels it and frees the time again.
+    16→    16→const AwaitingPaymentWindow = 45 * time.Minute
+    17→    17→
+    18→    18→// BookingGateway is the subset of the payment usecase the booking flow needs.
+    19→    19→type BookingGateway interface {
+    20→    20→        CreateBookingPayment(ctx context.Context, user *domain.User, session *domain.Session, returnPath string) (*TopupResult, error)
+    21→    21→}
+    22→    22→
+    23→    23→// BookResult carries the created session plus, for online payments, the Sep
+    24→    24→// token the client posts to OnlinePG (Monafaseh create semantics — the token
+    25→    25→// never travels in a URL).
+    26→    26→type BookResult struct {
+    27→    27→        Session       *domain.Session `json:"session"`
+    28→    28→        Token         string          `json:"token,omitempty"`
+    29→    29→        ResNum        string          `json:"res_num,omitempty"`
+    30→    30→        PaidViaWallet bool            `json:"paid_via_wallet"`
+    31→    31→}
+    32→    32→
+    33→    33→// SessionUsecase orchestrates bookings, the session lifecycle, and the
+    34→    34→// associated wallet movements (escrow on booking, payout on completion).
+    35→    35→type SessionUsecase struct {
+    36→    36→        sessions  domain.SessionRepository
+    37→    37→        teachers  domain.TeacherRepository
+    38→    38→        users     domain.UserRepository
+    39→    39→        wallet    domain.WalletRepository
+    40→    40→        financial domain.FinancialRepository
+    41→    41→        notif     domain.NotificationRepository
+    42→    42→        payments  BookingGateway
+    43→    43→        cfg       *config.Config
+    44→    44→}
+    45→    45→
+    46→    46→// NewSessionUsecase builds a SessionUsecase. The optional FinancialRepository
+    47→    47→// preserves compatibility with existing tests while production injects an atomic
+    48→    48→// transaction boundary.
+    49→    49→func NewSessionUsecase(s domain.SessionRepository, t domain.TeacherRepository, u domain.UserRepository, w domain.WalletRepository, n domain.NotificationRepository, cfg *config.Config, financial ...domain.FinancialRepository) *SessionUsecase {
+    50→    50→        var f domain.FinancialRepository
+    51→    51→        if len(financial) > 0 {
+    52→    52→                f = financial[0]
+    53→    53→        }
+    54→    54→        return &SessionUsecase{sessions: s, teachers: t, users: u, wallet: w, financial: f, notif: n, cfg: cfg}
+    55→    55→}
+    56→    56→
+    57→    57→// WithBookingGateway attaches the online-payment usecase used by the
+    58→    58→// "gateway" booking method. Passing nil keeps wallet-only bookings.
+    59→    59→func (uc *SessionUsecase) WithBookingGateway(payments BookingGateway) *SessionUsecase {
+    60→    60→        uc.payments = payments
+    61→    61→        return uc
+    62→    62→}
+    63→    63→
+    64→    64→// BookInput is the learner's booking request.
+    65→    65→type BookInput struct {
+    66→    66→        TeacherID     uint
+    67→    67→        ServiceID     uint
+    68→    68→        ScheduledAt   time.Time
+    69→    69→        Note          string
+    70→    70→        PaymentMethod string // "wallet" (default) | "gateway"
+    71→    71→        // ReturnPath is the client-chosen callback landing path. Only
+    72→    72→        // validated "/app..." paths are stored on the payment order; empty
+    73→    73→        // keeps the legacy panel landing.
+    74→    74→        ReturnPath string
+    75→    75→        // SkipWorkTimeCheck bypasses the teacher's weekly work-time template.
+    76→    76→        // The dispatch (فراخوان) confirm path uses it: the teacher already opted
+    77→    77→        // in by accepting the call, so the learner's chosen hour stands even if
+    78→    78→        // it falls outside the weekly template. Overlap checks still apply.
+    79→    79→        SkipWorkTimeCheck bool
+    80→    80→        // Instant marks a جلسهٔ فوری — an immediate booking created minutes
+    81→    81→        // before start. Requires the teacher's instant switch to be on and
+    82→    82→        // ignores the weekly template.
+    83→    83→        Instant bool
+    84→    84→}
+    85→    85→
+    86→    86→// Book creates a booking: the wallet method charges the learner's wallet up
+    87→    87→// front; the gateway method reserves the slot and hands the learner to the
+    88→    88→// Saman Sep payment page, activating the session after settlement.
+    89→    89→func (uc *SessionUsecase) Book(ctx context.Context, learnerID uint, in BookInput) (*BookResult, error) {
+    90→    90→        uc.cancelExpiredAwaiting(ctx)
+    91→    91→        uc.expireStaleInstantPending(ctx)
+    92→    92→
+    93→    93→        gatewayPayment := in.PaymentMethod == "gateway"
+    94→    94→        if in.PaymentMethod != "" && in.PaymentMethod != "wallet" && in.PaymentMethod != "gateway" {
+    95→    95→                return nil, domain.ErrValidation
+    96→    96→        }
+    97→    97→        if gatewayPayment && uc.payments == nil {
+    98→    98→                return nil, domain.ErrForbidden
+    99→    99→        }
+   100→   100→
+   101→   101→        teacher, err := uc.teachers.ByID(ctx, in.TeacherID)
+   102→   102→        if err != nil {
+   103→   103→                return nil, err
+   104→   104→        }
+   105→   105→        if teacher.Status != domain.TeacherApproved || !teacher.Verified {
+   106→   106→                return nil, domain.ErrTeacherNotReady
+   107→   107→        }
+   108→   108→        if !teacher.Available {
+   109→   109→                return nil, domain.ErrTeacherOffline
+   110→   110→        }
+   111→   111→        if in.Instant && !teacher.InstantEnabled {
+   112→   112→                return nil, domain.ErrInstantUnavailable
+   113→   113→        }
+   114→   114→        if teacher.UserID == learnerID {
+   115→   115→                return nil, domain.ErrSelfBooking
+   116→   116→        }
+   117→   117→
+   118→   118→        svc, err := uc.teachers.ServiceByID(ctx, in.ServiceID)
+   119→   119→        if err != nil || svc.TeacherID != teacher.ID || !svc.Active || svc.Price < 0 || svc.Duration <= 0 || svc.Duration > 240 {
+   120→   120→                return nil, domain.ErrValidation
+   121→   121→        }
+   122→   122→        if len(in.Note) > 500 {
+   123→   123→                return nil, domain.ErrValidation
+   124→   124→        }
+   125→   125→        if svc.Price == 0 && !teacher.FreeEnabled {
+   126→   126→                return nil, domain.ErrFreeUnavailable
+   127→   127→        }
+   128→   128→
+   129→   129→        now := time.Now()
+   130→   130→        if in.Instant {
+   131→   131→                // جلسهٔ فوری — رزرو همین لحظه: پنجرهٔ آغاز کوتاه و بدون قالب هفتگی.
+   132→   132→                if in.ScheduledAt.Before(now.Add(-time.Minute)) || in.ScheduledAt.After(now.Add(15*time.Minute)) {
+   133→   133→                        return nil, domain.ErrValidation
+   134→   134→                }
+   135→   135→        } else if in.ScheduledAt.Before(now.Add(5*time.Minute)) || in.ScheduledAt.After(now.AddDate(0, 6, 0)) {
+   136→   136→                return nil, domain.ErrValidation
+   137→   137→        }
+   138→   138→        if !in.SkipWorkTimeCheck && !in.Instant {
+   139→   139→                if err := uc.ensureWithinWorkTime(ctx, teacher.ID, in.ScheduledAt, svc.Duration); err != nil {
+   140→   140→                        return nil, err
+   141→   141→                }
+   142→   142→        }
+   143→   143→        if err := uc.ensureNoOverlap(ctx, learnerID, teacher.ID, in.ScheduledAt, svc.Duration); err != nil {
+   144→   144→                return nil, err
+   145→   145→        }
+   146→   146→
+   147→   147→        learner, err := uc.users.ByID(ctx, learnerID)
+   148→   148→        if err != nil {
+   149→   149→                return nil, err
+   150→   150→        }
+   151→   151→        if !learner.Active {
+   152→   152→                return nil, domain.ErrForbidden
+   153→   153→        }
+   154→   154→        if !gatewayPayment && learner.Wallet < svc.Price {
+   155→   155→                return nil, domain.ErrInsufficient
+   156→   156→        }
+   157→   157→
+   158→   158→        // Title/body of the teacher notification — the mobile client rings the
+   159→   159→        // summon chime for these titles (see CallAlertBar matching).
+   160→   160→        notifyTitle := "درخواست جلسه جدید: " + svc.Title
+   161→   161→        notifyBody := "یک قرآن‌آموز برای «" + svc.Title + "» درخواست جلسه ثبت کرد؛ از بخش درخواست‌ها تأیید یا رد کنید."
+   162→   162→        if in.Instant {
+   163→   163→                notifyTitle = "جلسهٔ فوری جدید: " + svc.Title
+   164→   164→                notifyBody = "یک قرآن‌آموز همین حالا درخواست جلسهٔ فوری ثبت کرد؛ سریع تأیید کنید تا کلاس آغاز شود."
+   165→   165→        } else if svc.Price == 0 {
+   166→   166→                notifyTitle = "درخواست جلسهٔ رایگان: " + svc.Title
+   167→   167→                notifyBody = "یک قرآن‌آموز جلسهٔ رایگان شما را رزرو کرد؛ از بخش درخواست‌های جلسه تأیید کنید."
+   168→   168→        }
+   169→   169→
+   170→   170→        s := &domain.Session{
+   171→   171→                LearnerID:   learnerID,
+   172→   172→                TeacherID:   teacher.ID,
+   173→   173→                ServiceID:   svc.ID,
+   174→   174→                Title:       svc.Title,
+   175→   175→                ScheduledAt: in.ScheduledAt.UTC(),
+   176→   176→                Duration:    svc.Duration,
+   177→   177→                Price:       svc.Price,
+   178→   178→                Status:      domain.SessionPending,
+   179→   179→                Note:        in.Note,
+   180→   180→                Instant:     in.Instant,
+   181→   181→        }
+   182→   182→
+   183→   183→        if gatewayPayment {
+   184→   184→                if uc.financial != nil {
+   185→   185→                        if err := uc.financial.CreateAwaitingSession(ctx, s); err != nil {
+   186→   186→                                return nil, err
+   187→   187→                        }
+   188→   188→                } else {
+   189→   189→                        s.Status = domain.SessionAwaitingPayment
+   190→   190→                        if err := uc.sessions.Create(ctx, s); err != nil {
+   191→   191→                                return nil, err
+   192→   192→                        }
+   193→   193→                }
+   194→   194→                payment, err := uc.payments.CreateBookingPayment(ctx, learner, s, in.ReturnPath)
+   195→   195→                if err != nil {
+   196→   196→                        // Free the reserved slot so the learner can retry cleanly.
+   197→   197→                        uc.cancelAwaitingSession(ctx, s.ID, "شروع پرداخت ناموفق بود")
+   198→   198→                        return nil, err
+   199→   199→                }
+   200→   200→                return &BookResult{Session: s, Token: payment.Token, ResNum: payment.ResNum, PaidViaWallet: false}, nil
+   201→   201→        }
+   202→   202→
+   203→   203→        // خدمات رایگان — جلسهٔ صفر تومانی: بدون کسر کیف پول، بدون درگاه؛
+   204→   204→        // درخواست مستقیم به صف تأیید استاد می‌رود.
+   205→   205→        if svc.Price == 0 {
+   206→   206→                if uc.financial != nil {
+   207→   207→                        if err := uc.financial.CreateFreeSession(ctx, s); err != nil {
+   208→   208→                                return nil, err
+   209→   209→                        }
+   210→   210→                } else {
+   211→   211→                        if err := uc.sessions.Create(ctx, s); err != nil {
+   212→   212→                                return nil, err
+   213→   213→                        }
+   214→   214→                }
+   215→   215→                uc.notify(ctx, teacher.UserID, notifyTitle, notifyBody)
+   216→   216→                return &BookResult{Session: s, PaidViaWallet: false}, nil
+   217→   217→        }
+   218→   218→
+   219→   219→        if uc.financial != nil {
+   220→   220→                if err := uc.financial.CreateFundedSession(ctx, s); err != nil {
+   221→   221→                        return nil, err
+   222→   222→                }
+   223→   223→        } else {
+   224→   224→                // Compatibility fallback for isolated tests; production always injects the
+   225→   225→                // atomic financial repository.
+   226→   226→                if err := uc.sessions.Create(ctx, s); err != nil {
+   227→   227→                        return nil, err
+   228→   228→                }
+   229→   229→                if err := uc.users.AddWallet(ctx, learnerID, -svc.Price); err != nil {
+   230→   230→                        uc.cancelUnfundedSession(ctx, s)
+   231→   231→                        return nil, err
+   232→   232→                }
+   233→   233→                if err := uc.wallet.AddTx(ctx, &domain.Transaction{
+   234→   234→                        UserID: learnerID, Type: domain.TxSession,
+   235→   235→                        Title: "رزرو جلسه: " + svc.Title, Amount: -svc.Price, RefID: s.ID,
+   236→   236→                }); err != nil {
+   237→   237→                        _ = uc.users.AddWallet(ctx, learnerID, svc.Price)
+   238→   238→                        uc.cancelUnfundedSession(ctx, s)
+   239→   239→                        return nil, err
+   240→   240→                }
+   241→   241→        }
+   242→   242→
+   243→   243→        uc.notify(ctx, teacher.UserID, notifyTitle, notifyBody)
+   244→   244→        return &BookResult{Session: s, PaidViaWallet: true}, nil
+   245→   245→}
+   246→   246→
+   247→   247→// BookingPayment re-initiates the gateway payment for a session that is still
+   248→   248→// awaiting payment (e.g. the learner closed the browser mid-checkout).
+   249→   249→func (uc *SessionUsecase) BookingPayment(ctx context.Context, learnerID, sessionID uint, returnPath string) (*TopupResult, error) {
+   250→   250→        uc.cancelExpiredAwaiting(ctx)
+   251→   251→        s, err := uc.sessions.ByID(ctx, sessionID)
+   252→   252→        if err != nil {
+   253→   253→                return nil, err
+   254→   254→        }
+   255→   255→        if s.LearnerID != learnerID {
+   256→   256→                return nil, domain.ErrForbidden
+   257→   257→        }
+   258→   258→        if s.Status != domain.SessionAwaitingPayment {
+   259→   259→                return nil, domain.ErrConflict
+   260→   260→        }
+   261→   261→        if uc.payments == nil {
+   262→   262→                return nil, domain.ErrForbidden
+   263→   263→        }
+   264→   264→        learner, err := uc.users.ByID(ctx, learnerID)
+   265→   265→        if err != nil {
+   266→   266→                return nil, err
+   267→   267→        }
+   268→   268→        if !learner.Active {
+   269→   269→                return nil, domain.ErrForbidden
+   270→   270→        }
+   271→   271→        _ = uc.financialFailStaleOrders(ctx, s.ID)
+   272→   272→        return uc.payments.CreateBookingPayment(ctx, learner, s, returnPath)
+   273→   273→}
+   274→   274→
+   275→   275→// Accept confirms a pending session (teacher action).
+   276→   276→func (uc *SessionUsecase) Accept(ctx context.Context, userID, sessionID uint) (*domain.Session, error) {
+   277→   277→        s, _, err := uc.ownTeacherSession(ctx, userID, sessionID)
+   278→   278→        if err != nil {
+   279→   279→                return nil, err
+   280→   280→        }
+   281→   281→        if s.Status != domain.SessionPending {
+   282→   282→                return nil, domain.ErrConflict
+   283→   283→        }
+   284→   284→        // جلسهٔ فوری تا پایان بازهٔ خودش قابل تأیید است (استاد ممکن است با
+   285→   285→        // کمی تأخیر ببیند)؛ جلسهٔ معمولی فقط پیش از آغاز رسمی.
+   286→   286→        acceptDeadline := s.ScheduledAt
+   287→   287→        if s.Instant {
+   288→   288→                acceptDeadline = s.ScheduledAt.Add(time.Duration(s.Duration) * time.Minute)
+   289→   289→        }
+   290→   290→        if time.Now().After(acceptDeadline) {
+   291→   291→                return nil, domain.ErrConflict
+   292→   292→        }
+   293→   293→        s.Status = domain.SessionConfirmed
+   294→   294→        if err := uc.sessions.Update(ctx, s); err != nil {
+   295→   295→                return nil, err
+   296→   296→        }
+   297→   297→        uc.notify(ctx, s.LearnerID, "جلسه تأیید شد", "استاد درخواست جلسه‌ی شما را تأیید کرد.")
+   298→   298→        return s, nil
+   299→   299→}
+   300→   300→
+   301→   301→// Reject declines a pending session and refunds the learner.
+   302→   302→func (uc *SessionUsecase) Reject(ctx context.Context, userID, sessionID uint, reason string) (*domain.Session, error) {
+   303→   303→        s, _, err := uc.ownTeacherSession(ctx, userID, sessionID)
+   304→   304→        if err != nil {
+   305→   305→                return nil, err
+   306→   306→        }
+   307→   307→        if s.Status != domain.SessionPending {
+   308→   308→                return nil, domain.ErrConflict
+   309→   309→        }
+   310→   310→        if len(reason) > 255 {
+   311→   311→                return nil, domain.ErrValidation
+   312→   312→        }
+   313→   313→
+   314→   314→        if uc.financial != nil {
+   315→   315→                if err := uc.financial.CancelAndRefundSession(ctx, s, []domain.SessionStatus{domain.SessionPending}, reason); err != nil {
+   316→   316→                        return nil, err
+   317→   317→                }
+   318→   318→        } else {
+   319→   319→                previousStatus, previousReason := s.Status, s.RejectNote
+   320→   320→                s.Status = domain.SessionCanceled
+   321→   321→                s.RejectNote = reason
+   322→   322→                if err := uc.sessions.Update(ctx, s); err != nil {
+   323→   323→                        return nil, err
+   324→   324→                }
+   325→   325→                if err := uc.refund(ctx, s); err != nil {
+   326→   326→                        s.Status, s.RejectNote = previousStatus, previousReason
+   327→   327→                        _ = uc.sessions.Update(ctx, s)
+   328→   328→                        return nil, err
+   329→   329→                }
+   330→   330→        }
+   331→   331→        uc.notify(ctx, s.LearnerID, "جلسه لغو شد", "استاد درخواست جلسه را رد کرد و مبلغ بازگشت داده شد.")
+   332→   332→        return s, nil
+   333→   333→}
+   334→   334→
+   335→   335→// Cancel lets the learner cancel a not-yet-held session and refunds them.
+   336→   336→func (uc *SessionUsecase) Cancel(ctx context.Context, learnerID, sessionID uint) (*domain.Session, error) {
+   337→   337→        s, err := uc.sessions.ByID(ctx, sessionID)
+   338→   338→        if err != nil {
+   339→   339→                return nil, err
+   340→   340→        }
+   341→   341→        if s.LearnerID != learnerID {
+   342→   342→                return nil, domain.ErrForbidden
+   343→   343→        }
+   344→   344→        if s.Status != domain.SessionPending && s.Status != domain.SessionConfirmed {
+   345→   345→                return nil, domain.ErrConflict
+   346→   346→        }
+   347→   347→
+   348→   348→        if uc.financial != nil {
+   349→   349→                if err := uc.financial.CancelAndRefundSession(ctx, s, []domain.SessionStatus{domain.SessionPending, domain.SessionConfirmed}, "لغو توسط قرآن‌آموز"); err != nil {
+   350→   350→                        return nil, err
+   351→   351→                }
+   352→   352→        } else {
+   353→   353→                previousStatus := s.Status
+   354→   354→                s.Status = domain.SessionCanceled
+   355→   355→                if err := uc.sessions.Update(ctx, s); err != nil {
+   356→   356→                        return nil, err
+   357→   357→                }
+   358→   358→                if err := uc.refund(ctx, s); err != nil {
+   359→   359→                        s.Status = previousStatus
+   360→   360→                        _ = uc.sessions.Update(ctx, s)
+   361→   361→                        return nil, err
+   362→   362→                }
+   363→   363→        }
+   364→   364→        if teacher, err := uc.teachers.ByID(ctx, s.TeacherID); err == nil {
+   365→   365→                uc.notify(ctx, teacher.UserID, "جلسه لغو شد", "قرآن‌آموز جلسه را لغو کرد.")
+   366→   366→        }
+   367→   367→        return s, nil
+   368→   368→}
+   369→   369→
+   370→   370→// Complete marks a confirmed session done and settles the teacher's earnings,
+   371→   371→// deducting the platform commission.
+   372→   372→func (uc *SessionUsecase) Complete(ctx context.Context, userID, sessionID uint) (*domain.Session, error) {
+   373→   373→        s, teacher, err := uc.ownTeacherSession(ctx, userID, sessionID)
+   374→   374→        if err != nil {
+   375→   375→                return nil, err
+   376→   376→        }
+   377→   377→        if s.Status != domain.SessionConfirmed {
+   378→   378→                return nil, domain.ErrConflict
+   379→   379→        }
+   380→   380→        // پایان جلسه پس از آغاز رسمی مجاز است (جلسه ممکن است زودتر از مدت
+   381→   381→        // رزروشده تمام شود)؛ پیش از آغاز رسمی خیر.
+   382→   382→        if time.Now().Before(s.ScheduledAt) {
+   383→   383→                return nil, domain.ErrConflict
+   384→   384→        }
+   385→   385→
+   386→   386→        commission := s.Price * int64(uc.cfg.PlatformCommissionPercent) / 100
+   387→   387→        earning := s.Price - commission
+   388→   388→        if earning < 0 {
+   389→   389→                return nil, domain.ErrInternal
+   390→   390→        }
+   391→   391→
+   392→   392→        if uc.financial != nil {
+   393→   393→                if err := uc.financial.CompleteAndSettleSession(ctx, s, teacher.UserID, earning, commission); err != nil {
+   394→   394→                        return nil, err
+   395→   395→                }
+   396→   396→        } else {
+   397→   397→                // Compatibility fallback for isolated tests.
+   398→   398→                s.Status = domain.SessionDone
+   399→   399→                if err := uc.sessions.Update(ctx, s); err != nil {
+   400→   400→                        return nil, err
+   401→   401→                }
+   402→   402→                if err := uc.users.AddWallet(ctx, teacher.UserID, earning); err != nil {
+   403→   403→                        s.Status = domain.SessionConfirmed
+   404→   404→                        _ = uc.sessions.Update(ctx, s)
+   405→   405→                        return nil, err
+   406→   406→                }
+   407→   407→                if err := uc.wallet.AddTx(ctx, &domain.Transaction{
+   408→   408→                        UserID: teacher.UserID, Type: domain.TxEarning,
+   409→   409→                        Title: "درآمد ناخالص جلسه: " + s.Title, Amount: s.Price, RefID: s.ID,
+   410→   410→                }); err != nil {
+   411→   411→                        _ = uc.users.AddWallet(ctx, teacher.UserID, -earning)
+   412→   412→                        s.Status = domain.SessionConfirmed
+   413→   413→                        _ = uc.sessions.Update(ctx, s)
+   414→   414→                        return nil, err
+   415→   415→                }
+   416→   416→                _ = uc.wallet.AddTx(ctx, &domain.Transaction{
+   417→   417→                        UserID: teacher.UserID, Type: domain.TxCommission,
+   418→   418→                        Title: "کارمزد پلتفرم", Amount: -commission, RefID: s.ID,
+   419→   419→                })
+   420→   420→                teacher.Sessions++
+   421→   421→                _ = uc.teachers.Update(ctx, teacher)
+   422→   422→        }
+   423→   423→        uc.notify(ctx, s.LearnerID, "جلسه برگزار شد", "جلسه‌ی شما به پایان رسید. لطفاً امتیاز دهید.")
+   424→   424→        return s, nil
+   425→   425→}
+   426→   426→
+   427→   427→// LearnerSessions lists a learner's sessions ("upcoming" | "past" | "").
+   428→   428→func (uc *SessionUsecase) LearnerSessions(ctx context.Context, learnerID uint, when string) ([]domain.Session, error) {
+   429→   429→        return uc.sessions.ForLearner(ctx, learnerID, when)
+   430→   430→}
+   431→   431→
+   432→   432→// TeacherSessions lists a teacher's sessions by status set.
+   433→   433→func (uc *SessionUsecase) TeacherSessions(ctx context.Context, userID uint, statuses []domain.SessionStatus) ([]domain.Session, error) {
+   434→   434→        teacher, err := uc.teacherProfileForUser(ctx, userID)
+   435→   435→        if err != nil {
+   436→   436→                return nil, err
+   437→   437→        }
+   438→   438→        return uc.sessions.ForTeacher(ctx, teacher.ID, statuses)
+   439→   439→}
+   440→   440→
+   441→   441→func (uc *SessionUsecase) ownTeacherSession(ctx context.Context, userID, sessionID uint) (*domain.Session, *domain.Teacher, error) {
+   442→   442→        teacher, err := uc.teacherProfileForUser(ctx, userID)
+   443→   443→        if err != nil {
+   444→   444→                return nil, nil, err
+   445→   445→        }
+   446→   446→        s, err := uc.sessions.ByID(ctx, sessionID)
+   447→   447→        if err != nil {
+   448→   448→                return nil, nil, err
+   449→   449→        }
+   450→   450→        if s.TeacherID != teacher.ID {
+   451→   451→                return nil, nil, domain.ErrForbidden
+   452→   452→        }
+   453→   453→        return s, teacher, nil
+   454→   454→}
+   455→   455→
+   456→   456→func (uc *SessionUsecase) teacherProfileForUser(ctx context.Context, userID uint) (*domain.Teacher, error) {
+   457→   457→        teacher, err := uc.teachers.ByUserID(ctx, userID)
+   458→   458→        if errors.Is(err, domain.ErrNotFound) {
+   459→   459→                return nil, domain.ErrTeacherProfileRequired
+   460→   460→        }
+   461→   461→        return teacher, err
+   462→   462→}
+   463→   463→
+   464→   464→// LiveAccess resolves a session for online-classroom participation. The
+   465→   465→// learner, the session's teacher, and admins may join; everyone else is
+   466→   466→// rejected. The returned role reflects the caller's position in this session.
+   467→   467→func (uc *SessionUsecase) LiveAccess(ctx context.Context, userID uint, role domain.Role, sessionID uint) (*domain.Session, domain.Role, error) {
+   468→   468→        s, err := uc.sessions.ByID(ctx, sessionID)
+   469→   469→        if err != nil {
+   470→   470→                return nil, "", err
+   471→   471→        }
+   472→   472→        if s.LearnerID == userID {
+   473→   473→                return s, domain.RoleLearner, nil
+   474→   474→        }
+   475→   475→        if role == domain.RoleAdmin {
+   476→   476→                return s, domain.RoleAdmin, nil
+   477→   477→        }
+   478→   478→        if teacher, terr := uc.teachers.ByUserID(ctx, userID); terr == nil && teacher != nil && teacher.ID == s.TeacherID {
+   479→   479→                return s, domain.RoleTeacher, nil
+   480→   480→        }
+   481→   481→        return nil, "", domain.ErrForbidden
+   482→   482→}
+   483→   483→
+   484→   484→func (uc *SessionUsecase) ensureWithinWorkTime(ctx context.Context, teacherID uint, scheduledAt time.Time, duration int) error {
+   485→   485→        location, err := time.LoadLocation(uc.cfg.AppTimezone)
+   486→   486→        if err != nil {
+   487→   487→                return err
+   488→   488→        }
+   489→   489→        local := scheduledAt.In(location)
+   490→   490→        weekday := (int(local.Weekday()) + 1) % 7 // Go Sunday=0; Vodda Saturday=0.
+   491→   491→        startMinute := local.Hour()*60 + local.Minute()
+   492→   492→        endMinute := startMinute + duration
+   493→   493→
+   494→   494→        workTimes, err := uc.teachers.WorkTimes(ctx, teacherID)
+   495→   495→        if err != nil {
+   496→   496→                return err
+   497→   497→        }
+   498→   498→        for _, slot := range workTimes {
+   499→   499→                if !slot.Active || slot.Weekday != weekday {
+   500→   500→                        continue
+   501→   501→                }
+   502→   502→                from, okFrom := parseClock(slot.FromTime)
+   503→   503→                to, okTo := parseClock(slot.ToTime)
+   504→   504→                if okFrom && okTo && startMinute >= from && endMinute <= to {
+   505→   505→                        return nil
+   506→   506→                }
+   507→   507→        }
+   508→   508→        return domain.ErrValidation
+   509→   509→}
+   510→   510→
+   511→   511→func (uc *SessionUsecase) ensureNoOverlap(ctx context.Context, learnerID, teacherID uint, start time.Time, duration int) error {
+   512→   512→        end := start.Add(time.Duration(duration) * time.Minute)
+   513→   513→        statuses := []domain.SessionStatus{domain.SessionPending, domain.SessionConfirmed, domain.SessionAwaitingPayment}
+   514→   514→        teacherSessions, err := uc.sessions.ForTeacher(ctx, teacherID, statuses)
+   515→   515→        if err != nil {
+   516→   516→                return err
+   517→   517→        }
+   518→   518→        for _, existing := range teacherSessions {
+   519→   519→                if overlaps(start, end, existing.ScheduledAt, existing.ScheduledAt.Add(time.Duration(existing.Duration)*time.Minute)) {
+   520→   520→                        return domain.ErrConflict
+   521→   521→                }
+   522→   522→        }
+   523→   523→
+   524→   524→        learnerSessions, err := uc.sessions.ForLearner(ctx, learnerID, "upcoming")
+   525→   525→        if err != nil {
+   526→   526→                return err
+   527→   527→        }
+   528→   528→        for _, existing := range learnerSessions {
+   529→   529→                if existing.Status != domain.SessionPending && existing.Status != domain.SessionConfirmed && existing.Status != domain.SessionAwaitingPayment {
+   530→   530→                        continue
+   531→   531→                }
+   532→   532→                if overlaps(start, end, existing.ScheduledAt, existing.ScheduledAt.Add(time.Duration(existing.Duration)*time.Minute)) {
+   533→   533→                        return domain.ErrConflict
+   534→   534→                }
+   535→   535→        }
+   536→   536→        return nil
+   537→   537→}
+   538→   538→
+   539→   539→// cancelExpiredAwaiting lazily frees slots abandoned during checkout.
+   540→   540→func (uc *SessionUsecase) cancelExpiredAwaiting(ctx context.Context) {
+   541→   541→        if uc.financial == nil {
+   542→   542→                return
+   543→   543→        }
+   544→   544→        if _, err := uc.financial.CancelExpiredAwaitingSessions(ctx, time.Now().Add(-AwaitingPaymentWindow)); err != nil {
+   545→   545→                _ = err
+   546→   546→        }
+   547→   547→}
+   548→   548→
+   549→   549→func (uc *SessionUsecase) cancelAwaitingSession(ctx context.Context, sessionID uint, reason string) {
+   550→   550→        if uc.financial == nil {
+   551→   551→                return
+   552→   552→        }
+   553→   553→        if err := uc.financial.CancelBookingSession(ctx, sessionID, reason); err != nil {
+   554→   554→                _ = err
+   555→   555→        }
+   556→   556→}
+   557→   557→
+   558→   558→func (uc *SessionUsecase) financialFailStaleOrders(ctx context.Context, sessionID uint) error {
+   559→   559→        if uc.financial == nil {
+   560→   560→                return nil
+   561→   561→        }
+   562→   562→        return uc.financial.FailPendingBookingOrders(ctx, sessionID, "سفارش جدیدی برای این جلسه صادر شد")
+   563→   563→}
+   564→   564→
+   565→   565→func (uc *SessionUsecase) refund(ctx context.Context, s *domain.Session) error {
+   566→   566→        if err := uc.users.AddWallet(ctx, s.LearnerID, s.Price); err != nil {
+   567→   567→                return err
+   568→   568→        }
+   569→   569→        if err := uc.wallet.AddTx(ctx, &domain.Transaction{
+   570→   570→                UserID: s.LearnerID, Type: domain.TxCharge,
+   571→   571→                Title: "بازگشت وجه جلسه: " + s.Title, Amount: s.Price, RefID: s.ID,
+   572→   572→        }); err != nil {
+   573→   573→                _ = uc.users.AddWallet(ctx, s.LearnerID, -s.Price)
+   574→   574→                return err
+   575→   575→        }
+   576→   576→        return nil
+   577→   577→}
+   578→   578→
+   579→   579→func (uc *SessionUsecase) cancelUnfundedSession(ctx context.Context, s *domain.Session) {
+   580→   580→        s.Status = domain.SessionCanceled
+   581→   581→        s.RejectNote = "خطا در رزرو وجه"
+   582→   582→        _ = uc.sessions.Update(ctx, s)
+   583→   583→}
+   584→   584→
+   585→   585→func (uc *SessionUsecase) notify(ctx context.Context, userID uint, title, body string) {
+   586→   586→        if userID == 0 {
+   587→   587→                return
+   588→   588→        }
+   589→   589→        _ = uc.notif.Create(ctx, &domain.Notification{UserID: userID, Title: title, Body: body})
+   590→   590→}
+   591→   591→
+   592→   592→func parseClock(value string) (int, bool) {
+   593→   593→        parsed, err := time.Parse("15:04", value)
+   594→   594→        if err != nil {
+   595→   595→                return 0, false
+   596→   596→        }
+   597→   597→        return parsed.Hour()*60 + parsed.Minute(), true
+   598→   598→}
+   599→   599→
+   600→   600→func overlaps(aStart, aEnd, bStart, bEnd time.Time) bool {
+   601→   601→        return aStart.Before(bEnd) && aEnd.After(bStart)
+   602→   602→}
+   603→   603→
+   604→   604→// SessionDetail is the role-aware single-session payload of the detail screen.
+   605→   605→type SessionDetail struct {
+   606→   606→        SessionDisplay
+   607→   607→        ViewerRole string `json:"viewer_role"`
+   608→   608→}
+   609→   609→
+   610→   610→// SessionDetailFor returns one session with full display fields when the
+   611→   611→// caller is its learner, its teacher, or an admin. A teacher view stamps
+   612→   612→// teacher_seen_at so the unseen counter clears once opened.
+   613→   613→func (uc *SessionUsecase) SessionDetailFor(ctx context.Context, callerID uint, callerRole domain.Role, sessionID uint) (*SessionDetail, error) {
+   614→   614→        s, role, err := uc.LiveAccess(ctx, callerID, callerRole, sessionID)
+   615→   615→        if err != nil {
+   616→   616→                return nil, err
+   617→   617→        }
+   618→   618→        if role == domain.RoleTeacher && s.TeacherSeenAt == nil &&
+   619→   619→                (s.Status == domain.SessionPending || s.Status == domain.SessionConfirmed) {
+   620→   620→                if err := uc.sessions.MarkSessionsSeen(ctx, []uint{s.ID}); err != nil {
+   621→   621→                        log.Printf("session: mark seen: %v", err)
+   622→   622→                }
+   623→   623→                now := time.Now().UTC()
+   624→   624→                s.TeacherSeenAt = &now
+   625→   625→        }
+   626→   626→        location, err := uc.displayLocation()
+   627→   627→        if err != nil {
+   628→   628→                return nil, err
+   629→   629→        }
+   630→   630→        return &SessionDetail{SessionDisplay: uc.sessionDisplay(*s, location), ViewerRole: string(role)}, nil
+   631→   631→}
+   632→   632→
+   633→   633→// SessionMessages lists the persisted coordination chat of a session.
+   634→   634→func (uc *SessionUsecase) SessionMessages(ctx context.Context, callerID uint, callerRole domain.Role, sessionID uint, limit int) ([]domain.SessionMessage, error) {
+   635→   635→        if _, _, err := uc.LiveAccess(ctx, callerID, callerRole, sessionID); err != nil {
+   636→   636→                return nil, err
+   637→   637→        }
+   638→   638→        return uc.sessions.SessionMessages(ctx, sessionID, limit)
+   639→   639→}
+   640→   640→
+   641→   641→// SendSessionMessage appends a coordination message and notifies the
+   642→   642→// counterpart (best effort) so neither side misses it.
+   643→   643→func (uc *SessionUsecase) SendSessionMessage(ctx context.Context, callerID uint, callerRole domain.Role, sessionID uint, body string) (*domain.SessionMessage, error) {
+   644→   644→        body = strings.TrimSpace(body)
+   645→   645→        if len(body) == 0 || len(body) > 1000 {
+   646→   646→                return nil, domain.ErrValidation
+   647→   647→        }
+   648→   648→        s, role, err := uc.LiveAccess(ctx, callerID, callerRole, sessionID)
+   649→   649→        if err != nil {
+   650→   650→                return nil, err
+   651→   651→        }
+   652→   652→        if s.Status == domain.SessionCanceled {
+   653→   653→                return nil, domain.ErrConflict
+   654→   654→        }
+   655→   655→        message := &domain.SessionMessage{SessionID: s.ID, SenderID: callerID, Body: body}
+   656→   656→        if err := uc.sessions.CreateSessionMessage(ctx, message); err != nil {
+   657→   657→                return nil, err
+   658→   658→        }
+   659→   659→        if role == domain.RoleLearner {
+   660→   660→                if teacher, terr := uc.teachers.ByID(ctx, s.TeacherID); terr == nil {
+   661→   661→                        uc.notify(ctx, teacher.UserID, "پیام جدید در جلسه", "قرآن‌آموز برای جلسه «"+s.Title+"» پیامی فرستاد.")
+   662→   662→                }
+   663→   663→        } else if role == domain.RoleTeacher {
+   664→   664→                uc.notify(ctx, s.LearnerID, "پیام جدید از استاد", "استاد برای جلسه «"+s.Title+"» پیامی فرستاد.")
+   665→   665→        }
+   666→   666→        return message, nil
+   667→   667→}
+   668→   668→
+   669→   669→// TeacherUnseenSessionCount powers the red counter on the teacher sessions tab.
+   670→   670→func (uc *SessionUsecase) TeacherUnseenSessionCount(ctx context.Context, userID uint) (int64, error) {
+   671→   671→        teacher, err := uc.teacherProfileForUser(ctx, userID)
+   672→   672→        if err != nil {
+   673→   673→                return 0, err
+   674→   674→        }
+   675→   675→        return uc.sessions.CountTeacherUnseen(ctx, teacher.ID)
+   676→   676→}
+   677→   677→
+   678→   678→// MarkTeacherSessionsSeenAll stamps all unseen active sessions of the calling
+   679→   679→// teacher; returns how many rows were marked.
+   680→   680→func (uc *SessionUsecase) MarkTeacherSessionsSeenAll(ctx context.Context, userID uint) (int64, error) {
+   681→   681→        teacher, err := uc.teacherProfileForUser(ctx, userID)
+   682→   682→        if err != nil {
+   683→   683→                return 0, err
+   684→   684→        }
+   685→   685→        return uc.sessions.MarkAllTeacherSessionsSeen(ctx, teacher.ID)
+   686→   686→}
+   687→   687→
+   688→   688→// ExpireSweep cancels instant sessions that were never accepted within their
+   689→   689→// own window (start..start+duration) and refunds the learner. Runs on the
+   690→   690→// one-minute background ticker.
+   691→   691→func (uc *SessionUsecase) ExpireSweep(ctx context.Context) error {
+   692→   692→        uc.expireStaleInstantPending(ctx)
+   693→   693→        return nil
+   694→   694→}
+   695→   695→
+   696→   696→func (uc *SessionUsecase) expireStaleInstantPending(ctx context.Context) {
+   697→   697→        stale, err := uc.sessions.StaleInstantPendings(ctx, time.Now())
+   698→   698→        if err != nil {
+   699→   699→                log.Printf("session: stale instant sweep: %v", err)
+   700→   700→                return
+   701→   701→        }
+   702→   702→        for _, s := range stale {
+   703→   703→                if uc.financial != nil {
+   704→   704→                        if err := uc.financial.CancelAndRefundSession(ctx, &s, []domain.SessionStatus{domain.SessionPending}, "انقضای جلسهٔ فوری"); err != nil {
+   705→   705→                                log.Printf("session: refund stale instant #%d: %v", s.ID, err)
+   706→   706→                                continue
+   707→   707→                        }
+   708→   708→                } else {
+   709→   709→                        s.Status = domain.SessionCanceled
+   710→   710→                        if err := uc.sessions.Update(ctx, &s); err != nil {
+   711→   711→                                continue
+   712→   712→                        }
+   713→   713→                        _ = uc.refund(ctx, &s)
+   714→   714→                }
+   715→   715→                uc.notify(ctx, s.LearnerID, "جلسهٔ فوری تأیید نشد", "استاد در بازهٔ جلسهٔ فوری پاسخ نداد و مبلغ به کیف پول شما بازگشت.")
+   716→   716→                if teacher, terr := uc.teachers.ByID(ctx, s.TeacherID); terr == nil {
+   717→   717→                        uc.notify(ctx, teacher.UserID, "جلسهٔ فوری منقضی شد", "به درخواست جلسهٔ فوری پاسخ ندادید؛ مبلغ به قرآن‌آموز بازگشت.")
+   718→   718→                }
+   719→   719→        }
+   720→   720→}
+   721→   721→

@@ -1,0 +1,2002 @@
+     1→@tailwind base;
+     2→@tailwind components;
+     3→@tailwind utilities;
+     4→
+     5→@font-face {
+     6→  font-family: 'IRANYekanXFaNum';
+     7→  src: url('/fonts/IRANYekanXFaNum-Regular.ttf') format('truetype');
+     8→  font-style: normal;
+     9→  font-weight: 400;
+    10→  font-display: swap;
+    11→}
+    12→@font-face {
+    13→  font-family: 'IRANYekanXFaNum';
+    14→  src: url('/fonts/IRANYekanXFaNum-Medium.ttf') format('truetype');
+    15→  font-style: normal;
+    16→  font-weight: 500;
+    17→  font-display: swap;
+    18→}
+    19→@font-face {
+    20→  font-family: 'IRANYekanXFaNum';
+    21→  src: url('/fonts/IRANYekanXFaNum-DemiBold.ttf') format('truetype');
+    22→  font-style: normal;
+    23→  font-weight: 600;
+    24→  font-display: swap;
+    25→}
+    26→@font-face {
+    27→  font-family: 'IRANYekanXFaNum';
+    28→  src: url('/fonts/IRANYekanXFaNum-Bold.ttf') format('truetype');
+    29→  font-style: normal;
+    30→  font-weight: 700;
+    31→  font-display: swap;
+    32→}
+    33→@font-face {
+    34→  font-family: 'IRANYekanXFaNum';
+    35→  src: url('/fonts/IRANYekanXFaNum-ExtraBold.ttf') format('truetype');
+    36→  font-style: normal;
+    37→  font-weight: 800;
+    38→  font-display: swap;
+    39→}
+    40→@font-face {
+    41→  font-family: 'IRANYekanXFaNum';
+    42→  src: url('/fonts/IRANYekanXFaNum-ExtraBold.ttf') format('truetype');
+    43→  font-style: normal;
+    44→  font-weight: 900;
+    45→  font-display: swap;
+    46→}
+    47→
+    48→/* ───────────────────────────────────────────────
+    49→   Vodda design tokens — mirrors docs/design/styles.css
+    50→─────────────────────────────────────────────── */
+    51→:root {
+    52→  --sand-50: #faf8f2;
+    53→  --sand-100: #f4f0e7;
+    54→  --sand-150: #ede8db;
+    55→  --sand-200: #e4ddcc;
+    56→  --surface: #ffffff;
+    57→  --surface-warm: #fcfaf4;
+    58→
+    59→  --olive-900: #2e3622;
+    60→  --olive-800: #3c472b;
+    61→  --olive-700: #4c5a36;
+    62→  --olive-600: #5e6e43;
+    63→  --olive-500: #728350;
+    64→  --olive-400: #93a172;
+    65→  --olive-300: #b6c09b;
+    66→  --olive-200: #d6dcc4;
+    67→  --olive-100: #e8ecdb;
+    68→  --olive-50: #f2f5ea;
+    69→
+    70→  --ink: #2a2820;
+    71→  --ink-2s: #565247;
+    72→  --ink-3: #8c8675;
+    73→  --ink-4: #aba593;
+    74→
+    75→  --gold: #bf9540;
+    76→  --gold-soft: #e7d5a8;
+    77→  --gold-bg: #f7efd9;
+    78→  --clay: #b0745a;
+    79→  --clay-bg: #f6e7df;
+    80→  --rose: #a65151;
+    81→  --info: #5e7e8c;
+    82→
+    83→  --r-xs: 10px;
+    84→  --r-sm: 14px;
+    85→  --r-md: 18px;
+    86→  --r-lg: 24px;
+    87→  --r-xl: 30px;
+    88→
+    89→  --sh-sm: 0 1px 3px rgba(46, 54, 34, 0.05), 0 1px 2px rgba(46, 54, 34, 0.04);
+    90→  --sh-md: 0 6px 22px rgba(46, 54, 34, 0.07), 0 2px 6px rgba(46, 54, 34, 0.04);
+    91→  --sh-lg: 0 14px 40px rgba(46, 54, 34, 0.1), 0 4px 12px rgba(46, 54, 34, 0.05);
+    92→  --sh-olive: 0 10px 28px rgba(76, 90, 54, 0.28);
+    93→
+    94→  --font: 'IRANYekanXFaNum', system-ui, sans-serif;
+    95→}
+    96→
+    97→* {
+    98→  box-sizing: border-box;
+    99→  -webkit-tap-highlight-color: transparent;
+   100→}
+   101→
+   102→html,
+   103→body {
+   104→  padding: 0;
+   105→  margin: 0;
+   106→  font-family: var(--font);
+   107→  color: var(--ink);
+   108→  -webkit-font-smoothing: antialiased;
+   109→  background: var(--sand-50);
+   110→}
+   111→
+   112→button,
+   113→input,
+   114→textarea,
+   115→select,
+   116→option,
+   117→optgroup {
+   118→  font: inherit;
+   119→  font-family: var(--font) !important;
+   120→}
+   121→
+   122→a {
+   123→  color: inherit;
+   124→  text-decoration: none;
+   125→}
+   126→
+   127→:focus-visible {
+   128→  outline: 3px solid rgba(94, 110, 67, 0.34);
+   129→  outline-offset: 3px;
+   130→}
+   131→
+   132→.num {
+   133→  font-feature-settings: 'ss01';
+   134→}
+   135→
+   136→input::placeholder,
+   137→textarea::placeholder {
+   138→  color: var(--ink-4);
+   139→  font-family: var(--font);
+   140→}
+   141→
+   142→/* ───────────────────────────────────────────────
+   143→   Public website — shared with the Universal App visual language
+   144→─────────────────────────────────────────────── */
+   145→.public-container {
+   146→  width: min(1180px, calc(100% - 48px));
+   147→  margin-inline: auto;
+   148→}
+   149→
+   150→.public-nav {
+   151→  position: sticky;
+   152→  z-index: 100;
+   153→  top: 0;
+   154→  border-bottom: 1px solid rgba(228,221,204,.78);
+   155→  background: rgba(250,248,242,.9);
+   156→  backdrop-filter: blur(18px);
+   157→}
+   158→
+   159→.public-nav-inner {
+   160→  min-height: 72px;
+   161→  display: flex;
+   162→  align-items: center;
+   163→  justify-content: space-between;
+   164→  gap: 24px;
+   165→}
+   166→
+   167→.brand-subtitle {
+   168→  display: block;
+   169→  margin-top: 2px;
+   170→  color: var(--ink-3);
+   171→  font-size: 9.5px;
+   172→  font-weight: 600;
+   173→}
+   174→
+   175→.desktop-nav {
+   176→  display: flex;
+   177→  align-items: center;
+   178→  gap: 6px;
+   179→}
+   180→
+   181→.public-nav-link {
+   182→  padding: 9px 12px;
+   183→  border-radius: 11px;
+   184→  color: var(--ink-2s);
+   185→  font-size: 13.5px;
+   186→  font-weight: 600;
+   187→}
+   188→
+   189→.public-nav-link:hover {
+   190→  color: var(--olive-700);
+   191→  background: var(--olive-50);
+   192→}
+   193→
+   194→.nav-app-link {
+   195→  display: inline-flex;
+   196→  align-items: center;
+   197→  gap: 6px;
+   198→  min-height: 40px;
+   199→  padding: 8px 12px;
+   200→  border-radius: 12px;
+   201→  color: var(--olive-700);
+   202→  background: var(--olive-50);
+   203→  font-size: 12.5px;
+   204→  font-weight: 700;
+   205→}
+   206→
+   207→.mobile-nav-toggle,
+   208→.mobile-menu,
+   209→.mobile-menu-backdrop {
+   210→  display: none;
+   211→}
+   212→
+   213→.public-page-hero {
+   214→  position: relative;
+   215→  overflow: hidden;
+   216→  border-bottom: 1px solid var(--sand-150);
+   217→  background: linear-gradient(180deg, #fff 0%, var(--sand-50) 100%);
+   218→}
+   219→
+   220→.landing-hero {
+   221→  position: relative;
+   222→  overflow: hidden;
+   223→  padding: 70px 0 54px;
+   224→  background:
+   225→    linear-gradient(180deg, #fff 0%, rgba(250,248,242,.4) 70%, var(--sand-50) 100%);
+   226→}
+   227→
+   228→.landing-hero-glow {
+   229→  position: absolute;
+   230→  inset-inline-start: 55%;
+   231→  top: -240px;
+   232→  width: 680px;
+   233→  height: 680px;
+   234→  border-radius: 50%;
+   235→  background: radial-gradient(circle, rgba(214,220,196,.72) 0%, rgba(242,245,234,.4) 45%, transparent 70%);
+   236→  pointer-events: none;
+   237→}
+   238→
+   239→.landing-hero-grid {
+   240→  position: relative;
+   241→  display: grid;
+   242→  grid-template-columns: minmax(0, 1.08fr) minmax(420px, .92fr);
+   243→  align-items: center;
+   244→  gap: 70px;
+   245→}
+   246→
+   247→.landing-hero-copy {
+   248→  padding-block: 24px;
+   249→}
+   250→
+   251→.landing-eyebrow {
+   252→  display: inline-flex;
+   253→  align-items: center;
+   254→  gap: 7px;
+   255→  margin-bottom: 16px;
+   256→  padding: 7px 11px;
+   257→  border: 1px solid var(--olive-100);
+   258→  border-radius: 999px;
+   259→  color: var(--olive-700);
+   260→  background: var(--olive-50);
+   261→  font-size: 12px;
+   262→  font-weight: 800;
+   263→}
+   264→
+   265→.landing-hero-copy h1 {
+   266→  max-width: 720px;
+   267→  margin: 0;
+   268→  font-size: clamp(40px, 5vw, 61px);
+   269→  line-height: 1.34;
+   270→  letter-spacing: -1.5px;
+   271→  font-weight: 800;
+   272→}
+   273→
+   274→.landing-hero-copy h1 span {
+   275→  color: var(--olive-600);
+   276→}
+   277→
+   278→.landing-hero-copy > p {
+   279→  max-width: 620px;
+   280→  margin: 19px 0 0;
+   281→  color: var(--ink-2s);
+   282→  font-size: 16px;
+   283→  line-height: 2.05;
+   284→}
+   285→
+   286→.landing-search-box {
+   287→  max-width: 690px;
+   288→  display: flex;
+   289→  align-items: center;
+   290→  gap: 0;
+   291→  margin-top: 30px;
+   292→  padding: 6px;
+   293→  border: 1px solid var(--sand-150);
+   294→  border-radius: 18px;
+   295→  background: #fff;
+   296→  box-shadow: 0 12px 34px rgba(46,54,34,.07);
+   297→}
+   298→
+   299→.landing-search-box label {
+   300→  min-width: 0;
+   301→  flex: 1.3;
+   302→  display: flex;
+   303→  align-items: center;
+   304→  gap: 9px;
+   305→  padding-inline: 11px;
+   306→  color: var(--ink-3);
+   307→}
+   308→
+   309→.landing-search-box label.landing-city-field {
+   310→  flex: .8;
+   311→}
+   312→
+   313→.landing-search-box input {
+   314→  min-width: 0;
+   315→  width: 100%;
+   316→  min-height: 44px;
+   317→  border: 0;
+   318→  outline: 0;
+   319→  color: var(--ink);
+   320→  background: transparent;
+   321→  font-size: 13.5px;
+   322→}
+   323→
+   324→.landing-search-divider {
+   325→  width: 1px;
+   326→  height: 30px;
+   327→  background: var(--sand-150);
+   328→}
+   329→
+   330→.landing-search-box button {
+   331→  min-height: 44px;
+   332→  display: inline-flex;
+   333→  align-items: center;
+   334→  gap: 7px;
+   335→  padding: 10px 16px;
+   336→  border: 0;
+   337→  border-radius: 13px;
+   338→  color: #fff;
+   339→  background: var(--olive-600);
+   340→  font-weight: 700;
+   341→  cursor: pointer;
+   342→}
+   343→
+   344→.landing-trust-row {
+   345→  display: flex;
+   346→  flex-wrap: wrap;
+   347→  gap: 10px 18px;
+   348→  margin-top: 16px;
+   349→  color: var(--ink-3);
+   350→  font-size: 11.5px;
+   351→}
+   352→
+   353→.landing-trust-row span {
+   354→  display: inline-flex;
+   355→  align-items: center;
+   356→  gap: 5px;
+   357→}
+   358→
+   359→.landing-hero-actions {
+   360→  display: flex;
+   361→  flex-wrap: wrap;
+   362→  gap: 10px;
+   363→  margin-top: 28px;
+   364→}
+   365→
+   366→.landing-app-stage {
+   367→  position: relative;
+   368→  min-height: 620px;
+   369→  display: grid;
+   370→  place-items: center;
+   371→}
+   372→
+   373→.landing-orb {
+   374→  position: absolute;
+   375→  border-radius: 50%;
+   376→  filter: blur(.2px);
+   377→}
+   378→
+   379→.landing-orb-gold {
+   380→  width: 120px;
+   381→  height: 120px;
+   382→  inset-inline-start: 14px;
+   383→  top: 74px;
+   384→  background: var(--gold-bg);
+   385→}
+   386→
+   387→.landing-orb-olive {
+   388→  width: 220px;
+   389→  height: 220px;
+   390→  inset-inline-end: -18px;
+   391→  bottom: 65px;
+   392→  background: var(--olive-100);
+   393→}
+   394→
+   395→.landing-phone {
+   396→  position: relative;
+   397→  z-index: 2;
+   398→  width: min(350px, 88%);
+   399→  min-height: 592px;
+   400→  padding: 20px 18px 80px;
+   401→  border: 9px solid var(--olive-900);
+   402→  border-radius: 42px;
+   403→  background: var(--sand-50);
+   404→  box-shadow: 0 36px 80px rgba(46,54,34,.19);
+   405→}
+   406→
+   407→.landing-phone::before {
+   408→  content: '';
+   409→  position: absolute;
+   410→  top: 7px;
+   411→  left: 50%;
+   412→  width: 82px;
+   413→  height: 5px;
+   414→  border-radius: 999px;
+   415→  transform: translateX(-50%);
+   416→  background: rgba(255,255,255,.14);
+   417→}
+   418→
+   419→.landing-phone-hero {
+   420→  margin-top: 18px;
+   421→  padding: 17px;
+   422→  border-radius: 22px;
+   423→  background: linear-gradient(145deg, var(--olive-700), var(--olive-600), var(--olive-500));
+   424→}
+   425→
+   426→.landing-mini-category {
+   427→  display: flex;
+   428→  align-items: center;
+   429→  gap: 7px;
+   430→  margin-top: 10px;
+   431→  padding: 11px;
+   432→  border: 1px solid var(--sand-150);
+   433→  border-radius: 14px;
+   434→  color: var(--olive-700);
+   435→  background: #fff;
+   436→  font-size: 10.5px;
+   437→  font-weight: 700;
+   438→}
+   439→
+   440→.landing-mini-teacher {
+   441→  display: flex;
+   442→  align-items: center;
+   443→  gap: 10px;
+   444→  padding: 12px;
+   445→  border-radius: 18px;
+   446→  background: #fff;
+   447→  box-shadow: 0 2px 8px rgba(46,54,34,.045);
+   448→}
+   449→
+   450→.landing-mini-bottom-nav {
+   451→  position: absolute;
+   452→  inset-inline: 0;
+   453→  bottom: 0;
+   454→  min-height: 65px;
+   455→  display: grid;
+   456→  grid-template-columns: repeat(5,1fr);
+   457→  align-items: center;
+   458→  padding: 4px 9px 7px;
+   459→  border-top: 1px solid var(--sand-150);
+   460→  border-radius: 0 0 32px 32px;
+   461→  background: #fff;
+   462→}
+   463→
+   464→.landing-mini-bottom-nav span {
+   465→  display: grid;
+   466→  justify-items: center;
+   467→  gap: 2px;
+   468→  color: var(--ink-4);
+   469→}
+   470→
+   471→.landing-mini-bottom-nav span.active {
+   472→  color: var(--olive-600);
+   473→}
+   474→
+   475→.landing-mini-bottom-nav small {
+   476→  font-size: 7.5px;
+   477→}
+   478→
+   479→.landing-floating-card {
+   480→  position: absolute;
+   481→  z-index: 4;
+   482→  display: flex;
+   483→  align-items: center;
+   484→  gap: 9px;
+   485→  min-width: 175px;
+   486→  padding: 10px 11px;
+   487→  border: 1px solid var(--sand-150);
+   488→  border-radius: 16px;
+   489→  background: rgba(255,255,255,.96);
+   490→  box-shadow: var(--sh-md);
+   491→  backdrop-filter: blur(10px);
+   492→}
+   493→
+   494→.landing-floating-card strong {
+   495→  display: block;
+   496→  font-size: 10.5px;
+   497→}
+   498→
+   499→.landing-floating-card small {
+   500→  display: block;
+   501→  margin-top: 1px;
+   502→  color: var(--ink-3);
+   503→  font-size: 8.5px;
+   504→}
+   505→
+   506→.landing-floating-card-top {
+   507→  inset-inline-start: -18px;
+   508→  top: 142px;
+   509→}
+   510→
+   511→.landing-floating-card-bottom {
+   512→  inset-inline-end: -20px;
+   513→  bottom: 138px;
+   514→}
+   515→
+   516→.landing-floating-icon {
+   517→  width: 34px;
+   518→  height: 34px;
+   519→  display: grid;
+   520→  place-items: center;
+   521→  border-radius: 11px;
+   522→  color: var(--olive-700);
+   523→  background: var(--olive-100);
+   524→}
+   525→
+   526→.landing-floating-icon.gold {
+   527→  color: #8b681f;
+   528→  background: var(--gold-bg);
+   529→}
+   530→
+   531→.landing-categories {
+   532→  padding: 16px 0 28px;
+   533→}
+   534→
+   535→.landing-category-grid {
+   536→  display: grid;
+   537→  grid-template-columns: repeat(3,minmax(0,1fr));
+   538→  gap: 14px;
+   539→}
+   540→
+   541→.landing-category-card {
+   542→  display: flex;
+   543→  align-items: center;
+   544→  gap: 15px;
+   545→  padding: 19px;
+   546→  border: 1px solid var(--sand-150);
+   547→  border-radius: 22px;
+   548→  background: #fff;
+   549→  box-shadow: 0 2px 10px rgba(46,54,34,.035);
+   550→}
+   551→
+   552→.landing-category-icon {
+   553→  width: 52px;
+   554→  height: 52px;
+   555→  display: grid;
+   556→  place-items: center;
+   557→  flex: 0 0 52px;
+   558→  border-radius: 16px;
+   559→  color: var(--olive-700);
+   560→  background: var(--olive-100);
+   561→}
+   562→
+   563→.landing-category-card small {
+   564→  display: block;
+   565→  color: var(--olive-600);
+   566→  font-size: 10.5px;
+   567→  font-weight: 700;
+   568→}
+   569→
+   570→.landing-category-card strong {
+   571→  display: block;
+   572→  margin-top: 3px;
+   573→  font-size: 15px;
+   574→  font-weight: 800;
+   575→}
+   576→
+   577→.landing-category-card p {
+   578→  margin: 5px 0 0;
+   579→  color: var(--ink-3);
+   580→  font-size: 11.5px;
+   581→  line-height: 1.8;
+   582→}
+   583→
+   584→.landing-category-arrow {
+   585→  width: 36px;
+   586→  height: 36px;
+   587→  display: grid;
+   588→  place-items: center;
+   589→  flex: 0 0 36px;
+   590→  border-radius: 12px;
+   591→  color: var(--olive-600);
+   592→  background: var(--sand-50);
+   593→}
+   594→
+   595→.landing-section {
+   596→  padding: 82px 0;
+   597→}
+   598→
+   599→.landing-how {
+   600→  border-block: 1px solid var(--sand-150);
+   601→  background: var(--surface-warm);
+   602→}
+   603→
+   604→.landing-steps {
+   605→  display: grid;
+   606→  grid-template-columns: repeat(3,minmax(0,1fr));
+   607→  gap: 16px;
+   608→  margin-top: 38px;
+   609→}
+   610→
+   611→.landing-step-card {
+   612→  position: relative;
+   613→  min-height: 228px;
+   614→  padding: 23px;
+   615→  border: 1px solid var(--sand-150);
+   616→  border-radius: 22px;
+   617→  background: #fff;
+   618→}
+   619→
+   620→.landing-step-number {
+   621→  position: absolute;
+   622→  inset-inline-end: 18px;
+   623→  top: 18px;
+   624→  color: var(--sand-200);
+   625→  font-size: 38px;
+   626→  font-weight: 900;
+   627→  line-height: 1;
+   628→}
+   629→
+   630→.landing-step-icon {
+   631→  width: 46px;
+   632→  height: 46px;
+   633→  display: grid;
+   634→  place-items: center;
+   635→  border-radius: 14px;
+   636→  color: var(--olive-700);
+   637→  background: var(--olive-100);
+   638→}
+   639→
+   640→.landing-step-card h3 {
+   641→  margin: 21px 0 8px;
+   642→  font-size: 16px;
+   643→  font-weight: 800;
+   644→}
+   645→
+   646→.landing-step-card p {
+   647→  margin: 0;
+   648→  color: var(--ink-3);
+   649→  font-size: 13px;
+   650→  line-height: 1.9;
+   651→}
+   652→
+   653→.landing-section-head {
+   654→  display: flex;
+   655→  align-items: flex-end;
+   656→  justify-content: space-between;
+   657→  gap: 24px;
+   658→  margin-bottom: 34px;
+   659→}
+   660→
+   661→.landing-teacher-grid {
+   662→  display: grid;
+   663→  grid-template-columns: repeat(3,minmax(0,1fr));
+   664→  gap: 16px;
+   665→  min-width: 0;
+   666→}
+   667→
+   668→.landing-teacher-card {
+   669→  display: grid;
+   670→  gap: 13px;
+   671→  width: 100%;
+   672→  min-width: 0;
+   673→  padding: 17px;
+   674→  border: 1px solid var(--sand-150);
+   675→  border-radius: 24px;
+   676→  background: #fff;
+   677→  box-shadow: 0 3px 12px rgba(46,54,34,.04);
+   678→}
+   679→
+   680→.landing-teacher-card > * {
+   681→  min-width: 0;
+   682→}
+   683→
+   684→.landing-teacher-name {
+   685→  display: block;
+   686→  overflow: hidden;
+   687→  color: var(--ink);
+   688→  font-size: 14.5px;
+   689→  font-weight: 800;
+   690→  text-overflow: ellipsis;
+   691→  white-space: nowrap;
+   692→}
+   693→
+   694→.landing-teacher-tag {
+   695→  display: block;
+   696→  overflow: hidden;
+   697→  margin-top: 2px;
+   698→  color: var(--olive-600);
+   699→  font-size: 11.5px;
+   700→  font-weight: 600;
+   701→  text-overflow: ellipsis;
+   702→  white-space: nowrap;
+   703→}
+   704→
+   705→.landing-teacher-rating {
+   706→  display: inline-flex;
+   707→  align-items: center;
+   708→  gap: 3px;
+   709→  color: var(--gold);
+   710→  font-size: 12px;
+   711→  font-weight: 800;
+   712→}
+   713→
+   714→.landing-teacher-meta {
+   715→  display: flex;
+   716→  flex-wrap: wrap;
+   717→  gap: 7px 12px;
+   718→  color: var(--ink-3);
+   719→  font-size: 10.5px;
+   720→}
+   721→
+   722→.landing-teacher-meta span {
+   723→  display: inline-flex;
+   724→  align-items: center;
+   725→  min-width: 0;
+   726→  max-width: 100%;
+   727→  gap: 3px;
+   728→}
+   729→
+   730→.landing-teacher-bio {
+   731→  display: -webkit-box;
+   732→  min-height: 45px;
+   733→  min-width: 0;
+   734→  margin: 0;
+   735→  overflow: hidden;
+   736→  overflow-wrap: anywhere;
+   737→  color: var(--ink-3);
+   738→  font-size: 11.5px;
+   739→  line-height: 1.9;
+   740→  white-space: pre-line;
+   741→  -webkit-box-orient: vertical;
+   742→  -webkit-line-clamp: 2;
+   743→}
+   744→
+   745→.landing-teacher-footer {
+   746→  display: flex;
+   747→  flex-wrap: wrap;
+   748→  align-items: flex-end;
+   749→  justify-content: space-between;
+   750→  min-width: 0;
+   751→  gap: 10px;
+   752→  padding-top: 13px;
+   753→  border-top: 1px solid var(--sand-100);
+   754→}
+   755→
+   756→.landing-teacher-footer > * {
+   757→  min-width: 0;
+   758→  max-width: 100%;
+   759→}
+   760→
+   761→.landing-teacher-footer small {
+   762→  display: block;
+   763→  color: var(--ink-4);
+   764→  font-size: 9px;
+   765→}
+   766→
+   767→.landing-teacher-footer strong {
+   768→  display: block;
+   769→  margin-top: 2px;
+   770→  font-size: 12px;
+   771→  font-weight: 800;
+   772→}
+   773→
+   774→.landing-empty-state {
+   775→  display: grid;
+   776→  justify-items: center;
+   777→  gap: 8px;
+   778→  padding: 45px 20px;
+   779→  border: 1px dashed var(--sand-200);
+   780→  border-radius: 24px;
+   781→  text-align: center;
+   782→  background: #fff;
+   783→}
+   784→
+   785→.landing-empty-state > span {
+   786→  width: 54px;
+   787→  height: 54px;
+   788→  display: grid;
+   789→  place-items: center;
+   790→  border-radius: 17px;
+   791→  color: var(--olive-700);
+   792→  background: var(--olive-100);
+   793→}
+   794→
+   795→.landing-empty-state strong {
+   796→  font-size: 14px;
+   797→}
+   798→
+   799→.landing-empty-state p {
+   800→  margin: 0;
+   801→  color: var(--ink-3);
+   802→  font-size: 12.5px;
+   803→}
+   804→
+   805→.landing-proof {
+   806→  position: relative;
+   807→  overflow: hidden;
+   808→  padding: 82px 0;
+   809→  color: #fff;
+   810→  background: var(--olive-900);
+   811→}
+   812→
+   813→.landing-proof-grid {
+   814→  position: relative;
+   815→  display: grid;
+   816→  grid-template-columns: .8fr 1.2fr;
+   817→  align-items: center;
+   818→  gap: 64px;
+   819→}
+   820→
+   821→.landing-proof-kicker {
+   822→  display: inline-flex;
+   823→  margin-bottom: 13px;
+   824→  color: var(--gold-soft);
+   825→  font-size: 12px;
+   826→  font-weight: 800;
+   827→}
+   828→
+   829→.landing-proof h2 {
+   830→  margin: 0;
+   831→  font-size: clamp(29px,4vw,40px);
+   832→  line-height: 1.55;
+   833→  font-weight: 800;
+   834→}
+   835→
+   836→.landing-proof-grid > div:first-child > p {
+   837→  margin: 14px 0 24px;
+   838→  color: rgba(255,255,255,.7);
+   839→  font-size: 14px;
+   840→  line-height: 2;
+   841→}
+   842→
+   843→.landing-proof-cards {
+   844→  display: grid;
+   845→  grid-template-columns: repeat(2,minmax(0,1fr));
+   846→  gap: 12px;
+   847→}
+   848→
+   849→.landing-proof-cards article {
+   850→  min-height: 168px;
+   851→  padding: 18px;
+   852→  border: 1px solid rgba(255,255,255,.08);
+   853→  border-radius: 20px;
+   854→  background: rgba(255,255,255,.055);
+   855→}
+   856→
+   857→.landing-proof-cards article > span {
+   858→  width: 42px;
+   859→  height: 42px;
+   860→  display: grid;
+   861→  place-items: center;
+   862→  border-radius: 13px;
+   863→  color: var(--gold-soft);
+   864→  background: rgba(255,255,255,.07);
+   865→}
+   866→
+   867→.landing-proof-cards strong {
+   868→  display: block;
+   869→  margin-top: 15px;
+   870→  font-size: 14px;
+   871→}
+   872→
+   873→.landing-proof-cards p {
+   874→  margin: 7px 0 0;
+   875→  color: rgba(255,255,255,.62);
+   876→  font-size: 11.5px;
+   877→  line-height: 1.9;
+   878→}
+   879→
+   880→.landing-teacher-cta {
+   881→  display: grid;
+   882→  grid-template-columns: .9fr 1.1fr;
+   883→  align-items: center;
+   884→  gap: 56px;
+   885→  padding: 48px;
+   886→  border: 1px solid var(--sand-150);
+   887→  border-radius: 30px;
+   888→  background: linear-gradient(135deg,#fff 0%,var(--olive-50) 100%);
+   889→}
+   890→
+   891→.landing-teacher-cta-copy h2 {
+   892→  max-width: 520px;
+   893→  margin: 0;
+   894→  font-size: clamp(29px,4vw,42px);
+   895→  line-height: 1.5;
+   896→  font-weight: 800;
+   897→}
+   898→
+   899→.landing-teacher-cta-copy > p {
+   900→  max-width: 560px;
+   901→  margin: 14px 0 25px;
+   902→  color: var(--ink-2s);
+   903→  font-size: 14.5px;
+   904→  line-height: 2;
+   905→}
+   906→
+   907→.teacher-preview-card {
+   908→  max-width: 430px;
+   909→  width: 100%;
+   910→  justify-self: end;
+   911→  padding: 18px;
+   912→  border: 1px solid var(--sand-150);
+   913→  border-radius: 24px;
+   914→  background: var(--sand-50);
+   915→  box-shadow: var(--sh-md);
+   916→}
+   917→
+   918→.teacher-preview-wallet {
+   919→  margin-top: 15px;
+   920→  padding: 19px;
+   921→  border-radius: 22px;
+   922→  color: #fff;
+   923→  background: linear-gradient(145deg,var(--olive-800),var(--olive-600));
+   924→}
+   925→
+   926→.teacher-preview-wallet > small {
+   927→  color: rgba(255,255,255,.68);
+   928→  font-size: 10px;
+   929→}
+   930→
+   931→.teacher-preview-wallet > strong {
+   932→  display: block;
+   933→  margin-top: 4px;
+   934→  font-size: 21px;
+   935→}
+   936→
+   937→.teacher-preview-wallet > strong span {
+   938→  color: rgba(255,255,255,.65);
+   939→  font-size: 10px;
+   940→  font-weight: 600;
+   941→}
+   942→
+   943→.teacher-preview-wallet > div {
+   944→  display: grid;
+   945→  grid-template-columns: 1fr 1px 1fr 1px 1fr;
+   946→  align-items: center;
+   947→  margin-top: 15px;
+   948→}
+   949→
+   950→.teacher-preview-wallet > div > span {
+   951→  display: grid;
+   952→  gap: 3px;
+   953→  justify-items: center;
+   954→  color: rgba(255,255,255,.6);
+   955→  font-size: 8.5px;
+   956→}
+   957→
+   958→.teacher-preview-wallet > div strong {
+   959→  color: #fff;
+   960→  font-size: 10.5px;
+   961→}
+   962→
+   963→.teacher-preview-wallet > div i {
+   964→  width: 1px;
+   965→  height: 28px;
+   966→  background: rgba(255,255,255,.2);
+   967→}
+   968→
+   969→.teacher-preview-actions {
+   970→  display: grid;
+   971→  grid-template-columns: repeat(2,minmax(0,1fr));
+   972→  gap: 8px;
+   973→  margin-top: 12px;
+   974→}
+   975→
+   976→.teacher-preview-actions span {
+   977→  min-height: 52px;
+   978→  display: flex;
+   979→  align-items: center;
+   980→  gap: 8px;
+   981→  padding: 11px;
+   982→  border-radius: 14px;
+   983→  color: var(--ink-2s);
+   984→  background: #fff;
+   985→  font-size: 10.5px;
+   986→  font-weight: 700;
+   987→}
+   988→
+   989→.teacher-preview-actions svg {
+   990→  color: var(--olive-600);
+   991→}
+   992→
+   993→.landing-app-cta {
+   994→  padding: 0 0 82px;
+   995→}
+   996→
+   997→.landing-app-cta-inner {
+   998→  display: flex;
+   999→  align-items: center;
+  1000→  gap: 15px;
+  1001→  padding: 22px 24px;
+  1002→  border: 1px solid var(--sand-150);
+  1003→  border-radius: 22px;
+  1004→  background: #fff;
+  1005→}
+  1006→
+  1007→.landing-app-cta-icon {
+  1008→  width: 52px;
+  1009→  height: 52px;
+  1010→  display: grid;
+  1011→  place-items: center;
+  1012→  flex: 0 0 52px;
+  1013→  border-radius: 16px;
+  1014→  color: var(--olive-700);
+  1015→  background: var(--olive-100);
+  1016→}
+  1017→
+  1018→.landing-app-cta strong {
+  1019→  display: block;
+  1020→  font-size: 15px;
+  1021→}
+  1022→
+  1023→.landing-app-cta p {
+  1024→  margin: 4px 0 0;
+  1025→  color: var(--ink-3);
+  1026→  font-size: 11.5px;
+  1027→}
+  1028→
+  1029→.public-footer {
+  1030→  padding: 58px 0 22px;
+  1031→  color: rgba(255,255,255,.72);
+  1032→  background: var(--olive-900);
+  1033→}
+  1034→
+  1035→.public-footer-grid {
+  1036→  display: grid;
+  1037→  grid-template-columns: 1.7fr repeat(3,1fr);
+  1038→  gap: 42px;
+  1039→}
+  1040→
+  1041→.public-footer-brand p {
+  1042→  max-width: 330px;
+  1043→  margin: 16px 0 0;
+  1044→  color: rgba(255,255,255,.55);
+  1045→  font-size: 12.5px;
+  1046→  line-height: 1.95;
+  1047→}
+  1048→
+  1049→.public-footer-brand small {
+  1050→  color: rgba(255,255,255,.5);
+  1051→  font-size: 9px;
+  1052→}
+  1053→
+  1054→.public-footer-column {
+  1055→  display: grid;
+  1056→  align-content: start;
+  1057→  gap: 10px;
+  1058→}
+  1059→
+  1060→.public-footer-column strong {
+  1061→  margin-bottom: 4px;
+  1062→  color: #fff;
+  1063→  font-size: 12.5px;
+  1064→}
+  1065→
+  1066→.public-footer-column a {
+  1067→  color: rgba(255,255,255,.58);
+  1068→  font-size: 11.5px;
+  1069→}
+  1070→
+  1071→.public-footer-column a:hover {
+  1072→  color: #fff;
+  1073→}
+  1074→
+  1075→.public-footer-bottom {
+  1076→  display: flex;
+  1077→  justify-content: space-between;
+  1078→  gap: 20px;
+  1079→  margin-top: 42px;
+  1080→  padding-top: 18px;
+  1081→  border-top: 1px solid rgba(255,255,255,.08);
+  1082→  color: rgba(255,255,255,.4);
+  1083→  font-size: 10.5px;
+  1084→}
+  1085→
+  1086→
+  1087→.public-content {
+  1088→  padding-block: 64px 82px;
+  1089→}
+  1090→
+  1091→.about-story-grid {
+  1092→  display: grid;
+  1093→  grid-template-columns: minmax(0,1.1fr) minmax(320px,.9fr);
+  1094→  align-items: center;
+  1095→  gap: 54px;
+  1096→}
+  1097→
+  1098→.public-lead {
+  1099→  max-width: 700px;
+  1100→  margin: 16px 0 0;
+  1101→  color: var(--ink-2s);
+  1102→  font-size: 14.5px;
+  1103→  line-height: 2.05;
+  1104→}
+  1105→
+  1106→.about-scope-header {
+  1107→  display: flex;
+  1108→  align-items: center;
+  1109→  gap: 11px;
+  1110→  padding-bottom: 16px;
+  1111→  border-bottom: 1px solid var(--sand-100);
+  1112→}
+  1113→
+  1114→.about-scope-header > span {
+  1115→  width: 42px;
+  1116→  height: 42px;
+  1117→  display: grid;
+  1118→  place-items: center;
+  1119→  flex: 0 0 42px;
+  1120→  border-radius: 13px;
+  1121→  color: var(--olive-700);
+  1122→  background: var(--olive-100);
+  1123→}
+  1124→
+  1125→.about-scope-header strong {
+  1126→  display: block;
+  1127→  font-size: 14px;
+  1128→}
+  1129→
+  1130→.about-scope-header p {
+  1131→  margin: 3px 0 0;
+  1132→  color: var(--ink-3);
+  1133→  font-size: 11px;
+  1134→}
+  1135→
+  1136→.about-scope-list {
+  1137→  display: grid;
+  1138→  gap: 10px;
+  1139→  margin-top: 16px;
+  1140→}
+  1141→
+  1142→.about-scope-list span {
+  1143→  display: flex;
+  1144→  align-items: center;
+  1145→  gap: 9px;
+  1146→  min-height: 42px;
+  1147→  padding: 10px 12px;
+  1148→  border-radius: 12px;
+  1149→  color: var(--ink-2s);
+  1150→  background: var(--sand-50);
+  1151→  font-size: 12px;
+  1152→  font-weight: 600;
+  1153→}
+  1154→
+  1155→.about-scope-list svg {
+  1156→  color: var(--olive-600);
+  1157→}
+  1158→
+  1159→.public-principles-grid {
+  1160→  display: grid;
+  1161→  grid-template-columns: repeat(4,minmax(0,1fr));
+  1162→  gap: 14px;
+  1163→  margin-top: 34px;
+  1164→}
+  1165→
+  1166→.public-principle-icon {
+  1167→  width: 46px;
+  1168→  height: 46px;
+  1169→  display: grid;
+  1170→  place-items: center;
+  1171→  border-radius: 14px;
+  1172→  color: var(--olive-700);
+  1173→  background: var(--olive-100);
+  1174→}
+  1175→
+  1176→.public-principles-grid h3 {
+  1177→  margin: 16px 0 6px;
+  1178→  font-size: 14px;
+  1179→  font-weight: 800;
+  1180→}
+  1181→
+  1182→.public-principles-grid p {
+  1183→  margin: 0;
+  1184→  color: var(--ink-3);
+  1185→  font-size: 11.5px;
+  1186→  line-height: 1.9;
+  1187→}
+  1188→
+  1189→.public-inline-cta {
+  1190→  display: flex;
+  1191→  align-items: center;
+  1192→  justify-content: space-between;
+  1193→  gap: 22px;
+  1194→  margin-top: 64px;
+  1195→  padding: 22px 24px;
+  1196→  border: 1px solid var(--olive-100);
+  1197→  border-radius: 22px;
+  1198→  background: var(--olive-50);
+  1199→}
+  1200→
+  1201→.public-inline-cta small {
+  1202→  display: block;
+  1203→  color: var(--olive-700);
+  1204→  font-size: 10.5px;
+  1205→  font-weight: 800;
+  1206→}
+  1207→
+  1208→.public-inline-cta strong {
+  1209→  display: block;
+  1210→  margin-top: 4px;
+  1211→  font-size: 14px;
+  1212→}
+  1213→
+  1214→.faq-layout {
+  1215→  display: grid;
+  1216→  grid-template-columns: 260px minmax(0,1fr);
+  1217→  align-items: start;
+  1218→  gap: 30px;
+  1219→}
+  1220→
+  1221→.faq-side-card,
+  1222→.legal-side {
+  1223→  position: sticky;
+  1224→  top: 98px;
+  1225→  padding: 20px;
+  1226→  border: 1px solid var(--sand-150);
+  1227→  border-radius: 22px;
+  1228→  background: #fff;
+  1229→}
+  1230→
+  1231→.faq-side-card > strong,
+  1232→.legal-side > strong {
+  1233→  display: block;
+  1234→  margin-top: 14px;
+  1235→  font-size: 14px;
+  1236→}
+  1237→
+  1238→.faq-side-card > p,
+  1239→.legal-side > p {
+  1240→  margin: 7px 0 16px;
+  1241→  color: var(--ink-3);
+  1242→  font-size: 11.5px;
+  1243→  line-height: 1.9;
+  1244→}
+  1245→
+  1246→.faq-list {
+  1247→  display: grid;
+  1248→  gap: 10px;
+  1249→}
+  1250→
+  1251→.faq-item {
+  1252→  overflow: hidden;
+  1253→  border: 1px solid var(--sand-150);
+  1254→  border-radius: 18px;
+  1255→  background: #fff;
+  1256→}
+  1257→
+  1258→.faq-item.open {
+  1259→  border-color: var(--olive-200);
+  1260→}
+  1261→
+  1262→.faq-item > button {
+  1263→  width: 100%;
+  1264→  min-height: 62px;
+  1265→  display: flex;
+  1266→  align-items: center;
+  1267→  gap: 11px;
+  1268→  padding: 14px 16px;
+  1269→  border: 0;
+  1270→  color: var(--ink);
+  1271→  background: transparent;
+  1272→  text-align: right;
+  1273→  font-size: 13.5px;
+  1274→  font-weight: 700;
+  1275→  cursor: pointer;
+  1276→}
+  1277→
+  1278→.faq-question-index {
+  1279→  width: 31px;
+  1280→  height: 31px;
+  1281→  display: grid;
+  1282→  place-items: center;
+  1283→  flex: 0 0 31px;
+  1284→  border-radius: 10px;
+  1285→  color: var(--olive-700);
+  1286→  background: var(--olive-50);
+  1287→  font-size: 11px;
+  1288→  font-weight: 800;
+  1289→}
+  1290→
+  1291→.faq-chevron {
+  1292→  width: 30px;
+  1293→  height: 30px;
+  1294→  display: grid;
+  1295→  place-items: center;
+  1296→  flex: 0 0 30px;
+  1297→  border-radius: 10px;
+  1298→  color: var(--ink-3);
+  1299→  background: var(--sand-50);
+  1300→  transition: transform .18s ease;
+  1301→}
+  1302→
+  1303→.faq-item:not(.open) .faq-chevron {
+  1304→  transform: rotate(180deg);
+  1305→}
+  1306→
+  1307→.faq-answer {
+  1308→  padding: 0 58px 17px 16px;
+  1309→  color: var(--ink-3);
+  1310→  font-size: 12.5px;
+  1311→  line-height: 2;
+  1312→}
+  1313→
+  1314→.contact-layout {
+  1315→  display: grid;
+  1316→  grid-template-columns: minmax(260px,.72fr) minmax(0,1.28fr);
+  1317→  align-items: start;
+  1318→  gap: 22px;
+  1319→}
+  1320→
+  1321→.contact-info-column {
+  1322→  display: grid;
+  1323→  gap: 12px;
+  1324→}
+  1325→
+  1326→.contact-info-icon {
+  1327→  width: 46px;
+  1328→  height: 46px;
+  1329→  display: grid;
+  1330→  place-items: center;
+  1331→  margin-bottom: 14px;
+  1332→  border-radius: 14px;
+  1333→  color: #8b681f;
+  1334→  background: var(--gold-bg);
+  1335→}
+  1336→
+  1337→.contact-info-icon.olive {
+  1338→  color: var(--olive-700);
+  1339→  background: var(--olive-100);
+  1340→}
+  1341→
+  1342→.contact-info-column small {
+  1343→  display: block;
+  1344→  color: var(--ink-3);
+  1345→  font-size: 10.5px;
+  1346→}
+  1347→
+  1348→.contact-info-column strong {
+  1349→  display: block;
+  1350→  margin-top: 3px;
+  1351→  font-size: 14px;
+  1352→}
+  1353→
+  1354→.contact-info-column p {
+  1355→  margin: 9px 0 0;
+  1356→  color: var(--ink-3);
+  1357→  font-size: 11.5px;
+  1358→  line-height: 1.9;
+  1359→}
+  1360→
+  1361→.contact-email-link {
+  1362→  display: inline-flex;
+  1363→  align-items: center;
+  1364→  gap: 5px;
+  1365→  margin-top: 13px;
+  1366→  color: var(--olive-700);
+  1367→  font-size: 11.5px;
+  1368→  font-weight: 700;
+  1369→}
+  1370→
+  1371→.contact-note {
+  1372→  display: flex;
+  1373→  align-items: flex-start;
+  1374→  gap: 8px;
+  1375→  padding: 13px;
+  1376→  border-radius: 14px;
+  1377→  color: var(--ink-3);
+  1378→  background: var(--sand-100);
+  1379→  font-size: 10.5px;
+  1380→  line-height: 1.8;
+  1381→}
+  1382→
+  1383→.contact-note svg {
+  1384→  flex: 0 0 auto;
+  1385→  margin-top: 1px;
+  1386→  color: var(--olive-600);
+  1387→}
+  1388→
+  1389→.contact-form-heading {
+  1390→  display: flex;
+  1391→  align-items: center;
+  1392→  gap: 11px;
+  1393→  padding-bottom: 17px;
+  1394→  border-bottom: 1px solid var(--sand-100);
+  1395→}
+  1396→
+  1397→.contact-form-heading > span {
+  1398→  width: 42px;
+  1399→  height: 42px;
+  1400→  display: grid;
+  1401→  place-items: center;
+  1402→  flex: 0 0 42px;
+  1403→  border-radius: 13px;
+  1404→  color: var(--olive-700);
+  1405→  background: var(--olive-100);
+  1406→}
+  1407→
+  1408→.contact-form-heading strong {
+  1409→  display: block;
+  1410→  font-size: 14px;
+  1411→}
+  1412→
+  1413→.contact-form-heading p {
+  1414→  margin: 3px 0 0;
+  1415→  color: var(--ink-3);
+  1416→  font-size: 10.5px;
+  1417→}
+  1418→
+  1419→.contact-form {
+  1420→  display: grid;
+  1421→  gap: 14px;
+  1422→  margin-top: 18px;
+  1423→}
+  1424→
+  1425→.contact-form label {
+  1426→  display: grid;
+  1427→  gap: 6px;
+  1428→}
+  1429→
+  1430→.contact-form label > span {
+  1431→  color: var(--ink-2s);
+  1432→  font-size: 11.5px;
+  1433→  font-weight: 700;
+  1434→}
+  1435→
+  1436→.contact-form input:focus,
+  1437→.contact-form textarea:focus {
+  1438→  border-color: var(--olive-500) !important;
+  1439→}
+  1440→
+  1441→.contact-form-message {
+  1442→  display: flex;
+  1443→  align-items: flex-start;
+  1444→  gap: 7px;
+  1445→  padding: 11px 12px;
+  1446→  border-radius: 12px;
+  1447→  font-size: 11.5px;
+  1448→  line-height: 1.8;
+  1449→}
+  1450→
+  1451→.contact-form-message.error {
+  1452→  color: var(--rose);
+  1453→  background: #faeeee;
+  1454→}
+  1455→
+  1456→.contact-form-message.success {
+  1457→  color: var(--olive-700);
+  1458→  background: var(--olive-50);
+  1459→}
+  1460→
+  1461→.contact-submit {
+  1462→  min-height: 50px;
+  1463→  display: inline-flex;
+  1464→  align-items: center;
+  1465→  justify-content: center;
+  1466→  gap: 7px;
+  1467→  border: 0;
+  1468→  border-radius: 14px;
+  1469→  color: #fff;
+  1470→  background: var(--olive-600);
+  1471→  font-size: 14px;
+  1472→  font-weight: 700;
+  1473→  cursor: pointer;
+  1474→}
+  1475→
+  1476→.contact-submit:disabled {
+  1477→  opacity: .55;
+  1478→  cursor: wait;
+  1479→}
+  1480→
+  1481→.legal-layout {
+  1482→  display: grid;
+  1483→  grid-template-columns: 250px minmax(0,1fr);
+  1484→  align-items: start;
+  1485→  gap: 30px;
+  1486→}
+  1487→
+  1488→.legal-side-meta {
+  1489→  display: grid;
+  1490→  gap: 7px;
+  1491→  padding-top: 14px;
+  1492→  border-top: 1px solid var(--sand-100);
+  1493→}
+  1494→
+  1495→.legal-side-meta span {
+  1496→  display: flex;
+  1497→  align-items: center;
+  1498→  gap: 6px;
+  1499→  color: var(--ink-3);
+  1500→  font-size: 10.5px;
+  1501→}
+  1502→
+  1503→.legal-side-meta svg {
+  1504→  color: var(--olive-600);
+  1505→}
+  1506→
+  1507→.legal-document {
+  1508→  overflow: hidden;
+  1509→  border: 1px solid var(--sand-150);
+  1510→  border-radius: 24px;
+  1511→  background: #fff;
+  1512→}
+  1513→
+  1514→.legal-section {
+  1515→  display: grid;
+  1516→  grid-template-columns: 40px minmax(0,1fr);
+  1517→  gap: 14px;
+  1518→  padding: 24px;
+  1519→}
+  1520→
+  1521→.legal-section + .legal-section {
+  1522→  border-top: 1px solid var(--sand-100);
+  1523→}
+  1524→
+  1525→.legal-index {
+  1526→  width: 34px;
+  1527→  height: 34px;
+  1528→  display: grid;
+  1529→  place-items: center;
+  1530→  border-radius: 11px;
+  1531→  color: var(--olive-700);
+  1532→  background: var(--olive-50);
+  1533→  font-size: 11px;
+  1534→  font-weight: 800;
+  1535→}
+  1536→
+  1537→.legal-section h2 {
+  1538→  margin: 3px 0 8px;
+  1539→  font-size: 15px;
+  1540→  font-weight: 800;
+  1541→}
+  1542→
+  1543→.legal-section p {
+  1544→  margin: 0;
+  1545→  color: var(--ink-3);
+  1546→  font-size: 12.5px;
+  1547→  line-height: 2.05;
+  1548→}
+  1549→
+  1550→.blog-featured {
+  1551→  display: flex;
+  1552→  align-items: center;
+  1553→  gap: 14px;
+  1554→  margin-bottom: 24px;
+  1555→  padding: 20px;
+  1556→  border: 1px solid var(--olive-100);
+  1557→  border-radius: 22px;
+  1558→  background: var(--olive-50);
+  1559→}
+  1560→
+  1561→.blog-featured-icon {
+  1562→  width: 48px;
+  1563→  height: 48px;
+  1564→  display: grid;
+  1565→  place-items: center;
+  1566→  flex: 0 0 48px;
+  1567→  border-radius: 15px;
+  1568→  color: var(--olive-700);
+  1569→  background: #fff;
+  1570→}
+  1571→
+  1572→.blog-featured small {
+  1573→  color: var(--olive-700);
+  1574→  font-size: 10px;
+  1575→  font-weight: 700;
+  1576→}
+  1577→
+  1578→.blog-featured strong {
+  1579→  display: block;
+  1580→  margin-top: 2px;
+  1581→  font-size: 14px;
+  1582→}
+  1583→
+  1584→.blog-featured p {
+  1585→  margin: 5px 0 0;
+  1586→  color: var(--ink-3);
+  1587→  font-size: 11.5px;
+  1588→  line-height: 1.8;
+  1589→}
+  1590→
+  1591→.blog-grid {
+  1592→  display: grid;
+  1593→  grid-template-columns: repeat(3,minmax(0,1fr));
+  1594→  gap: 14px;
+  1595→}
+  1596→
+  1597→.blog-card {
+  1598→  overflow: hidden;
+  1599→  border: 1px solid var(--sand-150);
+  1600→  border-radius: 22px;
+  1601→  background: #fff;
+  1602→}
+  1603→
+  1604→.blog-card-visual {
+  1605→  min-height: 142px;
+  1606→  display: grid;
+  1607→  place-items: center;
+  1608→  background:
+  1609→    radial-gradient(circle at 75% 25%, var(--olive-100), transparent 34%),
+  1610→    linear-gradient(145deg,var(--sand-100),var(--surface-warm));
+  1611→}
+  1612→
+  1613→.blog-card-visual span {
+  1614→  width: 64px;
+  1615→  height: 64px;
+  1616→  display: grid;
+  1617→  place-items: center;
+  1618→  border-radius: 20px;
+  1619→  color: var(--olive-700);
+  1620→  background: rgba(255,255,255,.84);
+  1621→}
+  1622→
+  1623→.blog-card-body {
+  1624→  padding: 17px;
+  1625→}
+  1626→
+  1627→.blog-card-meta {
+  1628→  display: flex;
+  1629→  align-items: center;
+  1630→  justify-content: space-between;
+  1631→  gap: 8px;
+  1632→}
+  1633→
+  1634→.blog-card-meta span {
+  1635→  padding: 3px 8px;
+  1636→  border-radius: 999px;
+  1637→  color: var(--olive-700);
+  1638→  background: var(--olive-50);
+  1639→  font-size: 9.5px;
+  1640→  font-weight: 700;
+  1641→}
+  1642→
+  1643→.blog-card-meta time {
+  1644→  color: var(--ink-4);
+  1645→  font-size: 9.5px;
+  1646→}
+  1647→
+  1648→.blog-card h2 {
+  1649→  margin: 13px 0 7px;
+  1650→  font-size: 14.5px;
+  1651→  line-height: 1.7;
+  1652→  font-weight: 800;
+  1653→}
+  1654→
+  1655→.blog-card p {
+  1656→  margin: 0;
+  1657→  color: var(--ink-3);
+  1658→  font-size: 11.5px;
+  1659→  line-height: 1.9;
+  1660→}
+  1661→
+  1662→.blog-card-action {
+  1663→  display: inline-flex;
+  1664→  align-items: center;
+  1665→  gap: 4px;
+  1666→  margin-top: 13px;
+  1667→  color: var(--olive-700);
+  1668→  font-size: 10.5px;
+  1669→  font-weight: 700;
+  1670→}
+  1671→
+  1672→a.blog-card {
+  1673→  transition: transform .18s ease, box-shadow .18s ease;
+  1674→}
+  1675→
+  1676→a.blog-card:hover {
+  1677→  transform: translateY(-3px);
+  1678→  box-shadow: 0 14px 32px rgba(46, 54, 34, .1);
+  1679→}
+  1680→
+  1681→a.blog-card:hover .blog-card-action {
+  1682→  text-decoration: underline;
+  1683→}
+  1684→
+  1685→.blog-cats {
+  1686→  display: flex;
+  1687→  flex-wrap: wrap;
+  1688→  gap: 8px;
+  1689→  margin-bottom: 22px;
+  1690→}
+  1691→
+  1692→.blog-cat {
+  1693→  padding: 7px 14px;
+  1694→  border: 1px solid var(--sand-150);
+  1695→  border-radius: 999px;
+  1696→  color: var(--ink-3);
+  1697→  background: #fff;
+  1698→  font-size: 11px;
+  1699→  font-weight: 700;
+  1700→  transition: color .15s, border-color .15s, background .15s;
+  1701→}
+  1702→
+  1703→.blog-cat:hover {
+  1704→  color: var(--olive-700);
+  1705→  border-color: var(--olive-300, #b8c68f);
+  1706→}
+  1707→
+  1708→.blog-cat[data-active='true'] {
+  1709→  color: #fff;
+  1710→  border-color: var(--olive-600, #7e8e56);
+  1711→  background: var(--olive-600, #7e8e56);
+  1712→}
+  1713→
+  1714→.blog-empty {
+  1715→  display: grid;
+  1716→  justify-items: center;
+  1717→  gap: 8px;
+  1718→  padding: 52px 20px;
+  1719→  border: 1px dashed var(--sand-150);
+  1720→  border-radius: 22px;
+  1721→  background: #fff;
+  1722→  text-align: center;
+  1723→}
+  1724→
+  1725→.blog-empty span > svg {
+  1726→  color: var(--ink-4);
+  1727→}
+  1728→
+  1729→.blog-empty strong {
+  1730→  font-size: 14px;
+  1731→}
+  1732→
+  1733→.blog-empty p {
+  1734→  max-width: 380px;
+  1735→  margin: 0;
+  1736→  color: var(--ink-3);
+  1737→  font-size: 11.5px;
+  1738→  line-height: 1.9;
+  1739→}
+  1740→
+  1741→.blog-empty .ops-button {
+  1742→  margin-top: 8px;
+  1743→}
+  1744→
+  1745→/* ── Blog article page ── */
+  1746→
+  1747→.blog-article {
+  1748→  padding: 26px 4px;
+  1749→}
+  1750→
+  1751→.blog-article-cat {
+  1752→  display: inline-block;
+  1753→  padding: 4px 11px;
+  1754→  border-radius: 999px;
+  1755→  color: var(--olive-700);
+  1756→  background: var(--olive-50);
+  1757→  font-size: 10px;
+  1758→  font-weight: 800;
+  1759→}
+  1760→
+  1761→.blog-article h1 {
+  1762→  margin: 13px 0 12px;
+  1763→  font-size: 23px;
+  1764→  line-height: 1.65;
+  1765→  font-weight: 800;
+  1766→}
+  1767→
+  1768→.blog-article-meta {
+  1769→  display: flex;
+  1770→  flex-wrap: wrap;
+  1771→  gap: 16px;
+  1772→  padding-bottom: 17px;
+  1773→  border-bottom: 1px solid var(--sand-100);
+  1774→  color: var(--ink-3);
+  1775→  font-size: 11px;
+  1776→}
+  1777→
+  1778→.blog-article-meta span {
+  1779→  display: inline-flex;
+  1780→  align-items: center;
+  1781→  gap: 5px;
+  1782→}
+  1783→
+  1784→.blog-article-cover {
+  1785→  width: 100%;
+  1786→  max-height: 380px;
+  1787→  margin: 20px 0 4px;
+  1788→  border-radius: 20px;
+  1789→  border: 1px solid var(--sand-150);
+  1790→  object-fit: cover;
+  1791→}
+  1792→
+  1793→.blog-article-body {
+  1794→  padding-top: 18px;
+  1795→}
+  1796→
+  1797→.blog-article-body p {
+  1798→  margin: 0 0 15px;
+  1799→  color: var(--ink-2, var(--ink));
+  1800→  font-size: 13.5px;
+  1801→  line-height: 2.15;
+  1802→}
+  1803→
+  1804→.blog-article-h2 {
+  1805→  margin: 26px 0 11px;
+  1806→  font-size: 16.5px;
+  1807→  font-weight: 800;
+  1808→  color: var(--ink);
+  1809→}
+  1810→
+  1811→.blog-article-list {
+  1812→  margin: 0 0 16px;
+  1813→  padding-inline-start: 20px;
+  1814→  color: var(--ink-2, var(--ink));
+  1815→  font-size: 13.5px;
+  1816→  line-height: 2.1;
+  1817→}
+  1818→
+  1819→.blog-article-list li {
+  1820→  margin-bottom: 7px;
+  1821→}
+  1822→
+  1823→.blog-article-footer {
+  1824→  display: flex;
+  1825→  flex-wrap: wrap;
+  1826→  align-items: center;
+  1827→  justify-content: space-between;
+  1828→  gap: 10px;
+  1829→  margin-top: 26px;
+  1830→  padding: 15px 17px;
+  1831→  border: 1px solid var(--sand-150);
+  1832→  border-radius: 18px;
+  1833→  background: #fff;
+  1834→  color: var(--ink-3);
+  1835→  font-size: 11px;
+  1836→  font-weight: 600;
+  1837→}
+  1838→
+  1839→.blog-share {
+  1840→  display: inline-flex;
+  1841→  align-items: center;
+  1842→  gap: 7px;
+  1843→}
+  1844→
+  1845→.blog-share a {
+  1846→  width: 32px;
+  1847→  height: 32px;
+  1848→  display: grid;
+  1849→  place-items: center;
+  1850→  border: 1px solid var(--sand-150);
+  1851→  border-radius: 10px;
+  1852→  color: var(--olive-700);
+  1853→  transition: background .15s;
+  1854→}
+  1855→
+  1856→.blog-share a:hover {
+  1857→  background: var(--olive-50);
+  1858→}
+  1859→
+  1860→
+  1861→.web-search-panel {
+  1862→  display: grid;
+  1863→  gap: 14px;
+  1864→  padding: 18px;
+  1865→  border: 1px solid var(--sand-150);
+  1866→  border-radius: 22px;
+  1867→  background: #fff;
+  1868→  box-shadow: 0 3px 14px rgba(46,54,34,.04);
+  1869→}
+  1870→
+  1871→.web-search-fields {
+  1872→  display: grid;
+  1873→  grid-template-columns: 1.45fr .75fr;
+  1874→  gap: 10px;
+  1875→}
+  1876→
+  1877→.web-search-fields label {
+  1878→  min-height: 50px;
+  1879→  display: flex;
+  1880→  align-items: center;
+  1881→  gap: 9px;
+  1882→  padding-inline: 13px;
+  1883→  border-radius: 14px;
+  1884→  color: var(--ink-3);
+  1885→  background: var(--sand-50);
+  1886→}
+  1887→
+  1888→.web-search-fields input {
+  1889→  min-width: 0;
+  1890→  width: 100%;
+  1891→  border: 0;
+  1892→  outline: 0;
+  1893→  color: var(--ink);
+  1894→  background: transparent;
+  1895→  font-size: 13.5px;
+  1896→}
+  1897→
+  1898→.web-search-filters {
+  1899→  display: flex;
+  1900→  flex-wrap: wrap;
+  1901→  align-items: center;
+  1902→  gap: 7px;
+  1903→  padding-top: 13px;
+  1904→  border-top: 1px solid var(--sand-100);
+  1905→}
+  1906→
+  1907→.web-search-filter-label {
+  1908→  display: inline-flex;
+  1909→  align-items: center;
+  1910→  gap: 5px;
+  1911→  margin-inline-end: 3px;
+  1912→  color: var(--ink-3);
+  1913→  font-size: 10.5px;
+  1914→  font-weight: 700;
+  1915→}
+  1916→
+  1917→.web-search-filters button {
+  1918→  min-height: 34px;
+  1919→  padding: 7px 11px;
+  1920→  border: 1px solid var(--sand-150);
+  1921→  border-radius: 999px;
+  1922→  color: var(--ink-2s);
+  1923→  background: #fff;
+  1924→  font-size: 10.5px;
+  1925→  font-weight: 700;
+  1926→  cursor: pointer;
+  1927→}
+  1928→
+  1929→.web-search-filters button.active {
+  1930→  border-color: var(--olive-600);
+  1931→  color: #fff;
+  1932→  background: var(--olive-600);
+  1933→}
+  1934→
+  1935→.web-search-filters button.clear {
+  1936→  display: inline-flex;
+  1937→  align-items: center;
+  1938→  gap: 4px;
+  1939→  margin-inline-start: auto;
+  1940→  border-color: transparent;
+  1941→  color: var(--ink-3);
+  1942→  background: var(--sand-100);
+  1943→}
+  1944→
+  1945→.web-results-head {
+  1946→  display: flex;
+  1947→  align-items: end;
+  1948→  justify-content: space-between;
+  1949→  gap: 16px;
+  1950→  margin: 25px 0 13px;
+  1951→}
+  1952→
+  1953→.web-results-head small {
+  1954→  display: block;
+  1955→  color: var(--ink-4);
+  1956→  font-size: 9.5px;
+  1957→}
+  1958→
+  1959→.web-results-head strong {
+  1960→  display: block;
+  1961→  margin-top: 2px;
+  1962→  font-size: 14px;
+  1963→}
+  1964→
+  1965→.web-results-head > span {
+  1966→  color: var(--ink-3);
+  1967→  font-size: 10.5px;
+  1968→}
+  1969→
+  1970→.web-teacher-results {
+  1971→  display: grid;
+  1972→  grid-template-columns: repeat(2,minmax(0,1fr));
+  1973→  gap: 14px;
+  1974→}
+  1975→
+  1976→.web-search-teacher-card {
+  1977→  display: grid;
+  1978→  gap: 12px;
+  1979→  padding: 16px;
+  1980→  border: 1px solid var(--sand-150);
+  1981→  border-radius: 22px;
+  1982→  color: inherit;
+  1983→  background: #fff;
+  1984→}
+  1985→
+  1986→.web-search-teacher-top {
+  1987→  display: flex;
+  1988→  align-items: center;
+  1989→  gap: 11px;
+  1990→}
+  1991→
+  1992→.web-search-teacher-top > div > strong {
+  1993→  display: block;
+  1994→  overflow: hidden;
+  1995→  font-size: 14px;
+  1996→  font-weight: 800;
+  1997→  text-overflow: ellipsis;
+  1998→  white-space: nowrap;
+  1999→}
+  2000→
+
+[showing lines 1-2000 of 5537; use offset=2001 with limit to continue reading]
