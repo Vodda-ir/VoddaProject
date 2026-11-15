@@ -91,14 +91,14 @@ export function LearnerProfileScreen({ config }: LearnerProfileScreenProps) {
 
   return (
     <div className="vodda-screen" style={{ display: "grid", gap: 18 }}>
-      <h1 className="vodda-display" style={{ fontSize: 26, margin: "2px 0 0", color: colors.ink, lineHeight: 1.7 }}>پروفایل</h1>
+      <h1 className="vodda-display" style={{ fontSize: 26, margin: "2px 0 0", color: colors.ink, lineHeight: 1.7 }}>{t("profile_title")}</h1>
 
       <Card elevated className="vodda-enter" style={{ padding: 16, borderRadius: 24 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <Avatar name={user.name} src={user.avatar_url} size={62} ring />
           <div style={{ minWidth: 0, flex: 1 }}>
             <strong style={{ fontSize: 17, fontWeight: 800, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: colors.ink }}>
-              {user.name.trim() || "کاربر وُدّا"}
+              {user.name.trim() || t("profile_default_name")}
             </strong>
             <span style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 3, fontSize: 12.5, color: colors.inkMuted }}>
               <Icon name="pin" size={13} />
@@ -119,8 +119,8 @@ export function LearnerProfileScreen({ config }: LearnerProfileScreenProps) {
             <Icon name="award" size={22} />
           </span>
           <span style={{ minWidth: 0, flex: 1 }}>
-            <strong style={{ ...typography.body, display: "block", fontWeight: 800 }}>ورود به حساب استاد</strong>
-            <span style={{ ...typography.caption, display: "block", marginTop: 3, color: colors.inkSecondary }}>جلسات و درآمدتان را مدیریت کنید.</span>
+            <strong style={{ ...typography.body, display: "block", fontWeight: 800 }}>{t("profile_teacher_mode")}</strong>
+            <span style={{ ...typography.caption, display: "block", marginTop: 3, color: colors.inkSecondary }}>{t("profile_teacher_mode_hint")}</span>
           </span>
           <Icon name="refresh" size={20} style={{ color: colors.olive600 }} />
         </button>
@@ -190,13 +190,13 @@ export function LearnerProfileScreen({ config }: LearnerProfileScreenProps) {
 
       <Card className="vodda-enter vodda-enter-delay-2" style={{ padding: 0, overflow: "hidden", borderRadius: 24 }}>
         {[
-          { icon: "user" as const, label: "ویرایش پروفایل", path: "/profile/edit" },
-          { icon: "wallet" as const, label: "کیف پول و تراکنش‌ها", path: "/wallet" },
+          { icon: "user" as const, labelKey: "profile_edit" as const, path: "/profile/edit" },
+          { icon: "wallet" as const, labelKey: "profile_wallet_row" as const, path: "/wallet" },
         ].map((row, index, rows) => (
           <button key={row.path} type="button" onClick={() => navigateApp(row.path, config)} className="vodda-tappable"
             style={{ width: "100%", minHeight: 58, display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", textAlign: "right", border: 0, borderBottom: index < rows.length - 1 ? `1px solid ${colors.sand100}` : 0, color: colors.ink, background: colors.surface, fontFamily: typography.fontFamily, cursor: "pointer" }}>
             <Icon name={row.icon} size={21} style={{ color: colors.olive600 }} />
-            <span style={{ flex: 1, fontSize: 14.5, fontWeight: 600 }}>{row.label}</span>
+            <span style={{ flex: 1, fontSize: 14.5, fontWeight: 600 }}>{t(row.labelKey)}</span>
             <Icon name="chevronL" size={18} style={{ color: colors.inkFaint }} />
           </button>
         ))}
@@ -205,15 +205,15 @@ export function LearnerProfileScreen({ config }: LearnerProfileScreenProps) {
       {/* پشتیبانی و اطلاعات (B3) — صفحات راهنما در وب وُدّا */}
       <Card className="vodda-enter vodda-enter-delay-2" style={{ padding: 0, overflow: "hidden", borderRadius: 24 }}>
         {[
-          { icon: "phone" as const, label: "پشتیبانی و تماس با ما", href: "/contact" },
-          { icon: "quran" as const, label: "دربارهٔ وُدّا", href: "/about" },
-          { icon: "doc" as const, label: "پرسش‌های پرتکرار", href: "/faq" },
-          { icon: "shield" as const, label: "قوانین و حریم خصوصی", href: "/privacy" },
+          { icon: "phone" as const, labelKey: "support_contact" as const, href: "/contact" },
+          { icon: "quran" as const, labelKey: "about_vodda" as const, href: "/about" },
+          { icon: "doc" as const, labelKey: "faq" as const, href: "/faq" },
+          { icon: "shield" as const, labelKey: "privacy" as const, href: "/privacy" },
         ].map((row, index, rows) => (
           <a key={row.href} href={row.href} target="_blank" rel="noreferrer" className="vodda-tappable"
             style={{ width: "100%", minHeight: 58, display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", textAlign: "right", textDecoration: "none", borderBottom: index < rows.length - 1 ? `1px solid ${colors.sand100}` : 0, color: colors.ink, background: colors.surface }}>
             <Icon name={row.icon} size={21} style={{ color: colors.olive600 }} />
-            <span style={{ flex: 1, fontSize: 14.5, fontWeight: 600 }}>{row.label}</span>
+            <span style={{ flex: 1, fontSize: 14.5, fontWeight: 600 }}>{t(row.labelKey)}</span>
             <Icon name="chevronL" size={18} style={{ color: colors.inkFaint }} />
           </a>
         ))}

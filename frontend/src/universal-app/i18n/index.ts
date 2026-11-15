@@ -127,6 +127,14 @@ export const fa = {
   profile_logout: "خروج از حساب",
   profile_become_teacher: "ثبت‌نام استاد",
   profile_support: "پشتیبانی",
+  profile_teacher_mode: "ورود به حساب استاد",
+  profile_teacher_mode_hint: "جلسات و درآمدتان را مدیریت کنید.",
+  profile_wallet_row: "کیف پول و تراکنش‌ها",
+  support_contact: "پشتیبانی و تماس با ما",
+  about_vodda: "دربارهٔ وُدّا",
+  faq: "پرسش‌های پرتکرار",
+  privacy: "قوانین و حریم خصوصی",
+  profile_default_name: "کاربر وُدّا",
 } as const;
 
 export type TranslationKey = keyof typeof fa;
@@ -256,6 +264,14 @@ export const en: Partial<Record<TranslationKey, string>> = {
   profile_logout: "Log out",
   profile_become_teacher: "Become a teacher",
   profile_support: "Support",
+  profile_teacher_mode: "Switch to teacher account",
+  profile_teacher_mode_hint: "Manage your sessions and income.",
+  profile_wallet_row: "Wallet & transactions",
+  support_contact: "Support & contact",
+  about_vodda: "About Vodda",
+  faq: "FAQ",
+  privacy: "Terms & privacy",
+  profile_default_name: "Vodda user",
 };
 
 export const dictionaries: Record<AppLanguage, Partial<Record<TranslationKey, string>>> = {
