@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isSameOriginMutation } from '@/lib/server/same-origin';
-import { aiComplete, type AiMessage } from '@/lib/ai/deepseek';
+import { aiComplete, type AiMessage } from '@/lib/ai/gateway';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -105,7 +105,7 @@ const FALLBACK: Record<string, string> = {
   disabled:
     'دستیار هوشمند هنوز روی پلتفرم فعال نشده است. تا فعال‌شدن کامل، پرسش‌هایتان را از «پشتیبانی» در بخش پروفایل بپرسید.',
   no_balance:
-    'دستیار هوشمند موقتاً در دسترس نیست (اعتبار سرویس هوش مصنوعی به پایان رسیده است). به‌زودی با شارژ حساب، همین‌جا پاسخ می‌گیرید. تا آن زمان از «پشتیبانی» در بخش پروفایل کمک بگیرید.',
+    'دستیار هوشمند موقتاً در دسترس نیست؛ چند دقیقه بعد دوباره تلاش کنید. تا آن زمان از «پشتیبانی» در بخش پروفایل کمک بگیرید.',
   rate_limited:
     'درحال‌حاضر تعداد درخواست‌ها زیاد است؛ چند لحظه بعد دوباره بپرسید.',
   timeout:

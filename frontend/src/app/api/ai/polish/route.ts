@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isSameOriginMutation } from '@/lib/server/same-origin';
-import { aiComplete } from '@/lib/ai/deepseek';
+import { aiComplete } from '@/lib/ai/gateway';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -50,7 +50,7 @@ const PROMPTS: Record<PolishKind, string> = {
 
 const FALLBACK: Record<string, string> = {
   disabled: 'دستیار هوشمند هنوز فعال نشده است.',
-  no_balance: 'دستیار هوشمند موقتاً بدون اعتبار است؛ به‌زودی فعال می‌شود.',
+  no_balance: 'دستیار هوشمند موقتاً در دسترس نیست؛ چند دقیقه بعد دوباره تلاش کنید.',
   rate_limited: 'درخواست‌های زیاد؛ چند لحظه بعد دوباره تلاش کنید.',
   timeout: 'پاسخ‌گویی طول کشید؛ دوباره تلاش کنید.',
   upstream: 'الان امکان بازنویسی نیست؛ کمی بعد دوباره امتحان کنید.',
