@@ -35,7 +35,6 @@ import {
   type AppNotification,
 } from "../notifications/api";
 import { getLearnerSessions } from "../sessions/api";
-import { isUpcomingSession } from "../sessions/types";
 import { searchTeachers } from "../teachers/api";
 import { TeacherCard } from "../teachers/TeacherCard";
 import type { Teacher } from "../teachers/types";
@@ -368,21 +367,6 @@ function RebookRail({ teachers, config }: { teachers: PastTeacher[]; config: Uni
         })}
       </div>
     </section>
-  );
-}
-
-function RebookBanner({ config }: { config: UniversalAppConfig }) {
-  return (
-    <Card elevated className="vodda-enter" style={{ display: "flex", alignItems: "center", gap: spacing.md, padding: spacing.lg }}>
-      <IconBadge icon="sparkle" tone="gold" size={46} />
-      <span style={{ minWidth: 0, flex: 1, display: "grid", gap: 3 }}>
-        <strong style={{ ...typography.body, color: colors.ink }}>جلسه دیگری رزرو می‌کنید؟</strong>
-        <span style={{ ...typography.caption, color: colors.inkMuted }}>زمان‌های آزاد جدید اساتید در انتظار شماست.</span>
-      </span>
-      <Button onClick={() => navigateApp("/search", config)} style={{ minHeight: 40, padding: "8px 16px", fontSize: 13 }}>
-        جستجوی استاد
-      </Button>
-    </Card>
   );
 }
 
@@ -769,9 +753,7 @@ function NotificationsBell({
 
 /* ─────────────────────────  صفحه خانه  ───────────────────────── */
 
-// «جلسه بعدی تو»، نوار چیپ‌ها و کادر «سه قدم تا جلسهٔ اول» حذف شدند؛
-// ناحیهٔ جلسه فقط بنر رزرو دوباره را نشان می‌دهد و مهمان‌ها پنل خوش‌آمد می‌بینند.
-type SessionAreaState = "loading" | "rebook" | "ready";
+type SessionAreaState = "loading" | "ready";
 
 export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
   const runtime = usePlatform();
@@ -838,12 +820,8 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
     let active = true;
     (async () => {
       try {
-        const [upcoming, past] = await Promise.all([
-          getLearnerSessions(runtime, "upcoming"),
-          getLearnerSessions(runtime, "past"),
-        ]);
+        const past = await getLearnerSessions(runtime, "past");
         if (!active) return;
-        const hasSoon = upcoming.some(isUpcomingSession);
         const seen = new Set<number>();
         const unique: PastTeacher[] = [];
         for (const session of [...past].sort((a, b) => b.scheduledAt.localeCompare(a.scheduledAt))) {
@@ -853,8 +831,7 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
           }
         }
         setPastTeachers(unique.slice(0, 8));
-        // کاربر دارای سابقهٔ جلسه → بنر رزرو دوباره؛ تازه‌کار → چک‌لیست شروع.
-        setSessionArea(hasSoon || past.length > 0 ? "rebook" : "ready");
+        setSessionArea("ready");
       } catch {
         if (active) setSessionArea("ready");
       }
@@ -976,10 +953,11 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
 
       <VerseStrip />
 
-      {/* کادر «سه قدم تا جلسهٔ اول» حذف شد — فقط بنر رزرو دوباره یا پنل خوش‌آمد مهمان */}
-      {sessionArea === "rebook" ? (
-        <RebookBanner config={config} />
-      ) : sessionArea === "ready" && !user ? (
+      {/* دسته‌بندی موضوعات — همیشه بلافاصله پس از کادر آیه نمایش داده می‌شود */}
+      <TopicCategoryGrid config={config} />
+
+      {/* بنر «جلسه دیگری رزرو می‌کنید؟» حذف شد — فقط پنل خوش‌آمد مهمان */}
+      {sessionArea === "ready" && !user ? (
         <HeroPanel
           eyebrow="به وُدّا خوش آمدید"
           title={"استاد قرآن خود را بیابید\nو زمان آزاد ایشان را رزرو کنید"}
@@ -1003,10 +981,7 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
 
       {needsProfileNudge ? <ProfileNudgeBar config={config} /> : null}
 
-      {/* دسته‌بندی موضوعات — یک کادر، شش موضوع تصویری؛ ورود به زیردسته‌های تخصصی */}
-      <TopicCategoryGrid config={config} />
-
-      {/* خدمات برتر و پراستفاده — کارت خدمات اول صفحه، بلافاصله پس از دسته‌ها */}
+      {/* خدمات برتر و پراستفاده — کارت خدمات اول صفحه، پس از دسته‌بندی موضوعات */}
       <TopServicesRail config={config} />
 
       {/* خدمات رایگان اساتید — جلسات صفر تومانی فعال (D-3) */}

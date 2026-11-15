@@ -93,6 +93,25 @@ async function fetchCatalog(): Promise<CatalogEntry[]> {
 
 type TopicCategory = { category: string; count: number; image: string; tint: string };
 
+/** دسته‌های واقعی کاتالوگ — اگر سرویس کاتالوگ در دسترس نبود، این فهرست همیشه نمایش داده می‌شود */
+const FALLBACK_TOPIC_CATEGORIES: Array<{ category: string }> = [
+  { category: "قرآن‌آموزی پایه" },
+  { category: "تجوید و علوم قرائت" },
+  { category: "حفظ قرآن" },
+  { category: "صوت و لحن و هنر قرآنی" },
+  { category: "مفاهیم، تفسیر و علوم قرآن" },
+  { category: "آموزش‌های ویژه" },
+  { category: "آمادگی و مشاوره قرآنی" },
+];
+
+function fallbackTopicCategories(): TopicCategory[] {
+  return FALLBACK_TOPIC_CATEGORIES.map((row) => ({
+    category: row.category,
+    count: 0,
+    ...categoryVisual(row.category),
+  }));
+}
+
 export function TopicCategoryGrid({ config }: { config: UniversalAppConfig }) {
   const [categories, setCategories] = useState<TopicCategory[] | null>(null);
 
@@ -110,10 +129,11 @@ export function TopicCategoryGrid({ config }: { config: UniversalAppConfig }) {
           .map(([category, count]) => ({ category, count, ...categoryVisual(category) }))
           .sort((a, b) => categoryOrderIndex(a.category) - categoryOrderIndex(b.category) || b.count - a.count)
           .slice(0, 6);
-        setCategories(rows);
+        // دسته‌بندی موضوعات باید همیشه نمایش داده شود — حتی اگر کاتالوگ خالی بود
+        setCategories(rows.length > 0 ? rows : fallbackTopicCategories());
       })
       .catch(() => {
-        if (active) setCategories([]);
+        if (active) setCategories(fallbackTopicCategories());
       });
     return () => {
       active = false;
@@ -137,7 +157,8 @@ export function TopicCategoryGrid({ config }: { config: UniversalAppConfig }) {
     );
   }
 
-  if (categories.length === 0) return null;
+  // دسته‌بندی موضوعات هرگز نباید ناپدید شود — در حالت خالی، فهرست پشتیبان نمایش داده می‌شود
+  const rows = categories.length > 0 ? categories : fallbackTopicCategories();
 
   return (
     <section aria-label="دسته‌بندی موضوعات" className="vodda-enter vodda-enter-delay-1" style={{ display: "grid", gap: 12, minWidth: 0 }}>
@@ -158,13 +179,13 @@ export function TopicCategoryGrid({ config }: { config: UniversalAppConfig }) {
           boxShadow: "0 0 0 4px rgba(231,213,168,.22), 0 12px 28px rgba(139,104,31,.13)",
         }}
       >
-        {categories.map((category) => (
+        {rows.map((category) => (
           <button
             key={category.category}
             type="button"
             onClick={() => navigateApp(`/search?mode=services&cat=${encodeURIComponent(category.category)}`, config)}
             className="vodda-tappable vodda-enter"
-            aria-label={`ورود به زیردسته‌های ${category.category} — ${faNumber(category.count)} خدمت`}
+            aria-label={category.count > 0 ? `ورود به زیردسته‌های ${category.category} — ${faNumber(category.count)} خدمت` : `ورود به زیردسته‌های ${category.category}`}
             style={{
               display: "grid",
               alignContent: "start",
@@ -258,7 +279,7 @@ export function TopicCategoryGrid({ config }: { config: UniversalAppConfig }) {
               }}
             >
               <Icon name="book" size={10} stroke={2.2} />
-              {faNumber(category.count)} خدمت
+              {category.count > 0 ? `${faNumber(category.count)} خدمت` : "خدمات فعال"}
             </span>
           </button>
         ))}
