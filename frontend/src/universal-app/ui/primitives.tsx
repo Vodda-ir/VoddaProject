@@ -174,7 +174,7 @@ export function Card({ elevated = false, children, style, className, ...props }:
           padding: spacing.xl,
           color: colors.ink,
           /* سفیدِ گرم با گرادیان ملایم + سایهٔ پیش‌فرض نرم: کارت‌ها از سطح پس‌زمینه «بلند» حس می‌شوند (فاز نور) */
-          background: "linear-gradient(180deg, #ffffff 0%, #fffdf8 100%)",
+          background: "linear-gradient(180deg, var(--v-surface, #ffffff) 0%, var(--v-surfaceWarm, #fffdf8) 100%)",
           border: `1px solid ${colors.border}`,
           borderRadius: radii.lg,
           boxShadow: elevated ? shadows.md : "0 1px 2px rgba(46,54,34,.04), 0 8px 22px rgba(46,54,34,.055)",

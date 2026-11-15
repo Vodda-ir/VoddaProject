@@ -173,7 +173,7 @@ export function TopicCategoryGrid({ config }: { config: UniversalAppConfig }) {
           gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
           gap: 10,
           padding: 12,
-          background: "linear-gradient(180deg, #ffffff, #fffdf8)",
+          background: `linear-gradient(180deg, ${colors.surface}, ${colors.surfaceWarm})`,
           border: `1.5px solid ${colors.goldSoft}`,
           borderRadius: 26,
           boxShadow: "0 0 0 4px rgba(231,213,168,.22), 0 12px 28px rgba(139,104,31,.13)",
@@ -211,7 +211,7 @@ export function TopicCategoryGrid({ config }: { config: UniversalAppConfig }) {
                   borderRadius: 12,
                   overflow: "hidden",
                   border: `2px solid ${colors.goldSoft}`,
-                  boxShadow: "0 0 0 3px #ffffff, 0 0 0 4.5px rgba(212,171,82,.35), 0 3px 8px rgba(46,54,34,.12)",
+                  boxShadow: `0 0 0 3px ${colors.surface}, 0 0 0 4.5px rgba(212,171,82,.35), 0 3px 8px rgba(46,54,34,.12)`,
                   background: colors.olive100,
                 }}
               >
@@ -240,7 +240,7 @@ export function TopicCategoryGrid({ config }: { config: UniversalAppConfig }) {
                   placeItems: "center",
                   borderRadius: "50%",
                   background: gradients.goldRich,
-                  border: "2px solid #ffffff",
+                  border: `2px solid ${colors.surface}`,
                   color: "#fffaf0",
                   boxShadow: "0 2px 6px rgba(139,104,31,.35)",
                 }}
@@ -370,7 +370,7 @@ export function TopServicesRail({ config }: { config: UniversalAppConfig }) {
                 textAlign: "center",
                 border: `1.5px solid ${colors.goldSoft}`,
                 borderRadius: 19,
-                background: "linear-gradient(180deg, #ffffff, #fffdf6)",
+                background: `linear-gradient(180deg, ${colors.surface}, ${colors.surfaceWarm})`,
                 color: colors.ink,
                 cursor: "pointer",
                 fontFamily: typography.fontFamily,
@@ -386,7 +386,7 @@ export function TopServicesRail({ config }: { config: UniversalAppConfig }) {
                     borderRadius: 13,
                     overflow: "hidden",
                     border: `2px solid ${colors.goldSoft}`,
-                    boxShadow: "0 0 0 2.5px #ffffff, 0 0 0 4px rgba(212,171,82,.30), 0 3px 8px rgba(46,54,34,.10)",
+                    boxShadow: `0 0 0 2.5px ${colors.surface}, 0 0 0 4px rgba(212,171,82,.30), 0 3px 8px rgba(46,54,34,.10)`,
                     background: colors.olive100,
                   }}
                 >
@@ -411,7 +411,7 @@ export function TopServicesRail({ config }: { config: UniversalAppConfig }) {
                     placeItems: "center",
                     borderRadius: "50%",
                     background: gradients.goldRich,
-                    border: "2px solid #ffffff",
+                    border: `2px solid ${colors.surface}`,
                     color: "#fffaf0",
                     boxShadow: "0 2px 6px rgba(139,104,31,.35)",
                   }}
@@ -534,7 +534,7 @@ function FreeServiceTile({ item, config }: { item: FreeServiceCardData; config: 
         textAlign: "right",
         border: `1.4px solid ${colors.gold}`,
         borderRadius: 22,
-        background: `linear-gradient(170deg, #fffdf6, ${colors.goldBackground})`,
+        background: `linear-gradient(170deg, ${colors.surfaceWarm}, ${colors.goldBackground})`,
         boxShadow: "0 8px 22px rgba(139,104,31,.14)",
         cursor: "pointer",
         fontFamily: typography.fontFamily,
@@ -591,7 +591,7 @@ function FreeServiceTile({ item, config }: { item: FreeServiceCardData; config: 
           gap: 8,
           padding: "8px 12px",
           borderRadius: 13,
-          background: "rgba(255,255,255,.75)",
+          background: "var(--v-veil-strong, rgba(255,255,255,.75))",
           border: `1px solid ${colors.goldSoft}`,
           fontSize: 12,
           fontWeight: 900,

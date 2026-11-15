@@ -34,6 +34,7 @@ import { PlatformProvider } from "./platform/context";
 import type { PlatformRuntime } from "./platform/types";
 import { createWebPlatformRuntime } from "./platform/web";
 import { navigateApp, useAppRoute, type AppRouteName } from "./router";
+import { AppearanceProvider, useAppearance } from "./ui/appearance";
 import { MobileAppShell, TeacherAppShell, Card, UniversalVisualStyles, colors, typography } from "./ui";
 
 export type UniversalAppProps = {
@@ -41,39 +42,45 @@ export type UniversalAppProps = {
   platform?: PlatformRuntime;
 };
 
-const routeTitles: Record<AppRouteName, string> = {
-  home: "وُدّا",
-  login: "ورود",
-  search: "جستجوی استاد",
-  teacher: "پروفایل استاد",
-  book: "رزرو جلسه",
-  sessions: "جلسات من",
-  session: "جزئیات جلسه",
-  wallet: "کیف پول",
-  profile: "پروفایل",
-  "profile-edit": "ویرایش پروفایل",
-  dispatch: "فراخوان اساتید",
-  "call-hub": "فراخوان‌ها",
-  "ceremony-new": "فراخوان مراسم",
-  "ceremony-calls": "فراخوان‌های من",
-  "ceremony-call": "فراخوان مراسم",
-  "ceremony-booking": "قرارداد مراسم",
-  presence: "قاریان حضوری",
-  "presence-provider": "پروفایل قاری",
-  "teacher-home": "داشبورد استاد",
-  "teacher-requests": "درخواست‌های جلسه",
-  "teacher-sessions": "جلسات استاد",
-  "teacher-services": "خدمات استاد",
-  "teacher-work-times": "برنامه کاری",
-  "teacher-wallet": "کیف پول استاد",
-  "teacher-withdraw": "برداشت",
-  "teacher-profile": "پروفایل استاد",
-  "teacher-reviews": "نظرها",
-  "teacher-dispatch": "فراخوان‌ها",
-  "teacher-ceremony": "فراخوان‌ها",
-  "teacher-presence": "خدمات حضوری",
-  "not-found": "صفحه پیدا نشد",
+const routeTitleKeys: Record<AppRouteName, string> = {
+  home: "app_title",
+  login: "login_submit",
+  search: "search_title",
+  teacher: "nav_profile",
+  book: "booking_title",
+  sessions: "sessions_mine",
+  session: "sessions_mine",
+  wallet: "wallet_title",
+  profile: "profile_title",
+  "profile-edit": "profile_edit",
+  dispatch: "dispatch_title",
+  "call-hub": "dispatch_title",
+  "ceremony-new": "dispatch_title",
+  "ceremony-calls": "dispatch_title",
+  "ceremony-call": "dispatch_title",
+  "ceremony-booking": "dispatch_title",
+  presence: "dispatch_title",
+  "presence-provider": "dispatch_title",
+  "teacher-home": "nav_teacher_home",
+  "teacher-requests": "session_accept",
+  "teacher-sessions": "nav_sessions",
+  "teacher-services": "booking_choose_service",
+  "teacher-work-times": "booking_choose_time",
+  "teacher-wallet": "wallet_title",
+  "teacher-withdraw": "wallet_title",
+  "teacher-profile": "nav_profile",
+  "teacher-reviews": "action_more",
+  "teacher-dispatch": "dispatch_title",
+  "teacher-ceremony": "dispatch_title",
+  "teacher-presence": "dispatch_title",
+  "not-found": "not_found_title",
 };
+
+function useRouteTitle(routeName: AppRouteName): string {
+  const { t } = useAppearance();
+  const key = routeTitleKeys[routeName] as Parameters<typeof t>[0];
+  return t(key);
+}
 
 const teacherRoutes = new Set<AppRouteName>([
   "teacher-home",
@@ -122,30 +129,20 @@ function RoutePlaceholder({
   );
 }
 
-function UniversalAppContent({ config, runtime }: { config: UniversalAppConfig; runtime: PlatformRuntime }) {
-  const route = useAppRoute(config);
-  // نقش نمایشگر جلسه — برای انتخاب پوستهٔ درست (استاد/قرآن‌آموز) در مسیر /session/:id
-  const [sessionRole, setSessionRole] = useState<"learner" | "teacher">("learner");
-  useEffect(() => {
-    if (route.name !== "session") setSessionRole("learner");
-  }, [route.name]);
-
-  if (route.name === "login") {
-    return (
-      <SessionBootstrap routeName={route.name} config={config}>
-        <LoginScreen config={config} />
-      </SessionBootstrap>
-    );
-  }
-
-  if (route.name === "profile-edit") {
-    return (
-      <SessionBootstrap routeName={route.name} config={config}>
-        <ProfileCompletionScreen config={config} />
-      </SessionBootstrap>
-    );
-  }
-
+function UniversalAppShellContent({
+  config,
+  runtime,
+  route,
+  sessionRole,
+  onSessionRoleResolved,
+}: {
+  config: UniversalAppConfig;
+  runtime: PlatformRuntime;
+  route: ReturnType<typeof useAppRoute>;
+  sessionRole: "learner" | "teacher";
+  onSessionRoleResolved: (role: "learner" | "teacher") => void;
+}) {
+  const title = useRouteTitle(route.name);
   const teacherMode = teacherRoutes.has(route.name) || (route.name === "session" && sessionRole === "teacher");
   const routeContent = route.name === "home" ? (
     <LearnerHomeScreen config={config} />
@@ -158,7 +155,7 @@ function UniversalAppContent({ config, runtime }: { config: UniversalAppConfig; 
   ) : route.name === "sessions" ? (
     <LearnerSessionsScreen config={config} />
   ) : route.name === "session" ? (
-    <SessionDetailScreen sessionId={route.params.id ?? ""} config={config} onRoleResolved={setSessionRole} />
+    <SessionDetailScreen sessionId={route.params.id ?? ""} config={config} onRoleResolved={onSessionRoleResolved} />
   ) : route.name === "wallet" ? (
     <LearnerWalletScreen />
   ) : route.name === "profile" ? (
@@ -208,11 +205,11 @@ function UniversalAppContent({ config, runtime }: { config: UniversalAppConfig; 
   );
   const content = routeContent;
   const shell = teacherMode ? (
-    <TeacherAppShell config={config} routeName={route.name} title={routeTitles[route.name]}>
+    <TeacherAppShell config={config} routeName={route.name} title={title}>
       {content}
     </TeacherAppShell>
   ) : (
-    <MobileAppShell config={config} routeName={route.name} title={routeTitles[route.name]}>
+    <MobileAppShell config={config} routeName={route.name} title={title}>
       {content}
     </MobileAppShell>
   );
@@ -226,6 +223,41 @@ function UniversalAppContent({ config, runtime }: { config: UniversalAppConfig; 
   );
 }
 
+function UniversalAppContent({ config, runtime }: { config: UniversalAppConfig; runtime: PlatformRuntime }) {
+  const route = useAppRoute(config);
+  // نقش نمایشگر جلسه — برای انتخاب پوستهٔ درست (استاد/قرآن‌آموز) در مسیر /session/:id
+  const [sessionRole, setSessionRole] = useState<"learner" | "teacher">("learner");
+  useEffect(() => {
+    if (route.name !== "session") setSessionRole("learner");
+  }, [route.name]);
+
+  if (route.name === "login") {
+    return (
+      <SessionBootstrap routeName={route.name} config={config}>
+        <LoginScreen config={config} />
+      </SessionBootstrap>
+    );
+  }
+
+  if (route.name === "profile-edit") {
+    return (
+      <SessionBootstrap routeName={route.name} config={config}>
+        <ProfileCompletionScreen config={config} />
+      </SessionBootstrap>
+    );
+  }
+
+  return (
+    <UniversalAppShellContent
+      config={config}
+      runtime={runtime}
+      route={route}
+      sessionRole={sessionRole}
+      onSessionRoleResolved={setSessionRole}
+    />
+  );
+}
+
 export function UniversalApp({ config: configOverrides, platform }: UniversalAppProps) {
   const config = useMemo(
     () => createUniversalAppConfig(configOverrides),
@@ -235,8 +267,10 @@ export function UniversalApp({ config: configOverrides, platform }: UniversalApp
 
   return (
     <PlatformProvider runtime={runtime}>
-      <UniversalVisualStyles />
-      <UniversalAppContent config={config} runtime={runtime} />
+      <AppearanceProvider>
+        <UniversalVisualStyles />
+        <UniversalAppContent config={config} runtime={runtime} />
+      </AppearanceProvider>
     </PlatformProvider>
   );
 }

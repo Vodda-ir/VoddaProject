@@ -1,6 +1,102 @@
 export function UniversalVisualStyles() {
   return (
     <style>{`
+      /* ── توکن‌های رنگ (روشن) — منبع حقیقت theme.ts به آن‌ها ارجاع می‌دهد ── */
+      :root {
+        color-scheme: light;
+        --v-sand50: #faf8f2;
+        --v-sand100: #f4f0e7;
+        --v-sand150: #ede8db;
+        --v-sand200: #e4ddcc;
+        --v-line: #e4ddcc;
+        --v-border: #e4ddcc;
+        --v-surface: #ffffff;
+        --v-surfaceWarm: #fcfaf4;
+        --v-surfaceSoft: #f8f6ef;
+        --v-surfaceElevated: #ffffff;
+        --v-olive950: #252c1c;
+        --v-olive900: #2e3622;
+        --v-olive800: #3c472b;
+        --v-olive700: #4c5a36;
+        --v-olive600: #5e6e43;
+        --v-olive500: #728350;
+        --v-olive400: #93a172;
+        --v-olive300: #b6c09b;
+        --v-olive200: #d6dcc4;
+        --v-olive100: #e8ecdb;
+        --v-olive50: #f2f5ea;
+        --v-ink: #2a2820;
+        --v-inkSecondary: #565247;
+        --v-inkMuted: #6f6a5b;
+        --v-inkFaint: #7a7463;
+        --v-gold: #bf9540;
+        --v-goldDark: #8b681f;
+        --v-goldSoft: #e7d5a8;
+        --v-goldBackground: #f7efd9;
+        --v-clay: #b0745a;
+        --v-clayBackground: #f6e7df;
+        --v-danger: #a65151;
+        --v-dangerBackground: #faeeee;
+        --v-success: #5e6e43;
+        --v-successBackground: #edf2e5;
+        --v-info: #5e7e8c;
+        --v-infoBackground: #edf3f5;
+        --v-grad-hero: linear-gradient(145deg, #4c5a36 0%, #5e6e43 52%, #728350 100%);
+        --v-grad-deep: linear-gradient(145deg, #2e3622 0%, #3c472b 58%, #4c5a36 100%);
+        --v-grad-oliveCard: linear-gradient(150deg, #4c5a36 0%, #5e6e43 55%, #6e7f4d 100%);
+        --v-grad-soft: linear-gradient(145deg, #f2f5ea 0%, #ffffff 72%);
+        --v-grad-gold: linear-gradient(145deg, #f7efd9 0%, #fffaf0 100%);
+        --v-grad-goldRich: linear-gradient(145deg, #d4ab52 0%, #bf9540 52%, #8b681f 100%);
+        --v-veil-strong: rgba(255,255,255,.75);
+      }
+      /* ── حالت تاریک — همان زبان بصری زیتونی/طلایی روی زمینهٔ ذغالی گرم ── */
+      [data-vodda-theme="dark"] {
+        color-scheme: dark;
+        --v-sand50: #14170f;
+        --v-sand100: #1a1e15;
+        --v-sand150: #21261b;
+        --v-sand200: #2b3122;
+        --v-line: #2b3122;
+        --v-border: #2b3122;
+        --v-surface: #1d2118;
+        --v-surfaceWarm: #20251b;
+        --v-surfaceSoft: #181c13;
+        --v-surfaceElevated: #242a1e;
+        --v-olive950: #0e1209;
+        --v-olive900: #171c10;
+        --v-olive800: #2e3820;
+        --v-olive700: #a4b485;
+        --v-olive600: #7c8f58;
+        --v-olive500: #8a9c66;
+        --v-olive400: #93a172;
+        --v-olive300: #5a6644;
+        --v-olive200: #3a4229;
+        --v-olive100: #2c3420;
+        --v-olive50: #262d1b;
+        --v-ink: #eceada;
+        --v-inkSecondary: #cbc7b8;
+        --v-inkMuted: #a5a191;
+        --v-inkFaint: #8b8778;
+        --v-gold: #d2aa55;
+        --v-goldDark: #e3c377;
+        --v-goldSoft: #6b5c33;
+        --v-goldBackground: #2a2416;
+        --v-clay: #c98d72;
+        --v-clayBackground: #322520;
+        --v-danger: #e09a9a;
+        --v-dangerBackground: #332220;
+        --v-success: #a4b485;
+        --v-successBackground: #242c18;
+        --v-info: #93b3bf;
+        --v-infoBackground: #1a2528;
+        --v-grad-hero: linear-gradient(145deg, #4c5a36 0%, #5e6e43 52%, #728350 100%);
+        --v-grad-deep: linear-gradient(145deg, #1a2012 0%, #232b17 58%, #2e3820 100%);
+        --v-grad-oliveCard: linear-gradient(150deg, #4c5a36 0%, #5e6e43 55%, #6e7f4d 100%);
+        --v-grad-soft: linear-gradient(145deg, #1d2118 0%, #23281c 72%);
+        --v-grad-gold: linear-gradient(145deg, #2b2517 0%, #1f1c12 100%);
+        --v-grad-goldRich: linear-gradient(145deg, #d4ab52 0%, #bf9540 52%, #8b681f 100%);
+        --v-veil-strong: rgba(24,28,19,.78);
+      }
       @font-face {
         font-family: "IRANYekanXFaNum";
         src: url("/fonts/IRANYekanXFaNum-Regular.ttf") format("truetype");

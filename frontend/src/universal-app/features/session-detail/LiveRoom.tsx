@@ -27,6 +27,31 @@ function uid(): string {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 
+/**
+ * تلاش پلکانی برای گرفتن دوربین/میکروفون — موبایل‌ها به دلایل مختلف
+ * (محدودیت دقت، اشغال بودن سخت‌افزار، مجوز ناقص) درخواست سخت‌گیرانه را رد
+ * می‌کنند؛ اول آسان‌ترین قید، بعد بدون قید، و در نهایت فقط صدا.
+ */
+async function acquireMedia(): Promise<MediaStream | null> {
+  if (!navigator.mediaDevices?.getUserMedia) return null;
+  const attempts: MediaStreamConstraints[] = [
+    {
+      video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
+      audio: { echoCancellation: true, noiseSuppression: true },
+    },
+    { video: true, audio: true },
+    { video: false, audio: true },
+  ];
+  for (const constraints of attempts) {
+    try {
+      return await navigator.mediaDevices.getUserMedia(constraints);
+    } catch {
+      /* تلاش بعدی */
+    }
+  }
+  return null;
+}
+
 function chatTime(at: number): string {
   const date = new Date(at);
   return `${toFaDigits(String(date.getHours()).padStart(2, "0"))}:${toFaDigits(String(date.getMinutes()).padStart(2, "0"))}`;
@@ -77,6 +102,8 @@ export function LiveRoom({
   const chatBodyRef = useRef<HTMLDivElement | null>(null);
   const peerOnlineRef = useRef(false);
   const engineRoleRef = useRef<EngineRole>(role);
+  const wakeLockRef = useRef<{ release: () => Promise<void>; released: boolean } | null>(null);
+  const [needsTapToPlay, setNeedsTapToPlay] = useState(false);
 
   const isTeacherSide = role !== "learner";
 
@@ -87,32 +114,29 @@ export function LiveRoom({
     let ctx: AudioContext | null = null;
     let raf = 0;
     (async () => {
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: { ideal: 1280 } },
-          audio: { echoCancellation: true, noiseSuppression: true },
-        });
-        previewStreamRef.current = stream;
-        setMediaError("");
-        if (localVideoRef.current) localVideoRef.current.srcObject = stream;
-        const [audioTrack] = stream.getAudioTracks();
-        if (audioTrack) {
-          ctx = new AudioContext();
-          const source = ctx.createMediaStreamSource(new MediaStream([audioTrack]));
-          const analyser = ctx.createAnalyser();
-          analyser.fftSize = 256;
-          source.connect(analyser);
-          const buffer = new Uint8Array(analyser.frequencyBinCount);
-          const tick = () => {
-            analyser.getByteFrequencyData(buffer);
-            const avg = buffer.reduce((sum, value) => sum + value, 0) / buffer.length;
-            setMicLevel(Math.min(100, Math.round((avg / 128) * 100)));
-            raf = requestAnimationFrame(tick);
-          };
-          tick();
-        }
-      } catch {
+      stream = await acquireMedia();
+      if (!stream) {
         setMediaError("دسترسی به دوربین/میکروفون ممکن نشد؛ می‌توانید بدون آن‌ها وارد کلاس شوید.");
+        return;
+      }
+      previewStreamRef.current = stream;
+      setMediaError("");
+      if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+      const [audioTrack] = stream.getAudioTracks();
+      if (audioTrack) {
+        ctx = new AudioContext();
+        const source = ctx.createMediaStreamSource(new MediaStream([audioTrack]));
+        const analyser = ctx.createAnalyser();
+        analyser.fftSize = 256;
+        source.connect(analyser);
+        const buffer = new Uint8Array(analyser.frequencyBinCount);
+        const tick = () => {
+          analyser.getByteFrequencyData(buffer);
+          const avg = buffer.reduce((sum, value) => sum + value, 0) / buffer.length;
+          setMicLevel(Math.min(100, Math.round((avg / 128) * 100)));
+          raf = requestAnimationFrame(tick);
+        };
+        tick();
       }
     })();
     return () => {
@@ -198,6 +222,59 @@ export function LiveRoom({
     if (body) body.scrollTop = body.scrollHeight;
   }, [chat, chatOpen]);
 
+  /* ---------- موبایل: بیدار نگه‌داشتن صفحه در طول کلاس ---------- */
+  useEffect(() => {
+    if (phase !== "live") return;
+    type WakeLockSentinel = { release: () => Promise<void>; released: boolean };
+    const wakeLockApi = (navigator as Navigator & { wakeLock?: { request: (type: "screen") => Promise<WakeLockSentinel> } }).wakeLock;
+    if (!wakeLockApi) return;
+    let released = false;
+    wakeLockApi.request("screen")
+      .then((sentinel) => {
+        if (released) {
+          void sentinel.release().catch(() => {});
+          return;
+        }
+        wakeLockRef.current = sentinel;
+      })
+      .catch(() => {});
+    return () => {
+      released = true;
+      const sentinel = wakeLockRef.current;
+      wakeLockRef.current = null;
+      void sentinel?.release().catch(() => {});
+    };
+  }, [phase]);
+
+  /* ---------- موبایل: برگشت از پس‌زمینه/تعویض شبکه → بازیابی اتصال ---------- */
+  useEffect(() => {
+    if (phase !== "live") return;
+    const recover = () => {
+      void engineRef.current?.reconnect();
+      const remote = remoteVideoRef.current;
+      if (remote && remote.paused) {
+        remote.play().catch(() => setNeedsTapToPlay(true));
+      }
+    };
+    const onVisible = () => {
+      if (document.visibilityState === "visible") recover();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("online", recover);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("online", recover);
+    };
+  }, [phase]);
+
+  /* ---------- پخش خودکار ویدیوی طرف مقابل (سیاست autoplay موبایل) ---------- */
+  useEffect(() => {
+    if (!remoteActive) return;
+    const remote = remoteVideoRef.current;
+    if (!remote) return;
+    remote.play().then(() => setNeedsTapToPlay(false)).catch(() => setNeedsTapToPlay(true));
+  }, [remoteActive]);
+
   /* ---------- ورود به کلاس ---------- */
   async function join(withMedia: boolean) {
     previewStreamRef.current?.getTracks().forEach((track) => track.stop());
@@ -205,9 +282,8 @@ export function LiveRoom({
 
     let stream: MediaStream | null = null;
     if (withMedia) {
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      } catch {
+      stream = await acquireMedia();
+      if (!stream) {
         setMediaError("ورود با دوربین/میکروفون ناموفق بود؛ بدون رسانه وارد می‌شوید.");
       }
     }
@@ -338,8 +414,30 @@ export function LiveRoom({
             autoPlay
             playsInline
             aria-label="تصویر طرف مقابل"
+            onDoubleClick={() => remoteVideoRef.current?.play().catch(() => {})}
             style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", background: "#10130e" }}
           />
+          {needsTapToPlay && phase === "live" ? (
+            <button
+              type="button"
+              onClick={() => {
+                const remote = remoteVideoRef.current;
+                if (!remote) return;
+                remote.play()
+                  .then(() => setNeedsTapToPlay(false))
+                  .catch(() => {});
+              }}
+              style={{
+                position: "absolute", top: 14, insetInline: 0, marginInline: "auto", zIndex: 4,
+                width: "fit-content", display: "flex", alignItems: "center", gap: 8,
+                padding: "9px 18px", borderRadius: 999, border: "1px solid rgba(216,184,105,.7)",
+                background: "rgba(23,27,20,.9)", color: "#ffd98c", fontFamily: "inherit",
+                fontSize: 12.5, fontWeight: 800, cursor: "pointer",
+              }}
+            >
+              ▶ برای پخش تصویر و صدای طرف مقابل لمس کنید
+            </button>
+          ) : null}
           {!remoteActive && phase === "live" ? (
             <div
               style={{

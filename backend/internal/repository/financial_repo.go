@@ -672,8 +672,14 @@ func (r *financialRepo) SettleBookingPaymentOrder(ctx context.Context, orderID u
                         return recordError(err)
                 }
                 if session.Status == domain.SessionAwaitingPayment {
+                        // جلسهٔ فوریِ برخاسته از فراخوان: استاد با ثبت پیشنهاد وعده
+                        // داده است؛ پس از تسویه بدون تأیید دوم قطعی می‌شود.
+                        newStatus := domain.SessionPending
+                        if session.Instant && session.ViaDispatch {
+                                newStatus = domain.SessionConfirmed
+                        }
                         if err := tx.Model(&domain.Session{}).Where("id = ? AND status = ?", session.ID, domain.SessionAwaitingPayment).
-                                Update("status", domain.SessionPending).Error; err != nil {
+                                Update("status", newStatus).Error; err != nil {
                                 return err
                         }
                 } else {

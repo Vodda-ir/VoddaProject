@@ -116,6 +116,7 @@ func main() {
                 Live:    delivery.NewLiveHub(),
                 Blog:    usecase.NewBlogUsecase(postRepo),
                 Payment: paymentUsecase,
+                FrontendBase: cfg.FrontendBaseURL,
         }
 
         readiness := func(ctx context.Context) error { return sqlDB.PingContext(ctx) }

@@ -44,6 +44,8 @@ type Config struct {
 
         Saman SamanConfig
 
+        Google GoogleConfig
+
         PlatformCommissionPercent int
 }
 
@@ -87,6 +89,15 @@ type SamanConfig struct {
         TerminalID string
         SiteURL    string
         BaseURL    string
+}
+
+// GoogleConfig holds Google OAuth login settings (ورود با گوگل — برای
+// کاربرانی که از خارج از کشور وارد می‌شوند و پیامک برایشان دردسر دارد).
+// Empty ClientID keeps the feature off; the login screen hides the button.
+type GoogleConfig struct {
+        ClientID     string
+        ClientSecret string
+        RedirectURI  string
 }
 
 // Load reads configuration from the environment, applying development-safe defaults.
@@ -149,6 +160,13 @@ func Load() *Config {
                         // existing deployments keep working.
                         SiteURL: getEnv("SITE_URL", getEnv("FRONTEND_BASE_URL", "")),
                         BaseURL: getEnv("SAMAN_BASE_URL", "https://sep.shaparak.ir"),
+                },
+                Google: GoogleConfig{
+                        ClientID:     getOptionalEnv("GOOGLE_OAUTH_CLIENT_ID"),
+                        ClientSecret: getOptionalEnv("GOOGLE_OAUTH_CLIENT_SECRET"),
+                        // The callback must match the redirect URI registered in
+                        // the Google Cloud console for this client id.
+                        RedirectURI: getEnv("GOOGLE_OAUTH_REDIRECT_URI", "https://api.vodda.ir/api/v1/auth/google/callback"),
                 },
                 PlatformCommissionPercent: getInt("PLATFORM_COMMISSION_PERCENT", 15),
         }

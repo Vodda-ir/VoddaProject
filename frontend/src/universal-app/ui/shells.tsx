@@ -5,6 +5,8 @@ import { CallAlertBar } from "../features/notifications/CallAlertBar";
 import { getTeacherUnseenSessionCount } from "../features/session-detail/api";
 import { usePlatform } from "../platform/context";
 import { AssistantChat } from "../features/assistant/AssistantChat";
+import { useAppearance } from "./appearance";
+import type { TranslationKey } from "../i18n";
 import { Icon } from "./Icon";
 import { ToastHost } from "./toast";
 import { colors, gradients, radii, shadows, spacing, typography } from "./theme";
@@ -12,7 +14,7 @@ import { colors, gradients, radii, shadows, spacing, typography } from "./theme"
 type IconName = Parameters<typeof Icon>[0]["name"];
 
 type NavigationItem = {
-  label: string;
+  labelKey: TranslationKey;
   target: StaticAppRouteName;
   icon: IconName;
   routes: AppRouteName[];
@@ -23,16 +25,16 @@ type NavigationItem = {
  * استاد آنلاین (فراخوان اساتید) و مراسم حضوری قرآنی.
  */
 type NavigationCta = {
-  label: string;
-  ariaLabel: string;
+  labelKey: TranslationKey;
+  ariaLabelKey: TranslationKey;
   icon: IconName;
   target: StaticAppRouteName;
   activeRoutes: AppRouteName[];
 };
 
 const learnerCallToAction: NavigationCta = {
-  label: "فراخوان",
-  ariaLabel: "فراخوان — درخواست استاد آنلاین و مراسم حضوری",
+  labelKey: "dispatch_title",
+  ariaLabelKey: "dispatch_title",
   icon: "bell",
   target: "call-hub",
   activeRoutes: ["call-hub", "dispatch", "ceremony-new", "ceremony-calls", "ceremony-call"],
@@ -46,18 +48,18 @@ type AppShellProps = {
 };
 
 const learnerNavigation: NavigationItem[] = [
-  { label: "خانه", target: "home", icon: "home", routes: ["home"] },
-  { label: "جستجو", target: "search", icon: "search", routes: ["search", "teacher", "book"] },
-  { label: "جلسات", target: "sessions", icon: "calendar", routes: ["sessions"] },
-  { label: "پروفایل", target: "profile", icon: "user", routes: ["profile", "profile-edit"] },
+  { labelKey: "nav_home", target: "home", icon: "home", routes: ["home"] },
+  { labelKey: "nav_search", target: "search", icon: "search", routes: ["search", "teacher", "book"] },
+  { labelKey: "nav_sessions", target: "sessions", icon: "calendar", routes: ["sessions"] },
+  { labelKey: "nav_profile", target: "profile", icon: "user", routes: ["profile", "profile-edit"] },
 ];
 
 const teacherNavigation: NavigationItem[] = [
-  { label: "داشبورد", target: "teacher-home", icon: "grid", routes: ["teacher-home", "teacher-services", "teacher-work-times", "teacher-reviews"] },
-  { label: "درخواست‌ها", target: "teacher-requests", icon: "message", routes: ["teacher-requests"] },
-  { label: "جلسات", target: "teacher-sessions", icon: "calendar", routes: ["teacher-sessions"] },
-  { label: "کیف پول", target: "teacher-wallet", icon: "wallet", routes: ["teacher-wallet", "teacher-withdraw"] },
-  { label: "پروفایل", target: "teacher-profile", icon: "user", routes: ["teacher-profile"] },
+  { labelKey: "nav_teacher_home", target: "teacher-home", icon: "grid", routes: ["teacher-home", "teacher-services", "teacher-work-times", "teacher-reviews"] },
+  { labelKey: "session_accept", target: "teacher-requests", icon: "message", routes: ["teacher-requests"] },
+  { labelKey: "nav_sessions", target: "teacher-sessions", icon: "calendar", routes: ["teacher-sessions"] },
+  { labelKey: "wallet_title", target: "teacher-wallet", icon: "wallet", routes: ["teacher-wallet", "teacher-withdraw"] },
+  { labelKey: "nav_profile", target: "teacher-profile", icon: "user", routes: ["teacher-profile"] },
 ];
 
 const tabRoutes = new Set<AppRouteName>([
@@ -78,7 +80,6 @@ const rootStyle: CSSProperties = {
   background: `radial-gradient(circle at 50% -20%, ${colors.olive100} 0%, ${colors.sand50} 36%, ${colors.sand100} 100%)`,
   color: colors.ink,
   fontFamily: typography.fontFamily,
-  direction: "rtl",
 };
 
 const frameStyle: CSSProperties = {
@@ -153,6 +154,7 @@ function BottomNavigation({
   ariaLabel: string;
   badgeFor?: (item: NavigationItem) => number | undefined;
 }) {
+  const { t } = useAppearance();
   const renderTab = (item: NavigationItem, badge?: number) => {
     const active = item.routes.includes(routeName);
     return (
@@ -217,7 +219,7 @@ function BottomNavigation({
               {badge > 99 ? "+۹۹" : new Intl.NumberFormat("fa-IR").format(badge)}
             </span>
           ) : null}
-          {item.label}
+          {item.labelKey ? t(item.labelKey) : ""}
         </span>
       </a>
     );
@@ -254,7 +256,7 @@ function BottomNavigation({
         <a
           key="nav-cta"
           href={appRouteUrl(cta.target, config)}
-          aria-label={cta.ariaLabel}
+          aria-label={t(cta.ariaLabelKey)}
           aria-current={ctaActive ? "true" : undefined}
           onClick={(event) => navigate(event, cta.target, config)}
           style={{
@@ -296,7 +298,7 @@ function BottomNavigation({
               color: ctaActive ? colors.goldDark : colors.olive700,
             }}
           >
-            {cta.label}
+            {t(cta.labelKey)}
           </span>
         </a>
       ) : null}
@@ -306,6 +308,7 @@ function BottomNavigation({
 }
 
 function ShellHeader({ title, routeName }: { title?: string; routeName: AppRouteName }) {
+  const { t } = useAppearance();
   if (!title || tabRoutes.has(routeName)) return null;
   return (
     <header
@@ -341,7 +344,7 @@ function ShellHeader({ title, routeName }: { title?: string; routeName: AppRoute
       </div>
       <div style={{ minWidth: 0, textAlign: "center" }}>
         <p style={{ ...typography.caption, margin: 0, color: colors.inkMuted }}>
-          {routeName.startsWith("teacher-") ? "فضای استاد" : "وُدّا"}
+          {routeName.startsWith("teacher-") ? t("nav_teacher_home") : t("app_title")}
         </p>
         <h1
           style={{
@@ -375,7 +378,7 @@ function Shell({
     return undefined;
   };
   return (
-    <div dir="rtl" data-app-shell={mode} style={rootStyle}>
+    <div data-app-shell={mode} style={rootStyle}>
       <div
         data-vodda-frame
         style={{

@@ -71,8 +71,13 @@ type User struct {
         Bio       string    `gorm:"size:500" json:"bio"`
         Active    bool      `gorm:"default:true" json:"active"`
         Wallet    int64     `gorm:"default:0" json:"wallet"`
-        CreatedAt time.Time `json:"created_at"`
-        UpdatedAt time.Time `json:"updated_at"`
+        // Google login (کاربران خارج از کشور): pointer columns so NULL never
+        // collides in the unique indexes; OTP accounts keep them NULL.
+        Email       *string   `gorm:"size:190;uniqueIndex" json:"email,omitempty"`
+        GoogleID    *string   `gorm:"size:64;uniqueIndex" json:"-"`
+        AuthProvider string    `gorm:"size:16;default:''" json:"auth_provider"`
+        CreatedAt   time.Time `json:"created_at"`
+        UpdatedAt   time.Time `json:"updated_at"`
 
         Teacher *Teacher `gorm:"foreignKey:UserID" json:"teacher,omitempty"`
 }
@@ -229,6 +234,10 @@ type Session struct {
         // Instant marks an immediate (جلسهٔ فوری) booking created minutes before
         // its start; such sessions bypass the weekly work-time template.
         Instant bool `gorm:"default:false;index" json:"instant"`
+        // ViaDispatch marks sessions born from a فراخوان confirm (ChooseOffer):
+        // the teacher already opted in, so instant dispatch sessions are
+        // auto-confirmed (gateway settlement included) without a second accept.
+        ViaDispatch bool `gorm:"default:false" json:"via_dispatch"`
         // TeacherSeenAt is set the first time the owning teacher views the session
         // (list or detail) — the base of the unseen counter badge.
         TeacherSeenAt *time.Time `gorm:"index" json:"teacher_seen_at,omitempty"`

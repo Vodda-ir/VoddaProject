@@ -12,10 +12,11 @@ import (
 const (
         // DispatchCallTTL bounds how long a broadcast stays visible to teachers.
         DispatchCallTTL = 12 * time.Minute
-        // DispatchFlexibleOffset is the provisional hour of a flexible
-        // ("در اسرع وقت") call: the confirmed session lands half an hour ahead
-        // and teacher/learner finalize the exact time in chat/live room.
-        DispatchFlexibleOffset = 30 * time.Minute
+        // DispatchInstantOffset is the start delay of a flexible ("در اسرع وقت"
+        // / جلسهٔ فوری) call: the confirmed session lands a couple of minutes
+        // ahead so the live room opens the same moment the learner confirms —
+        // never half an hour later. Teacher/learner can still adjust in chat.
+        DispatchInstantOffset = 2 * time.Minute
         // DispatchSeenFreshness marks how recent a teacher's inbox poll must be
         // to consider them present for the فراخوان.
         DispatchSeenFreshness = 2 * time.Minute
@@ -24,6 +25,7 @@ const (
 // SessionBooker is the subset of SessionUsecase the dispatch confirm needs.
 type SessionBooker interface {
         Book(ctx context.Context, learnerID uint, in BookInput) (*BookResult, error)
+        ConfirmInstantDispatch(ctx context.Context, sessionID, teacherID uint) error
 }
 
 // DispatchUsecase implements the فراخوان اساتید flow: a learner broadcasts a
@@ -227,11 +229,13 @@ func (uc *DispatchUsecase) ChooseOffer(ctx context.Context, learnerID, callID, o
                 return nil, domain.ErrConflict
         }
 
-        // The session hour: exact time when given, otherwise a provisional slot
-        // 30 minutes ahead that the teacher still confirms or reschedules.
+        // The session hour: exact time when given; a flexible (فوری) call
+        // starts minutes after the learner confirms — the live room must be
+        // ready the same moment, not half an hour later.
         scheduledAt := call.ScheduledAt
+        instant := call.Flexible
         if scheduledAt == nil || call.Flexible {
-                at := time.Now().Add(DispatchFlexibleOffset).Truncate(5 * time.Minute)
+                at := time.Now().Add(DispatchInstantOffset).Truncate(time.Minute)
                 scheduledAt = &at
         }
 
@@ -243,9 +247,20 @@ func (uc *DispatchUsecase) ChooseOffer(ctx context.Context, learnerID, callID, o
                 PaymentMethod:     paymentMethod,
                 ReturnPath:        returnPath,
                 SkipWorkTimeCheck: true, // the teacher opted in by accepting the call
+                Instant:           instant,
+                ViaDispatch:       true,
         })
         if err != nil {
                 return nil, err
+        }
+
+        // جلسهٔ فوری: استاد با پذیرش فراخوان و ثبت پیشنهاد، وعدهٔ برگزاری داده
+        // است؛ جلسه بدون منتظر ماندن برای تأیید دوم قطعی می‌شود تا کلاس همان
+        // لحظه پس از انتخاب کاربر آمادهٔ ورود باشد.
+        if instant && paymentMethod != "gateway" {
+                if err := uc.sessions.ConfirmInstantDispatch(ctx, result.Session.ID, offer.TeacherID); err != nil {
+                        log.Printf("dispatch: instant auto-confirm session=%d teacher=%d: %v", result.Session.ID, offer.TeacherID, err)
+                }
         }
 
         call.Status = domain.DispatchMatched

@@ -81,6 +81,9 @@ type BookInput struct {
         // before start. Requires the teacher's instant switch to be on and
         // ignores the weekly template.
         Instant bool
+        // ViaDispatch marks the booking as born from a فراخوان confirm — used
+        // by the settlement path to auto-confirm instant dispatch sessions.
+        ViaDispatch bool
 }
 
 // Book creates a booking: the wallet method charges the learner's wallet up
@@ -178,6 +181,7 @@ func (uc *SessionUsecase) Book(ctx context.Context, learnerID uint, in BookInput
                 Status:      domain.SessionPending,
                 Note:        in.Note,
                 Instant:     in.Instant,
+                ViaDispatch: in.ViaDispatch,
         }
 
         if gatewayPayment {
@@ -270,6 +274,32 @@ func (uc *SessionUsecase) BookingPayment(ctx context.Context, learnerID, session
         }
         _ = uc.financialFailStaleOrders(ctx, s.ID)
         return uc.payments.CreateBookingPayment(ctx, learner, s, returnPath)
+}
+
+// ConfirmInstantDispatch auto-confirms an instant session created through the
+// فراخوان: the teacher already committed by submitting the offer, so the class
+// is ready the same moment the learner confirms — no second accept needed.
+// Silently skips anything that does not match (wrong teacher, not instant,
+// not pending — e.g. awaiting gateway payment) so callers can stay optimistic.
+func (uc *SessionUsecase) ConfirmInstantDispatch(ctx context.Context, sessionID, teacherID uint) error {
+        s, err := uc.sessions.ByID(ctx, sessionID)
+        if err != nil {
+                return err
+        }
+        if s.TeacherID != teacherID || !s.Instant || !s.ViaDispatch || s.Status != domain.SessionPending {
+                return nil
+        }
+        s.Status = domain.SessionConfirmed
+        if err := uc.sessions.Update(ctx, s); err != nil {
+                return err
+        }
+        uc.notify(ctx, s.LearnerID, "جلسهٔ فوری آماده است",
+                "استاد فراخوان شما را پذیرفت و جلسه قطعی شد؛ همین حالا می‌توانید وارد کلاس تصویری شوید.")
+        if s.Teacher != nil {
+                uc.notify(ctx, s.Teacher.UserID, "جلسهٔ فوری قطعی شد",
+                        "کاربر پیشنهاد شما را انتخاب کرد و جلسه فوری قطعی شد؛ همین حالا وارد کلاس شوید.")
+        }
+        return nil
 }
 
 // Accept confirms a pending session (teacher action).

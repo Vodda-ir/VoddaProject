@@ -88,6 +88,12 @@ func NewRouter(cfg *config.Config, h *Handler, tm *token.Manager, readiness func
         {
                 auth.POST("/request-otp", otpRequestLimiter.Middleware("otp-request"), h.RequestOTP)
                 auth.POST("/verify-otp", otpVerifyLimiter.Middleware("otp-verify"), h.VerifyOTP)
+                // ورود با گوگل — برای کاربرانی که از خارج از کشور وارد می‌شوند.
+                // مسیرها عمومی‌اند: callback از مرورگرِ برگشتی از گوگل می‌آید و
+                // هویت با code+state و تبادل سرتاسری با گوگل احراز می‌شود.
+                auth.GET("/google/status", publicLimiter.Middleware("google-status"), h.GoogleAuthStatus)
+                auth.GET("/google", publicLimiter.Middleware("google-start"), h.GoogleAuthStart)
+                auth.GET("/google/callback", publicLimiter.Middleware("google-callback"), h.GoogleAuthCallback)
         }
         api.GET("/teachers", publicLimiter.Middleware("teacher-search"), h.SearchTeachers)
         api.GET("/teachers/:id", publicLimiter.Middleware("teacher-detail"), h.GetTeacher)

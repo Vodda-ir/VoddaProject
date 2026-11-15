@@ -45,6 +45,7 @@ export class LiveEngine {
   private makingOffer = false;
   private ignoreOffer = false;
   private closed = false;
+  private recoveryTimer = 0;
 
   constructor(options: EngineOptions) {
     this.role = options.role;
@@ -80,8 +81,19 @@ export class LiveEngine {
     };
     pc.onconnectionstatechange = () => {
       this.onState({ connection: pc.connectionState, ice: pc.iceConnectionState });
-      if (pc.connectionState === 'failed' && !this.closed) {
+      if (this.closed) return;
+      // موبایل: با تعویض شبکه یا قفل‌شدن صفحه اتصال ICE گاهی قطع می‌شود؛
+      // یک‌بار خودکار restart می‌زنیم تا مکالمه بدون خروج کاربر برنگردد.
+      if (pc.connectionState === 'failed') {
         void pc.restartIce?.();
+      } else if (pc.connectionState === 'disconnected') {
+        if (this.recoveryTimer) window.clearTimeout(this.recoveryTimer);
+        this.recoveryTimer = window.setTimeout(() => {
+          this.recoveryTimer = 0;
+          if (!this.closed && this.pc?.connectionState === 'disconnected') {
+            void this.pc.restartIce?.();
+          }
+        }, 2500);
       }
     };
 
@@ -213,12 +225,29 @@ export class LiveEngine {
     }
   }
 
+  /**
+   * بازیابی اتصال روی موبایل — بعد از قفل‌شدن صفحه، تعویض Wi‑Fi/داده یا
+   * برگشت از پس‌زمینه صدا زده می‌شود؛ ICE را وادار به مذاکرهٔ دوباره می‌کند.
+   */
+  async reconnect(): Promise<void> {
+    if (this.closed || !this.pc) return;
+    try {
+      await this.pc.restartIce?.();
+    } catch {
+      /* best-effort */
+    }
+  }
+
   setCameraTrack(track: MediaStreamTrack | null): void {
     this.cameraTrack = track;
   }
 
   close(): void {
     this.closed = true;
+    if (this.recoveryTimer) {
+      window.clearTimeout(this.recoveryTimer);
+      this.recoveryTimer = 0;
+    }
     this.localStream?.getTracks().forEach((track) => track.stop());
     this.remoteStream?.getTracks().forEach((track) => track.stop());
     this.pc?.getSenders().forEach((sender) => { try { sender.track?.stop(); } catch { /* ignore */ } });

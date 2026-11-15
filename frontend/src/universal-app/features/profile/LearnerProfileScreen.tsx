@@ -17,6 +17,7 @@ import {
   spacing,
   typography,
 } from "../../ui";
+import { useAppearance } from "../../ui/appearance";
 import { messageOf } from "../../ui/errorMessage";
 
 export type LearnerProfileScreenProps = {
@@ -27,6 +28,7 @@ const profileErrorMessage = "دریافت اطلاعات حساب انجام ن�
 
 export function LearnerProfileScreen({ config }: LearnerProfileScreenProps) {
   const platform = usePlatform();
+  const { t, lang, setLang, theme, toggleTheme } = useAppearance();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [loggingOut, setLoggingOut] = useState(false);
@@ -124,6 +126,68 @@ export function LearnerProfileScreen({ config }: LearnerProfileScreenProps) {
         </button>
       ) : null}
 
+      {/* تنظیمات ظاهر — زبان و حالت نمایش */}
+      <Card className="vodda-enter vodda-enter-delay-2" style={{ padding: 0, overflow: "hidden", borderRadius: 24 }}>
+        <div style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderBottom: `1px solid ${colors.sand100}` }}>
+          <Icon name="grid" size={21} style={{ color: colors.olive600 }} />
+          <span style={{ flex: 1, fontSize: 14.5, fontWeight: 700 }}>{t("profile_settings")}</span>
+        </div>
+        <div style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderBottom: `1px solid ${colors.sand100}` }}>
+          <Icon name="doc" size={20} style={{ color: colors.olive600 }} />
+          <span style={{ flex: 1, fontSize: 14.5, fontWeight: 600 }}>{t("profile_language")}</span>
+          <div role="group" aria-label={t("profile_language")} style={{ display: "flex", gap: 4, padding: 3, borderRadius: 999, border: `1px solid ${colors.sand200}`, background: colors.surfaceSoft }}>
+            {(["fa", "en"] as const).map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => setLang(option)}
+                aria-pressed={lang === option}
+                style={{
+                  padding: "5px 14px",
+                  borderRadius: 999,
+                  border: 0,
+                  cursor: "pointer",
+                  fontFamily: typography.fontFamily,
+                  fontSize: 12,
+                  fontWeight: lang === option ? 800 : 600,
+                  color: lang === option ? colors.surface : colors.inkMuted,
+                  background: lang === option ? colors.olive600 : "transparent",
+                }}
+              >
+                {option === "fa" ? t("lang_fa") : t("lang_en")}
+              </button>
+            ))}
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={toggleTheme}
+          role="switch"
+          aria-checked={theme === "dark"}
+          className="vodda-tappable"
+          style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", border: 0, color: colors.ink, background: colors.surface, fontFamily: typography.fontFamily, cursor: "pointer" }}
+        >
+          <Icon name={theme === "dark" ? "moon" : "sun"} size={20} style={{ color: colors.olive600 }} />
+          <span style={{ flex: 1, fontSize: 14.5, fontWeight: 600, textAlign: "right" }}>{t("profile_theme")}</span>
+          <span
+            style={{
+              minWidth: 64,
+              display: "flex",
+              alignItems: "center",
+              gap: 5,
+              padding: "5px 12px",
+              borderRadius: 999,
+              fontSize: 12,
+              fontWeight: 800,
+              color: theme === "dark" ? colors.surface : colors.olive700,
+              background: theme === "dark" ? colors.olive800 : colors.olive50,
+            }}
+          >
+            {theme === "dark" ? t("theme_dark") : t("theme_light")}
+          </span>
+        </button>
+      </Card>
+
       <Card className="vodda-enter vodda-enter-delay-2" style={{ padding: 0, overflow: "hidden", borderRadius: 24 }}>
         {[
           { icon: "user" as const, label: "ویرایش پروفایل", path: "/profile/edit" },
@@ -164,7 +228,7 @@ export function LearnerProfileScreen({ config }: LearnerProfileScreenProps) {
 
       <Button variant="danger" fullWidth loading={loggingOut} onClick={() => void logout()} style={{ minHeight: 48, borderRadius: 14 }}>
         <Icon name="logout" size={19} />
-        خروج از حساب
+        {t("profile_logout")}
       </Button>
 
       <p style={{ fontSize: 12, margin: "4px 0 0", textAlign: "center", color: colors.inkFaint }}>

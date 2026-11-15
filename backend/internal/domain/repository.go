@@ -40,6 +40,8 @@ type UserRepository interface {
         Update(ctx context.Context, u *User) error
         ByID(ctx context.Context, id uint) (*User, error)
         ByMobile(ctx context.Context, mobile string) (*User, error)
+        ByGoogleID(ctx context.Context, googleID string) (*User, error)
+        ByEmail(ctx context.Context, email string) (*User, error)
         List(ctx context.Context, f UserListFilter) ([]User, int64, error)
         AddWallet(ctx context.Context, userID uint, delta int64) error
         Count(ctx context.Context, role Role) (int64, error)

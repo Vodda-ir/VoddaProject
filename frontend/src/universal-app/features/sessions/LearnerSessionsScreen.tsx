@@ -40,14 +40,19 @@ import {
   isUpcomingSession,
   type LearnerSession,
 } from "./types";
+import { useAppearance } from "../../ui/appearance";
+import type { TranslationKey } from "../../i18n";
 
-const statusLabels: Record<string, string> = {
-  pending: "در انتظار تأیید",
-  confirmed: "تأیید شده",
-  done: "انجام شده",
-  canceled: "لغو شده",
-  awaiting_payment: "در انتظار پرداخت",
-};
+function statusLabel(status: string, t: (key: TranslationKey) => string): string {
+  switch (status) {
+    case "pending": return t("status_pending");
+    case "confirmed": return t("status_confirmed");
+    case "done": return t("status_done");
+    case "canceled": return t("status_canceled");
+    case "awaiting_payment": return t("status_awaiting_payment");
+    default: return status;
+  }
+}
 
 function officialTime(session: LearnerSession): string {
   if (!hasOfficialSessionTime(session)) return "زمان رسمی جلسه دریافت نشد";
@@ -75,6 +80,7 @@ function SessionCard({
   onRate: () => void;
   onPay: () => void;
 }) {
+  const { t } = useAppearance();
   return (
     <Card
       className="vodda-card--interactive"
@@ -83,7 +89,7 @@ function SessionCard({
     >
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: spacing.md }}>
         <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-          <StatusPill status={session.status} label={statusLabels[session.status] ?? session.status} />
+          <StatusPill status={session.status} label={statusLabel(session.status, t)} />
           {session.instant ? (
             <span aria-label="جلسهٔ فوری" style={{ padding: "3px 9px", borderRadius: radii.pill, color: "#fffaf0", background: "linear-gradient(145deg,#d8b869,#b8923c)", fontSize: 10, fontWeight: 800 }}>
               فوری
@@ -167,6 +173,7 @@ function SessionCard({
 
 export function LearnerSessionsScreen({ config }: { config?: UniversalAppConfig }) {
   const runtime = usePlatform();
+  const { t } = useAppearance();
   const [when, setWhen] = useState<LearnerSessionsWhen>("upcoming");
   const [sessions, setSessions] = useState<LearnerSession[]>([]);
   const [loading, setLoading] = useState(true);

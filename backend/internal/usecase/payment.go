@@ -535,6 +535,23 @@ func (uc *PaymentUsecase) notifyBookingSettled(ctx context.Context, order *domai
         if err != nil || teacher == nil {
                 return
         }
+        // جلسهٔ فوریِ فراخوان: پس از تسویه بدون تأیید دوم قطعی شده است؛
+        // پیام‌ها باید «وارد شو» بگویند نه «تأیید کن».
+        if session.Instant && session.ViaDispatch {
+                _ = uc.notifs.Create(ctx, &domain.Notification{
+                        UserID: teacher.UserID,
+                        Title:  "جلسهٔ فوری قطعی شد",
+                        Body:   "پرداخت انجام و جلسهٔ فوری قطعی شد؛ همین حالا وارد کلاس شوید.",
+                })
+                if session.LearnerID != 0 {
+                        _ = uc.notifs.Create(ctx, &domain.Notification{
+                                UserID: session.LearnerID,
+                                Title:  "جلسهٔ فوری آماده است",
+                                Body:   "پرداخت با موفقیت انجام شد؛ همین حالا می‌توانید وارد کلاس تصویری شوید.",
+                        })
+                }
+                return
+        }
         _ = uc.notifs.Create(ctx, &domain.Notification{
                 UserID: teacher.UserID,
                 Title:  "درخواست جلسه‌ی جدید",

@@ -26,6 +26,7 @@ import {
   typography,
 } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
+import { useAppearance } from "../../ui/appearance";
 import { resolveAssetUrl } from "../../platform/asset";
 import { RoleModeSheet } from "../auth/RoleModeSheet";
 import { TopicCategoryGrid, TopServicesRail, FreeServicesBoard } from "./homeSections";
@@ -64,8 +65,14 @@ function tehranHour() {
   }
 }
 
-function greetingLabel() {
+function greetingLabel(lang: "fa" | "en"): string {
   const hour = tehranHour();
+  if (lang === "en") {
+    if (hour < 12) return "Good morning";
+    if (hour < 15) return "Good afternoon";
+    if (hour < 20) return "Good evening";
+    return "Good night";
+  }
   if (hour < 12) return "صبح بخیر";
   if (hour < 15) return "ظهر بخیر";
   if (hour < 20) return "عصر بخیر";
@@ -252,7 +259,7 @@ function VerseStrip() {
         padding: "12px 16px",
         borderRadius: radii.lg,
         /* رنگ طلایی کاغذی + خط طلا — لحظهٔ آیه باید از بقیهٔ صفحه متمایز باشد */
-        background: `linear-gradient(150deg, ${colors.goldBackground}, #fffaf0 78%)`,
+        background: `linear-gradient(150deg, ${colors.goldBackground}, ${colors.surfaceWarm} 78%)`,
         border: `1px solid ${colors.goldSoft}`,
         boxShadow: "0 4px 14px rgba(191,149,64,.10)",
       }}
@@ -757,6 +764,7 @@ type SessionAreaState = "loading" | "ready";
 
 export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
   const runtime = usePlatform();
+  const { lang } = useAppearance();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [teachersLoading, setTeachersLoading] = useState(!teachersCacheFresh());
@@ -899,7 +907,7 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
           <Avatar name={user?.name} src={user?.avatar_url} size={48} ring />
           <span style={{ minWidth: 0 }}>
             <span style={{ ...typography.caption, display: "block", color: colors.inkMuted }}>
-              {greetingLabel()}،{today ? ` امروز ${today}` : ""}
+              {greetingLabel(lang)}،{today ? ` امروز ${today}` : ""}
             </span>
             <strong
               style={{

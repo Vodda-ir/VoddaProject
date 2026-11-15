@@ -25,6 +25,8 @@ import {
   spacing,
   typography,
 } from "../../ui";
+import { useAppearance } from "../../ui/appearance";
+import type { TranslationKey } from "../../i18n";
 import { messageOf } from "../../ui/errorMessage";
 import { formatWalletAmount, toFaDigits } from "../wallet/WalletTransactionCard";
 
@@ -58,6 +60,16 @@ const statusLabels: Record<string, string> = {
   canceled: "لغو شده",
 };
 
+function statusLabel(status: string, t: (key: TranslationKey) => string): string {
+  switch (status) {
+    case "pending": return t("status_pending");
+    case "confirmed": return t("status_confirmed");
+    case "done": return t("status_done");
+    case "canceled": return t("status_canceled");
+    case "awaiting_payment": return t("status_awaiting_payment");
+    default: return status;
+  }
+}
 function parseTeacherSession(value: unknown): TeacherSession | null {
   const row = asRecord(value);
   if (!row) return null;
@@ -140,6 +152,7 @@ function SessionCard({
   onReject: () => void;
   onComplete: () => void;
 }) {
+  const { t } = useAppearance();
   const commonCardStyle = {
     display: "grid",
     gap: 13,
@@ -190,7 +203,7 @@ function SessionCard({
     <Card className="vodda-card--interactive" style={{ ...commonCardStyle, cursor: "pointer", borderColor: session.unseen ? "rgba(216,184,105,.9)" : undefined, borderWidth: session.unseen ? 1.5 : undefined }} onClick={onOpen}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: spacing.md }}>
         <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-          <StatusPill status={session.status} label={statusLabels[session.status] ?? session.status} />
+          <StatusPill status={session.status} label={statusLabel(session.status, t)} />
           {session.instant ? (
             <span style={{ padding: "3px 9px", borderRadius: radii.pill, color: "#fffaf0", background: "linear-gradient(145deg,#d8b869,#b8923c)", fontSize: 10, fontWeight: 800 }}>فوری</span>
           ) : null}

@@ -1,0 +1,156 @@
+/**
+ * appearance.tsx — ظاهرِ اپ: حالت روشن/تاریک + زبان (فارسی/انگلیسی).
+ *
+ * Theme: toggles a single data-vodda-theme attribute on <html>; every color
+ * in theme.ts is a CSS variable, so the whole app re-paints instantly
+ * (no per-component edits, no re-render storm).
+ * Language: provides the t() translator for screens that opted into i18n
+ * and drives <html lang/dir> so Persian stays RTL and English becomes LTR.
+ * Both preferences persist in localStorage and are applied pre-paint by the
+ * inline script in the root layout (no flash).
+ */
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
+import { dictionaries, type AppLanguage, type TranslationKey } from "../i18n";
+
+export type ThemeMode = "light" | "dark";
+
+const THEME_STORAGE_KEY = "vodda_theme";
+const LANG_STORAGE_KEY = "vodda_lang";
+
+export type AppearanceValue = {
+  theme: ThemeMode;
+  setTheme: (mode: ThemeMode) => void;
+  toggleTheme: () => void;
+  lang: AppLanguage;
+  setLang: (lang: AppLanguage) => void;
+  dir: "rtl" | "ltr";
+  /** t("key") — i18n lookup with {placeholder} interpolation; missing keys fall back to Persian. */
+  t: (key: TranslationKey, vars?: Record<string, string | number>) => string;
+};
+
+const AppearanceContext = createContext<AppearanceValue | null>(null);
+
+function readStoredTheme(): ThemeMode {
+  if (typeof window === "undefined") return "light";
+  try {
+    const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
+    if (stored === "dark" || stored === "light") return stored;
+  } catch {
+    /* private mode */
+  }
+  return "light";
+}
+
+function readStoredLang(): AppLanguage {
+  if (typeof window === "undefined") return "fa";
+  try {
+    const stored = window.localStorage.getItem(LANG_STORAGE_KEY);
+    if (stored === "en" || stored === "fa") return stored;
+  } catch {
+    /* private mode */
+  }
+  return "fa";
+}
+
+export function applyThemeToDocument(mode: ThemeMode) {
+  if (typeof document === "undefined") return;
+  const root = document.documentElement;
+  if (mode === "dark") {
+    root.setAttribute("data-vodda-theme", "dark");
+  } else {
+    root.removeAttribute("data-vodda-theme");
+  }
+  root.style.colorScheme = mode;
+}
+
+export function applyLangToDocument(lang: AppLanguage) {
+  if (typeof document === "undefined") return;
+  const root = document.documentElement;
+  root.lang = lang === "en" ? "en" : "fa";
+  root.dir = lang === "en" ? "ltr" : "rtl";
+}
+
+export function AppearanceProvider({ children }: { children: ReactNode }) {
+  const [theme, setThemeState] = useState<ThemeMode>(readStoredTheme);
+  const [lang, setLangState] = useState<AppLanguage>(readStoredLang);
+
+  useEffect(() => {
+    applyThemeToDocument(theme);
+  }, [theme]);
+
+  useEffect(() => {
+    applyLangToDocument(lang);
+  }, [lang]);
+
+  const setTheme = useCallback((mode: ThemeMode) => {
+    setThemeState(mode);
+    try {
+      window.localStorage.setItem(THEME_STORAGE_KEY, mode);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const setLang = useCallback((next: AppLanguage) => {
+    setLangState(next);
+    try {
+      window.localStorage.setItem(LANG_STORAGE_KEY, next);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const value = useMemo<AppearanceValue>(() => {
+    const table = dictionaries[lang] ?? dictionaries.fa;
+    const t = (key: TranslationKey, vars?: Record<string, string | number>) => {
+      let text = table[key] ?? dictionaries.fa[key] ?? key;
+      if (vars) {
+        for (const [name, replacement] of Object.entries(vars)) {
+          text = text.replaceAll(`{${name}}`, String(replacement));
+        }
+      }
+      return text;
+    };
+    return {
+      theme,
+      setTheme,
+      toggleTheme: () => setTheme(theme === "dark" ? "light" : "dark"),
+      lang,
+      setLang,
+      dir: lang === "en" ? "ltr" : "rtl",
+      t,
+    };
+  }, [theme, lang, setTheme, setLang]);
+
+  return <AppearanceContext.Provider value={value}>{children}</AppearanceContext.Provider>;
+}
+
+export function useAppearance(): AppearanceValue {
+  const value = useContext(AppearanceContext);
+  if (!value) {
+    // Screens rendered outside the provider keep working with defaults.
+    return {
+      theme: "light",
+      setTheme: () => {},
+      toggleTheme: () => {},
+      lang: "fa",
+      setLang: () => {},
+      dir: "rtl",
+      t: (key) => dictionaries.fa[key] ?? key,
+    };
+  }
+  return value;
+}
+
+/** Convenience hook for screens that only need translations. */
+export function useT() {
+  return useAppearance().t;
+}

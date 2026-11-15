@@ -73,6 +73,10 @@ services:
       SAMAN_TERMINAL_ID: ${SAMAN_TERMINAL_ID:-31136631}
       SAMAN_BASE_URL: ${SAMAN_BASE_URL:-https://sep.shaparak.ir}
       PLATFORM_COMMISSION_PERCENT: ${PLATFORM_COMMISSION_PERCENT:-15}
+      # ورود با گوگل — تا وقتی خالی باشد مسیر گوگل غیرفعال است
+      GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID:-}
+      GOOGLE_OAUTH_CLIENT_SECRET: ${GOOGLE_OAUTH_CLIENT_SECRET:-}
+      GOOGLE_OAUTH_REDIRECT_URI: ${GOOGLE_OAUTH_REDIRECT_URI:-https://api.vodda.ir/api/v1/auth/google/callback}
     ports:
       - "127.0.0.1:${BACKEND_PORT:-3420}:${BACKEND_INTERNAL_PORT:-3420}"
     volumes:

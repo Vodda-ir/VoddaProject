@@ -33,6 +33,9 @@ type Handler struct {
         Blog         *usecase.BlogUsecase
         Notif        domain.NotificationRepository
         Live         *LiveHub
+        // FrontendBase is the public frontend origin the Google login callback
+        // redirects into (normally FRONTEND_BASE_URL).
+        FrontendBase string
 }
 
 func paramID(c *gin.Context) uint {

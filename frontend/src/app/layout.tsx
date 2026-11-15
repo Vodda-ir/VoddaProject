@@ -30,9 +30,18 @@ export const viewport: Viewport = {
   viewportFit: 'cover',
 };
 
+// پیش از اولین رنگ‌آمیزی اجرا می‌شود تا حالت تاریک/زبان ذخیره‌شده بدون فلش
+// اعمال شود (FOUC). هم‌قاعده با ui/appearance.tsx — کلیدها یکی هستند.
+const appearanceBootstrap = `(function(){try{var t=localStorage.getItem('vodda_theme');var l=localStorage.getItem('vodda_lang');var d=document.documentElement;if(t==='dark'){d.setAttribute('data-vodda-theme','dark');d.style.colorScheme='dark';}if(l==='en'){d.lang='en';d.dir='ltr';}}catch(e){}})();`;
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fa" dir="rtl">
+    // suppressHydrationWarning: اسکریپت پیش از رنگ‌آمیزی، lang/dir/تم را روی
+    // همین عنصر عوض می‌کند — این اختلاف عمدی است و نباید هشدار هیدریشن بدهد.
+    <html lang="fa" dir="rtl" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: appearanceBootstrap }} />
+      </head>
       <body>{children}</body>
     </html>
   );

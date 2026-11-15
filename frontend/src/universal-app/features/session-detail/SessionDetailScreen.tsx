@@ -44,14 +44,19 @@ import {
   type SessionMessageData,
 } from "./api";
 import { LiveRoom } from "./LiveRoom";
+import { useAppearance } from "../../ui/appearance";
+import type { TranslationKey } from "../../i18n";
 
-const statusLabels: Record<string, string> = {
-  pending: "در انتظار تأیید",
-  confirmed: "تأیید شده",
-  done: "برگزار شده",
-  canceled: "لغو شده",
-  awaiting_payment: "در انتظار پرداخت",
-};
+function statusLabel(status: string, t: (key: TranslationKey) => string): string {
+  switch (status) {
+    case "pending": return t("status_pending");
+    case "confirmed": return t("status_confirmed");
+    case "done": return t("status_done");
+    case "canceled": return t("status_canceled");
+    case "awaiting_payment": return t("status_awaiting_payment");
+    default: return status;
+  }
+}
 
 function officialTime(detail: SessionDetailData): string {
   if (!detail.localDate || !detail.localStart || !detail.localEnd) {
@@ -221,6 +226,7 @@ export function SessionDetailScreen({
   onRoleResolved?: (role: "learner" | "teacher") => void;
 }) {
   const runtime = usePlatform();
+  const { t } = useAppearance();
   const id = Number.parseInt(sessionId, 10);
   const [detail, setDetail] = useState<SessionDetailData | null>(null);
   const [messages, setMessages] = useState<SessionMessageData[]>([]);
@@ -354,7 +360,7 @@ export function SessionDetailScreen({
       {/* کادر وضعیت با حاشیهٔ برجسته */}
       <div
         role="status"
-        aria-label={`وضعیت جلسه: ${statusLabels[detail.status] ?? detail.status}`}
+        aria-label={`وضعیت جلسه: ${statusLabel(detail.status, t)}`}
         className="vodda-enter"
         style={{
           position: "relative",
@@ -372,7 +378,7 @@ export function SessionDetailScreen({
         }}
       >
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: spacing.md }}>
-          <StatusPill status={detail.status} label={statusLabels[detail.status] ?? detail.status} />
+          <StatusPill status={detail.status} label={statusLabel(detail.status, t)} />
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             {detail.instant ? (
               <span
@@ -494,7 +500,7 @@ export function SessionDetailScreen({
             style={{ minHeight: 48 }}
           >
             <Icon name="video" size={19} />
-            {joinReady ? "شروع جلسهٔ تصویری" : "هنوز زمان کلاس نیست"}
+            {joinReady ? t("session_start_video") : t("session_not_time_yet")}
           </Button>
           {isTeacher && endReady ? (
             <Button
