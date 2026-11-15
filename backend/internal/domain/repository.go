@@ -115,6 +115,8 @@ type SessionRepository interface {
         Count(ctx context.Context, status SessionStatus) (int64, error)
         // Unseen-session tracking: sessions with NULL teacher_seen_at.
         MarkSessionsSeen(ctx context.Context, ids []uint) error
+        MarkAllTeacherSessionsSeen(ctx context.Context, teacherID uint) (int64, error)
+        StaleInstantPendings(ctx context.Context, now time.Time) ([]Session, error)
         CountTeacherUnseen(ctx context.Context, teacherID uint) (int64, error)
         // Persisted per-session coordination chat.
         SessionMessages(ctx context.Context, sessionID uint, limit int) ([]SessionMessage, error)

@@ -88,6 +88,7 @@ type BookInput struct {
 // Saman Sep payment page, activating the session after settlement.
 func (uc *SessionUsecase) Book(ctx context.Context, learnerID uint, in BookInput) (*BookResult, error) {
         uc.cancelExpiredAwaiting(ctx)
+        uc.expireStaleInstantPending(ctx)
 
         gatewayPayment := in.PaymentMethod == "gateway"
         if in.PaymentMethod != "" && in.PaymentMethod != "wallet" && in.PaymentMethod != "gateway" {
@@ -277,7 +278,16 @@ func (uc *SessionUsecase) Accept(ctx context.Context, userID, sessionID uint) (*
         if err != nil {
                 return nil, err
         }
-        if s.Status != domain.SessionPending || time.Now().After(s.ScheduledAt) {
+        if s.Status != domain.SessionPending {
+                return nil, domain.ErrConflict
+        }
+        // جلسهٔ فوری تا پایان بازهٔ خودش قابل تأیید است (استاد ممکن است با
+        // کمی تأخیر ببیند)؛ جلسهٔ معمولی فقط پیش از آغاز رسمی.
+        acceptDeadline := s.ScheduledAt
+        if s.Instant {
+                acceptDeadline = s.ScheduledAt.Add(time.Duration(s.Duration) * time.Minute)
+        }
+        if time.Now().After(acceptDeadline) {
                 return nil, domain.ErrConflict
         }
         s.Status = domain.SessionConfirmed
@@ -663,4 +673,48 @@ func (uc *SessionUsecase) TeacherUnseenSessionCount(ctx context.Context, userID 
                 return 0, err
         }
         return uc.sessions.CountTeacherUnseen(ctx, teacher.ID)
+}
+
+// MarkTeacherSessionsSeenAll stamps all unseen active sessions of the calling
+// teacher; returns how many rows were marked.
+func (uc *SessionUsecase) MarkTeacherSessionsSeenAll(ctx context.Context, userID uint) (int64, error) {
+        teacher, err := uc.teacherProfileForUser(ctx, userID)
+        if err != nil {
+                return 0, err
+        }
+        return uc.sessions.MarkAllTeacherSessionsSeen(ctx, teacher.ID)
+}
+
+// ExpireSweep cancels instant sessions that were never accepted within their
+// own window (start..start+duration) and refunds the learner. Runs on the
+// one-minute background ticker.
+func (uc *SessionUsecase) ExpireSweep(ctx context.Context) error {
+        uc.expireStaleInstantPending(ctx)
+        return nil
+}
+
+func (uc *SessionUsecase) expireStaleInstantPending(ctx context.Context) {
+        stale, err := uc.sessions.StaleInstantPendings(ctx, time.Now())
+        if err != nil {
+                log.Printf("session: stale instant sweep: %v", err)
+                return
+        }
+        for _, s := range stale {
+                if uc.financial != nil {
+                        if err := uc.financial.CancelAndRefundSession(ctx, &s, []domain.SessionStatus{domain.SessionPending}, "انقضای جلسهٔ فوری"); err != nil {
+                                log.Printf("session: refund stale instant #%d: %v", s.ID, err)
+                                continue
+                        }
+                } else {
+                        s.Status = domain.SessionCanceled
+                        if err := uc.sessions.Update(ctx, &s); err != nil {
+                                continue
+                        }
+                        _ = uc.refund(ctx, &s)
+                }
+                uc.notify(ctx, s.LearnerID, "جلسهٔ فوری تأیید نشد", "استاد در بازهٔ جلسهٔ فوری پاسخ نداد و مبلغ به کیف پول شما بازگشت.")
+                if teacher, terr := uc.teachers.ByID(ctx, s.TeacherID); terr == nil {
+                        uc.notify(ctx, teacher.UserID, "جلسهٔ فوری منقضی شد", "به درخواست جلسهٔ فوری پاسخ ندادید؛ مبلغ به قرآن‌آموز بازگشت.")
+                }
+        }
 }

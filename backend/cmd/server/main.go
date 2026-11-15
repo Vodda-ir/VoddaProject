@@ -156,6 +156,9 @@ func main() {
                                 if err := ceremonyUsecase.ExpireSweep(context.Background()); err != nil {
                                         log.Printf("ceremony sweep: %v", err)
                                 }
+                                if err := sessionUsecase.ExpireSweep(context.Background()); err != nil {
+                                        log.Printf("session sweep: %v", err)
+                                }
                         case <-quit:
                                 return
                         }

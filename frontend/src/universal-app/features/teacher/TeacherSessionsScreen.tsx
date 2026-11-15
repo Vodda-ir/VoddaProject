@@ -80,7 +80,9 @@ function parseTeacherSession(value: unknown): TeacherSession | null {
     note: asString(row.note),
     rejectNote: asString(row.reject_note),
     instant: row.instant === true,
-    unseen: row.unseen === true,
+    // دیده‌نشده = مهر دیده‌شدن هنوز ثبت نشده باشد؛ هم نشان سروری و هم
+    // حالت قدیمی transient پشتیبانی می‌شود.
+    unseen: row.unseen === true || asString(row.teacher_seen_at) === "",
   };
 }
 
@@ -88,6 +90,11 @@ async function getTeacherSessions(runtime: PlatformRuntime, when: TeacherSession
   const search = new URLSearchParams({ when });
   const response = await runtime.request<ApiEnvelope<unknown[]>>(`/teacher/sessions?${search.toString()}`);
   return (response.data ?? []).map(parseTeacherSession).filter((item): item is TeacherSession => item !== null);
+}
+
+/** پس از دیدن فهرست، ردیف‌های دیده‌نشده مهر می‌خورند (شمارندهٔ قرمز صفر می‌شود). */
+async function markTeacherSessionsSeen(runtime: PlatformRuntime) {
+  await runtime.request<ApiEnvelope<unknown>>("/teacher/sessions/mark-seen", { method: "POST" });
 }
 
 async function acceptTeacherSession(runtime: PlatformRuntime, sessionId: number) {
@@ -262,6 +269,20 @@ export function TeacherSessionsScreen({ mode, config }: { mode: TeacherSessionsM
   useEffect(() => {
     void load(when);
   }, [load, when]);
+
+  // نشان «جدید» یک لحظه نمایش داده می‌شود و سپس جلسات مهر دیده‌شدن می‌خورند —
+  // به‌این‌ترتیب رفرش‌های دوبارهٔ همان فهرست، نشان را بی‌دلیل پاک نمی‌کنند.
+  useEffect(() => {
+    if (loading || sessions.length === 0) return;
+    const hasUnseen = sessions.some((item) => item.unseen);
+    if (!hasUnseen) return;
+    const timer = window.setTimeout(() => {
+      void markTeacherSessionsSeen(runtime).catch(() => {
+        // مهر ناموفق — شمارنده در نوسازی بعدی اصلاح می‌شود
+      });
+    }, 1500);
+    return () => window.clearTimeout(timer);
+  }, [loading, runtime, sessions]);
 
   const heading = mode === "requests" ? "درخواست‌های دریافتی" : "جلسات من";
   const emptyDescription = mode === "requests" ? "درخواست جدیدی برای بررسی ندارید." : "جلسه‌ای در این بخش ندارید.";

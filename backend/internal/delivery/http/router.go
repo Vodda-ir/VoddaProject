@@ -187,6 +187,7 @@ func NewRouter(cfg *config.Config, h *Handler, tm *token.Manager, readiness func
                 teacher.DELETE("/work-times/:id", mutationLimiter.Middleware("teacher-work-times"), h.DeleteWorkTime)
                 teacher.GET("/sessions", teacherSessionDisplaysHandler(h.Session))
                 teacher.GET("/sessions/unseen-count", h.TeacherUnseenSessions)
+                teacher.POST("/sessions/mark-seen", mutationLimiter.Middleware("teacher-session"), h.MarkTeacherSessionsSeen)
                 teacher.POST("/sessions/:id/accept", mutationLimiter.Middleware("teacher-session"), h.AcceptSession)
                 teacher.POST("/sessions/:id/reject", financialLimiter.Middleware("financial"), h.RejectSession)
                 teacher.POST("/sessions/:id/complete", financialLimiter.Middleware("financial"), h.CompleteSession)

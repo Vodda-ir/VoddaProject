@@ -105,6 +105,27 @@ func (r *sessionRepo) MarkSessionsSeen(ctx context.Context, ids []uint) error {
                 Update("teacher_seen_at", time.Now().UTC()).Error
 }
 
+// StaleInstantPendings returns instant sessions still pending after their own
+// window fully elapsed (start + duration) — they must be cancelled + refunded.
+func (r *sessionRepo) StaleInstantPendings(ctx context.Context, now time.Time) ([]domain.Session, error) {
+        var rows []domain.Session
+        err := r.db.WithContext(ctx).
+                Where("instant = ? AND status = ? AND scheduled_at + INTERVAL duration MINUTE < ?",
+                        true, domain.SessionPending, now).
+                Order("id asc").Limit(50).Find(&rows).Error
+        return rows, err
+}
+
+// MarkAllTeacherSessionsSeen stamps every unseen active session of a teacher
+// at once — the client calls it after rendering the unseen rows.
+func (r *sessionRepo) MarkAllTeacherSessionsSeen(ctx context.Context, teacherID uint) (int64, error) {
+        res := r.db.WithContext(ctx).Model(&domain.Session{}).
+                Where("teacher_id = ? AND teacher_seen_at IS NULL AND status IN ?",
+                        teacherID, []domain.SessionStatus{domain.SessionPending, domain.SessionConfirmed}).
+                Update("teacher_seen_at", time.Now().UTC())
+        return res.RowsAffected, res.Error
+}
+
 // CountTeacherUnseen counts the teacher's active (pending/confirmed) sessions
 // that were never viewed — the red counter on the sessions tab.
 func (r *sessionRepo) CountTeacherUnseen(ctx context.Context, teacherID uint) (int64, error) {

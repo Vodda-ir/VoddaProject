@@ -62,3 +62,14 @@ func (h *Handler) TeacherUnseenSessions(c *gin.Context) {
 	}
 	ok(c, gin.H{"count": count})
 }
+
+// MarkTeacherSessionsSeen handles POST /teacher/sessions/mark-seen — the
+// sessions list calls it shortly after rendering unseen rows.
+func (h *Handler) MarkTeacherSessionsSeen(c *gin.Context) {
+        marked, err := h.Session.MarkTeacherSessionsSeenAll(c, userID(c))
+        if err != nil {
+                fail(c, err)
+                return
+        }
+        ok(c, gin.H{"marked": marked})
+}
