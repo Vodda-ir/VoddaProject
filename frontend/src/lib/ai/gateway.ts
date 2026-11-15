@@ -52,8 +52,8 @@ const COOLDOWN_MAX_MS = 30 * 60 * 1000;
 const PER_ATTEMPT_TIMEOUT_MS = 25_000;
 // سرویس‌های بدون کلید (Pollinations) سقف نرخ سخت‌گیری دارند؛ فاصلهٔ حداقل
 // بین دو فراخوان + یک تلاش دوبارهٔ کوتاه، از خطای FREE_LIMIT جلوگیری می‌کند.
-const KEYLESS_GAP_MS = 3_000;
-const RATE_RETRY_DELAY_MS = 4_000;
+const KEYLESS_GAP_MS = 8_000;
+const RATE_RETRY_DELAY_MS = 6_000;
 const lastKeylessCallAt = new Map<string, number>();
 
 function sleep(ms: number): Promise<void> {
