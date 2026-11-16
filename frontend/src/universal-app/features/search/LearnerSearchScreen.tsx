@@ -1006,7 +1006,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
               >
                 <Icon name="quran" size={17} style={{ color: colors.olive700, flex: "0 0 auto" }} />
                 <div style={{ minWidth: 0, flex: 1 }}>
-                  <strong style={{ display: "block", fontSize: 12.5, color: colors.olive700 }}>{catName || needle}</strong>
+                  <strong style={{ display: "block", fontSize: 12.5, color: colors.olive700 }}>{L(catName || needle)}</strong>
                   <span style={{ fontSize: 11, color: colors.inkMuted }}>
                     {faNumber(baseOnlineServices.length, lang)} {L("خدمت در این بخش")}
                   </span>
@@ -1255,7 +1255,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
         >
           <Icon name="grid" size={17} style={{ color: colors.goldDark, flex: "0 0 auto" }} />
           <div style={{ minWidth: 0, flex: 1 }}>
-            <strong style={{ display: "block", fontSize: 12.5, color: colors.goldDark }}>{L("دسته: {n}").replace("{n}", catName)}</strong>
+            <strong style={{ display: "block", fontSize: 12.5, color: colors.goldDark }}>{L("دسته: {n}").replace("{n}", L(catName))}</strong>
             <span style={{ fontSize: 11, color: colors.inkMuted }}>
               {L("فقط استادان خدمات همین دسته نمایش داده می‌شوند")}
             </span>
