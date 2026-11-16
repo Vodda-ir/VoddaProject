@@ -198,6 +198,23 @@ services:
     security_opt:
       - no-new-privileges:true
 
+  turn:
+    image: coturn/coturn:alpine
+    container_name: vodda-turn-1
+    restart: unless-stopped
+    network_mode: host
+    command:
+      - -n
+      - --realm=vodda.ir
+      - --fingerprint
+      - --lt-cred-mech
+      - --user=vodda:Vd-turn-2026!x7Kq
+      - --listening-port=3478
+      - --external-ip=80.91.208.240
+      - --min-port=49160
+      - --max-port=49200
+      - --log-file=stdout
+
 volumes:
   monafaseh_db:
     name: monafaseh_monafaseh-db

@@ -12,6 +12,7 @@ import { FilterTabs, StatCard, TablePagination } from '@/components/admin/AdminU
 import { getToken } from '@/lib/auth';
 import { toFaDigits } from '@/lib/persian';
 import { confirmDialog } from '@/lib/confirm';
+import { acquireMediaStream } from '@/universal-app/platform/media-permissions';
 
 /**
  * صندوق پشتیبانی زندهٔ وُدّا — سیستم چت و تیکتینگ آنلاین.
@@ -242,6 +243,7 @@ export default function AdminSupportPage() {
   const [reply, setReply] = useState('');
   const [replyBusy, setReplyBusy] = useState(false);
   const [threadError, setThreadError] = useState('');
+  const [deniedHint, setDeniedHint] = useState(false);
 
   const [recording, setRecording] = useState(false);
   const [recordSeconds, setRecordSeconds] = useState(0);
@@ -499,42 +501,52 @@ export default function AdminSupportPage() {
     }
   }
 
-  function startRecording() {
+  async function startRecording() {
     setThreadError('');
-    navigator.mediaDevices
-      ?.getUserMedia({ audio: true })
-      .then((stream) => {
-        const mime = pickRecorderMime();
-        const recorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
-        recordChunksRef.current = [];
-        recorder.ondataavailable = (event) => {
-          if (event.data.size > 0) recordChunksRef.current.push(event.data);
-        };
-        recorder.onstop = () => {
-          stream.getTracks().forEach((track) => track.stop());
-          if (recordTimerRef.current !== null) {
-            window.clearInterval(recordTimerRef.current);
-            recordTimerRef.current = null;
-          }
-          const seconds = recordSecondsRef.current;
-          setRecording(false);
-          setRecordSeconds(0);
-          if (recordChunksRef.current.length === 0) return;
-          const blob = new Blob(recordChunksRef.current, { type: mime || 'audio/webm' });
-          setVoicePreview({ blob, url: URL.createObjectURL(blob), ms: Math.max(600, seconds * 1000), mime: mime || 'audio/webm' });
-        };
-        recorderRef.current = recorder;
-        recordSecondsRef.current = 0;
+    const acquired = await acquireMediaStream('audio');
+    if (!acquired.ok) {
+      // پیام راهنمای رفع انسداد را هم در بر دارد؛ دکمهٔ «تلاش دوباره» ظاهر می‌شود.
+      setThreadError(acquired.message);
+      setDeniedHint(acquired.denied);
+      return;
+    }
+    setDeniedHint(false);
+    const stream = acquired.stream;
+    try {
+      const mime = pickRecorderMime();
+      const recorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+      recordChunksRef.current = [];
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) recordChunksRef.current.push(event.data);
+      };
+      recorder.onstop = () => {
+        stream.getTracks().forEach((track) => track.stop());
+        if (recordTimerRef.current !== null) {
+          window.clearInterval(recordTimerRef.current);
+          recordTimerRef.current = null;
+        }
+        const seconds = recordSecondsRef.current;
+        setRecording(false);
         setRecordSeconds(0);
-        setRecording(true);
-        recorder.start(250);
-        recordTimerRef.current = window.setInterval(() => {
-          recordSecondsRef.current += 1;
-          setRecordSeconds(recordSecondsRef.current);
-          if (recordSecondsRef.current >= 300) recorderRef.current?.stop();
-        }, 1000);
-      })
-      .catch(() => setThreadError('دسترسی به میکروفون ممکن نشد؛ اجازهٔ مرورگر را بررسی کنید.'));
+        if (recordChunksRef.current.length === 0) return;
+        const blob = new Blob(recordChunksRef.current, { type: mime || 'audio/webm' });
+        setVoicePreview({ blob, url: URL.createObjectURL(blob), ms: Math.max(600, seconds * 1000), mime: mime || 'audio/webm' });
+      };
+      recorderRef.current = recorder;
+      recordSecondsRef.current = 0;
+      setRecordSeconds(0);
+      setRecording(true);
+      recorder.start(250);
+      recordTimerRef.current = window.setInterval(() => {
+        recordSecondsRef.current += 1;
+        setRecordSeconds(recordSecondsRef.current);
+        if (recordSecondsRef.current >= 300) recorderRef.current?.stop();
+      }, 1000);
+    } catch {
+      // میکروفون گرفته شده ولی ساخت MediaRecorder شکسته است؛ جریان را رها نکنیم.
+      stream.getTracks().forEach((track) => track.stop());
+      setThreadError('ضبط صدا در این مرورگر ممکن نشد؛ کروم را به‌روزرسانی کنید.');
+    }
   }
 
   function stopRecording(send: boolean) {
@@ -904,6 +916,7 @@ export default function AdminSupportPage() {
                 {threadError && (
                   <div className="ops-error" role="alert" style={{ margin: '10px 14px 0' }}>
                     <span>{threadError}</span>
+                    {deniedHint && <PanelButton onClick={() => void startRecording()}>تلاش دوباره</PanelButton>}
                   </div>
                 )}
 
@@ -1019,7 +1032,7 @@ export default function AdminSupportPage() {
                   >
                     <button
                       type="button"
-                      onClick={() => startRecording()}
+                      onClick={() => void startRecording()}
                       aria-label="ضبط پیام صوتی"
                       disabled={Boolean(voicePreview) || Boolean(imagePreview) || selectedTicket?.status === 'closed'}
                       className="ops-button"

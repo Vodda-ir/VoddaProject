@@ -8,6 +8,7 @@ import { getToken } from '@/lib/auth';
 import { LiveClient, type LiveEvent, type LiveStatus } from '@/lib/live/client';
 import { LiveEngine, type EngineRole } from '@/lib/live/engine';
 import { confirmDialog } from '@/lib/confirm';
+import { acquireMediaStream } from '@/universal-app/platform/media-permissions';
 
 type ChatMessage = { id: string; from: number; role: string; text: string; at: number; mine: boolean };
 type Reaction = { id: string; emoji: string; at: number };
@@ -43,6 +44,15 @@ function chatTime(at: number): string {
   return `${faDigits(String(date.getHours()).padStart(2, '0'))}:${faDigits(String(date.getMinutes()).padStart(2, '0'))}`;
 }
 
+/** پیام فارسی رده‌بندی‌شده برای خطاهای getUserMedia — هم‌رده با helper مشترک media-permissions. */
+function mediaFailureMessage(error: unknown): string {
+  const name = error instanceof Error ? error.name : '';
+  if (name === 'NotAllowedError' || name === 'SecurityError') return 'دسترسی دوربین/میکروفون مسدود شده است؛ از تنظیمات مرورگر اجازه دهید و صفحه را دوباره باز کنید.';
+  if (name === 'NotFoundError' || name === 'OverconstrainedError') return 'دوربین یا میکروفون درخواستی پیدا نشد.';
+  if (name === 'NotReadableError' || name === 'TrackStartError') return 'دوربین/میکروفون در برنامهٔ دیگری باز است.';
+  return 'گرفتن دسترسی دوربین/میکروفون ناموفق بود؛ دوباره تلاش کنید.';
+}
+
 export default function LiveClassroomPage() {
   const router = useRouter();
   const routeParams = useParams<{ id: string }>();
@@ -65,6 +75,7 @@ export default function LiveClassroomPage() {
   const [status, setStatus] = useState<LiveStatus>('connecting');
   const [micOn, setMicOn] = useState(true);
   const [camOn, setCamOn] = useState(true);
+  const [hasLiveMedia, setHasLiveMedia] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [remoteActive, setRemoteActive] = useState(false);
   const [connState, setConnState] = useState('');
@@ -97,6 +108,8 @@ export default function LiveClassroomPage() {
   const screenRef = useRef<MediaStream | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const myIdRef = useRef<number>(0);
+  const joinAnnouncedRef = useRef(false);
+  const peerSignaledRef = useRef(false);
 
   const isTeacherSide = role !== 'learner';
 
@@ -180,10 +193,22 @@ export default function LiveClassroomPage() {
     let ctx: AudioContext | null = null;
     (async () => {
       try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: camId ? { deviceId: { exact: camId } } : { width: { ideal: 1280 } },
-          audio: micId ? { deviceId: { exact: micId } } : { echoCancellation: true, noiseSuppression: true },
-        });
+        let acquired: MediaStream;
+        try {
+          acquired = await navigator.mediaDevices.getUserMedia({
+            video: camId ? { deviceId: { exact: camId } } : { width: { ideal: 1280 } },
+            audio: micId ? { deviceId: { exact: micId } } : { echoCancellation: true, noiseSuppression: true },
+          });
+        } catch {
+          // قید دقیق دستگاه (یا نخستین تلاش) رد شد — پیش از تسلیم، نردبان عمومی helper را امتحان می‌کنیم
+          const result = await acquireMediaStream('both');
+          if (!result.ok) {
+            setMediaError(result.message);
+            return;
+          }
+          acquired = result.stream;
+        }
+        stream = acquired;
         setPreviewStream(stream);
         setMediaError('');
         if (localVideoRef.current) localVideoRef.current.srcObject = stream;
@@ -264,6 +289,7 @@ export default function LiveClassroomPage() {
       case 'offer':
       case 'answer':
       case 'ice':
+        peerSignaledRef.current = true;
         void engineRef.current?.handleSignal(event.type, event.payload);
         break;
       case 'system': {
@@ -271,7 +297,12 @@ export default function LiveClassroomPage() {
         if (payload?.action === 'join') {
           setPeerOnline(true);
           setChat((items) => [...items, { id: uid(), from: 0, role: 'system', text: 'طرف مقابل وارد کلاس شد.', at: event.at, mine: false }]);
-          if (isTeacherSide) void engineRef.current?.initiate();
+          // هر ورود به کلاس فقط یک‌بار خودکار initiate می‌فرستد؛ join بازپخش‌شده/اکوشده
+          // (replay سرور یا کانال زنده) نباید دوباره offer بفرستد.
+          if (isTeacherSide && !joinAnnouncedRef.current) {
+            joinAnnouncedRef.current = true;
+            void engineRef.current?.initiate();
+          }
         }
         if (payload?.action === 'leave') {
           setPeerOnline(false);
@@ -281,6 +312,15 @@ export default function LiveClassroomPage() {
       }
     }
   }, [isTeacherSide, pushReaction]);
+
+  /* ---------------- معلم: اگر ۹ ثانیه پس از ورود هیچ قاب سیگنالینگ از طرف مقابل نرسید، یک‌بار initiate می‌فرستد ---------------- */
+  useEffect(() => {
+    if (phase !== 'live' || !isTeacherSide) return;
+    const timer = window.setTimeout(() => {
+      if (!peerSignaledRef.current) void engineRef.current?.initiate();
+    }, 9_000);
+    return () => window.clearTimeout(timer);
+  }, [phase, isTeacherSide]);
 
   /* ---------------- classroom countdown ---------------- */
   useEffect(() => {
@@ -372,8 +412,8 @@ export default function LiveClassroomPage() {
       const [track] = media.getVideoTracks();
       if (track) await replaceVideoTrack(track);
       else media.getTracks().forEach((item) => item.stop());
-    } catch {
-      setNotice('تغییر دوربین انجام نشد.');
+    } catch (cause) {
+      setNotice(mediaFailureMessage(cause));
       setTimeout(() => setNotice(''), 3000);
     } finally {
       setSettingsBusy(false);
@@ -389,8 +429,8 @@ export default function LiveClassroomPage() {
       const [track] = media.getAudioTracks();
       if (track) await replaceAudioTrack(track);
       else media.getTracks().forEach((item) => item.stop());
-    } catch {
-      setNotice('تغییر میکروفون انجام نشد.');
+    } catch (cause) {
+      setNotice(mediaFailureMessage(cause));
       setTimeout(() => setNotice(''), 3000);
     } finally {
       setSettingsBusy(false);
@@ -412,8 +452,8 @@ export default function LiveClassroomPage() {
       } else {
         media.getTracks().forEach((item) => item.stop());
       }
-    } catch {
-      setNotice('دوربین دیگری در دسترس نیست.');
+    } catch (cause) {
+      setNotice(mediaFailureMessage(cause));
       setTimeout(() => setNotice(''), 3000);
     } finally {
       setSettingsBusy(false);
@@ -436,22 +476,25 @@ export default function LiveClassroomPage() {
   /* ---------------- actions ---------------- */
   async function joinClassroom(withMedia: boolean) {
     if (!session) return;
+    joinAnnouncedRef.current = false;
     stopPreview();
     void audioCtxRef.current?.close();
     audioCtxRef.current = null;
 
     let stream: MediaStream | null = null;
     if (withMedia) {
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: camId ? { deviceId: { exact: camId } } : true,
-          audio: micId ? { deviceId: { exact: micId } } : true,
-        });
-      } catch {
-        setMediaError('ورود با دوربین/میکروفون ناموفق بود؛ بدون رسانه وارد می‌شوید.');
+      const result = await acquireMediaStream('both');
+      if (!result.ok) {
+        // بدون رسانه وارد کلاس می‌شویم — هیچ‌چیز نباید برگزاری کلاس را متوقف کند؛
+        // دلیل کامل در نوار خطای بالای کلاس زنده نمایش داده می‌شود.
+        setMediaError(result.message);
+      } else {
+        stream = result.stream;
+        setMediaError('');
       }
     }
     liveStreamRef.current = stream;
+    setHasLiveMedia(Boolean(stream));
     setPhase('live');
 
     const client = new LiveClient({
@@ -478,6 +521,25 @@ export default function LiveClassroomPage() {
     if (engine.isInitiator && peerOnline) void engine.initiate();
 
     await client.connect();
+  }
+
+  /** تلاش دوباره برای وصل دوربین/میکروفون در میانهٔ کلاس — خروج از کلاس لازم نیست. */
+  async function retryLiveMedia() {
+    const result = await acquireMediaStream('both');
+    if (!result.ok) {
+      setNotice(result.message);
+      setTimeout(() => setNotice(''), 4000);
+      return;
+    }
+    const stream = result.stream;
+    liveStreamRef.current = stream;
+    setHasLiveMedia(true);
+    setMediaError('');
+    await engineRef.current?.setLocalMedia(stream);
+    engineRef.current?.setCameraTrack(stream.getVideoTracks()[0] ?? null);
+    if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+    setMicOn(true);
+    setCamOn(stream.getVideoTracks().length > 0);
   }
 
   function sendChat() {
@@ -626,6 +688,13 @@ export default function LiveClassroomPage() {
       </header>
 
       {notice && <div role="status" style={{ marginBottom: 10, padding: '10px 14px', borderRadius: 12, background: 'var(--gold-bg)', color: 'var(--gold)', fontSize: 12.5, fontWeight: 700 }}>{notice}</div>}
+
+      {mediaError && !hasLiveMedia && (
+        <div style={{ marginBottom: 10, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', padding: '10px 14px', borderRadius: 12, background: 'var(--clay-bg)', color: 'var(--rose)', fontSize: 12.5, fontWeight: 700 }}>
+          <span style={{ flex: 1, minWidth: 220 }}>{mediaError}</span>
+          <button type="button" onClick={() => void retryLiveMedia()} style={{ border: 0, borderRadius: 12, padding: '9px 16px', background: 'var(--olive-600)', color: '#fff', fontWeight: 800, fontSize: 12.5, cursor: 'pointer' }}>تلاش دوباره</button>
+        </div>
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: sideTab === 'none' || narrow ? '1fr' : 'minmax(0, 1.6fr) minmax(280px, 1fr)', gap: 12, alignItems: 'start' }}>
         {/* stage */}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -139,6 +140,18 @@ func (h *Handler) LiveWS(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "missing ticket"})
 		return
 	}
+	// after optionally resumes from the client's cursor (a poller upgrading
+	// to a socket can skip already-seen events); a bad or out-of-range value
+	// falls back to 0 so a full replay stays the safe default.
+	after := uint64(0)
+	if afterStr := c.Query("after"); afterStr != "" {
+		if value, err := strconv.ParseUint(afterStr, 10, 64); err == nil {
+			if value > 1<<31 {
+				value = 1 << 31
+			}
+			after = value
+		}
+	}
 	uid, role, valid := h.liveHub().RedeemTicket(ticket)
 	if !valid {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid ticket"})
@@ -156,7 +169,7 @@ func (h *Handler) LiveWS(c *gin.Context) {
 	}
 
 	hub := h.liveHub()
-	sub, _, release := hub.Join(session.ID, uid, roomRole, 0)
+	sub, backlog, release := hub.Join(session.ID, uid, roomRole, after)
 	defer release()
 
 	_ = conn.SetReadDeadline(time.Now().Add(90 * time.Second))
@@ -164,6 +177,25 @@ func (h *Handler) LiveWS(c *gin.Context) {
 		_ = conn.SetReadDeadline(time.Now().Add(90 * time.Second))
 		return nil
 	})
+
+	// Replay the signaling backlog synchronously: history first, then the
+	// join announce below, then live events from the writer goroutine. Join
+	// subscribed us atomically before snapshotting history, so nothing
+	// published after Join is lost — it queues on sub.ch until the writer
+	// starts. Only signaling-critical types are replayed; stale chat/control
+	// frames from a previous class-life must not poison a fresh session.
+	for _, ev := range backlog {
+		switch ev.Type {
+		case liveTypeOffer, liveTypeAnswer, liveTypeIce, liveTypeSystem:
+		default:
+			continue
+		}
+		_ = conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+		if err := conn.WriteJSON(ev); err != nil {
+			_ = conn.Close()
+			return
+		}
+	}
 
 	// writer: hub -> socket
 	writeDone := make(chan struct{})

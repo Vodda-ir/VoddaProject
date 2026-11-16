@@ -6,6 +6,7 @@ import { colors, gradients, radii, shadows, typography } from "../../ui/theme";
 import { useAppearance } from "../../ui/appearance";
 import { localizedDigits } from "../../ui/persian";
 import { usePlatform } from "../../platform/context";
+import { acquireMediaStream } from "../../platform/media-permissions";
 import {
   closeTicket,
   createTicket,
@@ -229,6 +230,7 @@ export function SupportChat({ routeName }: { routeName: string }) {
   const [lightbox, setLightbox] = useState<string | null>(null);
 
   const [recording, setRecording] = useState(false);
+  const [deniedHint, setDeniedHint] = useState(false);
   const [recordSeconds, setRecordSeconds] = useState(0);
   const [voicePreview, setVoicePreview] = useState<{ blob: Blob; url: string; ms: number; mime: string } | null>(null);
   const [imagePreview, setImagePreview] = useState<{ file: File; url: string } | null>(null);
@@ -394,8 +396,16 @@ export function SupportChat({ routeName }: { routeName: string }) {
 
   async function startRecording() {
     setError("");
+    const acquired = await acquireMediaStream("audio");
+    if (!acquired.ok) {
+      // پیام خطا همراه راهنمای رفع انسداد است؛ دکمهٔ «تلاش دوباره» هم ظاهر می‌شود.
+      setError(L(acquired.message));
+      setDeniedHint(acquired.denied);
+      return;
+    }
+    setDeniedHint(false);
+    const stream = acquired.stream;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mime = pickRecorderMime();
       recordMimeRef.current = mime;
       const recorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
@@ -434,7 +444,9 @@ export function SupportChat({ routeName }: { routeName: string }) {
         }
       }, 1000);
     } catch {
-      setError(L("دسترسی به میکروفون ممکن نشد؛ اجازهٔ مرورگر را بررسی کنید."));
+      // میکروفون گرفته شده ولی ساخت MediaRecorder شکسته است؛ جریان را رها نکنیم.
+      stream.getTracks().forEach((track) => track.stop());
+      setError(L("ضبط صدا در این مرورگر ممکن نشد؛ کروم را به‌روزرسانی کنید."));
     }
   }
 
@@ -716,8 +728,43 @@ export function SupportChat({ routeName }: { routeName: string }) {
           </header>
 
           {error ? (
-            <p role="alert" style={{ margin: 0, padding: "8px 14px", fontSize: 11.5, fontWeight: 700, color: colors.danger, background: colors.dangerBackground }}>
-              {error}
+            <p
+              role="alert"
+              style={{
+                margin: 0,
+                padding: "8px 14px",
+                fontSize: 11.5,
+                fontWeight: 700,
+                color: colors.danger,
+                background: colors.dangerBackground,
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                flexWrap: "wrap",
+              }}
+            >
+              <span style={{ flex: "1 1 auto", minWidth: 0 }}>{error}</span>
+              {deniedHint ? (
+                <button
+                  type="button"
+                  onClick={() => void startRecording()}
+                  className="vodda-tappable"
+                  style={{
+                    flex: "0 0 auto",
+                    padding: "4px 12px",
+                    border: `1px solid ${colors.danger}`,
+                    borderRadius: 999,
+                    background: "none",
+                    color: colors.danger,
+                    fontWeight: 800,
+                    fontSize: 11,
+                    cursor: "pointer",
+                    fontFamily: typography.fontFamily,
+                  }}
+                >
+                  {L("تلاش دوباره")}
+                </button>
+              ) : null}
             </p>
           ) : null}
 

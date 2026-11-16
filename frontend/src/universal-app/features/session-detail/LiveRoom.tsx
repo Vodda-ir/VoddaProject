@@ -7,6 +7,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { LiveClient, type LiveEvent, type LiveStatus } from "../../../lib/live/client";
 import { LiveEngine, type EngineRole } from "../../../lib/live/engine";
+import { acquireMediaStream } from "../../platform/media-permissions";
 import { localizedDigits } from "../../ui/persian";
 import { Avatar } from "../../ui";
 import { useAppearance } from "../../ui/appearance";
@@ -28,31 +29,6 @@ function uid(): string {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 
-/**
- * تلاش پلکانی برای گرفتن دوربین/میکروفون — موبایل‌ها به دلایل مختلف
- * (محدودیت دقت، اشغال بودن سخت‌افزار، مجوز ناقص) درخواست سخت‌گیرانه را رد
- * می‌کنند؛ اول آسان‌ترین قید، بعد بدون قید، و در نهایت فقط صدا.
- */
-async function acquireMedia(): Promise<MediaStream | null> {
-  if (!navigator.mediaDevices?.getUserMedia) return null;
-  const attempts: MediaStreamConstraints[] = [
-    {
-      video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
-      audio: { echoCancellation: true, noiseSuppression: true },
-    },
-    { video: true, audio: true },
-    { video: false, audio: true },
-  ];
-  for (const constraints of attempts) {
-    try {
-      return await navigator.mediaDevices.getUserMedia(constraints);
-    } catch {
-      /* تلاش بعدی */
-    }
-  }
-  return null;
-}
-
 function chatTime(at: number, lang: "fa" | "en"): string {
   const date = new Date(at);
   return `${localizedDigits(String(date.getHours()).padStart(2, "0"), lang)}:${localizedDigits(String(date.getMinutes()).padStart(2, "0"), lang)}`;
@@ -71,6 +47,20 @@ const controlButton = (active: boolean): React.CSSProperties => ({
   fontSize: 21,
 });
 
+const retryButtonStyle: React.CSSProperties = {
+  height: 30,
+  padding: "0 14px",
+  borderRadius: 999,
+  border: "1px solid rgba(255,255,255,.24)",
+  background: "rgba(255,255,255,.12)",
+  color: "#fff",
+  cursor: "pointer",
+  fontFamily: "inherit",
+  fontSize: 11.5,
+  fontWeight: 800,
+  whiteSpace: "nowrap",
+};
+
 export function LiveRoom({
   sessionId,
   role,
@@ -84,6 +74,9 @@ export function LiveRoom({
   const [phase, setPhase] = useState<"preflight" | "live" | "ended">("preflight");
   const [status, setStatus] = useState<LiveStatus>("connecting");
   const [mediaError, setMediaError] = useState("");
+  const [mediaDenied, setMediaDenied] = useState(false);
+  const [mediaBusy, setMediaBusy] = useState(false);
+  const [hasLiveMedia, setHasLiveMedia] = useState(false);
   const [micLevel, setMicLevel] = useState(0);
   const [micOn, setMicOn] = useState(true);
   const [camOn, setCamOn] = useState(true);
@@ -100,8 +93,13 @@ export function LiveRoom({
   const remoteVideoRef = useRef<HTMLVideoElement | null>(null);
   const liveStreamRef = useRef<MediaStream | null>(null);
   const previewStreamRef = useRef<MediaStream | null>(null);
+  const mediaBusyRef = useRef(false);
+  const previewRunIdRef = useRef(0);
+  const stopPreviewRunRef = useRef<() => void>(() => {});
   const chatBodyRef = useRef<HTMLDivElement | null>(null);
   const peerOnlineRef = useRef(false);
+  const joinAnnouncedRef = useRef(false);
+  const peerSignaledRef = useRef(false);
   const engineRoleRef = useRef<EngineRole>(role);
   const wakeLockRef = useRef<{ release: () => Promise<void>; released: boolean } | null>(null);
   const [needsTapToPlay, setNeedsTapToPlay] = useState(false);
@@ -110,19 +108,45 @@ export function LiveRoom({
   const isTeacherSide = role !== "learner";
 
   /* ---------- پیش‌آزمون: پیش‌نمایش دوربین و سطح میکروفون ---------- */
-  useEffect(() => {
-    if (phase !== "preflight") return;
-    let stream: MediaStream | null = null;
+  // گرفتن رسانه با helper مشترک و نردبان پلکانی (قید مطلوب ← ساده ← فقط صدا)؛
+  // دیالوگ مجوز مرورگر همین‌جا باز می‌شود و هر شکست با پیام راهنما و کلید «تلاش دوباره» قابل جبران است.
+  const startPreview = useCallback(() => {
+    stopPreviewRunRef.current();
+    const runId = ++previewRunIdRef.current;
+    mediaBusyRef.current = true;
+    setMediaBusy(true);
     let ctx: AudioContext | null = null;
     let raf = 0;
-    (async () => {
-      stream = await acquireMedia();
-      if (!stream) {
-        setMediaError(L("دسترسی به دوربین/میکروفون ممکن نشد؛ می‌توانید بدون آن‌ها وارد کلاس شوید."));
+    let cancelled = false;
+    const cancelRun = () => {
+      cancelled = true;
+      cancelAnimationFrame(raf);
+      void ctx?.close();
+    };
+    stopPreviewRunRef.current = cancelRun;
+    void (async () => {
+      previewStreamRef.current?.getTracks().forEach((track) => track.stop());
+      previewStreamRef.current = null;
+      const result = await acquireMediaStream("both");
+      if (cancelled) {
+        if (result.ok) result.stream.getTracks().forEach((track) => track.stop());
+        if (runId === previewRunIdRef.current) {
+          mediaBusyRef.current = false;
+          setMediaBusy(false);
+        }
         return;
       }
+      mediaBusyRef.current = false;
+      setMediaBusy(false);
+      if (!result.ok) {
+        setMediaError(L(result.message));
+        setMediaDenied(result.denied);
+        return;
+      }
+      const stream = result.stream;
       previewStreamRef.current = stream;
       setMediaError("");
+      setMediaDenied(false);
       if (localVideoRef.current) localVideoRef.current.srcObject = stream;
       const [audioTrack] = stream.getAudioTracks();
       if (audioTrack) {
@@ -141,11 +165,23 @@ export function LiveRoom({
         tick();
       }
     })();
+  }, [L]);
+
+  const retryMedia = useCallback(() => {
+    if (mediaBusy) return;
+    startPreview();
+  }, [mediaBusy, startPreview]);
+
+  useEffect(() => {
+    if (phase !== "preflight") return;
+    startPreview();
     return () => {
-      cancelAnimationFrame(raf);
-      void ctx?.close();
-      stream?.getTracks().forEach((track) => track.stop());
+      stopPreviewRunRef.current();
+      const preview = previewStreamRef.current;
+      preview?.getTracks().forEach((track) => track.stop());
+      previewStreamRef.current = null;
     };
+    // startPreview عمداً در وابستگی‌ها نمی‌آید؛ اجرای دوبارهٔ افکت جریان تازهٔ پیش‌نمایش را قطع می‌کرد.
   }, [phase]);
 
   /* ---------- شمارش معکوس جلسه ---------- */
@@ -196,6 +232,7 @@ export function LiveRoom({
         case "offer":
         case "answer":
         case "ice":
+          peerSignaledRef.current = true;
           void engineRef.current?.handleSignal(event.type, event.payload);
           break;
         case "system": {
@@ -203,7 +240,12 @@ export function LiveRoom({
           if (payload?.action === "join") {
             peerOnlineRef.current = true;
             setChat((items) => [...items, { id: uid(), from: 0, text: L("طرف مقابل وارد کلاس شد."), at: event.at, mine: false }]);
-            if (isTeacherSide) void engineRef.current?.initiate();
+            // هر ورود به کلاس فقط یک‌بار خودکار پیشنهاد می‌فرستد؛ join بازپخش‌شده/اکو‌شده
+            // (replay کانال WS یا کانال زنده) نباید دوباره offer بفرستد.
+            if (isTeacherSide && !joinAnnouncedRef.current) {
+              joinAnnouncedRef.current = true;
+              void engineRef.current?.initiate();
+            }
           }
           if (payload?.action === "leave") {
             peerOnlineRef.current = false;
@@ -274,6 +316,15 @@ export function LiveRoom({
     };
   }, [phase]);
 
+  /* ---------- معلم: اگر ۹ ثانیه پس از ورود هیچ قاب سیگنالینگ از طرف مقابل نرسید، یک‌بار initiate می‌فرستد ---------- */
+  useEffect(() => {
+    if (phase !== "live" || !isTeacherSide) return;
+    const timer = window.setTimeout(() => {
+      if (!peerSignaledRef.current) void engineRef.current?.initiate();
+    }, 9_000);
+    return () => window.clearTimeout(timer);
+  }, [phase, isTeacherSide]);
+
   /* ---------- پخش خودکار ویدیوی طرف مقابل (سیاست autoplay موبایل) ---------- */
   useEffect(() => {
     if (!remoteActive) return;
@@ -283,18 +334,33 @@ export function LiveRoom({
   }, [remoteActive]);
 
   /* ---------- ورود به کلاس ---------- */
+  // جریان پیش‌نمایش اگر آماده باشد مستقیم برای جلسه به‌کار می‌رود تا دیالوگ مجوز دوباره باز نشود؛
+  // اگر نباشد، «ورود با رسانه» همان‌جا درخواست می‌دهد — و شکست هیچ‌وقت ورود به کلاس را блок نمی‌کند.
   async function join(withMedia: boolean) {
-    previewStreamRef.current?.getTracks().forEach((track) => track.stop());
-    previewStreamRef.current = null;
+    joinAnnouncedRef.current = false;
+    stopPreviewRunRef.current();
 
-    let stream: MediaStream | null = null;
-    if (withMedia) {
-      stream = await acquireMedia();
-      if (!stream) {
-        setMediaError(L("ورود با دوربین/میکروفون ناموفق بود؛ بدون رسانه وارد می‌شوید."));
+    let stream: MediaStream | null = previewStreamRef.current;
+    previewStreamRef.current = null;
+    if (!withMedia) {
+      stream?.getTracks().forEach((track) => track.stop());
+      stream = null;
+    } else if (!stream) {
+      setMediaBusy(true);
+      const result = await acquireMediaStream("both");
+      setMediaBusy(false);
+      if (!result.ok) {
+        setMediaError(L(result.message));
+        setMediaDenied(result.denied);
+        // بدون رسانه هم وارد کلاس می‌شویم — هیچ‌چیز نباید برگزاری کلاس را متوقف کند.
+      } else {
+        stream = result.stream;
+        setMediaError("");
+        setMediaDenied(false);
       }
     }
     liveStreamRef.current = stream;
+    setHasLiveMedia(Boolean(stream));
     setPhase("live");
 
     const client = new LiveClient({
@@ -341,6 +407,33 @@ export function LiveRoom({
     const next = !camOn;
     setCamOn(next);
     liveStreamRef.current?.getVideoTracks().forEach((track) => (track.enabled = next));
+  }
+
+  /* ---------- وصل دوبارهٔ دوربین و میکروفون در میانهٔ کلاس ---------- */
+  // وقتی کاربر بدون رسانه وارد شده، این مسیر از نوار کنترل دیالوگ مجوز را باز می‌کند
+  // و تراک‌ها را به موتور P2P می‌دهد — خروج از کلاس لازم نیست.
+  async function enableLiveMedia() {
+    if (mediaBusyRef.current) return;
+    mediaBusyRef.current = true;
+    setMediaBusy(true);
+    const result = await acquireMediaStream("both");
+    mediaBusyRef.current = false;
+    setMediaBusy(false);
+    if (!result.ok) {
+      setNotice(L(result.message));
+      window.setTimeout(() => setNotice(""), 4000);
+      return;
+    }
+    const stream = result.stream;
+    liveStreamRef.current = stream;
+    setHasLiveMedia(true);
+    setMediaError("");
+    setMediaDenied(false);
+    await engineRef.current?.setLocalMedia(stream);
+    engineRef.current?.setCameraTrack(stream.getVideoTracks()[0] ?? null);
+    if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+    setMicOn(true);
+    setCamOn(result.hasVideo);
   }
 
   function leave(complete: boolean) {
@@ -485,10 +578,24 @@ export function LiveRoom({
             />
           )}
 
-          {mediaError && phase === "preflight" ? (
-            <p style={{ position: "absolute", insetInline: 16, bottom: 14, margin: 0, zIndex: 2, fontSize: 11.5, lineHeight: 1.8, color: "#ffd9d0", background: "rgba(179,64,58,.24)", borderRadius: 12, padding: "8px 12px" }}>
-              {mediaError}
-            </p>
+          {mediaDenied && mediaError && phase === "preflight" ? (
+            <div style={{ position: "absolute", insetInline: 16, top: 14, zIndex: 2, background: "rgba(179,64,58,.18)", border: "1px solid rgba(179,64,58,.55)", borderRadius: 14, padding: 12, display: "grid", gap: 6 }}>
+              <strong style={{ fontSize: 13, fontWeight: 800, color: "#ffd9d0" }}>{L("مجوز دوربین و میکروفون لازم است")}</strong>
+              <span style={{ fontSize: 11.5, lineHeight: 1.9, color: "rgba(255,255,255,.85)" }}>{mediaError}</span>
+              <button type="button" onClick={retryMedia} aria-busy={mediaBusy} style={retryButtonStyle}>
+                {L("تلاش دوباره")}
+              </button>
+            </div>
+          ) : null}
+          {mediaError && phase === "preflight" && !mediaDenied ? (
+            <div style={{ position: "absolute", insetInline: 16, bottom: 14, zIndex: 2, display: "flex", alignItems: "center", gap: 8 }}>
+              <p style={{ flex: 1, margin: 0, fontSize: 11.5, lineHeight: 1.8, color: "#ffd9d0", background: "rgba(179,64,58,.24)", borderRadius: 12, padding: "8px 12px" }}>
+                {mediaError}
+              </p>
+              <button type="button" onClick={retryMedia} aria-busy={mediaBusy} style={retryButtonStyle}>
+                {L("تلاش دوباره")}
+              </button>
+            </div>
           ) : null}
 
           {/* چت درون‌کلاس */}
@@ -589,6 +696,17 @@ export function LiveRoom({
               <button type="button" onClick={toggleCam} style={controlButton(!camOn)} aria-label={camOn ? L("قطع دوربین") : L("وصل دوربین")}>
                 {camOn ? "🎥" : "🚫"}
               </button>
+              {phase === "live" && !hasLiveMedia ? (
+                <button
+                  type="button"
+                  onClick={() => void enableLiveMedia()}
+                  aria-busy={mediaBusy}
+                  aria-label={L("وصل دوربین و میکروفون")}
+                  style={{ ...controlButton(false), width: "auto", padding: "0 18px", borderRadius: 999, background: "rgba(255,255,255,.12)", fontFamily: "inherit", fontSize: 13, fontWeight: 800 }}
+                >
+                  {L("وصل دوربین و میکروفون")}
+                </button>
+              ) : null}
               <button
                 type="button"
                 onClick={() => leave(false)}

@@ -16,3 +16,13 @@ Implementation فعلی native در `frontend/native/src/native-capabilities.ts`
 4. feature مشترک فقط از `usePlatform().capabilities` استفاده کند و برای web یا platform فاقد capability fallback مناسب داشته باشد.
 
 این boundary باعث می‌شود Web auth همچنان HttpOnly/BFF بماند، Native auth همچنان secure token/Bearer باشد و Universal Source از `next/*` و Capacitor packages مستقل بماند.
+
+## WebView media permissions (کلاس تصویری / پیام صوتی)
+
+`android/` scaffold باید همیشه همراه repo باشد. `AndroidManifest.xml` دارای
+`CAMERA`, `RECORD_AUDIO`, `MODIFY_AUDIO_SETTINGS` است؛ WebView در زمان
+`getUserMedia` درخواست را از طریق `BridgeWebViewController.onPermissionRequest`
+به ران‌تایم اندروید منتقل می‌کند و کادر مجوز سیستم نمایش داده می‌شود.
+بدون این مجوزها در manifest، WebView درخواست‌ها را بی‌صدا رد می‌کند و
+نه کلاس تصویری و نه ضبط صوت پشتیبانی کار نمی‌کند.
+

@@ -90,7 +90,7 @@ export class LiveClient {
     return new Promise((resolve) => {
       let settled = false;
       try {
-        const socket = new WebSocket(`${WS_BASE}/api/v1/live/ws?session=${this.sessionId}&ticket=${encodeURIComponent(ticket)}`);
+        const socket = new WebSocket(`${WS_BASE}/api/v1/live/ws?session=${this.sessionId}&ticket=${encodeURIComponent(ticket)}&after=${this.cursor}`);
         this.ws = socket;
 
         // Some CDNs complete the WS handshake but silently drop data frames.
@@ -127,6 +127,9 @@ export class LiveClient {
           }
           try {
             const event = JSON.parse(String(raw.data)) as LiveEvent;
+            // The server replays pre-join events recorded before our join, and the
+            // live channel can overlap that replay — never double-deliver a seq.
+            if (event.seq <= this.cursor) return;
             this.track(event);
             this.onEvent(event);
           } catch { /* ignore malformed frames */ }
