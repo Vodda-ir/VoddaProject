@@ -4,7 +4,7 @@ import type { NextRequest } from 'next/server';
 const API_BASE = (process.env.SERVER_API_URL || 'http://backend:3420/api/v1').replace(/\/$/, '');
 const PANEL_PATHS = ['/panel/user', '/panel/teacher', '/panel/admin'];
 
-type MeResponse = { data?: { role?: string } };
+type MeResponse = { data?: { role?: string; is_support_agent?: boolean } };
 
 function loginRedirect(request: NextRequest): NextResponse {
   const url = new URL('/panel/login', request.url);
@@ -15,8 +15,12 @@ function loginRedirect(request: NextRequest): NextResponse {
   return response;
 }
 
-function roleCanAccess(pathname: string, role: string): boolean {
-  if (pathname.startsWith('/panel/admin')) return role === 'admin';
+function roleCanAccess(pathname: string, role: string, isSupportAgent: boolean): boolean {
+  if (pathname.startsWith('/panel/admin')) {
+    if (role === 'admin') return true;
+    // کارشناس پشتیبانی فقط به صندوق پشتیبانی پنل مدیریت دسترسی دارد.
+    return isSupportAgent && pathname.startsWith('/panel/admin/support');
+  }
   if (pathname.startsWith('/panel/teacher/register')) return Boolean(role);
   if (pathname.startsWith('/panel/teacher')) return role === 'teacher' || role === 'admin';
   if (pathname.startsWith('/panel/user')) return Boolean(role);
@@ -45,8 +49,15 @@ export async function middleware(request: NextRequest) {
 
     const payload = (await response.json()) as MeResponse;
     const role = payload.data?.role || '';
-    if (!roleCanAccess(pathname, role)) {
-      const destination = role === 'admin' ? '/panel/admin' : role === 'teacher' ? '/panel/teacher' : '/panel/user';
+    const isSupportAgent = payload.data?.is_support_agent === true;
+    if (!roleCanAccess(pathname, role, isSupportAgent)) {
+      const destination = role === 'admin'
+        ? '/panel/admin'
+        : role === 'teacher'
+          ? '/panel/teacher'
+          : isSupportAgent
+            ? '/panel/admin/support'
+            : '/panel/user';
       return NextResponse.redirect(new URL(destination, request.url));
     }
     return NextResponse.next();
