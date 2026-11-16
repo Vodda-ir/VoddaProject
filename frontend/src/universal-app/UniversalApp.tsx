@@ -35,6 +35,7 @@ import type { PlatformRuntime } from "./platform/types";
 import { createWebPlatformRuntime } from "./platform/web";
 import { navigateApp, useAppRoute, type AppRouteName } from "./router";
 import { AppearanceProvider, useAppearance } from "./ui/appearance";
+import { useBuildVersionGuard } from "./useBuildVersionGuard";
 import { MobileAppShell, TeacherAppShell, Card, UniversalVisualStyles, colors, typography } from "./ui";
 
 export type UniversalAppProps = {
@@ -106,13 +107,14 @@ function RoutePlaceholder({
   pathname: string;
   config: UniversalAppConfig;
 }) {
+  const { L } = useAppearance();
   if (routeName === "not-found") {
     return (
       <Card>
         <p style={{ ...typography.body, marginTop: 0, color: colors.inkSecondary }}>
-          این مسیر در اپ وُدّا تعریف نشده است.
+          {L("این مسیر در اپ وُدّا تعریف نشده است.")}
         </p>
-        <button type="button" onClick={() => navigateApp("/", config)}>بازگشت به اپ</button>
+        <button type="button" onClick={() => navigateApp("/", config)}>{L("بازگشت به اپ")}</button>
       </Card>
     );
   }
@@ -120,7 +122,7 @@ function RoutePlaceholder({
   return (
     <Card>
       <p style={{ ...typography.body, margin: 0, color: colors.inkSecondary }}>
-        این مسیر در نسخه فعلی وُدّا محتوای قابل نمایش ندارد.
+        {L("این مسیر در نسخه فعلی وُدّا محتوای قابل نمایش ندارد.")}
       </p>
       <p dir="ltr" style={{ ...typography.caption, margin: "8px 0 0", color: colors.inkMuted, textAlign: "right" }}>
         {pathname}
@@ -224,6 +226,7 @@ function UniversalAppShellContent({
 }
 
 function UniversalAppContent({ config, runtime }: { config: UniversalAppConfig; runtime: PlatformRuntime }) {
+  useBuildVersionGuard();
   const route = useAppRoute(config);
   // نقش نمایشگر جلسه — برای انتخاب پوستهٔ درست (استاد/قرآن‌آموز) در مسیر /session/:id
   const [sessionRole, setSessionRole] = useState<"learner" | "teacher">("learner");

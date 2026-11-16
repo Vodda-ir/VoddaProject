@@ -8,7 +8,8 @@ import type { CSSProperties } from "react";
 import type { UniversalAppConfig } from "../../config";
 import { usePlatform } from "../../platform/context";
 import { navigateApp } from "../../router";
-import { toFaDigits } from "../../ui/persian";
+import { localizedDigits } from "../../ui/persian";
+import { useAppearance } from "../../ui/appearance";
 import {
   Button,
   Card,
@@ -41,6 +42,7 @@ const cardStyle: CSSProperties = {
 };
 
 function CallRow({ view, onOpen }: { view: CeremonyCallView; onOpen: () => void }) {
+  const { L, lang } = useAppearance();
   const call = view.call;
   if (!call) return null;
   const tone = callStatusMeta[call.status];
@@ -53,7 +55,7 @@ function CallRow({ view, onOpen }: { view: CeremonyCallView; onOpen: () => void 
         <div style={{ minWidth: 0, flex: 1 }}>
           <strong style={{ display: "block", fontSize: 14.5, fontWeight: 800, color: colors.ink }}>{call.title}</strong>
           <span style={{ display: "block", fontSize: 12, color: colors.inkMuted, marginTop: 2 }}>
-            {ceremonyWhenLabel(call)} · {call.city || "شهر نامشخص"}
+            {ceremonyWhenLabel(call, lang)} · {call.city || L("شهر نامشخص")}
           </span>
         </div>
         <Icon name="chevronL" size={16} style={{ color: colors.inkFaint, flex: "0 0 auto" }} />
@@ -62,10 +64,10 @@ function CallRow({ view, onOpen }: { view: CeremonyCallView; onOpen: () => void 
         <ToneChip tone={tone} />
         <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11.5, color: colors.inkSecondary, background: colors.sand100, border: `1px solid ${colors.sand200}`, borderRadius: 999, padding: "3px 9px" }}>
           <Icon name="bell" size={11} />
-          {toFaDigits(call.offer_count)} پذیرش
+          {localizedDigits(call.offer_count, lang)} {L("پذیرش")}
         </span>
         <span style={{ fontSize: 11.5, color: colors.inkMuted, marginInlineStart: "auto" }}>
-          {formatBudgetRange(call.budget_min, call.budget_max)}
+          {formatBudgetRange(call.budget_min, call.budget_max, lang)}
         </span>
       </div>
     </button>
@@ -74,6 +76,7 @@ function CallRow({ view, onOpen }: { view: CeremonyCallView; onOpen: () => void 
 
 export function CeremonyCallsScreen({ config }: { config: UniversalAppConfig }) {
   const runtime = usePlatform();
+  const { L, lang } = useAppearance();
   const [views, setViews] = useState<CeremonyCallView[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -94,14 +97,14 @@ export function CeremonyCallsScreen({ config }: { config: UniversalAppConfig }) 
     void load();
   }, [load]);
 
-  if (loading) return <LoadingState label="در حال دریافت فراخوان‌های شما…" />;
+  if (loading) return <LoadingState label={L("در حال دریافت فراخوان‌های شما…")} />;
 
   if (error) {
     return (
       <ErrorState
-        title="دریافت فراخوان‌ها ناموفق بود"
-        description={error}
-        action={<Button onClick={() => void load()}>تلاش دوباره</Button>}
+        title={L("دریافت فراخوان‌ها ناموفق بود")}
+        description={L(error)}
+        action={<Button onClick={() => void load()}>{L("تلاش دوباره")}</Button>}
       />
     );
   }
@@ -111,11 +114,11 @@ export function CeremonyCallsScreen({ config }: { config: UniversalAppConfig }) 
       <div className="vodda-screen" style={{ display: "grid", gap: spacing.lg }}>
         <EmptyState
           icon={<Icon name="calendar" size={30} />}
-          title="هنوز فراخوانی نساخته‌اید"
-          description="برای مراسم خود فراخوان بگذارید تا قاریان حق‌الزحمه‌شان را اعلام کنند."
+          title={L("هنوز فراخوانی نساخته‌اید")}
+          description={L("برای مراسم خود فراخوان بگذارید تا قاریان حق‌الزحمه‌شان را اعلام کنند.")}
         />
         <Button fullWidth onClick={() => navigateApp("/ceremony/new", config)} style={{ minHeight: 50 }}>
-          🔔 فراخوان مراسم جدید
+          {L("🔔 فراخوان مراسم جدید")}
         </Button>
       </div>
     );
@@ -124,7 +127,7 @@ export function CeremonyCallsScreen({ config }: { config: UniversalAppConfig }) 
   return (
     <div className="vodda-screen" style={{ display: "grid", gap: spacing.md }}>
       <p style={{ margin: 0, fontSize: 12, color: colors.inkMuted, lineHeight: 1.9 }}>
-        {toFaDigits(views.length)} فراخوان ثبت کرده‌اید؛ وضعیت پذیرش‌ها را همین‌جا پیگیری کنید.
+        {L("{count} فراخوان ثبت کرده‌اید؛ وضعیت پذیرش‌ها را همین‌جا پیگیری کنید.").replace("{count}", localizedDigits(views.length, lang))}
       </p>
       {views.map((view) => (
         <CallRow key={view.call?.id ?? 0} view={view} onOpen={() => view.call && navigateApp(`/ceremony/calls/${view.call.id}`, config)} />
@@ -132,10 +135,10 @@ export function CeremonyCallsScreen({ config }: { config: UniversalAppConfig }) 
       <Card style={{ display: "flex", alignItems: "center", gap: 10, padding: 14, borderRadius: 18, background: colors.goldBackground, borderColor: colors.goldSoft }}>
         <Icon name="sparkle" size={18} style={{ color: colors.goldDark, flex: "0 0 auto" }} />
         <p style={{ margin: 0, fontSize: 12, color: colors.goldDark, lineHeight: 1.8 }}>
-          مراسم دیگری در پیش دارید؟ یک فراخوان تازه بسازید.
+          {L("مراسم دیگری در پیش دارید؟ یک فراخوان تازه بسازید.")}
         </p>
         <Button variant="secondary" style={{ minHeight: 42, paddingInline: 14, flex: "0 0 auto" }} onClick={() => navigateApp("/ceremony/new", config)}>
-          فراخوان جدید
+          {L("فراخوان جدید")}
         </Button>
       </Card>
     </div>

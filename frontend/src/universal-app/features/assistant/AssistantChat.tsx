@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "../../ui/Icon";
 import { colors, gradients, radii, shadows, typography } from "../../ui/theme";
+import { useAppearance } from "../../ui/appearance";
 
 /**
  * دستیار هوشمند وُدّا — چت‌بات شناور پشتیبانی (سمت فراگیر).
@@ -28,6 +29,7 @@ const QUICK_CHIPS: string[] = [
 const HIDDEN_ROUTES = new Set<string>(["book"]);
 
 export function AssistantChat({ routeName }: { routeName: string }) {
+  const { L } = useAppearance();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([WELCOME]);
   const [input, setInput] = useState("");
@@ -95,7 +97,7 @@ export function AssistantChat({ routeName }: { routeName: string }) {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          aria-label="گفتگو با دستیار هوشمند وُدّا"
+          aria-label={L("گفتگو با دستیار هوشمند وُدّا")}
           className="vodda-tappable"
           style={{
             pointerEvents: "auto",
@@ -141,7 +143,7 @@ export function AssistantChat({ routeName }: { routeName: string }) {
       {open ? (
         <section
           role="dialog"
-          aria-label="گفتگو با دستیار هوشمند وُدّا"
+          aria-label={L("گفتگو با دستیار هوشمند وُدّا")}
           className="vodda-enter"
           style={{
             pointerEvents: "auto",
@@ -185,13 +187,13 @@ export function AssistantChat({ routeName }: { routeName: string }) {
               <Icon name="sparkle" size={17} stroke={2} />
             </span>
             <div style={{ minWidth: 0, flex: 1 }}>
-              <strong style={{ display: "block", fontSize: 13, color: colors.ink }}>دستیار هوشمند وُدّا</strong>
-              <span style={{ display: "block", fontSize: 10.5, color: colors.inkMuted }}>پاسخ‌گوی خودکار سؤالات اپ</span>
+              <strong style={{ display: "block", fontSize: 13, color: colors.ink }}>{L("دستیار هوشمند وُدّا")}</strong>
+              <span style={{ display: "block", fontSize: 10.5, color: colors.inkMuted }}>{L("پاسخ‌گوی خودکار سؤالات اپ")}</span>
             </div>
             <button
               type="button"
               onClick={reset}
-              aria-label="شروع دوبارهٔ گفتگو"
+              aria-label={L("شروع دوبارهٔ گفتگو")}
               style={{ background: "none", border: 0, color: colors.inkMuted, cursor: "pointer", padding: 6, fontFamily: typography.fontFamily }}
             >
               <Icon name="refresh" size={16} />
@@ -199,7 +201,7 @@ export function AssistantChat({ routeName }: { routeName: string }) {
             <button
               type="button"
               onClick={() => setOpen(false)}
-              aria-label="بستن گفتگو"
+              aria-label={L("بستن گفتگو")}
               style={{ background: "none", border: 0, color: colors.inkMuted, cursor: "pointer", padding: 6, fontFamily: typography.fontFamily }}
             >
               <Icon name="x" size={17} />
@@ -209,7 +211,7 @@ export function AssistantChat({ routeName }: { routeName: string }) {
           <div
             ref={listRef}
             aria-live="polite"
-            aria-label="پیام‌های گفتگو"
+            aria-label={L("پیام‌های گفتگو")}
             style={{
               flex: "1 1 auto",
               overflowY: "auto",
@@ -245,13 +247,13 @@ export function AssistantChat({ routeName }: { routeName: string }) {
                       border: mine ? "none" : `1px solid ${colors.olive100}`,
                     }}
                   >
-                    {message.content}
+                    {L(message.content)}
                   </div>
                 </div>
               );
             })}
             {busy ? (
-              <div style={{ display: "flex", justifyContent: "flex-end" }} aria-label="در حال نوشتن پاسخ">
+              <div style={{ display: "flex", justifyContent: "flex-end" }} aria-label={L("در حال نوشتن پاسخ")}>
                 <div
                   style={{
                     padding: "10px 14px",
@@ -276,7 +278,7 @@ export function AssistantChat({ routeName }: { routeName: string }) {
                 overflowX: "auto",
                 padding: "4px 12px 8px",
               }}
-              aria-label="پیشنهادهای گفتگو"
+              aria-label={L("پیشنهادهای گفتگو")}
             >
               {QUICK_CHIPS.map((chip) => (
                 <button
@@ -297,7 +299,7 @@ export function AssistantChat({ routeName }: { routeName: string }) {
                     fontFamily: typography.fontFamily,
                   }}
                 >
-                  {chip}
+                  {L(chip)}
                 </button>
               ))}
             </div>
@@ -321,8 +323,8 @@ export function AssistantChat({ routeName }: { routeName: string }) {
             <input
               value={input}
               onChange={(event) => setInput(event.target.value)}
-              placeholder="سؤال خود را بنویسید…"
-              aria-label="متن پیام"
+              placeholder={L("سؤال خود را بنویسید…")}
+              aria-label={L("متن پیام")}
               maxLength={800}
               className="vodda-input"
               style={{
@@ -342,7 +344,7 @@ export function AssistantChat({ routeName }: { routeName: string }) {
             <button
               type="submit"
               disabled={busy || !input.trim()}
-              aria-label="ارسال پیام"
+              aria-label={L("ارسال پیام")}
               style={{
                 flex: "0 0 auto",
                 width: 42,

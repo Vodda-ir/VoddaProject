@@ -7,8 +7,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { LiveClient, type LiveEvent, type LiveStatus } from "../../../lib/live/client";
 import { LiveEngine, type EngineRole } from "../../../lib/live/engine";
-import { toFaDigits } from "../wallet/WalletTransactionCard";
+import { localizedDigits } from "../../ui/persian";
 import { Avatar } from "../../ui";
+import { useAppearance } from "../../ui/appearance";
 
 type ChatLine = { id: string; from: number; text: string; at: number; mine: boolean };
 
@@ -52,9 +53,9 @@ async function acquireMedia(): Promise<MediaStream | null> {
   return null;
 }
 
-function chatTime(at: number): string {
+function chatTime(at: number, lang: "fa" | "en"): string {
   const date = new Date(at);
-  return `${toFaDigits(String(date.getHours()).padStart(2, "0"))}:${toFaDigits(String(date.getMinutes()).padStart(2, "0"))}`;
+  return `${localizedDigits(String(date.getHours()).padStart(2, "0"), lang)}:${localizedDigits(String(date.getMinutes()).padStart(2, "0"), lang)}`;
 }
 
 const controlButton = (active: boolean): React.CSSProperties => ({
@@ -104,6 +105,7 @@ export function LiveRoom({
   const engineRoleRef = useRef<EngineRole>(role);
   const wakeLockRef = useRef<{ release: () => Promise<void>; released: boolean } | null>(null);
   const [needsTapToPlay, setNeedsTapToPlay] = useState(false);
+  const { L, lang, dir } = useAppearance();
 
   const isTeacherSide = role !== "learner";
 
@@ -116,7 +118,7 @@ export function LiveRoom({
     (async () => {
       stream = await acquireMedia();
       if (!stream) {
-        setMediaError("دسترسی به دوربین/میکروفون ممکن نشد؛ می‌توانید بدون آن‌ها وارد کلاس شوید.");
+        setMediaError(L("دسترسی به دوربین/میکروفون ممکن نشد؛ می‌توانید بدون آن‌ها وارد کلاس شوید."));
         return;
       }
       previewStreamRef.current = stream;
@@ -153,17 +155,22 @@ export function LiveRoom({
     const tick = () => {
       const diff = endAt - Date.now();
       if (diff <= 0) {
-        setCountdown("زمان جلسه به پایان رسیده است");
+        setCountdown(L("زمان جلسه به پایان رسیده است"));
         return;
       }
       const minutes = Math.floor(diff / 60_000);
       const seconds = Math.floor((diff % 60_000) / 1000);
-      setCountdown(`${toFaDigits(minutes)}:${toFaDigits(String(seconds).padStart(2, "0"))} باقی‌مانده`);
+      setCountdown(
+        L("{time} باقی‌مانده").replace(
+          "{time}",
+          `${localizedDigits(minutes, lang)}:${localizedDigits(String(seconds).padStart(2, "0"), lang)}`,
+        ),
+      );
     };
     tick();
     const timer = window.setInterval(tick, 1000);
     return () => window.clearInterval(timer);
-  }, [startAt, durationMinutes]);
+  }, [startAt, durationMinutes, L, lang]);
 
   /* ---------- رویدادهای سیگنالینگ ---------- */
   const handleEvent = useCallback(
@@ -180,7 +187,7 @@ export function LiveRoom({
         case "control": {
           const payload = event.payload as { action: string; value?: boolean | string } | undefined;
           if (payload?.action === "bye") {
-            setNotice("طرف مقابل کلاس را ترک کرد.");
+            setNotice(L("طرف مقابل کلاس را ترک کرد."));
             window.setTimeout(() => setNotice(""), 4000);
           }
           if (payload?.action === "end") setPhase("ended");
@@ -195,12 +202,12 @@ export function LiveRoom({
           const payload = event.payload as { action?: string } | undefined;
           if (payload?.action === "join") {
             peerOnlineRef.current = true;
-            setChat((items) => [...items, { id: uid(), from: 0, text: "طرف مقابل وارد کلاس شد.", at: event.at, mine: false }]);
+            setChat((items) => [...items, { id: uid(), from: 0, text: L("طرف مقابل وارد کلاس شد."), at: event.at, mine: false }]);
             if (isTeacherSide) void engineRef.current?.initiate();
           }
           if (payload?.action === "leave") {
             peerOnlineRef.current = false;
-            setChat((items) => [...items, { id: uid(), from: 0, text: "طرف مقابل خارج شد.", at: event.at, mine: false }]);
+            setChat((items) => [...items, { id: uid(), from: 0, text: L("طرف مقابل خارج شد."), at: event.at, mine: false }]);
           }
           break;
         }
@@ -284,7 +291,7 @@ export function LiveRoom({
     if (withMedia) {
       stream = await acquireMedia();
       if (!stream) {
-        setMediaError("ورود با دوربین/میکروفون ناموفق بود؛ بدون رسانه وارد می‌شوید.");
+        setMediaError(L("ورود با دوربین/میکروفون ناموفق بود؛ بدون رسانه وارد می‌شوید."));
       }
     }
     liveStreamRef.current = stream;
@@ -347,20 +354,20 @@ export function LiveRoom({
 
   const statusLabel =
     status === "live"
-      ? "اتصال زنده"
+      ? L("اتصال زنده")
       : status === "polling"
-        ? "اتصال پایدار (کانال پشتیبان)"
+        ? L("اتصال پایدار (کانال پشتیبان)")
         : status === "connecting"
-          ? "در حال اتصال…"
+          ? L("در حال اتصال…")
           : status === "error"
-            ? "خطای دسترسی"
-            : "پایان";
+            ? L("خطای دسترسی")
+            : L("پایان");
 
   /* ---------- پوشش تمام‌صفحه ---------- */
   return (
     <div
       role="dialog"
-      aria-label="کلاس زندهٔ تصویری"
+      aria-label={L("کلاس زندهٔ تصویری")}
       style={{
         position: "fixed",
         inset: 0,
@@ -369,7 +376,7 @@ export function LiveRoom({
         color: "#fff",
         display: "flex",
         flexDirection: "column",
-        direction: "rtl",
+        direction: dir,
         fontFamily: "inherit",
       }}
     >
@@ -388,21 +395,21 @@ export function LiveRoom({
         <div style={{ minWidth: 0, flex: 1 }}>
           <strong style={{ display: "block", fontSize: 14, fontWeight: 800 }}>{peerName}</strong>
           <span style={{ display: "block", fontSize: 11, color: remoteActive ? "#a8d08d" : "rgba(255,255,255,.55)" }}>
-            {remoteActive ? "متصل" : statusLabel}
+            {remoteActive ? L("متصل") : statusLabel}
             {countdown ? ` · ${countdown}` : ""}
           </span>
         </div>
         <button
           type="button"
           onClick={() => setChatOpen((open) => !open)}
-          aria-label="چت کلاس"
+          aria-label={L("چت کلاس")}
           style={{
             height: 38, padding: "0 14px", borderRadius: 999, border: "1px solid rgba(255,255,255,.18)",
             background: chatOpen ? "rgba(255,255,255,.16)" : "transparent", color: "#fff", cursor: "pointer",
             fontFamily: "inherit", fontSize: 12.5, fontWeight: 700,
           }}
         >
-          چت
+          {L("چت")}
         </button>
       </div>
 
@@ -413,7 +420,7 @@ export function LiveRoom({
             ref={remoteVideoRef}
             autoPlay
             playsInline
-            aria-label="تصویر طرف مقابل"
+            aria-label={L("تصویر طرف مقابل")}
             onDoubleClick={() => remoteVideoRef.current?.play().catch(() => {})}
             style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", background: "#10130e" }}
           />
@@ -435,7 +442,7 @@ export function LiveRoom({
                 fontSize: 12.5, fontWeight: 800, cursor: "pointer",
               }}
             >
-              ▶ برای پخش تصویر و صدای طرف مقابل لمس کنید
+              ▶ {L("برای پخش تصویر و صدای طرف مقابل لمس کنید")}
             </button>
           ) : null}
           {!remoteActive && phase === "live" ? (
@@ -449,7 +456,7 @@ export function LiveRoom({
                 <Avatar name={peerName} src={peerAvatar || undefined} size={84} ring tone="gold" />
                 <p style={{ margin: "14px 0 0", fontWeight: 700 }}>{peerName}</p>
                 <p style={{ margin: "4px 0 0", fontSize: 12 }}>
-                  در انتظار ورود طرف مقابل… همین صفحه را باز نگه دارید.
+                  {L("در انتظار ورود طرف مقابل… همین صفحه را باز نگه دارید.")}
                 </p>
               </div>
             </div>
@@ -460,7 +467,7 @@ export function LiveRoom({
               autoPlay
               muted
               playsInline
-              aria-label="پیش‌نمایش دوربین شما"
+              aria-label={L("پیش‌نمایش دوربین شما")}
               style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", transform: "scaleX(-1)" }}
             />
           ) : (
@@ -469,7 +476,7 @@ export function LiveRoom({
               autoPlay
               muted
               playsInline
-              aria-label="تصویر شما"
+              aria-label={L("تصویر شما")}
               style={{
                 position: "absolute", insetInlineStart: 14, bottom: 14, width: 116, height: 158,
                 objectFit: "cover", borderRadius: 16, border: "2px solid rgba(216,184,105,.75)",
@@ -504,7 +511,7 @@ export function LiveRoom({
                     }}
                   >
                     {line.text}
-                    <span style={{ display: "block", fontSize: 9.5, opacity: 0.65, marginTop: 2 }}>{chatTime(line.at)}</span>
+                    <span style={{ display: "block", fontSize: 9.5, opacity: 0.65, marginTop: 2 }}>{chatTime(line.at, lang)}</span>
                   </div>
                 ))}
               </div>
@@ -518,18 +525,18 @@ export function LiveRoom({
                       sendChat();
                     }
                   }}
-                  aria-label="متن پیام کلاس"
+                  aria-label={L("متن پیام کلاس")}
                   maxLength={1000}
-                  placeholder="پیام…"
+                  placeholder={L("پیام…")}
                   style={{ flex: 1, minWidth: 0, height: 42, borderRadius: 999, border: "1px solid rgba(255,255,255,.18)", background: "rgba(255,255,255,.08)", color: "#fff", padding: "0 16px", fontFamily: "inherit", fontSize: 13 }}
                 />
                 <button
                   type="button"
                   onClick={sendChat}
-                  aria-label="ارسال پیام کلاس"
+                  aria-label={L("ارسال پیام کلاس")}
                   style={{ height: 42, padding: "0 18px", borderRadius: 999, border: 0, background: "linear-gradient(145deg,#d8b869,#b8923c)", color: "#221a08", fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}
                 >
-                  ارسال
+                  {L("ارسال")}
                 </button>
               </div>
             </div>
@@ -556,7 +563,7 @@ export function LiveRoom({
                 />
               </div>
               <button type="button" onClick={() => void join(false)} style={{ ...controlButton(false), width: "auto", padding: "0 22px", borderRadius: 999, background: "rgba(255,255,255,.12)", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800 }}>
-                ورود بدون رسانه
+                {L("ورود بدون رسانه")}
               </button>
               <button
                 type="button"
@@ -566,27 +573,27 @@ export function LiveRoom({
                   background: "linear-gradient(145deg,#8fa873,#5f7a48)", color: "#fff", cursor: "pointer", fontSize: 27,
                   boxShadow: "0 14px 30px rgba(95,122,72,.5)",
                 }}
-                aria-label="ورود به کلاس با دوربین و میکروفون"
+                aria-label={L("ورود به کلاس با دوربین و میکروفون")}
               >
                 ▶
               </button>
               <button type="button" onClick={() => leave(false)} style={{ ...controlButton(false), width: "auto", padding: "0 22px", borderRadius: 999, background: "#b3403a", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800 }}>
-                انصراف
+                {L("انصراف")}
               </button>
             </>
           ) : (
             <>
-              <button type="button" onClick={toggleMic} style={controlButton(!micOn)} aria-label={micOn ? "قطع میکروفون" : "وصل میکروفون"}>
+              <button type="button" onClick={toggleMic} style={controlButton(!micOn)} aria-label={micOn ? L("قطع میکروفون") : L("وصل میکروفون")}>
                 {micOn ? "🎙" : "🔇"}
               </button>
-              <button type="button" onClick={toggleCam} style={controlButton(!camOn)} aria-label={camOn ? "قطع دوربین" : "وصل دوربین"}>
+              <button type="button" onClick={toggleCam} style={controlButton(!camOn)} aria-label={camOn ? L("قطع دوربین") : L("وصل دوربین")}>
                 {camOn ? "🎥" : "🚫"}
               </button>
               <button
                 type="button"
                 onClick={() => leave(false)}
                 style={{ width: 62, height: 62, borderRadius: "50%", border: 0, background: "#b3403a", color: "#fff", cursor: "pointer", fontSize: 24, boxShadow: "0 12px 26px rgba(179,64,58,.5)" }}
-                aria-label="خروج از کلاس"
+                aria-label={L("خروج از کلاس")}
               >
                 ✕
               </button>
@@ -595,9 +602,9 @@ export function LiveRoom({
                   type="button"
                   onClick={() => leave(true)}
                   style={{ width: "auto", height: 52, padding: "0 20px", borderRadius: 999, border: "1px solid rgba(216,184,105,.6)", background: "linear-gradient(145deg,#d8b869,#b8923c)", color: "#221a08", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 800 }}
-                  aria-label="پایان جلسه"
+                  aria-label={L("پایان جلسه")}
                 >
-                  پایان جلسه
+                  {L("پایان جلسه")}
                 </button>
               ) : null}
             </>

@@ -1,14 +1,17 @@
-import { Card, formatJalaliDateTime, Icon, colors, spacing, toFaDigits, typography } from "../../ui";
+import { Card, Icon, colors, spacing, typography } from "../../ui";
+import { useAppearance } from "../../ui/appearance";
+import { formatAppDateTime } from "../../ui/jalali";
 import type { WalletTransaction } from "./types";
 
 export { toFaDigits } from "../../ui";
 
-export function formatWalletAmount(value: number): string {
-  return new Intl.NumberFormat("fa-IR", { maximumFractionDigits: 0 }).format(value);
+/** مبلغ با ارقامِ متناسب با زبان اپ: فارسی «۱۲۳٬۴۵۶»، انگلیسی «123,456». */
+export function formatWalletAmount(value: number, lang: "fa" | "en" = "fa"): string {
+  return new Intl.NumberFormat(lang === "en" ? "en-US" : "fa-IR", { maximumFractionDigits: 0 }).format(value);
 }
 
-function transactionDate(value: string): string {
-  return formatJalaliDateTime(value, { withYear: false });
+function transactionDate(value: string, lang: "fa" | "en"): string {
+  return formatAppDateTime(value, lang, { withYear: false });
 }
 
 type TxVisual = { icon: "coins" | "video" | "trending" | "download" | "x" | "info"; label: string; ink: string; background: string };
@@ -24,13 +27,15 @@ const TX_VISUAL: Record<string, TxVisual> = {
 
 export function WalletTransactionCard({
   transaction,
-  formatAmount = formatWalletAmount,
+  formatAmount,
 }: {
   transaction: WalletTransaction;
   formatAmount?: (value: number) => string;
 }) {
+  const { L, lang } = useAppearance();
   const credit = transaction.amount > 0;
   const visual = TX_VISUAL[transaction.type] ?? TX_VISUAL.adjust;
+  const format = formatAmount ?? ((value: number) => formatWalletAmount(value, lang));
 
   return (
     <Card
@@ -72,11 +77,11 @@ export function WalletTransactionCard({
             fontWeight: 800,
           }}
         >
-          {transaction.title || visual.label}
+          {transaction.title ? L(transaction.title) : L(visual.label)}
         </strong>
         <span style={{ ...typography.caption, display: "block", marginTop: 3, color: colors.inkMuted }}>
-          {visual.label}
-          {transaction.createdAt ? ` · ${transactionDate(transaction.createdAt)}` : ""}
+          {L(visual.label)}
+          {transaction.createdAt ? ` · ${transactionDate(transaction.createdAt, lang)}` : ""}
         </span>
       </div>
       <div style={{ flex: "0 0 auto", textAlign: "left" }}>
@@ -90,7 +95,7 @@ export function WalletTransactionCard({
             fontWeight: 800,
           }}
         >
-          {credit ? "+" : "−"}{formatAmount(Math.abs(transaction.amount))}
+          {credit ? "+" : "−"}{format(Math.abs(transaction.amount))}
         </strong>
       </div>
     </Card>

@@ -21,15 +21,26 @@ import (
 
 // AuthUsecase implements OTP-based authentication.
 type AuthUsecase struct {
-	users  domain.UserRepository
-	otps   domain.OTPRepository
-	sender sms.Sender
-	tokens *token.Manager
-	cfg    *config.Config
+	users    domain.UserRepository
+	otps     domain.OTPRepository
+	sender   sms.Sender
+	tokens   *token.Manager
+	cfg      *config.Config
+	notifs   domain.NotificationRepository
+	settings domain.SettingRepository
 }
 
 func NewAuthUsecase(u domain.UserRepository, o domain.OTPRepository, s sms.Sender, t *token.Manager, cfg *config.Config) *AuthUsecase {
 	return &AuthUsecase{users: u, otps: o, sender: s, tokens: t, cfg: cfg}
+}
+
+// WithObservers wires the optional repositories the auth flow needs beyond
+// its core job: live admin notifications (new registrations) and platform
+// settings (Google OAuth credentials editable from the admin panel).
+func (uc *AuthUsecase) WithObservers(notifs domain.NotificationRepository, settings domain.SettingRepository) *AuthUsecase {
+	uc.notifs = notifs
+	uc.settings = settings
+	return uc
 }
 
 type AuthResult struct {
@@ -107,6 +118,8 @@ func (uc *AuthUsecase) VerifyOTP(ctx context.Context, mobile, code string) (*Aut
 		if err := uc.users.Create(ctx, user); err != nil {
 			return nil, err
 		}
+		NotifyAdmins(ctx, uc.notifs, uc.users, "مدیریت: ثبت‌نام کاربر جدید",
+			"کاربر تازه‌ای با شماره "+maskMobile(mobile)+" وارد وُدّا شد.")
 	} else if err != nil {
 		return nil, err
 	}

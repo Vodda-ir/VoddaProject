@@ -94,7 +94,9 @@ export const spacing = {
 } as const;
 
 export const typography = {
-  fontFamily: "'IRANYekanXFaNum', 'Yekan Bakh', 'Vazirmatn', system-ui, sans-serif",
+  // فونت از متغیر CSS خوانده می‌شود تا در حالت انگلیسی بتوان فونت بدون
+  // رقوم‌فارسی (FaNum) را جایگزین کرد — appearance.tsx مقدار را ست می‌کند.
+  fontFamily: "var(--vodda-font, 'IRANYekanXFaNum', 'Yekan Bakh', 'Vazirmatn', system-ui, sans-serif)",
   caption: { fontSize: 12.5, lineHeight: 1.7 },
   bodySmall: { fontSize: 13, lineHeight: 1.8 },
   body: { fontSize: 14, lineHeight: 1.9 },

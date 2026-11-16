@@ -10,6 +10,7 @@ import type {
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { resolveAssetUrl } from "../platform/asset";
+import { useAppearance } from "./appearance";
 import { colors, gradients, radii, shadows, spacing, typography } from "./theme";
 
 function mergeStyle(base: CSSProperties, style?: CSSProperties): CSSProperties {
@@ -34,6 +35,7 @@ export function Button({
   className,
   ...props
 }: ButtonProps) {
+  const { L } = useAppearance();
   const variants: Record<ButtonVariant, CSSProperties> = {
     primary: {
       color: colors.surface,
@@ -95,7 +97,7 @@ export function Button({
       {loading ? (
         <>
           <span className="vodda-spinner" aria-hidden="true" />
-          <span>در حال انجام…</span>
+          <span>{L("در حال انجام…")}</span>
         </>
       ) : children}
     </button>
@@ -230,6 +232,7 @@ function avatarFrame(size: number, ring: boolean, tone: "olive" | "gold", style?
 }
 
 export function Avatar({ name, size = 48, ring = true, tone = "olive", src, alt, style, ...props }: AvatarProps) {
+  const { L } = useAppearance();
   // آدرس‌های نسبی آپلودها (مثل /uploads/avatars/…) پیش از رندر حل می‌شوند تا
   // هم در وب هم‌مبدأ و هم در WebView نیتیو درست نمایش داده شوند.
   const resolvedSrc = resolveAssetUrl(src);
@@ -237,7 +240,7 @@ export function Avatar({ name, size = 48, ring = true, tone = "olive", src, alt,
     return (
       <img
         src={resolvedSrc}
-        alt={alt ?? name ?? "تصویر کاربر"}
+        alt={alt ?? name ?? L("تصویر کاربر")}
         width={size}
         height={size}
         style={{
@@ -253,7 +256,7 @@ export function Avatar({ name, size = 48, ring = true, tone = "olive", src, alt,
   return (
     <span
       role="img"
-      aria-label={alt ?? name ?? "کاربر"}
+      aria-label={alt ?? name ?? L("کاربر")}
       style={{
         ...avatarFrame(size, ring, tone, style),
         color: colors.olive800,
@@ -344,6 +347,7 @@ export function ErrorState(props: StateProps) {
 }
 
 export function LoadingState({ label = "در حال بارگذاری…", style }: { label?: ReactNode; style?: CSSProperties }) {
+  const { L } = useAppearance();
   return (
     <div
       role="status"
@@ -365,7 +369,7 @@ export function LoadingState({ label = "در حال بارگذاری…", style 
       )}
     >
       <span className="vodda-loader-orbit" aria-hidden="true" />
-      <span>{label}</span>
+      <span>{typeof label === "string" ? L(label) : label}</span>
     </div>
   );
 }
@@ -446,6 +450,8 @@ function useOverlayBehavior(open: boolean, onClose: () => void, containerRef: Re
 }
 
 export function Dialog({ open, title, children, onClose, closeLabel = "بستن" }: OverlayProps) {
+  const { L } = useAppearance();
+  const closeText = L(closeLabel);
   const containerRef = useRef<HTMLDivElement | null>(null);
   useOverlayBehavior(open, onClose, containerRef);
   if (!open || typeof document === "undefined") return null;
@@ -493,7 +499,7 @@ export function Dialog({ open, title, children, onClose, closeLabel = "بستن"
       >
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: spacing.md }}>
           {title ? <strong style={typography.title}>{title}</strong> : <span />}
-          <Button variant="ghost" onClick={onClose} aria-label={closeLabel} style={{ width: 44, minHeight: 44, padding: 0 }}>
+          <Button variant="ghost" onClick={onClose} aria-label={closeText} style={{ width: 44, minHeight: 44, padding: 0 }}>
             ×
           </Button>
         </div>
@@ -505,6 +511,8 @@ export function Dialog({ open, title, children, onClose, closeLabel = "بستن"
 }
 
 export function Sheet({ open, title, children, onClose, closeLabel = "بستن" }: OverlayProps) {
+  const { L } = useAppearance();
+  const closeText = L(closeLabel);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const dragStartY = useRef<number | null>(null);
   const [dragOffset, setDragOffset] = useState(0);
@@ -553,7 +561,7 @@ export function Sheet({ open, title, children, onClose, closeLabel = "بستن" 
       >
         <div
           role="button"
-          aria-label={closeLabel}
+          aria-label={closeText}
           className="vodda-hit"
           onClick={() => onClose()}
           onPointerDown={(event) => {
@@ -588,7 +596,7 @@ export function Sheet({ open, title, children, onClose, closeLabel = "بستن" 
         </div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: spacing.md }}>
           {title ? <strong style={typography.title}>{title}</strong> : <span />}
-          <Button variant="ghost" onClick={onClose} aria-label={closeLabel} style={{ width: 44, minHeight: 44, padding: 0 }}>
+          <Button variant="ghost" onClick={onClose} aria-label={closeText} style={{ width: 44, minHeight: 44, padding: 0 }}>
             ×
           </Button>
         </div>

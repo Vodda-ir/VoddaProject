@@ -11,6 +11,7 @@
 
 import type { CSSProperties } from "react";
 import { Icon, colors } from "../../ui";
+import { useAppearance } from "../../ui/appearance";
 
 type BioBlock =
   | { kind: "para"; emoji: string; text: string }
@@ -55,10 +56,11 @@ const paraStyle: CSSProperties = {
 };
 
 export function TeacherBioBlocks({ bio, emptyLabel = "اطلاعاتی ثبت نشده است." }: { bio?: string; emptyLabel?: string }) {
+  const { L } = useAppearance();
   const blocks = parseBioBlocks(bio);
   if (!blocks.length) {
     return (
-      <p style={{ fontSize: 14, lineHeight: 1.9, margin: "8px 0 0", color: colors.inkMuted }}>{emptyLabel}</p>
+      <p style={{ fontSize: 14, lineHeight: 1.9, margin: "8px 0 0", color: colors.inkMuted }}>{L(emptyLabel)}</p>
     );
   }
   return (
@@ -84,7 +86,7 @@ export function TeacherBioBlocks({ bio, emptyLabel = "اطلاعاتی ثبت ن
           return (
             <div key={index} style={{ padding: "12px 13px", borderRadius: 16, border: `1px solid ${colors.border}`, background: colors.sand50 }}>
               <strong style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 800, color: colors.olive700 }}>
-                <Icon name="sparkle" size={13} /> {block.title}
+                <Icon name="sparkle" size={13} /> {L(block.title)}
               </strong>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 9 }}>
                 {block.items.map((item) => (

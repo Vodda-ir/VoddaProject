@@ -3,6 +3,7 @@
 import type { UniversalAppConfig } from "../../config";
 import { navigateApp } from "../../router";
 import { Icon, Sheet, colors, shadows, typography } from "../../ui";
+import { useAppearance } from "../../ui/appearance";
 
 export function RoleModeSheet({
   open,
@@ -15,25 +16,26 @@ export function RoleModeSheet({
   config: UniversalAppConfig;
   onClose: () => void;
 }) {
+  const { L } = useAppearance();
   const options = [
     {
       mode: "learner" as const,
       icon: "user" as const,
-      title: "حساب قرآن آموز",
-      description: "یافتن استاد و رزرو جلسه",
+      title: L("حساب قرآن آموز"),
+      description: L("یافتن استاد و رزرو جلسه"),
       path: "/",
     },
     {
       mode: "teacher" as const,
       icon: "award" as const,
-      title: "حساب استاد",
-      description: "مدیریت جلسات و درآمد",
+      title: L("حساب استاد"),
+      description: L("مدیریت جلسات و درآمد"),
       path: "/t",
     },
   ];
 
   return (
-    <Sheet open={open} title="تغییر حساب" onClose={onClose}>
+    <Sheet open={open} title={L("تغییر حساب")} onClose={onClose}>
       <div style={{ display: "grid", gap: 12 }}>
         {options.map((option) => {
           const active = option.mode === mode;

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { colors, typography } from "../../ui";
+import { useAppearance } from "../../ui/appearance";
 
 export type PaymentResultState = "success" | "verify" | "failed" | null;
 
@@ -30,6 +31,7 @@ const LABELS: Record<"success" | "verify" | "failed", string> = {
  * ندهد؛ خود بنر تا بستنِ کاربر باقی می‌ماند.
  */
 export function PaymentResultBanner() {
+  const { L } = useAppearance();
   const [state, setState] = useState<PaymentResultState>(null);
   const [refNum, setRefNum] = useState("");
 
@@ -87,17 +89,17 @@ export function PaymentResultBanner() {
       </span>
       <div style={{ display: "grid", gap: 4, flex: 1, minWidth: 0 }}>
         <p style={{ ...typography.bodySmall, margin: 0, color: tone.text, fontWeight: 700 }}>
-          {LABELS[state]}
+          {L(LABELS[state])}
         </p>
         {refNum ? (
           <p style={{ ...typography.caption, margin: 0, color: tone.text, opacity: 0.85 }}>
-            شماره پیگیری بانک: <span dir="ltr">{refNum}</span>
+            {L("شماره پیگیری بانک:")} <span dir="ltr">{refNum}</span>
           </p>
         ) : null}
       </div>
       <button
         type="button"
-        aria-label="بستن پیام نتیجه پرداخت"
+        aria-label={L("بستن پیام نتیجه پرداخت")}
         onClick={() => setState(null)}
         style={{
           flex: "0 0 auto",

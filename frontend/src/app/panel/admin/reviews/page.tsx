@@ -19,6 +19,7 @@ import {
 } from '@/components/admin/AdminUI';
 import { fullUrl, getToken } from '@/lib/auth';
 import { toFaDigits } from '@/lib/persian';
+import { confirmDialog } from '@/lib/confirm';
 
 type AdminReviewRow = {
   id: number;
@@ -96,7 +97,7 @@ export default function AdminReviews() {
 
   async function removeReview(review: AdminReviewRow) {
     if (!token || busyId !== null) return;
-    if (!window.confirm('حذف نظر بازگشت‌پذیر نیست؛ امتیاز استاد بازمحاسبه و جلسه برای ثبت نظر تازه باز می‌شود. ادامه می‌دهید؟')) return;
+    if (!(await confirmDialog('حذف نظر بازگشت‌پذیر نیست؛ امتیاز استاد بازمحاسبه و جلسه برای ثبت نظر تازه باز می‌شود. ادامه می‌دهید؟'))) return;
 
     setBusyId(review.id);
     setError('');

@@ -9,13 +9,14 @@ import type { UniversalAppConfig } from "../../config";
 import { usePlatform } from "../../platform/context";
 import { navigateApp } from "../../router";
 import { CornerOrnament } from "../../ui/ornaments";
-import { toFaDigits, digitsOnly } from "../../ui/persian";
+import { digitsOnly, localizedDigits } from "../../ui/persian";
+import { useAppearance } from "../../ui/appearance";
+import { formatAppDate } from "../../ui/jalali";
 import {
   Button,
   Card,
   EmptyState,
   ErrorState,
-  formatJalaliDate,
   Icon,
   LoadingState,
   colors,
@@ -79,16 +80,18 @@ function whenChip(active: boolean): CSSProperties {
 const RECITER_PRESETS: readonly number[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
 function FieldLabel({ children, hint }: { children: string; hint?: string }) {
+  const { L } = useAppearance();
   return (
     <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: spacing.sm, marginBottom: 8 }}>
-      <strong style={{ fontSize: 13.5, color: colors.ink, display: "block" }}>{children}</strong>
-      {hint ? <span style={{ fontSize: 11, color: colors.inkFaint }}>{hint}</span> : null}
+      <strong style={{ fontSize: 13.5, color: colors.ink, display: "block" }}>{L(children)}</strong>
+      {hint ? <span style={{ fontSize: 11, color: colors.inkFaint }}>{L(hint)}</span> : null}
     </div>
   );
 }
 
 export function CeremonyNewScreen({ config }: { config: UniversalAppConfig }) {
   const runtime = usePlatform();
+  const { L, lang } = useAppearance();
   const [catalog, setCatalog] = useState<OfficialInPersonService[]>([]);
   const [catalogLoading, setCatalogLoading] = useState(true);
   const [catalogError, setCatalogError] = useState("");
@@ -179,7 +182,7 @@ export function CeremonyNewScreen({ config }: { config: UniversalAppConfig }) {
         audience,
       });
       if (created.call) {
-        showToast("فراخوان مراسم ثبت شد و برای قاریان ارسال گردید");
+        showToast(L("فراخوان مراسم ثبت شد و برای قاریان ارسال گردید"));
         navigateApp(`/ceremony/calls/${created.call.id}`, config);
       }
     } catch (error) {
@@ -187,7 +190,7 @@ export function CeremonyNewScreen({ config }: { config: UniversalAppConfig }) {
     } finally {
       setCreating(false);
     }
-  }, [audience, budgetMaxValue, budgetMinValue, city, config, creating, guestsValue, note, reciters, runtime, topic, venue, when]);
+  }, [audience, budgetMaxValue, budgetMinValue, city, config, creating, guestsValue, L, note, reciters, runtime, topic, venue, when]);
 
   return (
     <div className="vodda-screen" style={{ display: "grid", gap: spacing.lg }}>
@@ -210,15 +213,15 @@ export function CeremonyNewScreen({ config }: { config: UniversalAppConfig }) {
             <Icon name="calendar" size={24} />
           </div>
           <div>
-            <h1 className="vodda-display" style={{ margin: 0, fontSize: 22, lineHeight: 1.65 }}>فراخوان مراسم</h1>
-            <span style={{ fontSize: 12.5, opacity: 0.9 }}>مراسم خود را ثبت کنید؛ قاریان حق‌الزحمهٔ خود را اعلام می‌کنند</span>
+            <h1 className="vodda-display" style={{ margin: 0, fontSize: 22, lineHeight: 1.65 }}>{L("فراخوان مراسم")}</h1>
+            <span style={{ fontSize: 12.5, opacity: 0.9 }}>{L("مراسم خود را ثبت کنید؛ قاریان حق‌الزحمهٔ خود را اعلام می‌کنند")}</span>
           </div>
         </div>
         <div style={{ position: "relative", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginTop: 14 }}>
           {[
-            { icon: "doc" as const, text: "جزئیات مراسم را ثبت کنید" },
-            { icon: "bell" as const, text: "قاریان اعلام آمادگی می‌کنند" },
-            { icon: "checkCircle" as const, text: "یک را قطعی کنید" },
+            { icon: "doc" as const, text: L("جزئیات مراسم را ثبت کنید") },
+            { icon: "bell" as const, text: L("قاریان اعلام آمادگی می‌کنند") },
+            { icon: "checkCircle" as const, text: L("یک را قطعی کنید") },
           ].map((step) => (
             <div key={step.text} style={{ background: "rgba(255,255,255,.12)", borderRadius: 13, padding: "10px 8px", textAlign: "center" }}>
               <Icon name={step.icon} size={18} style={{ opacity: 0.92 }} />
@@ -240,7 +243,7 @@ export function CeremonyNewScreen({ config }: { config: UniversalAppConfig }) {
           <button
             type="button"
             onClick={() => setTopic(null)}
-            aria-label="تغییر موضوع"
+            aria-label={L("تغییر موضوع")}
             style={{ background: "none", border: "none", color: colors.inkMuted, cursor: "pointer", padding: 4, fontFamily: typography.fontFamily }}
           >
             <Icon name="refresh" size={17} />
@@ -248,20 +251,20 @@ export function CeremonyNewScreen({ config }: { config: UniversalAppConfig }) {
         </Card>
       ) : (
         <Card className="vodda-enter" style={{ padding: 18, borderRadius: 20 }}>
-          <strong style={{ fontSize: 15, fontWeight: 800, color: colors.ink, display: "block" }}>۱. موضوع مراسم را انتخاب کنید</strong>
+          <strong style={{ fontSize: 15, fontWeight: 800, color: colors.ink, display: "block" }}>{L("۱. موضوع مراسم را انتخاب کنید")}</strong>
           <span style={{ fontSize: 12, color: colors.inkMuted, display: "block", margin: "4px 0 12px" }}>
-            از خدمات حضوری رسمی وُدّا — {toFaDigits(catalog.length)} خدمت تأییدشده
+            {L("از خدمات حضوری رسمی وُدّا — {count} خدمت تأییدشده").replace("{count}", localizedDigits(catalog.length, lang))}
           </span>
           {catalogLoading ? (
-            <LoadingState label="در حال دریافت خدمات حضوری…" />
+            <LoadingState label={L("در حال دریافت خدمات حضوری…")} />
           ) : catalogError ? (
             <ErrorState
-              title="دریافت خدمات ناموفق بود"
-              description={catalogError}
-              action={<Button variant="secondary" onClick={() => void loadCatalog()}>تلاش دوباره</Button>}
+              title={L("دریافت خدمات ناموفق بود")}
+              description={L(catalogError)}
+              action={<Button variant="secondary" onClick={() => void loadCatalog()}>{L("تلاش دوباره")}</Button>}
             />
           ) : catalog.length === 0 ? (
-            <EmptyState title="خدمتی پیدا نشد" description="فعلاً خدمت حضوری ثبت‌شده‌ای در کاتالوگ نیست." />
+            <EmptyState title={L("خدمتی پیدا نشد")} description={L("فعلاً خدمت حضوری ثبت‌شده‌ای در کاتالوگ نیست.")} />
           ) : (
             <div style={{ display: "grid", gap: spacing.lg, maxHeight: 480, overflowY: "auto", paddingInlineEnd: 4 }}>
               {grouped.map(([category, items]) => (
@@ -302,13 +305,13 @@ export function CeremonyNewScreen({ config }: { config: UniversalAppConfig }) {
       )}
 
       <Card className="vodda-enter vodda-enter-delay-1" style={{ padding: 18, borderRadius: 20, display: "grid", gap: spacing.lg }}>
-        <strong style={{ fontSize: 15, fontWeight: 800, color: colors.ink }}>۲. زمان و مکان</strong>
+        <strong style={{ fontSize: 15, fontWeight: 800, color: colors.ink }}>{L("۲. زمان و مکان")}</strong>
 
         <div style={{ display: "grid", gap: spacing.md }}>
           <div style={{ display: "flex", gap: spacing.sm, flexWrap: "wrap" }}>
             <span style={chipStyle}>
               <Icon name="calendar" size={12} />
-              {formatJalaliDate(when.localDate)} · ساعت {toFaDigits(String(when.hh).padStart(2, "0"))}:{toFaDigits(String(when.mm).padStart(2, "0"))}
+              {formatAppDate(when.localDate, lang)} · {L("ساعت {time}").replace("{time}", `${localizedDigits(String(when.hh).padStart(2, "0"), lang)}:${localizedDigits(String(when.mm).padStart(2, "0"), lang)}`)}
             </span>
           </div>
           <JalaliWhenPicker value={when} onChange={setWhen} label="تاریخ و ساعت برگزاری" />
@@ -324,7 +327,7 @@ export function CeremonyNewScreen({ config }: { config: UniversalAppConfig }) {
       </Card>
 
       <Card className="vodda-enter vodda-enter-delay-2" style={{ padding: 18, borderRadius: 20, display: "grid", gap: spacing.lg }}>
-        <strong style={{ fontSize: 15, fontWeight: 800, color: colors.ink }}>۳. مهمانان و قاریان</strong>
+        <strong style={{ fontSize: 15, fontWeight: 800, color: colors.ink }}>{L("۳. مهمانان و قاریان")}</strong>
 
         <CountField
           label="تعداد مهمانان"
@@ -341,8 +344,8 @@ export function CeremonyNewScreen({ config }: { config: UniversalAppConfig }) {
 
         <div>
           <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: spacing.sm, marginBottom: 8 }}>
-            <strong style={{ fontSize: 13.5, color: colors.ink, display: "block" }}>تعداد قاریان موردنیاز</strong>
-            <span style={{ fontSize: 11, color: colors.inkFaint }}>۱ تا ۱۰ قاری</span>
+            <strong style={{ fontSize: 13.5, color: colors.ink, display: "block" }}>{L("تعداد قاریان موردنیاز")}</strong>
+            <span style={{ fontSize: 11, color: colors.inkFaint }}>{L("۱ تا ۱۰ قاری")}</span>
           </div>
           <div style={{ display: "flex", alignItems: "flex-start", gap: spacing.md }}>
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -355,14 +358,14 @@ export function CeremonyNewScreen({ config }: { config: UniversalAppConfig }) {
                 }}
                 options={RECITER_PRESETS.map((preset) => ({
                   value: String(preset),
-                  label: preset === 1 ? "۱ قاری" : `${toFaDigits(preset)} قاری`,
+                  label: preset === 1 ? L("۱ قاری") : `${localizedDigits(preset, lang)} ${L("قاری")}`,
                 }))}
               />
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "0 0 auto", paddingTop: 0 }}>
               <button
                 type="button"
-                aria-label="کاهش تعداد قاریان"
+                aria-label={L("کاهش تعداد قاریان")}
                 onClick={() => setReciters((value) => Math.max(1, value - 1))}
                 disabled={reciters <= 1}
                 style={{ ...stepButtonStyle, opacity: reciters <= 1 ? 0.45 : 1 }}
@@ -380,11 +383,11 @@ export function CeremonyNewScreen({ config }: { config: UniversalAppConfig }) {
                   fontVariantNumeric: "tabular-nums",
                 }}
               >
-                {toFaDigits(reciters)}
+                {localizedDigits(reciters, lang)}
               </strong>
               <button
                 type="button"
-                aria-label="افزایش تعداد قاریان"
+                aria-label={L("افزایش تعداد قاریان")}
                 onClick={() => setReciters((value) => Math.min(10, value + 1))}
                 disabled={reciters >= 10}
                 style={{ ...stepButtonStyle, opacity: reciters >= 10 ? 0.45 : 1 }}
@@ -397,7 +400,7 @@ export function CeremonyNewScreen({ config }: { config: UniversalAppConfig }) {
       </Card>
 
       <Card className="vodda-enter vodda-enter-delay-3" style={{ padding: 18, borderRadius: 20, display: "grid", gap: spacing.lg }}>
-        <strong style={{ fontSize: 15, fontWeight: 800, color: colors.ink }}>۴. بودجه و مخاطبان</strong>
+        <strong style={{ fontSize: 15, fontWeight: 800, color: colors.ink }}>{L("۴. بودجه و مخاطبان")}</strong>
 
         <PriceRangePicker
           minValue={budgetMinValue}
@@ -410,7 +413,7 @@ export function CeremonyNewScreen({ config }: { config: UniversalAppConfig }) {
 
         <div>
           <FieldLabel hint="برای رعایت شرعی فضای مراسم">مخاطبان مراسم</FieldLabel>
-          <div role="radiogroup" aria-label="مخاطبان مراسم" style={{ display: "flex", gap: spacing.sm, flexWrap: "wrap" }}>
+          <div role="radiogroup" aria-label={L("مخاطبان مراسم")} style={{ display: "flex", gap: spacing.sm, flexWrap: "wrap" }}>
             {audienceOptions.map((option) => (
               <button
                 key={option.value}
@@ -420,40 +423,40 @@ export function CeremonyNewScreen({ config }: { config: UniversalAppConfig }) {
                 onClick={() => setAudience(option.value)}
                 style={whenChip(audience === option.value)}
               >
-                {option.label}
+                {L(option.label)}
               </button>
             ))}
           </div>
         </div>
 
         <div style={{ display: "grid", gap: 10 }}>
-          <FieldLabel hint={`${toFaDigits(note.length)} از ۳۰۰`}>یادداشت برای قاریان (اختیاری)</FieldLabel>
+          <FieldLabel hint={L("{count} از ۳۰۰").replace("{count}", localizedDigits(note.length, lang))}>یادداشت برای قاریان (اختیاری)</FieldLabel>
           <NoteTemplateChips value={note} onChange={setNote} />
           <textarea
             value={note}
             onChange={(event) => setNote(event.target.value.slice(0, 300))}
             rows={3}
-            placeholder="مثلاً: مراسم ختم قرآن است؛ تلاوت سورهٔ رعد و دعای پایانی مدنظر است…"
+            placeholder={L("مثلاً: مراسم ختم قرآن است؛ تلاوت سورهٔ رعد و دعای پایانی مدنظر است…")}
             style={{ ...inputStyle, resize: "none", lineHeight: 1.9 }}
-            aria-label="یادداشت فراخوان مراسم"
+            aria-label={L("یادداشت فراخوان مراسم")}
           />
         </div>
       </Card>
 
       {validationError ? (
         <p role="alert" style={{ ...typography.bodySmall, padding: spacing.md, borderRadius: radii.md, background: colors.goldBackground, color: colors.goldDark, margin: 0 }}>
-          {validationError}
+          {L(validationError)}
         </p>
       ) : null}
       {actionError ? (
         <p role="alert" style={{ ...typography.bodySmall, padding: spacing.md, borderRadius: radii.md, background: colors.dangerBackground, color: colors.danger, margin: 0 }}>
-          {actionError}
+          {L(actionError)}
         </p>
       ) : null}
 
       <div style={{ position: "sticky", zIndex: 12, bottom: "calc(68px + env(safe-area-inset-bottom))", padding: "8px 0 12px", background: colors.sand50 }}>
         <Button fullWidth loading={creating} disabled={creating} onClick={() => void submit()} style={{ minHeight: 52 }}>
-          ثبت فراخوان مراسم
+          {L("ثبت فراخوان مراسم")}
         </Button>
       </div>
     </div>

@@ -9,7 +9,9 @@ import type { UniversalAppConfig } from "../../config";
 import { usePlatform } from "../../platform/context";
 import { navigateApp } from "../../router";
 import { payViaSamanGate } from "../../../lib/saman-gate";
-import { toFaDigits } from "../../ui/persian";
+import { localizedDigits } from "../../ui/persian";
+import { useAppearance } from "../../ui/appearance";
+import { formatAppDateTime } from "../../ui/jalali";
 import {
   Avatar,
   Button,
@@ -34,7 +36,6 @@ import {
   bookingStatusMeta,
   formatAmountFull,
 } from "./elements";
-import { formatJalaliDateTime } from "../../ui/jalali";
 import type { CeremonyBooking } from "./types";
 
 type TimelineStep = { key: string; label: string; reached: boolean; current: boolean; danger?: boolean };
@@ -57,6 +58,7 @@ function timelineOf(booking: CeremonyBooking): TimelineStep[] {
 }
 
 function Timeline({ booking }: { booking: CeremonyBooking }) {
+  const { L, lang } = useAppearance();
   const steps = timelineOf(booking);
   return (
     <div style={{ display: "flex", alignItems: "flex-start", gap: 0 }}>
@@ -90,7 +92,7 @@ function Timeline({ booking }: { booking: CeremonyBooking }) {
               fontWeight: 900,
             }}
           >
-            {step.reached ? "✓" : toFaDigits(index + 1)}
+            {step.reached ? "✓" : localizedDigits(index + 1, lang)}
           </span>
           <span
             style={{
@@ -101,7 +103,7 @@ function Timeline({ booking }: { booking: CeremonyBooking }) {
               fontWeight: step.current ? 800 : 600,
             }}
           >
-            {step.label}
+            {L(step.label)}
           </span>
         </div>
       ))}
@@ -131,6 +133,7 @@ function PersonRow({
   tag?: string;
   phone?: string;
 }) {
+  const { L, lang } = useAppearance();
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
       <Avatar name={name} src={avatar || undefined} size={44} ring={false} />
@@ -147,10 +150,10 @@ function PersonRow({
             style={{ display: "inline-flex", alignItems: "center", gap: 4, marginTop: 2, fontSize: 12.5, color: colors.olive700, textDecoration: "none", fontWeight: 700 }}
           >
             <Icon name="phone" size={13} />
-            {toFaDigits(phone)}
+            {localizedDigits(phone, lang)}
           </a>
         ) : (
-          <span style={{ display: "block", fontSize: 11, color: colors.inkFaint }}>شماره پس از قطعی‌سازی در دسترس است</span>
+          <span style={{ display: "block", fontSize: 11, color: colors.inkFaint }}>{L("شماره پس از قطعی‌سازی در دسترس است")}</span>
         )}
       </div>
     </div>
@@ -159,6 +162,7 @@ function PersonRow({
 
 export function CeremonyBookingScreen({ bookingId, config }: { bookingId: string; config: UniversalAppConfig }) {
   const runtime = usePlatform();
+  const { L, lang } = useAppearance();
   const numericId = Number(bookingId);
   const validId = Number.isInteger(numericId) && numericId > 0;
   const [booking, setBooking] = useState<CeremonyBooking | null>(null);
@@ -263,17 +267,17 @@ export function CeremonyBookingScreen({ bookingId, config }: { bookingId: string
     }
   }, [booking, busy, runtime]);
 
-  if (loading) return <LoadingState label="در حال دریافت قرارداد…" />;
+  if (loading) return <LoadingState label={L("در حال دریافت قرارداد…")} />;
 
   if (error || !booking) {
     return (
       <ErrorState
-        title="دریافت قرارداد ناموفق بود"
-        description={error || "این قرارداد پیدا نشد یا به شما تعلق ندارد."}
+        title={L("دریافت قرارداد ناموفق بود")}
+        description={L(error || "این قرارداد پیدا نشد یا به شما تعلق ندارد.")}
         action={
           <div style={{ display: "grid", gap: spacing.sm }}>
-            <Button variant="secondary" onClick={() => { setLoading(true); setError(""); void load(); }}>تلاش دوباره</Button>
-            <Button variant="ghost" onClick={() => navigateApp("/", config)}>بازگشت به خانه</Button>
+            <Button variant="secondary" onClick={() => { setLoading(true); setError(""); void load(); }}>{L("تلاش دوباره")}</Button>
+            <Button variant="ghost" onClick={() => navigateApp("/", config)}>{L("بازگشت به خانه")}</Button>
           </div>
         }
       />
@@ -287,9 +291,9 @@ export function CeremonyBookingScreen({ bookingId, config }: { bookingId: string
           <Icon name="shield" size={30} stroke={2.2} />
         </div>
         <div>
-          <h2 style={{ ...typography.title, margin: 0 }}>در حال انتقال به درگاه پرداخت…</h2>
+          <h2 style={{ ...typography.title, margin: 0 }}>{L("در حال انتقال به درگاه پرداخت…")}</h2>
           <p style={{ ...typography.body, color: colors.inkSecondary, marginBottom: 0 }}>
-            ودیعهٔ مراسم ثبت شد؛ پس از پرداخت موفق به همین صفحه برمی‌گردید.
+            {L("ودیعهٔ مراسم ثبت شد؛ پس از پرداخت موفق به همین صفحه برمی‌گردید.")}
           </p>
         </div>
         <span dir="ltr" style={{ ...typography.caption, color: colors.inkFaint }}>{APP_LANDING_CEREMONY_BOOKINGS}/{booking.id}</span>
@@ -304,7 +308,7 @@ export function CeremonyBookingScreen({ bookingId, config }: { bookingId: string
   const settled = booking.status === "settled";
   const cancelled = booking.status === "cancelled";
   const venueHidden = !booking.venue;
-  const venueLabel = booking.venue || "پس از پرداخت ودیعه نمایش داده می‌شود";
+  const venueLabel = booking.venue || L("پس از پرداخت ودیعه نمایش داده می‌شود");
 
   return (
     <div className="vodda-screen" style={{ display: "grid", gap: spacing.lg }}>
@@ -312,7 +316,7 @@ export function CeremonyBookingScreen({ bookingId, config }: { bookingId: string
 
       <Card elevated className="vodda-enter" style={{ display: "grid", gap: spacing.lg, borderRadius: 22 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: spacing.md, flexWrap: "wrap" }}>
-          <strong style={{ ...typography.title, color: colors.ink }}>قرارداد مراسم #{toFaDigits(booking.id)}</strong>
+          <strong style={{ ...typography.title, color: colors.ink }}>{L("قرارداد مراسم #{id}").replace("{id}", localizedDigits(booking.id, lang))}</strong>
           <ToneChip tone={bookingStatusMeta[booking.status]} />
         </div>
 
@@ -321,9 +325,9 @@ export function CeremonyBookingScreen({ bookingId, config }: { bookingId: string
         <div style={{ display: "grid", gap: 8 }}>
           <strong style={{ fontSize: 15.5, fontWeight: 800, color: colors.ink }}>{booking.service_title}</strong>
           {[
-            { icon: "calendar" as const, text: booking.scheduled_at ? formatJalaliDateTime(booking.scheduled_at, { withWeekday: true }) : "زمان نامشخص" },
-            { icon: "pin" as const, text: booking.city || "شهر نامشخص" },
-            { icon: "heart" as const, text: booking.venue || "پس از پرداخت ودیعه نمایش داده می‌شود" },
+            { icon: "calendar" as const, text: booking.scheduled_at ? formatAppDateTime(booking.scheduled_at, lang, { withWeekday: true }) : L("زمان نامشخص") },
+            { icon: "pin" as const, text: booking.city || L("شهر نامشخص") },
+            { icon: "heart" as const, text: booking.venue || L("پس از پرداخت ودیعه نمایش داده می‌شود") },
           ].map((row) => (
             <span key={row.icon} style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 12.5, color: colors.inkSecondary, background: colors.sand50, borderRadius: 12, padding: "9px 12px" }}>
               <Icon name={row.icon} size={15} style={{ color: colors.olive600, flex: "0 0 auto" }} />
@@ -333,34 +337,34 @@ export function CeremonyBookingScreen({ bookingId, config }: { bookingId: string
         </div>
         {venueHidden && depositPaid ? (
           <span style={{ ...typography.caption, color: colors.goldDark }}>
-            نشانی دقیق مکان به‌محض هماهنگی طرفین تکمیل می‌شود.
+            {L("نشانی دقیق مکان به‌محض هماهنگی طرفین تکمیل می‌شود.")}
           </span>
         ) : null}
       </Card>
 
       <Card className="vodda-enter vodda-enter-delay-1" style={{ display: "grid", gap: spacing.xs, borderRadius: 22 }}>
-        <strong style={{ fontSize: 14.5, fontWeight: 800, color: colors.ink, marginBottom: 6 }}>ریز مالی قرارداد</strong>
-        <MoneyRow label="حق‌الزحمهٔ مراسم" value={formatAmountFull(booking.price)} strong />
+        <strong style={{ fontSize: 14.5, fontWeight: 800, color: colors.ink, marginBottom: 6 }}>{L("ریز مالی قرارداد")}</strong>
+        <MoneyRow label={L("حق‌الزحمهٔ مراسم")} value={formatAmountFull(booking.price, lang)} strong />
         <MoneyRow
-          label={`کارمزد سامانه (${toFaDigits(Math.round(booking.commission_rate))}٪)`}
-          value={formatAmountFull(booking.commission_amount)}
+          label={L("کارمزد سامانه ({percent}٪)").replace("{percent}", localizedDigits(Math.round(booking.commission_rate), lang))}
+          value={formatAmountFull(booking.commission_amount, lang)}
           tone={colors.inkSecondary}
         />
         <div style={{ height: 1, background: colors.sand150, marginBlock: 3 }} />
         <MoneyRow
-          label={`ودیعهٔ لازم برای قطعی‌سازی (${toFaDigits(Math.round(booking.deposit_rate))}٪)`}
-          value={formatAmountFull(booking.deposit_amount)}
+          label={L("ودیعهٔ لازم برای قطعی‌سازی ({percent}٪)").replace("{percent}", localizedDigits(Math.round(booking.deposit_rate), lang))}
+          value={formatAmountFull(booking.deposit_amount, lang)}
           tone={colors.goldDark}
           strong
         />
         <p style={{ margin: "8px 0 0", fontSize: 11.5, color: colors.inkMuted, lineHeight: 1.8 }}>
-          ودیعه نزد سامانه امانت می‌ماند و پس از تأیید اجرای مراسم توسط برگزارکننده، به‌همراه مابقی مبلغ به قاری پرداخت می‌شود.
+          {L("ودیعه نزد سامانه امانت می‌ماند و پس از تأیید اجرای مراسم توسط برگزارکننده، به‌همراه مابقی مبلغ به قاری پرداخت می‌شود.")}
         </p>
       </Card>
 
       <Card className="vodda-enter vodda-enter-delay-2" style={{ display: "grid", gap: spacing.lg, borderRadius: 22 }}>
         <PersonRow
-          title="قاری مراسم"
+          title={L("قاری مراسم")}
           name={booking.provider.name}
           avatar={booking.provider.avatar_url}
           tag={booking.provider.tier}
@@ -368,7 +372,7 @@ export function CeremonyBookingScreen({ bookingId, config }: { bookingId: string
         />
         <div style={{ height: 1, background: colors.sand150 }} />
         <PersonRow
-          title="برگزارکننده"
+          title={L("برگزارکننده")}
           name={booking.organizer.name}
           avatar={booking.organizer.avatar_url}
           phone={booking.organizer.phone}
@@ -387,52 +391,54 @@ export function CeremonyBookingScreen({ bookingId, config }: { bookingId: string
           <div aria-hidden="true" style={{ width: 62, height: 62, display: "grid", placeItems: "center", marginInline: "auto", borderRadius: "50%", color: colors.surface, background: colors.olive600 }}>
             <Icon name="checkCircle" size={30} stroke={2.3} />
           </div>
-          <strong style={{ fontSize: 15.5, color: colors.olive800 }}>مراسم برگزار و قرارداد تسویه شد 🌿</strong>
+          <strong style={{ fontSize: 15.5, color: colors.olive800 }}>{L("مراسم برگزار و قرارداد تسویه شد 🌿")}</strong>
           <p style={{ margin: 0, fontSize: 12.5, color: colors.inkSecondary, lineHeight: 1.9 }}>
             {isOrganizer
-              ? "از انتخاب و اعتماد شما سپاسگزاریم؛ حق‌الزحمهٔ قاری تسویه شد."
-              : `حق‌الزحمهٔ این مراسم ${booking.settled_at ? `در ${formatJalaliDateTime(booking.settled_at, { withTime: false })} ` : ""}به کیف پول شما واریز شد.`}
+              ? L("از انتخاب و اعتماد شما سپاسگزاریم؛ حق‌الزحمهٔ قاری تسویه شد.")
+              : booking.settled_at
+                ? L("حق‌الزحمهٔ این مراسم در {date} به کیف پول شما واریز شد.").replace("{date}", formatAppDateTime(booking.settled_at, lang, { withTime: false }))
+                : L("حق‌الزحمهٔ این مراسم به کیف پول شما واریز شد.")}
           </p>
         </Card>
       ) : null}
 
       {cancelled ? (
         <Card style={{ display: "grid", gap: 8, textAlign: "center", padding: 22, borderRadius: 20, background: colors.dangerBackground, borderColor: "rgba(166,81,81,.2)" }}>
-          <strong style={{ fontSize: 15, color: colors.danger }}>این قرارداد لغو شده است</strong>
+          <strong style={{ fontSize: 15, color: colors.danger }}>{L("این قرارداد لغو شده است")}</strong>
           <p style={{ margin: 0, fontSize: 12.5, color: colors.inkSecondary, lineHeight: 1.9 }}>
             {isOrganizer
-              ? "بازگشت ودیعه بر اساس سیاست لغو (فاصله تا زمان مراسم) انجام شده یا در جریان است."
-              : "این مراسم از سوی برگزارکننده لغو شد؛ در صورت پرداخت ودیعه، بازگشت وجه طبق سیاست سامانه انجام می‌شود."}
+              ? L("بازگشت ودیعه بر اساس سیاست لغو (فاصله تا زمان مراسم) انجام شده یا در جریان است.")
+              : L("این مراسم از سوی برگزارکننده لغو شد؛ در صورت پرداخت ودیعه، بازگشت وجه طبق سیاست سامانه انجام می‌شود.")}
           </p>
         </Card>
       ) : null}
 
       {isOrganizer && depositPending ? (
         <Card style={{ display: "grid", gap: spacing.md, borderRadius: 22, borderColor: colors.goldSoft, background: colors.goldBackground }}>
-          <strong style={{ fontSize: 14.5, color: colors.goldDark }}>برای قطعی‌شدن مراسم، ودیعه را پرداخت کنید</strong>
+          <strong style={{ fontSize: 14.5, color: colors.goldDark }}>{L("برای قطعی‌شدن مراسم، ودیعه را پرداخت کنید")}</strong>
           <p style={{ margin: 0, fontSize: 12, color: colors.goldDark, opacity: 0.9, lineHeight: 1.8 }}>
-            مبلغ ودیعه: {formatAmountFull(booking.deposit_amount)} — تا پرداخت ودیعه، قرارداد برای قاری قطعی نیست و مکان مراسم مخفی می‌ماند.
+            {L("مبلغ ودیعه: {amount} — تا پرداخت ودیعه، قرارداد برای قاری قطعی نیست و مکان مراسم مخفی می‌ماند.").replace("{amount}", formatAmountFull(booking.deposit_amount, lang))}
           </p>
           <Button fullWidth loading={busy === "wallet"} disabled={Boolean(busy)} onClick={() => void pay("wallet")} style={{ minHeight: 50 }}>
             <Icon name="wallet" size={18} />
-            پرداخت ودیعه از کیف پول
+            {L("پرداخت ودیعه از کیف پول")}
           </Button>
           <Button fullWidth variant="secondary" loading={busy === "gateway"} disabled={Boolean(busy)} onClick={() => void pay("gateway")} style={{ minHeight: 50 }}>
             <Icon name="shield" size={18} />
-            پرداخت با کارت بانکی
+            {L("پرداخت با کارت بانکی")}
           </Button>
         </Card>
       ) : null}
 
       {isOrganizer && depositPaid ? (
         <Card style={{ display: "grid", gap: spacing.md, borderRadius: 22, borderColor: colors.olive200 }}>
-          <strong style={{ fontSize: 14.5, color: colors.ink }}>مراسم برگزار شد؟</strong>
+          <strong style={{ fontSize: 14.5, color: colors.ink }}>{L("مراسم برگزار شد؟")}</strong>
           <p style={{ margin: 0, fontSize: 12, color: colors.inkMuted, lineHeight: 1.9 }}>
-            با تأیید اجرا، مابقی مبلغ از کیف پول شما به قاری تسویه می‌شود. این اقدام بازگشت‌پذیر نیست.
+            {L("با تأیید اجرا، مابقی مبلغ از کیف پول شما به قاری تسویه می‌شود. این اقدام بازگشت‌پذیر نیست.")}
           </p>
           <Button fullWidth loading={busy === "confirm"} disabled={Boolean(busy)} onClick={() => setConfirmOpen(true)} style={{ minHeight: 50 }}>
             <Icon name="checkCircle" size={18} />
-            تأیید اجرا و تسویه
+            {L("تأیید اجرا و تسویه")}
           </Button>
         </Card>
       ) : null}
@@ -441,7 +447,7 @@ export function CeremonyBookingScreen({ bookingId, config }: { bookingId: string
         <Card style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: 15, borderRadius: 20, borderColor: colors.olive200, background: colors.olive50 }}>
           <Icon name="clock" size={19} style={{ color: colors.olive700, flex: "0 0 auto", marginTop: 2 }} />
           <p style={{ margin: 0, fontSize: 12.5, color: colors.olive800, lineHeight: 1.9 }}>
-            ودیعه پرداخت شده و مراسم قطعی است. پس از اجرای مراسم، برگزارکننده تسویه را تأیید می‌کند و حق‌الزحمهٔ شما به کیف پول واریز می‌شود.
+            {L("ودیعه پرداخت شده و مراسم قطعی است. پس از اجرای مراسم، برگزارکننده تسویه را تأیید می‌کند و حق‌الزحمهٔ شما به کیف پول واریز می‌شود.")}
           </p>
         </Card>
       ) : null}
@@ -450,14 +456,14 @@ export function CeremonyBookingScreen({ bookingId, config }: { bookingId: string
         <Card style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: 15, borderRadius: 20, borderColor: colors.goldSoft, background: colors.goldBackground }}>
           <Icon name="clock" size={19} style={{ color: colors.goldDark, flex: "0 0 auto", marginTop: 2 }} />
           <p style={{ margin: 0, fontSize: 12.5, color: colors.goldDark, lineHeight: 1.9 }}>
-            منتظر پرداخت ودیعه از سوی برگزارکننده هستید؛ تا آن زمان مراسم قطعی نشده است.
+            {L("منتظر پرداخت ودیعه از سوی برگزارکننده هستید؛ تا آن زمان مراسم قطعی نشده است.")}
           </p>
         </Card>
       ) : null}
 
       {actionError ? (
         <p role="alert" style={{ ...typography.bodySmall, padding: spacing.md, borderRadius: radii.md, background: colors.dangerBackground, color: colors.danger, margin: 0 }}>
-          {actionError}
+          {L(actionError)}
         </p>
       ) : null}
 
@@ -470,41 +476,41 @@ export function CeremonyBookingScreen({ bookingId, config }: { bookingId: string
           onClick={() => setCancelOpen(true)}
           style={{ minHeight: 48 }}
         >
-          لغو قرارداد
+          {L("لغو قرارداد")}
         </Button>
       ) : null}
 
       <Dialog
         open={confirmOpen}
-        title="تأیید اجرا و تسویه"
+        title={L("تأیید اجرا و تسویه")}
         onClose={() => { if (busy !== "confirm") setConfirmOpen(false); }}
       >
         <p style={{ ...typography.body, marginTop: 0, color: colors.inkSecondary, lineHeight: 2 }}>
-          با تأیید اجرا، حق‌الزحمهٔ {booking.provider.name} پس از کسر کارمزد سامانه از ودیعه و ماندهٔ قرارداد تسویه می‌شود و قرارداد بسته می‌شود؛ این اقدام بازگشت‌پذیر نیست. مراسم برگزار شده است؟
+          {L("با تأیید اجرا، حق‌الزحمهٔ {name} پس از کسر کارمزد سامانه از ودیعه و ماندهٔ قرارداد تسویه می‌شود و قرارداد بسته می‌شود؛ این اقدام بازگشت‌پذیر نیست. مراسم برگزار شده است؟").replace("{name}", booking.provider.name)}
         </p>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: spacing.sm }}>
-          <Button variant="secondary" onClick={() => setConfirmOpen(false)} disabled={busy === "confirm"}>بازگشت</Button>
-          <Button onClick={() => void confirmRun()} loading={busy === "confirm"}>تأیید و تسویه</Button>
+          <Button variant="secondary" onClick={() => setConfirmOpen(false)} disabled={busy === "confirm"}>{L("بازگشت")}</Button>
+          <Button onClick={() => void confirmRun()} loading={busy === "confirm"}>{L("تأیید و تسویه")}</Button>
         </div>
       </Dialog>
 
       <Dialog
         open={cancelOpen}
-        title="لغو قرارداد"
+        title={L("لغو قرارداد")}
         onClose={() => { if (busy !== "cancel") setCancelOpen(false); }}
       >
         <p style={{ ...typography.body, marginTop: 0, color: colors.inkSecondary, lineHeight: 2 }}>
-          سیاست لغو وُدّا: بازگشت ودیعه بر اساس فاصلهٔ زمانی تا شروع مراسم محاسبه می‌شود؛ هرچه به زمان مراسم نزدیک‌تر باشید، بخش کمتری از ودیعه بازمی‌گردد و در صورت لغو، حق قاری طبق همین سیاست محفوظ می‌ماند.
+          {L("سیاست لغو وُدّا: بازگشت ودیعه بر اساس فاصلهٔ زمانی تا شروع مراسم محاسبه می‌شود؛ هرچه به زمان مراسم نزدیک‌تر باشید، بخش کمتری از ودیعه بازمی‌گردد و در صورت لغو، حق قاری طبق همین سیاست محفوظ می‌ماند.")}
         </p>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: spacing.sm }}>
-          <Button variant="secondary" onClick={() => setCancelOpen(false)} disabled={busy === "cancel"}>انصراف</Button>
-          <Button variant="danger" onClick={() => void cancelContract()} loading={busy === "cancel"}>لغو قرارداد</Button>
+          <Button variant="secondary" onClick={() => setCancelOpen(false)} disabled={busy === "cancel"}>{L("انصراف")}</Button>
+          <Button variant="danger" onClick={() => void cancelContract()} loading={busy === "cancel"}>{L("لغو قرارداد")}</Button>
         </div>
       </Dialog>
 
       {isOrganizer && settled ? (
         <Button variant="secondary" fullWidth onClick={() => navigateApp("/ceremony/calls", config)} style={{ minHeight: 46 }}>
-          فراخوان‌های من
+          {L("فراخوان‌های من")}
         </Button>
       ) : null}
     </div>

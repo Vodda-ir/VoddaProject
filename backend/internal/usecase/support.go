@@ -10,10 +10,19 @@ import (
 // SupportUsecase validates and manages contact requests.
 type SupportUsecase struct {
 	messages domain.SupportMessageRepository
+	notifs   domain.NotificationRepository
+	users    domain.UserRepository
 }
 
 func NewSupportUsecase(messages domain.SupportMessageRepository) *SupportUsecase {
 	return &SupportUsecase{messages: messages}
+}
+
+// WithObservers wires the optional repos used for live admin notifications.
+func (uc *SupportUsecase) WithObservers(notifs domain.NotificationRepository, users domain.UserRepository) *SupportUsecase {
+	uc.notifs = notifs
+	uc.users = users
+	return uc
 }
 
 type CreateSupportMessageInput struct {
@@ -38,6 +47,8 @@ func (uc *SupportUsecase) Create(ctx context.Context, in CreateSupportMessageInp
 	if err := uc.messages.Create(ctx, message); err != nil {
 		return nil, err
 	}
+	NotifyAdmins(ctx, uc.notifs, uc.users, "مدیریت: پیام پشتیبانی جدید",
+		"پیام تازه‌ای از «"+in.Name+"» در صف پشتیبانی ثبت شد.")
 	return message, nil
 }
 

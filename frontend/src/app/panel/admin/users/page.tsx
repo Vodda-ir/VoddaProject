@@ -20,6 +20,7 @@ import {
 } from '@/components/admin/AdminUI';
 import { fullUrl, getToken } from '@/lib/auth';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
+import { confirmDialog } from '@/lib/confirm';
 
 const LIMIT = 30;
 type RoleFilter = '' | 'learner' | 'teacher' | 'admin';
@@ -301,7 +302,7 @@ export default function AdminUsers() {
     if (!token || busyId !== null) return;
     const next = !user.active;
     const verb = next ? 'فعال' : 'غیرفعال';
-    if (!window.confirm(`حساب «${user.name || (user.mobile ? toFaDigits(user.mobile) : 'کاربر')}» ${verb} شود؟`)) return;
+    if (!(await confirmDialog(`حساب «${user.name || (user.mobile ? toFaDigits(user.mobile) : 'کاربر')}» ${verb} شود؟`))) return;
 
     setBusyId(user.id);
     setError('');
@@ -324,7 +325,7 @@ export default function AdminUsers() {
   async function changeRole(user: AdminUser, role: RoleFilter) {
     if (!token || busyId !== null || role === user.role) return;
     const label = ROLES.find((item) => item.value === role)?.label || role;
-    if (!window.confirm(`نقش «${user.name || 'کاربر'}» به ${label} تغییر کند؟`)) return;
+    if (!(await confirmDialog(`نقش «${user.name || 'کاربر'}» به ${label} تغییر کند؟`))) return;
 
     setBusyId(user.id);
     setError('');
@@ -352,7 +353,7 @@ export default function AdminUsers() {
       setError('مبلغ تعدیل را وارد کنید؛ عدد مثبت افزودن و عدد منفی کسر است.');
       return;
     }
-    if (!window.confirm(`${parsed > 0 ? 'افزودن' : 'کسر'} ${formatFaNumber(Math.abs(parsed))} تومان ${parsed > 0 ? 'به' : 'از'} کیف پول «${selected.name || 'کاربر'}» ثبت شود؟`)) return;
+    if (!(await confirmDialog(`${parsed > 0 ? 'افزودن' : 'کسر'} ${formatFaNumber(Math.abs(parsed))} تومان ${parsed > 0 ? 'به' : 'از'} کیف پول «${selected.name || 'کاربر'}» ثبت شود؟`))) return;
 
     setAdjustBusy(true);
     setError('');

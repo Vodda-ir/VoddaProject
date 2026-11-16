@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Icon } from "./Icon";
+import { useAppearance } from "./appearance";
 
 /**
  * اعلان بالا-صفحه (C2) — یک نمونه در هر لحظه؛ فراخوانی از هر جایی:
@@ -47,6 +48,7 @@ export function showToast(message: string, tone: ToastTone = "success", duration
 }
 
 export function ToastHost() {
+  const { L } = useAppearance();
   const [toast, setToast] = useState<ToastState | null>(null);
 
   useEffect(() => {
@@ -67,7 +69,7 @@ export function ToastHost() {
       style={toast.tone === "info" ? { background: "linear-gradient(145deg, #5e6e43, #728350)" } : undefined}
     >
       <Icon name={toast.tone === "info" ? "info" : "checkCircle"} size={17} stroke={2.2} />
-      <span className="vodda-toast-text">{toast.message}</span>
+      <span className="vodda-toast-text">{L(toast.message)}</span>
     </div>
   );
 }

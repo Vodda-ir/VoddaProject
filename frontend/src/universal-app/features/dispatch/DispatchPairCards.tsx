@@ -11,6 +11,7 @@ import { navigateApp } from "../../router";
 import { Icon } from "../../ui/Icon";
 import { CornerOrnament } from "../../ui/ornaments";
 import { colors, gradients, shadows, spacing, typography } from "../../ui/theme";
+import { useAppearance } from "../../ui/appearance";
 
 /** ستارهٔ هشت‌پر — موتیف هندسی اسلامی به‌صورت الگوی تکرارشونده و بسیار کم‌رنگ. */
 function starPoints(cx: number, cy: number, outer: number, inner: number): string {
@@ -81,6 +82,7 @@ const cardBase: CSSProperties = {
 };
 
 function PairCard({ eyebrow, title, description, ctaLabel, ariaLabel, onClick, tone, icon, live }: PairCardProps) {
+  const { L } = useAppearance();
   const olive = tone === "olive";
   return (
     <button
@@ -163,7 +165,7 @@ function PairCard({ eyebrow, title, description, ctaLabel, ariaLabel, onClick, t
                 aria-hidden="true"
                 style={{ width: 7, height: 7, borderRadius: "50%", background: "#e8c15c", animation: "vodda-live-dot 1.6s ease-out infinite" }}
               />
-              پاسخ زنده
+              {L("پاسخ زنده")}
             </span>
           ) : (
             <span
@@ -177,17 +179,17 @@ function PairCard({ eyebrow, title, description, ctaLabel, ariaLabel, onClick, t
                 border: `1px solid ${olive ? "rgba(212,171,82,.3)" : "rgba(255,255,255,.24)"}`,
               }}
             >
-              ودیعهٔ امن
+              {L("ودیعهٔ امن")}
             </span>
           )}
         </span>
 
         <span style={{ display: "grid", gap: 5 }}>
           <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.2, color: olive ? colors.goldSoft : "#f6e9c8" }}>
-            {eyebrow}
+            {L(eyebrow)}
           </span>
-          <strong style={{ fontSize: 17.5, fontWeight: 900, lineHeight: 1.5 }}>{title}</strong>
-          <span style={{ fontSize: 12, lineHeight: 1.9, opacity: 0.9 }}>{description}</span>
+          <strong style={{ fontSize: 17.5, fontWeight: 900, lineHeight: 1.5 }}>{L(title)}</strong>
+          <span style={{ fontSize: 12, lineHeight: 1.9, opacity: 0.9 }}>{L(description)}</span>
         </span>
       </span>
 
@@ -205,7 +207,7 @@ function PairCard({ eyebrow, title, description, ctaLabel, ariaLabel, onClick, t
         }}
       >
         <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 900, color: olive ? colors.goldSoft : colors.surface }}>
-          {ctaLabel}
+          {L(ctaLabel)}
           <Icon name="chevronL" size={15} stroke={2.4} />
         </span>
         <Icon name="mic" size={16} stroke={1.8} style={{ opacity: 0.75 }} />
@@ -215,6 +217,7 @@ function PairCard({ eyebrow, title, description, ctaLabel, ariaLabel, onClick, t
 }
 
 export function DispatchPairCards({ config }: { config: UniversalAppConfig }) {
+  const { L } = useAppearance();
   return (
     <div
       className="vodda-enter"
@@ -228,21 +231,21 @@ export function DispatchPairCards({ config }: { config: UniversalAppConfig }) {
         tone="olive"
         icon="bell"
         live
-        eyebrow="فراخوان آنلاین"
-        title="استاد آنلاین برای یادگیری"
-        description="موضوع درسی‌تان را اعلام کنید؛ اساتید آمادگی خود را ثبت می‌کنند و شما بهترین را انتخاب می‌کنید."
-        ctaLabel="شروع فراخوان"
-        ariaLabel="فراخوان اساتید آنلاین — درخواست زنده استاد"
+        eyebrow={L("فراخوان آنلاین")}
+        title={L("استاد آنلاین برای یادگیری")}
+        description={L("موضوع درسی‌تان را اعلام کنید؛ اساتید آمادگی خود را ثبت می‌کنند و شما بهترین را انتخاب می‌کنید.")}
+        ctaLabel={L("شروع فراخوان")}
+        ariaLabel={L("فراخوان اساتید آنلاین — درخواست زنده استاد")}
         onClick={() => navigateApp("/dispatch", config)}
       />
       <PairCard
         tone="gold"
         icon="calendar"
-        eyebrow="مراسم حضوری"
-        title="قاری مراسم قرآنی"
-        description="تلاوت، ختم و جشن قرآنی؛ فراخوان بگذارید یا از قاریان تأییدشده رزرو مستقیم دریافت کنید."
-        ctaLabel="ثبت فراخوان مراسم"
-        ariaLabel="فراخوان مراسم حضوری قرآنی و رزرو قاری"
+        eyebrow={L("مراسم حضوری")}
+        title={L("قاری مراسم قرآنی")}
+        description={L("تلاوت، ختم و جشن قرآنی؛ فراخوان بگذارید یا از قاریان تأییدشده رزرو مستقیم دریافت کنید.")}
+        ctaLabel={L("ثبت فراخوان مراسم")}
+        ariaLabel={L("فراخوان مراسم حضوری قرآنی و رزرو قاری")}
         onClick={() => navigateApp("/ceremony/new", config)}
       />
     </div>

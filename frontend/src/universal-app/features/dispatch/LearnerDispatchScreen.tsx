@@ -12,7 +12,6 @@ import {
   Card,
   EmptyState,
   ErrorState,
-  formatJalaliDateTime,
   Icon,
   IllustrationDispatch,
   LoadingState,
@@ -25,6 +24,8 @@ import {
 } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
 import { showToast } from "../../ui/toast";
+import { useAppearance } from "../../ui/appearance";
+import { formatAppDate, formatAppDateTime, persianWeekdayIndex } from "../../ui/jalali";
 import { payViaSamanGate } from "../../../lib/saman-gate";
 import { formatWalletAmount } from "../wallet/WalletTransactionCard";
 import { SelectField } from "../ceremony/fields";
@@ -34,7 +35,7 @@ import {
   upcomingJalaliDays,
   type WhenValue,
 } from "../ceremony/schedule";
-import { toFaDigits } from "../../ui/persian";
+import { localizedDigits } from "../../ui/persian";
 import {
   cancelDispatchCall,
   chooseDispatchOffer,
@@ -45,24 +46,26 @@ import {
 } from "./api";
 import type { DispatchCandidate, DispatchCallView, OfficialService } from "./types";
 
-const numberFormatter = new Intl.NumberFormat("fa-IR");
-
-function fa(n: number): string {
-  return numberFormatter.format(n);
+function fa(n: number, lang: "fa" | "en"): string {
+  return new Intl.NumberFormat(lang === "en" ? "en-US" : "fa-IR").format(n);
 }
 
-function priceLabel(n: number): string {
-  return n === 0 ? "رایگان" : `${formatWalletAmount(Math.max(0, n))} تومان`;
+function priceLabel(n: number, lang: "fa" | "en", L: (text: string) => string): string {
+  return n === 0 ? L("رایگان") : L("{n} تومان").replace("{n}", localizedDigits(formatWalletAmount(Math.max(0, n)), lang));
 }
 
-function timeLabelOf(call: { flexible: boolean; scheduled_at?: string | null }): string {
-  if (call.flexible || !call.scheduled_at) return "جلسهٔ فوری — همین حالا";
+function timeLabelOf(
+  call: { flexible: boolean; scheduled_at?: string | null },
+  lang: "fa" | "en",
+  L: (text: string) => string,
+): string {
+  if (call.flexible || !call.scheduled_at) return L("جلسهٔ فوری — همین حالا");
   const at = new Date(call.scheduled_at);
-  if (Number.isNaN(at.getTime())) return "در اسرع وقت";
+  if (Number.isNaN(at.getTime())) return L("در اسرع وقت");
   const now = new Date();
   const diffMin = Math.round((at.getTime() - now.getTime()) / 60000);
-  if (diffMin < 60 && diffMin > -60) return `حدود ${fa(Math.max(0, diffMin))} دقیقهٔ دیگر`;
-  return formatJalaliDateTime(call.scheduled_at, { withWeekday: true });
+  if (diffMin < 60 && diffMin > -60) return L("حدود {n} دقیقهٔ دیگر").replace("{n}", fa(Math.max(0, diffMin), lang));
+  return formatAppDateTime(call.scheduled_at, lang, { withWeekday: true });
 }
 
 function remainingSeconds(expiresAt: string): number {
@@ -71,10 +74,10 @@ function remainingSeconds(expiresAt: string): number {
   return Math.max(0, Math.round((at - Date.now()) / 1000));
 }
 
-function countdownLabel(total: number): string {
+function countdownLabel(total: number, lang: "fa" | "en"): string {
   const m = Math.floor(total / 60);
   const s = total % 60;
-  return `${toFaDigits(String(m).padStart(2, "0"))}:${toFaDigits(String(s).padStart(2, "0"))}`;
+  return `${localizedDigits(String(m).padStart(2, "0"), lang)}:${localizedDigits(String(s).padStart(2, "0"), lang)}`;
 }
 
 const tierBadge: Record<string, { label: string; bg: string; color: string }> = {
@@ -108,6 +111,7 @@ function CandidateCard({
   onChoose: () => void;
   onDecline: () => void;
 }) {
+  const { L, lang } = useAppearance();
   const badge = tierBadge[candidate.tier];
   return (
     <div
@@ -130,14 +134,14 @@ function CandidateCard({
             <strong style={{ fontSize: 15, fontWeight: 800, color: colors.ink }}>{candidate.name}</strong>
             {badge ? (
               <span style={{ fontSize: 10, fontWeight: 700, color: badge.color, background: badge.bg, borderRadius: 999, padding: "2px 8px" }}>
-                {badge.label}
+                {L(badge.label)}
               </span>
             ) : null}
           </div>
           <span style={{ display: "block", fontSize: 12, color: colors.olive700, marginTop: 2 }}>
-            {candidateTitle(candidate)}
-            {candidate.sessions > 0 ? ` · ${fa(candidate.sessions)} جلسه` : ""}
-            {candidate.reviews > 0 ? ` · ⭐ ${toFaDigits(candidate.rating.toFixed(1))}` : ""}
+            {L(candidateTitle(candidate))}
+            {candidate.sessions > 0 ? L(" · {n} جلسه").replace("{n}", fa(candidate.sessions, lang)) : ""}
+            {candidate.reviews > 0 ? ` · ⭐ ${localizedDigits(candidate.rating.toFixed(1), lang)}` : ""}
           </span>
         </div>
         <div
@@ -153,12 +157,12 @@ function CandidateCard({
       </div>
 
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-        <span style={chipStyle}>{timeLabelOf({ flexible: true })}</span>
+        <span style={chipStyle}>{timeLabelOf({ flexible: true }, lang, L)}</span>
         <span style={chipStyle}>
-          <Icon name="clock" size={11} /> {fa(candidate.duration)} دقیقه
+          <Icon name="clock" size={11} /> {L("{n} دقیقه").replace("{n}", fa(candidate.duration, lang))}
         </span>
         <span style={{ ...chipStyle, color: colors.olive700, fontWeight: 800, background: colors.olive50, borderColor: colors.olive200 }}>
-          {priceLabel(candidate.price)}
+          {priceLabel(candidate.price, lang, L)}
         </span>
       </div>
 
@@ -169,10 +173,10 @@ function CandidateCard({
           disabled={busy}
           style={{ minHeight: 44, flex: "0 0 auto", paddingInline: 16 }}
         >
-          رد
+          {L("رد")}
         </Button>
         <Button onClick={onChoose} loading={busy} disabled={busy} style={{ minHeight: 44, flex: 1 }}>
-          انتخاب و رزرو این استاد
+          {L("انتخاب و رزرو این استاد")}
         </Button>
       </div>
     </div>
@@ -195,6 +199,7 @@ type ScreenMode = "idle" | "searching" | "matched";
 
 export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }) {
   const runtime = usePlatform();
+  const { L, lang } = useAppearance();
   const [catalog, setCatalog] = useState<OfficialService[]>([]);
   const [catalogLoading, setCatalogLoading] = useState(true);
   const [catalogError, setCatalogError] = useState("");
@@ -296,11 +301,18 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
   /* گزینه‌های شمسی «زمان مشخص» — هم‌سو با فرم مراسم (A3/B1) */
   const dayOptions = useMemo(
     () =>
-      upcomingJalaliDays(7).map((day, index) => ({
-        value: day.localDate,
-        label: `${index === 0 ? "امروز" : index === 1 ? "فردا" : day.weekday} — ${day.dayLabel}`,
-      })),
-    [],
+      upcomingJalaliDays(7).map((day, index) => {
+        const [gy, gm, gd] = day.localDate.split("-").map(Number);
+        const weekdayIndex = persianWeekdayIndex(new Date(gy, gm - 1, gd).getDay());
+        if (lang === "en") {
+          const dateLabel = formatAppDate(day.localDate, "en", { withWeekday: weekdayIndex, withYear: false });
+          const prefix = index === 0 ? L("امروز") : index === 1 ? L("فردا") : "";
+          return { value: day.localDate, label: prefix ? `${prefix} — ${dateLabel}` : dateLabel };
+        }
+        const prefix = index === 0 ? L("امروز") : index === 1 ? L("فردا") : day.weekday;
+        return { value: day.localDate, label: `${prefix} — ${day.dayLabel}` };
+      }),
+    [lang, L],
   );
 
   const timeOptions = useMemo(() => {
@@ -309,17 +321,17 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
       for (const mm of [0, 30]) {
         options.push({
           value: `${hh}:${mm}`,
-          label: `${toFaDigits(String(hh).padStart(2, "0"))}:${toFaDigits(String(mm).padStart(2, "0"))}`,
+          label: `${localizedDigits(String(hh).padStart(2, "0"), lang)}:${localizedDigits(String(mm).padStart(2, "0"), lang)}`,
         });
       }
     }
     return options;
-  }, []);
+  }, [lang]);
 
   const start = useCallback(async () => {
     if (!selectedTopic || creating) return;
     if (whenMode === "later" && !isWhenInFuture(when)) {
-      setActionError("زمان انتخاب‌شده باید حداقل ۱۵ دقیقه در آینده باشد.");
+      setActionError(L("زمان انتخاب‌شده باید حداقل ۱۵ دقیقه در آینده باشد."));
       return;
     }
     setCreating(true);
@@ -332,14 +344,14 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
         scheduledAt,
         flexible: whenMode === "now",
       });
-      showToast("فراخوان شما برای اساتید این موضوع ارسال شد");
+      showToast(L("فراخوان شما برای اساتید این موضوع ارسال شد"));
       setView(created);
     } catch (error) {
       setActionError(messageOf(error, "ثبت فراخوان انجام نشد."));
     } finally {
       setCreating(false);
     }
-  }, [creating, note, runtime, selectedTopic, when, whenMode]);
+  }, [creating, note, runtime, selectedTopic, when, whenMode, L]);
 
   const cancel = useCallback(async () => {
     if (!call || canceling) return;
@@ -372,7 +384,7 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
         }
       } catch (error) {
         if (payMethod === "wallet" && error instanceof PlatformHttpError && error.status === 400) {
-          setActionError("کیف پول شما کافی نیست. ابتدا کیف پول را شارژ کنید یا پرداخت آنلاین را برگزینید.");
+          setActionError(L("کیف پول شما کافی نیست. ابتدا کیف پول را شارژ کنید یا پرداخت آنلاین را برگزینید."));
         } else {
           setActionError(messageOf(error, "ثبت رزرو انجام نشد."));
         }
@@ -381,7 +393,7 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
         setBusyOffer(0);
       }
     },
-    [busyOffer, call, payMethod, refresh, runtime, view],
+    [busyOffer, call, payMethod, refresh, runtime, view, L],
   );
 
   const decline = useCallback(
@@ -417,9 +429,11 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
             <Icon name="checkCircle" size={36} stroke={2.2} />
           </div>
           <div>
-            <h2 style={{ ...typography.title, margin: 0 }}>جلسه شما رزرو شد 🎉</h2>
+            <h2 style={{ ...typography.title, margin: 0 }}>{L("جلسه شما رزرو شد 🎉")}</h2>
             <p style={{ ...typography.body, color: colors.inkSecondary, marginBottom: 0, marginTop: 6 }}>
-              موضوع «{call.topic_title}» با استاد {candidate?.name ?? "انتخاب‌شده"} ثبت شد و در انتظار تأیید نهایی استاد است.
+              {L("موضوع «{topic}» با استاد {name} ثبت شد و در انتظار تأیید نهایی استاد است.")
+                .replace("{topic}", L(call.topic_title))
+                .replace("{name}", L(candidate?.name ?? "انتخاب‌شده"))}
             </p>
           </div>
           {candidate ? (
@@ -428,12 +442,12 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
               <div style={{ minWidth: 0, flex: 1 }}>
                 <strong style={{ display: "block", fontSize: 14.5, color: colors.ink }}>{candidate.name}</strong>
                 <span style={{ fontSize: 12, color: colors.inkMuted }}>
-                  {priceLabel(candidate.price)} · {timeLabelOf(call)}
+                  {priceLabel(candidate.price, lang, L)} · {timeLabelOf(call, lang, L)}
                 </span>
               </div>
             </div>
           ) : null}
-          <Button fullWidth onClick={() => navigateApp("/sessions", config)}>پیگیری در جلسات من</Button>
+          <Button fullWidth onClick={() => navigateApp("/sessions", config)}>{L("پیگیری در جلسات من")}</Button>
           <Button
             variant="secondary"
             fullWidth
@@ -443,7 +457,7 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
               void refresh();
             }}
           >
-            فراخوان جدید
+            {L("فراخوان جدید")}
           </Button>
         </Card>
       </div>
@@ -472,18 +486,18 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
               <TopicIcon icon={call.topic_icon} size={24} />
             </div>
             <div style={{ minWidth: 0 }}>
-              <strong style={{ display: "block", fontSize: 16.5, fontWeight: 800 }}>{call.topic_title}</strong>
-              <span style={{ fontSize: 12.5, opacity: 0.85 }}>{timeLabelOf(call)}</span>
+              <strong style={{ display: "block", fontSize: 16.5, fontWeight: 800 }}>{L(call.topic_title)}</strong>
+              <span style={{ fontSize: 12.5, opacity: 0.85 }}>{timeLabelOf(call, lang, L)}</span>
             </div>
             <div style={{ marginInlineStart: "auto", textAlign: "center" }}>
               <strong dir="ltr" style={{ display: "block", fontSize: 19, fontVariantNumeric: "tabular-nums" }}>
-                {countdownLabel(secondsLeft)}
+                {countdownLabel(secondsLeft, lang)}
               </strong>
-              <span style={{ fontSize: 11.5, opacity: 0.78 }}>مهلت فراخوان</span>
+              <span style={{ fontSize: 11.5, opacity: 0.78 }}>{L("مهلت فراخوان")}</span>
             </div>
           </div>
           <p style={{ margin: "14px 0 0", fontSize: 13, lineHeight: 1.9, opacity: 0.92 }}>
-            درخواست شما بین همه اساتید این موضوع پخش شد. استادانی که زودتر اعلام آمادگی کنند، همین‌جا زنده نمایش داده می‌شوند.
+            {L("درخواست شما بین همه اساتید این موضوع پخش شد. استادانی که زودتر اعلام آمادگی کنند، همین‌جا زنده نمایش داده می‌شوند.")}
           </p>
         </div>
 
@@ -495,12 +509,12 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
         ) : null}
 
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <strong style={{ fontSize: 15, color: colors.ink }}>استادهای آماده</strong>
+          <strong style={{ fontSize: 15, color: colors.ink }}>{L("استادهای آماده")}</strong>
           <span style={{ background: colors.olive600, color: colors.surface, borderRadius: 999, fontSize: 12, fontWeight: 800, padding: "2px 10px" }}>
-            {fa((view?.candidates ?? []).length)}
+            {fa((view?.candidates ?? []).length, lang)}
           </span>
           <span style={{ marginInlineStart: "auto", display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, color: colors.olive700 }}>
-            <span aria-hidden="true" style={liveDotStyle} /> زنده
+            <span aria-hidden="true" style={liveDotStyle} /> {L("زنده")}
           </span>
         </div>
 
@@ -522,17 +536,17 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
             }}
           >
             <Icon name="gift" size={17} stroke={2.2} style={{ flex: "0 0 auto" }} />
-            <span>همهٔ پاسخ‌های این فراخوان <b>رایگان</b> هستند؛ با انتخاب استاد، جلسه بدون پرداخت ثبت می‌شود.</span>
+            <span>{L("همهٔ پاسخ‌های این فراخوان")} <b>{L("رایگان")}</b>{L("هستند؛ با انتخاب استاد، جلسه بدون پرداخت ثبت می‌شود.")}</span>
           </div>
         ) : (
           <div
             role="radiogroup"
-            aria-label="روش پرداخت"
+            aria-label={L("روش پرداخت")}
             style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, padding: 6, borderRadius: 16, border: `1px solid ${colors.border}`, background: colors.surface }}
           >
             {([
-              ["gateway", "پرداخت آنلاین (سامان)"],
-              ["wallet", "پرداخت از کیف پول"],
+              ["gateway", L("پرداخت آنلاین (سامان)")],
+              ["wallet", L("پرداخت از کیف پول")],
             ] as const).map(([value, label]) => (
               <button
                 key={value}
@@ -571,9 +585,9 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
               >
                 <Icon name="bell" size={24} />
               </div>
-              <strong style={{ fontSize: 14.5, color: colors.ink }}>در انتظار نخستین پاسخ…</strong>
+              <strong style={{ fontSize: 14.5, color: colors.ink }}>{L("در انتظار نخستین پاسخ…")}</strong>
               <p style={{ margin: 0, fontSize: 12.5, color: colors.inkMuted, lineHeight: 1.9 }}>
-                فراخوان شما برای اساتید «{call.topic_title}» ارسال شد. معمولاً نخستین پاسخ‌ها در چند دقیقه می‌رسند.
+                {L("فراخوان شما برای اساتید «{topic}» ارسال شد. معمولاً نخستین پاسخ‌ها در چند دقیقه می‌رسند.").replace("{topic}", L(call.topic_title))}
               </p>
             </div>
           </Card>
@@ -594,13 +608,13 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
 
         {actionError ? (
           <p role="alert" style={{ ...typography.bodySmall, padding: spacing.md, borderRadius: radii.md, background: colors.dangerBackground, color: colors.danger, margin: 0 }}>
-            {actionError}
+            {L(actionError)}
           </p>
         ) : null}
 
         <div style={{ position: "sticky", zIndex: 12, bottom: "calc(68px + env(safe-area-inset-bottom))", padding: "8px 0 12px", background: colors.sand50 }}>
           <Button variant="secondary" fullWidth loading={canceling} disabled={canceling} onClick={() => void cancel()} style={{ minHeight: 50 }}>
-            لغو فراخوان
+            {L("لغو فراخوان")}
           </Button>
         </div>
       </div>
@@ -630,15 +644,15 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
             <Icon name="bell" size={24} />
           </div>
           <div>
-            <h1 className="vodda-display" style={{ margin: 0, fontSize: 23, lineHeight: 1.65 }}>فراخوان اساتید</h1>
-            <span style={{ fontSize: 12.5, opacity: 0.85 }}>به‌سرعت و بدون تماس تلفنی؛ اساتید اعلام آمادگی می‌کنند و شما انتخاب می‌کنید</span>
+            <h1 className="vodda-display" style={{ margin: 0, fontSize: 23, lineHeight: 1.65 }}>{L("فراخوان اساتید")}</h1>
+            <span style={{ fontSize: 12.5, opacity: 0.85 }}>{L("به‌سرعت و بدون تماس تلفنی؛ اساتید اعلام آمادگی می‌کنند و شما انتخاب می‌کنید")}</span>
           </div>
         </div>
         <div style={{ position: "relative", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginTop: 16 }}>
           {[
-            { icon: "search" as const, text: "موضوع را انتخاب کنید" },
-            { icon: "bell" as const, text: "فراخوان را ثبت کنید" },
-            { icon: "checkCircle" as const, text: "از پاسخ‌ها انتخاب کنید" },
+            { icon: "search" as const, text: L("موضوع را انتخاب کنید") },
+            { icon: "bell" as const, text: L("فراخوان را ثبت کنید") },
+            { icon: "checkCircle" as const, text: L("از پاسخ‌ها انتخاب کنید") },
           ].map((step) => (
             <div key={step.text} style={{ background: "rgba(255,255,255,.1)", borderRadius: 13, padding: "10px 8px", textAlign: "center" }}>
               <Icon name={step.icon} size={18} style={{ opacity: 0.9 }} />
@@ -661,7 +675,7 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
             <button
               type="button"
               onClick={() => { setSelectedTopic(null); setActionError(""); }}
-              aria-label="تغییر موضوع"
+              aria-label={L("تغییر موضوع")}
               style={{ background: "none", border: "none", color: colors.inkMuted, cursor: "pointer", padding: 4, fontFamily: typography.fontFamily }}
             >
               <Icon name="refresh" size={17} />
@@ -671,13 +685,13 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
           <div style={{ height: 1, background: colors.sand150 }} />
 
           <div>
-            <strong style={{ fontSize: 13.5, color: colors.ink, display: "block", marginBottom: 8 }}>چه زمانی؟</strong>
+            <strong style={{ fontSize: 13.5, color: colors.ink, display: "block", marginBottom: 8 }}>{L("چه زمانی؟")}</strong>
             <div style={{ display: "flex", gap: spacing.sm, flexWrap: "wrap" }}>
               <button type="button" aria-pressed={whenMode === "now"} onClick={() => setWhenMode("now")} className="vodda-tappable" style={whenChip(whenMode === "now", true)}>
-                <Icon name="sparkle" size={14} style={{ marginInlineEnd: 5 }} /> جلسهٔ فوری — همین حالا
+                <Icon name="sparkle" size={14} style={{ marginInlineEnd: 5 }} /> {L("جلسهٔ فوری — همین حالا")}
               </button>
               <button type="button" aria-pressed={whenMode === "later"} onClick={() => setWhenMode("later")} className="vodda-tappable" style={whenChip(whenMode === "later", false)}>
-                <Icon name="calendar" size={14} style={{ marginInlineEnd: 5 }} /> زمان مشخص
+                <Icon name="calendar" size={14} style={{ marginInlineEnd: 5 }} /> {L("زمان مشخص")}
               </button>
             </div>
             {whenMode === "now" ? (
@@ -698,9 +712,9 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
                   <Icon name="sparkle" size={15} stroke={2.2} />
                 </span>
                 <span style={{ minWidth: 0 }}>
-                  <strong style={{ display: "block", fontSize: 12.5, fontWeight: 800, color: "#7a5e1e" }}>فراخوان فوری فقط به اساتید آمادهٔ همین لحظه می‌رسد</strong>
+                  <strong style={{ display: "block", fontSize: 12.5, fontWeight: 800, color: "#7a5e1e" }}>{L("فراخوان فوری فقط به اساتید آمادهٔ همین لحظه می‌رسد")}</strong>
                   <span style={{ display: "block", fontSize: 11.5, color: "#9a7426", lineHeight: 1.8, marginTop: 2 }}>
-                    این فراخوان فقط برای اساتیدی ارسال می‌شود که «جلسهٔ فوری» را فعال کرده‌اند و معمولاً در چند دقیقه پاسخ می‌گیرید؛ ساعت دقیق با توافق استاد مشخص می‌شود.
+                    {L("این فراخوان فقط برای اساتیدی ارسال می‌شود که «جلسهٔ فوری» را فعال کرده‌اند و معمولاً در چند دقیقه پاسخ می‌گیرید؛ ساعت دقیق با توافق استاد مشخص می‌شود.")}
                   </span>
                 </span>
               </div>
@@ -708,13 +722,13 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
             {whenMode === "later" ? (
               <div style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr", gap: spacing.sm, marginTop: 10 }}>
                 <SelectField
-                  ariaLabel="روز جلسه"
+                  ariaLabel={L("روز جلسه")}
                   value={when.localDate}
                   onChange={(next) => setWhen((previous) => ({ ...previous, localDate: next }))}
                   options={dayOptions}
                 />
                 <SelectField
-                  ariaLabel="ساعت جلسه"
+                  ariaLabel={L("ساعت جلسه")}
                   value={`${when.hh}:${when.mm}`}
                   onChange={(next) => {
                     const [hh, mm] = next.split(":").map(Number);
@@ -726,71 +740,71 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
             ) : null}
             <p style={{ margin: "8px 0 0", fontSize: 12, color: colors.inkMuted, lineHeight: 1.8 }}>
               {whenMode === "later"
-                ? "ساعت‌ها به وقت تهران است؛ زمان نهایی با تأیید استاد قطعی می‌شود."
-                : "بعد از ثبت، اساتید آماده اعلام حضور می‌کنند و شما یکی را انتخاب می‌کنید."}
+                ? L("ساعت‌ها به وقت تهران است؛ زمان نهایی با تأیید استاد قطعی می‌شود.")
+                : L("بعد از ثبت، اساتید آماده اعلام حضور می‌کنند و شما یکی را انتخاب می‌کنید.")}
             </p>
           </div>
 
           <div>
-            <strong style={{ fontSize: 13.5, color: colors.ink, display: "block", marginBottom: 8 }}>یادداشت برای اساتید (اختیاری)</strong>
+            <strong style={{ fontSize: 13.5, color: colors.ink, display: "block", marginBottom: 8 }}>{L("یادداشت برای اساتید (اختیاری)")}</strong>
             <textarea
               value={note}
               onChange={(event) => setNote(event.target.value.slice(0, 300))}
               rows={2}
-              placeholder="مثلاً: مبتدی هستم، برای شروع کمکم کنید…"
+              placeholder={L("مثلاً: مبتدی هستم، برای شروع کمکم کنید…")}
               style={{ ...inputStyle, resize: "none", lineHeight: 1.9 }}
-              aria-label="یادداشت فراخوان"
+              aria-label={L("یادداشت فراخوان")}
             />
           </div>
 
           {actionError ? (
             <p role="alert" style={{ ...typography.bodySmall, padding: spacing.md, borderRadius: radii.md, background: colors.dangerBackground, color: colors.danger, margin: 0 }}>
-              {actionError}
+              {L(actionError)}
             </p>
           ) : null}
 
           <div style={{ display: "grid", gap: spacing.sm }}>
             <Button fullWidth loading={creating} disabled={creating} onClick={() => void start()} style={{ minHeight: 52 }}>
-              ثبت فراخوان برای اساتید
+              {L("ثبت فراخوان برای اساتید")}
             </Button>
             <Button variant="secondary" fullWidth onClick={() => navigateApp(`/search?topic=${topic.id}`, config)} style={{ minHeight: 46 }}>
-              یا مشاهدهٔ اساتید همین موضوع
+              {L("یا مشاهدهٔ اساتید همین موضوع")}
             </Button>
           </div>
         </Card>
       ) : (
         <Card className="vodda-enter vodda-enter-delay-1" style={{ padding: 18, borderRadius: 20 }}>
-          <strong style={{ fontSize: 15, fontWeight: 800, color: colors.ink, display: "block" }}>۱. موضوع آموزش را انتخاب کنید</strong>
+          <strong style={{ fontSize: 15, fontWeight: 800, color: colors.ink, display: "block" }}>{L("۱. موضوع آموزش را انتخاب کنید")}</strong>
           <span style={{ fontSize: 12, color: colors.inkMuted, display: "block", margin: "4px 0 12px" }}>
-            از فهرست رسمی خدمات وُدّا — {fa(catalog.length)} موضوع تأییدشده
+            {L("از فهرست رسمی خدمات وُدّا — {n} موضوع تأییدشده").replace("{n}", fa(catalog.length, lang))}
           </span>
           <input
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="جستجو در موضوعات؛ مثلاً تجوید، حفظ، صوت و لحن…"
+            placeholder={L("جستجو در موضوعات؛ مثلاً تجوید، حفظ، صوت و لحن…")}
             style={{ ...inputStyle, marginBottom: 12 }}
-            aria-label="جستجوی موضوع"
+            aria-label={L("جستجوی موضوع")}
           />
           {catalogLoading ? (
-            <LoadingState label="در حال دریافت موضوعات…" />
+            <LoadingState label={L("در حال دریافت موضوعات…")} />
           ) : catalogError ? (
             <ErrorState
-              title="دریافت موضوعات ناموفق بود"
-              description={catalogError}
-              action={<Button variant="secondary" onClick={() => void loadCatalog()}>تلاش دوباره</Button>}
+              title={L("دریافت موضوعات ناموفق بود")}
+              description={L(catalogError)}
+              action={<Button variant="secondary" onClick={() => void loadCatalog()}>{L("تلاش دوباره")}</Button>}
             />
           ) : filteredCatalog.length === 0 ? (
             <EmptyState
               illustration={<IllustrationDispatch size={150} />}
-              title="موضوعی پیدا نشد"
-              description="عبارت دیگری را جستجو کنید."
+              title={L("موضوعی پیدا نشد")}
+              description={L("عبارت دیگری را جستجو کنید.")}
             />
           ) : (
             <div style={{ display: "grid", gap: spacing.lg, maxHeight: 520, overflowY: "auto", paddingInlineEnd: 4 }}>
               {grouped.map(([category, items]) => (
                 <div key={category}>
-                  <strong style={{ display: "block", fontSize: 12.5, color: colors.olive700, margin: "2px 0 8px" }}>{category}</strong>
+                  <strong style={{ display: "block", fontSize: 12.5, color: colors.olive700, margin: "2px 0 8px" }}>{L(category)}</strong>
                   <div style={{ display: "grid", gap: spacing.sm }}>
                     {items.map((item) => (
                       <button
@@ -803,7 +817,7 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
                           <TopicIcon icon={item.icon} size={17} />
                         </span>
                         <span style={{ minWidth: 0, flex: 1 }}>
-                          <strong style={{ display: "block", fontSize: 13.5, fontWeight: 700, color: colors.ink }}>{item.title}</strong>
+                          <strong style={{ display: "block", fontSize: 13.5, fontWeight: 700, color: colors.ink }}>{L(item.title)}</strong>
                         </span>
                         <Icon name="chevronL" size={15} style={{ color: colors.inkFaint, flex: "0 0 auto" }} />
                       </button>

@@ -6,7 +6,8 @@ import { useCallback, useEffect, useState } from "react";
 import type { UniversalAppConfig } from "../../config";
 import { usePlatform } from "../../platform/context";
 import { navigateApp } from "../../router";
-import { toFaDigits } from "../../ui/persian";
+import { localizedDigits } from "../../ui/persian";
+import { useAppearance } from "../../ui/appearance";
 import {
   Avatar,
   Button,
@@ -29,6 +30,7 @@ import { SelectField } from "./fields";
 import type { OfficialInPersonService, PresenceProvider } from "./types";
 
 function ProviderCard({ provider, onOpen }: { provider: PresenceProvider; onOpen: () => void }) {
+  const { L, lang } = useAppearance();
   return (
     <button
       type="button"
@@ -57,10 +59,10 @@ function ProviderCard({ provider, onOpen }: { provider: PresenceProvider; onOpen
             <TierBadge tier={provider.tier} />
           </div>
           <span style={{ display: "block", fontSize: 12, color: colors.olive700, marginTop: 2 }}>
-            {provider.tag || provider.field || "قاری قرآن"}
+            {provider.tag || provider.field || L("قاری قرآن")}
             {provider.city ? ` · 📍 ${provider.city}` : ""}
-            {provider.reviews > 0 ? ` · ⭐ ${toFaDigits(provider.rating.toFixed(1))} (${toFaDigits(provider.reviews)})` : ""}
-            {provider.sessions > 0 ? ` · ${toFaDigits(provider.sessions)} مراسم` : ""}
+            {provider.reviews > 0 ? ` · ⭐ ${localizedDigits(provider.rating.toFixed(1), lang)} (${localizedDigits(provider.reviews, lang)})` : ""}
+            {provider.sessions > 0 ? ` · ${localizedDigits(provider.sessions, lang)} ${L("مراسم")}` : ""}
           </span>
         </div>
         <Icon name="chevronL" size={16} style={{ color: colors.inkFaint, flex: "0 0 auto" }} />
@@ -73,7 +75,7 @@ function ProviderCard({ provider, onOpen }: { provider: PresenceProvider; onOpen
             </span>
           ))}
           {provider.services.length > 3 ? (
-            <span style={chipStyle}>+{toFaDigits(provider.services.length - 3)}</span>
+            <span style={chipStyle}>+{localizedDigits(provider.services.length - 3, lang)}</span>
           ) : null}
         </div>
       ) : null}
@@ -81,12 +83,12 @@ function ProviderCard({ provider, onOpen }: { provider: PresenceProvider; onOpen
         {provider.samples.length > 0 ? (
           <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11.5, color: colors.olive700 }}>
             <Icon name="headphones" size={13} />
-            {toFaDigits(provider.samples.length)} نمونهٔ صوتی
+            {localizedDigits(provider.samples.length, lang)} {L("نمونهٔ صوتی")}
           </span>
         ) : null}
         {provider.services.length > 0 ? (
           <span style={{ marginInlineStart: "auto", fontSize: 11.5, color: colors.inkMuted }}>
-            از {formatToman(Math.min(...provider.services.map((service) => service.base_price)))}
+            {L("از {price}").replace("{price}", formatToman(Math.min(...provider.services.map((service) => service.base_price)), lang))}
           </span>
         ) : null}
       </div>
@@ -96,6 +98,7 @@ function ProviderCard({ provider, onOpen }: { provider: PresenceProvider; onOpen
 
 export function PresenceScreen({ config }: { config: UniversalAppConfig }) {
   const runtime = usePlatform();
+  const { L, lang } = useAppearance();
   const [catalog, setCatalog] = useState<OfficialInPersonService[]>([]);
   const [providers, setProviders] = useState<PresenceProvider[]>([]);
   const [loading, setLoading] = useState(true);
@@ -153,8 +156,8 @@ export function PresenceScreen({ config }: { config: UniversalAppConfig }) {
             <Icon name="users" size={24} />
           </div>
           <div>
-            <h1 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>قاریان حضوری</h1>
-            <span style={{ fontSize: 12.5, opacity: 0.9 }}>قاری مراسم خود را ببینید، بشنوید و مستقیم رزرو کنید</span>
+            <h1 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>{L("قاریان حضوری")}</h1>
+            <span style={{ fontSize: 12.5, opacity: 0.9 }}>{L("قاری مراسم خود را ببینید، بشنوید و مستقیم رزرو کنید")}</span>
           </div>
         </div>
       </div>
@@ -171,13 +174,13 @@ export function PresenceScreen({ config }: { config: UniversalAppConfig }) {
             type="search"
             value={cityQuery}
             onChange={(event) => setCityQuery(event.target.value)}
-            placeholder="فیلتر شهر؛ مثلاً قم…"
+            placeholder={L("فیلتر شهر؛ مثلاً قم…")}
             style={{ ...inputStyle, flex: 1 }}
-            aria-label="فیلتر شهر"
+            aria-label={L("فیلتر شهر")}
           />
           <Button type="submit" variant="secondary" style={{ minHeight: 46, paddingInline: 16, flex: "0 0 auto" }}>
             <Icon name="search" size={17} />
-            جستجو
+            {L("جستجو")}
           </Button>
         </form>
         {catalog.length > 0 ? (
@@ -187,39 +190,39 @@ export function PresenceScreen({ config }: { config: UniversalAppConfig }) {
             value={serviceId === 0 ? "" : String(serviceId)}
             onChange={(next) => setServiceId(Number(next) || 0)}
             options={[
-              { value: "", label: "همهٔ خدمات حضوری" },
+              { value: "", label: L("همهٔ خدمات حضوری") },
               ...catalog.map((item) => ({ value: String(item.id), label: item.title })),
             ]}
           />
         ) : null}
         {appliedCity || activeService ? (
           <p style={{ margin: 0, fontSize: 11.5, color: colors.inkMuted }}>
-            فیلتر فعال: {appliedCity ? `شهر «${appliedCity}»` : ""}{appliedCity && activeService ? " · " : ""}{activeService ? activeService.title : ""}
+            {L("فیلتر فعال:")} {appliedCity ? L("شهر «{city}»").replace("{city}", appliedCity) : ""}{appliedCity && activeService ? " · " : ""}{activeService ? activeService.title : ""}
             {" — "}
             <button
               type="button"
               onClick={() => { setCityQuery(""); setAppliedCity(""); setServiceId(0); }}
               style={{ border: 0, background: "none", color: colors.olive700, cursor: "pointer", fontFamily: "inherit", fontSize: 11.5, fontWeight: 700, padding: 0 }}
             >
-              پاک کردن فیلترها
+              {L("پاک کردن فیلترها")}
             </button>
           </p>
         ) : null}
       </Card>
 
       {loading ? (
-        <LoadingState label="در حال دریافت قاریان حضوری…" />
+        <LoadingState label={L("در حال دریافت قاریان حضوری…")} />
       ) : error ? (
         <ErrorState
-          title="دریافت قاریان ناموفق بود"
-          description={error}
-          action={<Button onClick={() => void load()}>تلاش دوباره</Button>}
+          title={L("دریافت قاریان ناموفق بود")}
+          description={L(error)}
+          action={<Button onClick={() => void load()}>{L("تلاش دوباره")}</Button>}
         />
       ) : providers.length === 0 ? (
         <EmptyState
           icon={<Icon name="users" size={30} />}
-          title="قاری‌ای پیدا نشد"
-          description="با فیلترهای دیگر جستجو کنید؛ قاریان جدید به‌تدریج به این فهرست افزوده می‌شوند."
+          title={L("قاری‌ای پیدا نشد")}
+          description={L("با فیلترهای دیگر جستجو کنید؛ قاریان جدید به‌تدریج به این فهرست افزوده می‌شوند.")}
         />
       ) : (
         <div style={{ display: "grid", gap: spacing.md }}>
@@ -234,20 +237,20 @@ export function PresenceScreen({ config }: { config: UniversalAppConfig }) {
       )}
 
       <p style={{ ...typography.caption, margin: 0, color: colors.inkMuted, lineHeight: 1.9 }}>
-        برای میزبانی مراسم خود می‌توانید فراخوان بگذارید تا قاریان مناسب، خودشان اعلام آمادگی کنند.
+        {L("برای میزبانی مراسم خود می‌توانید فراخوان بگذارید تا قاریان مناسب، خودشان اعلام آمادگی کنند.")}
         {" "}
         <button
           type="button"
           onClick={() => navigateApp("/ceremony/new", config)}
           style={{ border: 0, background: "none", color: colors.goldDark, cursor: "pointer", fontFamily: "inherit", fontSize: 11.5, fontWeight: 800, padding: 0 }}
         >
-          ثبت فراخوان مراسم
+          {L("ثبت فراخوان مراسم")}
         </button>
       </p>
 
       {providers.length > 0 && !loading && !error ? (
         <span style={{ ...typography.caption, textAlign: "center", color: colors.inkFaint }}>
-          {toFaDigits(providers.length)} قاری حضوری
+          {L("{count} قاری حضوری").replace("{count}", localizedDigits(providers.length, lang))}
         </span>
       ) : null}
     </div>

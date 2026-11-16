@@ -6,9 +6,10 @@ import type { UniversalAppConfig } from "../../config";
 import { usePlatform } from "../../platform/context";
 import type { AuthUser } from "../../platform/types";
 import { navigateApp, type AppRouteName } from "../../router";
-import { Button, Card, Icon, colors, digitsOnly, shadows, spacing, toFaDigits, typography } from "../../ui";
+import { Button, Card, Icon, colors, digitsOnly, shadows, spacing, typography } from "../../ui";
 import { useAppearance } from "../../ui/appearance";
 import { messageOf } from "../../ui/errorMessage";
+import { localizedDigits } from "../../ui/persian";
 
 function normalizedMobile(value: string) {
   return digitsOnly(value, 11);
@@ -45,9 +46,10 @@ export function canAccessAppRoute(user: AuthUser, routeName: AppRouteName) {
 }
 
 export function LaunchScreen() {
+  const { t, L, dir } = useAppearance();
   return (
     <main
-      dir="rtl"
+      dir={dir}
       data-universal-app="vodda"
       style={{
         minHeight: "100dvh",
@@ -62,7 +64,7 @@ export function LaunchScreen() {
       <div style={{ display: "grid", justifyItems: "center", gap: 12, textAlign: "center" }}>
         <img
           src="/vodda-logo.svg"
-          alt="وُدّا"
+          alt={L("وُدّا")}
           width={150}
           height={173}
           style={{ width: 150, height: "auto", display: "block" }}
@@ -71,7 +73,7 @@ export function LaunchScreen() {
           className="vodda-display"
           style={{ fontSize: 18, color: colors.ink, lineHeight: 1.7 }}
         >
-          پلتفرم آموزش و خدمات آنلاین قرآن کریم
+          {t("login_subtitle")}
         </strong>
       </div>
     </main>
@@ -87,9 +89,10 @@ type SessionBootstrapProps = {
 type BootstrapStatus = "loading" | "ready" | "error";
 
 function SessionRestoreError({ message, onRetry }: { message: string; onRetry: () => void }) {
+  const { L, dir } = useAppearance();
   return (
     <main
-      dir="rtl"
+      dir={dir}
       data-universal-app="vodda"
       style={{
         minHeight: "100dvh",
@@ -103,12 +106,12 @@ function SessionRestoreError({ message, onRetry }: { message: string; onRetry: (
     >
       <Card elevated style={{ width: "min(100%, 460px)", textAlign: "center" }}>
         <div style={{ display: "grid", gap: spacing.md, justifyItems: "center" }}>
-          <strong style={{ ...typography.title, color: colors.danger }}>اتصال به حساب برقرار نشد</strong>
+          <strong style={{ ...typography.title, color: colors.danger }}>{L("اتصال به حساب برقرار نشد")}</strong>
           <p style={{ ...typography.bodySmall, margin: 0, color: colors.inkMuted }}>
-            {message}
+            {L(message)}
           </p>
           <Button type="button" onClick={onRetry}>
-            تلاش دوباره
+            {L("تلاش دوباره")}
           </Button>
         </div>
       </Card>
@@ -192,7 +195,7 @@ type LoginScreenProps = {
 
 export function LoginScreen({ config }: LoginScreenProps) {
   const platform = usePlatform();
-  const { t, lang, setLang } = useAppearance();
+  const { t, L, lang, setLang } = useAppearance();
   const otpRef = useRef<HTMLInputElement>(null);
   const [mobile, setMobile] = useState("");
   const [code, setCode] = useState("");
@@ -328,7 +331,7 @@ export function LoginScreen({ config }: LoginScreenProps) {
         <div className="vodda-enter" style={{ display: "grid", justifyItems: "center", marginTop: "8dvh" }}>
           <img
             src="/vodda-logo.svg"
-            alt="وُدّا"
+            alt={L("وُدّا")}
             width={96}
             height={111}
             style={{ width: 96, height: "auto", display: "block" }}
@@ -405,9 +408,9 @@ export function LoginScreen({ config }: LoginScreenProps) {
                 inputMode="numeric"
                 autoComplete="tel"
                 dir="ltr"
-                value={toFaDigits(mobile)}
+                value={localizedDigits(mobile, lang)}
                 disabled={codeSent || loading !== null}
-                placeholder="۰۹××× ××× ×××"
+                placeholder={L("۰۹××× ××× ×××")}
                 onChange={(event) => {
                   setMobile(normalizedMobile(event.target.value));
                   setError(null);
@@ -439,13 +442,13 @@ export function LoginScreen({ config }: LoginScreenProps) {
           ) : (
             <div style={{ display: "grid", gap: 20 }}>
               <p style={{ ...typography.bodySmall, margin: "0 0 -2px", color: colors.inkMuted, textAlign: "center" }}>
-                {t("login_code_prompt", { mobile: toFaDigits(mobile) })}
+                {t("login_code_prompt", { mobile: localizedDigits(mobile, lang) })}
               </p>
 
               <div
                 dir="ltr"
                 role="group"
-                aria-label="کد تأیید پنج رقمی"
+                aria-label={L("کد تأیید پنج رقمی")}
                 onClick={() => otpRef.current?.focus()}
                 style={{
                   position: "relative",
@@ -476,13 +479,13 @@ export function LoginScreen({ config }: LoginScreenProps) {
                         fontWeight: 800,
                       }}
                     >
-                      {toFaDigits(digit)}
+                      {localizedDigits(digit, lang)}
                     </span>
                   );
                 })}
                 <input
                   ref={otpRef}
-                  value={toFaDigits(code)}
+                  value={localizedDigits(code, lang)}
                   inputMode="numeric"
                   autoComplete="one-time-code"
                   disabled={loading !== null}
@@ -500,7 +503,7 @@ export function LoginScreen({ config }: LoginScreenProps) {
                     border: 0,
                     cursor: "text",
                   }}
-                  aria-label="کد تأیید"
+                  aria-label={L("کد تأیید")}
                 />
               </div>
 
@@ -525,8 +528,9 @@ export function LoginScreen({ config }: LoginScreenProps) {
                 >
                   {resendCooldown > 0
                     ? t("login_resend_in", {
-                        time: toFaDigits(
+                        time: localizedDigits(
                           `${String(Math.floor(resendCooldown / 60)).padStart(2, "0")}:${String(resendCooldown % 60).padStart(2, "0")}`,
+                          lang,
                         ),
                       })
                     : t("login_resend")}
@@ -567,7 +571,7 @@ export function LoginScreen({ config }: LoginScreenProps) {
               }}
             >
               <Icon name="shield" size={18} />
-              <span>{error}</span>
+              <span>{L(error)}</span>
             </div>
           ) : null}
 
@@ -586,7 +590,7 @@ export function LoginScreen({ config }: LoginScreenProps) {
               }}
             >
               <Icon name="shield" size={18} />
-              <span>{googleNotice}</span>
+              <span>{L(googleNotice)}</span>
             </div>
           ) : null}
 

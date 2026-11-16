@@ -255,3 +255,71 @@ export function todayJalaliLabel(): string {
     { withWeekday: persianWeekdayIndex(new Date(Date.UTC(parts.gy, parts.gm - 1, parts.gd)).getUTCDay()) },
   );
 }
+
+/* ───────────  نسخهٔ دوزبانهٔ توابع تاریخ (فارسی/انگلیسی)  ─────────── */
+
+const EN_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const EN_WEEKDAYS = ["Sat", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri"];
+/** ورودی به کنوانسیون بک‌اند است (۰=شنبه) → شنبه=Sat */
+const EN_WEEKDAYS_FULL = ["Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+
+/** تاریخ محلی "YYYY-MM-DD" به زبان اپ: فارسی شمسی، انگلیسی میلادی. */
+export function formatAppDate(
+  localDate: string,
+  lang: "fa" | "en",
+  options: FormatJalaliOptions = {},
+): string {
+  if (lang === "en") {
+    const { withYear = true, withWeekday = null } = options;
+    if (!localDate) return "";
+    const parts = localDate.trim().split("-");
+    if (parts.length !== 3) return localDate;
+    const gy = Number(parts[0]);
+    const gm = Number(parts[1]);
+    const gd = Number(parts[2]);
+    if (!Number.isFinite(gy) || !Number.isFinite(gm) || !Number.isFinite(gd)) return localDate;
+    const pieces: string[] = [];
+    if (withWeekday !== null && withWeekday !== undefined && Number.isFinite(withWeekday)) {
+      pieces.push(`${EN_WEEKDAYS[Number(withWeekday)] ?? ""} `);
+    }
+    pieces.push(`${gd} ${EN_MONTHS[gm - 1] ?? ""}`);
+    if (withYear) pieces.push(` ${gy}`);
+    return pieces.join("").trim();
+  }
+  return formatJalaliDate(localDate, options);
+}
+
+/** ISO datetime به زبان اپ: فارسی شمسی/تهران، انگلیسی میلادی/تهران. */
+export function formatAppDateTime(
+  iso: string,
+  lang: "fa" | "en",
+  options: FormatJalaliDateTimeOptions = {},
+): string {
+  const { withYear = true, withWeekday = false, withTime = true } = options;
+  if (lang === "en") {
+    if (!iso) return "";
+    const parts = tehranParts(iso);
+    if (!parts) return "";
+    const pieces: string[] = [];
+    if (withWeekday) {
+      const jsWeekday = new Date(Date.UTC(parts.gy, parts.gm - 1, parts.gd)).getUTCDay();
+      pieces.push(`${EN_WEEKDAYS_FULL[persianWeekdayIndex(jsWeekday)] ?? ""}, `);
+    }
+    pieces.push(`${parts.gd} ${EN_MONTHS[parts.gm - 1] ?? ""}`);
+    if (withYear) pieces.push(` ${parts.gy}`);
+    if (withTime) {
+      pieces.push(` · ${String(parts.hh).padStart(2, "0")}:${String(parts.mm).padStart(2, "0")}`);
+    }
+    return pieces.join("").trim();
+  }
+  return formatJalaliDateTime(iso, options);
+}
+
+/** برچسب امروز به زبان اپ. */
+export function todayAppDateLabel(lang: "fa" | "en"): string {
+  const parts = tehranParts(new Date().toISOString());
+  if (!parts) return "";
+  const local = `${parts.gy}-${String(parts.gm).padStart(2, "0")}-${String(parts.gd).padStart(2, "0")}`;
+  const weekday = persianWeekdayIndex(new Date(Date.UTC(parts.gy, parts.gm - 1, parts.gd)).getUTCDay());
+  return formatAppDate(local, lang, { withWeekday: weekday });
+}

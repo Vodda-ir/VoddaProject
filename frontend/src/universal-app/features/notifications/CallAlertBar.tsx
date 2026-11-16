@@ -10,6 +10,7 @@ import type { UniversalAppConfig } from "../../config";
 import { usePlatform } from "../../platform/context";
 import { navigateApp } from "../../router";
 import { Icon } from "../../ui/Icon";
+import { useAppearance } from "../../ui/appearance";
 import { getNotifications, markNotificationRead } from "./api";
 
 const CHIME_SRC = "/sounds/vodda-summon-chime.wav";
@@ -23,6 +24,7 @@ const FRESH_WINDOW_BY_KIND: Record<CallAlert["kind"], number> = {
   instant: 30 * 60 * 1000,
   session: 6 * 60 * 60 * 1000,
   ceremony: 6 * 60 * 60 * 1000,
+  admin: 24 * 60 * 60 * 1000,
 };
 const LS_CHIME = "vodda:call-alert:last-chime";
 const LS_DISMISSED = "vodda:call-alert:dismissed";
@@ -32,7 +34,7 @@ type CallAlert = {
   /** نام فراخوان — بخش بعد از «:» در تیتر اعلان */
   name: string;
   body: string;
-  kind: "ceremony" | "dispatch" | "session" | "instant";
+  kind: "ceremony" | "dispatch" | "session" | "instant" | "admin";
 };
 
 function dismissedIds(): number[] {
@@ -106,24 +108,33 @@ function toCallAlert(id: number, title: string, body: string, read: boolean, cre
   if (read) return null;
   const createdMs = Date.parse(createdAt);
   if (!Number.isFinite(createdMs)) return null;
-  const kind: CallAlert["kind"] | "" = title.includes("فراخوان مراسم")
-    ? "ceremony"
-    : title.includes("فراخوان جدید")
-      ? "dispatch"
-      : title.includes("جلسهٔ فوری") || title.includes("جلسه فوری")
-        ? "instant"
-        : title.includes("درخواست جلسه")
-          ? "session"
-          : "";
+  const kind: CallAlert["kind"] | "" = title.includes("مدیریت:")
+    ? "admin"
+    : title.includes("فراخوان مراسم")
+      ? "ceremony"
+      : title.includes("فراخوان جدید")
+        ? "dispatch"
+        : title.includes("جلسهٔ فوری") || title.includes("جلسه فوری")
+          ? "instant"
+          : title.includes("درخواست جلسه")
+            ? "session"
+            : "";
   if (kind === "") return null;
   if (Date.now() - createdMs > FRESH_WINDOW_BY_KIND[kind]) return null;
   const name = title.split(":").slice(1).join(":").trim() ||
-    (kind === "ceremony" ? "مراسم حضوری" : kind === "instant" ? "جلسهٔ فوری" : "درخواست جلسه");
+    (kind === "ceremony"
+      ? "مراسم حضوری"
+      : kind === "instant"
+        ? "جلسهٔ فوری"
+        : kind === "admin"
+          ? "رویداد پنل مدیریت"
+          : "درخواست جلسه");
   return { id, name, body, kind };
 }
 
 export function CallAlertBar({ config }: { config: UniversalAppConfig }) {
   const runtime = usePlatform();
+  const { L } = useAppearance();
   const [alert, setAlert] = useState<CallAlert | null>(null);
   const alertRef = useRef<CallAlert | null>(null);
 
@@ -159,6 +170,11 @@ export function CallAlertBar({ config }: { config: UniversalAppConfig }) {
     void markNotificationRead(runtime, current.id).catch(() => {
       // خواندن ناموفق؛ هدایت همچنان انجام می‌شود
     });
+    if (current.kind === "admin") {
+      // رویدادهای پنل مدیریت → پنل مدیریت در تب/مرورگر خارجی باز می‌شود.
+      window.open("/panel/admin", "_blank");
+      return;
+    }
     const target =
       current.kind === "ceremony"
         ? "/t/ceremony"
@@ -227,8 +243,9 @@ export function CallAlertBar({ config }: { config: UniversalAppConfig }) {
     dispatch: "درخواست جلسهٔ آنلاین",
     session: "درخواست جلسهٔ جدید",
     instant: "جلسهٔ فوری — همین حالا",
+    admin: "اعلان زندهٔ پنل مدیریت",
   };
-  const label = labelByKind[alert.kind];
+  const label = L(labelByKind[alert.kind]);
 
   return (
     <div className="vodda-call-alert" role="alert">
@@ -236,7 +253,7 @@ export function CallAlertBar({ config }: { config: UniversalAppConfig }) {
         type="button"
         className="vodda-call-alert-card"
         onClick={open}
-        aria-label={`${label}: ${alert.name} — مشاهده`}
+        aria-label={`${label}: ${L(alert.name)} — ${L("مشاهده")}`}
       >
         <span
           aria-hidden="true"
@@ -282,7 +299,7 @@ export function CallAlertBar({ config }: { config: UniversalAppConfig }) {
               whiteSpace: "nowrap",
             }}
           >
-            {alert.name}
+            {L(alert.name)}
           </span>
           {alert.body ? (
             <span
@@ -298,7 +315,7 @@ export function CallAlertBar({ config }: { config: UniversalAppConfig }) {
                 color: "rgba(255,255,255,.82)",
               }}
             >
-              {alert.body}
+              {L(alert.body)}
             </span>
           ) : null}
         </span>
@@ -311,7 +328,7 @@ export function CallAlertBar({ config }: { config: UniversalAppConfig }) {
       <button
         type="button"
         className="vodda-call-alert-close"
-        aria-label="بستن اعلان فراخوان"
+        aria-label={L("بستن اعلان فراخوان")}
         onClick={dismiss}
       >
         <Icon name="x" size={13} stroke={2.4} />

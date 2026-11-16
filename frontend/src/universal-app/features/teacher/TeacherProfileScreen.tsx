@@ -18,9 +18,10 @@ import {
   Sheet,
   shadows,
   spacing,
-  toFaDigits,
   typography,
 } from "../../ui";
+import { useAppearance } from "../../ui/appearance";
+import { localizedDigits } from "../../ui/persian";
 import { messageOf } from "../../ui/errorMessage";
 import { showToast } from "../../ui/toast";
 import { TierBadge } from "../teachers/TierBadge";
@@ -144,6 +145,7 @@ function validate(form: TeacherForm): string | null {
 
 export function TeacherProfileScreen({ config }: { config: UniversalAppConfig }) {
   const runtime = usePlatform();
+  const { L, lang } = useAppearance();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [teacher, setTeacher] = useState<TeacherProfile | null>(null);
   const [form, setForm] = useState<TeacherForm | null>(null);
@@ -252,7 +254,7 @@ export function TeacherProfileScreen({ config }: { config: UniversalAppConfig })
       setTeacher(updated);
       setForm(toForm(updated));
       setNotice("اطلاعات حرفه‌ای استاد ذخیره شد.");
-      showToast("اطلاعات حرفه‌ای ذخیره شد");
+      showToast(L("اطلاعات حرفه‌ای ذخیره شد"));
       setEditorOpen(false);
     } catch (saveError) {
       setNotice(messageOf(saveError));
@@ -281,13 +283,13 @@ export function TeacherProfileScreen({ config }: { config: UniversalAppConfig })
     }
   }
 
-  if (loading) return <LoadingState label="در حال دریافت پروفایل استاد…" />;
+  if (loading) return <LoadingState label={L("در حال دریافت پروفایل استاد…")} />;
   if (error || !user || !teacher || !form) {
     return (
       <ErrorState
-        title="دریافت پروفایل ناموفق بود"
-        description={error ?? "اطلاعات پروفایل دریافت نشد."}
-        action={<Button onClick={() => void load()}>تلاش دوباره</Button>}
+        title={L("دریافت پروفایل ناموفق بود")}
+        description={error ? L(error) : L("اطلاعات پروفایل دریافت نشد.")}
+        action={<Button onClick={() => void load()}>{L("تلاش دوباره")}</Button>}
       />
     );
   }
@@ -296,7 +298,7 @@ export function TeacherProfileScreen({ config }: { config: UniversalAppConfig })
 
   return (
     <section className="vodda-screen" style={{ display: "grid", gap: 18 }}>
-      <h1 style={{ fontSize: 24, fontWeight: 800, margin: 0, color: colors.ink }}>پروفایل استاد</h1>
+      <h1 style={{ fontSize: 24, fontWeight: 800, margin: 0, color: colors.ink }}>{L("پروفایل استاد")}</h1>
 
       <Card elevated className="vodda-enter" style={{ padding: 16, borderRadius: 24 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
@@ -304,7 +306,7 @@ export function TeacherProfileScreen({ config }: { config: UniversalAppConfig })
             <Avatar name={user.name} src={user.avatarUrl} size={62} ring />
             {teacher.tier ? (
               <span
-                aria-label="نشان درجه استاد"
+                aria-label={L("نشان درجه استاد")}
                 style={{
                   position: "absolute",
                   insetInlineEnd: -2,
@@ -327,19 +329,19 @@ export function TeacherProfileScreen({ config }: { config: UniversalAppConfig })
               {user.name}
             </strong>
             <span style={{ fontSize: 12.5, color: colors.olive600, fontWeight: 600 }}>
-              {teacher.tag || teacher.field || "مدرس"}
+              {L(teacher.tag || teacher.field || "مدرس")}
             </span>
             <span style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 7, fontSize: 12, color: colors.goldDark }}>
               <Icon name="star" size={14} fill style={{ color: colors.gold }} />
-              <strong>{rating === "—" ? rating : toFaDigits(rating)}</strong>
-              <span style={{ color: colors.inkFaint }}>({toFaDigits(teacher.reviews)} نظر)</span>
+              <strong>{rating === "—" ? rating : localizedDigits(rating, lang)}</strong>
+              <span style={{ color: colors.inkFaint }}>({L("{n} نظر").replace("{n}", localizedDigits(teacher.reviews, lang))})</span>
             </span>
           </div>
           <button
             type="button"
             className="vodda-tappable"
             onClick={() => navigateApp("/profile/edit", config)}
-            aria-label="ویرایش حساب"
+            aria-label={L("ویرایش حساب")}
             style={{
               width: 40,
               height: 40,
@@ -363,17 +365,17 @@ export function TeacherProfileScreen({ config }: { config: UniversalAppConfig })
         <div style={{ display: "flex", alignItems: "center", gap: spacing.md }}>
           <div style={{ minWidth: 0, flex: 1 }}>
             <strong style={{ fontSize: 13.5, fontWeight: 700, display: "block", color: colors.ink }}>
-              وضعیت پذیرش جلسه
+              {L("وضعیت پذیرش جلسه")}
             </strong>
             <span style={{ fontSize: 11.5, lineHeight: 1.6, color: colors.inkMuted }}>
-              {teacher.available ? "آماده دریافت درخواست جدید" : "موقتاً غیرفعال"}
+              {teacher.available ? L("آماده دریافت درخواست جدید") : L("موقتاً غیرفعال")}
             </span>
           </div>
           <button
             type="button"
             role="switch"
             aria-checked={teacher.available}
-            aria-label="وضعیت پذیرش جلسه"
+            aria-label={L("وضعیت پذیرش جلسه")}
             disabled={availabilitySaving}
             onClick={() => void setAvailability(!teacher.available)}
             style={{
@@ -419,16 +421,16 @@ export function TeacherProfileScreen({ config }: { config: UniversalAppConfig })
             ...typography.bodySmall,
           }}
         >
-          {notice}
+          {L(notice)}
         </div>
       ) : null}
 
       <Card className="vodda-enter vodda-enter-delay-1" style={{ padding: 0, overflow: "hidden", borderRadius: 24 }}>
         {[
-          { icon: "book" as const, title: "خدمات من", meta: `${toFaDigits(activeServices)} خدمت فعال`, action: () => navigateApp("/t/services", config) },
-          { icon: "clock" as const, title: "زمان کاری", meta: "مدیریت برنامه هفتگی", action: () => navigateApp("/t/work-times", config) },
-          { icon: "star" as const, title: "نظرات", meta: `${toFaDigits(teacher.reviews)} نظر`, action: () => navigateApp("/t/reviews", config) },
-          { icon: "edit" as const, title: "اطلاعات حرفه‌ای", meta: "تخصص، مهارت و تعرفه", action: () => setEditorOpen(true) },
+          { icon: "book" as const, title: L("خدمات من"), meta: L("{n} خدمت فعال").replace("{n}", localizedDigits(activeServices, lang)), action: () => navigateApp("/t/services", config) },
+          { icon: "clock" as const, title: L("زمان کاری"), meta: L("مدیریت برنامه هفتگی"), action: () => navigateApp("/t/work-times", config) },
+          { icon: "star" as const, title: L("نظرات"), meta: L("{n} نظر").replace("{n}", localizedDigits(teacher.reviews, lang)), action: () => navigateApp("/t/reviews", config) },
+          { icon: "edit" as const, title: L("اطلاعات حرفه‌ای"), meta: L("تخصص، مهارت و تعرفه"), action: () => setEditorOpen(true) },
         ].map((row, index, rows) => (
           <button
             key={row.title}
@@ -484,32 +486,32 @@ export function TeacherProfileScreen({ config }: { config: UniversalAppConfig })
           <Icon name="refresh" size={22} />
         </span>
         <span style={{ minWidth: 0, flex: 1 }}>
-          <strong style={{ ...typography.body, display: "block", fontWeight: 800 }}>بازگشت به حساب قرآن‌آموز</strong>
+          <strong style={{ ...typography.body, display: "block", fontWeight: 800 }}>{L("بازگشت به حساب قرآن‌آموز")}</strong>
           <span style={{ ...typography.caption, display: "block", marginTop: 3, color: colors.inkSecondary }}>
-            به‌عنوان قرآن‌آموز جلسه رزرو کنید
+            {L("به‌عنوان قرآن‌آموز جلسه رزرو کنید")}
           </span>
         </span>
         <Icon name="chevronL" size={20} style={{ color: colors.olive500 }} />
       </button>
 
-      <Sheet open={editorOpen} title="اطلاعات حرفه‌ای" onClose={() => { if (!saving) setEditorOpen(false); }}>
+      <Sheet open={editorOpen} title={L("اطلاعات حرفه‌ای")} onClose={() => { if (!saving) setEditorOpen(false); }}>
         <form onSubmit={saveProfile} style={{ display: "grid", gap: spacing.lg }}>
           <p style={{ ...typography.caption, margin: 0, color: colors.inkMuted }}>
-            فقط فیلدهای مجاز پروفایل استاد بروزرسانی می‌شوند؛ وضعیت تأیید و احراز هویت قابل تغییر نیست.
+            {L("فقط فیلدهای مجاز پروفایل استاد بروزرسانی می‌شوند؛ وضعیت تأیید و احراز هویت قابل تغییر نیست.")}
           </p>
-          <Input label="حوزه تخصص" value={form.field} maxLength={60} onChange={(event) => setForm({ ...form, field: event.target.value })} />
-          <Input label="عنوان استاد" value={form.tag} maxLength={60} onChange={(event) => setForm({ ...form, tag: event.target.value })} />
-          <Input label="سطح" value={form.level} maxLength={30} onChange={(event) => setForm({ ...form, level: event.target.value })} />
+          <Input label={L("حوزه تخصص")} value={form.field} maxLength={60} onChange={(event) => setForm({ ...form, field: event.target.value })} />
+          <Input label={L("عنوان استاد")} value={form.tag} maxLength={60} onChange={(event) => setForm({ ...form, tag: event.target.value })} />
+          <Input label={L("سطح")} value={form.level} maxLength={30} onChange={(event) => setForm({ ...form, level: event.target.value })} />
           <CityPicker
-            label="شهر"
+            label={L("شهر")}
             hint={undefined}
             value={form.city}
             onChange={(next) => setForm({ ...form, city: next.slice(0, 80) })}
           />
           <label style={{ display: "grid", gap: spacing.xs }}>
-            <span style={{ ...typography.bodySmall, color: colors.inkSecondary }}>معرفی استاد</span>
+            <span style={{ ...typography.bodySmall, color: colors.inkSecondary }}>{L("معرفی استاد")}</span>
             <span style={{ ...typography.caption, color: colors.inkMuted, lineHeight: 1.8 }}>
-              ساختار پیشنهادی: بند معرفی، سپس فهرست زمینه‌های تدریس با نشانهٔ • در خط جدا، و در پایان سطر مشخصات با «|»؛ صفحهٔ عمومی همین ساختار را مرتب نمایش می‌دهد.
+              {L("ساختار پیشنهادی: بند معرفی، سپس فهرست زمینه‌های تدریس با نشانهٔ • در خط جدا، و در پایان سطر مشخصات با «|»؛ صفحهٔ عمومی همین ساختار را مرتب نمایش می‌دهد.")}
             </span>
             <textarea
               value={form.bio}
@@ -520,14 +522,14 @@ export function TeacherProfileScreen({ config }: { config: UniversalAppConfig })
               style={{ width: "100%", resize: "vertical", padding: spacing.md, borderRadius: radii.md, border: `1px solid ${colors.line}`, outline: "none", boxShadow: shadows.xs, font: "inherit", background: colors.surface, color: colors.ink, lineHeight: 1.9 }}
             />
             <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: spacing.sm }}>
-              <span style={{ ...typography.caption, color: colors.inkFaint }}>{toFaDigits(String(form.bio.length))}/۱۰۰۰</span>
+              <span style={{ ...typography.caption, color: colors.inkFaint }}>{L("{n}/۱۰۰۰").replace("{n}", localizedDigits(String(form.bio.length), lang))}</span>
               <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 {form.bio.trim() ? (
                   <button
                     type="button"
                     onClick={() => void polishBioWithAi()}
                     disabled={aiBusy}
-                    aria-label="بهبود متن معرفی با هوش مصنوعی"
+                    aria-label={L("بهبود متن معرفی با هوش مصنوعی")}
                     style={{
                       minHeight: 34,
                       display: "inline-flex",
@@ -546,13 +548,13 @@ export function TeacherProfileScreen({ config }: { config: UniversalAppConfig })
                     }}
                   >
                     <Icon name="sparkle" size={13} stroke={2} />
-                    {aiBusy ? "در حال بازنویسی…" : "بهبود با هوش مصنوعی"}
+                    {aiBusy ? L("در حال بازنویسی…") : L("بهبود با هوش مصنوعی")}
                   </button>
                 ) : null}
                 {!form.bio.trim() ? (
                   <button
                     type="button"
-                    onClick={() => setForm({ ...form, bio: BIO_TEMPLATE })}
+                    onClick={() => setForm({ ...form, bio: L(BIO_TEMPLATE) })}
                     style={{
                       minHeight: 34,
                       padding: "0 12px",
@@ -566,13 +568,13 @@ export function TeacherProfileScreen({ config }: { config: UniversalAppConfig })
                       fontFamily: typography.fontFamily,
                     }}
                   >
-                    درج قالب پیشنهادی
+                    {L("درج قالب پیشنهادی")}
                   </button>
                 ) : null}
               </span>
             </span>
             {aiError ? (
-              <span style={{ ...typography.caption, color: "#b3261e", lineHeight: 1.8 }}>{aiError}</span>
+              <span style={{ ...typography.caption, color: "#b3261e", lineHeight: 1.8 }}>{L(aiError)}</span>
             ) : null}
             {aiPreview ? (
               <span
@@ -587,7 +589,7 @@ export function TeacherProfileScreen({ config }: { config: UniversalAppConfig })
               >
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 5, ...typography.caption, color: colors.goldDark, fontWeight: 800 }}>
                   <Icon name="sparkle" size={13} stroke={2} />
-                  پیشنهاد هوش مصنوعی — طبق الگوی وُدّا
+                  {L("پیشنهاد هوش مصنوعی — طبق الگوی وُدّا")}
                 </span>
                 <span style={{ ...typography.caption, color: colors.ink, lineHeight: 1.9, whiteSpace: "pre-wrap" }}>
                   {aiPreview}
@@ -614,7 +616,7 @@ export function TeacherProfileScreen({ config }: { config: UniversalAppConfig })
                       fontFamily: typography.fontFamily,
                     }}
                   >
-                    جایگزینی با این متن
+                    {L("جایگزینی با این متن")}
                   </button>
                   <button
                     type="button"
@@ -632,35 +634,35 @@ export function TeacherProfileScreen({ config }: { config: UniversalAppConfig })
                       fontFamily: typography.fontFamily,
                     }}
                   >
-                    انصراف
+                    {L("انصراف")}
                   </button>
                 </span>
               </span>
             ) : null}
           </label>
-          <Input label="مهارت‌ها" hint="با ویرگول جدا کنید؛ حداکثر ۲۰ مورد" value={form.skills} onChange={(event) => setForm({ ...form, skills: event.target.value })} />
+          <Input label={L("مهارت‌ها")} hint={L("با ویرگول جدا کنید؛ حداکثر ۲۰ مورد")} value={form.skills} onChange={(event) => setForm({ ...form, skills: event.target.value })} />
           <AmountPicker
-            label="تعرفهٔ جلسهٔ ۳۰ دقیقه‌ای"
-            hint="تومان"
-            ariaLabel="تعرفه ۳۰ دقیقه به تومان"
+            label={L("تعرفهٔ جلسهٔ ۳۰ دقیقه‌ای")}
+            hint={L("تومان")}
+            ariaLabel={L("تعرفه ۳۰ دقیقه به تومان")}
             value={form.price30}
             onChange={(next) => setForm({ ...form, price30: next })}
             presets={[100_000, 150_000, 200_000, 300_000, 400_000, 500_000]}
           />
           <AmountPicker
-            label="تعرفهٔ جلسهٔ ۶۰ دقیقه‌ای"
-            hint="تومان"
-            ariaLabel="تعرفه ۶۰ دقیقه به تومان"
+            label={L("تعرفهٔ جلسهٔ ۶۰ دقیقه‌ای")}
+            hint={L("تومان")}
+            ariaLabel={L("تعرفه ۶۰ دقیقه به تومان")}
             value={form.price60}
             onChange={(next) => setForm({ ...form, price60: next })}
             presets={[150_000, 200_000, 300_000, 450_000, 600_000, 800_000]}
           />
           {teacher.price30 > 0 || teacher.price60 > 0 ? (
             <p style={{ ...typography.caption, margin: 0, color: colors.inkMuted }}>
-              تعرفه فعلی: ۳۰ دقیقه {formatWalletAmount(teacher.price30)} تومان · ۶۰ دقیقه {formatWalletAmount(teacher.price60)} تومان
+              {L("تعرفه فعلی: ۳۰ دقیقه {p30} تومان · ۶۰ دقیقه {p60} تومان").replace("{p30}", lang === "en" ? new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(teacher.price30) : formatWalletAmount(teacher.price30)).replace("{p60}", lang === "en" ? new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(teacher.price60) : formatWalletAmount(teacher.price60))}
             </p>
           ) : null}
-          <Button type="submit" fullWidth loading={saving} disabled={saving}>ذخیره اطلاعات حرفه‌ای</Button>
+          <Button type="submit" fullWidth loading={saving} disabled={saving}>{L("ذخیره اطلاعات حرفه‌ای")}</Button>
         </form>
       </Sheet>
     </section>

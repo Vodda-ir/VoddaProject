@@ -45,6 +45,7 @@ type UserRepository interface {
         List(ctx context.Context, f UserListFilter) ([]User, int64, error)
         AddWallet(ctx context.Context, userID uint, delta int64) error
         Count(ctx context.Context, role Role) (int64, error)
+        AdminIDs(ctx context.Context) ([]uint, error)
 }
 
 // TeacherOnboardingRepository performs profile creation and role promotion in a

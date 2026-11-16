@@ -13,6 +13,7 @@ import {
 import { api, type SessionListItem } from '@/lib/api';
 import { fullUrl, getToken } from '@/lib/auth';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
+import { confirmDialog } from '@/lib/confirm';
 
 export default function TeacherSessionsPage() {
   const [tab, setTab] = useState<'upcoming' | 'past'>('upcoming');
@@ -41,7 +42,7 @@ export default function TeacherSessionsPage() {
 
   async function complete(session: SessionListItem) {
     if (!token || busyId !== null) return;
-    if (!window.confirm('جلسه برگزار شده و تسویهٔ درآمد انجام شود؟ این عملیات فقط پس از پایان زمان جلسه مجاز است.')) return;
+    if (!(await confirmDialog('جلسه برگزار شده و تسویهٔ درآمد انجام شود؟ این عملیات فقط پس از پایان زمان جلسه مجاز است.'))) return;
     setBusyId(session.id);
     setError('');
     try {

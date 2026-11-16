@@ -121,6 +121,17 @@ func (r *userRepo) AddWallet(ctx context.Context, userID uint, delta int64) erro
         return nil
 }
 
+// AdminIDs returns the ids of every active admin account — the audience of
+// the operational (مدیریت) notifications.
+func (r *userRepo) AdminIDs(ctx context.Context) ([]uint, error) {
+	var ids []uint
+	err := r.db.WithContext(ctx).
+		Model(&domain.User{}).
+		Where("role = ? AND active = ?", domain.RoleAdmin, true).
+		Pluck("id", &ids).Error
+	return ids, err
+}
+
 func (r *userRepo) Count(ctx context.Context, role domain.Role) (int64, error) {
         query := r.db.WithContext(ctx).Model(&domain.User{})
         if role != "" {

@@ -7,6 +7,7 @@ import { api, type SessionListItem } from '@/lib/api';
 import { getToken } from '@/lib/auth';
 import { LiveClient, type LiveEvent, type LiveStatus } from '@/lib/live/client';
 import { LiveEngine, type EngineRole } from '@/lib/live/engine';
+import { confirmDialog } from '@/lib/confirm';
 
 type ChatMessage = { id: string; from: number; role: string; text: string; at: number; mine: boolean };
 type Reaction = { id: string; emoji: string; at: number };
@@ -759,7 +760,7 @@ export default function LiveClassroomPage() {
         <ControlButton active={sideTab === 'chat'} label="گفت‌وگو" emoji="💬" onClick={() => openSide('chat')} badge={unread > 0 && sideTab !== 'chat' ? unread : 0} />
         <ControlButton active={sideTab === 'settings'} label="تنظیمات دوربین و صدا" emoji="⚙️" onClick={() => openSide('settings')} />
         <ControlButton active={sideTab === 'reading'} label="متن قرآنی" emoji="📖" onClick={() => openSide('reading')} />
-        <ControlButton active={false} label={isTeacherSide ? 'پایان کلاس و تسویه' : 'خروج از کلاس'} emoji="🔚" danger onClick={() => { if (window.confirm(isTeacherSide ? 'کلاس پایان یابد و تسویهٔ جلسه انجام شود؟' : 'از کلاس خارج می‌شوید؟')) void leaveClassroom(isTeacherSide); }} />
+        <ControlButton active={false} label={isTeacherSide ? 'پایان کلاس و تسویه' : 'خروج از کلاس'} emoji="🔚" danger onClick={() => { void confirmDialog(isTeacherSide ? 'کلاس پایان یابد و تسویهٔ جلسه انجام شود؟' : 'از کلاس خارج می‌شوید؟').then((confirmed) => { if (confirmed) void leaveClassroom(isTeacherSide); }); }} />
       </div>
 
       <style jsx global>{`

@@ -12,6 +12,7 @@ import {
 import { api, type SessionListItem } from '@/lib/api';
 import { fullUrl, getToken } from '@/lib/auth';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
+import { confirmDialog } from '@/lib/confirm';
 
 export default function TeacherRequests() {
   const [requests, setRequests] = useState<SessionListItem[]>([]);
@@ -40,7 +41,7 @@ export default function TeacherRequests() {
   async function respond(session: SessionListItem, approve: boolean) {
     if (!token || busyId !== null) return;
     const action = approve ? 'تأیید' : 'رد';
-    if (!window.confirm(`درخواست جلسهٔ ${session.learner?.name || 'قرآن‌آموز'} ${action} شود؟`)) return;
+    if (!(await confirmDialog(`درخواست جلسهٔ ${session.learner?.name || 'قرآن‌آموز'} ${action} شود؟`))) return;
     setBusyId(session.id);
     setError('');
     try {

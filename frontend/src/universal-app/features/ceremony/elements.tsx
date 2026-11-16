@@ -6,14 +6,14 @@
 
 import { useMemo } from "react";
 import type { CSSProperties } from "react";
-import { formatJalaliDate, formatJalaliDateTime } from "../../ui/jalali";
+import { formatAppDate, formatAppDateTime } from "../../ui/jalali";
 import { Icon } from "../../ui/Icon";
 import { resolveAssetUrl } from "../../platform/asset";
 import { colors, radii, spacing, typography } from "../../ui/theme";
-import { toFaDigits } from "../../ui/persian";
+import { localizedDigits } from "../../ui/persian";
+import { useAppearance } from "../../ui/appearance";
 import type { IconName } from "../../../components/Icon";
 import {
-  jalaliDayLabel,
   upcomingJalaliDays,
   type WhenValue,
 } from "./schedule";
@@ -26,29 +26,59 @@ import type {
   SampleView,
 } from "./types";
 
+type Lang = "fa" | "en";
+
+/** نام روز هفته به کنوانسیون بک‌اند (۰=شنبه) — برای حالت انگلیسی پیکر تاریخ. */
+const EN_WEEKDAY_NAMES = ["Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"] as const;
+
+/** ایندکس روز هفته (۰=شنبه) از یک تاریخ محلی YYYY-MM-DD. */
+function weekdayIndexOf(localDate: string): number {
+  const parts = localDate.split("-");
+  if (parts.length !== 3) return 0;
+  const date = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+  if (Number.isNaN(date.getTime())) return 0;
+  return (date.getDay() + 1) % 7;
+}
+
 const numberFormatter = new Intl.NumberFormat("fa-IR");
 const fullFormatter = new Intl.NumberFormat("fa-IR", { maximumFractionDigits: 0 });
 
-/** عدد با ارقام فارسی (پیش‌فرض یک رقم اعشار). */
-export function fa(value: number, maximumFractionDigits = 1): string {
-  return new Intl.NumberFormat("fa-IR", { maximumFractionDigits }).format(value);
+function localeOf(lang: Lang): string {
+  return lang === "en" ? "en-US" : "fa-IR";
 }
 
-/** مبلغ کامل با جداکننده: «۱٬۲۵۰٬۰۰۰ تومان» */
-export function formatAmountFull(amount: number): string {
-  return `${fullFormatter.format(Math.max(0, Math.round(amount)))} تومان`;
+/** عدد با ارقام متناسب با زبان (پیش‌فرض یک رقم اعشار). */
+export function fa(value: number, maximumFractionDigits = 1, lang: Lang = "fa"): string {
+  return new Intl.NumberFormat(localeOf(lang), { maximumFractionDigits }).format(value);
+}
+
+/** مبلغ کامل با جداکننده: «۱٬۲۵۰٬۰۰۰ تومان» / «1,250,000 Toman» */
+export function formatAmountFull(amount: number, lang: Lang = "fa"): string {
+  const unit = lang === "en" ? "Toman" : "تومان";
+  return `${fa(Math.max(0, Math.round(amount)), 0, lang)} ${unit}`;
 }
 
 /** مبلغ خوانا: «۱۱۵ هزار تومان» / «۲ میلیون تومان» */
-export function formatToman(amount: number): string {
+export function formatToman(amount: number, lang: Lang = "fa"): string {
   const safe = Math.max(0, Math.round(amount));
+  if (lang === "en") {
+    if (safe >= 1_000_000) return `${fa(safe / 1_000_000, 1, "en")} million Toman`;
+    if (safe >= 1_000) return `${fa(Math.round(safe / 1_000), 0, "en")} thousand Toman`;
+    return `${fa(safe, 0, "en")} Toman`;
+  }
   if (safe >= 1_000_000) return `${fa(safe / 1_000_000)} میلیون تومان`;
   if (safe >= 1_000) return `${fa(Math.round(safe / 1_000))} هزار تومان`;
   return `${fa(safe)} تومان`;
 }
 
-/** بازهٔ بودجه: «از ۱ میلیون تا ۲ میلیون تومان» */
-export function formatBudgetRange(min: number, max: number): string {
+/** بازهٔ بودجه: «از ۱ میلیون تا ۲ میلیون تومان» / «from 1 million to 2 million Toman» */
+export function formatBudgetRange(min: number, max: number, lang: Lang = "fa"): string {
+  if (lang === "en") {
+    if (min > 0 && max > 0) return `from ${formatToman(min, "en")} to ${formatToman(max, "en")}`;
+    if (max > 0) return `up to ${formatToman(max, "en")}`;
+    if (min > 0) return `from ${formatToman(min, "en")}`;
+    return "Negotiable";
+  }
   if (min > 0 && max > 0) return `${formatToman(min)} تا ${formatToman(max)}`;
   if (max > 0) return `تا ${formatToman(max)}`;
   if (min > 0) return `از ${formatToman(min)}`;
@@ -116,6 +146,7 @@ export const audienceMeta: Record<CeremonyAudience, string> = {
 };
 
 export function ToneChip({ tone }: { tone: Tone }) {
+  const { L } = useAppearance();
   return (
     <span
       style={{
@@ -133,7 +164,7 @@ export function ToneChip({ tone }: { tone: Tone }) {
       }}
     >
       <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: "50%", background: tone.fg }} />
-      {tone.label}
+      {L(tone.label)}
     </span>
   );
 }
@@ -150,9 +181,9 @@ export function TopicIcon({ icon, size = 22 }: { icon: string; size?: number }) 
 
 /* ─────────────────────────  زمان مراسم  ───────────────────────── */
 
-export function ceremonyWhenLabel(call: Pick<CeremonyCall, "scheduled_at">): string {
-  if (!call.scheduled_at) return "زمان اعلام نشده";
-  return `📅 ${formatJalaliDateTime(call.scheduled_at, { withWeekday: true })}`;
+export function ceremonyWhenLabel(call: Pick<CeremonyCall, "scheduled_at">, lang: Lang = "fa"): string {
+  if (!call.scheduled_at) return lang === "en" ? "Time not announced" : "زمان اعلام نشده";
+  return `📅 ${formatAppDateTime(call.scheduled_at, lang, { withWeekday: true })}`;
 }
 
 /* ─────────────────────────  پیکر جلالی تاریخ/ساعت  ───────────────────────── */
@@ -173,10 +204,11 @@ export function JalaliWhenPicker({
   onChange: (next: WhenValue) => void;
   label?: string;
 }) {
+  const { L, lang } = useAppearance();
   const days = useMemo(() => upcomingJalaliDays(45), []);
   return (
     <div style={{ display: "grid", gap: spacing.md }}>
-      <strong style={{ fontSize: 13.5, color: colors.ink, display: "block" }}>{label}</strong>
+      <strong style={{ fontSize: 13.5, color: colors.ink, display: "block" }}>{L(label)}</strong>
       <div className="vodda-scroll-rail" style={{ display: "flex", gap: spacing.sm, overflowX: "auto", paddingBottom: spacing.xs }}>
         {days.map((day) => {
           const selected = value.localDate === day.localDate;
@@ -200,9 +232,11 @@ export function JalaliWhenPicker({
                 ...typography.bodySmall,
               }}
             >
-              <strong style={{ display: "block", fontSize: 12, fontWeight: 700 }}>{day.weekday}</strong>
+              <strong style={{ display: "block", fontSize: 12, fontWeight: 700 }}>
+                {lang === "en" ? EN_WEEKDAY_NAMES[weekdayIndexOf(day.localDate)] : day.weekday}
+              </strong>
               <span style={{ display: "block", marginTop: 4, opacity: 0.82, fontSize: 10.5 }}>
-                {jalaliDayLabel(day.localDate)}
+                {formatAppDate(day.localDate, lang, { withYear: false })}
               </span>
             </button>
           );
@@ -212,27 +246,27 @@ export function JalaliWhenPicker({
         <select
           value={value.hh}
           onChange={(event) => onChange({ ...value, hh: Number(event.target.value) })}
-          aria-label="ساعت مراسم"
+          aria-label={L("ساعت مراسم")}
           style={{ ...inputStyle, minHeight: 46, flex: 1, appearance: "auto" }}
         >
           {Array.from({ length: 24 }, (_, hour) => (
-            <option key={hour} value={hour}>{toFaDigits(String(hour).padStart(2, "0"))}</option>
+            <option key={hour} value={hour}>{localizedDigits(String(hour).padStart(2, "0"), lang)}</option>
           ))}
         </select>
         <span aria-hidden="true" style={{ color: colors.inkMuted, fontWeight: 800 }}>:</span>
         <select
           value={value.mm}
           onChange={(event) => onChange({ ...value, mm: Number(event.target.value) })}
-          aria-label="دقیقهٔ مراسم"
+          aria-label={L("دقیقهٔ مراسم")}
           style={{ ...inputStyle, minHeight: 46, flex: 1, appearance: "auto" }}
         >
           {MINUTE_STEPS.map((minute) => (
-            <option key={minute} value={minute}>{toFaDigits(String(minute).padStart(2, "0"))}</option>
+            <option key={minute} value={minute}>{localizedDigits(String(minute).padStart(2, "0"), lang)}</option>
           ))}
         </select>
       </div>
       <p style={{ margin: 0, fontSize: 11.5, color: colors.inkMuted, lineHeight: 1.8 }}>
-        زمان مراسم به وقت رسمی ایران (تهران) است؛ تاریخ انتخابی: {formatJalaliDate(value.localDate)}
+        {L("زمان مراسم به وقت رسمی ایران (تهران) است؛ تاریخ انتخابی: {date}").replace("{date}", formatAppDate(value.localDate, lang))}
       </p>
     </div>
   );
@@ -241,6 +275,7 @@ export function JalaliWhenPicker({
 /* ─────────────────────────  نمونهٔ صوتی  ───────────────────────── */
 
 export function SampleAudioList({ samples, compact = false }: { samples: SampleView[]; compact?: boolean }) {
+  const { L, lang } = useAppearance();
   if (samples.length === 0) return null;
   return (
     <div style={{ display: "grid", gap: spacing.sm }}>
@@ -258,13 +293,13 @@ export function SampleAudioList({ samples, compact = false }: { samples: SampleV
         >
           <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700, color: colors.inkSecondary }}>
             <Icon name="headphones" size={14} style={{ color: colors.olive600, flex: "0 0 auto" }} />
-            {sample.title || "نمونهٔ تلاوت"}
-            {sample.length ? <span style={{ color: colors.inkFaint, fontWeight: 500 }}>· {toFaDigits(sample.length)}</span> : null}
+            {sample.title || L("نمونهٔ تلاوت")}
+            {sample.length ? <span style={{ color: colors.inkFaint, fontWeight: 500 }}>· {localizedDigits(sample.length, lang)}</span> : null}
           </span>
           {sample.url ? (
             <audio controls preload="none" src={resolveAssetUrl(sample.url)} style={{ width: "100%", direction: "ltr", height: 36 }}>
               <track kind="captions" />
-              مرورگر شما از پخش صوت پشتیبانی نمی‌کند.
+              {L("مرورگر شما از پخش صوت پشتیبانی نمی‌کند.")}
             </audio>
           ) : null}
         </div>

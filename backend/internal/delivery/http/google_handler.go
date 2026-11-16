@@ -23,13 +23,13 @@ const googleCookieTTL = 30 * 24 * time.Hour
 // GoogleAuthStatus tells the login screen whether the Google button should
 // render at all (feature flag driven by GOOGLE_OAUTH_CLIENT_ID).
 func (h *Handler) GoogleAuthStatus(c *gin.Context) {
-        ok(c, gin.H{"enabled": h.Auth.GoogleEnabled()})
+        ok(c, gin.H{"enabled": h.Auth.GoogleEnabled(c.Request.Context())})
 }
 
 // GoogleAuthStart redirects to the Google consent screen.
 func (h *Handler) GoogleAuthStart(c *gin.Context) {
         next := sanitizeGoogleNext(c.Query("next"))
-        authURL, err := h.Auth.GoogleAuthURL(next)
+        authURL, err := h.Auth.GoogleAuthURL(c.Request.Context(), next)
         if err != nil {
                 fail(c, domain.ErrNotFound)
                 return

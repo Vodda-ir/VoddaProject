@@ -21,6 +21,7 @@ import {
   typography,
 } from "../../ui";
 import { asArray, asRecord } from "../../platform/api";
+import { useAppearance } from "../../ui/appearance";
 
 /* ── نقشهٔ تصویر دسته‌ها ─────────────────────────────────────────────────── */
 
@@ -63,8 +64,8 @@ function categoryOrderIndex(name: string) {
 
 /* ── ابزارها ────────────────────────────────────────────────────────────── */
 
-function faNumber(value: number, maximumFractionDigits = 0) {
-  return new Intl.NumberFormat("fa-IR", { maximumFractionDigits }).format(value);
+function faNumber(value: number, lang: "fa" | "en", maximumFractionDigits = 0) {
+  return new Intl.NumberFormat(lang === "en" ? "en-US" : "fa-IR", { maximumFractionDigits }).format(value);
 }
 
 type CatalogEntry = { id: number; category: string; title: string; description: string };
@@ -113,6 +114,7 @@ function fallbackTopicCategories(): TopicCategory[] {
 }
 
 export function TopicCategoryGrid({ config }: { config: UniversalAppConfig }) {
+  const { L, lang } = useAppearance();
   const [categories, setCategories] = useState<TopicCategory[] | null>(null);
 
   useEffect(() => {
@@ -142,7 +144,7 @@ export function TopicCategoryGrid({ config }: { config: UniversalAppConfig }) {
 
   if (categories === null) {
     return (
-      <section aria-label="دسته‌بندی موضوعات" style={{ display: "grid", gap: 12 }}>
+      <section aria-label={L("دسته‌بندی موضوعات")} style={{ display: "grid", gap: 12 }}>
         <span aria-hidden="true" className="vodda-skeleton" style={{ display: "block", width: 150, height: 18 }} />
         <div
           aria-hidden="true"
@@ -161,10 +163,10 @@ export function TopicCategoryGrid({ config }: { config: UniversalAppConfig }) {
   const rows = categories.length > 0 ? categories : fallbackTopicCategories();
 
   return (
-    <section aria-label="دسته‌بندی موضوعات" className="vodda-enter vodda-enter-delay-1" style={{ display: "grid", gap: 12, minWidth: 0 }}>
+    <section aria-label={L("دسته‌بندی موضوعات")} className="vodda-enter vodda-enter-delay-1" style={{ display: "grid", gap: 12, minWidth: 0 }}>
       <SectionHeader
-        title="دسته‌بندی موضوعات"
-        description="موضوع دلخواه را انتخاب کنید تا وارد زیردسته‌های تخصصی آن شوید."
+        title={L("دسته‌بندی موضوعات")}
+        description={L("موضوع دلخواه را انتخاب کنید تا وارد زیردسته‌های تخصصی آن شوید.")}
       />
       {/* یک کادر واحد با حاشیهٔ طلایی برجسته — شش موضوع، تصویر کوچک و فانتزی + متن واضح */}
       <div
@@ -185,7 +187,9 @@ export function TopicCategoryGrid({ config }: { config: UniversalAppConfig }) {
             type="button"
             onClick={() => navigateApp(`/search?mode=services&cat=${encodeURIComponent(category.category)}`, config)}
             className="vodda-tappable vodda-enter"
-            aria-label={category.count > 0 ? `ورود به زیردسته‌های ${category.category} — ${faNumber(category.count)} خدمت` : `ورود به زیردسته‌های ${category.category}`}
+            aria-label={category.count > 0
+              ? L("ورود به زیردسته‌های {title} — {n} خدمت").replace("{title}", L(category.category)).replace("{n}", faNumber(category.count, lang))
+              : L("ورود به زیردسته‌های {title}").replace("{title}", L(category.category))}
             style={{
               display: "grid",
               alignContent: "start",
@@ -262,7 +266,7 @@ export function TopicCategoryGrid({ config }: { config: UniversalAppConfig }) {
                 minHeight: 34,
               }}
             >
-              {category.category}
+              {L(category.category)}
             </strong>
             <span
               style={{
@@ -279,7 +283,7 @@ export function TopicCategoryGrid({ config }: { config: UniversalAppConfig }) {
               }}
             >
               <Icon name="book" size={10} stroke={2.2} />
-              {category.count > 0 ? `${faNumber(category.count)} خدمت` : "خدمات فعال"}
+              {category.count > 0 ? L("{n} خدمت").replace("{n}", faNumber(category.count, lang)) : L("خدمات فعال")}
             </span>
           </button>
         ))}
@@ -294,6 +298,7 @@ export function TopicCategoryGrid({ config }: { config: UniversalAppConfig }) {
 const TOP_SERVICE_IDS = [1, 4, 6, 8, 13, 15, 19, 2];
 
 export function TopServicesRail({ config }: { config: UniversalAppConfig }) {
+  const { L, lang } = useAppearance();
   const [services, setServices] = useState<CatalogEntry[] | null>(null);
 
   useEffect(() => {
@@ -319,7 +324,7 @@ export function TopServicesRail({ config }: { config: UniversalAppConfig }) {
 
   if (services === null) {
     return (
-      <section aria-label="خدمات برتر" style={{ display: "grid", gap: 12 }}>
+      <section aria-label={L("خدمات برتر")} style={{ display: "grid", gap: 12 }}>
         <div style={{ display: "flex", gap: 10, overflow: "hidden" }}>
           {[0, 1, 2, 3].map((index) => (
             <span key={index} aria-hidden="true" className="vodda-skeleton" style={{ display: "block", flex: "0 0 150px", height: 142, borderRadius: 19 }} />
@@ -332,8 +337,8 @@ export function TopServicesRail({ config }: { config: UniversalAppConfig }) {
   if (services.length === 0) return null;
 
   return (
-    <section aria-label="خدمات برتر و پراستفاده" className="vodda-enter vodda-enter-delay-1" style={{ minWidth: 0 }}>
-      <SectionHeader title="خدمات برتر و پراستفاده" description="انتخاب قرآن‌آموزان وُدّا برای شروع مسیر" />
+    <section aria-label={L("خدمات برتر و پراستفاده")} className="vodda-enter vodda-enter-delay-1" style={{ minWidth: 0 }}>
+      <SectionHeader title={L("خدمات برتر و پراستفاده")} description={L("انتخاب قرآن‌آموزان وُدّا برای شروع مسیر")} />
       <div
         className="vodda-scroll-rail"
         style={{
@@ -357,7 +362,7 @@ export function TopServicesRail({ config }: { config: UniversalAppConfig }) {
               type="button"
               onClick={open}
               className="vodda-tappable vodda-enter"
-              aria-label={`اساتید خدمت ${service.title}`}
+              aria-label={L("اساتید خدمت {title}").replace("{title}", L(service.title))}
               style={{
                 flex: "0 0 150px",
                 width: 150,
@@ -433,13 +438,13 @@ export function TopServicesRail({ config }: { config: UniversalAppConfig }) {
                   minHeight: 34,
                 }}
               >
-                {service.title}
+                {L(service.title)}
               </strong>
               {/* پانویس کوچک — پرطرفدار + نشان اساتید */}
               <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 5, width: "100%" }}>
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 9.6, fontWeight: 800, color: colors.goldDark }}>
                   <Icon name="star" size={10} fill style={{ color: colors.gold }} />
-                  پرطرفدار
+                  {L("پرطرفدار")}
                 </span>
                 <span
                   style={{
@@ -456,7 +461,7 @@ export function TopServicesRail({ config }: { config: UniversalAppConfig }) {
                   }}
                 >
                   <Icon name="users" size={10} stroke={2.2} />
-                  اساتید
+                  {L("اساتید")}
                 </span>
               </span>
             </button>
@@ -516,14 +521,16 @@ async function fetchFreeServices(): Promise<FreeServiceCardData[]> {
 }
 
 function FreeServiceTile({ item, config }: { item: FreeServiceCardData; config: UniversalAppConfig }) {
-  const subtitle = [item.tag || item.field, item.city].filter(Boolean).join(" · ");
+  const { L, lang } = useAppearance();
+  const tagLabel = L(item.tag || item.field);
+  const subtitle = [tagLabel, item.city].filter(Boolean).join(" · ");
   return (
     <button
       type="button"
       // ?free=1 → صفحهٔ رزرو فقط خدمات رایگان همین استاد را نشان می‌دهد، نه خدمات پولی را
       onClick={() => navigateApp(`/book/${item.teacher_id}?free=1`, config)}
       className="vodda-tappable vodda-enter"
-      aria-label={`جلسهٔ رایگان ${item.title} با ${item.teacher_name}`}
+      aria-label={L("جلسهٔ رایگان {title} با {name}").replace("{title}", L(item.title)).replace("{name}", item.teacher_name)}
       style={{
         flex: "0 0 236px",
         width: 236,
@@ -556,15 +563,15 @@ function FreeServiceTile({ item, config }: { item: FreeServiceCardData; config: 
           }}
         >
           <Icon name="gift" size={12} stroke={2.4} />
-          رایگان
+          {L("رایگان")}
         </span>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 11, fontWeight: 700, color: colors.inkMuted }}>
           <Icon name="clock" size={12} stroke={2} />
-          {faNumber(item.duration)} دقیقه
+          {L("{n} دقیقه").replace("{n}", faNumber(item.duration, lang))}
         </span>
       </span>
       <strong style={{ fontSize: 13.5, fontWeight: 900, lineHeight: 1.6, color: colors.ink, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", minHeight: 43 }}>
-        {item.title}
+        {L(item.title)}
       </strong>
       <span style={{ display: "flex", alignItems: "center", gap: 9, minWidth: 0 }}>
         <Avatar name={item.teacher_name} src={item.avatar_url || undefined} size={38} ring tone="gold" />
@@ -573,13 +580,13 @@ function FreeServiceTile({ item, config }: { item: FreeServiceCardData; config: 
             {item.teacher_name}
           </strong>
           <span style={{ fontSize: 10.5, color: colors.inkMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {subtitle || "استاد وُدّا"}
+            {subtitle || L("استاد وُدّا")}
           </span>
         </span>
         {item.reviews > 0 ? (
           <span style={{ display: "inline-flex", alignItems: "center", gap: 3, marginInlineStart: "auto", fontSize: 11, fontWeight: 800, color: colors.goldDark, flex: "0 0 auto" }}>
             <Icon name="star" size={12} fill />
-            {new Intl.NumberFormat("fa-IR", { maximumFractionDigits: 1 }).format(item.rating)}
+            {faNumber(item.rating, lang, 1)}
           </span>
         ) : null}
       </span>
@@ -598,7 +605,7 @@ function FreeServiceTile({ item, config }: { item: FreeServiceCardData; config: 
           color: colors.olive800,
         }}
       >
-        رزرو جلسهٔ رایگان
+        {L("رزرو جلسهٔ رایگان")}
         <Icon name="chevronL" size={14} stroke={2.4} />
       </span>
     </button>
@@ -606,6 +613,7 @@ function FreeServiceTile({ item, config }: { item: FreeServiceCardData; config: 
 }
 
 export function FreeServicesBoard({ config }: { config: UniversalAppConfig }) {
+  const { L } = useAppearance();
   const [items, setItems] = useState<FreeServiceCardData[] | null>(null);
 
   useEffect(() => {
@@ -625,7 +633,7 @@ export function FreeServicesBoard({ config }: { config: UniversalAppConfig }) {
   // در حال بارگذاری: اسکلت ظریف؛ خالی: بخش پنهان می‌شود تا صفحه شلوغ نشود.
   if (items === null) {
     return (
-      <section aria-label="خدمات رایگان" style={{ display: "grid", gap: 12 }}>
+      <section aria-label={L("خدمات رایگان")} style={{ display: "grid", gap: 12 }}>
         <div style={{ display: "flex", gap: 12, overflow: "hidden" }}>
           {[0, 1].map((index) => (
             <span key={index} aria-hidden="true" className="vodda-skeleton" style={{ display: "block", flex: "0 0 236px", height: 188, borderRadius: 22 }} />
@@ -638,10 +646,10 @@ export function FreeServicesBoard({ config }: { config: UniversalAppConfig }) {
   if (items.length === 0) return null;
 
   return (
-    <section aria-label="خدمات رایگان اساتید" className="vodda-enter vodda-enter-delay-1" style={{ minWidth: 0 }}>
+    <section aria-label={L("خدمات رایگان اساتید")} className="vodda-enter vodda-enter-delay-1" style={{ minWidth: 0 }}>
       <SectionHeader
-        title="خدمات رایگان اساتید"
-        description="جلسات رایگانی که اساتید برای شما برگزار می‌کنند — بدون هزینه شروع کنید."
+        title={L("خدمات رایگان اساتید")}
+        description={L("جلسات رایگانی که اساتید برای شما برگزار می‌کنند — بدون هزینه شروع کنید.")}
       />
       <div
         className="vodda-scroll-rail"
@@ -667,6 +675,7 @@ export function FreeServicesBoard({ config }: { config: UniversalAppConfig }) {
 /* ── بنر طلایی خدمات رایگان (وقتی هیچ جلسهٔ رایگانی فعال نیست پنهان است) ── */
 
 export function FreeServicesBanner({ config }: { config: UniversalAppConfig }) {
+  const { L } = useAppearance();
   const [hasFree, setHasFree] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -691,7 +700,7 @@ export function FreeServicesBanner({ config }: { config: UniversalAppConfig }) {
       // free=1 → صفحهٔ خدمات فقط جلسات رایگان را نشان می‌دهد، نه همهٔ کاتالوگ را
       onClick={() => navigateApp("/search?mode=services&free=1", config)}
       className="vodda-tappable vodda-enter"
-      aria-label="مشاهدهٔ جلسات رایگان اساتید"
+      aria-label={L("مشاهدهٔ جلسات رایگان اساتید")}
       style={{
         position: "relative",
         overflow: "hidden",
@@ -720,13 +729,13 @@ export function FreeServicesBanner({ config }: { config: UniversalAppConfig }) {
       <span style={{ position: "relative", display: "grid", gap: 4, padding: "18px 18px 18px", flex: 1, minWidth: 0 }}>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 900, color: colors.goldSoft }}>
           <Icon name="gift" size={13} stroke={2.4} />
-          هدیهٔ اساتید وُدّا
+          {L("هدیهٔ اساتید وُدّا")}
         </span>
         <strong style={{ fontSize: 15.5, fontWeight: 900, color: colors.surface, lineHeight: 1.6 }}>
-          جلسات رایگان یادگیری قرآن
+          {L("جلسات رایگان یادگیری قرآن")}
         </strong>
         <span style={{ fontSize: 11.5, fontWeight: 600, color: "rgba(255,255,255,.75)", lineHeight: 1.8 }}>
-          اساتیدی که خدمتشان را رایگان ارائه می‌کنند را ببینید
+          {L("اساتیدی که خدمتشان را رایگان ارائه می‌کنند را ببینید")}
         </span>
       </span>
       <span

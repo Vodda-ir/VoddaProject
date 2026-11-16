@@ -66,14 +66,41 @@ type googleClaims struct {
         Aud           string `json:"aud"`
 }
 
+// googleCredentials resolves the OAuth client from platform settings (admin
+// panel, editable live) with the env-var configuration as fallback.
+func (uc *AuthUsecase) googleCredentials(ctx context.Context) (clientID, clientSecret, redirectURI string) {
+        clientID = uc.cfg.Google.ClientID
+        clientSecret = uc.cfg.Google.ClientSecret
+        redirectURI = uc.cfg.Google.RedirectURI
+        if uc.settings == nil {
+                return
+        }
+        stored, err := uc.settings.All(ctx)
+        if err != nil {
+                return
+        }
+        if v := strings.TrimSpace(stored["google_client_id"]); v != "" {
+                clientID = v
+        }
+        if v := strings.TrimSpace(stored["google_client_secret"]); v != "" {
+                clientSecret = v
+        }
+        if v := strings.TrimSpace(stored["google_redirect_uri"]); v != "" {
+                redirectURI = v
+        }
+        return
+}
+
 // GoogleEnabled reports whether Google login is configured.
-func (uc *AuthUsecase) GoogleEnabled() bool {
-        return uc.cfg.Google.ClientID != "" && uc.cfg.Google.ClientSecret != ""
+func (uc *AuthUsecase) GoogleEnabled(ctx context.Context) bool {
+        clientID, clientSecret, _ := uc.googleCredentials(ctx)
+        return clientID != "" && clientSecret != ""
 }
 
 // GoogleAuthURL builds the Google consent redirect for a fresh login attempt.
-func (uc *AuthUsecase) GoogleAuthURL(next string) (string, error) {
-        if !uc.GoogleEnabled() {
+func (uc *AuthUsecase) GoogleAuthURL(ctx context.Context, next string) (string, error) {
+        clientID, _, redirectURI := uc.googleCredentials(ctx)
+        if clientID == "" {
                 return "", domain.ErrNotFound
         }
 
@@ -95,8 +122,8 @@ func (uc *AuthUsecase) GoogleAuthURL(next string) (string, error) {
         googlePendingStates.Unlock()
 
         q := url.Values{}
-        q.Set("client_id", uc.cfg.Google.ClientID)
-        q.Set("redirect_uri", uc.cfg.Google.RedirectURI)
+        q.Set("client_id", clientID)
+        q.Set("redirect_uri", redirectURI)
         q.Set("response_type", "code")
         q.Set("scope", "openid email profile")
         q.Set("state", state)
@@ -120,11 +147,12 @@ func (uc *AuthUsecase) ConsumeGoogleState(state string) (string, bool) {
 
 // GoogleExchange finishes the OAuth flow: code → id_token → user → JWT.
 func (uc *AuthUsecase) GoogleExchange(ctx context.Context, code string) (*AuthResult, error) {
-        if !uc.GoogleEnabled() {
+        clientID, clientSecret, redirectURI := uc.googleCredentials(ctx)
+        if clientID == "" || clientSecret == "" {
                 return nil, domain.ErrNotFound
         }
 
-        idToken, err := uc.googleExchangeCode(ctx, code)
+        idToken, err := uc.googleExchangeCode(ctx, code, clientID, clientSecret, redirectURI)
         if err != nil {
                 log.Printf("google: code exchange failed: %v", err)
                 return nil, domain.ErrOTPInvalid
@@ -135,7 +163,7 @@ func (uc *AuthUsecase) GoogleExchange(ctx context.Context, code string) (*AuthRe
                 log.Printf("google: id_token rejected: %v", err)
                 return nil, domain.ErrOTPInvalid
         }
-        if claims.Aud != uc.cfg.Google.ClientID {
+        if claims.Aud != clientID {
                 return nil, domain.ErrOTPInvalid
         }
         if claims.Exp != 0 && time.Now().After(time.Unix(claims.Exp, 0)) {
@@ -162,12 +190,12 @@ func (uc *AuthUsecase) GoogleExchange(ctx context.Context, code string) (*AuthRe
 
 // googleExchangeCode swaps the authorization code for tokens at Google's
 // token endpoint (plain TLS POST — no extra dependency) and returns id_token.
-func (uc *AuthUsecase) googleExchangeCode(ctx context.Context, code string) (string, error) {
+func (uc *AuthUsecase) googleExchangeCode(ctx context.Context, code, clientID, clientSecret, redirectURI string) (string, error) {
         form := url.Values{}
         form.Set("code", code)
-        form.Set("client_id", uc.cfg.Google.ClientID)
-        form.Set("client_secret", uc.cfg.Google.ClientSecret)
-        form.Set("redirect_uri", uc.cfg.Google.RedirectURI)
+        form.Set("client_id", clientID)
+        form.Set("client_secret", clientSecret)
+        form.Set("redirect_uri", redirectURI)
         form.Set("grant_type", "authorization_code")
 
         exctx, cancel := context.WithTimeout(ctx, googleHTTPTimeout)
@@ -262,6 +290,8 @@ func (uc *AuthUsecase) upsertGoogleUser(ctx context.Context, claims *googleClaim
                 return nil, err
         }
         log.Printf("google: created user=%d for %s", user.ID, maskEmail(email))
+        NotifyAdmins(ctx, uc.notifs, uc.users, "مدیریت: ثبت‌نام کاربر جدید",
+                "کاربر تازه‌ای با نام "+name+" از طریق گوگل وارد وُدّا شد.")
         return user, nil
 }
 

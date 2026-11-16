@@ -7,7 +7,8 @@ import { useEffect, useState } from "react";
 import type { UniversalAppConfig } from "../../config";
 import { usePlatform } from "../../platform/context";
 import { navigateApp } from "../../router";
-import { toFaDigits } from "../../ui/persian";
+import { localizedDigits } from "../../ui/persian";
+import { useAppearance } from "../../ui/appearance";
 import {
   Button,
   Icon,
@@ -23,6 +24,7 @@ import { getNotifications, markNotificationRead, type AppNotification } from "./
 
 export function NotificationsBell({ config }: { config: UniversalAppConfig }) {
   const runtime = usePlatform();
+  const { L, lang } = useAppearance();
   const [unread, setUnread] = useState(0);
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<AppNotification[] | null>(null);
@@ -101,7 +103,7 @@ export function NotificationsBell({ config }: { config: UniversalAppConfig }) {
     <>
       <button
         type="button"
-        aria-label={`اعلان‌ها${unread > 0 ? ` (${toFaDigits(unread)} خوانده‌نشده)` : ""}`}
+        aria-label={`${L("اعلان‌ها")}${unread > 0 ? L(" ({n} خوانده‌نشده)").replace("{n}", localizedDigits(unread, lang)) : ""}`}
         className="vodda-tappable"
         onClick={openSheet}
         style={{
@@ -140,20 +142,20 @@ export function NotificationsBell({ config }: { config: UniversalAppConfig }) {
               lineHeight: 1,
             }}
           >
-            {unread > 9 ? "۹+" : toFaDigits(unread)}
+            {unread > 9 ? `${localizedDigits(9, lang)}+` : localizedDigits(unread, lang)}
           </span>
         ) : null}
       </button>
-      <Sheet open={open} title="اعلان‌ها" onClose={() => setOpen(false)}>
+      <Sheet open={open} title={L("اعلان‌ها")} onClose={() => setOpen(false)}>
         <div style={{ display: "grid", gap: spacing.md }}>
           {loading ? (
-            <LoadingState label="در حال دریافت اعلان‌ها…" style={{ minHeight: 140 }} />
+            <LoadingState label={L("در حال دریافت اعلان‌ها…")} style={{ minHeight: 140 }} />
           ) : items === null || items.length === 0 ? (
             <div style={{ display: "grid", justifyItems: "center", gap: spacing.sm, paddingBlock: spacing.xl, textAlign: "center" }}>
               <IconBadge icon="bell" tone="olive" size={52} />
-              <strong style={{ ...typography.body, color: colors.ink }}>اعلانی نداری</strong>
+              <strong style={{ ...typography.body, color: colors.ink }}>{L("اعلانی نداری")}</strong>
               <span style={{ ...typography.caption, color: colors.inkMuted }}>
-                وقتی خبر تازه‌ای داشته باشیم اینجا می‌بینی.
+                {L("وقتی خبر تازه‌ای داشته باشیم اینجا می‌بینی.")}
               </span>
             </div>
           ) : (
@@ -180,17 +182,17 @@ export function NotificationsBell({ config }: { config: UniversalAppConfig }) {
                       {!notification.read ? (
                         <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: "50%", background: colors.olive600, flex: "0 0 auto" }} />
                       ) : null}
-                      {notification.title}
+                      {L(notification.title)}
                     </span>
                     {notification.body ? (
-                      <span style={{ ...typography.caption, color: colors.inkMuted, lineHeight: 1.7 }}>{notification.body}</span>
+                      <span style={{ ...typography.caption, color: colors.inkMuted, lineHeight: 1.7 }}>{L(notification.body)}</span>
                     ) : null}
                   </button>
                 ))}
               </div>
               {unread > 0 ? (
                 <Button variant="secondary" disabled={marking} onClick={() => void markAllRead()} style={{ minHeight: 42 }}>
-                  {marking ? "در حال ثبت…" : "علامت‌گذاری همه به‌عنوان خوانده‌شده"}
+                  {marking ? L("در حال ثبت…") : L("علامت‌گذاری همه به‌عنوان خوانده‌شده")}
                 </Button>
               ) : null}
             </>

@@ -7,17 +7,20 @@ import { usePlatform } from "../../platform/context";
 import { navigateApp } from "../../router";
 import { getTeacherDetail } from "../teachers/api";
 import type { Teacher, TeacherService } from "../teachers/types";
-import { Avatar, Button, Card, EmptyState, ErrorState, formatJalaliDate, Icon, LoadingState, Sheet, colors, radii, shadows, spacing, typography } from "../../ui";
+import { Avatar, Button, Card, EmptyState, ErrorState, Icon, LoadingState, Sheet, colors, radii, shadows, spacing, typography } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
+import { useAppearance } from "../../ui/appearance";
+import { formatAppDate } from "../../ui/jalali";
+import { localizedDigits } from "../../ui/persian";
 import { formatWalletAmount } from "../wallet/WalletTransactionCard";
 import { createBooking, getBookingAvailability, getBookingMe, type BookingPaymentMethod } from "./api";
 import { payViaSamanGate } from "../../../lib/saman-gate";
 import type { BookingSlot } from "./types";
 
 const weekdays = ["شنبه", "یکشنبه", "دوشنبه", "سه‌شنبه", "چهارشنبه", "پنجشنبه", "جمعه"];
-const numberFormatter = new Intl.NumberFormat("fa-IR");
 
 function BookingStepHeader({ number, title }: { number: number; title: string }) {
+  const { lang } = useAppearance();
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
       <span
@@ -35,7 +38,7 @@ function BookingStepHeader({ number, title }: { number: number; title: string })
           fontWeight: 800,
         }}
       >
-        {numberFormatter.format(number)}
+        {localizedDigits(number, lang)}
       </span>
       <strong style={{ fontSize: 16, fontWeight: 800, color: colors.ink }}>{title}</strong>
     </div>
@@ -50,6 +53,7 @@ type DateGroup = {
 
 export function LearnerBookingScreen({ teacherId, config }: { teacherId: string; config: UniversalAppConfig }) {
   const runtime = usePlatform();
+  const { L, lang } = useAppearance();
   const numericTeacherId = Number(teacherId);
   const [teacher, setTeacher] = useState<Teacher | null>(null);
   const [teacherLoading, setTeacherLoading] = useState(true);
@@ -80,7 +84,7 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
 
   const loadTeacher = useCallback(async () => {
     if (!Number.isInteger(numericTeacherId) || numericTeacherId <= 0) {
-      setTeacherError("شناسه استاد نامعتبر است.");
+      setTeacherError(L("شناسه استاد نامعتبر است."));
       setTeacherLoading(false);
       return;
     }
@@ -91,11 +95,11 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
       setTeacher(detail.teacher);
     } catch (error) {
       setTeacher(null);
-      setTeacherError(messageOf(error, "اطلاعات استاد دریافت نشد."));
+      setTeacherError(messageOf(error, L("اطلاعات استاد دریافت نشد.")));
     } finally {
       setTeacherLoading(false);
     }
-  }, [numericTeacherId, runtime]);
+  }, [numericTeacherId, runtime, L]);
 
   useEffect(() => {
     void loadTeacher();
@@ -122,12 +126,12 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
       } catch (error) {
         if (availabilityRequest.current !== requestId) return;
         setAvailability([]);
-        setAvailabilityError(messageOf(error, "زمان‌های آزاد استاد دریافت نشد."));
+        setAvailabilityError(messageOf(error, L("زمان‌های آزاد استاد دریافت نشد.")));
       } finally {
         if (availabilityRequest.current === requestId) setAvailabilityLoading(false);
       }
     },
-    [numericTeacherId, runtime],
+    [numericTeacherId, runtime, L],
   );
 
   const chooseService = useCallback(
@@ -182,7 +186,7 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
   const submit = useCallback(async () => {
     if (!teacher || !service || !slot || saving) return;
     if (isSelfTeacher) {
-      setSubmitError("نمی‌توانید استاد خودتان را رزرو کنید؛ برای رزرو با حساب قرآن‌آموز وارد شوید.");
+      setSubmitError(L("نمی‌توانید استاد خودتان را رزرو کنید؛ برای رزرو با حساب قرآن‌آموز وارد شوید."));
       return;
     }
     setSaving(true);
@@ -211,21 +215,21 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
       if (error instanceof PlatformHttpError && error.status === 409) {
         setLocalDate(null);
         setSlot(null);
-        setSubmitError("این زمان همین حالا رزرو شده است. زمان‌های آزاد دوباره دریافت شدند؛ لطفاً زمان دیگری انتخاب کنید.");
+        setSubmitError(L("این زمان همین حالا رزرو شده است. زمان‌های آزاد دوباره دریافت شدند؛ لطفاً زمان دیگری انتخاب کنید."));
         await loadAvailability(service);
       } else {
-        setSubmitError(messageOf(error, "ثبت درخواست رزرو انجام نشد."));
+        setSubmitError(messageOf(error, L("ثبت درخواست رزرو انجام نشد.")));
       }
     } finally {
       setSaving(false);
     }
-  }, [isSelfTeacher, loadAvailability, paymentMethod, runtime, saving, service, slot, teacher]);
+  }, [isSelfTeacher, loadAvailability, paymentMethod, runtime, saving, service, slot, teacher, L]);
 
   /** ثبت جلسهٔ فوری — زمان آغاز: دو دقیقه بعد از همین لحظه. */
   const submitInstant = useCallback(async () => {
     if (!teacher || !service || saving) return;
     if (isSelfTeacher) {
-      setSubmitError("نمی‌توانید استاد خودتان را رزرو کنید.");
+      setSubmitError(L("نمی‌توانید استاد خودتان را رزرو کنید."));
       return;
     }
     setSaving(true);
@@ -249,19 +253,19 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
       setSubmitted(true);
     } catch (error) {
       setInstantSheet(false);
-      setSubmitError(messageOf(error, "ثبت جلسهٔ فوری انجام نشد."));
+      setSubmitError(messageOf(error, L("ثبت جلسهٔ فوری انجام نشد.")));
     } finally {
       setSaving(false);
     }
-  }, [isSelfTeacher, paymentMethod, runtime, saving, service, teacher]);
+  }, [isSelfTeacher, paymentMethod, runtime, saving, service, teacher, L]);
 
-  if (teacherLoading) return <LoadingState label="در حال دریافت اطلاعات استاد…" />;
+  if (teacherLoading) return <LoadingState label={L("در حال دریافت اطلاعات استاد…")} />;
   if (teacherError || !teacher) {
     return (
       <ErrorState
-        title="دریافت اطلاعات استاد ناموفق بود"
-        description={teacherError || "اطلاعات استاد دریافت نشد."}
-        action={<Button variant="secondary" onClick={() => void loadTeacher()}>تلاش دوباره</Button>}
+        title={L("دریافت اطلاعات استاد ناموفق بود")}
+        description={teacherError || L("اطلاعات استاد دریافت نشد.")}
+        action={<Button variant="secondary" onClick={() => void loadTeacher()}>{L("تلاش دوباره")}</Button>}
       />
     );
   }
@@ -271,11 +275,11 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
       <Card elevated style={{ display: "grid", gap: spacing.lg, textAlign: "center" }}>
         <div aria-hidden="true" style={{ width: 68, height: 68, display: "grid", placeItems: "center", marginInline: "auto", borderRadius: "50%", color: colors.surface, background: colors.olive600, boxShadow: shadows.olive }}><Icon name="check" size={30} stroke={2.5} /></div>
         <div>
-          <h2 style={{ ...typography.title, margin: 0 }}>{wasInstant ? "جلسهٔ فوری ثبت شد" : "درخواست جلسه ثبت شد"}</h2>
+          <h2 style={{ ...typography.title, margin: 0 }}>{wasInstant ? L("جلسهٔ فوری ثبت شد") : L("درخواست جلسه ثبت شد")}</h2>
           <p style={{ ...typography.body, color: colors.inkSecondary, marginBottom: 0 }}>
             {wasInstant
-              ? "درخواست شما همین حالا برای استاد ارسال شد. به‌محض تأیید، از جزئیات جلسه وارد کلاس تصویری شوید و برای هماهنگی چت در دسترس است."
-              : "تأیید، رد یا بازگشت وجه را از بخش «جلسات من» پیگیری کنید."}
+              ? L("درخواست شما همین حالا برای استاد ارسال شد. به‌محض تأیید، از جزئیات جلسه وارد کلاس تصویری شوید و برای هماهنگی چت در دسترس است.")
+              : L("تأیید، رد یا بازگشت وجه را از بخش «جلسات من» پیگیری کنید.")}
           </p>
         </div>
         <Button
@@ -286,7 +290,7 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
               : navigateApp("/sessions", config)
           }
         >
-          {wasInstant ? "مشاهدهٔ جزئیات جلسه" : "مشاهده جلسات من"}
+          {wasInstant ? L("مشاهدهٔ جزئیات جلسه") : L("مشاهده جلسات من")}
         </Button>
       </Card>
     );
@@ -297,12 +301,12 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
       <Card elevated style={{ display: "grid", gap: spacing.lg, textAlign: "center" }}>
         <div aria-hidden="true" style={{ width: 68, height: 68, display: "grid", placeItems: "center", marginInline: "auto", borderRadius: "50%", color: colors.surface, background: colors.olive600, boxShadow: shadows.olive }}><Icon name="shield" size={30} stroke={2.2} /></div>
         <div>
-          <h2 style={{ ...typography.title, margin: 0 }}>در حال انتقال به درگاه پرداخت…</h2>
+          <h2 style={{ ...typography.title, margin: 0 }}>{L("در حال انتقال به درگاه پرداخت…")}</h2>
           <p style={{ ...typography.body, color: colors.inkSecondary, marginBottom: 0 }}>
-            رزرو شما ثبت و تا پایان پرداخت برای شما نگه داشته شده است.
+            {L("رزرو شما ثبت و تا پایان پرداخت برای شما نگه داشته شده است.")}
           </p>
         </div>
-        <Button variant="secondary" fullWidth onClick={() => navigateApp("/sessions", config)}>مشاهده جلسات من</Button>
+        <Button variant="secondary" fullWidth onClick={() => navigateApp("/sessions", config)}>{L("مشاهده جلسات من")}</Button>
       </Card>
     );
   }
@@ -330,7 +334,7 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
               }}
             >
               <span aria-hidden="true" className="vodda-offline-dot" style={{ width: 7, height: 7, borderRadius: "50%", flex: "0 0 auto", background: colors.danger }} />
-              استاد آفلاین است — فعلاً زمان آزاد ندارد
+              {L("استاد آفلاین است — فعلاً زمان آزاد ندارد")}
             </span>
           ) : null}
         </div>
@@ -361,9 +365,9 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
             <Icon name="sparkle" size={21} stroke={2.2} />
           </span>
           <span style={{ minWidth: 0, flex: 1, display: "grid", gap: 2 }}>
-            <strong style={{ fontSize: 13.5, fontWeight: 800, color: "#7a5e1e" }}>همین حالا وقت می‌خواهید؟</strong>
+            <strong style={{ fontSize: 13.5, fontWeight: 800, color: "#7a5e1e" }}>{L("همین حالا وقت می‌خواهید؟")}</strong>
             <span style={{ fontSize: 11, color: "#9a7426", lineHeight: 1.7 }}>
-              این استاد جلسهٔ فوری فعال کرده — درخواست شما مستقیم و فوری برایش ارسال می‌شود.
+              {L("این استاد جلسهٔ فوری فعال کرده — درخواست شما مستقیم و فوری برایش ارسال می‌شود.")}
             </span>
           </span>
           <Button
@@ -371,13 +375,13 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
             disabled={!service}
             style={{ flex: "0 0 auto", minHeight: 44, padding: "0 16px", fontSize: 12.5 }}
           >
-            جلسهٔ فوری
+            {L("جلسهٔ فوری")}
           </Button>
         </Card>
       ) : null}
 
       <Card className="vodda-enter vodda-enter-delay-1" style={{ padding: 18, borderRadius: 20, borderColor: colors.sand200, boxShadow: "none" }}>
-        <BookingStepHeader number={1} title="انتخاب خدمت" />
+        <BookingStepHeader number={1} title={L("انتخاب خدمت")} />
         {freeOnly ? (
           <div
             style={{
@@ -393,7 +397,7 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
           >
             <Icon name="gift" size={15} stroke={2.3} style={{ color: colors.goldDark, flex: "0 0 auto" }} />
             <span style={{ flex: 1, minWidth: 0, fontSize: 12, fontWeight: 700, color: colors.goldDark, lineHeight: 1.7 }}>
-              فقط خدمات رایگان این استاد نمایش داده می‌شود
+              {L("فقط خدمات رایگان این استاد نمایش داده می‌شود")}
             </span>
             <button
               type="button"
@@ -411,7 +415,7 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
                 fontFamily: typography.fontFamily,
               }}
             >
-              نمایش همهٔ خدمات
+              {L("نمایش همهٔ خدمات")}
             </button>
           </div>
         ) : (
@@ -420,12 +424,12 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
         {services.length === 0 ? (
           freeOnly ? (
             <EmptyState
-              title="خدمت رایگان فعالی ندارد"
-              description="این استاد در حال حاضر خدمت رایگان فعالی ندارد؛ می‌توانید همهٔ خدمات او را ببینید."
-              action={<Button variant="secondary" onClick={() => setFreeOnly(false)}>نمایش همهٔ خدمات</Button>}
+              title={L("خدمت رایگان فعالی ندارد")}
+              description={L("این استاد در حال حاضر خدمت رایگان فعالی ندارد؛ می‌توانید همهٔ خدمات او را ببینید.")}
+              action={<Button variant="secondary" onClick={() => setFreeOnly(false)}>{L("نمایش همهٔ خدمات")}</Button>}
             />
           ) : (
-            <EmptyState title="خدمت قابل رزرو وجود ندارد" description="این استاد فعلاً خدمت فعال و قابل رزروی ندارد." />
+            <EmptyState title={L("خدمت قابل رزرو وجود ندارد")} description={L("این استاد فعلاً خدمت فعال و قابل رزروی ندارد.")} />
           )
         ) : (
           <div style={{ display: "grid", gap: spacing.sm }}>
@@ -469,7 +473,7 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
                       }}
                     >
                       <Icon name="clock" size={12} stroke={2} />
-                      {numberFormatter.format(item.duration)} دقیقه
+                      {localizedDigits(item.duration, lang)} {L("دقیقه")}
                     </span>
                   </span>
                   {item.price === 0 ? (
@@ -489,10 +493,10 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
                       }}
                     >
                       <Icon name="gift" size={12} stroke={2.4} />
-                      رایگان
+                      {L("رایگان")}
                     </span>
                   ) : (
-                    <strong style={{ ...typography.bodySmall, color: colors.olive700 }}>{formatWalletAmount(Math.max(0, item.price))} تومان</strong>
+                    <strong style={{ ...typography.bodySmall, color: colors.olive700 }}>{formatWalletAmount(Math.max(0, item.price))} {L("تومان")}</strong>
                   )}
                 </button>
               );
@@ -502,20 +506,20 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
       </Card>
 
       <Card className="vodda-enter vodda-enter-delay-2" style={{ padding: 18, borderRadius: 20, borderColor: colors.sand200, boxShadow: "none" }}>
-        <BookingStepHeader number={2} title="انتخاب تاریخ و ساعت" />
+        <BookingStepHeader number={2} title={L("انتخاب تاریخ و ساعت")} />
         <div style={{ height: 16 }} />
         {!service ? (
-          <EmptyState title="یک خدمت انتخاب کنید" description="بعد از انتخاب خدمت، زمان‌های آزاد رسمی استاد دریافت می‌شوند." />
+          <EmptyState title={L("یک خدمت انتخاب کنید")} description={L("بعد از انتخاب خدمت، زمان‌های آزاد رسمی استاد دریافت می‌شوند.")} />
         ) : availabilityLoading ? (
-          <LoadingState label="در حال دریافت زمان‌های آزاد…" />
+          <LoadingState label={L("در حال دریافت زمان‌های آزاد…")} />
         ) : availabilityError ? (
           <ErrorState
-            title="دریافت زمان‌های آزاد ناموفق بود"
+            title={L("دریافت زمان‌های آزاد ناموفق بود")}
             description={availabilityError}
-            action={<Button variant="secondary" onClick={() => void loadAvailability(service)}>تلاش دوباره</Button>}
+            action={<Button variant="secondary" onClick={() => void loadAvailability(service)}>{L("تلاش دوباره")}</Button>}
           />
         ) : dateGroups.length === 0 ? (
-          <EmptyState title="زمان آزادی پیدا نشد" description="در ۱۴ روز آینده زمان آزاد و قابل رزروی برای این خدمت وجود ندارد." />
+          <EmptyState title={L("زمان آزادی پیدا نشد")} description={L("در ۱۴ روز آینده زمان آزاد و قابل رزروی برای این خدمت وجود ندارد.")} />
         ) : (
           <div style={{ display: "grid", gap: spacing.lg }}>
             <div className="vodda-scroll-rail" style={{ display: "flex", gap: spacing.sm, overflowX: "auto", paddingBottom: spacing.xs }}>
@@ -546,10 +550,10 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
                     }}
                   >
                     <strong style={{ display: "block", fontSize: 12, fontWeight: 700 }}>
-                      {weekdays[group.weekday] ?? "روز"}
+                      {L(weekdays[group.weekday] ?? "روز")}
                     </strong>
                     <span style={{ display: "block", marginTop: 4, opacity: 0.82, fontSize: 10.5 }}>
-                      {formatJalaliDate(group.localDate, { withYear: false })} · {numberFormatter.format(group.slots.length)} زمان
+                      {formatAppDate(group.localDate, lang, { withYear: false })} · {localizedDigits(group.slots.length, lang)} {L("زمان")}
                     </span>
                   </button>
                 );
@@ -579,7 +583,7 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
                         ...typography.bodySmall,
                       }}
                     >
-                      {item.localStart} تا {item.localEnd}
+                      {item.localStart} {L("تا")} {item.localEnd}
                     </button>
                   );
                 })}
@@ -590,19 +594,19 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
       </Card>
 
       <Card className="vodda-enter vodda-enter-delay-3" style={{ padding: 18, borderRadius: 20, borderColor: colors.sand200, boxShadow: "none" }}>
-        <BookingStepHeader number={3} title="بررسی نهایی" />
+        <BookingStepHeader number={3} title={L("بررسی نهایی")} />
         <div style={{ height: 16 }} />
         {!service || !slot ? (
-          <EmptyState title="رزرو هنوز آماده ثبت نیست" description="پس از انتخاب خدمت و زمان، خلاصه رزرو اینجا نمایش داده می‌شود." />
+          <EmptyState title={L("رزرو هنوز آماده ثبت نیست")} description={L("پس از انتخاب خدمت و زمان، خلاصه رزرو اینجا نمایش داده می‌شود.")} />
         ) : (
           <div style={{ display: "grid" }}>
             {[
-              ["استاد", teacher.name],
-              ["خدمت", service.title],
-              ["تاریخ", formatJalaliDate(slot.localDate, { withWeekday: slot.weekday })],
-              ["ساعت", `${slot.localStart} تا ${slot.localEnd}`],
-              ["مدت", `${numberFormatter.format(service.duration)} دقیقه`],
-              ["مبلغ", service.price === 0 ? "رایگان — بدون پرداخت" : `${formatWalletAmount(Math.max(0, service.price))} تومان`],
+              [L("استاد"), teacher.name],
+              [L("خدمت"), service.title],
+              [L("تاریخ"), formatAppDate(slot.localDate, lang, { withWeekday: slot.weekday })],
+              [L("ساعت"), `${slot.localStart} ${L("تا")} ${slot.localEnd}`],
+              [L("مدت"), `${localizedDigits(service.duration, lang)} ${L("دقیقه")}`],
+              [L("مبلغ"), service.price === 0 ? L("رایگان — بدون پرداخت") : `${formatWalletAmount(Math.max(0, service.price))} ${L("تومان")}`],
             ].map(([label, value]) => (
               <div key={label} style={{ display: "flex", justifyContent: "space-between", gap: spacing.md, paddingBlock: 8 }}>
                 <span style={{ color: colors.inkMuted }}>{label}</span>
@@ -630,12 +634,12 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
               >
                 <Icon name="gift" size={17} stroke={2.2} style={{ flex: "0 0 auto" }} />
                 <span>
-                  این جلسه <b>رایگان</b> است؛ بدون پرداخت هزینه و بدون کسر از کیف پول، درخواست شما مستقیم برای استاد ارسال می‌شود.
+                  {L("این جلسه")} <b>{L("رایگان")}</b>{L(" است؛ بدون پرداخت هزینه و بدون کسر از کیف پول، درخواست شما مستقیم برای استاد ارسال می‌شود.")}
                 </span>
               </div>
             ) : (
             <>
-            <div role="radiogroup" aria-label="روش پرداخت" style={{ display: "grid", gap: spacing.sm, marginBlock: spacing.md }}>
+            <div role="radiogroup" aria-label={L("روش پرداخت")} style={{ display: "grid", gap: spacing.sm, marginBlock: spacing.md }}>
               <button
                 type="button"
                 role="radio"
@@ -658,9 +662,9 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
                 }}
               >
                 <span style={{ display: "grid", gap: 2, flex: 1 }}>
-                  <strong style={{ fontSize: 13.5, fontWeight: 800 }}>پرداخت از کیف پول</strong>
+                  <strong style={{ fontSize: 13.5, fontWeight: 800 }}>{L("پرداخت از کیف پول")}</strong>
                   <span style={{ ...typography.caption, color: colors.inkMuted }}>
-                    {wallet !== null ? `موجودی: ${formatWalletAmount(wallet)} تومان` : "موجودی نامشخص"}{walletCovers ? "" : " — موجودی کافی نیست"}
+                    {wallet !== null ? L("موجودی: {n} تومان").replace("{n}", formatWalletAmount(wallet)) : L("موجودی نامشخص")}{walletCovers ? "" : L(" — موجودی کافی نیست")}
                   </span>
                 </span>
                 <Icon name="wallet" size={20} style={{ color: paymentMethod === "wallet" ? colors.olive600 : colors.inkMuted }} />
@@ -685,17 +689,17 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
                 }}
               >
                 <span style={{ display: "grid", gap: 2, flex: 1 }}>
-                  <strong style={{ fontSize: 13.5, fontWeight: 800 }}>پرداخت آنلاین با درگاه سامان‌سپ</strong>
-                  <span style={{ ...typography.caption, color: colors.inkMuted }}>پرداخت امن با کارت بانکی؛ زمان رزرو تا پایان پرداخت نگه داشته می‌شود</span>
+                  <strong style={{ fontSize: 13.5, fontWeight: 800 }}>{L("پرداخت آنلاین با درگاه سامان‌سپ")}</strong>
+                  <span style={{ ...typography.caption, color: colors.inkMuted }}>{L("پرداخت امن با کارت بانکی؛ زمان رزرو تا پایان پرداخت نگه داشته می‌شود")}</span>
                 </span>
                 <Icon name="shield" size={20} style={{ color: paymentMethod === "gateway" ? colors.olive600 : colors.inkMuted }} />
               </button>
             </div>
             <p style={{ ...typography.caption, margin: "8px 0 0", color: colors.inkMuted, lineHeight: 1.8 }}>
               {paymentMethod === "gateway"
-                ? "با ثبت رزرو به درگاه امن سامان‌سپ منتقل می‌شوید و پس از پرداخت موفق، درخواست برای استاد ارسال می‌شود."
-                : "مبلغ هنگام ثبت رزرو از کیف پول کسر می‌شود."}{" "}
-              زمان‌ها با timezone رسمی سامانه و تداخل جلسات فعال محاسبه شده‌اند. ممکن است تا لحظهٔ ثبت توسط کاربر دیگری رزرو شوند.
+                ? L("با ثبت رزرو به درگاه امن سامان‌سپ منتقل می‌شوید و پس از پرداخت موفق، درخواست برای استاد ارسال می‌شود.")
+                : L("مبلغ هنگام ثبت رزرو از کیف پول کسر می‌شود.")}{" "}
+              {L("زمان‌ها با timezone رسمی سامانه و تداخل جلسات فعال محاسبه شده‌اند. ممکن است تا لحظهٔ ثبت توسط کاربر دیگری رزرو شوند.")}
             </p>
             </>
             )}
@@ -705,24 +709,24 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
 
       {isSelfTeacher ? (
         <p role="alert" style={{ ...typography.bodySmall, padding: spacing.md, borderRadius: radii.md, background: colors.goldBackground, color: colors.goldDark, margin: 0 }}>
-          این پروفایل متعلق به حساب شماست؛ رزرو جلسه با خودتان ممکن نیست. برای آزمایش فرآیند، با حساب قرآن‌آموز وارد شوید و استاد دیگری را رزرو کنید.
+          {L("این پروفایل متعلق به حساب شماست؛ رزرو جلسه با خودتان ممکن نیست. برای آزمایش فرآیند، با حساب قرآن‌آموز وارد شوید و استاد دیگری را رزرو کنید.")}
         </p>
       ) : null}
       {submitError ? <p role="alert" style={{ ...typography.bodySmall, padding: spacing.md, borderRadius: radii.md, background: colors.dangerBackground, color: colors.danger, margin: 0 }}>{submitError}</p> : null}
 
       {/* شیت تأیید جلسهٔ فوری */}
-      <Sheet open={instantSheet} title="درخواست جلسهٔ فوری" onClose={() => { if (!saving) setInstantSheet(false); }}>
+      <Sheet open={instantSheet} title={L("درخواست جلسهٔ فوری")} onClose={() => { if (!saving) setInstantSheet(false); }}>
         {service ? (
           <div style={{ display: "grid", gap: spacing.md }}>
             <p style={{ ...typography.body, margin: 0, color: colors.inkSecondary, lineHeight: 2 }}>
-              با تأیید، درخواست جلسه <b>همین حالا</b> برای {teacher.name} ارسال می‌شود و زمان آغاز دو دقیقه بعد در نظر گرفته می‌شود. به‌محض تأیید استاد می‌توانید وارد کلاس تصویری شوید.
+              {L("با تأیید، درخواست جلسه")} <b>{L("همین حالا")}</b> {L("برای {n} ارسال می‌شود و زمان آغاز دو دقیقه بعد در نظر گرفته می‌شود. به‌محض تأیید استاد می‌توانید وارد کلاس تصویری شوید.").replace("{n}", teacher.name)}
             </p>
             <div style={{ display: "grid", gap: 0, padding: "4px 14px", borderRadius: 14, background: colors.sand50 }}>
               {[
-                ["خدمت", service.title],
-                ["مدت", `${numberFormatter.format(service.duration)} دقیقه`],
-                ["مبلغ", service.price === 0 ? "رایگان — بدون پرداخت" : `${formatWalletAmount(Math.max(0, service.price))} تومان`],
-                ["پرداخت", service.price === 0 ? "بدون تراکنش" : paymentMethod === "wallet" ? "از کیف پول" : "درگاه سامان‌سپ"],
+                [L("خدمت"), service.title],
+                [L("مدت"), `${localizedDigits(service.duration, lang)} ${L("دقیقه")}`],
+                [L("مبلغ"), service.price === 0 ? L("رایگان — بدون پرداخت") : `${formatWalletAmount(Math.max(0, service.price))} ${L("تومان")}`],
+                [L("پرداخت"), service.price === 0 ? L("بدون تراکنش") : paymentMethod === "wallet" ? L("از کیف پول") : L("درگاه سامان‌سپ")],
               ].map(([label, value]) => (
                 <div key={label} style={{ display: "flex", justifyContent: "space-between", gap: spacing.md, paddingBlock: 8 }}>
                   <span style={{ color: colors.inkMuted, fontSize: 12.5 }}>{label}</span>
@@ -732,19 +736,19 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
             </div>
             {service.price > 0 && paymentMethod === "wallet" && !walletCovers ? (
               <p role="alert" style={{ margin: 0, fontSize: 12, color: colors.danger }}>
-                موجودی کیف پول کافی نیست؛ در مرحلهٔ بعد به درگاه پرداخت منتقل می‌شوید.
+                {L("موجودی کیف پول کافی نیست؛ در مرحلهٔ بعد به درگاه پرداخت منتقل می‌شوید.")}
               </p>
             ) : null}
             <Button fullWidth loading={saving} onClick={() => void submitInstant()} style={{ minHeight: 50, background: colors.gold, borderColor: colors.gold }}>
               <Icon name="sparkle" size={18} />
-              ارسال درخواست جلسهٔ فوری
+              {L("ارسال درخواست جلسهٔ فوری")}
             </Button>
           </div>
         ) : null}
       </Sheet>
       <div style={{ position: "sticky", zIndex: 12, bottom: "calc(68px + env(safe-area-inset-bottom))", padding: "8px 0 12px", background: colors.sand50 }}>
         <Button fullWidth loading={saving} disabled={!service || !slot || isSelfTeacher} onClick={() => void submit()} style={{ minHeight: 52 }}>
-          {service && service.price === 0 ? "ثبت درخواست جلسهٔ رایگان" : paymentMethod === "gateway" ? "پرداخت و ثبت رزرو" : "ثبت درخواست رزرو"}
+          {service && service.price === 0 ? L("ثبت درخواست جلسهٔ رایگان") : paymentMethod === "gateway" ? L("پرداخت و ثبت رزرو") : L("ثبت درخواست رزرو")}
         </Button>
       </div>
     </div>

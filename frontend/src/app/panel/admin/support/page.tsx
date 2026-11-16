@@ -10,6 +10,7 @@ import {
 import { FilterTabs, StatCard, TablePagination } from '@/components/admin/AdminUI';
 import { getToken } from '@/lib/auth';
 import { toFaDigits } from '@/lib/persian';
+import { confirmDialog } from '@/lib/confirm';
 
 type SupportStatus = 'new' | 'resolved';
 
@@ -68,7 +69,7 @@ export default function AdminSupportPage() {
 
   async function resolve(message: SupportMessage) {
     if (busyId !== null || message.status !== 'new') return;
-    if (!window.confirm('این پیام به‌عنوان رسیدگی‌شده ثبت شود؟')) return;
+    if (!(await confirmDialog('این پیام به‌عنوان رسیدگی‌شده ثبت شود؟'))) return;
     setBusyId(message.id);
     setError('');
     try {

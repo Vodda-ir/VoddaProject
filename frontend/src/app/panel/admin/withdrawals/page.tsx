@@ -19,6 +19,7 @@ import {
 } from '@/components/admin/AdminUI';
 import { fullUrl, getToken } from '@/lib/auth';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
+import { confirmDialog } from '@/lib/confirm';
 
 type WithdrawalStatus = '' | 'pending' | 'paid' | 'rejected';
 
@@ -100,7 +101,7 @@ export default function AdminWithdrawals() {
     const warning = paid
       ? 'فقط پس از انجام واقعی انتقال بانکی، وضعیت را پرداخت‌شده کنید. ادامه می‌دهید؟'
       : 'با رد درخواست، مبلغ رزروشده به کیف پول استاد بازمی‌گردد. ادامه می‌دهید؟';
-    if (!window.confirm(warning)) return;
+    if (!(await confirmDialog(warning))) return;
 
     setBusyId(withdrawal.id);
     setError('');

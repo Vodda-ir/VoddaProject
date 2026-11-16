@@ -72,7 +72,7 @@ func main() {
 
         tm := token.NewManager(cfg.JWTSecret, cfg.TokenExpiration)
         sender := sms.New(cfg.SMS)
-        supportUsecase := usecase.NewSupportUsecase(supportRepo)
+        supportUsecase := usecase.NewSupportUsecase(supportRepo).WithObservers(notifRepo, userRepo)
 
         paymentRepo := repository.NewPaymentRepository(db)
         samanClient := payment.NewSaman(cfg.Saman.TerminalID, cfg.Saman.SiteURL, cfg.Saman.BaseURL)
@@ -92,10 +92,10 @@ func main() {
         )
 
         h := &delivery.Handler{
-                Auth:         usecase.NewAuthUsecase(userRepo, otpRepo, sender, tm, cfg),
+                Auth:         usecase.NewAuthUsecase(userRepo, otpRepo, sender, tm, cfg).WithObservers(notifRepo, settingsRepo),
                 User:         usecase.NewUserUsecase(userRepo, teacherRepo, onboardingRepo),
                 LearnerStats: usecase.NewLearnerAnalyticsUsecase(analyticsRepo),
-                Teacher:      usecase.NewTeacherUsecase(teacherRepo, reviewRepo, userRepo),
+                Teacher:      usecase.NewTeacherUsecase(teacherRepo, reviewRepo, userRepo).WithNotifier(notifRepo),
                 Session:      sessionUsecase,
                 Dispatch:     dispatchUsecase,
                 Ceremony:     ceremonyUsecase,

@@ -11,7 +11,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { UniversalAppConfig } from "../../config";
 import { usePlatform } from "../../platform/context";
 import { navigateApp } from "../../router";
-import { digitsOnly, toFaDigits } from "../../ui/persian";
+import { digitsOnly, localizedDigits } from "../../ui/persian";
+import { useAppearance } from "../../ui/appearance";
 import {
   Avatar,
   Button,
@@ -44,6 +45,7 @@ function OpenCallCard({
   busy: boolean;
   onAccept: (call: TeacherCeremonyInboxCall["call"], suggested: PresenceService | null) => void;
 }) {
+  const { L, lang } = useAppearance();
   const call = item.call;
   const accepted = item.accepted || item.my_offer !== null;
   return (
@@ -66,28 +68,28 @@ function OpenCallCard({
         <div style={{ minWidth: 0, flex: 1 }}>
           <strong style={{ display: "block", fontSize: 14.5, fontWeight: 800, color: colors.ink }}>{call.title}</strong>
           <span style={{ display: "block", fontSize: 12, color: colors.inkMuted, marginTop: 2 }}>
-            {ceremonyWhenLabel(call)} · 📍 {call.city || "شهر نامشخص"}
+            {ceremonyWhenLabel(call, lang)} · 📍 {call.city || L("شهر نامشخص")}
           </span>
         </div>
         {item.matches_services ? (
           <span style={{ flex: "0 0 auto", fontSize: 10.5, fontWeight: 800, color: colors.olive700, background: colors.olive50, border: `1px solid ${colors.olive200}`, borderRadius: 999, padding: "3px 9px", whiteSpace: "nowrap" }}>
-            خدمات شما ✓
+            {L("خدمات شما ✓")}
           </span>
         ) : null}
       </div>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11.5, color: colors.inkSecondary, background: colors.sand100, border: `1px solid ${colors.sand200}`, borderRadius: 999, padding: "3px 9px" }}>
-          <Icon name="users" size={11} /> {toFaDigits(call.guests_count)} مهمان
+          <Icon name="users" size={11} /> {localizedDigits(call.guests_count, lang)} {L("مهمان")}
         </span>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11.5, color: colors.inkSecondary, background: colors.sand100, border: `1px solid ${colors.sand200}`, borderRadius: 999, padding: "3px 9px" }}>
-          <Icon name="mic" size={11} /> {toFaDigits(call.reciters_needed)} قاری
+          <Icon name="mic" size={11} /> {localizedDigits(call.reciters_needed, lang)} {L("قاری")}
         </span>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11.5, color: colors.inkSecondary, background: colors.sand100, border: `1px solid ${colors.sand200}`, borderRadius: 999, padding: "3px 9px" }}>
-          {audienceMeta[call.audience]}
+          {L(audienceMeta[call.audience])}
         </span>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11.5, color: colors.goldDark, background: colors.goldBackground, border: `1px solid ${colors.goldSoft}`, borderRadius: 999, padding: "3px 9px", fontWeight: 700 }}>
-          {formatBudgetRange(call.budget_min, call.budget_max)}
+          {formatBudgetRange(call.budget_min, call.budget_max, lang)}
         </span>
       </div>
 
@@ -98,24 +100,24 @@ function OpenCallCard({
       ) : null}
 
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <Avatar name={call.organizer_name || "برگزارکننده"} src={call.organizer_avatar || undefined} size={40} ring={false} />
+        <Avatar name={call.organizer_name || L("برگزارکننده")} src={call.organizer_avatar || undefined} size={40} ring={false} />
         <span style={{ fontSize: 12, color: colors.inkMuted }}>
-          برگزارکننده: <strong style={{ color: colors.inkSecondary }}>{(call.organizer_name || "کاربر وُدّا").split(" ")[0]}</strong>
+          {L("برگزارکننده:")} <strong style={{ color: colors.inkSecondary }}>{(call.organizer_name || L("کاربر وُدّا")).split(" ")[0]}</strong>
         </span>
       </div>
 
       {accepted ? (
         <p style={{ margin: 0, fontSize: 12.5, color: colors.olive700, lineHeight: 1.9 }}>
-          ⏳ پذیرش شما ثبت شد؛ منتظر انتخاب برگزارکننده هستید. نتیجه در «پذیرش‌های من» دیده می‌شود.
+          {L("⏳ پذیرش شما ثبت شد؛ منتظر انتخاب برگزارکننده هستید. نتیجه در «پذیرش‌های من» دیده می‌شود.")}
         </p>
       ) : (
         <Button onClick={() => onAccept(call, suggestedPrice)} loading={busy} disabled={busy} style={{ minHeight: 46 }}>
-          🤝 پذیرش این مراسم
+          {L("🤝 پذیرش این مراسم")}
         </Button>
       )}
       {!accepted && suggestedPrice ? (
         <span style={{ fontSize: 11, color: colors.inkFaint }}>
-          پیشنهاد قیمت از خدمات حضوری شما: {formatToman(suggestedPrice.base_price)}
+          {L("پیشنهاد قیمت از خدمات حضوری شما: {price}").replace("{price}", formatToman(suggestedPrice.base_price, lang))}
         </span>
       ) : null}
     </div>
@@ -140,12 +142,13 @@ function MyOfferRow({
   busy: boolean;
   onWithdraw: () => void;
 }) {
+  const { L, lang } = useAppearance();
   const waiting = offer.status === "waiting";
   return (
     <div className="vodda-enter" style={{ ...offerRowStyle, borderColor: waiting ? colors.goldSoft : undefined }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <strong style={{ minWidth: 0, flex: 1, fontSize: 13.5, color: colors.ink }}>
-          پذیرش #{toFaDigits(offer.id)} · {formatToman(offer.price)}
+          {L("پذیرش #{id} · {price}").replace("{id}", localizedDigits(offer.id, lang)).replace("{price}", formatToman(offer.price, lang))}
         </strong>
         <ToneChip tone={offerStatusMeta[offer.status]} />
       </div>
@@ -154,15 +157,15 @@ function MyOfferRow({
       ) : null}
       {waiting ? (
         <Button variant="secondary" onClick={onWithdraw} loading={busy} disabled={busy} style={{ minHeight: 40 }}>
-          پس گرفتن پذیرش
+          {L("پس گرفتن پذیرش")}
         </Button>
       ) : offer.status === "chosen" ? (
         <p style={{ margin: 0, fontSize: 12.5, color: colors.olive700, lineHeight: 1.9 }}>
-          برگزارکننده شما را انتخاب کرد؛ قرارداد مراسم در «خدمات حضوری» قابل پیگیری است.
+          {L("برگزارکننده شما را انتخاب کرد؛ قرارداد مراسم در «خدمات حضوری» قابل پیگیری است.")}
         </p>
       ) : (
         <p style={{ margin: 0, fontSize: 12, color: colors.inkMuted, lineHeight: 1.8 }}>
-          این فراخوان بسته شد؛ پذیرش شما انتخاب نشد.
+          {L("این فراخوان بسته شد؛ پذیرش شما انتخاب نشد.")}
         </p>
       )}
     </div>
@@ -171,6 +174,7 @@ function MyOfferRow({
 
 export function CeremonyInboxPanel({ config }: { config: UniversalAppConfig }) {
   const runtime = usePlatform();
+  const { L, lang } = useAppearance();
   const [tab, setTab] = useState<"calls" | "offers">("calls");
   const [inbox, setInbox] = useState<{ calls: TeacherCeremonyInboxCall[]; offers: CeremonyOffer[] } | null>(null);
   const [myServices, setMyServices] = useState<PresenceService[]>([]);
@@ -284,7 +288,7 @@ export function CeremonyInboxPanel({ config }: { config: UniversalAppConfig }) {
     [busyId, refresh, runtime],
   );
 
-  if (loading) return <LoadingState label="در حال دریافت فراخوان‌های مراسم…" />;
+  if (loading) return <LoadingState label={L("در حال دریافت فراخوان‌های مراسم…")} />;
 
   const callsTabActive = tab === "calls";
 
@@ -305,31 +309,31 @@ export function CeremonyInboxPanel({ config }: { config: UniversalAppConfig }) {
             <Icon name="mic" size={23} />
           </div>
           <div>
-            <h1 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>فراخوان مراسم</h1>
-            <span style={{ fontSize: 12.5, opacity: 0.85 }}>فراخوان‌های مراسم حضوری را مشاهده و اعلام پذیرش کنید</span>
+            <h1 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>{L("فراخوان مراسم")}</h1>
+            <span style={{ fontSize: 12.5, opacity: 0.85 }}>{L("فراخوان‌های مراسم حضوری را مشاهده و اعلام پذیرش کنید")}</span>
           </div>
           <div style={{ marginInlineStart: "auto", textAlign: "center" }}>
-            <strong style={{ display: "block", fontSize: 22, fontVariantNumeric: "tabular-nums" }}>{toFaDigits(openCalls.length)}</strong>
-            <span style={{ fontSize: 10.5, opacity: 0.8 }}>فراخوان باز</span>
+            <strong style={{ display: "block", fontSize: 22, fontVariantNumeric: "tabular-nums" }}>{localizedDigits(openCalls.length, lang)}</strong>
+            <span style={{ fontSize: 10.5, opacity: 0.8 }}>{L("فراخوان باز")}</span>
           </div>
         </div>
         {waitingCount > 0 ? (
           <p style={{ margin: "12px 0 0", fontSize: 12.5, background: "rgba(255,255,255,.12)", borderRadius: 12, padding: "8px 11px", lineHeight: 1.8 }}>
-            ⏳ {toFaDigits(waitingCount)} پذیرش فعال دارید که منتظر انتخاب برگزارکننده هستند.
+            {L("⏳ {count} پذیرش فعال دارید که منتظر انتخاب برگزارکننده هستند.").replace("{count}", localizedDigits(waitingCount, lang))}
           </p>
         ) : null}
       </div>
 
       {error ? (
         <p role="alert" style={{ ...typography.bodySmall, padding: spacing.md, borderRadius: radii.md, background: colors.dangerBackground, color: colors.danger, margin: 0 }}>
-          {error}
+          {L(error)}
         </p>
       ) : null}
 
       <div className="vodda-enter" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
         {([
-          ["calls", `فراخوان‌های باز${openCalls.length > 0 ? ` (${toFaDigits(openCalls.length)})` : ""}`],
-          ["offers", `پذیرش‌های من${myOffers.length > 0 ? ` (${toFaDigits(myOffers.length)})` : ""}`],
+          ["calls", `${L("فراخوان‌های باز")}${openCalls.length > 0 ? ` (${localizedDigits(openCalls.length, lang)})` : ""}`],
+          ["offers", `${L("پذیرش‌های من")}${myOffers.length > 0 ? ` (${localizedDigits(myOffers.length, lang)})` : ""}`],
         ] as const).map(([key, label]) => (
           <button
             key={key}
@@ -358,14 +362,14 @@ export function CeremonyInboxPanel({ config }: { config: UniversalAppConfig }) {
         openCalls.length === 0 ? (
           <Card style={{ padding: 20, borderRadius: 20, textAlign: "center" }}>
             <EmptyState
-              title="فعلاً فراخوان مراسمی نیست"
-              description="به‌محض ثبت فراخوان مراسم توسط برگزارکننده‌ها، همین‌جا نمایش داده می‌شود. برای دیده‌شدن در جستجوی مراسم، خدمات حضوری خود را ثبت کنید."
+              title={L("فعلاً فراخوان مراسمی نیست")}
+              description={L("به‌محض ثبت فراخوان مراسم توسط برگزارکننده‌ها، همین‌جا نمایش داده می‌شود. برای دیده‌شدن در جستجوی مراسم، خدمات حضوری خود را ثبت کنید.")}
             />
             <Button variant="secondary" onClick={() => navigateApp("/t/presence", config)} style={{ minHeight: 44 }}>
-              ثبت خدمات حضوری
+              {L("ثبت خدمات حضوری")}
             </Button>
             <span style={{ display: "block", marginTop: 10, fontSize: 11.5, color: colors.inkFaint }} aria-hidden="true">
-              {tick > 0 ? "به‌روزرسانی شد" : ""}
+              {tick > 0 ? L("به‌روزرسانی شد") : ""}
             </span>
           </Card>
         ) : (
@@ -388,8 +392,8 @@ export function CeremonyInboxPanel({ config }: { config: UniversalAppConfig }) {
         <Card style={{ padding: 20, borderRadius: 20, textAlign: "center" }}>
           <EmptyState
             icon={<Icon name="checkCircle" size={28} />}
-            title="پذیرشی ثبت نکرده‌اید"
-            description="با پذیرش فراخوان‌های مراسم، برگزارکننده‌ها شما را می‌بینند و انتخاب می‌کنند."
+            title={L("پذیرشی ثبت نکرده‌اید")}
+            description={L("با پذیرش فراخوان‌های مراسم، برگزارکننده‌ها شما را می‌بینند و انتخاب می‌کنند.")}
           />
         </Card>
       ) : (
@@ -402,26 +406,26 @@ export function CeremonyInboxPanel({ config }: { config: UniversalAppConfig }) {
 
       {actionError ? (
         <p role="alert" style={{ ...typography.bodySmall, padding: spacing.md, borderRadius: radii.md, background: colors.dangerBackground, color: colors.danger, margin: 0 }}>
-          {actionError}
+          {L(actionError)}
         </p>
       ) : null}
 
       <p style={{ margin: 0, fontSize: 11.5, color: colors.inkMuted, lineHeight: 1.9 }}>
-        نکته: اگر در پذیرش قیمت ننویسید، قیمت خدمت حضوریِ شما برای همان موضوع مبنای محاسبه می‌شود. پس از انتخاب‌شدن، قرارداد ساخته شده و ودیعه از برگزارکننده دریافت می‌گردد.
+        {L("نکته: اگر در پذیرش قیمت ننویسید، قیمت خدمت حضوریِ شما برای همان موضوع مبنای محاسبه می‌شود. پس از انتخاب‌شدن، قرارداد ساخته شده و ودیعه از برگزارکننده دریافت می‌گردد.")}
       </p>
 
       <Sheet
         open={sheetCall !== null}
-        title={sheetCall ? `پذیرش «${sheetCall.title}»` : "پذیرش مراسم"}
+        title={sheetCall ? L("پذیرش «{title}»").replace("{title}", sheetCall.title) : L("پذیرش مراسم")}
         onClose={() => { if (!sheetSaving) setSheetCall(null); }}
       >
         {sheetCall ? (
           <div style={{ display: "grid", gap: spacing.lg }}>
             <p style={{ ...typography.bodySmall, margin: 0, color: colors.inkSecondary, lineHeight: 1.9 }}>
-              {ceremonyWhenLabel(sheetCall)} · 📍 {sheetCall.city || "شهر نامشخص"} · 👥 {toFaDigits(sheetCall.guests_count)} مهمان
+              {ceremonyWhenLabel(sheetCall, lang)} · 📍 {sheetCall.city || L("شهر نامشخص")} · 👥 {localizedDigits(sheetCall.guests_count, lang)} {L("مهمان")}
               {sheetCall.budget_min > 0 || sheetCall.budget_max > 0 ? (
                 <>
-                  {" "}· 💰 بودجهٔ برگزارکننده: <strong>{formatBudgetRange(sheetCall.budget_min, sheetCall.budget_max)}</strong>
+                  {" "}· 💰 {L("بودجهٔ برگزارکننده:")} <strong>{formatBudgetRange(sheetCall.budget_min, sheetCall.budget_max, lang)}</strong>
                 </>
               ) : null}
             </p>
@@ -433,24 +437,24 @@ export function CeremonyInboxPanel({ config }: { config: UniversalAppConfig }) {
               presets={sheetPresets}
               ariaLabel="حق‌الزحمهٔ پیشنهادی به تومان"
               emptyHint={sheetPresets.length > 0
-                ? "خالی بگذارید تا قیمت خدمت حضوری شما برای این موضوع اعمال شود."
-                : "قیمت پیشنهادی خود را به تومان وارد کنید."}
+                ? L("خالی بگذارید تا قیمت خدمت حضوری شما برای این موضوع اعمال شود.")
+                : L("قیمت پیشنهادی خود را به تومان وارد کنید.")}
             />
             <label style={{ display: "grid", gap: 7, ...typography.bodySmall }}>
-              <span style={{ fontWeight: 800, color: colors.inkSecondary }}>پیام به برگزارکننده (اختیاری)</span>
+              <span style={{ fontWeight: 800, color: colors.inkSecondary }}>{L("پیام به برگزارکننده (اختیاری)")}</span>
               <textarea
                 value={sheetMessage}
                 onChange={(event) => setSheetMessage(event.target.value.slice(0, 200))}
                 rows={3}
-                placeholder="مثلاً: تجربهٔ اجرای مراسم عروسی و ختم را دارم…"
+                placeholder={L("مثلاً: تجربهٔ اجرای مراسم عروسی و ختم را دارم…")}
                 style={{ ...inputStyle, resize: "none", lineHeight: 1.9 }}
               />
             </label>
             {sheetError ? (
-              <p role="alert" style={{ ...typography.caption, margin: 0, color: colors.danger }}>{sheetError}</p>
+              <p role="alert" style={{ ...typography.caption, margin: 0, color: colors.danger }}>{L(sheetError)}</p>
             ) : null}
             <Button fullWidth loading={sheetSaving} disabled={sheetSaving} onClick={() => void submitAccept()} style={{ minHeight: 50 }}>
-              ثبت پذیرش
+              {L("ثبت پذیرش")}
             </Button>
           </div>
         ) : null}

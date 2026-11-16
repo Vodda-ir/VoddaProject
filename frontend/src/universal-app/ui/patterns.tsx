@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
+import { useAppearance } from "./appearance";
 import { Icon } from "./Icon";
 import { colors, gradients, radii, shadows, spacing, typography } from "./theme";
 
@@ -90,6 +91,7 @@ export function IconBadge({
 }
 
 export function StatusPill({ status, label }: { status: string; label?: string }) {
+  const { L } = useAppearance();
   const map: Record<string, { text: string; fg: string; bg: string }> = {
     confirmed: { text: "تأیید شده", fg: colors.olive700, bg: colors.olive100 },
     pending: { text: "در انتظار تأیید", fg: colors.goldDark, bg: colors.goldBackground },
@@ -119,7 +121,7 @@ export function StatusPill({ status, label }: { status: string; label?: string }
       }}
     >
       <span style={{ width: 6, height: 6, borderRadius: "50%", background: tone.fg }} />
-      {label ?? tone.text}
+      {label ? L(label) : L(tone.text)}
     </span>
   );
 }
@@ -159,9 +161,9 @@ export function MetricTile({
 }
 
 export function WalletHero({
-  label = "موجودی کیف پول",
+  label,
   amount,
-  suffix = "تومان",
+  suffix,
   children,
 }: {
   label?: ReactNode;
@@ -169,6 +171,9 @@ export function WalletHero({
   suffix?: ReactNode;
   children?: ReactNode;
 }) {
+  const { L } = useAppearance();
+  const labelNode = label ?? L("موجودی کیف پول");
+  const suffixNode = suffix ?? L("تومان");
   return (
     <div
       style={{
@@ -179,10 +184,10 @@ export function WalletHero({
         boxShadow: "0 10px 28px rgba(94,110,67,.28)",
       }}
     >
-      <span style={{ fontSize: 13, lineHeight: 1.7, color: "rgba(255,255,255,.70)" }}>{label}</span>
+      <span style={{ fontSize: 13, lineHeight: 1.7, color: "rgba(255,255,255,.70)" }}>{labelNode}</span>
       <div style={{ display: "flex", alignItems: "baseline", flexWrap: "wrap", gap: 6, marginTop: 7 }}>
         <strong style={{ fontSize: 30, lineHeight: 1.35, fontWeight: 800, color: colors.surface }}>{amount}</strong>
-        <span style={{ fontSize: 14.5, lineHeight: 1.6, color: "rgba(255,255,255,.65)", fontWeight: 600 }}>{suffix}</span>
+        <span style={{ fontSize: 14.5, lineHeight: 1.6, color: "rgba(255,255,255,.65)", fontWeight: 600 }}>{suffixNode}</span>
       </div>
       {children ? <div style={{ marginTop: 18 }}>{children}</div> : null}
     </div>

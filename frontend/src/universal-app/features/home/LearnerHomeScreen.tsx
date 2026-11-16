@@ -17,7 +17,6 @@ import {
   OrnamentDivider,
   SectionHeader,
   Sheet,
-  todayJalaliLabel,
   colors,
   gradients,
   radii,
@@ -27,9 +26,13 @@ import {
 } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
 import { useAppearance } from "../../ui/appearance";
+import { localizedDigits } from "../../ui/persian";
+import { todayAppDateLabel } from "../../ui/jalali";
 import { resolveAssetUrl } from "../../platform/asset";
 import { RoleModeSheet } from "../auth/RoleModeSheet";
 import { TopicCategoryGrid, TopServicesRail, FreeServicesBoard } from "./homeSections";
+import { phraseMap } from "../../i18n/phrases";
+import { CityLocator } from "./CityLocator";
 import {
   getNotifications,
   markNotificationRead,
@@ -79,10 +82,6 @@ function greetingLabel(lang: "fa" | "en"): string {
   return "شب بخیر";
 }
 
-function todayLabel() {
-  return todayJalaliLabel();
-}
-
 function dayOfYearIndex() {
   const now = new Date();
   const start = new Date(now.getFullYear(), 0, 0);
@@ -105,13 +104,13 @@ const DAILY_QUOTES: Array<{ text: string; source: string }> = [
   { text: "طَلَبُ الْعِلْمِ فَرِيضَةٌ عَلَى كُلِّ مُسْلِمٍ", source: "حدیث نبوی" },
 ];
 
-function faNumber(value: number, maximumFractionDigits = 1) {
-  return new Intl.NumberFormat("fa-IR", { maximumFractionDigits }).format(value);
+function faNumber(value: number, lang: "fa" | "en", maximumFractionDigits = 1) {
+  return new Intl.NumberFormat(lang === "en" ? "en-US" : "fa-IR", { maximumFractionDigits }).format(value);
 }
 
-function walletShort(wallet: number) {
-  if (wallet >= 1_000_000) return `${faNumber(wallet / 1_000_000)} میلیون`;
-  return `${faNumber(Math.round(wallet / 1000), 0)} هزار`;
+function walletShort(wallet: number, lang: "fa" | "en") {
+  if (wallet >= 1_000_000) return `${faNumber(wallet / 1_000_000, lang)} ${lang === "en" ? "million" : "میلیون"}`;
+  return `${faNumber(Math.round(wallet / 1000), lang, 0)} ${lang === "en" ? "thousand" : "هزار"}`;
 }
 
 /* ─────────────────────────  منطق انتخاب اساتید صفحهٔ نخست  ───────────────────────── */
@@ -176,8 +175,10 @@ function isMaddahiTeacher(teacher: Teacher) {
   return MADDAHI_PATTERN.test(teacher.field) || MADDAHI_PATTERN.test(teacher.tag);
 }
 
-function teacherSubtitle(teacher: Teacher) {
-  return [teacher.tag || teacher.field, teacher.city].filter(Boolean).join(" · ");
+function teacherSubtitle(teacher: Teacher, lang: "fa" | "en") {
+  const rawTag = teacher.tag || teacher.field;
+  const tag = lang === "en" ? (phraseMap.get(rawTag) ?? rawTag) : rawTag;
+  return [tag, teacher.city].filter(Boolean).join(" · ");
 }
 
 /* ─────────────────────────  زیرکامپوننت‌ها  ───────────────────────── */
@@ -187,8 +188,9 @@ function Skeleton({ style }: { style?: CSSProperties }) {
 }
 
 function HomeSkeleton() {
+  const { L } = useAppearance();
   return (
-    <div role="status" aria-label="در حال بارگذاری" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 26 }}>
+    <div role="status" aria-label={L("در حال بارگذاری")} style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 26 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
         <Skeleton style={{ width: 48, height: 48, borderRadius: "50%" }} />
         <div style={{ display: "grid", gap: 7, flex: 1 }}>
@@ -215,6 +217,7 @@ function HomeSkeleton() {
 }
 
 function ProfileNudgeBar({ config }: { config: UniversalAppConfig }) {
+  const { L } = useAppearance();
   return (
     <button
       type="button"
@@ -237,7 +240,7 @@ function ProfileNudgeBar({ config }: { config: UniversalAppConfig }) {
     >
       <IconBadge icon="edit" tone="gold" size={34} />
       <span style={{ flex: 1, minWidth: 0, ...typography.caption, color: colors.inkMuted, fontWeight: 600 }}>
-        پروفایل خود را کامل کنید تا اساتید شما را بهتر بشناسند
+        {L("پروفایل خود را کامل کنید تا اساتید شما را بهتر بشناسند")}
       </span>
       <Icon name="chevronL" size={16} style={{ color: colors.inkMuted }} />
     </button>
@@ -245,6 +248,7 @@ function ProfileNudgeBar({ config }: { config: UniversalAppConfig }) {
 }
 
 function VerseStrip() {
+  const { L } = useAppearance();
   const quote = DAILY_QUOTES[dayOfYearIndex() % DAILY_QUOTES.length];
   const isQuran = quote.source.startsWith("قرآن");
   return (
@@ -293,7 +297,7 @@ function VerseStrip() {
             whiteSpace: "nowrap",
           }}
         >
-          — {quote.source}
+          — {L(quote.source)}
         </span>
       </p>
     </div>
@@ -303,10 +307,11 @@ function VerseStrip() {
 type PastTeacher = { id: number; name: string; avatarUrl: string };
 
 function RebookRail({ teachers, config }: { teachers: PastTeacher[]; config: UniversalAppConfig }) {
+  const { L } = useAppearance();
   if (teachers.length === 0) return null;
   return (
-    <section aria-label="استادهای جلسه‌های قبلی تو" className="vodda-enter" style={{ minWidth: 0 }}>
-      <SectionHeader title="استادهای جلسه‌های قبلی تو" />
+    <section aria-label={L("استادهای جلسه‌های قبلی تو")} className="vodda-enter" style={{ minWidth: 0 }}>
+      <SectionHeader title={L("استادهای جلسه‌های قبلی تو")} />
       <div
         className="vodda-scroll-rail"
         style={{
@@ -366,7 +371,7 @@ function RebookRail({ teachers, config }: { teachers: PastTeacher[]; config: Uni
                 {teacher.name}
               </strong>
               <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 800, color: colors.olive700 }}>
-                رزرو دوباره
+                {L("رزرو دوباره")}
                 <Icon name="chevronL" size={13} />
               </span>
             </div>
@@ -386,11 +391,12 @@ function TeacherRail({
   teachers: Teacher[];
   config: UniversalAppConfig;
 }) {
+  const { L } = useAppearance();
   if (teachers.length === 0) return null;
 
   return (
     <section aria-label={title} className="vodda-enter" style={{ minWidth: 0 }}>
-      <SectionHeader title={title} action="مشاهدهٔ همه" onAction={() => navigateApp("/search", config)} />
+      <SectionHeader title={title} action={L("مشاهدهٔ همه")} onAction={() => navigateApp("/search", config)} />
       <div
         className="vodda-scroll-rail"
         style={{
@@ -416,15 +422,16 @@ function TeacherRail({
 
 /** اساتید منتخب صفحهٔ نخست — ۷ استادِ رندوم از میان برترین‌ها (عملکرد + رتبه + فعالیت). */
 function SpotlightSection({ teachers, config }: { teachers: Teacher[]; config: UniversalAppConfig }) {
+  const { L } = useAppearance();
   const [seed, setSeed] = useState(newSpotlightSeed);
   const spotlight = useMemo(() => pickSpotlight(teachers, seed), [teachers, seed]);
   if (spotlight.length === 0) return null;
   return (
-    <section aria-label="اساتید منتخب وُدّا" className="vodda-enter" style={{ minWidth: 0 }}>
+    <section aria-label={L("اساتید منتخب وُدّا")} className="vodda-enter" style={{ minWidth: 0 }}>
       <SectionHeader
-        title="اساتید منتخب وُدّا"
-        description="هر بار منتخبی متفاوت از توانمندترین استادان — بر پایهٔ عملکرد، رتبه و فعالیت"
-        action="چیدمان تازه"
+        title={L("اساتید منتخب وُدّا")}
+        description={L("هر بار منتخبی متفاوت از توانمندترین استادان — بر پایهٔ عملکرد، رتبه و فعالیت")}
+        action={L("چیدمان تازه")}
         onAction={() => setSeed(newSpotlightSeed())}
       />
       <div
@@ -451,6 +458,7 @@ function SpotlightSection({ teachers, config }: { teachers: Teacher[]; config: U
 }
 
 function FeaturedTeacher({ teacher, config }: { teacher: Teacher; config: UniversalAppConfig }) {
+  const { L, lang } = useAppearance();
   const sample = teacher.samples.find((item) => item.url) ?? null;
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playing, setPlaying] = useState(false);
@@ -526,7 +534,7 @@ function FeaturedTeacher({ teacher, config }: { teacher: Teacher; config: Univer
         {sample ? (
           <button
             type="button"
-            aria-label={playing ? "توقف نمونه‌صوت" : `پخش نمونه‌صوت: ${sample.title}`}
+            aria-label={playing ? L("توقف نمونه‌صوت") : L("پخش نمونه‌صوت: {title}").replace("{title}", sample.title)}
             onClick={toggleSample}
             style={{
               position: "absolute",
@@ -555,18 +563,18 @@ function FeaturedTeacher({ teacher, config }: { teacher: Teacher; config: Univer
       <div style={{ minWidth: 0, flex: 1, position: "relative" }}>
         <p style={{ ...typography.caption, display: "flex", alignItems: "center", gap: 5, margin: 0, color: colors.goldSoft, fontWeight: 800 }}>
           <Icon name="sparkle" size={14} stroke={2} />
-          استاد ویژهٔ امروز
+          {L("استاد ویژهٔ امروز")}
         </p>
         <h2 style={{ ...typography.title, margin: `${spacing.sm}px 0 0`, color: colors.surface }}>{teacher.name}</h2>
         <p style={{ ...typography.bodySmall, margin: "3px 0 0", color: "rgba(255,255,255,0.72)" }}>
-          {teacherSubtitle(teacher) || "مشاهده خدمات و زمان‌های قابل رزرو"}
+          {teacherSubtitle(teacher, lang) || L("مشاهده خدمات و زمان‌های قابل رزرو")}
         </p>
         <p style={{ ...typography.caption, display: "flex", alignItems: "center", gap: 8, margin: `${spacing.sm}px 0 0`, color: colors.goldSoft, fontWeight: 800 }}>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>
             <Icon name="star" size={13} fill />
-            {faNumber(teacher.rating)}
+            {faNumber(teacher.rating, lang)}
           </span>
-          {teacher.reviews > 0 ? <span>({faNumber(teacher.reviews, 0)} نظر)</span> : null}
+          {teacher.reviews > 0 ? <span>{L("({n} نظر)").replace("{n}", faNumber(teacher.reviews, lang, 0))}</span> : null}
           <button
             type="button"
             onClick={(event) => {
@@ -590,7 +598,7 @@ function FeaturedTeacher({ teacher, config }: { teacher: Teacher; config: Univer
               minHeight: 32,
             }}
           >
-            مشاهده و رزرو
+            {L("مشاهده و رزرو")}
             <Icon name="chevronL" size={14} />
           </button>
         </p>
@@ -611,6 +619,7 @@ function NotificationsBell({
   const [items, setItems] = useState<AppNotification[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [marking, setMarking] = useState(false);
+  const { L, lang } = useAppearance();
 
   useEffect(() => {
     if (!user) {
@@ -663,7 +672,7 @@ function NotificationsBell({
     <>
       <button
         type="button"
-        aria-label="اعلان‌ها"
+        aria-label={L("اعلان‌ها")}
         className="vodda-tappable"
         onClick={openSheet}
         style={{
@@ -702,20 +711,20 @@ function NotificationsBell({
               lineHeight: 1,
             }}
           >
-            {unread > 9 ? "۹+" : faNumber(unread, 0)}
+            {unread > 9 ? `${localizedDigits(9, lang)}+` : faNumber(unread, lang, 0)}
           </span>
         ) : null}
       </button>
-      <Sheet open={open} title="اعلان‌ها" onClose={() => setOpen(false)}>
+      <Sheet open={open} title={L("اعلان‌ها")} onClose={() => setOpen(false)}>
         <div style={{ display: "grid", gap: spacing.md }}>
           {loading ? (
-            <LoadingState label="در حال دریافت اعلان‌ها…" style={{ minHeight: 140 }} />
+            <LoadingState label={L("در حال دریافت اعلان‌ها…")} style={{ minHeight: 140 }} />
           ) : items === null || items.length === 0 ? (
             <div style={{ display: "grid", justifyItems: "center", gap: spacing.sm, paddingBlock: spacing.xl, textAlign: "center" }}>
               <IconBadge icon="bell" tone="olive" size={52} />
-              <strong style={{ ...typography.body, color: colors.ink }}>اعلانی نداری</strong>
+              <strong style={{ ...typography.body, color: colors.ink }}>{L("اعلانی نداری")}</strong>
               <span style={{ ...typography.caption, color: colors.inkMuted }}>
-                وقتی خبر تازه‌ای داشته باشیم اینجا می‌بینی.
+                {L("وقتی خبر تازه‌ای داشته باشیم اینجا می‌بینی.")}
               </span>
             </div>
           ) : (
@@ -737,17 +746,17 @@ function NotificationsBell({
                       {!notification.read ? (
                         <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: "50%", background: colors.olive600, flex: "0 0 auto" }} />
                       ) : null}
-                      {notification.title}
+                      {L(notification.title)}
                     </span>
                     {notification.body ? (
-                      <span style={{ ...typography.caption, color: colors.inkMuted, lineHeight: 1.7 }}>{notification.body}</span>
+                      <span style={{ ...typography.caption, color: colors.inkMuted, lineHeight: 1.7 }}>{L(notification.body)}</span>
                     ) : null}
                   </div>
                 ))}
               </div>
               {unread > 0 ? (
                 <Button variant="secondary" disabled={marking} onClick={markAllRead} style={{ minHeight: 42 }}>
-                  {marking ? "در حال ثبت…" : "علامت‌گذاری همه به‌عنوان خوانده‌شده"}
+                  {marking ? L("در حال ثبت…") : L("علامت‌گذاری همه به‌عنوان خوانده‌شده")}
                 </Button>
               ) : null}
             </>
@@ -764,7 +773,7 @@ type SessionAreaState = "loading" | "ready";
 
 export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
   const runtime = usePlatform();
-  const { lang } = useAppearance();
+  const { lang, L } = useAppearance();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [teachersLoading, setTeachersLoading] = useState(!teachersCacheFresh());
@@ -864,11 +873,11 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
     return pool[dayOfYearIndex() % pool.length];
   }, [teachers, recommended]);
 
-  const firstName = user?.name?.trim().split(/\s+/)[0] || "دوست";
+  const firstName = user?.name?.trim().split(/\s+/)[0] || L("دوست");
   const canUseTeacherMode = user?.role === "teacher" || user?.role === "admin";
   const needsProfileNudge =
     user !== null && (!user.avatar_url || !user.city?.trim() || !user.bio?.trim());
-  const today = todayLabel();
+  const today = todayAppDateLabel(lang);
 
   if (teachersLoading && teachers.length === 0 && !teachersError) {
     return <HomeSkeleton />;
@@ -907,7 +916,9 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
           <Avatar name={user?.name} src={user?.avatar_url} size={48} ring />
           <span style={{ minWidth: 0 }}>
             <span style={{ ...typography.caption, display: "block", color: colors.inkMuted }}>
-              {greetingLabel(lang)}،{today ? ` امروز ${today}` : ""}
+              {today
+                ? L("{greeting}، امروز {date}").replace("{greeting}", greetingLabel(lang)).replace("{date}", today)
+                : greetingLabel(lang)}
             </span>
             <strong
               style={{
@@ -920,11 +931,11 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
                 fontWeight: 900,
               }}
             >
-              {user?.name?.trim() ? `${firstName} جان` : "کاربر عزیز"} 🌿
+              {user?.name?.trim() ? L("{n} جان").replace("{n}", firstName) : L("کاربر عزیز")} 🌿
             </strong>
             {canUseTeacherMode ? (
               <span style={{ display: "block", marginTop: 1, fontSize: 11.5, color: colors.olive700, fontWeight: 600 }}>
-                برای تغییر پنل، به پروفایل بروید
+                {L("برای تغییر پنل، به پروفایل بروید")}
               </span>
             ) : null}
           </span>
@@ -933,7 +944,7 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
           <NotificationsBell runtime={runtime} user={user} />
           <button
             type="button"
-            aria-label="کیف پول"
+            aria-label={L("کیف پول")}
             className="vodda-tappable"
             onClick={() => navigateApp("/wallet", config)}
             style={{
@@ -953,11 +964,13 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
           >
             <Icon name="wallet" size={18} />
             <span style={{ fontSize: 12, fontWeight: 700, lineHeight: 1, whiteSpace: "nowrap" }}>
-              {user && user.wallet > 0 ? walletShort(user.wallet) : "کیف پول"}
+              {user && user.wallet > 0 ? walletShort(user.wallet, lang) : L("کیف پول")}
             </span>
           </button>
         </div>
       </header>
+
+      <CityLocator user={user} />
 
       <VerseStrip />
 
@@ -967,9 +980,9 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
       {/* بنر «جلسه دیگری رزرو می‌کنید؟» حذف شد — فقط پنل خوش‌آمد مهمان */}
       {sessionArea === "ready" && !user ? (
         <HeroPanel
-          eyebrow="به وُدّا خوش آمدید"
-          title={"استاد قرآن خود را بیابید\nو زمان آزاد ایشان را رزرو کنید"}
-          description="پروفایل استادان تأییدشده و خدمات قابل رزرو را ببینید."
+          eyebrow={L("به وُدّا خوش آمدید")}
+          title={L("استاد قرآن خود را بیابید\nو زمان آزاد ایشان را رزرو کنید")}
+          description={L("پروفایل استادان تأییدشده و خدمات قابل رزرو را ببینید.")}
         >
           <Button
             onClick={() => navigateApp("/search", config)}
@@ -982,7 +995,7 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
             }}
           >
             <Icon name="search" size={18} />
-            جستجوی استاد
+            {L("جستجوی استاد")}
           </Button>
         </HeroPanel>
       ) : null}
@@ -1000,18 +1013,18 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
       ) : teachersError ? (
         <Card elevated style={{ display: "grid", gap: spacing.md, textAlign: "center" }}>
           <IconBadge icon="users" tone="olive" size={52} />
-          <strong style={{ ...typography.title, color: colors.ink }}>دریافت استادان ناموفق بود</strong>
-          <span style={{ ...typography.caption, color: colors.inkMuted }}>{teachersError}</span>
+          <strong style={{ ...typography.title, color: colors.ink }}>{L("دریافت استادان ناموفق بود")}</strong>
+          <span style={{ ...typography.caption, color: colors.inkMuted }}>{L(teachersError)}</span>
           <Button variant="secondary" onClick={() => setReloadKey((value) => value + 1)}>
-            تلاش دوباره
+            {L("تلاش دوباره")}
           </Button>
         </Card>
       ) : teachers.length === 0 ? (
         <Card style={{ paddingBlock: spacing.huge, textAlign: "center" }}>
           <IconBadge icon="users" tone="olive" size={58} />
-          <strong style={{ ...typography.title, display: "block", marginTop: spacing.md }}>هنوز استادی منتشر نشده</strong>
+          <strong style={{ ...typography.title, display: "block", marginTop: spacing.md }}>{L("هنوز استادی منتشر نشده")}</strong>
           <p style={{ ...typography.caption, margin: `${spacing.sm}px 0 0`, color: colors.inkMuted }}>
-            پس از تأیید اولین استاد، پروفایل او در این بخش نمایش داده می‌شود.
+            {L("پس از تأیید اولین استاد، پروفایل او در این بخش نمایش داده می‌شود.")}
           </p>
         </Card>
       ) : (

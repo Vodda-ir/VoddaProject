@@ -28,7 +28,7 @@ const profileErrorMessage = "دریافت اطلاعات حساب انجام ن�
 
 export function LearnerProfileScreen({ config }: LearnerProfileScreenProps) {
   const platform = usePlatform();
-  const { t, lang, setLang, theme, toggleTheme } = useAppearance();
+  const { t, L, lang, setLang, theme, toggleTheme } = useAppearance();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [loggingOut, setLoggingOut] = useState(false);
@@ -75,13 +75,13 @@ export function LearnerProfileScreen({ config }: LearnerProfileScreenProps) {
     }
   }
 
-  if (loading) return <LoadingState label="در حال دریافت اطلاعات پروفایل…" />;
+  if (loading) return <LoadingState label={L("در حال دریافت اطلاعات پروفایل…")} />;
   if (error && !user) {
     return (
       <ErrorState
-        title="دریافت پروفایل ناموفق بود"
-        description={error}
-        action={<Button onClick={() => void loadProfile()}>تلاش دوباره</Button>}
+        title={L("دریافت پروفایل ناموفق بود")}
+        description={L(error)}
+        action={<Button onClick={() => void loadProfile()}>{L("تلاش دوباره")}</Button>}
       />
     );
   }
@@ -105,7 +105,7 @@ export function LearnerProfileScreen({ config }: LearnerProfileScreenProps) {
               {user.city.trim() || "—"}
             </span>
           </div>
-          <button type="button" aria-label="ویرایش پروفایل" onClick={() => navigateApp("/profile/edit", config)} className="vodda-tappable"
+          <button type="button" aria-label={L("ویرایش پروفایل")} onClick={() => navigateApp("/profile/edit", config)} className="vodda-tappable"
             style={{ width: 44, height: 44, display: "grid", placeItems: "center", flex: "0 0 44px", padding: 0, border: 0, borderRadius: 12, color: colors.olive700, background: colors.olive50, cursor: "pointer" }}>
             <Icon name="edit" size={19} />
           </button>
@@ -222,7 +222,7 @@ export function LearnerProfileScreen({ config }: LearnerProfileScreenProps) {
       {error ? (
         <div role="alert" style={{ display: "flex", alignItems: "center", gap: spacing.sm, padding: spacing.md, borderRadius: radii.md, background: colors.dangerBackground, color: colors.danger, ...typography.bodySmall }}>
           <Icon name="info" size={18} />
-          {error}
+          {L(error)}
         </div>
       ) : null}
 
@@ -232,7 +232,7 @@ export function LearnerProfileScreen({ config }: LearnerProfileScreenProps) {
       </Button>
 
       <p style={{ fontSize: 12, margin: "4px 0 0", textAlign: "center", color: colors.inkFaint }}>
-        وُدّا · نسخهٔ ۱٫۰٫۰
+        {L("وُدّا · نسخهٔ ۱٫۰٫۰")}
       </p>
     </div>
   );

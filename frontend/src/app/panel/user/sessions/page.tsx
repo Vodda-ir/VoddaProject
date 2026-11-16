@@ -17,6 +17,7 @@ import { api, type SessionListItem } from '@/lib/api';
 import { payViaSamanGate } from '@/lib/saman-gate';
 import { fullUrl, getToken } from '@/lib/auth';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
+import { confirmDialog } from '@/lib/confirm';
 
 type TabKey = 'all' | 'upcoming' | 'past';
 
@@ -76,7 +77,7 @@ export default function UserSessionsPage() {
 
   async function cancelSession(session: SessionListItem) {
     if (!token || busyId !== null) return;
-    if (!window.confirm('جلسه لغو شود؟ لغو فقط پیش از زمان شروع مجاز است و مبلغ به کیف پول بازمی‌گردد.')) return;
+    if (!(await confirmDialog('جلسه لغو شود؟ لغو فقط پیش از زمان شروع مجاز است و مبلغ به کیف پول بازمی‌گردد.'))) return;
     setBusyId(session.id);
     setError('');
     try {

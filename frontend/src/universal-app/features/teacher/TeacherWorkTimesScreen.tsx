@@ -14,10 +14,11 @@ import {
   colors,
   radii,
   spacing,
-  toFaDigits,
   toLatinDigits,
   typography,
 } from "../../ui";
+import { useAppearance } from "../../ui/appearance";
+import { localizedDigits } from "../../ui/persian";
 import { messageOf } from "../../ui/errorMessage";
 
 type WorkTime = {
@@ -94,6 +95,7 @@ function overlaps(items: WorkTime[], draft: WorkTimeDraft, editingId?: number): 
 
 export function TeacherWorkTimesScreen() {
   const runtime = usePlatform();
+  const { L, lang } = useAppearance();
   const [items, setItems] = useState<WorkTime[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -197,14 +199,14 @@ export function TeacherWorkTimesScreen() {
 
   return (
     <section className="vodda-screen" style={{ display: "grid", gap: spacing.xl }}>
-      <p style={{ ...typography.bodySmall, margin: 0, color: colors.inkMuted, lineHeight: 1.9 }}>روزها و ساعت‌هایی که برای برگزاری جلسه در دسترس هستید را مشخص کنید.</p>
+      <p style={{ ...typography.bodySmall, margin: 0, color: colors.inkMuted, lineHeight: 1.9 }}>{L("روزها و ساعت‌هایی که برای برگزاری جلسه در دسترس هستید را مشخص کنید.")}</p>
 
-      {loading ? <LoadingState label="در حال دریافت زمان‌های کاری…" /> : null}
+      {loading ? <LoadingState label={L("در حال دریافت زمان‌های کاری…")} /> : null}
       {!loading && error ? (
         <ErrorState
-          title="دریافت زمان‌های کاری ناموفق بود"
-          description={error}
-          action={<Button onClick={() => void load()}>تلاش دوباره</Button>}
+          title={L("دریافت زمان‌های کاری ناموفق بود")}
+          description={L(error)}
+          action={<Button onClick={() => void load()}>{L("تلاش دوباره")}</Button>}
         />
       ) : null}
 
@@ -215,7 +217,7 @@ export function TeacherWorkTimesScreen() {
             return (
               <Card key={day} className="vodda-card--interactive" style={{ display: "grid", gap: spacing.md, padding: 14, borderRadius: 18, boxShadow: "0 0 4px rgba(46,54,34,.04)" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: spacing.md }}>
-                  <strong style={{ fontSize: 14.5, fontWeight: 700, color: slots.length ? colors.ink : colors.inkFaint }}>{day}</strong>
+                  <strong style={{ fontSize: 14.5, fontWeight: 700, color: slots.length ? colors.ink : colors.inkFaint }}>{L(day)}</strong>
                   <button
                     type="button"
                     className="vodda-tappable"
@@ -236,7 +238,7 @@ export function TeacherWorkTimesScreen() {
                     }}
                   >
                     <Icon name="plus" size={14} />
-                    افزودن بازه
+                    {L("افزودن بازه")}
                   </button>
                 </div>
 
@@ -276,11 +278,11 @@ export function TeacherWorkTimesScreen() {
                             }}
                           >
                             <Icon name="clock" size={14} />
-                            <span dir="ltr">{toFaDigits(slot.from)} تا {toFaDigits(slot.to)}</span>
+                            <span dir="ltr">{L("{from} تا {to}").replace("{from}", localizedDigits(slot.from, lang)).replace("{to}", localizedDigits(slot.to, lang))}</span>
                           </button>
                           <button
                             type="button"
-                            aria-label="حذف بازه"
+                            aria-label={L("حذف بازه")}
                             disabled={busy}
                             onClick={() => setDeleteTarget(slot)}
                             style={{ display: "grid", placeItems: "center", padding: 0, border: 0, color: colors.inkMuted, background: "transparent", cursor: busy ? "not-allowed" : "pointer" }}
@@ -292,7 +294,7 @@ export function TeacherWorkTimesScreen() {
                     })}
                   </div>
                 ) : (
-                  <span style={{ paddingTop: 2, fontSize: 12.5, color: colors.inkFaint }}>تعطیل</span>
+                  <span style={{ paddingTop: 2, fontSize: 12.5, color: colors.inkFaint }}>{L("تعطیل")}</span>
                 )}
               </Card>
             );
@@ -302,53 +304,53 @@ export function TeacherWorkTimesScreen() {
 
       <Dialog
         open={editor !== null}
-        title={editor ? `${editor.slot ? "ویرایش" : "افزودن"} بازه - ${days[editor.weekday]}` : "بازهٔ کاری"}
+        title={editor ? L(editor.slot ? "ویرایش بازه - {day}" : "افزودن بازه - {day}").replace("{day}", L(days[editor.weekday])) : L("بازهٔ کاری")}
         onClose={closeEditor}
       >
         <div style={{ display: "grid", gap: spacing.md }}>
           <label style={{ display: "grid", gap: spacing.xs, ...typography.bodySmall }}>
-            <span style={{ fontWeight: 700 }}>از ساعت</span>
+            <span style={{ fontWeight: 700 }}>{L("از ساعت")}</span>
             <input
               type="text"
               inputMode="numeric"
-              value={toFaDigits(draft.from)}
+              value={localizedDigits(draft.from, lang)}
               disabled={busyId !== null}
-              placeholder="۰۸:۰۰"
+              placeholder={L("۰۸:۰۰")}
               onChange={(event) => setDraft((current) => ({ ...current, from: normalizeTimeInput(event.target.value) }))}
               style={{ width: "100%", padding: spacing.md, border: `1px solid ${colors.sand200}`, borderRadius: radii.md, background: colors.surface, color: colors.ink, boxShadow: "none", fontFamily: typography.fontFamily }}
             />
           </label>
           <label style={{ display: "grid", gap: spacing.xs, ...typography.bodySmall }}>
-            <span style={{ fontWeight: 700 }}>تا ساعت</span>
+            <span style={{ fontWeight: 700 }}>{L("تا ساعت")}</span>
             <input
               type="text"
               inputMode="numeric"
-              value={toFaDigits(draft.to)}
+              value={localizedDigits(draft.to, lang)}
               disabled={busyId !== null}
-              placeholder="۱۲:۰۰"
+              placeholder={L("۱۲:۰۰")}
               onChange={(event) => setDraft((current) => ({ ...current, to: normalizeTimeInput(event.target.value) }))}
               style={{ width: "100%", padding: spacing.md, border: `1px solid ${colors.sand200}`, borderRadius: radii.md, background: colors.surface, color: colors.ink, boxShadow: "none", fontFamily: typography.fontFamily }}
             />
           </label>
-          {formError ? <span role="alert" style={{ ...typography.caption, color: colors.danger }}>{formError}</span> : null}
+          {formError ? <span role="alert" style={{ ...typography.caption, color: colors.danger }}>{L(formError)}</span> : null}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: spacing.sm }}>
-            <Button variant="ghost" disabled={busyId !== null} onClick={closeEditor}>انصراف</Button>
-            <Button loading={busyId !== null} onClick={() => void save()}>ذخیره</Button>
+            <Button variant="ghost" disabled={busyId !== null} onClick={closeEditor}>{L("انصراف")}</Button>
+            <Button loading={busyId !== null} onClick={() => void save()}>{L("ذخیره")}</Button>
           </div>
         </div>
       </Dialog>
 
       <Dialog
         open={deleteTarget !== null}
-        title="حذف بازهٔ کاری"
+        title={L("حذف بازهٔ کاری")}
         onClose={() => { if (busyId === null) setDeleteTarget(null); }}
       >
         <p style={{ ...typography.body, marginTop: 0, color: colors.inkSecondary }}>
-          {deleteTarget ? `بازهٔ ${toFaDigits(deleteTarget.from)} تا ${toFaDigits(deleteTarget.to)} حذف شود؟` : ""}
+          {deleteTarget ? L("بازهٔ {from} تا {to} حذف شود؟").replace("{from}", localizedDigits(deleteTarget.from, lang)).replace("{to}", localizedDigits(deleteTarget.to, lang)) : ""}
         </p>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: spacing.sm }}>
-          <Button variant="secondary" disabled={busyId !== null} onClick={() => setDeleteTarget(null)}>انصراف</Button>
-          <Button variant="danger" loading={busyId !== null} onClick={() => void remove()}>حذف</Button>
+          <Button variant="secondary" disabled={busyId !== null} onClick={() => setDeleteTarget(null)}>{L("انصراف")}</Button>
+          <Button variant="danger" loading={busyId !== null} onClick={() => void remove()}>{L("حذف")}</Button>
         </div>
       </Dialog>
     </section>

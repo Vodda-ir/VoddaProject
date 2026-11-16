@@ -6,6 +6,7 @@ import { PanelButton, PanelMetric, PanelPageHeader } from '@/components/panel/Pa
 import { api, type WorkTime } from '@/lib/api';
 import { getToken } from '@/lib/auth';
 import { toFaDigits, toLatinDigits } from '@/lib/persian';
+import { confirmDialog } from '@/lib/confirm';
 
 const DAYS = ['شنبه', 'یک‌شنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنج‌شنبه', 'جمعه'];
 
@@ -66,7 +67,7 @@ export default function TeacherWorkTimesPage() {
 
   async function remove(slot: WorkTime) {
     if (!token || busyId !== null) return;
-    if (!window.confirm(`بازهٔ ${toFaDigits(slot.from)} تا ${toFaDigits(slot.to)} حذف شود؟`)) return;
+    if (!(await confirmDialog(`بازهٔ ${toFaDigits(slot.from)} تا ${toFaDigits(slot.to)} حذف شود؟`))) return;
     setBusyId(slot.id);
     setError('');
     try {

@@ -12,6 +12,7 @@ import {
 import { api, type Withdrawal } from '@/lib/api';
 import { getToken } from '@/lib/auth';
 import { digitsOnly, formatFaNumber, toFaDigits, toLatinDigits } from '@/lib/persian';
+import { confirmDialog } from '@/lib/confirm';
 
 export default function TeacherWithdrawalsPage() {
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
@@ -52,7 +53,7 @@ export default function TeacherWithdrawalsPage() {
     if (!normalizedCard && !normalizedSheba) return setError('حداقل شماره کارت یا شبا را وارد کنید.');
     if (normalizedCard && normalizedCard.length !== 16) return setError('شماره کارت باید ۱۶ رقم باشد.');
     if (normalizedSheba && !/^IR\d{24}$/.test(normalizedSheba)) return setError('شماره شبا باید با IR شروع شود و ۲۴ رقم داشته باشد.');
-    if (!window.confirm(`${formatFaNumber(numericAmount)} تومان برای برداشت رزرو شود؟`)) return;
+    if (!(await confirmDialog(`${formatFaNumber(numericAmount)} تومان برای برداشت رزرو شود؟`))) return;
 
     setSaving(true);
     setError('');

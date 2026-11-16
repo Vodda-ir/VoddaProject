@@ -502,6 +502,8 @@ func (uc *PaymentUsecase) HandleCallback(ctx context.Context, form payment.Callb
                 }
                 log.Printf("[payment] settled booking order=%d session=%d user=%d amount=%d toman refnum=%s trace=%s",
                         settled.ID, settled.RefID, settled.UserID, settled.Amount, settled.RefNum, settled.TraceNo)
+                NotifyAdmins(ctx, uc.notifs, uc.users, "مدیریت: پرداخت جلسه انجام شد",
+                        "پرداخت جلسه به مبلغ "+fmt.Sprintf("%d", settled.Amount)+" تومان با موفقیت تسویه شد.")
                 uc.notifyBookingSettled(ctx, settled)
                 return uc.bookingResultURLFor(order, "success", settled.RefNum)
         }
@@ -518,6 +520,8 @@ func (uc *PaymentUsecase) HandleCallback(ctx context.Context, form payment.Callb
         }
         log.Printf("[payment] settled order=%d user=%d amount=%d toman refnum=%s trace=%s",
                 settled.ID, settled.UserID, settled.Amount, settled.RefNum, settled.TraceNo)
+        NotifyAdmins(ctx, uc.notifs, uc.users, "مدیریت: تراکنش موفق",
+                "شارژ کیف پول به مبلغ "+fmt.Sprintf("%d", settled.Amount)+" تومان با موفقیت انجام شد.")
         return uc.topupResultURL(order, "success", settled.RefNum)
 }
 

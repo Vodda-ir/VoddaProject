@@ -3,6 +3,7 @@ package usecase
 import (
         "context"
         "errors"
+        "fmt"
         "log"
         "strings"
         "time"
@@ -217,6 +218,7 @@ func (uc *SessionUsecase) Book(ctx context.Context, learnerID uint, in BookInput
                         }
                 }
                 uc.notify(ctx, teacher.UserID, notifyTitle, notifyBody)
+                uc.notifyAdminsBooking(ctx, in.Instant, svc.Title, svc.Price)
                 return &BookResult{Session: s, PaidViaWallet: false}, nil
         }
 
@@ -245,6 +247,7 @@ func (uc *SessionUsecase) Book(ctx context.Context, learnerID uint, in BookInput
         }
 
         uc.notify(ctx, teacher.UserID, notifyTitle, notifyBody)
+        uc.notifyAdminsBooking(ctx, in.Instant, svc.Title, svc.Price)
         return &BookResult{Session: s, PaidViaWallet: true}, nil
 }
 
@@ -617,6 +620,16 @@ func (uc *SessionUsecase) notify(ctx context.Context, userID uint, title, body s
                 return
         }
         _ = uc.notif.Create(ctx, &domain.Notification{UserID: userID, Title: title, Body: body})
+}
+
+// notifyAdminsBooking pushes the live booking event to admin accounts.
+func (uc *SessionUsecase) notifyAdminsBooking(ctx context.Context, instant bool, serviceTitle string, price int64) {
+        title := "مدیریت: رزرو جلسه جدید"
+        if instant {
+                title = "مدیریت: جلسهٔ فوری رزرو شد"
+        }
+        NotifyAdmins(ctx, uc.notif, uc.users, title,
+                "جلسهٔ «"+serviceTitle+"» رزرو شد؛ مبلغ "+fmt.Sprintf("%d", price)+" تومان.")
 }
 
 func parseClock(value string) (int, bool) {

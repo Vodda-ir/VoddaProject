@@ -6,6 +6,7 @@ import { getTeacherUnseenSessionCount } from "../features/session-detail/api";
 import { usePlatform } from "../platform/context";
 import { AssistantChat } from "../features/assistant/AssistantChat";
 import { useAppearance } from "./appearance";
+import { localizedDigits } from "./persian";
 import type { TranslationKey } from "../i18n";
 import { Icon } from "./Icon";
 import { ToastHost } from "./toast";
@@ -154,7 +155,7 @@ function BottomNavigation({
   ariaLabel: string;
   badgeFor?: (item: NavigationItem) => number | undefined;
 }) {
-  const { t } = useAppearance();
+  const { t, L, lang } = useAppearance();
   const renderTab = (item: NavigationItem, badge?: number) => {
     const active = item.routes.includes(routeName);
     return (
@@ -196,7 +197,7 @@ function BottomNavigation({
         <span style={{ position: "relative", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }}>
           {badge !== undefined && badge > 0 ? (
             <span
-              aria-label={`${badge} مورد دیده نشده`}
+              aria-label={L("{n} مورد دیده نشده").replace("{n}", localizedDigits(badge, lang))}
               style={{
                 position: "absolute",
                 top: -30,
@@ -216,7 +217,7 @@ function BottomNavigation({
                 boxShadow: "0 3px 8px rgba(179,64,58,.4)",
               }}
             >
-              {badge > 99 ? "+۹۹" : new Intl.NumberFormat("fa-IR").format(badge)}
+              {localizedDigits(badge > 99 ? "+99" : badge, lang)}
             </span>
           ) : null}
           {item.labelKey ? t(item.labelKey) : ""}
@@ -308,7 +309,7 @@ function BottomNavigation({
 }
 
 function ShellHeader({ title, routeName }: { title?: string; routeName: AppRouteName }) {
-  const { t } = useAppearance();
+  const { t, L } = useAppearance();
   if (!title || tabRoutes.has(routeName)) return null;
   return (
     <header
@@ -323,7 +324,7 @@ function ShellHeader({ title, routeName }: { title?: string; routeName: AppRoute
       <div>
         <button
           type="button"
-          aria-label="بازگشت"
+          aria-label={L("بازگشت")}
           className="vodda-tappable"
           onClick={() => window.history.back()}
           style={{
@@ -371,6 +372,7 @@ function Shell({
   title,
   mode,
 }: AppShellProps & { mode: "learner" | "teacher" }) {
+  const { L } = useAppearance();
   const items = mode === "teacher" ? teacherNavigation : learnerNavigation;
   const unseenCount = useTeacherUnseenCount(mode === "teacher");
   const badgeFor = (item: NavigationItem): number | undefined => {
@@ -398,12 +400,13 @@ function Shell({
           routeName={routeName}
           config={config}
           badgeFor={badgeFor}
-          ariaLabel={mode === "teacher" ? "ناوبری اصلی استاد" : "ناوبری اصلی قرآن‌آموز"}
+          ariaLabel={mode === "teacher" ? L("ناوبری اصلی استاد") : L("ناوبری اصلی قرآن‌آموز")}
         />
       </div>
       <ToastHost />
       {mode === "learner" ? <AssistantChat routeName={routeName} /> : null}
-      {mode === "teacher" ? <CallAlertBar config={config} /> : null}
+      {/* اعلان‌های زنده در هر دو حالت (استاد/کاربر) — برای مدیران شامل رویدادهای پنل مدیریت */}
+      <CallAlertBar config={config} />
     </div>
   );
 }

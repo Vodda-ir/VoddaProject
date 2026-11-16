@@ -60,6 +60,16 @@ const FIELDS: Array<{ group: string; description: string; icon: Parameters<typeo
       { key: 'about_short', label: 'معرفی کوتاه', type: 'textarea', placeholder: 'وُدّا، پلتفرم آنلاین آموزش قرآن کریم…' },
     ],
   },
+  {
+    group: 'ورود با گوگل',
+    description: 'برای کاربرانی که پیامک به دستشان نمی‌رسد (مثلاً خارج از کشور). دو کلید را از Google Cloud Console بگیرید و همین‌جا ثبت کنید.',
+    icon: 'shield',
+    fields: [
+      { key: 'google_client_id', label: 'Client ID گوگل', type: 'text', placeholder: 'xxxxxxxx.apps.googleusercontent.com', ltr: true, hint: 'پایان‌یافته با apps.googleusercontent.com' },
+      { key: 'google_client_secret', label: 'Client Secret گوگل', type: 'text', placeholder: 'GOCSPX-...', ltr: true, hint: 'برای امنیت فقط به‌صورت پوشانده نمایش داده می‌شود' },
+      { key: 'google_redirect_uri', label: 'Redirect URI', type: 'text', ltr: true, hint: 'همین مقدار باید در Google Cloud Console هم ثبت شود' },
+    ],
+  },
 ];
 
 const ALL_KEYS = FIELDS.flatMap((section) => section.fields.map((field) => field.key));
@@ -277,6 +287,20 @@ export default function AdminSettings() {
               </div>
             </PanelSection>
           ))}
+
+          <PanelSection title="راهنمای فعال‌سازی ورود با گوگل" description="پنج قدم ساده — حدود ده دقیقه زمان می‌برد.">
+            <ol style={{ margin: 0, padding: '6px 18px 20px', display: 'grid', gap: 10, fontSize: 12.5, lineHeight: 2, color: 'var(--ink)' }}>
+              <li>
+                در مرورگر به آدرس <code dir="ltr" style={{ direction: 'ltr', display: 'inline-block', background: 'var(--sand-100)', padding: '2px 8px', borderRadius: 8, fontSize: 11.5 }}>console.cloud.google.com</code> بروید و با حساب گوگل خودتان وارد شوید.
+              </li>
+              <li>از منوی بالا یک Project جدید بسازید (یا پروژهٔ موجود را انتخاب کنید) و سپس از بخش «APIs &amp; Services → OAuth consent screen» گزینهٔ External را انتخاب و یک نام (مثلاً Vodda) ثبت کنید.</li>
+              <li>در «Credentials → Create Credentials → OAuth client ID» نوع <strong>Web application</strong> را انتخاب کنید و در قسمت Authorized redirect URIs دقیقاً این آدرس را بگذارید:
+                  <code dir="ltr" style={{ direction: 'ltr', display: 'block', marginTop: 6, background: 'var(--sand-100)', padding: '6px 10px', borderRadius: 8, fontSize: 11.5, textAlign: 'left' }}>https://api.vodda.ir/api/v1/auth/google/callback</code>
+              </li>
+              <li>Client ID و Client Secret ساخته‌شده را در فرم بالای همین بخش کپی کنید و دکمهٔ «ثبت تغییرات» را بزنید.</li>
+              <li>چند لحظه بعد، دکمهٔ «ورود با گوگل» در صفحهٔ ورود اپ و سایت برای همه کاربران ظاهر می‌شود.</li>
+            </ol>
+          </PanelSection>
         </div>
       )}
     </main>

@@ -14,11 +14,18 @@ type TeacherUsecase struct {
         teachers domain.TeacherRepository
         reviews  domain.ReviewRepository
         users    domain.UserRepository
+        notifs   domain.NotificationRepository
 }
 
 // NewTeacherUsecase builds a TeacherUsecase.
 func NewTeacherUsecase(t domain.TeacherRepository, r domain.ReviewRepository, u domain.UserRepository) *TeacherUsecase {
         return &TeacherUsecase{teachers: t, reviews: r, users: u}
+}
+
+// WithNotifier wires the optional notification repo used for live admin events.
+func (uc *TeacherUsecase) WithNotifier(n domain.NotificationRepository) *TeacherUsecase {
+        uc.notifs = n
+        return uc
 }
 
 // Search returns approved, verified and available teachers matching the public filter.
@@ -172,6 +179,8 @@ func (uc *TeacherUsecase) AddService(ctx context.Context, userID uint, s *domain
         if err := uc.teachers.AddService(ctx, s); err != nil {
                 return nil, err
         }
+        NotifyAdmins(ctx, uc.notifs, uc.users, "مدیریت: خدمت جدید ثبت شد",
+                "استاد خدمت «"+s.Title+"» را ثبت کرد.")
         return s, nil
 }
 

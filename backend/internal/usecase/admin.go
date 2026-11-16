@@ -500,6 +500,9 @@ var settingDefaults = map[string]string{
 	"announcement_link": "",
 	"announcement_on":   "false",
 	"about_short":       "وُدّا، پلتفرم آنلاین آموزش قرآن کریم با استادان تأییدشده.",
+	"google_client_id":  "",
+	"google_client_secret": "",
+	"google_redirect_uri":  "https://api.vodda.ir/api/v1/auth/google/callback",
 }
 
 var settingWhitelist = map[string]bool{}
@@ -507,6 +510,15 @@ var settingMaxValue = map[string]int{
 	"support_email": 120, "support_phone": 40, "instagram": 120, "telegram": 120,
 	"whatsapp": 120, "announcement_text": 300, "announcement_link": 300,
 	"announcement_on": 8, "about_short": 400,
+	"google_client_id": 220, "google_client_secret": 220, "google_redirect_uri": 300,
+}
+
+// settingSecrets are stored but never returned verbatim by GET /admin/settings;
+// the client sends the sentinel back to keep the stored value untouched.
+const settingsSecretMask = "••••••••"
+
+var settingSecrets = map[string]bool{
+	"google_client_secret": true,
 }
 
 func init() {
@@ -533,8 +545,16 @@ func (uc *AdminUsecase) GetSettings(ctx context.Context) (*AdminSettings, error)
 		}
 		for key, value := range stored {
 			if settingWhitelist[key] {
+				if settingSecrets[key] && value != "" {
+					value = settingsSecretMask
+				}
 				merged[key] = value
 			}
+		}
+	}
+	for key := range settingSecrets {
+		if merged[key] == "" {
+			merged[key] = ""
 		}
 	}
 	return &AdminSettings{Settings: merged}, nil
@@ -549,6 +569,9 @@ func (uc *AdminUsecase) UpdateSettings(ctx context.Context, values map[string]st
 	for key, value := range values {
 		if !settingWhitelist[key] {
 			return nil, domain.ErrValidation
+		}
+		if settingSecrets[key] && value == settingsSecretMask {
+			continue // masked value round-tripped from GET — keep stored secret
 		}
 		value = strings.TrimSpace(value)
 		if maxLen, ok := settingMaxValue[key]; ok && len([]rune(value)) > maxLen {

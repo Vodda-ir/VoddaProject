@@ -14,6 +14,7 @@ import {
 } from '@/components/admin/AdminUI';
 import { fullUrl, getToken } from '@/lib/auth';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
+import { confirmDialog } from '@/lib/confirm';
 
 type AdminPostRow = {
   id: number;
@@ -230,7 +231,7 @@ export default function AdminBlogPage() {
 
   async function remove(row: AdminPostRow) {
     if (busyId !== null) return;
-    if (!window.confirm(`حذف «${row.title}» بازگشت‌پذیر نیست. ادامه می‌دهید؟`)) return;
+    if (!(await confirmDialog(`حذف «${row.title}» بازگشت‌پذیر نیست. ادامه می‌دهید؟`))) return;
     setBusyId(row.id);
     setError('');
     try {

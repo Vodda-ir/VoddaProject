@@ -6,8 +6,10 @@ import type { UniversalAppConfig } from "../../config";
 import { usePlatform } from "../../platform/context";
 import type { AuthUser } from "../../platform/types";
 import { navigateApp } from "../../router";
-import { Avatar, Icon, LoadingState, colors, radii, toFaDigits, typography } from "../../ui";
+import { Avatar, Icon, LoadingState, colors, radii, typography } from "../../ui";
+import { useAppearance } from "../../ui/appearance";
 import { messageOf } from "../../ui/errorMessage";
+import { localizedDigits } from "../../ui/persian";
 import { showToast } from "../../ui/toast";
 import { AvatarPrepareError, prepareAvatarUpload } from "@/lib/avatarImage";
 import { defaultRouteForUser } from "./AuthExperience";
@@ -29,6 +31,7 @@ type ProfileCompletionScreenProps = {
 
 export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps) {
   const platform = usePlatform();
+  const { L, dir, lang } = useAppearance();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [name, setName] = useState("");
   const [city, setCity] = useState("");
@@ -89,7 +92,7 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
     event.target.value = "";
     if (!picked) return;
     if (!picked.type.startsWith("image/") && !/\.(heic|heif)$/i.test(picked.name)) {
-      setError("فایل انتخاب‌شده باید تصویر باشد.");
+      setError(L("فایل انتخاب‌شده باید تصویر باشد."));
       return;
     }
     setError(null);
@@ -109,7 +112,7 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (!nameValid) {
-      setError("نام و نام خانوادگی را کامل وارد کنید.");
+      setError(L("نام و نام خانوادگی را کامل وارد کنید."));
       return;
     }
 
@@ -145,7 +148,7 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
         return;
       }
       setUser(updated);
-      showToast(avatar ? "پروفایل و تصویر شما ذخیره شد" : "پروفایل ذخیره شد");
+      showToast(L(avatar ? "پروفایل و تصویر شما ذخیره شد" : "پروفایل ذخیره شد"));
       navigateApp(onboarding ? defaultRouteForUser(updated) : "/profile", config, { replace: true });
     } catch (saveError) {
       setError(messageOf(saveError, "ذخیره پروفایل انجام نشد. دوباره تلاش کنید."));
@@ -156,15 +159,15 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
 
   if (loading) {
     return (
-      <main dir="rtl" data-universal-app="vodda" style={{ minHeight: "100dvh", display: "grid", placeItems: "center", background: colors.sand50 }}>
-        <LoadingState label="در حال دریافت اطلاعات حساب…" />
+      <main dir={dir} data-universal-app="vodda" style={{ minHeight: "100dvh", display: "grid", placeItems: "center", background: colors.sand50 }}>
+        <LoadingState label={L("در حال دریافت اطلاعات حساب…")} />
       </main>
     );
   }
 
   return (
     <main
-      dir="rtl"
+      dir={dir}
       data-universal-app="vodda"
       data-platform={platform.kind}
       style={{ minHeight: "100dvh", background: colors.sand50, color: colors.ink, fontFamily: typography.fontFamily }}
@@ -183,7 +186,7 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
             {!onboarding ? (
               <button
                 type="button"
-                aria-label="بازگشت"
+                aria-label={L("بازگشت")}
                 onClick={() => navigateApp("/profile", config)}
                 style={{ width: 44, height: 44, display: "grid", placeItems: "center", border: 0, borderRadius: "50%", color: colors.inkSecondary, background: "transparent", cursor: "pointer" }}
               >
@@ -192,7 +195,7 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
             ) : null}
           </div>
           <h1 style={{ fontSize: 18, fontWeight: 700, margin: 0, textAlign: "center", color: colors.ink }}>
-            {onboarding ? "تکمیل پروفایل" : "ویرایش پروفایل"}
+            {onboarding ? L("تکمیل پروفایل") : L("ویرایش پروفایل")}
           </h1>
           <button
             type="submit"
@@ -210,7 +213,7 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
               cursor: canSubmit ? "pointer" : "not-allowed",
             }}
           >
-            {saving ? "…" : "ذخیره"}
+            {saving ? "…" : L("ذخیره")}
           </button>
         </header>
 
@@ -239,14 +242,14 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
               <input type="file" accept="image/*" disabled={saving} onChange={selectAvatar} style={{ display: "none" }} />
             </label>
             <label style={{ color: colors.olive600, fontSize: 13, fontWeight: 600, cursor: saving ? "not-allowed" : "pointer" }}>
-              {avatar || user?.avatar_url ? "تغییر تصویر" : "افزودن تصویر"}
+              {avatar || user?.avatar_url ? L("تغییر تصویر") : L("افزودن تصویر")}
               <input type="file" accept="image/*" disabled={saving} onChange={selectAvatar} style={{ display: "none" }} />
             </label>
             <span aria-hidden="true" style={{ width: 48, height: 3, marginTop: 2, borderRadius: 3, background: colors.olive200 }} />
           </div>
 
           <label style={{ display: "grid", gap: 6 }}>
-            <span style={{ fontSize: 13.5, fontWeight: 700, color: colors.inkSecondary }}>نام و نام خانوادگی</span>
+            <span style={{ fontSize: 13.5, fontWeight: 700, color: colors.inkSecondary }}>{L("نام و نام خانوادگی")}</span>
             <div style={{ position: "relative" }}>
               <Icon name="user" size={19} style={{ position: "absolute", insetInlineStart: 16, top: "50%", transform: "translateY(-50%)", color: colors.inkFaint }} />
               <input
@@ -254,27 +257,27 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
                 autoComplete="name"
                 value={name}
                 disabled={saving}
-                placeholder="نام خود را وارد کنید"
+                placeholder={L("نام خود را وارد کنید")}
                 onChange={(event) => setName(event.target.value)}
                 style={{ width: "100%", minHeight: 54, padding: "12px 46px 12px 16px", border: `1px solid ${name.length > 0 && !nameValid ? colors.danger : colors.sand200}`, borderRadius: 16, outline: "none", color: colors.ink, background: colors.surface, fontFamily: typography.fontFamily, fontSize: 15, fontWeight: 500 }}
               />
             </div>
-            {name.length > 0 && !nameValid ? <span style={{ fontSize: 11.5, color: colors.danger }}>حداقل دو حرف وارد کنید.</span> : null}
+            {name.length > 0 && !nameValid ? <span style={{ fontSize: 11.5, color: colors.danger }}>{L("حداقل دو حرف وارد کنید.")}</span> : null}
           </label>
 
           {user?.mobile ? (
             <div style={{ display: "grid", gap: 6 }}>
-              <span style={{ fontSize: 13.5, fontWeight: 700, color: colors.inkSecondary }}>شماره موبایل</span>
+              <span style={{ fontSize: 13.5, fontWeight: 700, color: colors.inkSecondary }}>{L("شماره موبایل")}</span>
               <div style={{ minHeight: 54, display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderRadius: 16, background: colors.sand100 }}>
                 <Icon name="phone" size={19} style={{ color: colors.inkFaint }} />
-                <span dir="ltr" style={{ flex: 1, color: colors.inkMuted, fontSize: 15, fontWeight: 600 }}>{toFaDigits(user.mobile)}</span>
-                <span style={{ padding: "4px 10px", borderRadius: radii.pill, color: colors.inkFaint, background: colors.sand200, fontSize: 11, fontWeight: 600 }}>قابل تغییر نیست</span>
+                <span dir="ltr" style={{ flex: 1, color: colors.inkMuted, fontSize: 15, fontWeight: 600 }}>{localizedDigits(user.mobile, lang)}</span>
+                <span style={{ padding: "4px 10px", borderRadius: radii.pill, color: colors.inkFaint, background: colors.sand200, fontSize: 11, fontWeight: 600 }}>{L("قابل تغییر نیست")}</span>
               </div>
             </div>
           ) : null}
 
           <label style={{ display: "grid", gap: 6 }}>
-            <span style={{ fontSize: 13.5, fontWeight: 700, color: colors.inkSecondary }}>شهر</span>
+            <span style={{ fontSize: 13.5, fontWeight: 700, color: colors.inkSecondary }}>{L("شهر")}</span>
             <div style={{ position: "relative" }}>
               <Icon name="pin" size={19} style={{ position: "absolute", insetInlineStart: 16, top: "50%", transform: "translateY(-50%)", color: colors.inkFaint }} />
               <input
@@ -282,7 +285,7 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
                 autoComplete="address-level2"
                 value={city}
                 disabled={saving}
-                placeholder="شهر خود را وارد کنید"
+                placeholder={L("شهر خود را وارد کنید")}
                 onChange={(event) => setCity(event.target.value)}
                 style={{ width: "100%", minHeight: 54, padding: "12px 46px 12px 16px", border: `1px solid ${colors.sand200}`, borderRadius: 16, outline: "none", color: colors.ink, background: colors.surface, fontFamily: typography.fontFamily, fontSize: 15, fontWeight: 500 }}
               />
@@ -290,14 +293,14 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
           </label>
 
           <label style={{ display: "grid", gap: 6 }}>
-            <span style={{ fontSize: 13.5, fontWeight: 700, color: colors.inkSecondary }}>دربارهٔ شما</span>
+            <span style={{ fontSize: 13.5, fontWeight: 700, color: colors.inkSecondary }}>{L("دربارهٔ شما")}</span>
             <textarea
               name="bio"
               rows={4}
               value={bio}
               disabled={saving}
               maxLength={400}
-              placeholder="چند خط دربارهٔ خودتان بنویسید…"
+              placeholder={L("چند خط دربارهٔ خودتان بنویسید…")}
               onChange={(event) => setBio(event.target.value)}
               className="vodda-textarea"
               style={{ width: "100%", resize: "vertical", padding: 14, border: `1px solid ${colors.sand200}`, borderRadius: 16, outline: "none", color: colors.ink, background: colors.surface, fontFamily: typography.fontFamily, fontSize: 15, fontWeight: 500, lineHeight: 1.8 }}
@@ -307,14 +310,14 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
 
           {onboarding ? (
             <p style={{ ...typography.caption, margin: "-4px 0 0", color: colors.inkMuted }}>
-              برای ورود به وُدّا حداقل نام و نام خانوادگی لازم است؛ بقیه اطلاعات را می‌توانید بعداً هم ویرایش کنید.
+              {L("برای ورود به وُدّا حداقل نام و نام خانوادگی لازم است؛ بقیه اطلاعات را می‌توانید بعداً هم ویرایش کنید.")}
             </p>
           ) : null}
 
           {error ? (
             <div role="alert" style={{ display: "flex", alignItems: "center", gap: 10, padding: 14, borderRadius: 14, background: colors.clayBackground, color: colors.danger, ...typography.bodySmall }}>
               <Icon name="info" size={18} />
-              <span>{error}</span>
+              <span>{L(error)}</span>
             </div>
           ) : null}
         </form>

@@ -7,7 +7,8 @@ import { useCallback, useEffect, useState } from "react";
 import type { UniversalAppConfig } from "../../config";
 import { usePlatform } from "../../platform/context";
 import { navigateApp } from "../../router";
-import { toFaDigits } from "../../ui/persian";
+import { localizedDigits } from "../../ui/persian";
+import { useAppearance } from "../../ui/appearance";
 import {
   Avatar,
   Button,
@@ -53,6 +54,7 @@ function DirectBookingForm({
   onDone?: () => void;
 }) {
   const runtime = usePlatform();
+  const { L, lang } = useAppearance();
   const [when, setWhen] = useState<WhenValue>(() => ({ localDate: todayLocalDate(), hh: 18, mm: 0 }));
   const [city, setCity] = useState(provider.city);
   const [venue, setVenue] = useState("");
@@ -104,32 +106,32 @@ function DirectBookingForm({
         value={note}
         onChange={(event) => setNote(event.target.value.slice(0, 300))}
         rows={2}
-        placeholder="یادداشت برای قاری (اختیاری)…"
+        placeholder={L("یادداشت برای قاری (اختیاری)…")}
         style={{ ...inputStyle, resize: "none", lineHeight: 1.9 }}
-        aria-label={`یادداشت برای خدمت ${service.title}`}
+        aria-label={L("یادداشت برای خدمت {title}").replace("{title}", service.title)}
       />
       {validationError ? (
         <p role="alert" style={{ ...typography.bodySmall, padding: spacing.md, borderRadius: radii.md, background: colors.goldBackground, color: colors.goldDark, margin: 0 }}>
-          {validationError}
+          {L(validationError)}
         </p>
       ) : null}
       {actionError ? (
         <p role="alert" style={{ ...typography.bodySmall, padding: spacing.md, borderRadius: radii.md, background: colors.dangerBackground, color: colors.danger, margin: 0 }}>
-          {actionError}
+          {L(actionError)}
         </p>
       ) : null}
       <div style={{ display: "flex", gap: spacing.sm }}>
         {onDone ? (
           <Button variant="secondary" onClick={onDone} disabled={saving} style={{ minHeight: 46, flex: "0 0 auto" }}>
-            بستن
+            {L("بستن")}
           </Button>
         ) : null}
         <Button fullWidth loading={saving} disabled={saving} onClick={() => void submit()} style={{ minHeight: 50 }}>
-          ثبت رزرو و پرداخت ودیعه
+          {L("ثبت رزرو و پرداخت ودیعه")}
         </Button>
       </div>
       <p style={{ margin: 0, fontSize: 11, color: colors.inkMuted, lineHeight: 1.8 }}>
-        پس از ثبت رزرو، قرارداد ساخته می‌شود؛ ودیعهٔ قطعی‌سازی بر اساس نرخ رسمی سامانه در صفحهٔ قرارداد محاسبه و دریافت می‌شود.
+        {L("پس از ثبت رزرو، قرارداد ساخته می‌شود؛ ودیعهٔ قطعی‌سازی بر اساس نرخ رسمی سامانه در صفحهٔ قرارداد محاسبه و دریافت می‌شود.")}
       </p>
     </div>
   );
@@ -145,6 +147,7 @@ function ServiceCard({
   config: UniversalAppConfig;
 }) {
   const [open, setOpen] = useState(false);
+  const { L, lang } = useAppearance();
   return (
     <div
       className="vodda-enter"
@@ -162,10 +165,10 @@ function ServiceCard({
         <div style={{ minWidth: 0, flex: 1 }}>
           <strong style={{ display: "block", fontSize: 14.5, fontWeight: 800, color: colors.ink }}>{service.title}</strong>
           <span style={{ display: "block", fontSize: 12, color: colors.inkMuted, marginTop: 2 }}>
-            ⏱ {toFaDigits(service.duration)} دقیقه · 📍 {service.cities || provider.city || "همهٔ شهرها"}
+            ⏱ {localizedDigits(service.duration, lang)} {L("دقیقه")} · 📍 {service.cities || provider.city || L("همهٔ شهرها")}
           </span>
         </div>
-        <strong style={{ fontSize: 13.5, color: colors.goldDark, whiteSpace: "nowrap" }}>{formatToman(service.base_price)}</strong>
+        <strong style={{ fontSize: 13.5, color: colors.goldDark, whiteSpace: "nowrap" }}>{formatToman(service.base_price, lang)}</strong>
       </div>
       {service.note ? (
         <p style={{ margin: 0, fontSize: 12, color: colors.inkSecondary, background: colors.sand50, borderRadius: 12, padding: "8px 11px", lineHeight: 1.9 }}>
@@ -174,10 +177,10 @@ function ServiceCard({
       ) : null}
       {service.active ? (
         <Button onClick={() => setOpen((value) => !value)} variant={open ? "secondary" : "primary"} style={{ minHeight: 46 }}>
-          {open ? "بستن فرم رزرو" : "رزرو مستقیم"}
+          {open ? L("بستن فرم رزرو") : L("رزرو مستقیم")}
         </Button>
       ) : (
-        <span style={{ fontSize: 11.5, color: colors.inkMuted }}>این خدمت فعلاً غیرفعال است.</span>
+        <span style={{ fontSize: 11.5, color: colors.inkMuted }}>{L("این خدمت فعلاً غیرفعال است.")}</span>
       )}
       {open ? (
         <DirectBookingForm service={service} provider={provider} config={config} onDone={() => setOpen(false)} />
@@ -188,6 +191,7 @@ function ServiceCard({
 
 export function PresenceProviderScreen({ providerId, config }: { providerId: string; config: UniversalAppConfig }) {
   const runtime = usePlatform();
+  const { L, lang } = useAppearance();
   const numericId = Number(providerId);
   const validId = Number.isInteger(numericId) && numericId > 0;
   const [provider, setProvider] = useState<PresenceProvider | null>(null);
@@ -216,17 +220,17 @@ export function PresenceProviderScreen({ providerId, config }: { providerId: str
     void load();
   }, [load]);
 
-  if (loading) return <LoadingState label="در حال دریافت پروفایل قاری…" />;
+  if (loading) return <LoadingState label={L("در حال دریافت پروفایل قاری…")} />;
 
   if (error || !provider) {
     return (
       <ErrorState
-        title="دریافت پروفایل ناموفق بود"
-        description={error || "این قاری پیدا نشد."}
+        title={L("دریافت پروفایل ناموفق بود")}
+        description={L(error || "این قاری پیدا نشد.")}
         action={
           <div style={{ display: "grid", gap: spacing.sm }}>
-            <Button variant="secondary" onClick={() => void load()}>تلاش دوباره</Button>
-            <Button variant="ghost" onClick={() => navigateApp("/presence", config)}>قاریان حضوری</Button>
+            <Button variant="secondary" onClick={() => void load()}>{L("تلاش دوباره")}</Button>
+            <Button variant="ghost" onClick={() => navigateApp("/presence", config)}>{L("قاریان حضوری")}</Button>
           </div>
         }
       />
@@ -244,7 +248,7 @@ export function PresenceProviderScreen({ providerId, config }: { providerId: str
               <TierBadge tier={provider.tier} />
             </div>
             <span style={{ display: "block", fontSize: 12.5, color: colors.olive700, marginTop: 2 }}>
-              {provider.tag || provider.field || "قاری قرآن"}
+              {provider.tag || provider.field || L("قاری قرآن")}
               {provider.level ? ` · ${provider.level}` : ""}
               {provider.city ? ` · 📍 ${provider.city}` : ""}
             </span>
@@ -252,9 +256,9 @@ export function PresenceProviderScreen({ providerId, config }: { providerId: str
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1px 1fr 1px 1fr", alignItems: "center" }}>
           {[
-            ["امتیاز", provider.reviews > 0 ? `${toFaDigits(provider.rating.toFixed(1))} ★` : "—"],
-            ["نظرها", toFaDigits(provider.reviews)],
-            ["مراسم", toFaDigits(provider.sessions)],
+            [L("امتیاز"), provider.reviews > 0 ? `${localizedDigits(provider.rating.toFixed(1), lang)} ★` : "—"],
+            [L("نظرها"), localizedDigits(provider.reviews, lang)],
+            [L("مراسم"), localizedDigits(provider.sessions, lang)],
           ].flatMap(([label, value], index) => {
             const metric = (
               <div key={label} style={{ minWidth: 0, textAlign: "center" }}>
@@ -270,7 +274,7 @@ export function PresenceProviderScreen({ providerId, config }: { providerId: str
 
       {provider.bio ? (
         <Card style={{ padding: 15, borderRadius: 20 }}>
-          <strong style={{ display: "block", fontSize: 13.5, color: colors.ink }}>دربارهٔ قاری</strong>
+          <strong style={{ display: "block", fontSize: 13.5, color: colors.ink }}>{L("دربارهٔ قاری")}</strong>
           <TeacherBioBlocks bio={provider.bio} />
         </Card>
       ) : null}
@@ -279,19 +283,19 @@ export function PresenceProviderScreen({ providerId, config }: { providerId: str
         <Card style={{ padding: 15, borderRadius: 20, display: "grid", gap: spacing.md }}>
           <strong style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13.5, color: colors.ink }}>
             <Icon name="headphones" size={16} style={{ color: colors.olive600 }} />
-            نمونهٔ تلاوت‌ها
+            {L("نمونهٔ تلاوت‌ها")}
           </strong>
           <SampleAudioList samples={provider.samples} />
         </Card>
       ) : null}
 
       <div style={{ display: "grid", gap: spacing.md }}>
-        <strong style={{ fontSize: 15, color: colors.ink }}>خدمات حضوری</strong>
+        <strong style={{ fontSize: 15, color: colors.ink }}>{L("خدمات حضوری")}</strong>
         {provider.services.length === 0 ? (
           <EmptyState
             icon={<Icon name="mic" size={28} />}
-            title="خدمتی ثبت نشده"
-            description="این قاری فعلاً خدمت حضوری قابل رزروی ندارد؛ می‌توانید برای مراسم خود فراخوان بگذارید."
+            title={L("خدمتی ثبت نشده")}
+            description={L("این قاری فعلاً خدمت حضوری قابل رزروی ندارد؛ می‌توانید برای مراسم خود فراخوان بگذارید.")}
           />
         ) : (
           provider.services.map((service) => (
@@ -301,7 +305,7 @@ export function PresenceProviderScreen({ providerId, config }: { providerId: str
       </div>
 
       <p style={{ margin: 0, fontSize: 11.5, color: colors.inkMuted, lineHeight: 1.9 }}>
-        در رزرو مستقیم، قرارداد بدون فراخوان ساخته می‌شود؛ پس از پرداخت ودیعه، مراسم قطعی و نشانی مکان برای قاری ارسال می‌شود.
+        {L("در رزرو مستقیم، قرارداد بدون فراخوان ساخته می‌شود؛ پس از پرداخت ودیعه، مراسم قطعی و نشانی مکان برای قاری ارسال می‌شود.")}
       </p>
     </div>
   );

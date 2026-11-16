@@ -19,9 +19,10 @@ import {
   radii,
   shadows,
   spacing,
-  toFaDigits,
   typography,
 } from "../../ui";
+import { useAppearance } from "../../ui/appearance";
+import { localizedDigits } from "../../ui/persian";
 import { showToast } from "../../ui/toast";
 import { messageOf } from "../../ui/errorMessage";
 import { formatWalletAmount } from "../wallet/WalletTransactionCard";
@@ -194,6 +195,16 @@ function quickChipStyle(active: boolean): CSSProperties {
   };
 }
 
+function amountLabel(value: number, lang: "fa" | "en"): string {
+  return lang === "en"
+    ? new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(Math.max(0, value))
+    : formatWalletAmount(value);
+}
+
+function pricePresetLabel(value: number, lang: "fa" | "en"): string {
+  return lang === "en" ? `${new Intl.NumberFormat("en-US").format(value)} Toman` : formatToman(value);
+}
+
 function normalizePersian(value: string): string {
   return value
     .replace(/[\u200c\u064b-\u0652]/g, "")
@@ -207,6 +218,7 @@ function normalizePersian(value: string): string {
 
 export function TeacherServicesScreen() {
   const runtime = usePlatform();
+  const { L, lang } = useAppearance();
   const [services, setServices] = useState<TeacherService[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -326,7 +338,7 @@ export function TeacherServicesScreen() {
       } else {
         await load();
       }
-      showToast(`«${entry.title}» به خدمات شما اضافه شد`);
+      showToast(L("«{title}» به خدمات شما اضافه شد").replace("{title}", entry.title));
     } catch (mutationError) {
       setActionError(messageOf(mutationError));
     } finally {
@@ -352,12 +364,12 @@ export function TeacherServicesScreen() {
     const price = Number.parseInt(draft.price.trim(), 10);
 
     if (!Number.isFinite(duration) || duration < 10 || duration > 240) {
-      setFormError("مدت خدمت باید بین ۱۰ تا ۲۴۰ دقیقه باشد.");
+      setFormError(L("مدت خدمت باید بین ۱۰ تا ۲۴۰ دقیقه باشد."));
       return;
     }
     // قیمت صفر = خدمت رایگان (جلسات رایگان اساتید)
     if (!Number.isFinite(price) || price < 0) {
-      setFormError("مبلغ معتبر وارد کنید.");
+      setFormError(L("مبلغ معتبر وارد کنید."));
       return;
     }
 
@@ -369,7 +381,7 @@ export function TeacherServicesScreen() {
         current.map((service) => (service.id === editing.id ? { ...service, duration, price } : service)),
       );
       setEditing(null);
-      showToast("تغییرات خدمت ذخیره شد");
+      showToast(L("تغییرات خدمت ذخیره شد"));
     } catch (mutationError) {
       setFormError(messageOf(mutationError));
     } finally {
@@ -390,7 +402,7 @@ export function TeacherServicesScreen() {
         current.map((service) => (service.id === target.id ? { ...service, active: false } : service)),
       );
       setEditing(null);
-      showToast("خدمت غیرفعال شد", "info");
+      showToast(L("خدمت غیرفعال شد"), "info");
     } catch (mutationError) {
       setError(messageOf(mutationError));
     } finally {
@@ -408,7 +420,7 @@ export function TeacherServicesScreen() {
       await deleteService(runtime, target.id);
       setServices((current) => current.filter((service) => service.id !== target.id));
       setEditing(null);
-      showToast("خدمت حذف شد", "info");
+      showToast(L("خدمت حذف شد"), "info");
     } catch (mutationError) {
       setError(messageOf(mutationError));
     } finally {
@@ -431,21 +443,23 @@ export function TeacherServicesScreen() {
           <IconBadge icon="checkCircle" tone="olive" size={40} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <strong style={{ ...typography.body, display: "block" }}>
-              {toFaDigits(activeCount)} خدمت فعال دارید
+              {L("{n} خدمت فعال دارید").replace("{n}", localizedDigits(activeCount, lang))}
             </strong>
             <span style={{ ...typography.caption, color: colors.inkMuted, display: "block", lineHeight: 1.8 }}>
-              اینجا خدمات جلسهٔ آنلاین شماست: برای انتخاب هر خدمت فقط یک بار روی آن بزنید؛ خدمت انتخابی <b style={{ color: greenTone.ink }}>سبز</b> می‌شود، قیمت پیش‌فرض دارد و بلافاصله قابل رزرو است. خدمات حضوری مراسم (تلاوت مجلسی، ختم، اذان و…) مسیر جداگانه‌ای دارد: بخش «خدمات حضوری».
+              {L("اینجا خدمات جلسهٔ آنلاین شماست: برای انتخاب هر خدمت فقط یک بار روی آن بزنید؛ خدمت انتخابی ")}
+              <b style={{ color: greenTone.ink }}>{L("سبز")}</b>
+              {L(" می‌شود، قیمت پیش‌فرض دارد و بلافاصله قابل رزرو است. خدمات حضوری مراسم (تلاوت مجلسی، ختم، اذان و…) مسیر جداگانه‌ای دارد: بخش «خدمات حضوری».")}
             </span>
           </div>
         </div>
       </Card>
 
-      {loading ? <LoadingState label="در حال دریافت خدمات…" /> : null}
+      {loading ? <LoadingState label={L("در حال دریافت خدمات…")} /> : null}
       {!loading && error ? (
         <ErrorState
-          title="دریافت خدمات ناموفق بود"
-          description={error}
-          action={<Button onClick={() => void load()}>تلاش دوباره</Button>}
+          title={L("دریافت خدمات ناموفق بود")}
+          description={L(error)}
+          action={<Button onClick={() => void load()}>{L("تلاش دوباره")}</Button>}
         />
       ) : null}
 
@@ -459,8 +473,8 @@ export function TeacherServicesScreen() {
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="جستجوی خدمت…"
-              aria-label="جستجوی خدمت"
+              placeholder={L("جستجوی خدمت…")}
+              aria-label={L("جستجوی خدمت")}
               style={{
                 width: "100%",
                 padding: "12px 42px",
@@ -476,7 +490,7 @@ export function TeacherServicesScreen() {
             {query ? (
               <button
                 type="button"
-                aria-label="پاک کردن جستجو"
+                aria-label={L("پاک کردن جستجو")}
                 onClick={() => setQuery("")}
                 style={{ position: "absolute", insetInlineEnd: 10, top: "50%", transform: "translateY(-50%)", border: 0, background: "transparent", color: colors.inkFaint, cursor: "pointer", display: "grid", padding: 6 }}
               >
@@ -492,17 +506,17 @@ export function TeacherServicesScreen() {
             </div>
           ) : null}
 
-          {catalogLoading ? <LoadingState label="در حال دریافت فهرست خدمات رسمی…" /> : null}
+          {catalogLoading ? <LoadingState label={L("در حال دریافت فهرست خدمات رسمی…")} /> : null}
           {!catalogLoading && catalogError ? (
             <ErrorState
-              title="دریافت فهرست خدمات رسمی ناموفق بود"
-              description={catalogError}
-              action={<Button onClick={() => void loadCatalog()}>تلاش دوباره</Button>}
+              title={L("دریافت فهرست خدمات رسمی ناموفق بود")}
+              description={L(catalogError)}
+              action={<Button onClick={() => void loadCatalog()}>{L("تلاش دوباره")}</Button>}
             />
           ) : null}
 
           {!catalogLoading && !catalogError && visibleCategories.length === 0 ? (
-            <EmptyState icon={<Icon name="search" size={28} />} title="خدمتی یافت نشد" description="عبارت دیگری را جستجو کنید." />
+            <EmptyState icon={<Icon name="search" size={28} />} title={L("خدمتی یافت نشد")} description={L("عبارت دیگری را جستجو کنید.")} />
           ) : null}
 
           {/* دسته‌بندی‌ها */}
@@ -533,7 +547,7 @@ export function TeacherServicesScreen() {
                         <strong style={{ ...typography.body, color: colors.ink }}>{group.category}</strong>
                         {selectedInGroup > 0 ? (
                           <span style={{ fontSize: 10.5, fontWeight: 800, color: greenTone.ink, background: greenTone.chip, borderRadius: radii.pill, padding: "3px 9px" }}>
-                            {toFaDigits(selectedInGroup)} انتخاب‌شده
+                            {L("{n} انتخاب‌شده").replace("{n}", localizedDigits(selectedInGroup, lang))}
                           </span>
                         ) : null}
                       </span>
@@ -555,7 +569,7 @@ export function TeacherServicesScreen() {
                                 key={entry.id}
                                 type="button"
                                 onClick={() => openEditor(own)}
-                                aria-label={`ویرایش خدمت ${own.title}`}
+                                aria-label={L("ویرایش خدمت {title}").replace("{title}", own.title)}
                                 style={{
                                   display: "flex",
                                   gap: 12,
@@ -575,16 +589,16 @@ export function TeacherServicesScreen() {
                                 <span style={{ flex: 1, minWidth: 0, display: "grid", gap: 3 }}>
                                   <strong style={{ ...typography.bodySmall, color: inactive ? colors.goldDark : greenTone.deep }}>{entry.title}</strong>
                                   <span style={{ ...typography.caption, color: inactive ? colors.goldDark : greenTone.ink, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                                    <span>{toFaDigits(own.duration)} دقیقه · {own.price === 0 ? "هر جلسه رایگان" : `هر جلسه ${formatWalletAmount(own.price)} تومان`}</span>
+                                    <span>{L("{n} دقیقه").replace("{n}", localizedDigits(own.duration, lang))} · {own.price === 0 ? L("هر جلسه رایگان") : L("هر جلسه {n} تومان").replace("{n}", amountLabel(own.price, lang))}</span>
                                     <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontWeight: 700, opacity: 0.85 }}>
                                       <Icon name="edit" size={12} />
-                                      ویرایش
+                                      {L("ویرایش")}
                                     </span>
                                   </span>
                                 </span>
                                 {inactive ? (
                                   <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 800, color: colors.goldDark, background: "#fff", borderRadius: radii.pill, padding: "4px 10px" }}>
-                                    غیرفعال
+                                    {L("غیرفعال")}
                                   </span>
                                 ) : (
                                   <span style={{ flexShrink: 0, width: 30, height: 30, borderRadius: "50%", display: "grid", placeItems: "center", color: "#fff", background: greenTone.ink }}>
@@ -602,7 +616,7 @@ export function TeacherServicesScreen() {
                               type="button"
                               disabled={creatingId !== null}
                               onClick={() => void selectService(entry)}
-                              aria-label={`افزودن خدمت ${entry.title}`}
+                              aria-label={L("افزودن خدمت {title}").replace("{title}", entry.title)}
                               style={{
                                 display: "flex",
                                 gap: 12,
@@ -625,7 +639,7 @@ export function TeacherServicesScreen() {
                                   {entry.description}
                                 </span>
                                 <span style={{ ...typography.caption, color: colors.olive700, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 4 }}>
-                                  پیش‌فرض: {formatToman(preset.price)} · {toFaDigits(preset.duration)} دقیقه
+                                  {L("پیش‌فرض: {price} · {duration} دقیقه").replace("{price}", pricePresetLabel(preset.price, lang)).replace("{duration}", localizedDigits(preset.duration, lang))}
                                 </span>
                               </span>
                               <span
@@ -647,7 +661,7 @@ export function TeacherServicesScreen() {
           {/* خدمت‌های قدیمی بدون تطابق کاتالوگ */}
           {!catalogLoading && orphanServices.length > 0 ? (
             <div style={{ display: "grid", gap: spacing.sm }}>
-              <strong style={{ ...typography.body, color: colors.ink }}>سایر خدمات ثبت‌شده</strong>
+              <strong style={{ ...typography.body, color: colors.ink }}>{L("سایر خدمات ثبت‌شده")}</strong>
               {orphanServices.map((service) => (
                 <button
                   key={service.id}
@@ -671,7 +685,7 @@ export function TeacherServicesScreen() {
                   <span style={{ flex: 1, minWidth: 0, display: "grid", gap: 3 }}>
                     <strong style={{ ...typography.bodySmall }}>{service.title}</strong>
                     <span style={{ ...typography.caption, color: colors.inkMuted }}>
-                      {toFaDigits(service.duration)} دقیقه · {service.price === 0 ? "هر جلسه رایگان" : `هر جلسه ${formatWalletAmount(service.price)} تومان`}
+                      {L("{n} دقیقه").replace("{n}", localizedDigits(service.duration, lang))} · {service.price === 0 ? L("هر جلسه رایگان") : L("هر جلسه {n} تومان").replace("{n}", amountLabel(service.price, lang))}
                     </span>
                   </span>
                   {service.active ? (
@@ -680,7 +694,7 @@ export function TeacherServicesScreen() {
                     </span>
                   ) : (
                     <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 800, color: colors.goldDark, background: "#fff", borderRadius: radii.pill, padding: "4px 10px" }}>
-                      غیرفعال
+                      {L("غیرفعال")}
                     </span>
                   )}
                 </button>
@@ -691,20 +705,20 @@ export function TeacherServicesScreen() {
       ) : null}
 
       {/* ویرایشگر قیمت و مدت */}
-      <Dialog open={editing !== null} title="ویرایش خدمت" onClose={closeEditor}>
+      <Dialog open={editing !== null} title={L("ویرایش خدمت")} onClose={closeEditor}>
         <div style={{ display: "grid", gap: spacing.md }}>
           {editing ? (
             <div style={{ display: "flex", gap: 10, alignItems: "center", border: `1.5px solid ${colors.olive200}`, background: colors.olive50, borderRadius: radii.lg, padding: 12 }}>
               <IconBadge icon={editingIcon || "book"} tone="olive" size={38} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <strong style={{ ...typography.body, display: "block" }}>{editing.title}</strong>
-                <span style={{ ...typography.caption, color: colors.inkMuted }}>{editing.active ? "فعال و قابل رزرو" : "غیرفعال — تا فعال‌سازی مجدد قابل رزرو نیست"}</span>
+                <span style={{ ...typography.caption, color: colors.inkMuted }}>{editing.active ? L("فعال و قابل رزرو") : L("غیرفعال — تا فعال‌سازی مجدد قابل رزرو نیست")}</span>
               </div>
             </div>
           ) : null}
           <label style={{ display: "grid", gap: spacing.xs, ...typography.bodySmall }}>
-            <span style={{ fontWeight: 700 }}>مدت جلسه (دقیقه)</span>
-            <div role="group" aria-label="مدت‌های پیشنهادی" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            <span style={{ fontWeight: 700 }}>{L("مدت جلسه (دقیقه)")}</span>
+            <div role="group" aria-label={L("مدت‌های پیشنهادی")} style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               {DURATION_PRESETS.map((preset) => (
                 <button
                   key={preset}
@@ -713,21 +727,21 @@ export function TeacherServicesScreen() {
                   onClick={() => setDraft((current) => ({ ...current, duration: String(preset) }))}
                   style={quickChipStyle(draft.duration === String(preset))}
                 >
-                  {toFaDigits(preset)} دقیقه
+                  {L("{n} دقیقه").replace("{n}", localizedDigits(preset, lang))}
                 </button>
               ))}
             </div>
             <input
               inputMode="numeric"
-              value={toFaDigits(draft.duration)}
+              value={localizedDigits(draft.duration, lang)}
               disabled={saving}
               onChange={(event) => setDraft((current) => ({ ...current, duration: digitsOnly(event.target.value, 3) }))}
-              placeholder="یا مدت دلخواه — بین ۱۰ تا ۲۴۰"
+              placeholder={L("یا مدت دلخواه — بین ۱۰ تا ۲۴۰")}
               style={{ width: "100%", padding: spacing.md, border: `1px solid ${colors.sand200}`, borderRadius: radii.md, background: colors.surface, color: colors.ink, boxShadow: shadows.xs, fontFamily: typography.fontFamily }}
             />
           </label>
           <div style={{ display: "grid", gap: spacing.xs, ...typography.bodySmall }}>
-            <span style={{ fontWeight: 700 }}>قیمت هر جلسه (تومان)</span>
+            <span style={{ fontWeight: 700 }}>{L("قیمت هر جلسه (تومان)")}</span>
             <button
               type="button"
               role="switch"
@@ -764,21 +778,21 @@ export function TeacherServicesScreen() {
               </span>
               <span style={{ flex: 1, minWidth: 0, display: "grid", gap: 1 }}>
                 <strong style={{ fontSize: 13, fontWeight: 800, color: isFreeService ? colors.goldDark : colors.ink }}>
-                  ارائهٔ رایگان این خدمت
+                  {L("ارائهٔ رایگان این خدمت")}
                 </strong>
                 <span style={{ fontSize: 11.5, color: colors.inkMuted, lineHeight: 1.7 }}>
-                  با فعال‌کردن این گزینه، قرآن‌آموزان بدون پرداخت هزینه رزرو می‌کنند و جلسه در بخش «خدمات رایگان» صفحهٔ نخست نمایش داده می‌شود.
+                  {L("با فعال‌کردن این گزینه، قرآن‌آموزان بدون پرداخت هزینه رزرو می‌کنند و جلسه در بخش «خدمات رایگان» صفحهٔ نخست نمایش داده می‌شود.")}
                 </span>
               </span>
             </button>
             {isFreeService ? (
               <span style={{ ...typography.caption, color: colors.goldDark, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 4 }}>
                 <Icon name="gift" size={13} />
-                این خدمت رایگان ارائه می‌شود (۰ تومان)
+                {L("این خدمت رایگان ارائه می‌شود (۰ تومان)")}
               </span>
             ) : (
               <>
-                <div role="group" aria-label="قیمت‌های پیشنهادی" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                <div role="group" aria-label={L("قیمت‌های پیشنهادی")} style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                   {PRICE_PRESETS.map((preset) => (
                     <button
                       key={preset}
@@ -787,21 +801,21 @@ export function TeacherServicesScreen() {
                       onClick={() => setDraft((current) => ({ ...current, price: String(preset) }))}
                       style={quickChipStyle(draft.price === String(preset))}
                     >
-                      {formatToman(preset)}
+                      {pricePresetLabel(preset, lang)}
                     </button>
                   ))}
                 </div>
                 <AmountInput
                   value={draft.price}
                   onChange={(next) => setDraft((current) => ({ ...current, price: next }))}
-                  ariaLabel="قیمت خدمت به تومان"
-                  placeholder="یا مبلغ دلخواه…"
+                  ariaLabel={L("قیمت خدمت به تومان")}
+                  placeholder={L("یا مبلغ دلخواه…")}
                 />
               </>
             )}
           </div>
-          {formError ? <span role="alert" style={{ ...typography.caption, color: colors.danger }}>{formError}</span> : null}
-          <Button fullWidth loading={saving} onClick={() => void saveService()}>ذخیره تغییرات</Button>
+          {formError ? <span role="alert" style={{ ...typography.caption, color: colors.danger }}>{L(formError)}</span> : null}
+          <Button fullWidth loading={saving} onClick={() => void saveService()}>{L("ذخیره تغییرات")}</Button>
           {editing ? (
             <div style={{ display: "flex", gap: spacing.sm, justifyContent: "center" }}>
               {editing.active ? (
@@ -811,7 +825,7 @@ export function TeacherServicesScreen() {
                   onClick={() => setDeactivateTarget(editing)}
                   style={{ border: 0, background: "transparent", color: colors.goldDark, fontWeight: 700, fontSize: 12, cursor: "pointer", fontFamily: typography.fontFamily, padding: "6px 10px" }}
                 >
-                  غیرفعال‌کردن خدمت
+                  {L("غیرفعال‌کردن خدمت")}
                 </button>
               ) : null}
               <button
@@ -820,28 +834,28 @@ export function TeacherServicesScreen() {
                 onClick={() => setDeleteTarget(editing)}
                 style={{ border: 0, background: "transparent", color: colors.danger, fontWeight: 700, fontSize: 12, cursor: "pointer", fontFamily: typography.fontFamily, padding: "6px 10px" }}
               >
-                حذف خدمت
+                {L("حذف خدمت")}
               </button>
             </div>
           ) : null}
         </div>
       </Dialog>
 
-      <Dialog open={deactivateTarget !== null} title="غیرفعال‌کردن خدمت" onClose={() => { if (!saving) setDeactivateTarget(null); }}>
+      <Dialog open={deactivateTarget !== null} title={L("غیرفعال‌کردن خدمت")} onClose={() => { if (!saving) setDeactivateTarget(null); }}>
         <p style={{ ...typography.body, marginTop: 0, color: colors.inkSecondary }}>
-          این خدمت غیرفعال می‌شود و تا فعال‌سازی مجدد قابل رزرو نیست.
+          {L("این خدمت غیرفعال می‌شود و تا فعال‌سازی مجدد قابل رزرو نیست.")}
         </p>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: spacing.sm }}>
-          <Button variant="secondary" disabled={saving} onClick={() => setDeactivateTarget(null)}>انصراف</Button>
-          <Button loading={saving} onClick={() => void deactivate()}>غیرفعال‌کردن</Button>
+          <Button variant="secondary" disabled={saving} onClick={() => setDeactivateTarget(null)}>{L("انصراف")}</Button>
+          <Button loading={saving} onClick={() => void deactivate()}>{L("غیرفعال‌کردن")}</Button>
         </div>
       </Dialog>
 
-      <Dialog open={deleteTarget !== null} title="حذف خدمت" onClose={() => { if (!saving) setDeleteTarget(null); }}>
-        <p style={{ ...typography.body, marginTop: 0, color: colors.inkSecondary }}>این خدمت حذف شود؟</p>
+      <Dialog open={deleteTarget !== null} title={L("حذف خدمت")} onClose={() => { if (!saving) setDeleteTarget(null); }}>
+        <p style={{ ...typography.body, marginTop: 0, color: colors.inkSecondary }}>{L("این خدمت حذف شود؟")}</p>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: spacing.sm }}>
-          <Button variant="secondary" disabled={saving} onClick={() => setDeleteTarget(null)}>انصراف</Button>
-          <Button variant="danger" loading={saving} onClick={() => void remove()}>حذف</Button>
+          <Button variant="secondary" disabled={saving} onClick={() => setDeleteTarget(null)}>{L("انصراف")}</Button>
+          <Button variant="danger" loading={saving} onClick={() => void remove()}>{L("حذف")}</Button>
         </div>
       </Dialog>
     </section>

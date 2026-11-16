@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"fmt"
 	"context"
 	"errors"
 	"strings"
@@ -139,6 +140,8 @@ func (uc *WalletUsecase) RequestWithdrawal(ctx context.Context, userID uint, in 
 		_ = uc.wallet.UpdateWithdrawal(ctx, w)
 		return nil, err
 	}
+	NotifyAdmins(ctx, uc.notif, uc.users, "مدیریت: درخواست برداشت جدید",
+		"استاد «"+user.Name+"» درخواست برداشت "+fmt.Sprintf("%d", in.Amount)+" تومانی ثبت کرد.")
 	return w, nil
 }
 

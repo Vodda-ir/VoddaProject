@@ -15,3 +15,8 @@ export function digitsOnly(value: string | number, maxLength?: number): string {
   const normalized = toLatinDigits(value).replace(/\D/g, "");
   return typeof maxLength === "number" ? normalized.slice(0, maxLength) : normalized;
 }
+
+/** رقم‌های متناسب با زبان اپ: فارسی = ارقام فارسی، انگلیسی = ارقام لاتین. */
+export function localizedDigits(value: string | number, lang: "fa" | "en"): string {
+  return lang === "en" ? toLatinDigits(value) : toFaDigits(value);
+}

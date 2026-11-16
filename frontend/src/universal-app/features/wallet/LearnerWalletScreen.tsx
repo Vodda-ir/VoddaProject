@@ -16,10 +16,11 @@ import {
   digitsOnly,
   radii,
   spacing,
-  toFaDigits,
   typography,
 } from "../../ui";
+import { useAppearance } from "../../ui/appearance";
 import { messageOf } from "../../ui/errorMessage";
+import { localizedDigits } from "../../ui/persian";
 import { payViaSamanGate } from "../../../lib/saman-gate";
 import { getWalletSnapshot, createWalletTopup, type WalletTopup } from "./api";
 import type { WalletTransaction } from "./types";
@@ -39,6 +40,7 @@ const TOPUP_MAX = 100_000_000;
 
 export function LearnerWalletScreen() {
   const runtime = usePlatform();
+  const { L, lang } = useAppearance();
   const [balance, setBalance] = useState<number | null>(null);
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -78,7 +80,11 @@ export function LearnerWalletScreen() {
     if (topupBusy || redirecting) return;
     setTopupError("");
     if (!topupAmount || topupAmount < TOPUP_MIN || topupAmount > TOPUP_MAX) {
-      setTopupError(`مبلغ شارژ باید بین ${toFaDigits(TOPUP_MIN)} و ${toFaDigits(TOPUP_MAX)} تومان باشد.`);
+      setTopupError(
+        L("مبلغ شارژ باید بین {min} و {max} تومان باشد.")
+          .replace("{min}", localizedDigits(TOPUP_MIN, lang))
+          .replace("{max}", localizedDigits(TOPUP_MAX, lang)),
+      );
       return;
     }
     setTopupBusy(true);
@@ -89,19 +95,19 @@ export function LearnerWalletScreen() {
       setRedirecting(true);
       payViaSamanGate(topup.token);
     } catch (topupFailure) {
-      setTopupError(messageOf(topupFailure, "شروع پرداخت انجام نشد؛ چند لحظه دیگر تلاش کنید."));
+      setTopupError(messageOf(topupFailure, L("شروع پرداخت انجام نشد؛ چند لحظه دیگر تلاش کنید.")));
       setTopupBusy(false);
     }
-  }, [redirecting, runtime, topupAmount, topupBusy]);
+  }, [redirecting, runtime, topupAmount, topupBusy, L, lang]);
 
   return (
     <section className="vodda-screen" style={{ display: "grid", gap: spacing.xl }}>
-      <h1 className="vodda-display" style={{ fontSize: 26, margin: "2px 0 0", color: colors.ink, lineHeight: 1.7 }}>کیف پول</h1>
+      <h1 className="vodda-display" style={{ fontSize: 26, margin: "2px 0 0", color: colors.ink, lineHeight: 1.7 }}>{L("کیف پول")}</h1>
       <PaymentResultBanner />
-      <WalletHero amount={balance === null ? "—" : formatWalletAmount(balance)} />
+      <WalletHero amount={balance === null ? "—" : formatWalletAmount(balance, lang)} />
 
       <div style={{ display: "grid", gap: spacing.md }}>
-        <SectionHeader title="شارژ کیف پول" />
+        <SectionHeader title={L("شارژ کیف پول")} />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: spacing.sm }}>
           {TOPUP_PRESETS.map((preset) => {
             const active = topupAmount === preset.value && !parsedCustom;
@@ -127,9 +133,9 @@ export function LearnerWalletScreen() {
                   transition: "border-color 140ms ease, background 140ms ease",
                 }}
               >
-                {preset.label}
+                {L(preset.label)}
                 <span style={{ display: "block", fontSize: 11, fontWeight: 600, opacity: 0.8, marginTop: 2 }}>
-                  تومان
+                  {L("تومان")}
                 </span>
               </button>
             );
@@ -137,19 +143,19 @@ export function LearnerWalletScreen() {
         </div>
 
         <Input
-          label="مبلغ دلخواه (تومان)"
+          label={L("مبلغ دلخواه (تومان)")}
           inputMode="numeric"
           value={customAmount}
           onChange={(event) => {
             setCustomAmount(digitsOnly(event.target.value, 9));
             setTopupError("");
           }}
-          placeholder={toFaDigits("مثلاً ۳۰۰۰۰۰")}
+          placeholder={L("مثلاً ۳۰۰۰۰۰")}
         />
 
         {topupError ? (
           <p role="alert" style={{ ...typography.caption, margin: 0, color: colors.danger, fontWeight: 700 }}>
-            {topupError}
+            {L(topupError)}
           </p>
         ) : null}
 
@@ -159,35 +165,35 @@ export function LearnerWalletScreen() {
           disabled={redirecting || !topupAmount}
         >
           {redirecting ? (
-            "در حال انتقال به درگاه…"
+            L("در حال انتقال به درگاه…")
           ) : (
             <>
               <Icon name="wallet" size={17} />
-              پرداخت با درگاه بانکی
+              {L("پرداخت با درگاه بانکی")}
             </>
           )}
         </Button>
 
         <p style={{ ...typography.caption, margin: 0, color: colors.inkMuted }}>
-          پرداخت از طریق درگاه امن سامان‌سپ انجام می‌شود؛ رسید بانک را برای پیگیری نگه دارید.
+          {L("پرداخت از طریق درگاه امن سامان‌سپ انجام می‌شود؛ رسید بانک را برای پیگیری نگه دارید.")}
         </p>
       </div>
 
-      <SectionHeader title="تراکنش‌ها" />
+      <SectionHeader title={L("تراکنش‌ها")} />
 
-      {loading ? <LoadingState label="در حال دریافت کیف پول…" /> : null}
+      {loading ? <LoadingState label={L("در حال دریافت کیف پول…")} /> : null}
       {!loading && error ? (
         <ErrorState
-          title="دریافت کیف پول ناموفق بود"
-          description={error}
-          action={<Button onClick={() => void load()}>تلاش دوباره</Button>}
+          title={L("دریافت کیف پول ناموفق بود")}
+          description={L(error)}
+          action={<Button onClick={() => void load()}>{L("تلاش دوباره")}</Button>}
         />
       ) : null}
       {!loading && !error && transactions.length === 0 ? (
         <EmptyState
           illustration={<IllustrationWallet />}
-          title="تراکنشی ثبت نشده"
-          description="هنوز تراکنشی در کیف پول شما وجود ندارد."
+          title={L("تراکنشی ثبت نشده")}
+          description={L("هنوز تراکنشی در کیف پول شما وجود ندارد.")}
         />
       ) : null}
       {!loading && !error && transactions.length > 0 ? (

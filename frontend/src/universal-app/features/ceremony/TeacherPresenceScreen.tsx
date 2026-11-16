@@ -8,14 +8,15 @@ import type { CSSProperties } from "react";
 import type { UniversalAppConfig } from "../../config";
 import { usePlatform } from "../../platform/context";
 import { navigateApp } from "../../router";
-import { digitsOnly, toFaDigits } from "../../ui/persian";
+import { digitsOnly, localizedDigits } from "../../ui/persian";
+import { useAppearance } from "../../ui/appearance";
+import { formatAppDateTime } from "../../ui/jalali";
 import {
   Button,
   Card,
   Dialog,
   EmptyState,
   ErrorState,
-  formatJalaliDateTime,
   Icon,
   LoadingState,
   colors,
@@ -89,13 +90,14 @@ function ServiceForm({
   onCancel: () => void;
   formError: string;
 }) {
+  const { L } = useAppearance();
   const selectedService = catalog.find((item) => item.id === form.officialServiceId) ?? null;
   return (
     <div style={{ display: "grid", gap: spacing.lg }}>
       <div>
-        <strong style={{ display: "block", fontSize: 13.5, color: colors.ink, marginBottom: 8 }}>خدمت رسمی</strong>
+        <strong style={{ display: "block", fontSize: 13.5, color: colors.ink, marginBottom: 8 }}>{L("خدمت رسمی")}</strong>
         {catalog.length === 0 ? (
-          <span style={{ ...typography.caption, color: colors.inkMuted }}>کاتالوگ خدمات حضوری دریافت نشد.</span>
+          <span style={{ ...typography.caption, color: colors.inkMuted }}>{L("کاتالوگ خدمات حضوری دریافت نشد.")}</span>
         ) : selectedService && form.id > 0 ? (
           <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, color: colors.inkSecondary, background: colors.sand100, border: `1px solid ${colors.sand200}`, borderRadius: 999, padding: "6px 11px" }}>
             <TopicIcon icon={selectedService.icon} size={14} />
@@ -140,7 +142,7 @@ function ServiceForm({
         value={form.basePrice}
         onChange={(next) => onChange({ ...form, basePrice: next })}
         presets={[500_000, 1_000_000, 1_500_000, 2_000_000, 3_000_000, 5_000_000]}
-        ariaLabel={`حق‌الزحمهٔ پایه برای خدمت ${selectedService?.title ?? "حضوری"}`}
+        ariaLabel={L("حق‌الزحمهٔ پایه برای خدمت {title}").replace("{title}", selectedService?.title ?? L("حضوری"))}
       />
 
       <DurationPicker value={form.duration} onChange={(next) => onChange({ ...form, duration: next })} />
@@ -148,28 +150,28 @@ function ServiceForm({
       <CitiesChipsField value={form.cities} onChange={(next) => onChange({ ...form, cities: next })} />
 
       <label style={{ display: "grid", gap: 6, ...typography.bodySmall }}>
-        <span style={{ fontWeight: 800, color: colors.inkSecondary }}>توضیح خدمت (اختیاری)</span>
+        <span style={{ fontWeight: 800, color: colors.inkSecondary }}>{L("توضیح خدمت (اختیاری)")}</span>
         <textarea
           value={form.note}
           onChange={(event) => onChange({ ...form, note: event.target.value.slice(0, 300) })}
           rows={2}
-          placeholder="مثلاً: تلاوت جزء ۳۰ با روخوانی معتبر؛ مناسب مراسم ختم…"
+          placeholder={L("مثلاً: تلاوت جزء ۳۰ با روخوانی معتبر؛ مناسب مراسم ختم…")}
           style={{ ...inputStyle, resize: "none", lineHeight: 1.9 }}
         />
       </label>
 
       {formError ? (
-        <p role="alert" style={{ ...typography.caption, margin: 0, color: colors.danger }}>{formError}</p>
+        <p role="alert" style={{ ...typography.caption, margin: 0, color: colors.danger }}>{L(formError)}</p>
       ) : null}
 
       <div style={{ display: "flex", gap: spacing.sm }}>
         {form.id > 0 ? (
           <Button variant="secondary" onClick={onCancel} disabled={saving} style={{ minHeight: 46, flex: "0 0 auto" }}>
-            انصراف
+            {L("انصراف")}
           </Button>
         ) : null}
         <Button fullWidth loading={saving} disabled={saving} onClick={onSubmit} style={{ minHeight: 48 }}>
-          {form.id > 0 ? "ذخیرهٔ تغییرات" : "افزودن خدمت حضوری"}
+          {form.id > 0 ? L("ذخیرهٔ تغییرات") : L("افزودن خدمت حضوری")}
         </Button>
       </div>
     </div>
@@ -178,6 +180,7 @@ function ServiceForm({
 
 export function TeacherPresenceScreen({ config }: { config: UniversalAppConfig }) {
   const runtime = usePlatform();
+  const { L, lang } = useAppearance();
   const [tab, setTab] = useState<"services" | "bookings">("services");
   const [services, setServices] = useState<PresenceService[]>([]);
   const [bookings, setBookings] = useState<CeremonyBooking[]>([]);
@@ -273,14 +276,14 @@ export function TeacherPresenceScreen({ config }: { config: UniversalAppConfig }
     }
   }, [busyId, deleteTarget, load, runtime]);
 
-  if (loading) return <LoadingState label="در حال دریافت خدمات حضوری…" />;
+  if (loading) return <LoadingState label={L("در حال دریافت خدمات حضوری…")} />;
 
   if (error && services.length === 0) {
     return (
       <ErrorState
-        title="دریافت خدمات حضوری ناموفق بود"
-        description={error}
-        action={<Button onClick={() => void load()}>تلاش دوباره</Button>}
+        title={L("دریافت خدمات حضوری ناموفق بود")}
+        description={L(error)}
+        action={<Button onClick={() => void load()}>{L("تلاش دوباره")}</Button>}
       />
     );
   }
@@ -302,20 +305,20 @@ export function TeacherPresenceScreen({ config }: { config: UniversalAppConfig }
             <Icon name="mic" size={23} />
           </div>
           <div>
-            <h1 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>خدمات حضوری</h1>
-            <span style={{ fontSize: 12.5, opacity: 0.85 }}>در کاتالوگ مراسم دیده شوید و رزرو مستقیم دریافت کنید</span>
+            <h1 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>{L("خدمات حضوری")}</h1>
+            <span style={{ fontSize: 12.5, opacity: 0.85 }}>{L("در کاتالوگ مراسم دیده شوید و رزرو مستقیم دریافت کنید")}</span>
           </div>
           <div style={{ marginInlineStart: "auto", textAlign: "center" }}>
-            <strong style={{ display: "block", fontSize: 22, fontVariantNumeric: "tabular-nums" }}>{toFaDigits(services.length)}</strong>
-            <span style={{ fontSize: 10.5, opacity: 0.8 }}>خدمت فعال</span>
+            <strong style={{ display: "block", fontSize: 22, fontVariantNumeric: "tabular-nums" }}>{localizedDigits(services.length, lang)}</strong>
+            <span style={{ fontSize: 10.5, opacity: 0.8 }}>{L("خدمت فعال")}</span>
           </div>
         </div>
       </div>
 
       <div className="vodda-enter" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
         {([
-          ["services", `خدمات من (${toFaDigits(services.length)})`],
-          ["bookings", `مراسم‌های من (${toFaDigits(bookings.length)})`],
+          ["services", `${L("خدمات من")} (${localizedDigits(services.length, lang)})`],
+          ["bookings", `${L("مراسم‌های من")} (${localizedDigits(bookings.length, lang)})`],
         ] as const).map(([key, label]) => (
           <button
             key={key}
@@ -342,7 +345,7 @@ export function TeacherPresenceScreen({ config }: { config: UniversalAppConfig }
 
       {error ? (
         <p role="alert" style={{ ...typography.bodySmall, padding: spacing.md, borderRadius: radii.md, background: colors.dangerBackground, color: colors.danger, margin: 0 }}>
-          {error}
+          {L(error)}
         </p>
       ) : null}
 
@@ -352,8 +355,8 @@ export function TeacherPresenceScreen({ config }: { config: UniversalAppConfig }
             <Card style={{ borderRadius: 20 }}>
               <EmptyState
                 icon={<Icon name="mic" size={28} />}
-                title="هنوز خدمت حضوری ثبت نکرده‌اید"
-                description="با ثبت خدمت حضوری، در کاتالوگ «قاریان حضوری» نمایش داده می‌شوید و رزرو مستقیم دریافت می‌کنید."
+                title={L("هنوز خدمت حضوری ثبت نکرده‌اید")}
+                description={L("با ثبت خدمت حضوری، در کاتالوگ «قاریان حضوری» نمایش داده می‌شوید و رزرو مستقیم دریافت می‌کنید.")}
               />
             </Card>
           ) : null}
@@ -368,13 +371,13 @@ export function TeacherPresenceScreen({ config }: { config: UniversalAppConfig }
                   </span>
                   <div style={{ minWidth: 0, flex: 1 }}>
                     <strong style={{ display: "block", fontSize: 14.5, fontWeight: 800, color: colors.ink }}>
-                      {service.title || official?.title || "خدمت حضوری"}
+                      {service.title || official?.title || L("خدمت حضوری")}
                     </strong>
                     <span style={{ display: "block", fontSize: 12, color: colors.inkMuted, marginTop: 2 }}>
-                      ⏱ {toFaDigits(service.duration)} دقیقه · {service.cities || "همهٔ شهرها"}
+                      ⏱ {localizedDigits(service.duration, lang)} {L("دقیقه")} · {service.cities || L("همهٔ شهرها")}
                     </span>
                   </div>
-                  <strong style={{ fontSize: 13, color: colors.goldDark, whiteSpace: "nowrap" }}>{formatToman(service.base_price)}</strong>
+                  <strong style={{ fontSize: 13, color: colors.goldDark, whiteSpace: "nowrap" }}>{formatToman(service.base_price, lang)}</strong>
                 </div>
                 {service.note ? (
                   <p style={{ margin: 0, fontSize: 12, color: colors.inkSecondary, background: colors.sand50, borderRadius: 12, padding: "8px 11px", lineHeight: 1.9 }}>
@@ -396,12 +399,12 @@ export function TeacherPresenceScreen({ config }: { config: UniversalAppConfig }
                     }}
                   >
                     <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: "50%", background: service.active ? colors.olive600 : colors.inkFaint }} />
-                    {service.active ? "فعال در کاتالوگ" : "غیرفعال"}
+                    {service.active ? L("فعال در کاتالوگ") : L("غیرفعال")}
                   </span>
                   <Button variant="secondary" onClick={() => { setForm(formOf(service)); setFormError(""); }} style={{ minHeight: 42, paddingInline: 14, marginInlineStart: "auto" }}>
-                    ویرایش
+                    {L("ویرایش")}
                   </Button>
-                  <Button variant="ghost" onClick={() => setDeleteTarget(service)} aria-label={`حذف خدمت ${service.title}`} style={{ minHeight: 42, width: 42, padding: 0, color: colors.danger }}>
+                  <Button variant="ghost" onClick={() => setDeleteTarget(service)} aria-label={L("حذف خدمت {title}").replace("{title}", service.title)} style={{ minHeight: 42, width: 42, padding: 0, color: colors.danger }}>
                     <Icon name="trash" size={17} />
                   </Button>
                 </div>
@@ -411,7 +414,7 @@ export function TeacherPresenceScreen({ config }: { config: UniversalAppConfig }
 
           {form ? (
             <Card style={{ borderRadius: 20, display: "grid", gap: spacing.lg }}>
-              <strong style={{ fontSize: 14.5, color: colors.ink }}>{form.id > 0 ? "ویرایش خدمت حضوری" : "خدمت حضوری جدید"}</strong>
+              <strong style={{ fontSize: 14.5, color: colors.ink }}>{form.id > 0 ? L("ویرایش خدمت حضوری") : L("خدمت حضوری جدید")}</strong>
               <ServiceForm
                 form={form}
                 catalog={catalog}
@@ -425,12 +428,12 @@ export function TeacherPresenceScreen({ config }: { config: UniversalAppConfig }
           ) : (
             <Button fullWidth variant={services.length > 0 ? "secondary" : "primary"} onClick={() => { setForm(emptyForm(catalog[0]?.id ?? 0)); setFormError(""); }} style={{ minHeight: 50 }}>
               <Icon name="plus" size={18} />
-              افزودن خدمت حضوری
+              {L("افزودن خدمت حضوری")}
             </Button>
           )}
 
           <p style={{ margin: 0, fontSize: 11.5, color: colors.inkMuted, lineHeight: 1.9 }}>
-            قیمت پایه به‌عنوان پیشنهاد پذیرش فراخوان‌ها و رزرو مستقیم استفاده می‌شود؛ کارمزد سامانه هنگام تسویه از آن کسر می‌گردد.
+            {L("قیمت پایه به‌عنوان پیشنهاد پذیرش فراخوان‌ها و رزرو مستقیم استفاده می‌شود؛ کارمزد سامانه هنگام تسویه از آن کسر می‌گردد.")}
           </p>
         </div>
       ) : (
@@ -439,8 +442,8 @@ export function TeacherPresenceScreen({ config }: { config: UniversalAppConfig }
             <Card style={{ borderRadius: 20 }}>
               <EmptyState
                 icon={<Icon name="calendar" size={28} />}
-                title="مراسمی در کار نیست"
-                description="با پذیرش فراخوان‌ها یا گرفتن رزرو مستقیم، قراردادهای مراسم شما این‌جا فهرست می‌شود."
+                title={L("مراسمی در کار نیست")}
+                description={L("با پذیرش فراخوان‌ها یا گرفتن رزرو مستقیم، قراردادهای مراسم شما این‌جا فهرست می‌شود.")}
               />
             </Card>
           ) : (
@@ -471,11 +474,11 @@ export function TeacherPresenceScreen({ config }: { config: UniversalAppConfig }
                 </div>
                 <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: colors.inkSecondary, background: colors.sand50, borderRadius: 12, padding: "8px 11px" }}>
                   <Icon name="calendar" size={14} style={{ color: colors.olive500, flex: "0 0 auto" }} />
-                  {formatJalaliDateTime(booking.scheduled_at)} · 📍 {booking.city || "—"}
+                  {formatAppDateTime(booking.scheduled_at, lang)} · 📍 {booking.city || "—"}
                 </span>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontSize: 12, color: colors.inkMuted }}>برگزارکننده: {booking.organizer.name}</span>
-                  <span style={{ marginInlineStart: "auto", fontSize: 12.5, fontWeight: 800, color: colors.goldDark }}>{formatAmountFull(booking.price)}</span>
+                  <span style={{ fontSize: 12, color: colors.inkMuted }}>{L("برگزارکننده:")} {booking.organizer.name}</span>
+                  <span style={{ marginInlineStart: "auto", fontSize: 12.5, fontWeight: 800, color: colors.goldDark }}>{formatAmountFull(booking.price, lang)}</span>
                   <Icon name="chevronL" size={15} style={{ color: colors.inkFaint }} />
                 </div>
               </button>
@@ -483,7 +486,7 @@ export function TeacherPresenceScreen({ config }: { config: UniversalAppConfig }
           )}
           {bookings.length > 0 ? (
             <p style={{ margin: 0, fontSize: 11.5, color: colors.inkMuted, lineHeight: 1.9 }}>
-              وضعیت ودیعه، نشانی دقیق مراسم و تسویه در جزئیات هر قرارداد دیده می‌شود.
+              {L("وضعیت ودیعه، نشانی دقیق مراسم و تسویه در جزئیات هر قرارداد دیده می‌شود.")}
             </p>
           ) : null}
         </div>
@@ -491,15 +494,15 @@ export function TeacherPresenceScreen({ config }: { config: UniversalAppConfig }
 
       <Dialog
         open={deleteTarget !== null}
-        title="حذف خدمت حضوری"
+        title={L("حذف خدمت حضوری")}
         onClose={() => { if (!busyId) setDeleteTarget(null); }}
       >
         <p style={{ ...typography.body, marginTop: 0, color: colors.inkSecondary, lineHeight: 2 }}>
-          با حذف، این خدمت از کاتالوگ «قاریان حضوری» برداشته می‌شود و رزرو مستقیم دریافت نخواهید کرد. قراردادهای قبلی به قوت خود باقی هستند.
+          {L("با حذف، این خدمت از کاتالوگ «قاریان حضوری» برداشته می‌شود و رزرو مستقیم دریافت نخواهید کرد. قراردادهای قبلی به قوت خود باقی هستند.")}
         </p>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: spacing.sm }}>
-          <Button variant="secondary" onClick={() => setDeleteTarget(null)} disabled={Boolean(busyId)}>انصراف</Button>
-          <Button variant="danger" onClick={() => void removeService()} loading={Boolean(busyId)}>حذف خدمت</Button>
+          <Button variant="secondary" onClick={() => setDeleteTarget(null)} disabled={Boolean(busyId)}>{L("انصراف")}</Button>
+          <Button variant="danger" onClick={() => void removeService()} loading={Boolean(busyId)}>{L("حذف خدمت")}</Button>
         </div>
       </Dialog>
     </div>

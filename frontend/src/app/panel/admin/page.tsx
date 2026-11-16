@@ -14,6 +14,7 @@ import { AreaChart, BarsChart, DonutChart, HBarList, faCompact } from '@/compone
 import { StatCard, deltaOf, exportCsv, FilterTabs } from '@/components/admin/AdminUI';
 import { fullUrl, getToken } from '@/lib/auth';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
+import { confirmDialog } from '@/lib/confirm';
 
 // ─────────────────────────── types ───────────────────────────
 
@@ -122,7 +123,7 @@ export default function AdminDashboard() {
   async function reviewTeacher(id: number, approve: boolean) {
     if (!token || busyId !== null) return;
     const action = approve ? 'تأیید' : 'رد';
-    if (!window.confirm(`پروفایل این استاد ${action} شود؟`)) return;
+    if (!(await confirmDialog(`پروفایل این استاد ${action} شود؟`))) return;
 
     setBusyId(id);
     setError('');

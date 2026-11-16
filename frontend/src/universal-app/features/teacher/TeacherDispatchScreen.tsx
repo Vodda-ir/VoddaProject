@@ -4,13 +4,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { UniversalAppConfig } from "../../config";
 import { usePlatform } from "../../platform/context";
 import { navigateApp } from "../../router";
-import { toFaDigits } from "../../ui/persian";
+import { localizedDigits } from "../../ui/persian";
 import type { IconName } from "../../../components/Icon";
 import {
   Button,
   Card,
   EmptyState,
-  formatJalaliDateTime,
   Icon,
   LoadingState,
   colors,
@@ -20,6 +19,8 @@ import {
   spacing,
   typography,
 } from "../../ui";
+import { useAppearance } from "../../ui/appearance";
+import { formatAppDateTime } from "../../ui/jalali";
 import { messageOf } from "../../ui/errorMessage";
 import { CeremonyInboxPanel } from "../ceremony/TeacherCeremonyScreen";
 import { formatWalletAmount } from "../wallet/WalletTransactionCard";
@@ -33,23 +34,31 @@ import type { TeacherInbox, TeacherInboxCall } from "../dispatch/types";
 
 const numberFormatter = new Intl.NumberFormat("fa-IR");
 
-function fa(n: number): string {
-  return numberFormatter.format(n);
+function fa(n: number, lang: "fa" | "en"): string {
+  return lang === "en" ? new Intl.NumberFormat("en-US").format(n) : numberFormatter.format(n);
 }
 
-function priceLabel(n: number): string {
-  return `${formatWalletAmount(Math.max(0, n))} تومان`;
+function amountLabel(value: number, lang: "fa" | "en"): string {
+  return lang === "en"
+    ? new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(Math.max(0, value))
+    : formatWalletAmount(value);
 }
 
-function ageLabel(iso: string): string {
+type Translate = (text: string) => string;
+
+function priceLabel(n: number, L: Translate, lang: "fa" | "en"): string {
+  return L("{n} تومان").replace("{n}", amountLabel(n, lang));
+}
+
+function ageLabel(iso: string, L: Translate, lang: "fa" | "en"): string {
   const at = new Date(iso).getTime();
   if (Number.isNaN(at)) return "";
   const seconds = Math.max(0, Math.round((Date.now() - at) / 1000));
-  if (seconds < 60) return "همین حالا";
+  if (seconds < 60) return L("همین حالا");
   const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${fa(minutes)} دقیقه پیش`;
+  if (minutes < 60) return L("{n} دقیقه پیش").replace("{n}", fa(minutes, lang));
   const hours = Math.floor(minutes / 60);
-  return `${fa(hours)} ساعت پیش`;
+  return L("{n} ساعت پیش").replace("{n}", fa(hours, lang));
 }
 
 function remainingSeconds(expiresAt: string): number {
@@ -58,15 +67,15 @@ function remainingSeconds(expiresAt: string): number {
   return Math.max(0, Math.round((at - Date.now()) / 1000));
 }
 
-function countdownLabel(total: number): string {
+function countdownLabel(total: number, lang: "fa" | "en"): string {
   const m = Math.floor(total / 60);
   const s = total % 60;
-  return `${toFaDigits(String(m).padStart(2, "0"))}:${toFaDigits(String(s).padStart(2, "0"))}`;
+  return `${localizedDigits(String(m).padStart(2, "0"), lang)}:${localizedDigits(String(s).padStart(2, "0"), lang)}`;
 }
 
-function whenLabel(call: TeacherInboxCall["call"]): string {
-  if (call.flexible || !call.scheduled_at) return "⚡ در اسرع وقت";
-  return `📅 ${formatJalaliDateTime(call.scheduled_at, { withWeekday: true })}`;
+function whenLabel(call: TeacherInboxCall["call"], L: Translate, lang: "fa" | "en"): string {
+  if (call.flexible || !call.scheduled_at) return L("⚡ در اسرع وقت");
+  return `📅 ${formatAppDateTime(call.scheduled_at, lang, { withWeekday: true })}`;
 }
 
 const chipStyle: React.CSSProperties = {
@@ -92,6 +101,7 @@ function IncomingCallCard({
   onAccept: () => void;
   onReject: () => void;
 }) {
+  const { L, lang } = useAppearance();
   const call = item.call;
   return (
     <div
@@ -113,11 +123,11 @@ function IncomingCallCard({
         <div style={{ minWidth: 0, flex: 1 }}>
           <strong style={{ display: "block", fontSize: 14.5, fontWeight: 800, color: colors.ink }}>{call.topic_title}</strong>
           <span style={{ fontSize: 12, color: colors.inkMuted }}>
-            {whenLabel(call)} · {ageLabel(call.created_at)}
+            {whenLabel(call, L, lang)} · {ageLabel(call.created_at, L, lang)}
           </span>
         </div>
         <strong dir="ltr" style={{ fontSize: 13.5, color: colors.olive700, fontVariantNumeric: "tabular-nums", flex: "0 0 auto" }}>
-          {countdownLabel(remainingSeconds(call.expires_at))}
+          {countdownLabel(remainingSeconds(call.expires_at), lang)}
         </strong>
       </div>
 
@@ -129,14 +139,14 @@ function IncomingCallCard({
 
       <div style={{ display: "flex", gap: spacing.sm }}>
         <Button variant="secondary" onClick={onReject} disabled={busy} style={{ minHeight: 44, flex: "0 0 auto", paddingInline: 18 }}>
-          رد
+          {L("رد")}
         </Button>
         <Button onClick={onAccept} loading={busy} disabled={busy} style={{ minHeight: 44, flex: 1 }}>
-          🤝 می‌پذیرم — اعلام آمادگی
+          {L("🤝 می‌پذیرم — اعلام آمادگی")}
         </Button>
       </div>
       <p style={{ margin: 0, fontSize: 11, color: colors.inkMuted, lineHeight: 1.8 }}>
-        با پذیرش، پروفایل شما برای کاربر نمایش داده می‌شود؛ اگر کاربر شما را انتخاب کند، درخواست جلسه در «درخواست‌ها» ثبت می‌شود.
+        {L("با پذیرش، پروفایل شما برای کاربر نمایش داده می‌شود؛ اگر کاربر شما را انتخاب کند، درخواست جلسه در «درخواست‌ها» ثبت می‌شود.")}
       </p>
     </div>
   );
@@ -151,6 +161,7 @@ function MyOfferCard({
   busy: boolean;
   onWithdraw: () => void;
 }) {
+  const { L, lang } = useAppearance();
   const call = offer.call;
   const chosen = offer.status === "chosen";
   const callAlive = call && call.status === "searching";
@@ -177,33 +188,33 @@ function MyOfferCard({
           <Icon name={chosen ? "checkCircle" : "clock"} size={17} stroke={2.1} />
         </div>
         <div style={{ minWidth: 0, flex: 1 }}>
-          <strong style={{ display: "block", fontSize: 14, color: colors.ink }}>{call?.topic_title ?? "فراخوان"}</strong>
+          <strong style={{ display: "block", fontSize: 14, color: colors.ink }}>{L(call?.topic_title ?? "فراخوان")}</strong>
           <span style={{ fontSize: 12, color: colors.inkMuted }}>
-            {priceLabel(offer.service_price)} · {fa(offer.service_duration)} دقیقه
+            {priceLabel(offer.service_price, L, lang)} · {fa(offer.service_duration, lang)} {L("دقیقه")}
           </span>
         </div>
       </div>
       {chosen ? (
         <>
           <p style={{ margin: 0, fontSize: 12.5, color: colors.olive700, lineHeight: 1.9 }}>
-            🎉 کاربر شما را انتخاب کرد! درخواست جلسه ثبت شد — در «درخواست‌ها» تأیید کنید.
+            {L("🎉 کاربر شما را انتخاب کرد! درخواست جلسه ثبت شد — در «درخواست‌ها» تأیید کنید.")}
           </p>
           <Button variant="secondary" fullWidth onClick={() => navigateApp("/t/requests", {} as UniversalAppConfig)} style={{ minHeight: 42 }}>
-            رفتن به درخواست‌ها
+            {L("رفتن به درخواست‌ها")}
           </Button>
         </>
       ) : callAlive ? (
         <>
           <p style={{ margin: 0, fontSize: 12.5, color: colors.inkSecondary, lineHeight: 1.9 }}>
-            پاسخ شما ارسال شده؛ منتظر انتخاب کاربر هستید…
+            {L("پاسخ شما ارسال شده؛ منتظر انتخاب کاربر هستید…")}
           </p>
           <Button variant="secondary" onClick={onWithdraw} loading={busy} disabled={busy} style={{ minHeight: 40 }}>
-            انصراف از فراخوان
+            {L("انصراف از فراخوان")}
           </Button>
         </>
       ) : (
         <p style={{ margin: 0, fontSize: 12.5, color: colors.inkMuted, lineHeight: 1.9 }}>
-          این فراخوان بسته شد (کاربر استاد دیگری را انتخاب کرد یا فراخوان لغو/منقضی شد).
+          {L("این فراخوان بسته شد (کاربر استاد دیگری را انتخاب کرد یا فراخوان لغو/منقضی شد).")}
         </p>
       )}
     </div>
@@ -212,6 +223,7 @@ function MyOfferCard({
 
 function OnlineDispatchPanel({ config, active }: { config: UniversalAppConfig; active: boolean }) {
   const runtime = usePlatform();
+  const { L, lang } = useAppearance();
   const [inbox, setInbox] = useState<TeacherInbox | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -313,7 +325,7 @@ function OnlineDispatchPanel({ config, active }: { config: UniversalAppConfig; a
   );
   const waitingMine = useMemo(() => myOffers.filter((offer) => offer.status === "waiting").length, [myOffers]);
 
-  if (loading) return <LoadingState label="در حال دریافت فراخوان‌های زنده…" />;
+  if (loading) return <LoadingState label={L("در حال دریافت فراخوان‌های زنده…")} />;
 
   return (
     <div className="vodda-screen" style={{ display: "grid", gap: spacing.lg }}>
@@ -334,44 +346,44 @@ function OnlineDispatchPanel({ config, active }: { config: UniversalAppConfig; a
             <Icon name="bell" size={23} />
           </div>
           <div>
-            <h1 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>فراخوان‌های زنده</h1>
-            <span style={{ fontSize: 12.5, opacity: 0.85 }}>اولین استادی که بپذیرد، دیده می‌شود</span>
+            <h1 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>{L("فراخوان‌های زنده")}</h1>
+            <span style={{ fontSize: 12.5, opacity: 0.85 }}>{L("اولین استادی که بپذیرد، دیده می‌شود")}</span>
           </div>
           <div style={{ marginInlineStart: "auto", textAlign: "center" }}>
-            <strong style={{ display: "block", fontSize: 22, fontVariantNumeric: "tabular-nums" }}>{fa(openCalls.length)}</strong>
-            <span style={{ fontSize: 10.5, opacity: 0.8 }}>فراخوان باز</span>
+            <strong style={{ display: "block", fontSize: 22, fontVariantNumeric: "tabular-nums" }}>{fa(openCalls.length, lang)}</strong>
+            <span style={{ fontSize: 10.5, opacity: 0.8 }}>{L("فراخوان باز")}</span>
           </div>
         </div>
         {waitingMine > 0 ? (
           <p style={{ margin: "12px 0 0", fontSize: 12.5, background: "rgba(255,255,255,.12)", borderRadius: 12, padding: "8px 11px", lineHeight: 1.8 }}>
-            ⏳ {fa(waitingMine)} پاسخ فعال دارید که منتظر انتخاب کاربر هستند.
+            {L("⏳ {n} پاسخ فعال دارید که منتظر انتخاب کاربر هستند.").replace("{n}", fa(waitingMine, lang))}
           </p>
         ) : null}
         {flashNew ? (
           <p style={{ margin: "12px 0 0", fontSize: 12.5, background: "rgba(255,255,255,.16)", borderRadius: 12, padding: "8px 11px" }}>
-            🔔 فراخوان تازه رسید!
+            {L("🔔 فراخوان تازه رسید!")}
           </p>
         ) : null}
       </div>
 
       {error ? (
         <p role="alert" style={{ ...typography.bodySmall, padding: spacing.md, borderRadius: radii.md, background: colors.dangerBackground, color: colors.danger, margin: 0 }}>
-          {error}
+          {L(error)}
         </p>
       ) : null}
 
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <strong style={{ fontSize: 15, color: colors.ink }}>در انتظار پاسخ</strong>
+        <strong style={{ fontSize: 15, color: colors.ink }}>{L("در انتظار پاسخ")}</strong>
         <span style={{ marginInlineStart: "auto", display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, color: colors.olive700 }}>
-          <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: "50%", background: colors.olive600, animation: "vodda-live-dot 1.6s ease-out infinite" }} /> به‌روزرسانی زنده
+          <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: "50%", background: colors.olive600, animation: "vodda-live-dot 1.6s ease-out infinite" }} /> {L("به‌روزرسانی زنده")}
         </span>
       </div>
 
       {openCalls.length === 0 ? (
         <Card style={{ padding: 20, borderRadius: 20, textAlign: "center" }}>
           <EmptyState
-            title="فعلاً فراخوانی نیست"
-            description="به‌محض ثبت فراخوان در موضوع‌هایی که تدریس می‌کنید، همین‌جا نمایش داده می‌شود."
+            title={L("فعلاً فراخوانی نیست")}
+            description={L("به‌محض ثبت فراخوان در موضوع‌هایی که تدریس می‌کنید، همین‌جا نمایش داده می‌شود.")}
           />
           <span style={{ fontSize: 11.5, color: colors.inkFaint }} aria-hidden="true">
             {tick > 0 ? "…" : ""}
@@ -394,7 +406,7 @@ function OnlineDispatchPanel({ config, active }: { config: UniversalAppConfig; a
       {myOffers.length > 0 ? (
         <>
           <div style={{ height: 1, background: colors.sand150 }} />
-          <strong style={{ fontSize: 15, color: colors.ink }}>پاسخ‌های من</strong>
+          <strong style={{ fontSize: 15, color: colors.ink }}>{L("پاسخ‌های من")}</strong>
           <div style={{ display: "grid", gap: spacing.md }}>
             {myOffers.map((offer) => (
               <MyOfferCard
@@ -409,7 +421,7 @@ function OnlineDispatchPanel({ config, active }: { config: UniversalAppConfig; a
       ) : null}
 
       <p style={{ margin: 0, fontSize: 11.5, color: colors.inkMuted, lineHeight: 1.9 }}>
-        نکته: پاسخ سریع‌تر شانس دیده‌شدن شما را بیشتر می‌کند؛ کاربران معمولاً نخستین استادهای آماده را بررسی و انتخاب می‌کنند.
+        {L("نکته: پاسخ سریع‌تر شانس دیده‌شدن شما را بیشتر می‌کند؛ کاربران معمولاً نخستین استادهای آماده را بررسی و انتخاب می‌کنند.")}
       </p>
     </div>
   );
@@ -427,10 +439,11 @@ export function TeacherDispatchScreen({
   initialTab?: "online" | "ceremony";
 }) {
   const [tab, setTab] = useState<"online" | "ceremony">(initialTab);
+  const { L } = useAppearance();
 
   const tabs: Array<["online" | "ceremony", string, IconName]> = [
-    ["online", "جلسهٔ آنلاین", "video"],
-    ["ceremony", "مراسم حضوری", "mic"],
+    ["online", L("جلسهٔ آنلاین"), "video"],
+    ["ceremony", L("مراسم حضوری"), "mic"],
   ];
 
   return (

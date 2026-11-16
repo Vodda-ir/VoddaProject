@@ -21,6 +21,7 @@ import {
 } from '@/components/admin/AdminUI';
 import { fullUrl, getToken } from '@/lib/auth';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
+import { confirmDialog } from '@/lib/confirm';
 
 type TeacherStatus = '' | 'pending' | 'approved' | 'rejected';
 type TeacherTier = '' | 'international' | 'grade2' | 'grade3';
@@ -159,7 +160,7 @@ export default function AdminTeachers() {
   async function review(teacher: TeacherRow, approve: boolean) {
     if (!token || busyId !== null || teacher.status !== 'pending') return;
     const action = approve ? 'تأیید' : 'رد';
-    if (!window.confirm(`پروفایل «${teacher.user?.name || 'استاد'}» ${action} شود؟`)) return;
+    if (!(await confirmDialog(`پروفایل «${teacher.user?.name || 'استاد'}» ${action} شود؟`))) return;
 
     setBusyId(teacher.id);
     setError('');

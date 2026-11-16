@@ -11,6 +11,7 @@ import {
 import { api, type OfficialService, type OfficialServiceCategory, type TeacherService } from '@/lib/api';
 import { getToken } from '@/lib/auth';
 import { digitsOnly, formatFaNumber, toFaDigits } from '@/lib/persian';
+import { confirmDialog } from '@/lib/confirm';
 
 export default function TeacherServicesPage() {
   const [services, setServices] = useState<TeacherService[]>([]);
@@ -39,7 +40,7 @@ export default function TeacherServicesPage() {
 
   async function deactivate(service: TeacherService) {
     if (!token || busyId !== null || !service.active) return;
-    if (!window.confirm(`خدمت «${service.title}» غیرفعال شود؟`)) return;
+    if (!(await confirmDialog(`خدمت «${service.title}» غیرفعال شود؟`))) return;
     setBusyId(service.id);
     setError('');
     try {
@@ -54,7 +55,7 @@ export default function TeacherServicesPage() {
 
   async function remove(service: TeacherService) {
     if (!token || busyId !== null) return;
-    if (!window.confirm(`خدمت «${service.title}» حذف شود؟`)) return;
+    if (!(await confirmDialog(`خدمت «${service.title}» حذف شود؟`))) return;
     setBusyId(service.id);
     setError('');
     try {

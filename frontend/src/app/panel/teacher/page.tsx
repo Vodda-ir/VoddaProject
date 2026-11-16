@@ -15,6 +15,7 @@ import {
 import { api, type SessionListItem, type Teacher } from '@/lib/api';
 import { fullUrl, getToken } from '@/lib/auth';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
+import { confirmDialog } from '@/lib/confirm';
 
 export default function TeacherDashboard() {
   const [teacher, setTeacher] = useState<Teacher | null>(null);
@@ -53,7 +54,7 @@ export default function TeacherDashboard() {
   async function respond(session: SessionListItem, approve: boolean) {
     if (!token || busyId !== null) return;
     const action = approve ? 'تأیید' : 'رد';
-    if (!window.confirm(`درخواست این جلسه ${action} شود؟`)) return;
+    if (!(await confirmDialog(`درخواست این جلسه ${action} شود؟`))) return;
     setBusyId(session.id);
     setError('');
     try {

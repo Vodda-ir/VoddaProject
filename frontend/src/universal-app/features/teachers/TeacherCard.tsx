@@ -5,6 +5,7 @@ import type { UniversalAppConfig } from "../../config";
 import { navigateApp } from "../../router";
 import { resolveAssetUrl } from "../../platform/asset";
 import { Button, Icon, colors, typography } from "../../ui";
+import { useAppearance } from "../../ui/appearance";
 import { TierBadge } from "./TierBadge";
 import type { Teacher } from "./types";
 
@@ -24,8 +25,9 @@ export function TeacherCard({
   config: UniversalAppConfig;
   wide?: boolean;
 }) {
+  const { L, lang } = useAppearance();
   const goToTeacher = () => navigateApp(`/teacher/${teacher.id}`, config);
-  const priceFrom = new Intl.NumberFormat("fa-IR", { maximumFractionDigits: 0 }).format(
+  const priceFrom = new Intl.NumberFormat(lang === "en" ? "en-US" : "fa-IR", { maximumFractionDigits: 0 }).format(
     Math.max(0, teacher.price30 / 1000),
   );
 
@@ -180,11 +182,11 @@ export function TeacherCard({
                 background: teacher.available ? colors.olive600 : colors.danger,
               }}
             />
-            {teacher.available ? "آنلاین — آمادهٔ رزرو" : "آفلاین"}
+            {teacher.available ? L("آنلاین — آمادهٔ رزرو") : L("آفلاین")}
           </span>
           {teacher.instantEnabled ? (
             <span
-              aria-label="جلسهٔ فوری فعال"
+              aria-label={L("جلسهٔ فوری فعال")}
               style={{
                 display: "inline-flex",
                 alignItems: "center",
@@ -200,7 +202,7 @@ export function TeacherCard({
               }}
             >
               <Icon name="sparkle" size={11} stroke={2.4} style={{ color: colors.goldDark }} />
-              فوری
+              {L("فوری")}
             </span>
           ) : null}
         </div>
@@ -218,9 +220,9 @@ export function TeacherCard({
       >
         <span style={{ display: "inline-flex", alignItems: "center", gap: 3, color: colors.goldDark, fontWeight: 800 }}>
           <Icon name="star" size={13} fill style={{ color: colors.gold }} />
-          {teacher.rating.toLocaleString("fa-IR", { maximumFractionDigits: 1 })}
+          {teacher.rating.toLocaleString(lang === "en" ? "en-US" : "fa-IR", { maximumFractionDigits: 1 })}
           {teacher.reviews > 0 ? (
-            <span style={{ fontWeight: 600 }}>({teacher.reviews.toLocaleString("fa-IR")})</span>
+            <span style={{ fontWeight: 600 }}>({teacher.reviews.toLocaleString(lang === "en" ? "en-US" : "fa-IR")})</span>
           ) : null}
         </span>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 2, minWidth: 0 }}>
@@ -230,7 +232,7 @@ export function TeacherCard({
       </div>
       <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: colors.inkMuted }}>
         <Icon name="award" size={12} />
-        {teacher.sessions.toLocaleString("fa-IR")} جلسهٔ موفق
+        {teacher.sessions.toLocaleString(lang === "en" ? "en-US" : "fa-IR")} {L("جلسهٔ موفق")}
       </span>
 
       <div
@@ -244,9 +246,9 @@ export function TeacherCard({
         }}
       >
         <span>
-          <span style={{ display: "block", fontSize: 12, color: colors.inkMuted }}>هر جلسه از</span>
+          <span style={{ display: "block", fontSize: 12, color: colors.inkMuted }}>{L("هر جلسه از")}</span>
           <strong style={{ display: "block", marginTop: 1, fontSize: 13.5, fontWeight: 800, color: colors.ink }}>
-            {priceFrom} هزار تومان
+            {priceFrom} {L("هزار تومان")}
           </strong>
         </span>
         <Button
@@ -257,7 +259,7 @@ export function TeacherCard({
           style={{ minHeight: 44, padding: "8px 14px", fontSize: 13 }}
         >
           {/* استاد آفلاین قابل رزرو نیست — دکمه فقط به پروفایل می‌رود تا درخواست بی‌جواب نماند */}
-          {teacher.available ? "رزرو جلسه" : "مشاهدهٔ پروفایل"}
+          {teacher.available ? L("رزرو جلسه") : L("مشاهدهٔ پروفایل")}
         </Button>
       </div>
     </div>

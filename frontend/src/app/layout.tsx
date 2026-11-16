@@ -32,7 +32,7 @@ export const viewport: Viewport = {
 
 // پیش از اولین رنگ‌آمیزی اجرا می‌شود تا حالت تاریک/زبان ذخیره‌شده بدون فلش
 // اعمال شود (FOUC). هم‌قاعده با ui/appearance.tsx — کلیدها یکی هستند.
-const appearanceBootstrap = `(function(){try{var t=localStorage.getItem('vodda_theme');var l=localStorage.getItem('vodda_lang');var d=document.documentElement;if(t==='dark'){d.setAttribute('data-vodda-theme','dark');d.style.colorScheme='dark';}if(l==='en'){d.lang='en';d.dir='ltr';}}catch(e){}})();`;
+const appearanceBootstrap = `(function(){try{var t=localStorage.getItem('vodda_theme');var l=localStorage.getItem('vodda_lang');var d=document.documentElement;if(t==='dark'){d.setAttribute('data-vodda-theme','dark');d.style.colorScheme='dark';}if(l==='en'){d.lang='en';d.dir='ltr';d.style.setProperty('--vodda-font',"system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif");}else{d.style.setProperty('--vodda-font',"'IRANYekanXFaNum', 'Yekan Bakh', 'Vazirmatn', system-ui, sans-serif");}}catch(e){}})();`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

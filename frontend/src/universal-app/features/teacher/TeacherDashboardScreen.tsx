@@ -11,12 +11,12 @@ import { RoleModeSheet } from "../auth/RoleModeSheet";
 import { getTeacherCeremonyInbox } from "../ceremony/api";
 import { getTeacherDispatchInbox } from "../dispatch/api";
 import { NotificationsBell } from "../notifications/NotificationsBell";
+import { CityLocator } from "../home/CityLocator";
 import {
   Avatar,
   Button,
   Card,
   ErrorState,
-  formatJalaliDate,
   Icon,
   LoadingState,
   SectionHeader,
@@ -27,7 +27,10 @@ import {
   spacing,
   typography,
 } from "../../ui";
-import { formatWalletAmount, toFaDigits } from "../wallet/WalletTransactionCard";
+import { useAppearance } from "../../ui/appearance";
+import { formatAppDate } from "../../ui/jalali";
+import { localizedDigits } from "../../ui/persian";
+import { formatWalletAmount } from "../wallet/WalletTransactionCard";
 
 /** وضعیت کلیدهای سریع استاد — از /teacher/me خوانده می‌شود. */
 type FeatureSwitches = {
@@ -44,6 +47,12 @@ async function loadFeatureSwitches(runtime: PlatformRuntime): Promise<FeatureSwi
     instantEnabled: row.instant_enabled === true,
     freeEnabled: row.free_enabled !== false,
   };
+}
+
+function amountLabel(value: number, lang: "fa" | "en"): string {
+  return lang === "en"
+    ? new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(Math.max(0, value))
+    : formatWalletAmount(value);
 }
 
 /** سوییچ زیبا با دستهٔ متحرک — پایهٔ کارت‌های امکانات. */
@@ -89,6 +98,7 @@ function FeatureSwitch({ checked, label, onChange }: { checked: boolean; label: 
 
 /** کارت امکانات مهم استاد — جلسات فوری، جلسات رایگان و پذیرش رزرو. */
 function QuickFeatureToggles({ runtime }: { runtime: PlatformRuntime }) {
+  const { L, lang } = useAppearance();
   const [state, setState] = useState<FeatureSwitches | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -131,7 +141,6 @@ function QuickFeatureToggles({ runtime }: { runtime: PlatformRuntime }) {
     } catch {
       setState(previous);
       setError("تغییر وضعیت انجام نشد؛ دوباره تلاش کنید.");
-    } finally {
       setBusyKey(null);
     }
   };
@@ -142,50 +151,50 @@ function QuickFeatureToggles({ runtime }: { runtime: PlatformRuntime }) {
     {
       key: "instant_enabled" as const,
       icon: "sparkle" as const,
-      title: "جلسات فوری",
+      title: L("جلسات فوری"),
       hint: state.instantEnabled
-        ? "فعال است — کاربران می‌توانند همین حالا با شما جلسه بگذارند"
-        : "خاموش — با فعال‌کردن، رزروهای همین‌لحظه به شما می‌رسد",
+        ? L("فعال است — کاربران می‌توانند همین حالا با شما جلسه بگذارند")
+        : L("خاموش — با فعال‌کردن، رزروهای همین‌لحظه به شما می‌رسد"),
       checked: state.instantEnabled,
       gold: true,
     },
     {
       key: "free_enabled" as const,
       icon: "gift" as const,
-      title: "جلسات رایگان",
+      title: L("جلسات رایگان"),
       hint: state.freeEnabled
-        ? "فعال است — خدمات صفر تومانی شما در تابلوی رایگان دیده می‌شود"
-        : "خاموش — خدمات رایگان شما مخفی و رزرو رایگان بسته است",
+        ? L("فعال است — خدمات صفر تومانی شما در تابلوی رایگان دیده می‌شود")
+        : L("خاموش — خدمات رایگان شما مخفی و رزرو رایگان بسته است"),
       checked: state.freeEnabled,
       gold: false,
     },
     {
       key: "available" as const,
       icon: "checkCircle" as const,
-      title: "پذیرش درخواست جدید",
+      title: L("پذیرش درخواست جدید"),
       hint: state.available
-        ? "چراغ سبز شما روشن است و در جستجو و فراخوان‌ها دیده می‌شوید"
-        : "آفلاین — پروفایل شما به کاربران رزرو نشان نمی‌دهد",
+        ? L("چراغ سبز شما روشن است و در جستجو و فراخوان‌ها دیده می‌شوید")
+        : L("آفلاین — پروفایل شما به کاربران رزرو نشان نمی‌دهد"),
       checked: state.available,
       gold: false,
     },
   ];
 
   return (
-    <section aria-label="امکانات سریع" className="vodda-enter" style={{ display: "grid", gap: 12, padding: 16, borderRadius: 24, border: `1.5px solid ${colors.goldSoft}`, background: `linear-gradient(150deg, ${colors.goldBackground}, #fffdf8 70%)`, boxShadow: shadows.sm }}>
+    <section aria-label={L("امکانات سریع")} className="vodda-enter" style={{ display: "grid", gap: 12, padding: 16, borderRadius: 24, border: `1.5px solid ${colors.goldSoft}`, background: `linear-gradient(150deg, ${colors.goldBackground}, #fffdf8 70%)`, boxShadow: shadows.sm }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <span aria-hidden="true" style={{ width: 38, height: 38, display: "grid", placeItems: "center", flex: "0 0 38px", borderRadius: 12, background: "linear-gradient(145deg,#d8b869,#b8923c)", color: "#fff" }}>
           <Icon name="settings" size={19} stroke={2} />
         </span>
         <div style={{ minWidth: 0, flex: 1 }}>
-          <strong style={{ display: "block", fontSize: 14, fontWeight: 800, color: colors.ink }}>امکانات مهم استادی</strong>
-          <span style={{ display: "block", fontSize: 11, color: colors.inkMuted, marginTop: 1 }}>با یک لمس فعال یا غیرفعال کنید</span>
+          <strong style={{ display: "block", fontSize: 14, fontWeight: 800, color: colors.ink }}>{L("امکانات مهم استادی")}</strong>
+          <span style={{ display: "block", fontSize: 11, color: colors.inkMuted, marginTop: 1 }}>{L("با یک لمس فعال یا غیرفعال کنید")}</span>
         </div>
       </div>
 
       {error ? (
         <span role="alert" style={{ fontSize: 11.5, color: colors.danger }}>
-          {error}
+          {L(error)}
         </span>
       ) : null}
 
@@ -330,15 +339,21 @@ async function getTeacherDashboardSnapshot(runtime: PlatformRuntime): Promise<Da
   };
 }
 
-function officialTime(session: TeacherSession): string {
+type Translate = (text: string) => string;
+
+function officialTime(session: TeacherSession, L: Translate, lang: "fa" | "en"): string {
   if (!session.localDate || !session.localStart || !session.localEnd) {
-    return "زمان رسمی جلسه دریافت نشد";
+    return "";
   }
-  return `${formatJalaliDate(session.localDate)} · ${toFaDigits(session.localStart)} تا ${toFaDigits(session.localEnd)}`;
+  return L("{date} · {from} تا {to}")
+    .replace("{date}", formatAppDate(session.localDate, lang))
+    .replace("{from}", localizedDigits(session.localStart, lang))
+    .replace("{to}", localizedDigits(session.localEnd, lang));
 }
 
 export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig }) {
   const runtime = usePlatform();
+  const { L, lang } = useAppearance();
   const [snapshot, setSnapshot] = useState<DashboardSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -409,7 +424,7 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
           type="button"
           className="vodda-tappable vodda-enter"
           onClick={() => setRoleSheetOpen(true)}
-          aria-label="تغییر به فضای قرآن‌آموز"
+          aria-label={L("تغییر به فضای قرآن‌آموز")}
           style={{
             width: "100%",
             minWidth: 0,
@@ -428,9 +443,9 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
         >
           <Avatar name={teacher?.name} src={teacher?.avatarUrl} size={46} ring />
           <span style={{ minWidth: 0, flex: 1 }}>
-            <span style={{ ...typography.caption, display: "block", color: colors.inkMuted }}>پنل استاد · {firstName}</span>
+            <span style={{ ...typography.caption, display: "block", color: colors.inkMuted }}>{L("پنل استاد · {name}").replace("{name}", firstName)}</span>
             <strong style={{ ...typography.body, display: "inline-flex", alignItems: "center", gap: 5, color: colors.olive700 }}>
-              تغییر حساب
+              {L("تغییر حساب")}
               <Icon name="refresh" size={15} stroke={1.9} />
             </strong>
           </span>
@@ -438,23 +453,25 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
         <NotificationsBell config={config} />
       </div>
 
+      <CityLocator />
+
       {loading ? (
-        <LoadingState label="در حال دریافت داشبورد استاد…" style={{ minHeight: 180 }} />
+        <LoadingState label={L("در حال دریافت داشبورد استاد…")} style={{ minHeight: 180 }} />
       ) : error || !snapshot || !teacher ? (
         <ErrorState
-          title="دریافت داشبورد ناموفق بود"
-          description={error ?? "اطلاعات داشبورد دریافت نشد."}
-          action={<Button onClick={() => void load()}>تلاش دوباره</Button>}
+          title={L("دریافت داشبورد ناموفق بود")}
+          description={error ? L(error) : L("اطلاعات داشبورد دریافت نشد.")}
+          action={<Button onClick={() => void load()}>{L("تلاش دوباره")}</Button>}
         />
       ) : (
         <>
       <div>
-        <WalletHero label="موجودی قابل برداشت" amount={formatWalletAmount(teacher.wallet)}>
+        <WalletHero label={L("موجودی قابل برداشت")} amount={amountLabel(teacher.wallet, lang)}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1px 1fr 1px 1fr", alignItems: "center" }}>
             {[
-              ["امتیاز", (rating === "—" ? rating : toFaDigits(rating)) + " ★"],
-              ["نظرها", toFaDigits(teacher.reviews)],
-              ["جلسات", toFaDigits(teacher.sessions)],
+              [L("امتیاز"), (rating === "—" ? rating : localizedDigits(rating, lang)) + " ★"],
+              [L("نظرها"), localizedDigits(teacher.reviews, lang)],
+              [L("جلسات"), localizedDigits(teacher.sessions, lang)],
             ].flatMap(([label, value], index) => {
               const metric = (
                 <div key={label} style={{ minWidth: 0, textAlign: "center" }}>
@@ -468,7 +485,7 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
           </div>
         </WalletHero>
         <p style={{ margin: "10px 0 0", textAlign: "center", fontSize: 11.5, lineHeight: 1.6, color: colors.inkMuted }}>
-          آمار دوره‌ای درآمد تا زمان وجود گزارش واقعی نمایش داده نمی‌شود.
+          {L("آمار دوره‌ای درآمد تا زمان وجود گزارش واقعی نمایش داده نمی‌شود.")}
         </p>
       </div>
 
@@ -476,7 +493,7 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
         type="button"
         className="vodda-tappable vodda-enter"
         onClick={() => navigateApp("/t/dispatch", config)}
-        aria-label="فراخوان‌های زنده"
+        aria-label={L("فراخوان‌های زنده")}
         style={{
           width: "100%",
           display: "flex",
@@ -504,24 +521,24 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
         </span>
         <span style={{ flex: 1, minWidth: 0 }}>
           <strong style={{ display: "block", fontSize: 14, fontWeight: 800, color: colors.ink }}>
-            فراخوان‌ها
+            {L("فراخوان‌ها")}
           </strong>
           <span style={{ display: "block", fontSize: 11.5, color: colors.inkMuted, marginTop: 2, lineHeight: 1.7 }}>
             {dispatchBadge > 0
-              ? "🔔 فراخوان تازهٔ جلسهٔ آنلاین یا مراسم — سریع اعلام آمادگی کنید"
-              : "درخواست‌های جلسهٔ آنلاین و مراسم حضوری کاربران — در یک صندوق"}
+              ? L("🔔 فراخوان تازهٔ جلسهٔ آنلاین یا مراسم — سریع اعلام آمادگی کنید")
+              : L("درخواست‌های جلسهٔ آنلاین و مراسم حضوری کاربران — در یک صندوق")}
           </span>
         </span>
         {dispatchBadge > 0 ? (
           <span
-            aria-label={`${dispatchBadge} فراخوان جدید`}
+            aria-label={L("{n} فراخوان جدید").replace("{n}", localizedDigits(dispatchBadge, lang))}
             style={{
               flex: "0 0 auto", minWidth: 24, height: 24, borderRadius: 999,
               display: "grid", placeItems: "center", padding: "0 7px",
               background: colors.gold, color: "#fff", fontSize: 12, fontWeight: 800,
             }}
           >
-            {toFaDigits(dispatchBadge)}
+            {localizedDigits(dispatchBadge, lang)}
           </span>
         ) : (
           <Icon name="chevronL" size={16} style={{ flex: "0 0 auto", color: colors.inkFaint }} />
@@ -554,8 +571,8 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
         >
           <Icon name="message" size={27} style={{ flex: "0 0 auto", color: colors.gold }} />
           <span style={{ minWidth: 0, flex: 1 }}>
-            <strong style={{ display: "block", fontSize: 14.5, fontWeight: 800, color: "#7a5e1e" }}>{toFaDigits(pending.length)} درخواست جدید</strong>
-            <span style={{ display: "block", marginTop: 2, fontSize: 12, color: "#9a7426" }}>برای تأیید یا رد، لمس کنید</span>
+            <strong style={{ display: "block", fontSize: 14.5, fontWeight: 800, color: "#7a5e1e" }}>{L("{n} درخواست جدید").replace("{n}", localizedDigits(pending.length, lang))}</strong>
+            <span style={{ display: "block", marginTop: 2, fontSize: 12, color: "#9a7426" }}>{L("برای تأیید یا رد، لمس کنید")}</span>
           </span>
           <Icon name="chevronL" size={20} style={{ color: "#9a7426" }} />
         </button>
@@ -563,7 +580,7 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
 
       {nextSession ? (
         <section>
-          <SectionHeader title="جلسهٔ بعدی شما" action="همهٔ جلسات" onAction={() => navigateApp("/t/sessions", config)} />
+          <SectionHeader title={L("جلسهٔ بعدی شما")} action={L("همهٔ جلسات")} onAction={() => navigateApp("/t/sessions", config)} />
           <Card
             style={{
               display: "grid",
@@ -581,22 +598,22 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
                 <span style={{ display: "block", marginTop: 3, fontSize: 12.5, color: colors.inkSecondary }}>{nextSession.service}</span>
               </div>
               <span style={{ padding: "5px 9px", borderRadius: radii.pill, color: colors.surface, background: colors.olive600, ...typography.caption, fontWeight: 700 }}>
-                تأییدشده
+                {L("تأییدشده")}
               </span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "11px 14px", borderRadius: 13, color: colors.inkSecondary, background: colors.sand50, fontSize: 12.5 }}>
               <Icon name="calendar" size={16} style={{ color: colors.olive500 }} />
-              {officialTime(nextSession)}
+              {officialTime(nextSession, L, lang) || L("زمان رسمی جلسه دریافت نشد")}
             </div>
             <Button variant="secondary" fullWidth onClick={() => navigateApp("/t/sessions", config)}>
-              مشاهدهٔ جزئیات جلسه
+              {L("مشاهدهٔ جزئیات جلسه")}
             </Button>
           </Card>
         </section>
       ) : null}
 
       <section>
-        <SectionHeader title="مدیریت سریع" />
+        <SectionHeader title={L("مدیریت سریع")} />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12, marginTop: spacing.md }}>
           {([
             ["book" as const, "خدمات من", "/t/services"],
@@ -629,7 +646,7 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
               <span style={{ width: 40, height: 40, display: "grid", placeItems: "center", flex: "0 0 40px", borderRadius: 12, color: colors.olive700, background: colors.olive100 }}>
                 <Icon name={icon} size={21} />
               </span>
-              <strong style={{ minWidth: 0, fontSize: 13, fontWeight: 700 }}>{label}</strong>
+              <strong style={{ minWidth: 0, fontSize: 13, fontWeight: 700 }}>{L(label)}</strong>
             </button>
           ))}
         </div>
@@ -650,43 +667,44 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
 
 /** چک‌لیست تکمیل پروفایل استادی — تا استاد تازه‌وارد قدم‌به‌قدم حرفه‌ای شود. */
 function CompletionChecklist({ state, config }: { state: CompletionState; config: UniversalAppConfig }) {
+  const { L, lang } = useAppearance();
   const items = useMemo(
     () =>
       [
         {
           icon: "book" as const,
-          title: "ثبت حداقل یک خدمت فعال",
-          hint: "خدمت آنلاین شما را برای رزرو کردن باز می‌کند",
+          title: L("ثبت حداقل یک خدمت فعال"),
+          hint: L("خدمت آنلاین شما را برای رزرو کردن باز می‌کند"),
           done: state.activeServices > 0,
-          meta: state.activeServices > 0 ? `${toFaDigits(state.activeServices)} خدمت فعال` : "ثبت خدمت",
+          meta: state.activeServices > 0 ? L("{n} خدمت فعال").replace("{n}", localizedDigits(state.activeServices, lang)) : L("ثبت خدمت"),
           path: "/t/services",
         },
         {
           icon: "user" as const,
-          title: "معرفی و تخصص حرفه‌ای",
-          hint: "معرفی حداقل ۴۰ حرفی به‌همراه حوزه تخصص یا عنوان استاد",
+          title: L("معرفی و تخصص حرفه‌ای"),
+          hint: L("معرفی حداقل ۴۰ حرفی به‌همراه حوزه تخصص یا عنوان استاد"),
           done: state.bioChars >= 40 && state.hasTitle,
-          meta: state.bioChars >= 40 ? (state.hasTitle ? "کامل شد" : "افزودن عنوان") : "تکمیل معرفی",
+          meta: state.bioChars >= 40 ? (state.hasTitle ? L("کامل شد") : L("افزودن عنوان")) : L("تکمیل معرفی"),
           path: "/t/profile",
         },
         {
           icon: "coins" as const,
-          title: "تعرفهٔ جلسات ۳۰ و ۶۰ دقیقه‌ای",
-          hint: "تعرفهٔ شفاف، شانس ظاهرشدن در فراخوان‌ها را بالا می‌برد",
+          title: L("تعرفهٔ جلسات ۳۰ و ۶۰ دقیقه‌ای"),
+          hint: L("تعرفهٔ شفاف، شانس ظاهرشدن در فراخوان‌ها را بالا می‌برد"),
           done: state.priceSet,
-          meta: state.priceSet ? "تعریف شده" : "تعیین تعرفه",
+          meta: state.priceSet ? L("تعریف شده") : L("تعیین تعرفه"),
           path: "/t/profile",
         },
         {
           icon: "clock" as const,
-          title: "زمان‌های کاری هفتگی",
-          hint: "ساعات حضور شما برای رزروهای خودکار",
+          title: L("زمان‌های کاری هفتگی"),
+          hint: L("ساعات حضور شما برای رزروهای خودکار"),
           done: state.workSlots > 0,
-          meta: state.workSlots > 0 ? `${toFaDigits(state.workSlots)} بازه` : "افزودن بازه",
+          meta: state.workSlots > 0 ? L("{n} بازه").replace("{n}", localizedDigits(state.workSlots, lang)) : L("افزودن بازه"),
           path: "/t/work-times",
         },
       ] as const,
-    [state],
+    [state, L, lang],
   );
 
   const doneCount = items.filter((item) => item.done).length;
@@ -697,7 +715,7 @@ function CompletionChecklist({ state, config }: { state: CompletionState; config
   return (
     <section
       className="vodda-enter"
-      aria-label="تکمیل پروفایل استادی"
+      aria-label={L("تکمیل پروفایل استادی")}
       style={{
         display: "grid",
         gap: 12,
@@ -720,21 +738,21 @@ function CompletionChecklist({ state, config }: { state: CompletionState; config
         </span>
         <div style={{ minWidth: 0, flex: 1 }}>
           <strong style={{ display: "block", fontSize: 14, fontWeight: 800, color: colors.ink }}>
-            پروفایل استادی خود را کامل کنید
+            {L("پروفایل استادی خود را کامل کنید")}
           </strong>
           <span style={{ display: "block", fontSize: 11.5, color: colors.inkMuted, marginTop: 1 }}>
-            پروفایل کامل = اعتماد بیشتر و رزروهای بیشتر
+            {L("پروفایل کامل = اعتماد بیشتر و رزروهای بیشتر")}
           </span>
         </div>
         <strong
-          aria-label={`${percent} درصد تکمیل`}
+          aria-label={L("{n} درصد تکمیل").replace("{n}", localizedDigits(percent, lang))}
           style={{
             flex: "0 0 auto", minWidth: 44, textAlign: "center",
             padding: "5px 9px", borderRadius: 999, fontSize: 12.5, fontWeight: 800,
             color: "#7a5e1e", background: colors.goldBackground, border: `1px solid ${colors.goldSoft}`,
           }}
         >
-          ٪{toFaDigits(percent)}
+          {L("٪{n}").replace("{n}", localizedDigits(percent, lang))}
         </strong>
       </div>
 
@@ -762,7 +780,7 @@ function CompletionChecklist({ state, config }: { state: CompletionState; config
             type="button"
             onClick={() => navigateApp(item.path, config)}
             className="vodda-tappable"
-            aria-label={`${item.title} — ${item.done ? "انجام شده" : "انجام نشده"}`}
+            aria-label={`${item.title} — ${item.done ? L("انجام شده") : L("انجام نشده")}`}
             style={{
               display: "flex", alignItems: "center", gap: 10, width: "100%",
               padding: "10px 12px", textAlign: "right",

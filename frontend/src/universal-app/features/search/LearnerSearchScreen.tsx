@@ -18,6 +18,7 @@ import {
   typography,
 } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
+import { useAppearance } from "../../ui/appearance";
 import { navigateApp } from "../../router";
 import { asArray, asRecord } from "../../platform/api";
 import { categoryVisual } from "../home/homeSections";
@@ -114,8 +115,8 @@ function sortTeachers(rows: Teacher[], sort: SortKey): Teacher[] {
   }
 }
 
-function faNumber(value: number, maximumFractionDigits = 0) {
-  return new Intl.NumberFormat("fa-IR", { maximumFractionDigits }).format(value);
+function faNumber(value: number, lang: "fa" | "en", maximumFractionDigits = 0) {
+  return new Intl.NumberFormat(lang === "en" ? "en-US" : "fa-IR", { maximumFractionDigits }).format(value);
 }
 
 function readInitialFilters(): SearchFilters {
@@ -187,14 +188,15 @@ function Skeleton({ style }: { style?: CSSProperties }) {
 
 /** کنترل سگمنتی «اساتید / خدمات» — دو مسیر هم‌ارزِ جستجو. */
 function ModeTabs({ mode, onChange }: { mode: SearchMode; onChange: (next: SearchMode) => void }) {
+  const { L } = useAppearance();
   const tabs: Array<[SearchMode, string, string]> = [
-    ["teachers", "اساتید", "users"],
-    ["services", "خدمات", "quran"],
+    ["teachers", L("اساتید"), "users"],
+    ["services", L("خدمات"), "quran"],
   ];
   return (
     <div
       role="tablist"
-      aria-label="نوع جستجو"
+      aria-label={L("نوع جستجو")}
       style={{
         display: "grid",
         gridTemplateColumns: "1fr 1fr",
@@ -333,13 +335,14 @@ function TopicTeacherRow({
   config: UniversalAppConfig;
   index?: number;
 }) {
+  const { L, lang } = useAppearance();
   const subtitle = [teacher.tag || teacher.field, teacher.city].filter(Boolean).join(" · ");
   return (
     <button
       type="button"
       onClick={() => navigateApp(`/teacher/${teacher.id}`, config)}
       className="vodda-tappable vodda-enter"
-      aria-label={`پروفایل استاد ${teacher.name}`}
+      aria-label={L("پروفایل استاد {n}").replace("{n}", teacher.name)}
       style={{
         display: "flex",
         alignItems: "center",
@@ -361,13 +364,13 @@ function TopicTeacherRow({
           {teacher.name}
         </strong>
         <span style={{ display: "block", fontSize: 11, color: colors.inkMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {subtitle || "استاد وُدّا"}
+          {subtitle || L("استاد وُدّا")}
         </span>
       </span>
       {teacher.reviews > 0 ? (
         <span style={{ flex: "0 0 auto", display: "inline-flex", alignItems: "center", gap: 3, fontSize: 11, fontWeight: 800, color: colors.goldDark }}>
           <Icon name="star" size={11} fill />
-          {faNumber(teacher.rating, 1)}
+          {faNumber(teacher.rating, lang, 1)}
         </span>
       ) : null}
       <Icon name="chevronL" size={16} style={{ color: colors.inkFaint, flex: "0 0 auto" }} />
@@ -376,8 +379,9 @@ function TopicTeacherRow({
 }
 
 function SearchSkeleton() {
+  const { L } = useAppearance();
   return (
-    <div style={{ display: "grid", gap: 14 }} aria-label="در حال جستجو">
+    <div style={{ display: "grid", gap: 14 }} aria-label={L("در حال جستجو")}>
       {[0, 1, 2].map((index) => (
         <div
           key={index}
@@ -397,6 +401,7 @@ function SearchSkeleton() {
 
 export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) {
   const runtime = usePlatform();
+  const { L, lang } = useAppearance();
   const initial = useMemo(readInitialFilters, []);
   const [mode, setMode] = useState<SearchMode>(() => {
     if (typeof window === "undefined") return "teachers";
@@ -471,7 +476,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
         setServicesLoaded(true);
       })
       .catch((reason: unknown) => {
-        setServicesError(messageOf(reason, "دریافت فهرست خدمات ناموفق بود."));
+        setServicesError(messageOf(reason, L("دریافت فهرست خدمات ناموفق بود.")));
         setServicesLoaded(true);
       })
       .finally(() => {
@@ -579,7 +584,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
       .catch((reason: unknown) => {
         if (!active) return;
         setRows([]);
-        setError(messageOf(reason, "دریافت فهرست استادان با خطا روبه‌رو شد."));
+        setError(messageOf(reason, L("دریافت فهرست استادان با خطا روبه‌رو شد.")));
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -893,9 +898,9 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
   return (
     <section className="vodda-screen" style={{ display: "grid", gap: 14 }}>
       <header className="vodda-enter" style={{ paddingTop: 2 }}>
-        <h1 className="vodda-display" style={{ fontSize: 26, margin: "2px 0 0", color: colors.ink, lineHeight: 1.7 }}>جستجو</h1>
+        <h1 className="vodda-display" style={{ fontSize: 26, margin: "2px 0 0", color: colors.ink, lineHeight: 1.7 }}>{L("جستجو")}</h1>
         <p style={{ fontSize: 12.5, margin: "5px 0 0", color: colors.inkMuted }}>
-          استاد، خدمت آموزشی و قاری مراسم — همه از یک‌جا.
+          {L("استاد، خدمت آموزشی و قاری مراسم — همه از یک‌جا.")}
         </p>
       </header>
 
@@ -916,7 +921,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
               type="search"
               value={servicesQuery}
               onChange={(event) => setServicesQuery(event.target.value)}
-              placeholder="نام خدمت؛ مثلاً تجوید، حفظ، ختم قرآن…"
+              placeholder={L("نام خدمت؛ مثلاً تجوید، حفظ، ختم قرآن…")}
               className="vodda-input"
               style={{
                 width: "100%",
@@ -931,16 +936,16 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
                 fontFamily: typography.fontFamily,
                 ...typography.body,
               }}
-              aria-label="جستجوی خدمت"
+              aria-label={L("جستجوی خدمت")}
             />
           </div>
 
           {servicesLoading ? <SearchSkeleton /> : null}
           {!servicesLoading && servicesError ? (
             <ErrorState
-              title="خطا در دریافت خدمات"
+              title={L("خطا در دریافت خدمات")}
               description={servicesError}
-              action={<Button variant="secondary" onClick={() => { catalogRequestedRef.current = false; setServicesLoaded(false); }}>تلاش دوباره</Button>}
+              action={<Button variant="secondary" onClick={() => { catalogRequestedRef.current = false; setServicesLoaded(false); }}>{L("تلاش دوباره")}</Button>}
             />
           ) : null}
           {!servicesLoading && !servicesError && freeOnly ? (
@@ -955,13 +960,13 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
               >
                 <Icon name="gift" size={17} style={{ color: colors.goldDark, flex: "0 0 auto" }} />
                 <div style={{ minWidth: 0, flex: 1 }}>
-                  <strong style={{ display: "block", fontSize: 12.5, color: colors.goldDark }}>فقط خدمات رایگان</strong>
-                  <span style={{ fontSize: 11, color: colors.inkMuted }}>جلسات رایگانی که اساتید برای شروع رایگان برگزار می‌کنند</span>
+                  <strong style={{ display: "block", fontSize: 12.5, color: colors.goldDark }}>{L("فقط خدمات رایگان")}</strong>
+                  <span style={{ fontSize: 11, color: colors.inkMuted }}>{L("جلسات رایگانی که اساتید برای شروع رایگان برگزار می‌کنند")}</span>
                 </div>
                 <button
                   type="button"
                   onClick={() => setFreeOnly(false)}
-                  aria-label="نمایش همهٔ خدمات"
+                  aria-label={L("نمایش همهٔ خدمات")}
                   style={{ background: "none", border: 0, color: colors.inkMuted, cursor: "pointer", padding: 4, fontFamily: typography.fontFamily }}
                 >
                   <Icon name="x" size={16} />
@@ -970,17 +975,17 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
               {freeRows.length === 0 ? (
                 <EmptyState
                   icon={<Icon name="gift" size={30} />}
-                  title="فعلاً جلسهٔ رایگانی فعال نیست"
-                  description="به‌محض فعال‌شدن جلسات رایگان اساتید، همین‌جا نمایش داده می‌شود."
+                  title={L("فعلاً جلسهٔ رایگانی فعال نیست")}
+                  description={L("به‌محض فعال‌شدن جلسات رایگان اساتید، همین‌جا نمایش داده می‌شود.")}
                 />
               ) : (
                 freeRows.map((row, index) => (
                   <ServiceRow
                     key={`${row.teacher_id}-${row.service_id}`}
                     icon="gift"
-                    title={row.title || "جلسهٔ رایگان"}
-                    description={[row.tag, row.city].filter(Boolean).join(" · ") || `استاد ${row.teacher_name}`}
-                    trailing="رایگان"
+                    title={row.title || L("جلسهٔ رایگان")}
+                    description={[row.tag, row.city].filter(Boolean).join(" · ") || L("استاد {n}").replace("{n}", row.teacher_name)}
+                    trailing={L("رایگان")}
                     index={index}
                     onClick={() => navigateApp(`/book/${row.teacher_id}?free=1`, config)}
                   />
@@ -1003,7 +1008,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
                 <div style={{ minWidth: 0, flex: 1 }}>
                   <strong style={{ display: "block", fontSize: 12.5, color: colors.olive700 }}>{catName || needle}</strong>
                   <span style={{ fontSize: 11, color: colors.inkMuted }}>
-                    {faNumber(baseOnlineServices.length)} خدمت در این بخش
+                    {faNumber(baseOnlineServices.length, lang)} {L("خدمت در این بخش")}
                   </span>
                 </div>
                 <button
@@ -1012,7 +1017,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
                     setCatName("");
                     setServicesQuery("");
                   }}
-                  aria-label="بازگشت به همهٔ موضوعات"
+                  aria-label={L("بازگشت به همهٔ موضوعات")}
                   style={{
                     flex: "0 0 auto", minHeight: 36, padding: "0 13px",
                     borderRadius: 999, border: 0, cursor: "pointer",
@@ -1020,7 +1025,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
                     fontSize: 12, fontWeight: 800, fontFamily: typography.fontFamily,
                   }}
                 >
-                  همهٔ موضوعات
+                  {L("همهٔ موضوعات")}
                 </button>
               </div>
 
@@ -1035,7 +1040,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
                       icon={item.icon}
                       title={item.title}
                       description={item.description}
-                      trailing="اساتید"
+                      trailing={L("اساتید")}
                       index={index}
                       onClick={() => openServiceTeachers(item.id)}
                     />
@@ -1046,7 +1051,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
               {presenceServiceGroups.map(([category, items]) => (
                 <div key={category} style={{ display: "grid", gap: 7 }}>
                   <span style={{ fontSize: 11, color: colors.inkFaint }}>
-                    {catName ? "خدمات حضوری همین دسته" : `${category} — حضوری`}
+                    {catName ? L("خدمات حضوری همین دسته") : L("{n} — حضوری").replace("{n}", category)}
                   </span>
                   {items.map((item, index) => (
                     <ServiceRow
@@ -1054,7 +1059,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
                       icon={item.icon}
                       title={item.title}
                       description={item.description}
-                      trailing="قاریان حضوری"
+                      trailing={L("قاریان حضوری")}
                       index={index}
                       onClick={() => navigateApp(`/presence?service=${item.id}`, config)}
                     />
@@ -1064,13 +1069,13 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
 
               {/* اساتید همین بخش — فقط استادان خدمات همین دسته، نه همهٔ اساتید */}
               {baseOnlineServices.length > 0 ? (
-                <section style={{ display: "grid", gap: 9 }} aria-label="اساتید این موضوعات">
+                <section style={{ display: "grid", gap: 9 }} aria-label={L("اساتید این موضوعات")}>
                   <strong style={{ fontSize: 13, color: colors.olive700, display: "flex", alignItems: "center", gap: 6 }}>
                     <Icon name="users" size={15} />
-                    {catName ? "اساتید این دسته" : "اساتید این موضوعات"}
+                    {catName ? L("اساتید این دسته") : L("اساتید این موضوعات")}
                   </strong>
                   {topicTeachersLoading ? (
-                    <div style={{ display: "grid", gap: 7 }} aria-label="در حال دریافت اساتید">
+                    <div style={{ display: "grid", gap: 7 }} aria-label={L("در حال دریافت اساتید")}>
                       {[0, 1, 2].map((index) => (
                         <span
                           key={index}
@@ -1082,7 +1087,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
                     </div>
                   ) : topicTeachers.length === 0 ? (
                     <p style={{ margin: 0, fontSize: 11.5, color: colors.inkMuted, lineHeight: 1.9 }}>
-                      هنوز استادی برای این موضوعات ثبت‌نام نکرده است؛ می‌توانید از فراخوان استفاده کنید.
+                      {L("هنوز استادی برای این موضوعات ثبت‌نام نکرده است؛ می‌توانید از فراخوان استفاده کنید.")}
                     </p>
                   ) : (
                     topicTeachers.map((teacher, index) => (
@@ -1095,8 +1100,8 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
               {onlineServiceGroups.length === 0 && presenceServiceGroups.length === 0 ? (
                 <EmptyState
                   icon={<Icon name="quran" size={30} />}
-                  title="خدمتی یافت نشد"
-                  description="عبارت دیگری را جستجو کنید؛ فهرست رسمی خدمات وُدّا همین‌جاست."
+                  title={L("خدمتی یافت نشد")}
+                  description={L("عبارت دیگری را جستجو کنید؛ فهرست رسمی خدمات وُدّا همین‌جاست.")}
                 />
               ) : null}
             </>
@@ -1105,10 +1110,10 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
           {/* حالت بدون جستجو و بدون دسته: دایرکتوری دسته‌ها — ورود به هر دسته فقط خدمات همان دسته را نشان می‌دهد */}
           {!servicesLoading && !servicesError && !freeOnly && !needle && !catName ? (
             <>
-              <section style={{ display: "grid", gap: 10 }} aria-label="دسته‌بندی موضوعات">
+              <section style={{ display: "grid", gap: 10 }} aria-label={L("دسته‌بندی موضوعات")}>
                 <strong style={{ fontSize: 13, color: colors.olive700, display: "flex", alignItems: "center", gap: 6 }}>
                   <Icon name="grid" size={15} />
-                  موضوع خود را انتخاب کنید
+                  {L("موضوع خود را انتخاب کنید")}
                 </strong>
                 <div
                   style={{
@@ -1128,7 +1133,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
                       type="button"
                       onClick={() => setServicesQuery(category.category)}
                       className="vodda-tappable vodda-enter"
-                      aria-label={`ورود به ${category.category} — ${faNumber(category.count)} خدمت`}
+                      aria-label={L("ورود به {n} — {m} خدمت").replace("{n}", category.category).replace("{m}", faNumber(category.count, lang))}
                       style={{
                         display: "grid",
                         alignContent: "start",
@@ -1194,7 +1199,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
                           fontWeight: 800,
                         }}
                       >
-                        {faNumber(category.count)} خدمت
+                        {L("{n} خدمت").replace("{n}", faNumber(category.count, lang))}
                       </span>
                     </button>
                   ))}
@@ -1228,8 +1233,8 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
                     <Icon name="mic" size={19} />
                   </span>
                   <span style={{ minWidth: 0, flex: 1 }}>
-                    <strong style={{ display: "block", fontSize: 13, fontWeight: 900, color: colors.ink }}>خدمات حضوری مراسم</strong>
-                    <span style={{ fontSize: 11.5, color: colors.inkMuted }}>تلاوت مجلسی، اذان، ختم قرآن و تواشیح</span>
+                    <strong style={{ display: "block", fontSize: 13, fontWeight: 900, color: colors.ink }}>{L("خدمات حضوری مراسم")}</strong>
+                    <span style={{ fontSize: 11.5, color: colors.inkMuted }}>{L("تلاوت مجلسی، اذان، ختم قرآن و تواشیح")}</span>
                   </span>
                   <Icon name="chevronL" size={16} style={{ color: colors.inkFaint, flex: "0 0 auto" }} />
                 </button>
@@ -1250,15 +1255,15 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
         >
           <Icon name="grid" size={17} style={{ color: colors.goldDark, flex: "0 0 auto" }} />
           <div style={{ minWidth: 0, flex: 1 }}>
-            <strong style={{ display: "block", fontSize: 12.5, color: colors.goldDark }}>دسته: {catName}</strong>
+            <strong style={{ display: "block", fontSize: 12.5, color: colors.goldDark }}>{L("دسته: {n}").replace("{n}", catName)}</strong>
             <span style={{ fontSize: 11, color: colors.inkMuted }}>
-              فقط استادان خدمات همین دسته نمایش داده می‌شوند
+              {L("فقط استادان خدمات همین دسته نمایش داده می‌شوند")}
             </span>
           </div>
           <button
             type="button"
             onClick={() => setCatName("")}
-            aria-label="حذف فیلتر دسته"
+            aria-label={L("حذف فیلتر دسته")}
             style={{ background: "none", border: 0, color: colors.inkMuted, cursor: "pointer", padding: 4, fontFamily: typography.fontFamily }}
           >
             <Icon name="x" size={16} />
@@ -1278,14 +1283,14 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
           <Icon name="quran" size={17} style={{ color: colors.olive700, flex: "0 0 auto" }} />
           <div style={{ minWidth: 0, flex: 1 }}>
             <strong style={{ display: "block", fontSize: 12.5, color: colors.olive700 }}>
-              موضوع: {topicTitle || `#${topicId}`}
+              {L("موضوع: {n}").replace("{n}", topicTitle || `#${topicId}`)}
             </strong>
-            <span style={{ fontSize: 11, color: colors.inkMuted }}>اساتیدی که این موضوع رسمی را تدریس می‌کنند</span>
+            <span style={{ fontSize: 11, color: colors.inkMuted }}>{L("اساتیدی که این موضوع رسمی را تدریس می‌کنند")}</span>
           </div>
           <button
             type="button"
             onClick={() => setTopicId(0)}
-            aria-label="حذف فیلتر موضوع"
+            aria-label={L("حذف فیلتر موضوع")}
             style={{ background: "none", border: 0, color: colors.inkMuted, cursor: "pointer", padding: 4, fontFamily: typography.fontFamily }}
           >
             <Icon name="x" size={16} />
@@ -1300,7 +1305,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
               fontSize: 12.5, fontWeight: 800, fontFamily: typography.fontFamily,
             }}
           >
-            🔔 فراخوان
+            {L("🔔 فراخوان")}
           </button>
         </div>
       ) : null}
@@ -1316,7 +1321,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
           <input
             value={filters.query}
             onChange={(event) => setFilters((current) => ({ ...current, query: event.target.value }))}
-            placeholder="نام استاد یا تخصص…"
+            placeholder={L("نام استاد یا تخصص…")}
             className="vodda-input"
             style={{
               width: "100%",
@@ -1335,7 +1340,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
           {filters.query ? (
             <button
               type="button"
-              aria-label="پاک کردن جستجو"
+              aria-label={L("پاک کردن جستجو")}
               onClick={() => setFilters((current) => ({ ...current, query: "" }))}
               style={{
                 position: "absolute",
@@ -1362,7 +1367,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
         <div style={{ position: "relative", flex: "0 0 auto" }}>
           <button
             type="button"
-            aria-label="فیلتر شهر و جنسیت"
+            aria-label={L("فیلتر شهر و جنسیت")}
             onClick={openFilters}
             className="vodda-tappable"
             style={{
@@ -1417,7 +1422,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
               </button>
               <button
                 type="button"
-                aria-label={`حذف ${item} از جستجوهای اخیر`}
+                aria-label={L("حذف {n} از جستجوهای اخیر").replace("{n}", item)}
                 onClick={() => removeRecent(item)}
                 className="vodda-hit"
                 style={{
@@ -1452,7 +1457,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
             onClick={() => setFilters((current) => ({ ...current, field }))}
             style={chipStyle(filters.field === field)}
           >
-            {label}
+            {L(label)}
           </button>
         ))}
       </div>
@@ -1470,7 +1475,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
             style={{ ...chipStyle(filters.sort === value), fontSize: 12.5, minHeight: 38, padding: "6px 11px" }}
           >
             <Icon name={filters.sort === value ? "check" : "trending"} size={13} stroke={2} />
-            {label}
+            {L(label)}
           </button>
         ))}
       </div>
@@ -1486,12 +1491,12 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
           style={{ ...chipStyle(filters.availableOnly), fontSize: 12.5, minHeight: 38, padding: "6px 11px" }}
         >
           <Icon name="checkCircle" size={13} stroke={2} />
-          فقط آمادهٔ رزرو
+          {L("فقط آمادهٔ رزرو")}
         </button>
         <button
           type="button"
           className="vodda-tappable"
-          aria-label="فقط اساتیدی که جلسهٔ فوری فعال کرده‌اند"
+          aria-label={L("فقط اساتیدی که جلسهٔ فوری فعال کرده‌اند")}
           onClick={() => setFilters((current) => ({ ...current, instantOnly: !current.instantOnly }))}
           style={{
             ...chipStyle(filters.instantOnly),
@@ -1502,7 +1507,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
           }}
         >
           <Icon name="sparkle" size={13} stroke={2} />
-          جلسهٔ فوری
+          {L("جلسهٔ فوری")}
         </button>
         {TIER_PRESETS.map(([value, label, color]) => (
           <button
@@ -1518,7 +1523,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
                 style={{ width: 9, height: 9, borderRadius: "50%", background: color, flex: "0 0 auto" }}
               />
             ) : null}
-            {label}
+            {L(label)}
           </button>
         ))}
       </div>
@@ -1532,7 +1537,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
               onClick={() => setFilters((current) => ({ ...current, city: "" }))}
               style={{ ...chipStyle(false), background: colors.sand100 }}
             >
-              شهر: {filters.city}
+              {L("شهر: {n}").replace("{n}", filters.city)}
               <Icon name="x" size={14} />
             </button>
           ) : null}
@@ -1543,7 +1548,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
               onClick={() => setFilters((current) => ({ ...current, female: "all" }))}
               style={{ ...chipStyle(false), background: colors.sand100 }}
             >
-              {filters.female === "female" ? "استاد خانم" : "استاد آقا"}
+              {filters.female === "female" ? L("استاد خانم") : L("استاد آقا")}
               <Icon name="x" size={14} />
             </button>
           ) : null}
@@ -1554,7 +1559,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
               onClick={() => setFilters((current) => ({ ...current, tier: "" }))}
               style={{ ...chipStyle(false), background: colors.sand100 }}
             >
-              درجه: {TIER_LABELS[filters.tier]}
+              {L("درجه: {n}").replace("{n}", L(TIER_LABELS[filters.tier]))}
               <Icon name="x" size={14} />
             </button>
           ) : null}
@@ -1565,7 +1570,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
               onClick={() => setFilters((current) => ({ ...current, availableOnly: false }))}
               style={{ ...chipStyle(false), background: colors.sand100 }}
             >
-              فقط آمادهٔ رزرو
+              {L("فقط آمادهٔ رزرو")}
               <Icon name="x" size={14} />
             </button>
           ) : null}
@@ -1576,7 +1581,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
               onClick={() => setFilters((current) => ({ ...current, instantOnly: false }))}
               style={{ ...chipStyle(false), background: colors.sand100 }}
             >
-              جلسهٔ فوری
+              {L("جلسهٔ فوری")}
               <Icon name="x" size={14} />
             </button>
           ) : null}
@@ -1588,17 +1593,17 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
       {loading ? <SearchSkeleton /> : null}
       {!loading && error ? (
         <ErrorState
-          title="خطا در جستجو"
+          title={L("خطا در جستجو")}
           description={error}
-          action={<Button variant="secondary" onClick={() => setReloadKey((value) => value + 1)}>تلاش دوباره</Button>}
+          action={<Button variant="secondary" onClick={() => setReloadKey((value) => value + 1)}>{L("تلاش دوباره")}</Button>}
         />
       ) : null}
       {!loading && !error ? (
         <>
           <div style={{ ...typography.bodySmall, color: colors.inkMuted }}>
-            {faNumber(filtered.length)} استاد یافت شد
+            {faNumber(filtered.length, lang)} {L("استاد یافت شد")}
             {serverTotal > filtered.length ? (
-              <span> (از {faNumber(serverTotal)} استاد پلتفرم)</span>
+              <span> {L("(از {n} استاد پلتفرم)").replace("{n}", faNumber(serverTotal, lang))}</span>
             ) : null}
           </div>
           {filtered.length === 0 ? (
@@ -1608,30 +1613,30 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
                   icon={<Icon name={catName ? "grid" : filters.instantOnly ? "sparkle" : "search"} size={30} />}
                   title={
                     filters.instantOnly
-                      ? "فعلاً استادی با جلسهٔ فوری فعال پیدا نشد"
+                      ? L("فعلاً استادی با جلسهٔ فوری فعال پیدا نشد")
                       : catName
-                        ? "استادی برای این دسته یافت نشد"
-                        : "نتیجه‌ای یافت نشد"
+                        ? L("استادی برای این دسته یافت نشد")
+                        : L("نتیجه‌ای یافت نشد")
                   }
                   description={
                     filters.instantOnly
-                      ? "اساتید با کلید جلسهٔ فوری روشن اینجا دیده می‌شوند؛ می‌توانید فراخوان فوری ثبت کنید تا به اساتید آمادهٔ همین لحظه برسد، یا فیلتر را بردارید."
+                      ? L("اساتید با کلید جلسهٔ فوری روشن اینجا دیده می‌شوند؛ می‌توانید فراخوان فوری ثبت کنید تا به اساتید آمادهٔ همین لحظه برسد، یا فیلتر را بردارید.")
                       : catName
-                        ? "هنوز استادی خدمات این دسته را ثبت نکرده است؛ فیلترها را کمتر کنید یا از فراخوان وُدّا استفاده کنید."
-                        : "با این فیلترها استادی پیدا نشد؛ فیلترها را کمتر کنید."
+                        ? L("هنوز استادی خدمات این دسته را ثبت نکرده است؛ فیلترها را کمتر کنید یا از فراخوان وُدّا استفاده کنید.")
+                        : L("با این فیلترها استادی پیدا نشد؛ فیلترها را کمتر کنید.")
                   }
-                  action={<Button variant="secondary" onClick={clearAllFilters}>پاک کردن فیلترها</Button>}
+                  action={<Button variant="secondary" onClick={clearAllFilters}>{L("پاک کردن فیلترها")}</Button>}
                 />
               ) : (
                 <EmptyState
                   icon={<Icon name="users" size={30} />}
-                  title="هنوز استادی منتشر نشده"
-                  description="پس از تأیید اولین استاد، پروفایل او اینجا نمایش داده می‌شود."
+                  title={L("هنوز استادی منتشر نشده")}
+                  description={L("پس از تأیید اولین استاد، پروفایل او اینجا نمایش داده می‌شود.")}
                 />
               )}
               {fallback.length > 0 ? (
                 <div style={{ display: "grid", gap: 12 }}>
-                  <strong style={{ ...typography.bodySmall, color: colors.ink }}>شاید این گزینه‌ها برای شما مناسب باشند</strong>
+                  <strong style={{ ...typography.bodySmall, color: colors.ink }}>{L("شاید این گزینه‌ها برای شما مناسب باشند")}</strong>
                   {fallback.map((teacher) => (
                     <TeacherCard key={teacher.id} teacher={teacher} config={config} wide />
                   ))}
@@ -1652,7 +1657,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
                     fullWidth
                     onClick={() => setVisibleCount((current) => current + PAGE_SIZE)}
                   >
-                    نمایش بیشتر ({faNumber(filtered.length - visibleCount)} نفر مانده)
+                    {L("نمایش بیشتر ({n} نفر مانده)").replace("{n}", faNumber(filtered.length - visibleCount, lang))}
                   </Button>
                   <div ref={sentinelRef} style={{ height: 1 }} />
                 </div>
@@ -1662,15 +1667,15 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
         </>
       ) : null}
 
-      <Sheet open={filtersOpen} title="فیلترهای جستجو" onClose={() => setFiltersOpen(false)}>
+      <Sheet open={filtersOpen} title={L("فیلترهای جستجو")} onClose={() => setFiltersOpen(false)}>
         <div style={{ display: "grid", gap: spacing.lg }}>
           <div style={{ display: "grid", gap: 8 }}>
-            <strong style={{ ...typography.bodySmall }}>شهر</strong>
+            <strong style={{ ...typography.bodySmall }}>{L("شهر")}</strong>
             {cities.length > 8 ? (
               <input
                 value={cityQuery}
                 onChange={(event) => setCityQuery(event.target.value)}
-                placeholder="جستجوی شهر…"
+                placeholder={L("جستجوی شهر…")}
                 className="vodda-input"
                 style={{
                   width: "100%",
@@ -1687,9 +1692,9 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
             ) : null}
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8, maxHeight: 190, overflowY: "auto" }}>
               {cities.length === 0 ? (
-                <span style={{ ...typography.caption, color: colors.inkMuted }}>در حال دریافت شهرها…</span>
+                <span style={{ ...typography.caption, color: colors.inkMuted }}>{L("در حال دریافت شهرها…")}</span>
               ) : filteredCitiesList.length === 0 ? (
-                <span style={{ ...typography.caption, color: colors.inkMuted }}>شهری با این نام پیدا نشد.</span>
+                <span style={{ ...typography.caption, color: colors.inkMuted }}>{L("شهری با این نام پیدا نشد.")}</span>
               ) : (
                 filteredCitiesList.map((city) => (
                   <button
@@ -1709,12 +1714,12 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
           </div>
 
           <div style={{ display: "grid", gap: 8 }}>
-            <strong style={{ ...typography.bodySmall }}>جنسیت استاد</strong>
+            <strong style={{ ...typography.bodySmall }}>{L("جنسیت استاد")}</strong>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {[
-                ["all", "فرقی ندارد"],
-                ["male", "آقا"],
-                ["female", "خانم"],
+                ["all", L("فرقی ندارد")],
+                ["male", L("آقا")],
+                ["female", L("خانم")],
               ].map(([value, label]) => (
                 <button
                   key={value}
@@ -1729,8 +1734,8 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
             </div>
           </div>
 
-          <Button fullWidth onClick={applyAdvancedFilters}>اعمال فیلتر</Button>
-          <Button fullWidth variant="ghost" onClick={clearAdvancedFilters}>پاک کردن فیلترها</Button>
+          <Button fullWidth onClick={applyAdvancedFilters}>{L("اعمال فیلتر")}</Button>
+          <Button fullWidth variant="ghost" onClick={clearAdvancedFilters}>{L("پاک کردن فیلترها")}</Button>
         </div>
       </Sheet>
         </>
