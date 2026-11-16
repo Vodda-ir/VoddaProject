@@ -22,6 +22,7 @@ import {
   SectionHeader,
   WalletHero,
   colors,
+  gradients,
   radii,
   shadows,
   spacing,
@@ -74,7 +75,7 @@ function FeatureSwitch({ checked, label, onChange }: { checked: boolean; label: 
         border: 0,
         borderRadius: 999,
         cursor: "pointer",
-        background: checked ? "linear-gradient(145deg,#8fa873,#5f7a48)" : colors.sand200,
+        background: checked ? gradients.oliveBtn : colors.sand200,
         boxShadow: checked ? "0 4px 12px rgba(95,122,72,.35)" : "none",
         transition: "background 240ms cubic-bezier(.2,.9,.3,1)",
       }}
@@ -181,7 +182,7 @@ function QuickFeatureToggles({ runtime }: { runtime: PlatformRuntime }) {
   ];
 
   return (
-    <section aria-label={L("امکانات سریع")} className="vodda-enter" style={{ display: "grid", gap: 12, padding: 16, borderRadius: 24, border: `1.5px solid ${colors.goldSoft}`, background: `linear-gradient(150deg, ${colors.goldBackground}, #fffdf8 70%)`, boxShadow: shadows.sm }}>
+    <section aria-label={L("امکانات سریع")} className="vodda-enter" style={{ display: "grid", gap: 12, padding: 16, borderRadius: 24, border: `1.5px solid ${colors.goldSoft}`, background: gradients.goldPanel, boxShadow: shadows.sm }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <span aria-hidden="true" style={{ width: 38, height: 38, display: "grid", placeItems: "center", flex: "0 0 38px", borderRadius: 12, background: "linear-gradient(145deg,#d8b869,#b8923c)", color: "#fff" }}>
           <Icon name="settings" size={19} stroke={2} />
@@ -217,7 +218,7 @@ function QuickFeatureToggles({ runtime }: { runtime: PlatformRuntime }) {
               aria-hidden="true"
               style={{
                 width: 36, height: 36, display: "grid", placeItems: "center", flex: "0 0 36px", borderRadius: 12,
-                background: row.gold ? "linear-gradient(145deg,#f7ecd0,#fffaf0)" : colors.olive50,
+                background: row.gold ? gradients.goldRow : colors.olive50,
                 border: `1px solid ${row.gold ? colors.goldSoft : colors.olive100}`,
                 color: row.gold ? colors.goldDark : colors.olive700,
               }}
@@ -476,7 +477,7 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
               const metric = (
                 <div key={label} style={{ minWidth: 0, textAlign: "center" }}>
                   <span style={{ display: "block", fontSize: 11, color: "rgba(255,255,255,.60)" }}>{label}</span>
-                  <strong style={{ display: "block", marginTop: 3, fontSize: 15, fontWeight: 800, color: colors.surface }}>{value}</strong>
+                  <strong style={{ display: "block", marginTop: 3, fontSize: 15, fontWeight: 800, color: colors.onOlive }}>{value}</strong>
                 </div>
               );
               if (index === 2) return [metric];
@@ -502,7 +503,7 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
           padding: "14px 16px",
           borderRadius: 20,
           border: `1px solid ${dispatchBadge > 0 ? colors.olive200 : colors.sand150}`,
-          background: dispatchBadge > 0 ? "linear-gradient(135deg, #f2f5ea 0%, #ffffff 62%)" : colors.surface,
+          background: dispatchBadge > 0 ? gradients.soft : colors.surface,
           boxShadow: shadows.sm,
           cursor: "pointer",
           fontFamily: typography.fontFamily,
@@ -571,10 +572,10 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
         >
           <Icon name="message" size={27} style={{ flex: "0 0 auto", color: colors.gold }} />
           <span style={{ minWidth: 0, flex: 1 }}>
-            <strong style={{ display: "block", fontSize: 14.5, fontWeight: 800, color: "#7a5e1e" }}>{L("{n} درخواست جدید").replace("{n}", localizedDigits(pending.length, lang))}</strong>
-            <span style={{ display: "block", marginTop: 2, fontSize: 12, color: "#9a7426" }}>{L("برای تأیید یا رد، لمس کنید")}</span>
+            <strong style={{ display: "block", fontSize: 14.5, fontWeight: 800, color: colors.goldInk }}>{L("{n} درخواست جدید").replace("{n}", localizedDigits(pending.length, lang))}</strong>
+            <span style={{ display: "block", marginTop: 2, fontSize: 12, color: colors.goldInkSoft }}>{L("برای تأیید یا رد، لمس کنید")}</span>
           </span>
-          <Icon name="chevronL" size={20} style={{ color: "#9a7426" }} />
+          <Icon name="chevronL" size={20} style={{ color: colors.goldInkSoft }} />
         </button>
       ) : null}
 
@@ -597,7 +598,7 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
                 <strong style={{ display: "block", fontSize: 14.5, fontWeight: 800, color: colors.ink }}>{N(nextSession.learnerName)}</strong>
                 <span style={{ display: "block", marginTop: 3, fontSize: 12.5, color: colors.inkSecondary }}>{L(nextSession.service)}</span>
               </div>
-              <span style={{ padding: "5px 9px", borderRadius: radii.pill, color: colors.surface, background: colors.olive600, ...typography.caption, fontWeight: 700 }}>
+              <span style={{ padding: "5px 9px", borderRadius: radii.pill, color: colors.onOlive, background: colors.olive600, ...typography.caption, fontWeight: 700 }}>
                 {L("تأییدشده")}
               </span>
             </div>
@@ -749,7 +750,7 @@ function CompletionChecklist({ state, config }: { state: CompletionState; config
           style={{
             flex: "0 0 auto", minWidth: 44, textAlign: "center",
             padding: "5px 9px", borderRadius: 999, fontSize: 12.5, fontWeight: 800,
-            color: "#7a5e1e", background: colors.goldBackground, border: `1px solid ${colors.goldSoft}`,
+            color: colors.goldInk, background: colors.goldBackground, border: `1px solid ${colors.goldSoft}`,
           }}
         >
           {L("٪{n}").replace("{n}", localizedDigits(percent, lang))}
@@ -798,7 +799,7 @@ function CompletionChecklist({ state, config }: { state: CompletionState; config
                 width: 26, height: 26, display: "grid", placeItems: "center", flex: "0 0 26px",
                 borderRadius: "50%",
                 background: item.done ? colors.olive600 : colors.sand100,
-                color: item.done ? colors.surface : colors.inkFaint,
+                color: item.done ? colors.onOlive : colors.inkFaint,
               }}
             >
               <Icon name={item.done ? "check" : item.icon} size={14} stroke={2.4} />
@@ -819,7 +820,7 @@ function CompletionChecklist({ state, config }: { state: CompletionState; config
             <span
               style={{
                 flex: "0 0 auto", fontSize: 11, fontWeight: 700,
-                color: item.done ? colors.olive600 : "#9a7426",
+                color: item.done ? colors.olive600 : colors.goldInkSoft,
               }}
             >
               {item.meta}

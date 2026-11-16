@@ -73,7 +73,7 @@ export function RoleModeSheet({
                   placeItems: "center",
                   flex: "0 0 48px",
                   borderRadius: 14,
-                  color: active ? colors.surface : colors.olive700,
+                  color: active ? colors.onOlive : colors.olive700,
                   background: active ? colors.olive600 : colors.olive100,
                 }}
               >

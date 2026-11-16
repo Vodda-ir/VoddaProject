@@ -48,6 +48,26 @@ export const colors = {
   successBackground: "var(--v-successBackground, #edf2e5)",
   info: "var(--v-info, #5e7e8c)",
   infoBackground: "var(--v-infoBackground, #edf3f5)",
+  /* متن روی سطوح سبز ثابت (گرادیان‌های برند، دکمهٔ اصلی، کارت‌های زیتونی) —
+     در هر دو حالت روشن می‌ماند؛ برعکسِ surface که در حالت تاریک تیره می‌شود.
+     بدون این توکن، متن روی کارت‌های سبز در حالت تاریک سیاه‌نما و ناخوانا می‌شد. */
+  onOlive: "var(--v-onOlive, #fffaf0)",
+  /* متن روی سطوح طلایی ثابت (دکمه‌های طلایی) — در هر دو حالت تیره می‌ماند */
+  onGold: "var(--v-onGold, #221a08)",
+  /* متن طلاییِ روی پنل‌های کِرِم/طلایی — در حالت تاریک به طلایی روشن تبدیل می‌شود
+     تا «متن تیره روی زمینه تیره» هرگز رخ ندهد */
+  goldInk: "var(--v-goldInk, #7a5e1e)",
+  goldInkSoft: "var(--v-goldInkSoft, #9a7426)",
+  /* خط و پس‌زمینهٔ پنل‌های طلایی — تطبیقی */
+  goldAccent: "var(--v-goldAccent, #d8b869)",
+  goldSurface: "var(--v-goldSurface, #fdf6e3)",
+  goldPanelEnd: "var(--v-goldPanelEnd, #fffdf8)",
+  /* پالت سبزِ فرم خدمات اساتید — تطبیقی با حالت تاریک */
+  greenInk: "var(--v-greenInk, #2c5e3a)",
+  greenDeep: "var(--v-greenDeep, #24512f)",
+  greenBorder: "var(--v-greenBorder, #a9cfb4)",
+  greenChip: "var(--v-greenChip, #d9edde)",
+  greenBackground: "var(--v-greenBackground, #eef8f1)",
 } as const;
 
 export const gradients = {
@@ -60,6 +80,20 @@ export const gradients = {
   gold: "var(--v-grad-gold, linear-gradient(145deg, #f7efd9 0%, #fffaf0 100%))",
   goldRich:
     "var(--v-grad-goldRich, linear-gradient(145deg, #d4ab52 0%, #bf9540 52%, #8b681f 100%))",
+  /* پنل‌های کِرِم/طلایی — در حالت تاریک به پنل‌های طلاییِ تیره تبدیل می‌شوند تا
+     کادرها نه خیره‌کننده شوند نه ناخوانا */
+  goldPanel:
+    "var(--v-grad-goldPanel, linear-gradient(150deg, #f7efd9 0%, #fffdf8 70%))",
+  goldRow:
+    "var(--v-grad-goldRow, linear-gradient(145deg, #f7ecd0 0%, #fffaf0 100%))",
+  cream:
+    "var(--v-grad-cream, linear-gradient(150deg, #fdf6e3 0%, #fffdf8 75%))",
+  /* دکمه/سوئیچ سبز فعال — در حالت تاریک عمیق‌تر تا با زمینهٔ ذغالی هماهنگ بماند */
+  oliveBtn:
+    "var(--v-grad-oliveBtn, linear-gradient(145deg, #8fa873 0%, #5f7a48 100%))",
+  /* لبهٔ روشن کارت‌ها — تطبیقی */
+  cardSheen:
+    "var(--v-grad-cardSheen, linear-gradient(180deg, #ffffff 0%, #fffdf8 100%))",
 } as const;
 
 export const radii = {

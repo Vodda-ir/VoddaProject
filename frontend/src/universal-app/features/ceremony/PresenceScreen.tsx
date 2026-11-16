@@ -147,7 +147,7 @@ export function PresenceScreen({ config }: { config: UniversalAppConfig }) {
         style={{
           borderRadius: 22,
           padding: 20,
-          color: colors.surface,
+          color: colors.onOlive,
           background: gradients.goldRich,
           boxShadow: "0 14px 34px rgba(139,104,31,.3)",
         }}

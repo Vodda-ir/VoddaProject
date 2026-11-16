@@ -32,11 +32,14 @@ function Scene({ children, size = 176, style }: { children: React.ReactNode; siz
   );
 }
 
-const ink = "#5e6e43";
-const inkSoft = "rgba(94,110,67,.45)";
-const gold = "#bf9540";
-const goldSoft = "#e7d5a8";
-const cream = "#fcfaf4";
+/* ستون‌های تصویرسازی متغیر CSS هستند تا در حالت تاریک خودکار بازرنگ شوند؛
+   مقدارهای روشن به‌عنوان fallback نوشته شده‌اند. */
+const ink = "var(--v-ill-ink, #5e6e43)";
+const inkSoft = "var(--v-ill-inkSoft, rgba(94,110,67,.45))";
+const gold = "var(--v-ill-gold, #bf9540)";
+const goldSoft = "var(--v-ill-goldSoft, #e7d5a8)";
+/* کاغذ/متن کتاب و لوح — در تاریک به کاغذِ تیرهٔ گرم تبدیل می‌شود */
+const paper = "var(--v-ill-paper, #ffffff)";
 
 /** قرآنِ باز زیر گنبد و ستاره — برای حالت خالی جلسات */
 export function IllustrationSessions({ size = 190 }: { size?: number }) {
@@ -58,7 +61,7 @@ export function IllustrationSessions({ size = 190 }: { size?: number }) {
       {/* کتاب باز */}
       <path
         d="M40 92 C 58 80, 86 80, 100 92 C 114 80, 142 80, 160 92 L 160 118 C 142 106, 114 106, 100 118 C 86 106, 58 106, 40 118 Z"
-        fill="#ffffff"
+        fill={paper}
         stroke={ink}
         strokeWidth="2"
         strokeLinejoin="round"
@@ -78,10 +81,10 @@ export function IllustrationWallet({ size = 190 }: { size?: number }) {
   return (
     <Scene size={size}>
       {/* بدنهٔ کیف */}
-      <rect x="48" y="62" width="104" height="56" rx="14" fill="#ffffff" stroke={ink} strokeWidth="2" />
+      <rect x="48" y="62" width="104" height="56" rx="14" fill={paper} stroke={ink} strokeWidth="2" />
       <path d="M48 80 L 140 80" stroke={inkSoft} strokeWidth="1.4" />
       {/* درزِ بست */}
-      <path d="M136 84 L 152 84 C 158 84, 162 88, 162 94 C 162 100, 158 104, 152 104 L 136 104" fill="#ffffff" stroke={ink} strokeWidth="2" strokeLinejoin="round" />
+      <path d="M136 84 L 152 84 C 158 84, 162 88, 162 94 C 162 100, 158 104, 152 104 L 136 104" fill={paper} stroke={ink} strokeWidth="2" strokeLinejoin="round" />
       <circle cx="146" cy="94" r="4.6" fill={gold} />
       {/* سکه‌های طلایی */}
       <circle cx="88" cy="52" r="13" fill={goldSoft} stroke={gold} strokeWidth="2" />
@@ -101,7 +104,7 @@ export function IllustrationDispatch({ size = 190 }: { size?: number }) {
       {/* بدنهٔ بلندگو */}
       <path
         d="M62 74 L 96 74 L 130 50 L 130 102 L 96 78 L 62 78 C 57 78, 54 76, 54 76 C 54 76, 57 74, 62 74 Z"
-        fill="#ffffff"
+        fill={paper}
         stroke={ink}
         strokeWidth="2"
         strokeLinejoin="round"
@@ -128,7 +131,7 @@ export function IllustrationQalam({ size = 190 }: { size?: number }) {
   return (
     <Scene size={size}>
       {/* دوات */}
-      <path d="M128 96 C 128 88, 136 84, 144 84 C 152 84, 160 88, 160 96 L 156 118 L 132 118 Z" fill="#ffffff" stroke={ink} strokeWidth="2" strokeLinejoin="round" />
+      <path d="M128 96 C 128 88, 136 84, 144 84 C 152 84, 160 88, 160 96 L 156 118 L 132 118 Z" fill={paper} stroke={ink} strokeWidth="2" strokeLinejoin="round" />
       {/* قلم نی */}
       <path d="M44 108 L 108 66 L 118 58 C 122 55, 126 59, 123 63 L 115 73 L 52 116 C 48 118, 42 114, 44 108 Z" fill={goldSoft} stroke={gold} strokeWidth="1.8" strokeLinejoin="round" />
       <path d="M108 66 L 115 73" stroke={gold} strokeWidth="1.4" />

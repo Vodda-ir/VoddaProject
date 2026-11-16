@@ -287,7 +287,7 @@ export function LearnerSessionsScreen({ config }: { config?: UniversalAppConfig 
                 minHeight: 44,
                 border: 0,
                 borderRadius: 14,
-                color: selected ? colors.surface : colors.inkMuted,
+                color: selected ? colors.onOlive : colors.inkMuted,
                 background: selected ? colors.olive600 : colors.surface,
                 boxShadow: shadows.xs,
                 fontFamily: typography.fontFamily,

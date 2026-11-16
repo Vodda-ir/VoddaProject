@@ -102,7 +102,7 @@ export function TeacherBioBlocks({ bio, emptyLabel = "اطلاعاتی ثبت ن
         return (
           <div key={index} style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
             {block.items.map((item) => (
-              <span key={item} style={{ display: "inline-flex", padding: "5px 10px", borderRadius: 999, fontSize: 11.5, fontWeight: 700, color: "#8b681f", background: colors.goldBackground, border: "1px solid rgba(191,149,64,.35)" }}>
+              <span key={item} style={{ display: "inline-flex", padding: "5px 10px", borderRadius: 999, fontSize: 11.5, fontWeight: 700, color: colors.goldInk, background: colors.goldBackground, border: "1px solid rgba(191,149,64,.35)" }}>
                 {item}
               </span>
             ))}

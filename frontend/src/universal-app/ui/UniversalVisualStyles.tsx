@@ -96,6 +96,34 @@ export function UniversalVisualStyles() {
         --v-grad-gold: linear-gradient(145deg, #2b2517 0%, #1f1c12 100%);
         --v-grad-goldRich: linear-gradient(145deg, #d4ab52 0%, #bf9540 52%, #8b681f 100%);
         --v-veil-strong: rgba(24,28,19,.78);
+        /* متن روی سطوح سبز ثابت — در هر دو حالت روشن می‌ماند تا متن سیاه روی کادر سبز رخ ندهد */
+        --v-onOlive: #fffaf0;
+        --v-onGold: #221a08;
+        /* متن طلایی روی پنل‌های کِرِم — در تاریک روشن می‌شود (خوانایی کامل) */
+        --v-goldInk: #ecd9a8;
+        --v-goldInkSoft: #c9ab5e;
+        --v-goldAccent: #8a7434;
+        --v-goldSurface: #2b2517;
+        --v-goldPanelEnd: #221e13;
+        /* پالت سبز فرم خدمات — تیره و آرام در حالت تاریک */
+        --v-greenInk: #9cc4aa;
+        --v-greenDeep: #7ba88c;
+        --v-greenBorder: #2e4a3a;
+        --v-greenChip: #1d2e24;
+        --v-greenBackground: #16211a;
+        /* پنل‌های طلایی/کِرِم — تیره تا کادرها خیره‌کننده نشوند */
+        --v-grad-goldPanel: linear-gradient(150deg, #2b2517 0%, #221e13 70%);
+        --v-grad-goldRow: linear-gradient(145deg, #2e2715 0%, #241f10 100%);
+        --v-grad-cream: linear-gradient(150deg, #2b2517 0%, #221e13 75%);
+        --v-grad-oliveBtn: linear-gradient(145deg, #7c8f58 0%, #5e6e43 100%);
+        --v-grad-cardSheen: linear-gradient(180deg, #1d2118 0%, #20251b 100%);
+        /* تصویرسازی‌های خطی — ستون‌های اصلی در تاریک روشن می‌شوند */
+        --v-ill-ink: #a4b485;
+        --v-ill-inkSoft: rgba(164,180,133,.45);
+        --v-ill-gold: #d2aa55;
+        --v-ill-goldSoft: #6b5c33;
+        --v-ill-cream: #2b3122;
+        --v-ill-paper: #242a1e;
       }
       @font-face {
         font-family: "IRANYekanXFaNum";
@@ -230,7 +258,18 @@ export function UniversalVisualStyles() {
       }
       .vodda-input::placeholder,
       .vodda-textarea::placeholder {
-        color: #7a7463;
+        color: var(--v-inkFaint, #7a7463);
+      }
+      /* اسکلت لودینگ و لودر مداری — در حالت تاریک از زمینهٔ صفحه سیاه‌تر نشوند */
+      [data-vodda-theme="dark"] .vodda-skeleton {
+        background: #262d1b;
+      }
+      [data-vodda-theme="dark"] .vodda-skeleton::after {
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent);
+      }
+      [data-vodda-theme="dark"] .vodda-loader-orbit {
+        border-color: #2c3420;
+        border-top-color: #a4b485;
       }
       .vodda-card {
         transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
@@ -303,8 +342,8 @@ export function UniversalVisualStyles() {
         width: 34px;
         height: 34px;
         border-radius: 50%;
-        border: 3px solid #e8ecdb;
-        border-top-color: #5e6e43;
+        border: 3px solid var(--v-olive100, #e8ecdb);
+        border-top-color: var(--v-olive600, #5e6e43);
         animation: vodda-spin .75s linear infinite;
       }
       .vodda-overlay {
@@ -313,7 +352,7 @@ export function UniversalVisualStyles() {
       .vodda-skeleton {
         position: relative;
         overflow: hidden;
-        background: #eceadf;
+        background: var(--v-sand150, #ede8db);
         border-radius: 10px;
       }
       .vodda-skeleton::after {

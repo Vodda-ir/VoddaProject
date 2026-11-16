@@ -126,7 +126,7 @@ export function LearnerWalletScreen() {
                   borderRadius: radii.sm,
                   border: `1.5px solid ${active ? colors.olive600 : colors.border}`,
                   background: active ? colors.olive600 : colors.surface,
-                  color: active ? colors.surface : colors.ink,
+                  color: active ? colors.onOlive : colors.ink,
                   cursor: "pointer",
                   fontWeight: 800,
                   fontSize: 14,

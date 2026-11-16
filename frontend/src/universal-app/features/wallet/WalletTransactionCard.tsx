@@ -25,7 +25,7 @@ type TxVisual = { icon: "coins" | "video" | "trending" | "download" | "x" | "inf
 
 const TX_VISUAL: Record<string, TxVisual> = {
   charge: { icon: "coins", label: "شارژ کیف پول", ink: colors.olive700, background: colors.olive100 },
-  session: { icon: "video", label: "پرداخت جلسه", ink: "#8d6d1f", background: colors.goldBackground },
+  session: { icon: "video", label: "پرداخت جلسه", ink: colors.goldInk, background: colors.goldBackground },
   earning: { icon: "trending", label: "درآمد جلسه", ink: colors.olive700, background: colors.olive100 },
   withdrawal: { icon: "download", label: "برداشت", ink: colors.clay, background: colors.clayBackground },
   commission: { icon: "x", label: "کارمزد سامانه", ink: colors.clay, background: colors.clayBackground },

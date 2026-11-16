@@ -87,7 +87,7 @@ function Timeline({ booking }: { booking: CeremonyBooking }) {
               placeItems: "center",
               borderRadius: "50%",
               zIndex: 1,
-              color: colors.surface,
+              color: colors.onOlive,
               background: step.danger ? colors.danger : step.reached ? colors.olive600 : colors.sand200,
               fontSize: 12,
               fontWeight: 900,
@@ -288,7 +288,7 @@ export function CeremonyBookingScreen({ bookingId, config }: { bookingId: string
   if (redirecting) {
     return (
       <Card elevated style={{ display: "grid", gap: spacing.lg, textAlign: "center" }}>
-        <div aria-hidden="true" style={{ width: 68, height: 68, display: "grid", placeItems: "center", marginInline: "auto", borderRadius: "50%", color: colors.surface, background: colors.olive600, boxShadow: shadows.olive }}>
+        <div aria-hidden="true" style={{ width: 68, height: 68, display: "grid", placeItems: "center", marginInline: "auto", borderRadius: "50%", color: colors.onOlive, background: colors.olive600, boxShadow: shadows.olive }}>
           <Icon name="shield" size={30} stroke={2.2} />
         </div>
         <div>
@@ -389,10 +389,10 @@ export function CeremonyBookingScreen({ bookingId, config }: { bookingId: string
 
       {settled ? (
         <Card style={{ display: "grid", gap: 10, textAlign: "center", padding: 22, borderRadius: 20, background: colors.successBackground, borderColor: colors.olive200 }}>
-          <div aria-hidden="true" style={{ width: 62, height: 62, display: "grid", placeItems: "center", marginInline: "auto", borderRadius: "50%", color: colors.surface, background: colors.olive600 }}>
+          <div aria-hidden="true" style={{ width: 62, height: 62, display: "grid", placeItems: "center", marginInline: "auto", borderRadius: "50%", color: colors.onOlive, background: colors.olive600 }}>
             <Icon name="checkCircle" size={30} stroke={2.3} />
           </div>
-          <strong style={{ fontSize: 15.5, color: colors.olive800 }}>{L("مراسم برگزار و قرارداد تسویه شد 🌿")}</strong>
+          <strong style={{ fontSize: 15.5, color: colors.olive700 }}>{L("مراسم برگزار و قرارداد تسویه شد 🌿")}</strong>
           <p style={{ margin: 0, fontSize: 12.5, color: colors.inkSecondary, lineHeight: 1.9 }}>
             {isOrganizer
               ? L("از انتخاب و اعتماد شما سپاسگزاریم؛ حق‌الزحمهٔ قاری تسویه شد.")
@@ -447,7 +447,7 @@ export function CeremonyBookingScreen({ bookingId, config }: { bookingId: string
       {isProvider && depositPaid ? (
         <Card style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: 15, borderRadius: 20, borderColor: colors.olive200, background: colors.olive50 }}>
           <Icon name="clock" size={19} style={{ color: colors.olive700, flex: "0 0 auto", marginTop: 2 }} />
-          <p style={{ margin: 0, fontSize: 12.5, color: colors.olive800, lineHeight: 1.9 }}>
+          <p style={{ margin: 0, fontSize: 12.5, color: colors.olive700, lineHeight: 1.9 }}>
             {L("ودیعه پرداخت شده و مراسم قطعی است. پس از اجرای مراسم، برگزارکننده تسویه را تأیید می‌کند و حق‌الزحمهٔ شما به کیف پول واریز می‌شود.")}
           </p>
         </Card>

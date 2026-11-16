@@ -81,7 +81,7 @@ export function Chip({
   const tone: CSSProperties = active
     ? accent === "gold"
       ? { background: colors.goldBackground, borderColor: colors.goldSoft, color: colors.goldDark }
-      : { background: colors.olive600, borderColor: colors.olive600, color: colors.surface }
+      : { background: colors.olive600, borderColor: colors.olive600, color: colors.onOlive }
     : { background: colors.surface, borderColor: colors.sand200, color: colors.inkSecondary };
   return (
     <button
@@ -671,7 +671,7 @@ export function VenuePicker({
 
       <div style={{ display: "grid", gap: spacing.sm }}>
         {geoState === "done" && detected ? (
-          <div style={{ ...actionCard, border: `1px solid rgba(94,110,67,.35)`, background: colors.successBackground, color: colors.olive800 }}>
+          <div style={{ ...actionCard, border: `1px solid rgba(94,110,67,.35)`, background: colors.successBackground, color: colors.olive700 }}>
             <Icon name="checkCircle" size={19} style={{ flex: "0 0 auto" }} />
             <div style={{ minWidth: 0, flex: 1 }}>
               <strong style={{ display: "block", fontSize: 12.5, fontWeight: 800 }}>

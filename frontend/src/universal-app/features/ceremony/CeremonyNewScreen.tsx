@@ -71,7 +71,7 @@ function whenChip(active: boolean): CSSProperties {
     fontWeight: 700,
     cursor: "pointer",
     fontFamily: "inherit",
-    color: active ? colors.surface : colors.inkSecondary,
+    color: active ? colors.onOlive : colors.inkSecondary,
     background: active ? colors.olive600 : colors.surface,
     border: `1px solid ${active ? colors.olive600 : colors.sand200}`,
   };
@@ -201,7 +201,7 @@ export function CeremonyNewScreen({ config }: { config: UniversalAppConfig }) {
           overflow: "hidden",
           borderRadius: 22,
           padding: 20,
-          color: colors.surface,
+          color: colors.onOlive,
           background: gradients.goldRich,
           boxShadow: "0 14px 34px rgba(139,104,31,.3)",
         }}

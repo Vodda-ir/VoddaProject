@@ -380,7 +380,7 @@ export function TeacherSessionsScreen({ mode, config }: { mode: TeacherSessionsM
           {(["upcoming", "past"] as const).map((tab) => {
             const selected = when === tab;
             return (
-              <button key={tab} type="button" className="vodda-tappable" aria-pressed={selected} onClick={() => setWhen(tab)} style={{ minHeight: 44, border: 0, borderRadius: 14, color: selected ? colors.surface : colors.inkMuted, background: selected ? colors.olive600 : colors.surface, boxShadow: shadows.xs, fontFamily: typography.fontFamily, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
+              <button key={tab} type="button" className="vodda-tappable" aria-pressed={selected} onClick={() => setWhen(tab)} style={{ minHeight: 44, border: 0, borderRadius: 14, color: selected ? colors.onOlive : colors.inkMuted, background: selected ? colors.olive600 : colors.surface, boxShadow: shadows.xs, fontFamily: typography.fontFamily, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
                 {tab === "upcoming" ? L("پیش‌رو") : L("گذشته")}
               </button>
             );

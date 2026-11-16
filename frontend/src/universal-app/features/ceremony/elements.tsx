@@ -223,7 +223,7 @@ export function JalaliWhenPicker({
                 width: 102,
                 minHeight: 76,
                 padding: "10px 8px",
-                color: selected ? colors.surface : colors.inkSecondary,
+                color: selected ? colors.onOlive : colors.inkSecondary,
                 background: selected ? colors.olive600 : colors.sand50,
                 border: `1px solid ${selected ? colors.olive600 : colors.sand200}`,
                 borderRadius: 15,

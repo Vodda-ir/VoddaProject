@@ -239,7 +239,7 @@ export function CeremonyCallScreen({ callId, config }: { callId: string; config:
           overflow: "hidden",
           borderRadius: 22,
           padding: 20,
-          color: colors.surface,
+          color: colors.onOlive,
           background: searching ? "linear-gradient(145deg, #2e3622 0%, #3c472b 58%, #4c5a36 100%)" : colors.olive800,
           boxShadow: shadows.olive,
         }}
@@ -312,7 +312,7 @@ export function CeremonyCallScreen({ callId, config }: { callId: string; config:
           <>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <strong style={{ fontSize: 15, color: colors.ink }}>{L("پذیرش‌های رسیده")}</strong>
-              <span style={{ background: colors.olive600, color: colors.surface, borderRadius: 999, fontSize: 12, fontWeight: 800, padding: "2px 10px" }}>
+              <span style={{ background: colors.olive600, color: colors.onOlive, borderRadius: 999, fontSize: 12, fontWeight: 800, padding: "2px 10px" }}>
                 {localizedDigits(offers.length, lang)}
               </span>
             </div>

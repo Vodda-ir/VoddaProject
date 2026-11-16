@@ -81,7 +81,7 @@ export function PaymentResultBanner() {
           justifyContent: "center",
           fontSize: 12,
           fontWeight: 900,
-          color: colors.surface,
+          color: colors.onOlive,
           background: tone.border,
         }}
       >

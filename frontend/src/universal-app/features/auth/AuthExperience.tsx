@@ -373,7 +373,7 @@ export function LoginScreen({ config }: LoginScreenProps) {
                 fontFamily: typography.fontFamily,
                 fontSize: 12.5,
                 fontWeight: lang === option ? 800 : 600,
-                color: lang === option ? colors.surface : colors.inkMuted,
+                color: lang === option ? colors.onOlive : colors.inkMuted,
                 background: lang === option ? colors.olive600 : "transparent",
               }}
             >

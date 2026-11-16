@@ -169,7 +169,7 @@ function chipStyle(active: boolean) {
     padding: "7px 13px",
     border: active ? "1px solid " + colors.olive600 : "1px solid " + colors.sand200,
     borderRadius: radii.pill,
-    color: active ? colors.surface : colors.inkSecondary,
+    color: active ? colors.onOlive : colors.inkSecondary,
     background: active ? colors.olive600 : colors.surface,
     boxShadow: active ? "0 5px 14px rgba(94,110,67,.14)" : shadows.xs,
     fontFamily: typography.fontFamily,
@@ -229,7 +229,7 @@ function ModeTabs({ mode, onChange }: { mode: SearchMode; onChange: (next: Searc
               fontFamily: typography.fontFamily,
               cursor: "pointer",
               border: 0,
-              color: active ? colors.surface : colors.inkSecondary,
+              color: active ? colors.onOlive : colors.inkSecondary,
               background: active ? colors.olive600 : "transparent",
               boxShadow: active ? "0 6px 16px rgba(94,110,67,.22)" : "none",
             }}
@@ -1023,7 +1023,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
                   style={{
                     flex: "0 0 auto", minHeight: 36, padding: "0 13px",
                     borderRadius: 999, border: 0, cursor: "pointer",
-                    background: colors.olive600, color: colors.surface,
+                    background: colors.olive600, color: colors.onOlive,
                     fontSize: 12, fontWeight: 800, fontFamily: typography.fontFamily,
                   }}
                 >
@@ -1123,7 +1123,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
                     gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
                     gap: 10,
                     padding: 12,
-                    background: "linear-gradient(180deg, #ffffff, #fffdf8)",
+                    background: gradients.cardSheen,
                     border: `1.5px solid ${colors.goldSoft}`,
                     borderRadius: 26,
                     boxShadow: "0 0 0 4px rgba(231,213,168,.22), 0 12px 28px rgba(139,104,31,.13)",
@@ -1159,7 +1159,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
                           borderRadius: 12,
                           overflow: "hidden",
                           border: `2px solid ${colors.goldSoft}`,
-                          boxShadow: "0 0 0 2.5px #ffffff, 0 0 0 4px rgba(212,171,82,.3), 0 3px 8px rgba(46,54,34,.12)",
+                          boxShadow: "0 0 0 2.5px var(--v-surface, #ffffff), 0 0 0 4px rgba(212,171,82,.3), 0 3px 8px rgba(46,54,34,.12)",
                           background: colors.olive100,
                           position: "relative",
                         }}
@@ -1220,7 +1220,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
                     width: "100%",
                     padding: "12px 14px",
                     textAlign: "right",
-                    background: "linear-gradient(170deg, #fffdf6, " + colors.goldBackground + ")",
+                    background: "linear-gradient(170deg, var(--v-goldPanelEnd, #fffdf6), var(--v-goldBackground, #f7efd9))",
                     border: "1.4px solid " + colors.gold,
                     borderRadius: 18,
                     cursor: "pointer",
@@ -1303,7 +1303,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
             style={{
               flex: "0 0 auto", minHeight: 36, padding: "0 13px",
               borderRadius: 999, border: 0, cursor: "pointer",
-              background: colors.olive600, color: colors.surface,
+              background: colors.olive600, color: colors.onOlive,
               fontSize: 12.5, fontWeight: 800, fontFamily: typography.fontFamily,
             }}
           >
@@ -1380,7 +1380,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
               padding: 0,
               border: 0,
               borderRadius: 16,
-              color: colors.surface,
+              color: colors.onOlive,
               background: colors.olive600,
               boxShadow: shadows.sm,
               cursor: "pointer",
@@ -1505,7 +1505,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
             fontSize: 12.5,
             minHeight: 38,
             padding: "6px 11px",
-            ...(filters.instantOnly ? { borderColor: "#d8b869", color: "#7a5e1e", background: "#fdf6e3" } : null),
+            ...(filters.instantOnly ? { borderColor: colors.goldAccent, color: colors.goldInk, background: colors.goldSurface } : null),
           }}
         >
           <Icon name="sparkle" size={13} stroke={2} />

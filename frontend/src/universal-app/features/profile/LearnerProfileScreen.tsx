@@ -116,7 +116,7 @@ export function LearnerProfileScreen({ config }: LearnerProfileScreenProps) {
       {canUseTeacherMode ? (
         <button type="button" onClick={() => navigateApp("/t", config)} className="vodda-tappable vodda-enter vodda-enter-delay-1"
           style={{ width: "100%", display: "flex", alignItems: "center", gap: 13, padding: 16, textAlign: "right", border: `1px solid ${colors.olive100}`, borderRadius: 24, color: colors.ink, background: colors.olive50, fontFamily: typography.fontFamily, cursor: "pointer" }}>
-          <span style={{ width: 46, height: 46, display: "grid", placeItems: "center", flex: "0 0 46px", borderRadius: 14, color: colors.surface, background: colors.olive600 }}>
+          <span style={{ width: 46, height: 46, display: "grid", placeItems: "center", flex: "0 0 46px", borderRadius: 14, color: colors.onOlive, background: colors.olive600 }}>
             <Icon name="award" size={22} />
           </span>
           <span style={{ minWidth: 0, flex: 1 }}>
@@ -151,7 +151,7 @@ export function LearnerProfileScreen({ config }: LearnerProfileScreenProps) {
                   fontFamily: typography.fontFamily,
                   fontSize: 12,
                   fontWeight: lang === option ? 800 : 600,
-                  color: lang === option ? colors.surface : colors.inkMuted,
+                  color: lang === option ? colors.onOlive : colors.inkMuted,
                   background: lang === option ? colors.olive600 : "transparent",
                 }}
               >
@@ -180,7 +180,8 @@ export function LearnerProfileScreen({ config }: LearnerProfileScreenProps) {
               borderRadius: 999,
               fontSize: 12,
               fontWeight: 800,
-              color: theme === "dark" ? colors.surface : colors.olive700,
+              /* در حالت تاریک متن پیل باید روشن بماند — surface تیره می‌شود */
+              color: colors.olive700,
               background: theme === "dark" ? colors.olive800 : colors.olive50,
             }}
           >

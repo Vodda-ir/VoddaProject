@@ -81,7 +81,7 @@ function ServiceCard({ service }: { service: TeacherService }) {
             {L("رایگان")}
           </span>
         ) : (
-          <strong style={{ ...typography.bodySmall, flexShrink: 0, color: colors.olive800, whiteSpace: "nowrap" }}>
+          <strong style={{ ...typography.bodySmall, flexShrink: 0, color: colors.olive700, whiteSpace: "nowrap" }}>
             {formatWalletAmount(service.price)} {L("تومان")}
           </strong>
         )}
@@ -241,7 +241,7 @@ export function LearnerTeacherProfileScreen({
                 borderRadius: 999,
                 fontSize: 11.5,
                 fontWeight: 800,
-                color: "#7a5e1e",
+                color: colors.goldInk,
                 background: colors.goldBackground,
                 border: `1px solid ${colors.goldSoft}`,
               }}
@@ -320,7 +320,7 @@ export function LearnerTeacherProfileScreen({
             variant="secondary"
             disabled={services.length === 0}
             onClick={() => navigateApp(`/book/${teacher.id}`, config)}
-            style={{ marginBottom: 8, borderColor: colors.goldSoft, color: "#7a5e1e", background: colors.goldBackground }}
+            style={{ marginBottom: 8, borderColor: colors.goldSoft, color: colors.goldInk, background: colors.goldBackground }}
           >
             <Icon name="sparkle" size={18} style={{ color: colors.goldDark }} />
             {L("درخواست جلسهٔ فوری — همین حالا")}

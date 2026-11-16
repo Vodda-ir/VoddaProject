@@ -124,7 +124,7 @@ function ServiceForm({
                   fontWeight: 700,
                   cursor: "pointer",
                   fontFamily: "inherit",
-                  color: form.officialServiceId === item.id ? colors.surface : colors.inkSecondary,
+                  color: form.officialServiceId === item.id ? colors.onOlive : colors.inkSecondary,
                   background: form.officialServiceId === item.id ? colors.olive600 : colors.surface,
                   border: `1px solid ${form.officialServiceId === item.id ? colors.olive600 : colors.sand200}`,
                 }}
@@ -296,7 +296,7 @@ export function TeacherPresenceScreen({ config }: { config: UniversalAppConfig }
         style={{
           borderRadius: 22,
           padding: 20,
-          color: colors.surface,
+          color: colors.onOlive,
           background: gradients.deep,
           boxShadow: shadows.olive,
         }}
@@ -330,7 +330,7 @@ export function TeacherPresenceScreen({ config }: { config: UniversalAppConfig }
               minHeight: 44,
               border: 0,
               borderRadius: 14,
-              color: tab === key ? colors.surface : colors.inkMuted,
+              color: tab === key ? colors.onOlive : colors.inkMuted,
               background: tab === key ? colors.olive600 : colors.surface,
               boxShadow: shadows.xs,
               fontFamily: typography.fontFamily,

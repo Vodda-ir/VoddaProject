@@ -167,11 +167,11 @@ function defaultFor(entry: CatalogEntry): ServiceDefault {
 
 /* سبز انتخاب — کنتراست واضح با کارت‌های خنثی، هماهنگ با پالت طبیعی وُدّا */
 const greenTone = {
-  ink: "#2c5e3a",
-  deep: "#24512f",
-  border: "#a9cfb4",
-  chip: "#d9edde",
-  background: "#eef8f1",
+  ink: colors.greenInk,
+  deep: colors.greenDeep,
+  border: colors.greenBorder,
+  chip: colors.greenChip,
+  background: colors.greenBackground,
 } as const;
 
 const emptyDraft: ServiceDraft = { duration: "60", price: "" };
@@ -189,7 +189,7 @@ function quickChipStyle(active: boolean): CSSProperties {
     fontWeight: active ? 800 : 600,
     cursor: "pointer",
     fontFamily: typography.fontFamily,
-    color: active ? colors.surface : colors.inkSecondary,
+    color: active ? colors.onOlive : colors.inkSecondary,
     background: active ? colors.olive600 : colors.surface,
     border: `1px solid ${active ? colors.olive600 : colors.sand200}`,
   };
@@ -438,7 +438,7 @@ export function TeacherServicesScreen() {
   return (
     <section className="vodda-screen" style={{ display: "grid", gap: spacing.lg }}>
       {/* خلاصه و راهنما */}
-      <Card style={{ display: "grid", gap: 10, padding: 16, borderRadius: radii.md, background: `linear-gradient(150deg, ${colors.olive50}, #ffffff 78%)`, border: `1px solid ${colors.olive100}` }}>
+      <Card style={{ display: "grid", gap: 10, padding: 16, borderRadius: radii.md, background: `linear-gradient(150deg, ${colors.olive50}, ${colors.surface} 78%)`, border: `1px solid ${colors.olive100}` }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <IconBadge icon="checkCircle" tone="olive" size={40} />
           <div style={{ flex: 1, minWidth: 0 }}>

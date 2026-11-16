@@ -245,7 +245,7 @@ export function AssistantChat({ routeName }: { routeName: string }) {
                       lineHeight: 1.9,
                       whiteSpace: "pre-wrap",
                       wordBreak: "break-word",
-                      color: mine ? colors.surface : colors.ink,
+                      color: mine ? colors.onOlive : colors.ink,
                       background: mine ? colors.olive600 : colors.olive50,
                       border: mine ? "none" : `1px solid ${colors.olive100}`,
                     }}
@@ -357,7 +357,7 @@ export function AssistantChat({ routeName }: { routeName: string }) {
                 padding: 0,
                 border: 0,
                 borderRadius: 14,
-                color: colors.surface,
+                color: colors.onOlive,
                 background: input.trim() && !busy ? colors.olive600 : colors.sand200,
                 cursor: input.trim() && !busy ? "pointer" : "default",
               }}

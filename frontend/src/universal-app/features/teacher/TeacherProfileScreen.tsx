@@ -574,7 +574,7 @@ export function TeacherProfileScreen({ config }: { config: UniversalAppConfig })
               </span>
             </span>
             {aiError ? (
-              <span style={{ ...typography.caption, color: "#b3261e", lineHeight: 1.8 }}>{L(aiError)}</span>
+              <span style={{ ...typography.caption, color: colors.danger, lineHeight: 1.8 }}>{L(aiError)}</span>
             ) : null}
             {aiPreview ? (
               <span

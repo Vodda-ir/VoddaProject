@@ -603,7 +603,7 @@ function FreeServiceTile({ item, config }: { item: FreeServiceCardData; config: 
           border: `1px solid ${colors.goldSoft}`,
           fontSize: 12,
           fontWeight: 900,
-          color: colors.olive800,
+          color: colors.olive700,
         }}
       >
         {L("رزرو جلسهٔ رایگان")}
@@ -732,7 +732,7 @@ export function FreeServicesBanner({ config }: { config: UniversalAppConfig }) {
           <Icon name="gift" size={13} stroke={2.4} />
           {L("هدیهٔ اساتید وُدّا")}
         </span>
-        <strong style={{ fontSize: 15.5, fontWeight: 900, color: colors.surface, lineHeight: 1.6 }}>
+        <strong style={{ fontSize: 15.5, fontWeight: 900, color: colors.onOlive, lineHeight: 1.6 }}>
           {L("جلسات رایگان یادگیری قرآن")}
         </strong>
         <span style={{ fontSize: 11.5, fontWeight: 600, color: "rgba(255,255,255,.75)", lineHeight: 1.8 }}>

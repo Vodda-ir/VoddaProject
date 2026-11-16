@@ -7,7 +7,7 @@ import { usePlatform } from "../../platform/context";
 import { navigateApp } from "../../router";
 import { getTeacherDetail } from "../teachers/api";
 import type { Teacher, TeacherService } from "../teachers/types";
-import { Avatar, Button, Card, EmptyState, ErrorState, Icon, LoadingState, Sheet, colors, radii, shadows, spacing, typography } from "../../ui";
+import { Avatar, Button, Card, EmptyState, ErrorState, Icon, LoadingState, Sheet, colors, gradients, radii, shadows, spacing, typography } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
 import { useAppearance } from "../../ui/appearance";
 import { formatAppDate } from "../../ui/jalali";
@@ -32,7 +32,7 @@ function BookingStepHeader({ number, title }: { number: number; title: string })
           placeItems: "center",
           flex: "0 0 28px",
           borderRadius: "50%",
-          color: colors.surface,
+          color: colors.onOlive,
           background: colors.olive600,
           fontSize: 13,
           fontWeight: 800,
@@ -273,7 +273,7 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
   if (submitted) {
     return (
       <Card elevated style={{ display: "grid", gap: spacing.lg, textAlign: "center" }}>
-        <div aria-hidden="true" style={{ width: 68, height: 68, display: "grid", placeItems: "center", marginInline: "auto", borderRadius: "50%", color: colors.surface, background: colors.olive600, boxShadow: shadows.olive }}><Icon name="check" size={30} stroke={2.5} /></div>
+        <div aria-hidden="true" style={{ width: 68, height: 68, display: "grid", placeItems: "center", marginInline: "auto", borderRadius: "50%", color: colors.onOlive, background: colors.olive600, boxShadow: shadows.olive }}><Icon name="check" size={30} stroke={2.5} /></div>
         <div>
           <h2 style={{ ...typography.title, margin: 0 }}>{wasInstant ? L("جلسهٔ فوری ثبت شد") : L("درخواست جلسه ثبت شد")}</h2>
           <p style={{ ...typography.body, color: colors.inkSecondary, marginBottom: 0 }}>
@@ -299,7 +299,7 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
   if (redirecting) {
     return (
       <Card elevated style={{ display: "grid", gap: spacing.lg, textAlign: "center" }}>
-        <div aria-hidden="true" style={{ width: 68, height: 68, display: "grid", placeItems: "center", marginInline: "auto", borderRadius: "50%", color: colors.surface, background: colors.olive600, boxShadow: shadows.olive }}><Icon name="shield" size={30} stroke={2.2} /></div>
+        <div aria-hidden="true" style={{ width: 68, height: 68, display: "grid", placeItems: "center", marginInline: "auto", borderRadius: "50%", color: colors.onOlive, background: colors.olive600, boxShadow: shadows.olive }}><Icon name="shield" size={30} stroke={2.2} /></div>
         <div>
           <h2 style={{ ...typography.title, margin: 0 }}>{L("در حال انتقال به درگاه پرداخت…")}</h2>
           <p style={{ ...typography.body, color: colors.inkSecondary, marginBottom: 0 }}>
@@ -350,7 +350,7 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
             padding: "14px 16px",
             borderRadius: 20,
             border: `1.5px solid ${colors.goldSoft}`,
-            background: `linear-gradient(150deg, ${colors.goldBackground}, #fffdf8 72%)`,
+            background: gradients.goldPanel,
             boxShadow: "0 0 0 4px rgba(231,213,168,.18), 0 10px 24px rgba(139,104,31,.10)",
           }}
         >
@@ -365,8 +365,8 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
             <Icon name="sparkle" size={21} stroke={2.2} />
           </span>
           <span style={{ minWidth: 0, flex: 1, display: "grid", gap: 2 }}>
-            <strong style={{ fontSize: 13.5, fontWeight: 800, color: "#7a5e1e" }}>{L("همین حالا وقت می‌خواهید؟")}</strong>
-            <span style={{ fontSize: 11, color: "#9a7426", lineHeight: 1.7 }}>
+            <strong style={{ fontSize: 13.5, fontWeight: 800, color: colors.goldInk }}>{L("همین حالا وقت می‌خواهید؟")}</strong>
+            <span style={{ fontSize: 11, color: colors.goldInkSoft, lineHeight: 1.7 }}>
               {L("این استاد جلسهٔ فوری فعال کرده — درخواست شما مستقیم و فوری برایش ارسال می‌شود.")}
             </span>
           </span>
@@ -540,7 +540,7 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
                       width: 102,
                       minHeight: 76,
                       padding: "10px 8px",
-                      color: selected ? colors.surface : colors.inkSecondary,
+                      color: selected ? colors.onOlive : colors.inkSecondary,
                       background: selected ? colors.olive600 : colors.sand50,
                       border: `1px solid ${selected ? colors.olive600 : colors.sand200}`,
                       borderRadius: 15,
@@ -574,7 +574,7 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
                       }}
                       style={{
                         padding: `${spacing.sm}px ${spacing.md}px`,
-                        color: selected ? colors.surface : colors.inkSecondary,
+                        color: selected ? colors.onOlive : colors.inkSecondary,
                         background: selected ? colors.olive600 : colors.surface,
                         border: `1px solid ${selected ? colors.olive600 : colors.sand200}`,
                         borderRadius: radii.pill,

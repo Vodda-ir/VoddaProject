@@ -38,14 +38,15 @@ export function Button({
   const { L } = useAppearance();
   const variants: Record<ButtonVariant, CSSProperties> = {
     primary: {
-      color: colors.surface,
+      /* روی سبز زیتونیِ ثابت، متن باید روشن بماند — در حالت تاریک surface تیره می‌شود */
+      color: colors.onOlive,
       background: colors.olive600,
       borderColor: colors.olive600,
       /* درخشش نرم زیتونی — دکمهٔ اصلی حس «فشرده شدن» و عمق می‌گیرد (فاز نور) */
       boxShadow: "0 8px 20px rgba(76, 90, 54, 0.22), 0 2px 6px rgba(46, 54, 34, 0.10)",
     },
     secondary: {
-      color: colors.olive800,
+      color: colors.olive700,
       background: colors.surface,
       borderColor: colors.olive200,
       boxShadow: shadows.xs,
@@ -262,7 +263,7 @@ export function Avatar({ name, size = 48, ring = true, tone = "olive", src, alt,
       aria-label={alt ?? localName ?? L("کاربر")}
       style={{
         ...avatarFrame(size, ring, tone, style),
-        color: colors.olive800,
+        color: colors.olive700,
         background: gradients.soft,
         fontFamily: typography.fontFamily,
         fontSize: Math.max(12, Math.round(size * 0.29)),

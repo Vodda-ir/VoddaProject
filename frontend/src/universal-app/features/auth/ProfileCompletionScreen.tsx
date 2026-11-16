@@ -231,9 +231,9 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
                   height: 32,
                   display: "grid",
                   placeItems: "center",
-                  border: `2px solid ${colors.surface}`,
+                  border: `2px solid var(--v-sand50, #faf8f2)`,
                   borderRadius: "50%",
-                  color: colors.surface,
+                  color: colors.onOlive,
                   background: colors.olive600,
                 }}
               >

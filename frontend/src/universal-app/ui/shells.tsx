@@ -187,7 +187,8 @@ function BottomNavigation({
             display: "grid",
             placeItems: "center",
             borderRadius: radii.pill,
-            color: active ? colors.surface : colors.inkMuted,
+            /* روی پیل سبزِ فعال، آیکون روشن می‌ماند — در تاریک surface تیره می‌شود */
+            color: active ? colors.onOlive : colors.inkMuted,
             background: active ? colors.olive600 : "transparent",
             boxShadow: undefined,
           }}
@@ -209,7 +210,7 @@ function BottomNavigation({
                 padding: "0 5px",
                 borderRadius: 999,
                 background: colors.danger,
-                border: "2px solid #ffffff",
+                border: "2px solid var(--v-sand50, #faf8f2)",
                 color: "#ffffff",
                 fontSize: 9.5,
                 fontWeight: 900,
@@ -281,7 +282,7 @@ function BottomNavigation({
               display: "grid",
               placeItems: "center",
               borderRadius: "50%",
-              color: colors.surface,
+              color: colors.onOlive,
               background: ctaActive ? gradients.goldRich : gradients.hero,
               border: `2px solid ${ctaActive ? colors.goldDark : colors.goldSoft}`,
               boxShadow: ctaActive

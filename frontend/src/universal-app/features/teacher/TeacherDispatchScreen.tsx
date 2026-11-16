@@ -334,7 +334,7 @@ function OnlineDispatchPanel({ config, active }: { config: UniversalAppConfig; a
         style={{
           borderRadius: 22,
           padding: 20,
-          color: colors.surface,
+          color: colors.onOlive,
           background: gradients.deep,
           boxShadow: shadows.olive,
           position: "relative",
@@ -465,7 +465,7 @@ export function TeacherDispatchScreen({
                 gap: 7,
                 border: `1.4px solid ${selected ? colors.olive600 : colors.sand200}`,
                 borderRadius: 14,
-                color: selected ? colors.surface : colors.inkMuted,
+                color: selected ? colors.onOlive : colors.inkMuted,
                 background: selected ? colors.olive600 : colors.surface,
                 boxShadow: shadows.xs,
                 fontFamily: typography.fontFamily,

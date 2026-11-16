@@ -379,7 +379,7 @@ export function SessionDetailScreen({
           background:
             detail.status === "canceled"
               ? colors.surface
-              : `linear-gradient(150deg, ${colors.goldBackground}, #fffdf8 72%)`,
+              : gradients.goldPanel,
           boxShadow: "0 0 0 4px rgba(231,213,168,.18), 0 14px 30px rgba(139,104,31,.10)",
         }}
       >
@@ -392,7 +392,7 @@ export function SessionDetailScreen({
                 style={{
                   display: "inline-flex", alignItems: "center", gap: 4,
                   padding: "4px 10px", borderRadius: radii.pill,
-                  background: gradients.goldRich, color: "#fffaf0", fontSize: 10.5, fontWeight: 800,
+                  background: gradients.goldRich, color: colors.onOlive, fontSize: 10.5, fontWeight: 800,
                   boxShadow: "0 3px 8px rgba(139,104,31,.35)",
                 }}
               >
@@ -423,7 +423,7 @@ export function SessionDetailScreen({
             gap: 7,
             padding: "12px 14px",
             borderRadius: 14,
-            background: "rgba(255,255,255,.75)",
+            background: "var(--v-veil-strong, rgba(255,255,255,.75))",
             border: `1px solid ${colors.sand150}`,
             color: colors.inkSecondary,
             fontSize: 12.5,
@@ -468,10 +468,10 @@ export function SessionDetailScreen({
       {/* اقدامات استاد */}
       {isTeacher && detail.status === "pending" ? (
         <Card style={{ display: "grid", gap: 12, padding: 16, borderRadius: 22, border: `1.5px solid ${colors.goldSoft}`, background: colors.goldBackground }}>
-          <strong style={{ display: "block", fontSize: 13.5, fontWeight: 800, color: "#7a5e1e" }}>
+          <strong style={{ display: "block", fontSize: 13.5, fontWeight: 800, color: colors.goldInk }}>
             {L("درخواست جلسه در انتظار پاسخ شماست")}
           </strong>
-          <span style={{ fontSize: 12, color: "#9a7426", lineHeight: 1.9 }}>
+          <span style={{ fontSize: 12, color: colors.goldInkSoft, lineHeight: 1.9 }}>
             {L("با تأیید، جلسه قطعی می‌شود و قرآن‌آموز می‌تواند کلاس تصویری را آغاز کند.")}
           </span>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>

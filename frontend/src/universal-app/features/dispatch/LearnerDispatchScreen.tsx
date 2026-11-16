@@ -423,7 +423,7 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
             aria-hidden="true"
             style={{
               width: 76, height: 76, display: "grid", placeItems: "center", marginInline: "auto",
-              borderRadius: "50%", color: colors.surface, background: gradients.hero, boxShadow: shadows.olive,
+              borderRadius: "50%", color: colors.onOlive, background: gradients.hero, boxShadow: shadows.olive,
             }}
           >
             <Icon name="checkCircle" size={36} stroke={2.2} />
@@ -475,7 +475,7 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
             overflow: "hidden",
             borderRadius: 22,
             padding: 20,
-            color: colors.surface,
+            color: colors.onOlive,
             background: gradients.deep,
             boxShadow: shadows.olive,
           }}
@@ -510,7 +510,7 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
 
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <strong style={{ fontSize: 15, color: colors.ink }}>{L("استادهای آماده")}</strong>
-          <span style={{ background: colors.olive600, color: colors.surface, borderRadius: 999, fontSize: 12, fontWeight: 800, padding: "2px 10px" }}>
+          <span style={{ background: colors.olive600, color: colors.onOlive, borderRadius: 999, fontSize: 12, fontWeight: 800, padding: "2px 10px" }}>
             {fa((view?.candidates ?? []).length, lang)}
           </span>
           <span style={{ marginInlineStart: "auto", display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, color: colors.olive700 }}>
@@ -561,7 +561,7 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
                   fontWeight: 800,
                   cursor: "pointer",
                   fontFamily: "inherit",
-                  color: payMethod === value ? colors.surface : colors.inkSecondary,
+                  color: payMethod === value ? colors.onOlive : colors.inkSecondary,
                   background: payMethod === value ? colors.olive600 : "transparent",
                   border: "none",
                 }}
@@ -632,7 +632,7 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
           overflow: "hidden",
           borderRadius: 22,
           padding: 22,
-          color: colors.surface,
+          color: colors.onOlive,
           background: gradients.hero,
           boxShadow: shadows.olive,
         }}
@@ -704,16 +704,16 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
                   marginTop: 10,
                   padding: "10px 12px",
                   borderRadius: 14,
-                  border: "1px solid #ecd9a8",
-                  background: "linear-gradient(150deg,#fdf6e3,#fffdf8 75%)",
+                  border: `1px solid ${colors.goldSoft}`,
+                  background: gradients.cream,
                 }}
               >
-                <span aria-hidden="true" style={{ width: 30, height: 30, display: "grid", placeItems: "center", flex: "0 0 30px", borderRadius: 10, background: "linear-gradient(145deg,#d8b869,#b8923c)", color: "#fffaf0" }}>
+                <span aria-hidden="true" style={{ width: 30, height: 30, display: "grid", placeItems: "center", flex: "0 0 30px", borderRadius: 10, background: "linear-gradient(145deg,#d8b869,#b8923c)", color: colors.onOlive }}>
                   <Icon name="sparkle" size={15} stroke={2.2} />
                 </span>
                 <span style={{ minWidth: 0 }}>
-                  <strong style={{ display: "block", fontSize: 12.5, fontWeight: 800, color: "#7a5e1e" }}>{L("فراخوان فوری فقط به اساتید آمادهٔ همین لحظه می‌رسد")}</strong>
-                  <span style={{ display: "block", fontSize: 11.5, color: "#9a7426", lineHeight: 1.8, marginTop: 2 }}>
+                  <strong style={{ display: "block", fontSize: 12.5, fontWeight: 800, color: colors.goldInk }}>{L("فراخوان فوری فقط به اساتید آمادهٔ همین لحظه می‌رسد")}</strong>
+                  <span style={{ display: "block", fontSize: 11.5, color: colors.goldInkSoft, lineHeight: 1.8, marginTop: 2 }}>
                     {L("این فراخوان فقط برای اساتیدی ارسال می‌شود که «جلسهٔ فوری» را فعال کرده‌اند و معمولاً در چند دقیقه پاسخ می‌گیرید؛ ساعت دقیق با توافق استاد مشخص می‌شود.")}
                   </span>
                 </span>
@@ -842,9 +842,9 @@ const whenChip = (active: boolean, gold = false): React.CSSProperties => ({
   fontWeight: 700,
   cursor: "pointer",
   fontFamily: "inherit",
-  color: active ? (gold ? "#7a5e1e" : colors.surface) : colors.inkSecondary,
-  background: active ? (gold ? "#fdf6e3" : colors.olive600) : colors.surface,
-  border: `1px solid ${active ? (gold ? "#d8b869" : colors.olive600) : colors.sand200}`,
+  color: active ? (gold ? colors.goldInk : colors.onOlive) : colors.inkSecondary,
+  background: active ? (gold ? colors.goldSurface : colors.olive600) : colors.surface,
+  border: `1px solid ${active ? (gold ? colors.goldAccent : colors.olive600) : colors.sand200}`,
   boxShadow: active && gold ? "0 0 0 3px rgba(231,213,168,.28)" : "none",
 });
 

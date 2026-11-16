@@ -92,9 +92,9 @@ function PairCard({ eyebrow, title, description, ctaLabel, ariaLabel, onClick, t
       className="vodda-tappable vodda-enter"
       style={{
         ...cardBase,
-        color: colors.surface,
+        color: colors.onOlive,
         background: olive
-          ? `linear-gradient(150deg, ${colors.olive950} 0%, ${colors.olive800} 62%, ${colors.olive700} 100%)`
+          ? "linear-gradient(150deg, #252c1c 0%, #3c472b 62%, #4c5a36 100%)"
           : gradients.goldRich,
         boxShadow: olive ? shadows.olive : "0 16px 38px rgba(139,104,31,.3)",
       }}
@@ -139,7 +139,7 @@ function PairCard({ eyebrow, title, description, ctaLabel, ariaLabel, onClick, t
               display: "grid",
               placeItems: "center",
               borderRadius: 16,
-              color: olive ? colors.goldSoft : colors.surface,
+              color: olive ? "#e7d5a8" : colors.onOlive,
               background: olive ? "rgba(212,171,82,.18)" : "rgba(255,255,255,.18)",
               border: `1px solid ${olive ? "rgba(212,171,82,.34)" : "rgba(255,255,255,.28)"}`,
             }}
@@ -156,7 +156,7 @@ function PairCard({ eyebrow, title, description, ctaLabel, ariaLabel, onClick, t
                 borderRadius: 999,
                 fontSize: 10.5,
                 fontWeight: 800,
-                color: colors.surface,
+                color: colors.onOlive,
                 background: "rgba(255,255,255,.14)",
                 border: "1px solid rgba(255,255,255,.22)",
               }}
@@ -174,7 +174,7 @@ function PairCard({ eyebrow, title, description, ctaLabel, ariaLabel, onClick, t
                 borderRadius: 999,
                 fontSize: 10.5,
                 fontWeight: 800,
-                color: olive ? colors.goldSoft : "#fdf6e3",
+                color: olive ? "#e7d5a8" : "#fdf6e3",
                 background: olive ? "rgba(212,171,82,.16)" : "rgba(255,255,255,.14)",
                 border: `1px solid ${olive ? "rgba(212,171,82,.3)" : "rgba(255,255,255,.24)"}`,
               }}
@@ -185,7 +185,7 @@ function PairCard({ eyebrow, title, description, ctaLabel, ariaLabel, onClick, t
         </span>
 
         <span style={{ display: "grid", gap: 5 }}>
-          <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.2, color: olive ? colors.goldSoft : "#f6e9c8" }}>
+          <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.2, color: olive ? "#e7d5a8" : "#f6e9c8" }}>
             {L(eyebrow)}
           </span>
           <strong style={{ fontSize: 17.5, fontWeight: 900, lineHeight: 1.5 }}>{L(title)}</strong>
@@ -206,7 +206,7 @@ function PairCard({ eyebrow, title, description, ctaLabel, ariaLabel, onClick, t
           border: `1px solid ${olive ? "rgba(255,255,255,.14)" : "rgba(255,255,255,.22)"}`,
         }}
       >
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 900, color: olive ? colors.goldSoft : colors.surface }}>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 900, color: olive ? "#e7d5a8" : colors.onOlive }}>
           {L(ctaLabel)}
           <Icon name="chevronL" size={15} stroke={2.4} />
         </span>

@@ -198,7 +198,7 @@ export function TeacherCard({
                 borderRadius: 999,
                 fontSize: 10.5,
                 fontWeight: 800,
-                color: "#7a5e1e",
+                color: colors.goldInk,
                 background: colors.goldBackground,
                 border: `1px solid ${colors.goldSoft}`,
               }}

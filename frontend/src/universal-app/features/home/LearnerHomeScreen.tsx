@@ -496,7 +496,7 @@ function FeaturedTeacher({ teacher, config }: { teacher: Teacher; config: Univer
         gap: spacing.lg,
         padding: spacing.lg,
         textAlign: "right",
-        color: colors.surface,
+        color: colors.onOlive,
         background: gradients.deep,
         borderRadius: radii.xl,
         boxShadow: shadows.md,
@@ -546,8 +546,8 @@ function FeaturedTeacher({ teacher, config }: { teacher: Teacher; config: Univer
               placeItems: "center",
               borderRadius: "50%",
               background: gradients.goldRich,
-              border: `2px solid ${colors.surface}`,
-              color: colors.surface,
+              border: "2px solid rgba(255,255,255,.9)",
+              color: colors.onOlive,
               cursor: "pointer",
               boxShadow: shadows.sm,
             }}
@@ -565,7 +565,7 @@ function FeaturedTeacher({ teacher, config }: { teacher: Teacher; config: Univer
           <Icon name="sparkle" size={14} stroke={2} />
           {L("استاد ویژهٔ امروز")}
         </p>
-        <h2 style={{ ...typography.title, margin: `${spacing.sm}px 0 0`, color: colors.surface }}>{N(teacher.name)}</h2>
+        <h2 style={{ ...typography.title, margin: `${spacing.sm}px 0 0`, color: colors.onOlive }}>{N(teacher.name)}</h2>
         <p style={{ ...typography.bodySmall, margin: "3px 0 0", color: "rgba(255,255,255,0.72)" }}>
           {teacherSubtitle(teacher, lang) || L("مشاهده خدمات و زمان‌های قابل رزرو")}
         </p>
@@ -590,7 +590,7 @@ function FeaturedTeacher({ teacher, config }: { teacher: Teacher; config: Univer
               borderRadius: 999,
               padding: "6px 12px",
               background: "rgba(255,255,255,.08)",
-              color: colors.surface,
+              color: colors.onOlive,
               fontSize: 12,
               fontWeight: 800,
               fontFamily: typography.fontFamily,
@@ -703,9 +703,9 @@ function NotificationsBell({
               placeItems: "center",
               padding: "0 4px",
               borderRadius: 999,
-              border: `2px solid ${colors.surface}`,
+              border: `2px solid var(--v-sand50, #faf8f2)`,
               background: colors.danger,
-              color: colors.surface,
+              color: "#ffffff",
               fontSize: 11,
               fontWeight: 800,
               lineHeight: 1,
