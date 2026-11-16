@@ -1,0 +1,702 @@
+     1→     1→"use client";
+     2→     2→
+     3→     3→import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
+     4→     4→import { Icon } from "../../ui/Icon";
+     5→     5→import { colors, gradients, radii, shadows, typography } from "../../ui/theme";
+     6→     6→import { useAppearance } from "../../ui/appearance";
+     7→     7→import { localizedDigits } from "../../ui/persian";
+     8→     8→import { usePlatform } from "../../platform/context";
+     9→     9→import {
+    10→    10→  closeTicket,
+    11→    11→  createTicket,
+    12→    12→  fetchThread,
+    13→    13→  fetchUnreadTotal,
+    14→    14→  listMyTickets,
+    15→    15→  sendChatMessage,
+    16→    16→  uploadChatAttachment,
+    17→    17→  type SupportChatMessage,
+    18→    18→  type SupportTicketSummary,
+    19→    19→} from "./api";
+    20→    20→
+    21→    21→/**
+    22→    22→ * گفتگوی زندهٔ پشتیبانی وُدّا — جانشین «دستیار هوشمند».
+    23→    23→ * کاربران و اساتید تیکت باز می‌کنند و با کارشناس پشتیبانی (پنل مدیریت)
+    24→    24→ * گفتگوی لحظه‌ای دارند؛ متن، پیام صوتی و تصویر پشتیبانی می‌شود.
+    25→    25→ * دستیار هوشمند فعلاً از رابط کاربری حذف شده تا بعداً توسعه داده شود.
+    26→    26→ */
+    27→    27→
+    28→    28→type View = "list" | "new" | "thread";
+    29→    29→
+    30→    30→const HIDDEN_ROUTES = new Set<string>(["book"]);
+    31→    31→const POLL_THREAD_MS = 3500;
+    32→    32→const POLL_BADGE_MS = 18_000;
+    33→    33→const MAX_RECORD_SECONDS = 300;
+    34→    34→
+    35→    35→function statusMeta(status: SupportTicketSummary["status"]): { label: string; ink: string; bg: string } {
+    36→    36→  switch (status) {
+    37→    37→    case "open":
+    38→    38→      return { label: "در انتظار بررسی", ink: "var(--v-goldInk, #7a5e1e)", bg: "var(--v-goldBackground, #f7efd9)" };
+    39→    39→    case "pending":
+    40→    40→      return { label: "در انتظار پاسخ", ink: "var(--v-clay, #b0745a)", bg: "var(--v-clayBackground, #f6e7df)" };
+    41→    41→    case "answered":
+    42→    42→      return { label: "پاسخ داده شد", ink: "var(--v-success, #5e6e43)", bg: "var(--v-successBackground, #edf2e5)" };
+    43→    43→    default:
+    44→    44→      return { label: "بسته‌شده", ink: "var(--v-inkMuted, #6f6a5b)", bg: "var(--v-sand100, #f4f0e7)" };
+    45→    45→  }
+    46→    46→}
+    47→    47→
+    48→    48→function shortTime(value: string): string {
+    49→    49→  const date = new Date(value);
+    50→    50→  if (Number.isNaN(date.getTime())) return "";
+    51→    51→  return new Intl.DateTimeFormat("fa-IR", { hour: "2-digit", minute: "2-digit" }).format(date);
+    52→    52→}
+    53→    53→
+    54→    54→function shortDate(value: string): string {
+    55→    55→  const date = new Date(value);
+    56→    56→  if (Number.isNaN(date.getTime())) return "";
+    57→    57→  return new Intl.DateTimeFormat("fa-IR", { day: "numeric", month: "short" }).format(date);
+    58→    58→}
+    59→    59→
+    60→    60→function formatDuration(ms: number, lang: "fa" | "en"): string {
+    61→    61→  const total = Math.max(0, Math.round(ms / 1000));
+    62→    62→  const minutes = Math.floor(total / 60);
+    63→    63→  const seconds = total % 60;
+    64→    64→  return `${localizedDigits(minutes, lang)}:${localizedDigits(String(seconds).padStart(2, "0"), lang)}`;
+    65→    65→}
+    66→    66→
+    67→    67→function pickRecorderMime(): string {
+    68→    68→  if (typeof MediaRecorder === "undefined" || !MediaRecorder.isTypeSupported) return "";
+    69→    69→  const candidates = ["audio/webm;codecs=opus", "audio/webm", "audio/ogg;codecs=opus", "audio/mp4"];
+    70→    70→  return candidates.find((mime) => MediaRecorder.isTypeSupported(mime)) ?? "";
+    71→    71→}
+    72→    72→
+    73→    73→function mimeToExtension(mime: string): string {
+    74→    74→  if (mime.includes("webm")) return ".webm";
+    75→    75→  if (mime.includes("ogg")) return ".ogg";
+    76→    76→  if (mime.includes("mp4")) return ".m4a";
+    77→    77→  return ".bin";
+    78→    78→}
+    79→    79→
+    80→    80→/** downscales a picked image so uploads stay small and fast. */
+    81→    81→async function compressImageFile(file: File): Promise<File> {
+    82→    82→  if (!file.type.startsWith("image/") || file.size < 900_000) return file;
+    83→    83→  try {
+    84→    84→    const bitmap = await createImageBitmap(file);
+    85→    85→    const maxSide = 1600;
+    86→    86→    const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+    87→    87→    const canvas = document.createElement("canvas");
+    88→    88→    canvas.width = Math.round(bitmap.width * scale);
+    89→    89→    canvas.height = Math.round(bitmap.height * scale);
+    90→    90→    const ctx = canvas.getContext("2d");
+    91→    91→    if (!ctx) return file;
+    92→    92→    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    93→    93→    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.85));
+    94→    94→    if (!blob) return file;
+    95→    95→    return new File([blob], `photo_${Date.now()}.jpg`, { type: "image/jpeg" });
+    96→    96→  } catch {
+    97→    97→    return file;
+    98→    98→  }
+    99→    99→}
+   100→   100→
+   101→   101→/** compact voice-note player used inside chat bubbles. */
+   102→   102→function AudioBubble({
+   103→   103→  url,
+   104→   104→  durationMs,
+   105→   105→  mine,
+   106→   106→}: {
+   107→   107→  url: string;
+   108→   108→  durationMs: number;
+   109→   109→  mine: boolean;
+   110→   110→}) {
+   111→   111→  const audioRef = useRef<HTMLAudioElement | null>(null);
+   112→   112→  const [playing, setPlaying] = useState(false);
+   113→   113→  const [progress, setProgress] = useState(0);
+   114→   114→  const { L } = useAppearance();
+   115→   115→
+   116→   116→  useEffect(() => () => audioRef.current?.pause(), []);
+   117→   117→
+   118→   118→  function toggle() {
+   119→   119→    const audio = audioRef.current;
+   120→   120→    if (!audio) return;
+   121→   121→    if (playing) {
+   122→   122→      audio.pause();
+   123→   123→    } else {
+   124→   124→      void audio.play().catch(() => setPlaying(false));
+   125→   125→    }
+   126→   126→  }
+   127→   127→
+   128→   128→  return (
+   129→   129→    <div
+   130→   130→      style={{
+   131→   131→        display: "flex",
+   132→   132→        alignItems: "center",
+   133→   133→        gap: 9,
+   134→   134→        minWidth: 168,
+   135→   135→        padding: "7px 10px",
+   136→   136→        borderRadius: 999,
+   137→   137→        border: `1px solid ${mine ? "rgba(255,250,240,.35)" : colors.olive200}`,
+   138→   138→        background: mine ? colors.olive600 : colors.surface,
+   139→   139→        color: mine ? colors.onOlive : colors.ink,
+   140→   140→      }}
+   141→   141→    >
+   142→   142→      <button
+   143→   143→        type="button"
+   144→   144→        onClick={toggle}
+   145→   145→        aria-label={playing ? L("توقف پخش پیام صوتی") : L("پخش پیام صوتی")}
+   146→   146→        style={{
+   147→   147→          width: 34,
+   148→   148→          height: 34,
+   149→   149→          flex: "0 0 auto",
+   150→   150→          display: "grid",
+   151→   151→          placeItems: "center",
+   152→   152→          padding: 0,
+   153→   153→          border: 0,
+   154→   154→          borderRadius: "50%",
+   155→   155→          cursor: "pointer",
+   156→   156→          color: mine ? colors.onOlive : "#fffaf0",
+   157→   157→          background: mine ? "rgba(255,255,255,.22)" : colors.olive600,
+   158→   158→        }}
+   159→   159→      >
+   160→   160→        {playing ? (
+   161→   161→          <span aria-hidden style={{ display: "inline-flex", gap: 2.5 }}>
+   162→   162→            <span style={{ width: 3.5, height: 12, background: "currentColor", borderRadius: 2 }} />
+   163→   163→            <span style={{ width: 3.5, height: 12, background: "currentColor", borderRadius: 2 }} />
+   164→   164→          </span>
+   165→   165→        ) : (
+   166→   166→          <Icon name="play" size={15} stroke={2.2} />
+   167→   167→        )}
+   168→   168→      </button>
+   169→   169→      <div style={{ flex: 1, minWidth: 0 }}>
+   170→   170→        <div
+   171→   171→          aria-hidden
+   172→   172→          style={{
+   173→   173→            height: 4,
+   174→   174→            borderRadius: 999,
+   175→   175→            overflow: "hidden",
+   176→   176→            background: mine ? "rgba(255,255,255,.25)" : colors.olive100,
+   177→   177→          }}
+   178→   178→        >
+   179→   179→          <div
+   180→   180→            style={{
+   181→   181→              width: `${Math.round(progress * 100)}%`,
+   182→   182→              height: "100%",
+   183→   183→              borderRadius: 999,
+   184→   184→              background: mine ? "#fffaf0" : colors.olive600,
+   185→   185→              transition: "width .2s linear",
+   186→   186→            }}
+   187→   187→          />
+   188→   188→        </div>
+   189→   189→        <span style={{ display: "block", marginTop: 3, fontSize: 10, fontWeight: 700, opacity: 0.9 }}>
+   190→   190→          {formatDuration(durationMs || 0, "fa")}
+   191→   191→        </span>
+   192→   192→      </div>
+   193→   193→      <audio
+   194→   194→        ref={audioRef}
+   195→   195→        src={url}
+   196→   196→        preload="metadata"
+   197→   197→        onPlay={() => setPlaying(true)}
+   198→   198→        onPause={() => setPlaying(false)}
+   199→   199→        onEnded={() => {
+   200→   200→          setPlaying(false);
+   201→   201→          setProgress(0);
+   202→   202→        }}
+   203→   203→        onTimeUpdate={(event) => {
+   204→   204→          const audio = event.currentTarget;
+   205→   205→          if (audio.duration > 0 && Number.isFinite(audio.duration)) {
+   206→   206→            setProgress(audio.currentTime / audio.duration);
+   207→   207→          }
+   208→   208→        }}
+   209→   209→      />
+   210→   210→    </div>
+   211→   211→  );
+   212→   212→}
+   213→   213→
+   214→   214→export function SupportChat({ routeName }: { routeName: string }) {
+   215→   215→  const runtime = usePlatform();
+   216→   216→  const { L, lang } = useAppearance();
+   217→   217→
+   218→   218→  const [open, setOpen] = useState(false);
+   219→   219→  const [authed, setAuthed] = useState(false);
+   220→   220→  const [view, setView] = useState<View>("list");
+   221→   221→  const [tickets, setTickets] = useState<SupportTicketSummary[]>([]);
+   222→   222→  const [ticket, setTicket] = useState<SupportTicketSummary | null>(null);
+   223→   223→  const [messages, setMessages] = useState<SupportChatMessage[]>([]);
+   224→   224→  const [input, setInput] = useState("");
+   225→   225→  const [subject, setSubject] = useState("");
+   226→   226→  const [busy, setBusy] = useState(false);
+   227→   227→  const [error, setError] = useState("");
+   228→   228→  const [badge, setBadge] = useState(0);
+   229→   229→  const [lightbox, setLightbox] = useState<string | null>(null);
+   230→   230→
+   231→   231→  const [recording, setRecording] = useState(false);
+   232→   232→  const [recordSeconds, setRecordSeconds] = useState(0);
+   233→   233→  const [voicePreview, setVoicePreview] = useState<{ blob: Blob; url: string; ms: number; mime: string } | null>(null);
+   234→   234→  const [imagePreview, setImagePreview] = useState<{ file: File; url: string } | null>(null);
+   235→   235→  const [sendingAttachment, setSendingAttachment] = useState(false);
+   236→   236→
+   237→   237→  const recorderRef = useRef<MediaRecorder | null>(null);
+   238→   238→  const recordChunksRef = useRef<Blob[]>([]);
+   239→   239→  const recordTimerRef = useRef<number | null>(null);
+   240→   240→  const recordMimeRef = useRef<string>("");
+   241→   241→  const recordSecondsRef = useRef<number>(0);
+   242→   242→  const listRef = useRef<HTMLDivElement | null>(null);
+   243→   243→  const lastMessageIdRef = useRef<number>(0);
+   244→   244→  const fileInputRef = useRef<HTMLInputElement | null>(null);
+   245→   245→
+   246→   246→  // هویت کاربر؛ دکمهٔ شناور فقط برای کاربران وارد‌شده نمایش داده می‌شود.
+   247→   247→  useEffect(() => {
+   248→   248→    let active = true;
+   249→   249→    runtime
+   250→   250→      .restoreSession()
+   251→   251→      .then((sessionUser) => {
+   252→   252→        if (active) setAuthed(Boolean(sessionUser));
+   253→   253→      })
+   254→   254→      .catch(() => {
+   255→   255→        if (active) setAuthed(false);
+   256→   256→      });
+   257→   257→    return () => {
+   258→   258→      active = false;
+   259→   259→    };
+   260→   260→  }, [runtime]);
+   261→   261→
+   262→   262→  // نشان قرمز پیام‌های خوانده‌نشدهٔ پشتیبانی
+   263→   263→  useEffect(() => {
+   264→   264→    if (!authed) return;
+   265→   265→    let active = true;
+   266→   266→    const load = () => {
+   267→   267→      fetchUnreadTotal(runtime)
+   268→   268→        .then((value) => {
+   269→   269→          if (active) setBadge(value);
+   270→   270→        })
+   271→   271→        .catch(() => {});
+   272→   272→    };
+   273→   273→    load();
+   274→   274→    const timer = window.setInterval(load, POLL_BADGE_MS);
+   275→   275→    return () => {
+   276→   276→      active = false;
+   277→   277→      window.clearInterval(timer);
+   278→   278→    };
+   279→   279→  }, [authed, runtime, open, messages.length]);
+   280→   280→
+   281→   281→  const refreshTickets = useCallback(() => {
+   282→   282→    return listMyTickets(runtime)
+   283→   283→      .then((rows) => {
+   284→   284→        setTickets(rows);
+   285→   285→        setError("");
+   286→   286→      })
+   287→   287→      .catch(() => {
+   288→   288→        setTickets([]);
+   289→   289→      });
+   290→   290→  }, [runtime]);
+   291→   291→
+   292→   292→  // فهرست تیکت‌ها هنگام باز بودن پنل هر چند ثانیه تازه می‌شود.
+   293→   293→  useEffect(() => {
+   294→   294→    if (!open || view !== "list" || !authed) return;
+   295→   295→    void refreshTickets();
+   296→   296→    const timer = window.setInterval(() => void refreshTickets(), 10_000);
+   297→   297→    return () => window.clearInterval(timer);
+   298→   298→  }, [open, view, authed, refreshTickets]);
+   299→   299→
+   300→   300→  // گفتگوی باز: واکشی اولیه + نظرسنجی افزایندهٔ پیام‌های تازه.
+   301→   301→  const threadTicketId = view === "thread" && ticket ? ticket.id : 0;
+   302→   302→  useEffect(() => {
+   303→   303→    if (!open || threadTicketId === 0 || !authed) return;
+   304→   304→    let active = true;
+   305→   305→    const ticketId = threadTicketId;
+   306→   306→    lastMessageIdRef.current = 0;
+   307→   307→    setMessages([]);
+   308→   308→
+   309→   309→    const pull = (reset: boolean) => {
+   310→   310→      const afterId = reset ? 0 : lastMessageIdRef.current;
+   311→   311→      fetchThread(runtime, ticketId, afterId)
+   312→   312→        .then((payload) => {
+   313→   313→          if (!active) return;
+   314→   314→          setTicket(payload.ticket);
+   315→   315→          if (reset) {
+   316→   316→            setMessages(payload.messages);
+   317→   317→          } else if (payload.messages.length > 0) {
+   318→   318→            setMessages((current) => {
+   319→   319→              const seen = new Set(current.map((item) => item.id));
+   320→   320→              return [...current, ...payload.messages.filter((item) => !seen.has(item.id))];
+   321→   321→            });
+   322→   322→          }
+   323→   323→          const all = payload.messages;
+   324→   324→          if (all.length > 0) lastMessageIdRef.current = Math.max(lastMessageIdRef.current, all[all.length - 1].id);
+   325→   325→        })
+   326→   326→        .catch(() => {});
+   327→   327→    };
+   328→   328→
+   329→   329→    pull(true);
+   330→   330→    const timer = window.setInterval(() => pull(false), POLL_THREAD_MS);
+   331→   331→    return () => {
+   332→   332→      active = false;
+   333→   333→      window.clearInterval(timer);
+   334→   334→    };
+   335→   335→  }, [open, threadTicketId, authed, runtime]);
+   336→   336→
+   337→   337→  // اسکرول خودکار به آخرین پیام
+   338→   338→  useEffect(() => {
+   339→   339→    const node = listRef.current;
+   340→   340→    if (node) node.scrollTop = node.scrollHeight;
+   341→   341→  }, [messages, view, open]);
+   342→   342→
+   343→   343→  function openThread(row: SupportTicketSummary) {
+   344→   344→    setTicket(row);
+   345→   345→    setMessages([]);
+   346→   346→    setView("thread");
+   347→   347→    setBadge((current) => Math.max(0, current - row.unreadUser));
+   348→   348→  }
+   349→   349→
+   350→   350→  function backToList() {
+   351→   351→    setView("list");
+   352→   352→    setTicket(null);
+   353→   353→    setMessages([]);
+   354→   354→    void refreshTickets();
+   355→   355→  }
+   356→   356→
+   357→   357→  async function handleCreateTicket() {
+   358→   358→    const trimmedSubject = subject.trim();
+   359→   359→    const trimmedBody = input.trim();
+   360→   360→    if (!trimmedSubject || !trimmedBody || busy) return;
+   361→   361→    setBusy(true);
+   362→   362→    setError("");
+   363→   363→    try {
+   364→   364→      const created = await createTicket(runtime, trimmedSubject, trimmedBody);
+   365→   365→      setSubject("");
+   366→   366→      setInput("");
+   367→   367→      setTicket(created);
+   368→   368→      setMessages([]);
+   369→   369→      setView("thread");
+   370→   370→    } catch (cause) {
+   371→   371→      setError(cause instanceof Error ? cause.message : L("ارسال انجام نشد؛ دوباره تلاش کنید."));
+   372→   372→    } finally {
+   373→   373→      setBusy(false);
+   374→   374→    }
+   375→   375→  }
+   376→   376→
+   377→   377→  async function handleSendText() {
+   378→   378→    const trimmed = input.trim();
+   379→   379→    if (!trimmed || busy || !ticket) return;
+   380→   380→    setBusy(true);
+   381→   381→    setError("");
+   382→   382→    try {
+   383→   383→      const message = await sendChatMessage(runtime, ticket.id, { kind: "text", body: trimmed });
+   384→   384→      setInput("");
+   385→   385→      lastMessageIdRef.current = Math.max(lastMessageIdRef.current, message.id);
+   386→   386→      setMessages((current) => (current.some((item) => item.id === message.id) ? current : [...current, message]));
+   387→   387→      setTicket((current) => (current ? { ...current, status: "pending" } : current));
+   388→   388→    } catch (cause) {
+   389→   389→      setError(cause instanceof Error ? cause.message : L("ارسال انجام نشد؛ دوباره تلاش کنید."));
+   390→   390→    } finally {
+   391→   391→      setBusy(false);
+   392→   392→    }
+   393→   393→  }
+   394→   394→
+   395→   395→  async function startRecording() {
+   396→   396→    setError("");
+   397→   397→    try {
+   398→   398→      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+   399→   399→      const mime = pickRecorderMime();
+   400→   400→      recordMimeRef.current = mime;
+   401→   401→      const recorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+   402→   402→      recordChunksRef.current = [];
+   403→   403→      recorder.ondataavailable = (event) => {
+   404→   404→        if (event.data.size > 0) recordChunksRef.current.push(event.data);
+   405→   405→      };
+   406→   406→      recorder.onstop = () => {
+   407→   407→        stream.getTracks().forEach((track) => track.stop());
+   408→   408→        if (recordTimerRef.current !== null) {
+   409→   409→          window.clearInterval(recordTimerRef.current);
+   410→   410→          recordTimerRef.current = null;
+   411→   411→        }
+   412→   412→        const seconds = recordSecondsRef.current;
+   413→   413→        setRecording(false);
+   414→   414→        setRecordSeconds(0);
+   415→   415→        if (recordChunksRef.current.length === 0) return;
+   416→   416→        const blob = new Blob(recordChunksRef.current, { type: mime || "audio/webm" });
+   417→   417→        setVoicePreview({
+   418→   418→          blob,
+   419→   419→          url: URL.createObjectURL(blob),
+   420→   420→          ms: Math.max(600, seconds * 1000),
+   421→   421→          mime: mime || "audio/webm",
+   422→   422→        });
+   423→   423→      };
+   424→   424→      recorderRef.current = recorder;
+   425→   425→      recordSecondsRef.current = 0;
+   426→   426→      setRecordSeconds(0);
+   427→   427→      setRecording(true);
+   428→   428→      recorder.start(250);
+   429→   429→      recordTimerRef.current = window.setInterval(() => {
+   430→   430→        recordSecondsRef.current += 1;
+   431→   431→        setRecordSeconds(recordSecondsRef.current);
+   432→   432→        if (recordSecondsRef.current >= MAX_RECORD_SECONDS) {
+   433→   433→          recorderRef.current?.stop();
+   434→   434→        }
+   435→   435→      }, 1000);
+   436→   436→    } catch {
+   437→   437→      setError(L("دسترسی به میکروفون ممکن نشد؛ اجازهٔ مرورگر را بررسی کنید."));
+   438→   438→    }
+   439→   439→  }
+   440→   440→
+   441→   441→  function stopRecording(send: boolean) {
+   442→   442→    const recorder = recorderRef.current;
+   443→   443→    if (!recorder) return;
+   444→   444→    if (!send) {
+   445→   445→      // لغو: جریان بسته و ذخیره‌ها دور ریخته می‌شوند.
+   446→   446→      recorder.onstop = () => {
+   447→   447→        recorder.stream.getTracks().forEach((track) => track.stop());
+   448→   448→        if (recordTimerRef.current !== null) {
+   449→   449→          window.clearInterval(recordTimerRef.current);
+   450→   450→          recordTimerRef.current = null;
+   451→   451→        }
+   452→   452→        setRecording(false);
+   453→   453→        setRecordSeconds(0);
+   454→   454→      };
+   455→   455→      recordChunksRef.current = [];
+   456→   456→    }
+   457→   457→    recorder.stop();
+   458→   458→  }
+   459→   459→
+   460→   460→  async function handleSendVoice() {
+   461→   461→    if (!ticket || !voicePreview || sendingAttachment) return;
+   462→   462→    setSendingAttachment(true);
+   463→   463→    setError("");
+   464→   464→    try {
+   465→   465→      const extension = mimeToExtension(voicePreview.mime);
+   466→   466→      const file = new File([voicePreview.blob], `voice_${Date.now()}${extension}`, { type: voicePreview.mime });
+   467→   467→      const uploaded = await uploadChatAttachment(runtime, file, "audio");
+   468→   468→      const message = await sendChatMessage(runtime, ticket.id, {
+   469→   469→        kind: "audio",
+   470→   470→        attachmentUrl: uploaded.url,
+   471→   471→        mime: uploaded.mime,
+   472→   472→        durationMs: voicePreview.ms,
+   473→   473→      });
+   474→   474→      lastMessageIdRef.current = Math.max(lastMessageIdRef.current, message.id);
+   475→   475→      setMessages((current) => (current.some((item) => item.id === message.id) ? current : [...current, message]));
+   476→   476→      URL.revokeObjectURL(voicePreview.url);
+   477→   477→      setVoicePreview(null);
+   478→   478→    } catch (cause) {
+   479→   479→      setError(cause instanceof Error ? cause.message : L("ارسال پیام صوتی انجام نشد."));
+   480→   480→    } finally {
+   481→   481→      setSendingAttachment(false);
+   482→   482→    }
+   483→   483→  }
+   484→   484→
+   485→   485→  async function pickImage() {
+   486→   486→    setError("");
+   487→   487→    fileInputRef.current?.click();
+   488→   488→  }
+   489→   489→
+   490→   490→  async function handleImageChosen(event: ChangeEvent<HTMLInputElement>) {
+   491→   491→    const file = event.target.files?.[0];
+   492→   492→    event.target.value = "";
+   493→   493→    if (!file) return;
+   494→   494→    if (!file.type.startsWith("image/")) {
+   495→   495→      setError(L("فقط تصویر انتخاب کنید."));
+   496→   496→      return;
+   497→   497→    }
+   498→   498→    const compressed = await compressImageFile(file);
+   499→   499→    setImagePreview({ file: compressed, url: URL.createObjectURL(compressed) });
+   500→   500→  }
+   501→   501→
+   502→   502→  async function handleSendImage() {
+   503→   503→    if (!ticket || !imagePreview || sendingAttachment) return;
+   504→   504→    setSendingAttachment(true);
+   505→   505→    setError("");
+   506→   506→    try {
+   507→   507→      const uploaded = await uploadChatAttachment(runtime, imagePreview.file, "image");
+   508→   508→      const message = await sendChatMessage(runtime, ticket.id, {
+   509→   509→        kind: "image",
+   510→   510→        attachmentUrl: uploaded.url,
+   511→   511→        mime: uploaded.mime,
+   512→   512→      });
+   513→   513→      lastMessageIdRef.current = Math.max(lastMessageIdRef.current, message.id);
+   514→   514→      setMessages((current) => (current.some((item) => item.id === message.id) ? current : [...current, message]));
+   515→   515→      URL.revokeObjectURL(imagePreview.url);
+   516→   516→      setImagePreview(null);
+   517→   517→    } catch (cause) {
+   518→   518→      setError(cause instanceof Error ? cause.message : L("ارسال تصویر انجام نشد."));
+   519→   519→    } finally {
+   520→   520→      setSendingAttachment(false);
+   521→   521→    }
+   522→   522→  }
+   523→   523→
+   524→   524→  async function handleCloseTicket() {
+   525→   525→    if (!ticket || busy) return;
+   526→   526→    setBusy(true);
+   527→   527→    try {
+   528→   528→      await closeTicket(runtime, ticket.id);
+   529→   529→      setTicket({ ...ticket, status: "closed" });
+   530→   530→    } catch (cause) {
+   531→   531→      setError(cause instanceof Error ? cause.message : L("بستن گفتگو انجام نشد."));
+   532→   532→    } finally {
+   533→   533→      setBusy(false);
+   534→   534→    }
+   535→   535→  }
+   536→   536→
+   537→   537→  const statusChip = useMemo(() => (ticket ? statusMeta(ticket.status) : null), [ticket]);
+   538→   538→
+   539→   539→  if (!authed || HIDDEN_ROUTES.has(routeName)) return null;
+   540→   540→
+   541→   541→  return (
+   542→   542→    <div
+   543→   543→      aria-hidden={!open}
+   544→   544→      style={{
+   545→   545→        position: "fixed",
+   546→   546→        zIndex: 40,
+   547→   547→        left: "50%",
+   548→   548→        transform: "translateX(-50%)",
+   549→   549→        width: "min(100%, 600px)",
+   550→   550→        top: 0,
+   551→   551→        bottom: 0,
+   552→   552→        pointerEvents: "none",
+   553→   553→        fontFamily: typography.fontFamily,
+   554→   554→      }}
+   555→   555→    >
+   556→   556→      <input
+   557→   557→        ref={fileInputRef}
+   558→   558→        type="file"
+   559→   559→        accept="image/*"
+   560→   560→        aria-hidden="true"
+   561→   561→        tabIndex={-1}
+   562→   562→        style={{ display: "none" }}
+   563→   563→        onChange={(event) => void handleImageChosen(event)}
+   564→   564→      />
+   565→   565→
+   566→   566→      {/* دکمهٔ شناور پشتیبانی */}
+   567→   567→      {!open ? (
+   568→   568→        <button
+   569→   569→          type="button"
+   570→   570→          onClick={() => {
+   571→   571→            setOpen(true);
+   572→   572→            setView("list");
+   573→   573→          }}
+   574→   574→          aria-label={L("گفتگو با پشتیبانی وُدّا")}
+   575→   575→          className="vodda-tappable"
+   576→   576→          style={{
+   577→   577→            pointerEvents: "auto",
+   578→   578→            position: "absolute",
+   579→   579→            bottom: "calc(96px + env(safe-area-inset-bottom))",
+   580→   580→            insetInlineStart: 14,
+   581→   581→            width: 48,
+   582→   582→            height: 48,
+   583→   583→            display: "grid",
+   584→   584→            placeItems: "center",
+   585→   585→            padding: 0,
+   586→   586→            border: `1.5px solid ${colors.goldSoft}`,
+   587→   587→            borderRadius: "50%",
+   588→   588→            color: "#fffaf0",
+   589→   589→            background: gradients.goldRich,
+   590→   590→            boxShadow: "0 10px 24px rgba(139,104,31,.35), 0 3px 8px rgba(46,54,34,.18)",
+   591→   591→            cursor: "pointer",
+   592→   592→          }}
+   593→   593→        >
+   594→   594→          <Icon name="headphones" size={21} stroke={2} />
+   595→   595→          {badge > 0 ? (
+   596→   596→            <span
+   597→   597→              aria-label={L("{n} پیام خوانده‌نشده از پشتیبانی").replace("{n}", localizedDigits(badge, lang))}
+   598→   598→              style={{
+   599→   599→                position: "absolute",
+   600→   600→                top: -4,
+   601→   601→                insetInlineEnd: -4,
+   602→   602→                minWidth: 19,
+   603→   603→                height: 19,
+   604→   604→                display: "grid",
+   605→   605→                placeItems: "center",
+   606→   606→                padding: "0 5px",
+   607→   607→                borderRadius: 999,
+   608→   608→                background: colors.danger,
+   609→   609→                border: "2px solid #fffaf0",
+   610→   610→                color: "#ffffff",
+   611→   611→                fontSize: 9.5,
+   612→   612→                fontWeight: 900,
+   613→   613→                lineHeight: 1,
+   614→   614→              }}
+   615→   615→            >
+   616→   616→              {localizedDigits(badge > 99 ? "+99" : badge, lang)}
+   617→   617→            </span>
+   618→   618→          ) : null}
+   619→   619→        </button>
+   620→   620→      ) : null}
+   621→   621→
+   622→   622→      {/* پنل پشتیبانی */}
+   623→   623→      {open ? (
+   624→   624→        <section
+   625→   625→          role="dialog"
+   626→   626→          aria-label={L("گفتگو با پشتیبانی وُدّا")}
+   627→   627→          className="vodda-enter"
+   628→   628→          style={{
+   629→   629→            pointerEvents: "auto",
+   630→   630→            position: "absolute",
+   631→   631→            insetInline: 10,
+   632→   632→            bottom: "calc(84px + env(safe-area-inset-bottom))",
+   633→   633→            maxHeight: "min(78dvh, 640px)",
+   634→   634→            display: "flex",
+   635→   635→            flexDirection: "column",
+   636→   636→            overflow: "hidden",
+   637→   637→            background: colors.surface,
+   638→   638→            border: `1px solid ${colors.sand150}`,
+   639→   639→            borderRadius: radii.lg,
+   640→   640→            boxShadow: shadows.lg,
+   641→   641→          }}
+   642→   642→        >
+   643→   643→          {/* سرصفحه */}
+   644→   644→          <header
+   645→   645→            style={{
+   646→   646→              display: "flex",
+   647→   647→              alignItems: "center",
+   648→   648→              gap: 9,
+   649→   649→              padding: "11px 13px",
+   650→   650→              borderBottom: `1px solid ${colors.sand100}`,
+   651→   651→              background: `linear-gradient(180deg, ${colors.olive50}, ${colors.surface})`,
+   652→   652→              flex: "0 0 auto",
+   653→   653→            }}
+   654→   654→          >
+   655→   655→            {view === "thread" ? (
+   656→   656→              <button
+   657→   657→                type="button"
+   658→   658→                onClick={backToList}
+   659→   659→                aria-label={L("بازگشت به فهرست گفتگوها")}
+   660→   660→                style={{ background: "none", border: 0, color: colors.inkMuted, cursor: "pointer", padding: 4, fontFamily: typography.fontFamily }}
+   661→   661→              >
+   662→   662→                <Icon name="arrowL" size={18} />
+   663→   663→              </button>
+   664→   664→            ) : (
+   665→   665→              <span
+   666→   666→                aria-hidden="true"
+   667→   667→                style={{
+   668→   668→                  width: 34,
+   669→   669→                  height: 34,
+   670→   670→                  display: "grid",
+   671→   671→                  placeItems: "center",
+   672→   672→                  borderRadius: 12,
+   673→   673→                  background: gradients.goldRich,
+   674→   674→                  color: "#fffaf0",
+   675→   675→                  flex: "0 0 auto",
+   676→   676→                }}
+   677→   677→              >
+   678→   678→                <Icon name="headphones" size={17} stroke={2} />
+   679→   679→              </span>
+   680→   680→            )}
+   681→   681→            <div style={{ minWidth: 0, flex: 1 }}>
+   682→   682→              <strong style={{ display: "block", fontSize: 13, color: colors.ink }}>
+   683→   683→                {view === "thread" && ticket ? ticket.subject : L("پشتیبانی وُدّا")}
+   684→   684→              </strong>
+   685→   685→              <span style={{ display: "block", fontSize: 10.5, color: colors.inkMuted }}>
+   686→   686→                {view === "thread"
+   687→   687→                  ? L("پاسخ‌گویی لحظه‌ای توسط کارشناسان وُدّا")
+   688→   688→                  : view === "new"
+   689→   689→                    ? L("گفتگوی جدید با تیم پشتیبانی")
+   690→   690→                    : L("گفتگوهای شما با تیم پشتیبانی")}
+   691→   691→              </span>
+   692→   692→            </div>
+   693→   693→            {view === "thread" && ticket && statusChip ? (
+   694→   694→              <span
+   695→   695→                style={{
+   696→   696→                  flex: "0 0 auto",
+   697→   697→                  fontSize: 10.5,
+   698→   698→                  fontWeight: 800,
+   699→   699→                  padding: "4px 10px",
+   700→   700→                  borderRadius: 999,
+
+[showing lines 1-700 of 1325; use offset=701 with limit to continue reading]

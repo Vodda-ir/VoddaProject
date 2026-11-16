@@ -1,0 +1,728 @@
+     1→"use client";
+     2→
+     3→// کلاس زندهٔ تصویری وُدّا در اپ جامع — پوشش تمام‌صفحه روی صفحهٔ جزئیات جلسه.
+     4→// ورود با پیش‌آزمون دوربین/میکروفون، ویدیوی P2P، چت درون‌کلاس (وب‌سوکت)
+     5→// و کلیدهای قطع صدا/تصویر و خروج. موتور و کلاینت سیگنالینگ از lib/live.
+     6→
+     7→import { useCallback, useEffect, useRef, useState } from "react";
+     8→import { LiveClient, type LiveEvent, type LiveStatus } from "../../../lib/live/client";
+     9→import { LiveEngine, type EngineRole } from "../../../lib/live/engine";
+    10→import { acquireMediaStream } from "../../platform/media-permissions";
+    11→import { localizedDigits } from "../../ui/persian";
+    12→import { Avatar } from "../../ui";
+    13→import { useAppearance } from "../../ui/appearance";
+    14→
+    15→type ChatLine = { id: string; from: number; text: string; at: number; mine: boolean };
+    16→
+    17→type LiveRoomProps = {
+    18→  sessionId: number;
+    19→  role: EngineRole;
+    20→  myUserId: number;
+    21→  peerName: string;
+    22→  peerAvatar?: string;
+    23→  startAt: string;
+    24→  durationMinutes: number;
+    25→  onClose: () => void;
+    26→};
+    27→
+    28→function uid(): string {
+    29→  return Math.random().toString(36).slice(2) + Date.now().toString(36);
+    30→}
+    31→
+    32→function chatTime(at: number, lang: "fa" | "en"): string {
+    33→  const date = new Date(at);
+    34→  return `${localizedDigits(String(date.getHours()).padStart(2, "0"), lang)}:${localizedDigits(String(date.getMinutes()).padStart(2, "0"), lang)}`;
+    35→}
+    36→
+    37→const controlButton = (active: boolean): React.CSSProperties => ({
+    38→  width: 52,
+    39→  height: 52,
+    40→  display: "grid",
+    41→  placeItems: "center",
+    42→  borderRadius: "50%",
+    43→  border: 0,
+    44→  cursor: "pointer",
+    45→  background: active ? "rgba(255,255,255,.14)" : "#b3403a",
+    46→  color: "#fff",
+    47→  fontSize: 21,
+    48→});
+    49→
+    50→const retryButtonStyle: React.CSSProperties = {
+    51→  height: 30,
+    52→  padding: "0 14px",
+    53→  borderRadius: 999,
+    54→  border: "1px solid rgba(255,255,255,.24)",
+    55→  background: "rgba(255,255,255,.12)",
+    56→  color: "#fff",
+    57→  cursor: "pointer",
+    58→  fontFamily: "inherit",
+    59→  fontSize: 11.5,
+    60→  fontWeight: 800,
+    61→  whiteSpace: "nowrap",
+    62→};
+    63→
+    64→export function LiveRoom({
+    65→  sessionId,
+    66→  role,
+    67→  myUserId,
+    68→  peerName,
+    69→  peerAvatar,
+    70→  startAt,
+    71→  durationMinutes,
+    72→  onClose,
+    73→}: LiveRoomProps) {
+    74→  const [phase, setPhase] = useState<"preflight" | "live" | "ended">("preflight");
+    75→  const [status, setStatus] = useState<LiveStatus>("connecting");
+    76→  const [mediaError, setMediaError] = useState("");
+    77→  const [mediaDenied, setMediaDenied] = useState(false);
+    78→  const [mediaBusy, setMediaBusy] = useState(false);
+    79→  const [hasLiveMedia, setHasLiveMedia] = useState(false);
+    80→  const [micLevel, setMicLevel] = useState(0);
+    81→  const [micOn, setMicOn] = useState(true);
+    82→  const [camOn, setCamOn] = useState(true);
+    83→  const [remoteActive, setRemoteActive] = useState(false);
+    84→  const [chat, setChat] = useState<ChatLine[]>([]);
+    85→  const [chatDraft, setChatDraft] = useState("");
+    86→  const [chatOpen, setChatOpen] = useState(false);
+    87→  const [notice, setNotice] = useState("");
+    88→  const [countdown, setCountdown] = useState("");
+    89→
+    90→  const clientRef = useRef<LiveClient | null>(null);
+    91→  const engineRef = useRef<LiveEngine | null>(null);
+    92→  const localVideoRef = useRef<HTMLVideoElement | null>(null);
+    93→  const remoteVideoRef = useRef<HTMLVideoElement | null>(null);
+    94→  const liveStreamRef = useRef<MediaStream | null>(null);
+    95→  const previewStreamRef = useRef<MediaStream | null>(null);
+    96→  const mediaBusyRef = useRef(false);
+    97→  const previewRunIdRef = useRef(0);
+    98→  const stopPreviewRunRef = useRef<() => void>(() => {});
+    99→  const chatBodyRef = useRef<HTMLDivElement | null>(null);
+   100→  const peerOnlineRef = useRef(false);
+   101→  const engineRoleRef = useRef<EngineRole>(role);
+   102→  const wakeLockRef = useRef<{ release: () => Promise<void>; released: boolean } | null>(null);
+   103→  const [needsTapToPlay, setNeedsTapToPlay] = useState(false);
+   104→  const { L, lang, dir, N } = useAppearance();
+   105→
+   106→  const isTeacherSide = role !== "learner";
+   107→
+   108→  /* ---------- پیش‌آزمون: پیش‌نمایش دوربین و سطح میکروفون ---------- */
+   109→  // گرفتن رسانه با helper مشترک و نردبان پلکانی (قید مطلوب ← ساده ← فقط صدا)؛
+   110→  // دیالوگ مجوز مرورگر همین‌جا باز می‌شود و هر شکست با پیام راهنما و کلید «تلاش دوباره» قابل جبران است.
+   111→  const startPreview = useCallback(() => {
+   112→    stopPreviewRunRef.current();
+   113→    const runId = ++previewRunIdRef.current;
+   114→    mediaBusyRef.current = true;
+   115→    setMediaBusy(true);
+   116→    let ctx: AudioContext | null = null;
+   117→    let raf = 0;
+   118→    let cancelled = false;
+   119→    const cancelRun = () => {
+   120→      cancelled = true;
+   121→      cancelAnimationFrame(raf);
+   122→      void ctx?.close();
+   123→    };
+   124→    stopPreviewRunRef.current = cancelRun;
+   125→    void (async () => {
+   126→      previewStreamRef.current?.getTracks().forEach((track) => track.stop());
+   127→      previewStreamRef.current = null;
+   128→      const result = await acquireMediaStream("both");
+   129→      if (cancelled) {
+   130→        if (result.ok) result.stream.getTracks().forEach((track) => track.stop());
+   131→        if (runId === previewRunIdRef.current) {
+   132→          mediaBusyRef.current = false;
+   133→          setMediaBusy(false);
+   134→        }
+   135→        return;
+   136→      }
+   137→      mediaBusyRef.current = false;
+   138→      setMediaBusy(false);
+   139→      if (!result.ok) {
+   140→        setMediaError(L(result.message));
+   141→        setMediaDenied(result.denied);
+   142→        return;
+   143→      }
+   144→      const stream = result.stream;
+   145→      previewStreamRef.current = stream;
+   146→      setMediaError("");
+   147→      setMediaDenied(false);
+   148→      if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+   149→      const [audioTrack] = stream.getAudioTracks();
+   150→      if (audioTrack) {
+   151→        ctx = new AudioContext();
+   152→        const source = ctx.createMediaStreamSource(new MediaStream([audioTrack]));
+   153→        const analyser = ctx.createAnalyser();
+   154→        analyser.fftSize = 256;
+   155→        source.connect(analyser);
+   156→        const buffer = new Uint8Array(analyser.frequencyBinCount);
+   157→        const tick = () => {
+   158→          analyser.getByteFrequencyData(buffer);
+   159→          const avg = buffer.reduce((sum, value) => sum + value, 0) / buffer.length;
+   160→          setMicLevel(Math.min(100, Math.round((avg / 128) * 100)));
+   161→          raf = requestAnimationFrame(tick);
+   162→        };
+   163→        tick();
+   164→      }
+   165→    })();
+   166→  }, [L]);
+   167→
+   168→  const retryMedia = useCallback(() => {
+   169→    if (mediaBusy) return;
+   170→    startPreview();
+   171→  }, [mediaBusy, startPreview]);
+   172→
+   173→  useEffect(() => {
+   174→    if (phase !== "preflight") return;
+   175→    startPreview();
+   176→    return () => {
+   177→      stopPreviewRunRef.current();
+   178→      const preview = previewStreamRef.current;
+   179→      preview?.getTracks().forEach((track) => track.stop());
+   180→      previewStreamRef.current = null;
+   181→    };
+   182→    // startPreview عمداً در وابستگی‌ها نمی‌آید؛ اجرای دوبارهٔ افکت جریان تازهٔ پیش‌نمایش را قطع می‌کرد.
+   183→  }, [phase]);
+   184→
+   185→  /* ---------- شمارش معکوس جلسه ---------- */
+   186→  useEffect(() => {
+   187→    if (!startAt) return;
+   188→    const endAt = new Date(startAt).getTime() + Math.max(1, durationMinutes) * 60_000;
+   189→    const tick = () => {
+   190→      const diff = endAt - Date.now();
+   191→      if (diff <= 0) {
+   192→        setCountdown(L("زمان جلسه به پایان رسیده است"));
+   193→        return;
+   194→      }
+   195→      const minutes = Math.floor(diff / 60_000);
+   196→      const seconds = Math.floor((diff % 60_000) / 1000);
+   197→      setCountdown(
+   198→        L("{time} باقی‌مانده").replace(
+   199→          "{time}",
+   200→          `${localizedDigits(minutes, lang)}:${localizedDigits(String(seconds).padStart(2, "0"), lang)}`,
+   201→        ),
+   202→      );
+   203→    };
+   204→    tick();
+   205→    const timer = window.setInterval(tick, 1000);
+   206→    return () => window.clearInterval(timer);
+   207→  }, [startAt, durationMinutes, L, lang]);
+   208→
+   209→  /* ---------- رویدادهای سیگنالینگ ---------- */
+   210→  const handleEvent = useCallback(
+   211→    (event: LiveEvent) => {
+   212→      if (event.from === myUserId && event.type !== "system") return;
+   213→      switch (event.type) {
+   214→        case "chat": {
+   215→          const payload = event.payload as { text?: string } | undefined;
+   216→          const text = String(payload?.text ?? "").slice(0, 1000);
+   217→          if (!text) return;
+   218→          setChat((items) => [...items, { id: uid(), from: event.from, text, at: event.at, mine: false }]);
+   219→          break;
+   220→        }
+   221→        case "control": {
+   222→          const payload = event.payload as { action: string; value?: boolean | string } | undefined;
+   223→          if (payload?.action === "bye") {
+   224→            setNotice(L("طرف مقابل کلاس را ترک کرد."));
+   225→            window.setTimeout(() => setNotice(""), 4000);
+   226→          }
+   227→          if (payload?.action === "end") setPhase("ended");
+   228→          break;
+   229→        }
+   230→        case "offer":
+   231→        case "answer":
+   232→        case "ice":
+   233→          void engineRef.current?.handleSignal(event.type, event.payload);
+   234→          break;
+   235→        case "system": {
+   236→          const payload = event.payload as { action?: string } | undefined;
+   237→          if (payload?.action === "join") {
+   238→            peerOnlineRef.current = true;
+   239→            setChat((items) => [...items, { id: uid(), from: 0, text: L("طرف مقابل وارد کلاس شد."), at: event.at, mine: false }]);
+   240→            if (isTeacherSide) void engineRef.current?.initiate();
+   241→          }
+   242→          if (payload?.action === "leave") {
+   243→            peerOnlineRef.current = false;
+   244→            setChat((items) => [...items, { id: uid(), from: 0, text: L("طرف مقابل خارج شد."), at: event.at, mine: false }]);
+   245→          }
+   246→          break;
+   247→        }
+   248→      }
+   249→    },
+   250→    [isTeacherSide, myUserId],
+   251→  );
+   252→
+   253→  useEffect(() => {
+   254→    return () => {
+   255→      clientRef.current?.close();
+   256→      engineRef.current?.close();
+   257→      liveStreamRef.current?.getTracks().forEach((track) => track.stop());
+   258→    };
+   259→  }, []);
+   260→
+   261→  useEffect(() => {
+   262→    const body = chatBodyRef.current;
+   263→    if (body) body.scrollTop = body.scrollHeight;
+   264→  }, [chat, chatOpen]);
+   265→
+   266→  /* ---------- موبایل: بیدار نگه‌داشتن صفحه در طول کلاس ---------- */
+   267→  useEffect(() => {
+   268→    if (phase !== "live") return;
+   269→    type WakeLockSentinel = { release: () => Promise<void>; released: boolean };
+   270→    const wakeLockApi = (navigator as Navigator & { wakeLock?: { request: (type: "screen") => Promise<WakeLockSentinel> } }).wakeLock;
+   271→    if (!wakeLockApi) return;
+   272→    let released = false;
+   273→    wakeLockApi.request("screen")
+   274→      .then((sentinel) => {
+   275→        if (released) {
+   276→          void sentinel.release().catch(() => {});
+   277→          return;
+   278→        }
+   279→        wakeLockRef.current = sentinel;
+   280→      })
+   281→      .catch(() => {});
+   282→    return () => {
+   283→      released = true;
+   284→      const sentinel = wakeLockRef.current;
+   285→      wakeLockRef.current = null;
+   286→      void sentinel?.release().catch(() => {});
+   287→    };
+   288→  }, [phase]);
+   289→
+   290→  /* ---------- موبایل: برگشت از پس‌زمینه/تعویض شبکه → بازیابی اتصال ---------- */
+   291→  useEffect(() => {
+   292→    if (phase !== "live") return;
+   293→    const recover = () => {
+   294→      void engineRef.current?.reconnect();
+   295→      const remote = remoteVideoRef.current;
+   296→      if (remote && remote.paused) {
+   297→        remote.play().catch(() => setNeedsTapToPlay(true));
+   298→      }
+   299→    };
+   300→    const onVisible = () => {
+   301→      if (document.visibilityState === "visible") recover();
+   302→    };
+   303→    document.addEventListener("visibilitychange", onVisible);
+   304→    window.addEventListener("online", recover);
+   305→    return () => {
+   306→      document.removeEventListener("visibilitychange", onVisible);
+   307→      window.removeEventListener("online", recover);
+   308→    };
+   309→  }, [phase]);
+   310→
+   311→  /* ---------- پخش خودکار ویدیوی طرف مقابل (سیاست autoplay موبایل) ---------- */
+   312→  useEffect(() => {
+   313→    if (!remoteActive) return;
+   314→    const remote = remoteVideoRef.current;
+   315→    if (!remote) return;
+   316→    remote.play().then(() => setNeedsTapToPlay(false)).catch(() => setNeedsTapToPlay(true));
+   317→  }, [remoteActive]);
+   318→
+   319→  /* ---------- ورود به کلاس ---------- */
+   320→  // جریان پیش‌نمایش اگر آماده باشد مستقیم برای جلسه به‌کار می‌رود تا دیالوگ مجوز دوباره باز نشود؛
+   321→  // اگر نباشد، «ورود با رسانه» همان‌جا درخواست می‌دهد — و شکست هیچ‌وقت ورود به کلاس را блок نمی‌کند.
+   322→  async function join(withMedia: boolean) {
+   323→    stopPreviewRunRef.current();
+   324→
+   325→    let stream: MediaStream | null = previewStreamRef.current;
+   326→    previewStreamRef.current = null;
+   327→    if (!withMedia) {
+   328→      stream?.getTracks().forEach((track) => track.stop());
+   329→      stream = null;
+   330→    } else if (!stream) {
+   331→      setMediaBusy(true);
+   332→      const result = await acquireMediaStream("both");
+   333→      setMediaBusy(false);
+   334→      if (!result.ok) {
+   335→        setMediaError(L(result.message));
+   336→        setMediaDenied(result.denied);
+   337→        // بدون رسانه هم وارد کلاس می‌شویم — هیچ‌چیز نباید برگزاری کلاس را متوقف کند.
+   338→      } else {
+   339→        stream = result.stream;
+   340→        setMediaError("");
+   341→        setMediaDenied(false);
+   342→      }
+   343→    }
+   344→    liveStreamRef.current = stream;
+   345→    setHasLiveMedia(Boolean(stream));
+   346→    setPhase("live");
+   347→
+   348→    const client = new LiveClient({
+   349→      sessionId,
+   350→      onEvent: handleEvent,
+   351→      onStatus: (value) => setStatus(value),
+   352→    });
+   353→    clientRef.current = client;
+   354→
+   355→    const engine = new LiveEngine({
+   356→      role: engineRoleRef.current,
+   357→      onRemoteStream: (remote) => {
+   358→        setRemoteActive(remote.getTracks().length > 0);
+   359→        if (remoteVideoRef.current) remoteVideoRef.current.srcObject = remote;
+   360→      },
+   361→      onState: () => {},
+   362→      send: (type, payload) => client.send(type, payload),
+   363→    });
+   364→    engineRef.current = engine;
+   365→    engine.setCameraTrack(stream?.getVideoTracks()[0] ?? null);
+   366→    await engine.ensureConnection();
+   367→    if (stream) await engine.setLocalMedia(stream);
+   368→    if (localVideoRef.current && stream) localVideoRef.current.srcObject = stream;
+   369→    if (engine.isInitiator && peerOnlineRef.current) void engine.initiate();
+   370→
+   371→    await client.connect();
+   372→  }
+   373→
+   374→  function sendChat() {
+   375→    const text = chatDraft.trim();
+   376→    if (!text || !clientRef.current) return;
+   377→    setChat((items) => [...items, { id: uid(), from: myUserId, text, at: Date.now(), mine: true }]);
+   378→    clientRef.current.send("chat", { text: text.slice(0, 1000) });
+   379→    setChatDraft("");
+   380→  }
+   381→
+   382→  function toggleMic() {
+   383→    const next = !micOn;
+   384→    setMicOn(next);
+   385→    liveStreamRef.current?.getAudioTracks().forEach((track) => (track.enabled = next));
+   386→  }
+   387→
+   388→  function toggleCam() {
+   389→    const next = !camOn;
+   390→    setCamOn(next);
+   391→    liveStreamRef.current?.getVideoTracks().forEach((track) => (track.enabled = next));
+   392→  }
+   393→
+   394→  /* ---------- وصل دوبارهٔ دوربین و میکروفون در میانهٔ کلاس ---------- */
+   395→  // وقتی کاربر بدون رسانه وارد شده، این مسیر از نوار کنترل دیالوگ مجوز را باز می‌کند
+   396→  // و تراک‌ها را به موتور P2P می‌دهد — خروج از کلاس لازم نیست.
+   397→  async function enableLiveMedia() {
+   398→    if (mediaBusyRef.current) return;
+   399→    mediaBusyRef.current = true;
+   400→    setMediaBusy(true);
+   401→    const result = await acquireMediaStream("both");
+   402→    mediaBusyRef.current = false;
+   403→    setMediaBusy(false);
+   404→    if (!result.ok) {
+   405→      setNotice(L(result.message));
+   406→      window.setTimeout(() => setNotice(""), 4000);
+   407→      return;
+   408→    }
+   409→    const stream = result.stream;
+   410→    liveStreamRef.current = stream;
+   411→    setHasLiveMedia(true);
+   412→    setMediaError("");
+   413→    setMediaDenied(false);
+   414→    await engineRef.current?.setLocalMedia(stream);
+   415→    engineRef.current?.setCameraTrack(stream.getVideoTracks()[0] ?? null);
+   416→    if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+   417→    setMicOn(true);
+   418→    setCamOn(result.hasVideo);
+   419→  }
+   420→
+   421→  function leave(complete: boolean) {
+   422→    clientRef.current?.send("control", { action: complete ? "end" : "bye" });
+   423→    clientRef.current?.close();
+   424→    engineRef.current?.close();
+   425→    liveStreamRef.current?.getTracks().forEach((track) => track.stop());
+   426→    setPhase("ended");
+   427→    onClose();
+   428→  }
+   429→
+   430→  const statusLabel =
+   431→    status === "live"
+   432→      ? L("اتصال زنده")
+   433→      : status === "polling"
+   434→        ? L("اتصال پایدار (کانال پشتیبان)")
+   435→        : status === "connecting"
+   436→          ? L("در حال اتصال…")
+   437→          : status === "error"
+   438→            ? L("خطای دسترسی")
+   439→            : L("پایان");
+   440→
+   441→  /* ---------- پوشش تمام‌صفحه ---------- */
+   442→  return (
+   443→    <div
+   444→      role="dialog"
+   445→      aria-label={L("کلاس زندهٔ تصویری")}
+   446→      style={{
+   447→        position: "fixed",
+   448→        inset: 0,
+   449→        zIndex: 80,
+   450→        background: "#171b14",
+   451→        color: "#fff",
+   452→        display: "flex",
+   453→        flexDirection: "column",
+   454→        direction: dir,
+   455→        fontFamily: "inherit",
+   456→      }}
+   457→    >
+   458→      {/* نوار بالا */}
+   459→      <div
+   460→        style={{
+   461→          display: "flex",
+   462→          alignItems: "center",
+   463→          gap: 10,
+   464→          padding: "12px 16px",
+   465→          background: "rgba(23,27,20,.92)",
+   466→          borderBottom: "1px solid rgba(255,255,255,.08)",
+   467→        }}
+   468→      >
+   469→        <Avatar name={peerName} src={peerAvatar || undefined} size={38} ring={false} />
+   470→        <div style={{ minWidth: 0, flex: 1 }}>
+   471→          <strong style={{ display: "block", fontSize: 14, fontWeight: 800 }}>{N(peerName)}</strong>
+   472→          <span style={{ display: "block", fontSize: 11, color: remoteActive ? "#a8d08d" : "rgba(255,255,255,.55)" }}>
+   473→            {remoteActive ? L("متصل") : statusLabel}
+   474→            {countdown ? ` · ${countdown}` : ""}
+   475→          </span>
+   476→        </div>
+   477→        <button
+   478→          type="button"
+   479→          onClick={() => setChatOpen((open) => !open)}
+   480→          aria-label={L("چت کلاس")}
+   481→          style={{
+   482→            height: 38, padding: "0 14px", borderRadius: 999, border: "1px solid rgba(255,255,255,.18)",
+   483→            background: chatOpen ? "rgba(255,255,255,.16)" : "transparent", color: "#fff", cursor: "pointer",
+   484→            fontFamily: "inherit", fontSize: 12.5, fontWeight: 700,
+   485→          }}
+   486→        >
+   487→          {L("چت")}
+   488→        </button>
+   489→      </div>
+   490→
+   491→      {/* بدنه */}
+   492→      <div style={{ flex: 1, minHeight: 0, display: "grid", gridTemplateRows: "1fr auto" }}>
+   493→        <div style={{ position: "relative", minHeight: 0, background: "#10130e" }}>
+   494→          <video
+   495→            ref={remoteVideoRef}
+   496→            autoPlay
+   497→            playsInline
+   498→            aria-label={L("تصویر طرف مقابل")}
+   499→            onDoubleClick={() => remoteVideoRef.current?.play().catch(() => {})}
+   500→            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", background: "#10130e" }}
+   501→          />
+   502→          {needsTapToPlay && phase === "live" ? (
+   503→            <button
+   504→              type="button"
+   505→              onClick={() => {
+   506→                const remote = remoteVideoRef.current;
+   507→                if (!remote) return;
+   508→                remote.play()
+   509→                  .then(() => setNeedsTapToPlay(false))
+   510→                  .catch(() => {});
+   511→              }}
+   512→              style={{
+   513→                position: "absolute", top: 14, insetInline: 0, marginInline: "auto", zIndex: 4,
+   514→                width: "fit-content", display: "flex", alignItems: "center", gap: 8,
+   515→                padding: "9px 18px", borderRadius: 999, border: "1px solid rgba(216,184,105,.7)",
+   516→                background: "rgba(23,27,20,.9)", color: "#ffd98c", fontFamily: "inherit",
+   517→                fontSize: 12.5, fontWeight: 800, cursor: "pointer",
+   518→              }}
+   519→            >
+   520→              ▶ {L("برای پخش تصویر و صدای طرف مقابل لمس کنید")}
+   521→            </button>
+   522→          ) : null}
+   523→          {!remoteActive && phase === "live" ? (
+   524→            <div
+   525→              style={{
+   526→                position: "absolute", inset: 0, display: "grid", placeItems: "center", textAlign: "center",
+   527→                padding: 24, color: "rgba(255,255,255,.75)", fontSize: 13.5, lineHeight: 2,
+   528→              }}
+   529→            >
+   530→              <div>
+   531→                <Avatar name={peerName} src={peerAvatar || undefined} size={84} ring tone="gold" />
+   532→                <p style={{ margin: "14px 0 0", fontWeight: 700 }}>{N(peerName)}</p>
+   533→                <p style={{ margin: "4px 0 0", fontSize: 12 }}>
+   534→                  {L("در انتظار ورود طرف مقابل… همین صفحه را باز نگه دارید.")}
+   535→                </p>
+   536→              </div>
+   537→            </div>
+   538→          ) : null}
+   539→          {phase !== "live" ? (
+   540→            <video
+   541→              ref={localVideoRef}
+   542→              autoPlay
+   543→              muted
+   544→              playsInline
+   545→              aria-label={L("پیش‌نمایش دوربین شما")}
+   546→              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", transform: "scaleX(-1)" }}
+   547→            />
+   548→          ) : (
+   549→            <video
+   550→              ref={localVideoRef}
+   551→              autoPlay
+   552→              muted
+   553→              playsInline
+   554→              aria-label={L("تصویر شما")}
+   555→              style={{
+   556→                position: "absolute", insetInlineStart: 14, bottom: 14, width: 116, height: 158,
+   557→                objectFit: "cover", borderRadius: 16, border: "2px solid rgba(216,184,105,.75)",
+   558→                boxShadow: "0 10px 24px rgba(0,0,0,.45)", background: "#000", transform: "scaleX(-1)", zIndex: 2,
+   559→              }}
+   560→            />
+   561→          )}
+   562→
+   563→          {mediaDenied && mediaError && phase === "preflight" ? (
+   564→            <div style={{ position: "absolute", insetInline: 16, top: 14, zIndex: 2, background: "rgba(179,64,58,.18)", border: "1px solid rgba(179,64,58,.55)", borderRadius: 14, padding: 12, display: "grid", gap: 6 }}>
+   565→              <strong style={{ fontSize: 13, fontWeight: 800, color: "#ffd9d0" }}>{L("مجوز دوربین و میکروفون لازم است")}</strong>
+   566→              <span style={{ fontSize: 11.5, lineHeight: 1.9, color: "rgba(255,255,255,.85)" }}>{mediaError}</span>
+   567→              <button type="button" onClick={retryMedia} aria-busy={mediaBusy} style={retryButtonStyle}>
+   568→                {L("تلاش دوباره")}
+   569→              </button>
+   570→            </div>
+   571→          ) : null}
+   572→          {mediaError && phase === "preflight" && !mediaDenied ? (
+   573→            <div style={{ position: "absolute", insetInline: 16, bottom: 14, zIndex: 2, display: "flex", alignItems: "center", gap: 8 }}>
+   574→              <p style={{ flex: 1, margin: 0, fontSize: 11.5, lineHeight: 1.8, color: "#ffd9d0", background: "rgba(179,64,58,.24)", borderRadius: 12, padding: "8px 12px" }}>
+   575→                {mediaError}
+   576→              </p>
+   577→              <button type="button" onClick={retryMedia} aria-busy={mediaBusy} style={retryButtonStyle}>
+   578→                {L("تلاش دوباره")}
+   579→              </button>
+   580→            </div>
+   581→          ) : null}
+   582→
+   583→          {/* چت درون‌کلاس */}
+   584→          {chatOpen ? (
+   585→            <div
+   586→              style={{
+   587→                position: "absolute", insetInline: 0, bottom: 0, zIndex: 3, maxHeight: "46%",
+   588→                display: "grid", gridTemplateRows: "1fr auto",
+   589→                background: "rgba(16,19,14,.88)", borderTop: "1px solid rgba(255,255,255,.12)", backdropFilter: "blur(6px)",
+   590→              }}
+   591→            >
+   592→              <div ref={chatBodyRef} style={{ overflowY: "auto", padding: "10px 14px", display: "grid", gap: 6, alignContent: "start" }}>
+   593→                {chat.map((line) => (
+   594→                  <div
+   595→                    key={line.id}
+   596→                    style={{
+   597→                      maxWidth: "86%", justifySelf: line.mine ? "start" : "end", fontSize: 12.5, lineHeight: 1.8,
+   598→                      background: line.mine ? "rgba(125,143,96,.55)" : "rgba(255,255,255,.10)",
+   599→                      color: "#fff", borderRadius: 14, padding: "7px 12px",
+   600→                    }}
+   601→                  >
+   602→                    {line.text}
+   603→                    <span style={{ display: "block", fontSize: 9.5, opacity: 0.65, marginTop: 2 }}>{chatTime(line.at, lang)}</span>
+   604→                  </div>
+   605→                ))}
+   606→              </div>
+   607→              <div style={{ display: "flex", gap: 8, padding: "8px 12px 12px" }}>
+   608→                <input
+   609→                  value={chatDraft}
+   610→                  onChange={(event) => setChatDraft(event.target.value)}
+   611→                  onKeyDown={(event) => {
+   612→                    if (event.key === "Enter") {
+   613→                      event.preventDefault();
+   614→                      sendChat();
+   615→                    }
+   616→                  }}
+   617→                  aria-label={L("متن پیام کلاس")}
+   618→                  maxLength={1000}
+   619→                  placeholder={L("پیام…")}
+   620→                  style={{ flex: 1, minWidth: 0, height: 42, borderRadius: 999, border: "1px solid rgba(255,255,255,.18)", background: "rgba(255,255,255,.08)", color: "#fff", padding: "0 16px", fontFamily: "inherit", fontSize: 13 }}
+   621→                />
+   622→                <button
+   623→                  type="button"
+   624→                  onClick={sendChat}
+   625→                  aria-label={L("ارسال پیام کلاس")}
+   626→                  style={{ height: 42, padding: "0 18px", borderRadius: 999, border: 0, background: "linear-gradient(145deg,#d8b869,#b8923c)", color: "#221a08", fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}
+   627→                >
+   628→                  {L("ارسال")}
+   629→                </button>
+   630→              </div>
+   631→            </div>
+   632→          ) : null}
+   633→        </div>
+   634→
+   635→        {/* نوار کنترل */}
+   636→        <div
+   637→          style={{
+   638→            display: "flex", alignItems: "center", justifyContent: "center", gap: 14,
+   639→            padding: "14px 16px calc(14px + env(safe-area-inset-bottom))",
+   640→            background: "rgba(23,27,20,.95)", borderTop: "1px solid rgba(255,255,255,.08)",
+   641→          }}
+   642→        >
+   643→          {phase === "preflight" ? (
+   644→            <>
+   645→              <div style={{ position: "absolute", insetInline: 0, top: -46, display: "flex", justifyContent: "center", pointerEvents: "none" }}>
+   646→                <span
+   647→                  aria-hidden="true"
+   648→                  style={{
+   649→                    width: 120, height: 6, borderRadius: 999,
+   650→                    background: `linear-gradient(90deg, #d8b869 ${Math.max(6, micLevel)}%, rgba(255,255,255,.16) ${Math.max(6, micLevel)}%)`,
+   651→                  }}
+   652→                />
+   653→              </div>
+   654→              <button type="button" onClick={() => void join(false)} style={{ ...controlButton(false), width: "auto", padding: "0 22px", borderRadius: 999, background: "rgba(255,255,255,.12)", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800 }}>
+   655→                {L("ورود بدون رسانه")}
+   656→              </button>
+   657→              <button
+   658→                type="button"
+   659→                onClick={() => void join(true)}
+   660→                style={{
+   661→                  width: 68, height: 68, borderRadius: "50%", border: "3px solid rgba(216,184,105,.85)",
+   662→                  background: "linear-gradient(145deg,#8fa873,#5f7a48)", color: "#fff", cursor: "pointer", fontSize: 27,
+   663→                  boxShadow: "0 14px 30px rgba(95,122,72,.5)",
+   664→                }}
+   665→                aria-label={L("ورود به کلاس با دوربین و میکروفون")}
+   666→              >
+   667→                ▶
+   668→              </button>
+   669→              <button type="button" onClick={() => leave(false)} style={{ ...controlButton(false), width: "auto", padding: "0 22px", borderRadius: 999, background: "#b3403a", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800 }}>
+   670→                {L("انصراف")}
+   671→              </button>
+   672→            </>
+   673→          ) : (
+   674→            <>
+   675→              <button type="button" onClick={toggleMic} style={controlButton(!micOn)} aria-label={micOn ? L("قطع میکروفون") : L("وصل میکروفون")}>
+   676→                {micOn ? "🎙" : "🔇"}
+   677→              </button>
+   678→              <button type="button" onClick={toggleCam} style={controlButton(!camOn)} aria-label={camOn ? L("قطع دوربین") : L("وصل دوربین")}>
+   679→                {camOn ? "🎥" : "🚫"}
+   680→              </button>
+   681→              {phase === "live" && !hasLiveMedia ? (
+   682→                <button
+   683→                  type="button"
+   684→                  onClick={() => void enableLiveMedia()}
+   685→                  aria-busy={mediaBusy}
+   686→                  aria-label={L("وصل دوربین و میکروفون")}
+   687→                  style={{ ...controlButton(false), width: "auto", padding: "0 18px", borderRadius: 999, background: "rgba(255,255,255,.12)", fontFamily: "inherit", fontSize: 13, fontWeight: 800 }}
+   688→                >
+   689→                  {L("وصل دوربین و میکروفون")}
+   690→                </button>
+   691→              ) : null}
+   692→              <button
+   693→                type="button"
+   694→                onClick={() => leave(false)}
+   695→                style={{ width: 62, height: 62, borderRadius: "50%", border: 0, background: "#b3403a", color: "#fff", cursor: "pointer", fontSize: 24, boxShadow: "0 12px 26px rgba(179,64,58,.5)" }}
+   696→                aria-label={L("خروج از کلاس")}
+   697→              >
+   698→                ✕
+   699→              </button>
+   700→              {isTeacherSide ? (
+   701→                <button
+   702→                  type="button"
+   703→                  onClick={() => leave(true)}
+   704→                  style={{ width: "auto", height: 52, padding: "0 20px", borderRadius: 999, border: "1px solid rgba(216,184,105,.6)", background: "linear-gradient(145deg,#d8b869,#b8923c)", color: "#221a08", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 800 }}
+   705→                  aria-label={L("پایان جلسه")}
+   706→                >
+   707→                  {L("پایان جلسه")}
+   708→                </button>
+   709→              ) : null}
+   710→            </>
+   711→          )}
+   712→        </div>
+   713→      </div>
+   714→
+   715→      {notice ? (
+   716→        <div
+   717→          role="status"
+   718→          style={{
+   719→            position: "absolute", top: 66, insetInline: 0, display: "flex", justifyContent: "center", pointerEvents: "none", zIndex: 5,
+   720→          }}
+   721→        >
+   722→          <span style={{ background: "rgba(216,184,105,.95)", color: "#221a08", fontSize: 12, fontWeight: 700, borderRadius: 999, padding: "8px 18px" }}>{notice}</span>
+   723→        </div>
+   724→      ) : null}
+   725→    </div>
+   726→  );
+   727→}
+   728→

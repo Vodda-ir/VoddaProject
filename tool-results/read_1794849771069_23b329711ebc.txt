@@ -1,0 +1,813 @@
+     1→'use client';
+     2→
+     3→import { useCallback, useEffect, useRef, useState } from 'react';
+     4→import { useParams, useRouter } from 'next/navigation';
+     5→import { faDigits } from '@/components/PanelShell';
+     6→import { api, type SessionListItem } from '@/lib/api';
+     7→import { getToken } from '@/lib/auth';
+     8→import { LiveClient, type LiveEvent, type LiveStatus } from '@/lib/live/client';
+     9→import { LiveEngine, type EngineRole } from '@/lib/live/engine';
+    10→import { confirmDialog } from '@/lib/confirm';
+    11→
+    12→type ChatMessage = { id: string; from: number; role: string; text: string; at: number; mine: boolean };
+    13→type Reaction = { id: string; emoji: string; at: number };
+    14→
+    15→const REACTIONS = ['👍', '❤️', '👏', '🎉', '🤲', '✨'];
+    16→
+    17→const QURAN_SNIPPETS: Array<{ label: string; text: string }> = [
+    18→  {
+    19→    label: 'سورهٔ حمد',
+    20→    text: 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ\nالْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ\nالرَّحْمَٰنِ الرَّحِيمِ\nمَالِكِ يَوْمِ الدِّينِ\nإِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ\nاهْدِنَا الصِّرَاطَ الْمُسْتَقِيمَ\nصِرَاطَ الَّذِينَ أَنْعَمْتَ عَلَيْهِمْ غَيْرِ الْمَغْضُوبِ عَلَيْهِمْ وَلَا الضَّالِّينَ',
+    21→  },
+    22→  {
+    23→    label: 'سورهٔ اخلاص',
+    24→    text: 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ\nقُلْ هُوَ اللَّهُ أَحَدٌ\nاللَّهُ الصَّمَدُ\nلَمْ يَلِدْ وَلَمْ يُولَدْ\nوَلَمْ يَكُنْ لَهُ كُفُوًا أَحَدٌ',
+    25→  },
+    26→  {
+    27→    label: 'سورهٔ فلق',
+    28→    text: 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ\nقُلْ أَعُوذُ بِرَبِّ الْفَلَقِ\nمِنْ شَرِّ مَا خَلَقَ\nوَمِنْ شَرِّ غَاسِقٍ إِذَا وَقَبَ\nوَمِنْ شَرِّ النَّفَّاثَاتِ فِي الْعُقَدِ\nوَمِنْ شَرِّ حَاسِدٍ إِذَا حَسَدَ',
+    29→  },
+    30→  {
+    31→    label: 'سورهٔ ناس',
+    32→    text: 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ\nقُلْ أَعُوذُ بِرَبِّ النَّاسِ\nمَلِكِ النَّاسِ\nإِلَٰهِ النَّاسِ\nمِنْ شَرِّ الْوَسْوَاسِ الْخَنَّاسِ\nالَّذِي يُوَسْوِسُ فِي صُدُورِ النَّاسِ\nمِنَ الْجِنَّةِ وَالنَّاسِ',
+    33→  },
+    34→];
+    35→
+    36→function uid(): string {
+    37→  return Math.random().toString(36).slice(2) + Date.now().toString(36);
+    38→}
+    39→
+    40→/** ساعت پیام چت به‌صورت فارسی — «۱۴:۰۵» */
+    41→function chatTime(at: number): string {
+    42→  const date = new Date(at);
+    43→  return `${faDigits(String(date.getHours()).padStart(2, '0'))}:${faDigits(String(date.getMinutes()).padStart(2, '0'))}`;
+    44→}
+    45→
+    46→export default function LiveClassroomPage() {
+    47→  const router = useRouter();
+    48→  const routeParams = useParams<{ id: string }>();
+    49→  const sessionId = Number(routeParams?.id ?? 0);
+    50→  const [session, setSession] = useState<SessionListItem | null>(null);
+    51→  const [role, setRole] = useState<EngineRole>('learner');
+    52→  const [loadError, setLoadError] = useState('');
+    53→  const [ready, setReady] = useState(false);
+    54→
+    55→  // preflight state
+    56→  const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
+    57→  const [camId, setCamId] = useState<string>('');
+    58→  const [micId, setMicId] = useState<string>('');
+    59→  const [previewStream, setPreviewStream] = useState<MediaStream | null>(null);
+    60→  const [mediaError, setMediaError] = useState('');
+    61→  const [micLevel, setMicLevel] = useState(0);
+    62→
+    63→  // live state
+    64→  const [phase, setPhase] = useState<'preflight' | 'live' | 'ended'>('preflight');
+    65→  const [status, setStatus] = useState<LiveStatus>('connecting');
+    66→  const [micOn, setMicOn] = useState(true);
+    67→  const [camOn, setCamOn] = useState(true);
+    68→  const [sharing, setSharing] = useState(false);
+    69→  const [remoteActive, setRemoteActive] = useState(false);
+    70→  const [connState, setConnState] = useState('');
+    71→  const [peerOnline, setPeerOnline] = useState(false);
+    72→
+    73→  // panels
+    74→  const [sideTab, setSideTab] = useState<'none' | 'chat' | 'settings' | 'reading'>('none');
+    75→  const [chat, setChat] = useState<ChatMessage[]>([]);
+    76→  const [chatDraft, setChatDraft] = useState('');
+    77→  const [unread, setUnread] = useState(0);
+    78→  const [readingText, setReadingText] = useState('');
+    79→  // in-call device settings (تنظیمات جلسات ویدیویی — موبایل و دسکتاپ)
+    80→  const [liveDevices, setLiveDevices] = useState<MediaDeviceInfo[]>([]);
+    81→  const [settingsBusy, setSettingsBusy] = useState(false);
+    82→  const [facing, setFacing] = useState<'user' | 'environment'>('user');
+    83→  // چیدمان موبایل — پنل کنار در صفحهٔ باریک زیر ویدیو می‌رود
+    84→  const [narrow, setNarrow] = useState(false);
+    85→  const [reactions, setReactions] = useState<Reaction[]>([]);
+    86→  const [handRaised, setHandRaised] = useState(false);
+    87→  const [notice, setNotice] = useState('');
+    88→  const [countdown, setCountdown] = useState('');
+    89→
+    90→  // refs (non-rendering objects)
+    91→  const clientRef = useRef<LiveClient | null>(null);
+    92→  const engineRef = useRef<LiveEngine | null>(null);
+    93→  const localVideoRef = useRef<HTMLVideoElement | null>(null);
+    94→  const remoteVideoRef = useRef<HTMLVideoElement | null>(null);
+    95→  const liveStreamRef = useRef<MediaStream | null>(null);
+    96→  const chatBodyRef = useRef<HTMLDivElement | null>(null);
+    97→  const screenRef = useRef<MediaStream | null>(null);
+    98→  const audioCtxRef = useRef<AudioContext | null>(null);
+    99→  const myIdRef = useRef<number>(0);
+   100→
+   101→  const isTeacherSide = role !== 'learner';
+   102→
+   103→  /* ---------------- load session + identity ---------------- */
+   104→  useEffect(() => {
+   105→    if (!sessionId) {
+   106→      setLoadError('شناسهٔ جلسه نامعتبر است.');
+   107→      setReady(true);
+   108→      return;
+   109→    }
+   110→    const token = getToken();
+   111→    if (!token) {
+   112→      router.replace('/panel/login');
+   113→      return;
+   114→    }
+   115→    let cancelled = false;
+   116→    (async () => {
+   117→      try {
+   118→        const me = await api.me(token);
+   119→        const myId = Number(me.data?.id ?? 0);
+   120→        myIdRef.current = myId;
+   121→        const candidates: Array<{ when: string; loader: Promise<{ data?: SessionListItem[] }>; teacherSide: boolean }> = [
+   122→          { when: 'upcoming', loader: api.mySessions(token, 'upcoming'), teacherSide: false },
+   123→          { when: 'past', loader: api.mySessions(token, 'past'), teacherSide: false },
+   124→          { when: 'upcoming', loader: api.teacherSessions(token, 'upcoming'), teacherSide: true },
+   125→          { when: 'past', loader: api.teacherSessions(token, 'past'), teacherSide: true },
+   126→        ];
+   127→        for (const candidate of candidates) {
+   128→          if (cancelled) return;
+   129→          try {
+   130→            const response = await candidate.loader;
+   131→            const found = (response.data || []).find((item) => item.id === sessionId);
+   132→            if (found) {
+   133→              setSession(found);
+   134→              setRole(candidate.teacherSide ? (found.learner_id === myId ? 'learner' : 'teacher') : 'learner');
+   135→              setReady(true);
+   136→              return;
+   137→            }
+   138→          } catch { /* try next source */ }
+   139→        }
+   140→        // Not found in own lists — admins can still observe any session.
+   141→        if (me.data?.role === 'admin') {
+   142→          setRole('admin');
+   143→          setSession({
+   144→            id: sessionId,
+   145→            learner_id: 0,
+   146→            teacher_id: 0,
+   147→            service_id: 0,
+   148→            service: `کلاس زندهٔ #${faDigits(sessionId)}`,
+   149→            scheduled_at: new Date().toISOString(),
+   150→            local_date: '',
+   151→            local_start: '',
+   152→            local_end: '',
+   153→            weekday: 0,
+   154→            duration: 60,
+   155→            price: 0,
+   156→            status: 'confirmed',
+   157→            rated: false,
+   158→          });
+   159→        } else {
+   160→          setLoadError('این جلسه در دسترس شما نیست یا وجود ندارد.');
+   161→        }
+   162→      } catch (cause) {
+   163→        setLoadError(cause instanceof Error ? cause.message : 'اطلاعات جلسه دریافت نشد.');
+   164→      } finally {
+   165→        if (!cancelled) setReady(true);
+   166→      }
+   167→    })();
+   168→    return () => { cancelled = true; };
+   169→  }, [router, sessionId]);
+   170→
+   171→  /* ---------------- preflight: device preview ---------------- */
+   172→  const stopPreview = useCallback(() => {
+   173→    previewStream?.getTracks().forEach((track) => track.stop());
+   174→  }, [previewStream]);
+   175→
+   176→  useEffect(() => {
+   177→    if (phase !== 'preflight' || !ready || loadError) return;
+   178→    let stream: MediaStream | null = null;
+   179→    let raf = 0;
+   180→    let ctx: AudioContext | null = null;
+   181→    (async () => {
+   182→      try {
+   183→        stream = await navigator.mediaDevices.getUserMedia({
+   184→          video: camId ? { deviceId: { exact: camId } } : { width: { ideal: 1280 } },
+   185→          audio: micId ? { deviceId: { exact: micId } } : { echoCancellation: true, noiseSuppression: true },
+   186→        });
+   187→        setPreviewStream(stream);
+   188→        setMediaError('');
+   189→        if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+   190→        const [audioTrack] = stream.getAudioTracks();
+   191→        if (audioTrack) {
+   192→          ctx = new AudioContext();
+   193→          audioCtxRef.current = ctx;
+   194→          const source = ctx.createMediaStreamSource(new MediaStream([audioTrack]));
+   195→          const analyser = ctx.createAnalyser();
+   196→          analyser.fftSize = 256;
+   197→          source.connect(analyser);
+   198→          const buffer = new Uint8Array(analyser.frequencyBinCount);
+   199→          const tick = () => {
+   200→            analyser.getByteFrequencyData(buffer);
+   201→            const avg = buffer.reduce((sum, value) => sum + value, 0) / buffer.length;
+   202→            setMicLevel(Math.min(100, Math.round((avg / 128) * 100)));
+   203→            raf = requestAnimationFrame(tick);
+   204→          };
+   205→          tick();
+   206→        }
+   207→        const list = await navigator.mediaDevices.enumerateDevices();
+   208→        setDevices(list.filter((device) => device.kind !== 'audiooutput'));
+   209→        if (!camId && list.find((device) => device.kind === 'videoinput')) setCamId(list.find((device) => device.kind === 'videoinput')!.deviceId);
+   210→        if (!micId && list.find((device) => device.kind === 'audioinput')) setMicId(list.find((device) => device.kind === 'audioinput')!.deviceId);
+   211→      } catch {
+   212→        setMediaError('دسترسی به دوربین/میکروفون ممکن نشد. می‌توانید بدون آن‌ها وارد کلاس شوید.');
+   213→      }
+   214→    })();
+   215→    return () => {
+   216→      cancelAnimationFrame(raf);
+   217→      void ctx?.close();
+   218→      stream?.getTracks().forEach((track) => track.stop());
+   219→    };
+   220→  }, [phase, ready, loadError, camId, micId]);
+   221→
+   222→  /* ---------------- event handling ---------------- */
+   223→  const pushReaction = useCallback((emoji: string) => {
+   224→    const reaction: Reaction = { id: uid(), emoji, at: Date.now() };
+   225→    setReactions((items) => [...items, reaction]);
+   226→    setTimeout(() => setReactions((items) => items.filter((item) => item.id !== reaction.id)), 2600);
+   227→  }, []);
+   228→
+   229→  const handleEvent = useCallback((event: LiveEvent) => {
+   230→    if (event.from === myIdRef.current && event.type !== 'system') {
+   231→      // own frames echoed by WS path are ignored (chat already optimistic)
+   232→      if (event.type !== 'reading') return;
+   233→    }
+   234→    switch (event.type) {
+   235→      case 'chat': {
+   236→        const payload = event.payload as { text?: string } | undefined;
+   237→        const text = String(payload?.text ?? '').slice(0, 1000);
+   238→        if (!text) return;
+   239→        setChat((items) => [...items, { id: uid(), from: event.from, role: String(event.role), text, at: event.at, mine: false }]);
+   240→        setUnread((count) => count + 1);
+   241→        break;
+   242→      }
+   243→      case 'reading': {
+   244→        const payload = event.payload as { text?: string } | undefined;
+   245→        setReadingText(String(payload?.text ?? ''));
+   246→        break;
+   247→      }
+   248→      case 'control': {
+   249→        const payload = event.payload as { action: string; value?: boolean | string } | undefined;
+   250→        if (payload?.action === 'hand') {
+   251→          setNotice(payload.value ? '✋ دانش‌آموز دستش را بالا برده است.' : 'دست پایین آمد.');
+   252→          setTimeout(() => setNotice(''), 4000);
+   253→        }
+   254→        if (payload?.action === 'reaction' && typeof payload.value === 'string') pushReaction(payload.value);
+   255→        if (payload?.action === 'bye') {
+   256→          setNotice('طرف مقابل کلاس را ترک کرد.');
+   257→          setTimeout(() => setNotice(''), 4000);
+   258→        }
+   259→        if (payload?.action === 'end') {
+   260→          setPhase('ended');
+   261→        }
+   262→        break;
+   263→      }
+   264→      case 'offer':
+   265→      case 'answer':
+   266→      case 'ice':
+   267→        void engineRef.current?.handleSignal(event.type, event.payload);
+   268→        break;
+   269→      case 'system': {
+   270→        const payload = event.payload as { action?: string } | undefined;
+   271→        if (payload?.action === 'join') {
+   272→          setPeerOnline(true);
+   273→          setChat((items) => [...items, { id: uid(), from: 0, role: 'system', text: 'طرف مقابل وارد کلاس شد.', at: event.at, mine: false }]);
+   274→          if (isTeacherSide) void engineRef.current?.initiate();
+   275→        }
+   276→        if (payload?.action === 'leave') {
+   277→          setPeerOnline(false);
+   278→          setChat((items) => [...items, { id: uid(), from: 0, role: 'system', text: 'طرف مقابل خارج شد.', at: event.at, mine: false }]);
+   279→        }
+   280→        break;
+   281→      }
+   282→    }
+   283→  }, [isTeacherSide, pushReaction]);
+   284→
+   285→  /* ---------------- classroom countdown ---------------- */
+   286→  useEffect(() => {
+   287→    if (!session?.scheduled_at) return;
+   288→    const endAt = new Date(session.scheduled_at).getTime() + (session.duration || 60) * 60_000;
+   289→    const tick = () => {
+   290→      const diff = endAt - Date.now();
+   291→      if (diff <= 0) { setCountdown('به پایان زمان جلسه رسیده است'); return; }
+   292→      const minutes = Math.floor(diff / 60_000);
+   293→      const seconds = Math.floor((diff % 60_000) / 1000);
+   294→      setCountdown(`${faDigits(minutes)}:${faDigits(String(seconds).padStart(2, '0'))} باقی‌مانده`);
+   295→    };
+   296→    tick();
+   297→    const timer = setInterval(tick, 1000);
+   298→    return () => clearInterval(timer);
+   299→  }, [session]);
+   300→
+   301→  /* ---------------- classroom countdown ---------------- */
+   302→  useEffect(() => {
+   303→    if (!session?.scheduled_at) return;
+   304→    const endAt = new Date(session.scheduled_at).getTime() + (session.duration || 60) * 60_000;
+   305→    const tick = () => {
+   306→      const diff = endAt - Date.now();
+   307→      if (diff <= 0) { setCountdown('به پایان زمان جلسه رسیده است'); return; }
+   308→      const minutes = Math.floor(diff / 60_000);
+   309→      const seconds = Math.floor((diff % 60_000) / 1000);
+   310→      setCountdown(`${faDigits(minutes)}:${faDigits(String(seconds).padStart(2, '0'))} باقی‌مانده`);
+   311→    };
+   312→    tick();
+   313→    const timer = setInterval(tick, 1000);
+   314→    return () => clearInterval(timer);
+   315→  }, [session]);
+   316→
+   317→  /* ---------------- responsive layout (موبایل) ---------------- */
+   318→  useEffect(() => {
+   319→    const query = window.matchMedia('(max-width: 860px)');
+   320→    const apply = () => setNarrow(query.matches);
+   321→    apply();
+   322→    query.addEventListener('change', apply);
+   323→    return () => query.removeEventListener('change', apply);
+   324→  }, []);
+   325→
+   326→  /* ---------------- chat auto-scroll ---------------- */
+   327→  useEffect(() => {
+   328→    const body = chatBodyRef.current;
+   329→    if (body) body.scrollTop = body.scrollHeight;
+   330→  }, [chat, sideTab]);
+   331→
+   332→  /* ---------------- in-call device switching (تنظیمات ویدیویی) ---------------- */
+   333→  const refreshLiveDevices = useCallback(async () => {
+   334→    try {
+   335→      const list = await navigator.mediaDevices.enumerateDevices();
+   336→      setLiveDevices(list.filter((device) => device.kind !== 'audiooutput'));
+   337→    } catch { /* non-fatal */ }
+   338→  }, []);
+   339→
+   340→  useEffect(() => {
+   341→    if (phase === 'live') void refreshLiveDevices();
+   342→  }, [phase, refreshLiveDevices]);
+   343→
+   344→  /** جایگزینی تراک ویدیو در ارسال‌کنندهٔ P2P بدون قطع جلسه. */
+   345→  const replaceVideoTrack = useCallback(async (videoTrack: MediaStreamTrack) => {
+   346→    const engine = engineRef.current;
+   347→    const stream = liveStreamRef.current;
+   348→    if (!engine || !stream) return;
+   349→    stream.getVideoTracks().forEach((track) => track.stop());
+   350→    stream.removeTrack(stream.getVideoTracks()[0]);
+   351→    stream.addTrack(videoTrack);
+   352→    await engine.setLocalMedia(stream);
+   353→    if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+   354→  }, []);
+   355→
+   356→  /** جایگزینی تراک میکروفون بدون قطع جلسه. */
+   357→  const replaceAudioTrack = useCallback(async (audioTrack: MediaStreamTrack) => {
+   358→    const engine = engineRef.current;
+   359→    const stream = liveStreamRef.current;
+   360→    if (!engine || !stream) return;
+   361→    stream.getAudioTracks().forEach((track) => track.stop());
+   362→    stream.removeTrack(stream.getAudioTracks()[0]);
+   363→    stream.addTrack(audioTrack);
+   364→    await engine.setLocalMedia(stream);
+   365→  }, []);
+   366→
+   367→  async function switchCameraDevice(deviceId: string) {
+   368→    if (settingsBusy) return;
+   369→    setSettingsBusy(true);
+   370→    try {
+   371→      const media = await navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: deviceId } } });
+   372→      const [track] = media.getVideoTracks();
+   373→      if (track) await replaceVideoTrack(track);
+   374→      else media.getTracks().forEach((item) => item.stop());
+   375→    } catch {
+   376→      setNotice('تغییر دوربین انجام نشد.');
+   377→      setTimeout(() => setNotice(''), 3000);
+   378→    } finally {
+   379→      setSettingsBusy(false);
+   380→      void refreshLiveDevices();
+   381→    }
+   382→  }
+   383→
+   384→  async function switchMicDevice(deviceId: string) {
+   385→    if (settingsBusy) return;
+   386→    setSettingsBusy(true);
+   387→    try {
+   388→      const media = await navigator.mediaDevices.getUserMedia({ audio: { deviceId: { exact: deviceId }, echoCancellation: true, noiseSuppression: true } });
+   389→      const [track] = media.getAudioTracks();
+   390→      if (track) await replaceAudioTrack(track);
+   391→      else media.getTracks().forEach((item) => item.stop());
+   392→    } catch {
+   393→      setNotice('تغییر میکروفون انجام نشد.');
+   394→      setTimeout(() => setNotice(''), 3000);
+   395→    } finally {
+   396→      setSettingsBusy(false);
+   397→      void refreshLiveDevices();
+   398→    }
+   399→  }
+   400→
+   401→  /** چرخش دوربین جلو/عقب — کلید اصلی موبایل. */
+   402→  async function flipCamera() {
+   403→    if (settingsBusy) return;
+   404→    const next = facing === 'user' ? 'environment' : 'user';
+   405→    setSettingsBusy(true);
+   406→    try {
+   407→      const media = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: next }, width: { ideal: 1280 } } });
+   408→      const [track] = media.getVideoTracks();
+   409→      if (track) {
+   410→        await replaceVideoTrack(track);
+   411→        setFacing(next);
+   412→      } else {
+   413→        media.getTracks().forEach((item) => item.stop());
+   414→      }
+   415→    } catch {
+   416→      setNotice('دوربین دیگری در دسترس نیست.');
+   417→      setTimeout(() => setNotice(''), 3000);
+   418→    } finally {
+   419→      setSettingsBusy(false);
+   420→    }
+   421→  }
+   422→
+   423→  /* ---------------- lifecycle ---------------- */
+   424→  useEffect(() => () => {
+   425→    clientRef.current?.close();
+   426→    engineRef.current?.close();
+   427→    screenRef.current?.getTracks().forEach((track) => track.stop());
+   428→    void audioCtxRef.current?.close();
+   429→  }, []);
+   430→
+   431→  const openSide = (tab: 'chat' | 'settings' | 'reading') => {
+   432→    setSideTab((current) => (current === tab ? 'none' : tab));
+   433→    if (tab === 'chat') setUnread(0);
+   434→  };
+   435→
+   436→  /* ---------------- actions ---------------- */
+   437→  async function joinClassroom(withMedia: boolean) {
+   438→    if (!session) return;
+   439→    stopPreview();
+   440→    void audioCtxRef.current?.close();
+   441→    audioCtxRef.current = null;
+   442→
+   443→    let stream: MediaStream | null = null;
+   444→    if (withMedia) {
+   445→      try {
+   446→        stream = await navigator.mediaDevices.getUserMedia({
+   447→          video: camId ? { deviceId: { exact: camId } } : true,
+   448→          audio: micId ? { deviceId: { exact: micId } } : true,
+   449→        });
+   450→      } catch {
+   451→        setMediaError('ورود با دوربین/میکروفون ناموفق بود؛ بدون رسانه وارد می‌شوید.');
+   452→      }
+   453→    }
+   454→    liveStreamRef.current = stream;
+   455→    setPhase('live');
+   456→
+   457→    const client = new LiveClient({
+   458→      sessionId: session.id,
+   459→      onEvent: handleEvent,
+   460→      onStatus: (value) => setStatus(value),
+   461→    });
+   462→    clientRef.current = client;
+   463→
+   464→    const engine = new LiveEngine({
+   465→      role,
+   466→      onRemoteStream: (remote) => {
+   467→        setRemoteActive(remote.getTracks().length > 0);
+   468→        if (remoteVideoRef.current) remoteVideoRef.current.srcObject = remote;
+   469→      },
+   470→      onState: (state) => setConnState(`${state.connection}/${state.ice}`),
+   471→      send: (type, payload) => client.send(type, payload),
+   472→    });
+   473→    engineRef.current = engine;
+   474→    engine.setCameraTrack(stream?.getVideoTracks()[0] ?? null);
+   475→    await engine.ensureConnection();
+   476→    if (stream) await engine.setLocalMedia(stream);
+   477→    if (localVideoRef.current && stream) localVideoRef.current.srcObject = stream;
+   478→    if (engine.isInitiator && peerOnline) void engine.initiate();
+   479→
+   480→    await client.connect();
+   481→  }
+   482→
+   483→  function sendChat() {
+   484→    const text = chatDraft.trim();
+   485→    if (!text || !clientRef.current) return;
+   486→    setChat((items) => [...items, { id: uid(), from: myIdRef.current, role, text, at: Date.now(), mine: true }]);
+   487→    clientRef.current.send('chat', { text: text.slice(0, 1000) });
+   488→    setChatDraft('');
+   489→  }
+   490→
+   491→  function sendReading(text: string) {
+   492→    setReadingText(text);
+   493→    clientRef.current?.send('reading', { text: text.slice(0, 4000) });
+   494→  }
+   495→
+   496→  function sendReaction(emoji: string) {
+   497→    pushReaction(emoji);
+   498→    clientRef.current?.send('control', { action: 'reaction', value: emoji });
+   499→  }
+   500→
+   501→  function toggleHand() {
+   502→    const next = !handRaised;
+   503→    setHandRaised(next);
+   504→    clientRef.current?.send('control', { action: 'hand', value: next });
+   505→  }
+   506→
+   507→  async function toggleShare() {
+   508→    const engine = engineRef.current;
+   509→    if (!engine) return;
+   510→    if (sharing) {
+   511→      screenRef.current?.getTracks().forEach((track) => track.stop());
+   512→      screenRef.current = null;
+   513→      await engine.stopScreenShare();
+   514→      if (localVideoRef.current && liveStreamRef.current) localVideoRef.current.srcObject = liveStreamRef.current;
+   515→      setSharing(false);
+   516→      return;
+   517→    }
+   518→    try {
+   519→      const screen = await engine.startScreenShare();
+   520→      screenRef.current = screen;
+   521→      if (localVideoRef.current) localVideoRef.current.srcObject = screen;
+   522→      setSharing(true);
+   523→      screen.getVideoTracks()[0]?.addEventListener('ended', () => {
+   524→        setSharing(false);
+   525→        if (localVideoRef.current && liveStreamRef.current) localVideoRef.current.srcObject = liveStreamRef.current;
+   526→      });
+   527→    } catch (cause) {
+   528→      setNotice(cause instanceof Error ? cause.message : 'اشتراک صفحه انجام نشد.');
+   529→      setTimeout(() => setNotice(''), 4000);
+   530→    }
+   531→  }
+   532→
+   533→  async function leaveClassroom(complete = false) {
+   534→    const token = getToken();
+   535→    clientRef.current?.send('control', { action: complete ? 'end' : 'bye' });
+   536→    clientRef.current?.close();
+   537→    engineRef.current?.close();
+   538→    screenRef.current?.getTracks().forEach((track) => track.stop());
+   539→    if (complete && token && session && isTeacherSide) {
+   540→      try { await api.teacherCompleteSession(token, session.id); } catch { /* complete may be time-gated */ }
+   541→    }
+   542→    setPhase('ended');
+   543→    router.push(isTeacherSide ? '/panel/teacher/sessions' : '/panel/user/sessions');
+   544→  }
+   545→
+   546→  /* ---------------- render ---------------- */
+   547→  if (!ready) {
+   548→    return <main style={{ padding: 32, color: 'var(--ink-3)' }}>در حال آماده‌سازی کلاس…</main>;
+   549→  }
+   550→  if (loadError) {
+   551→    return (
+   552→      <main style={{ padding: 32 }}>
+   553→        <div style={{ padding: 22, borderRadius: 16, background: 'var(--clay-bg)', color: 'var(--rose)', fontWeight: 700 }}>{loadError}</div>
+   554→        <button type="button" onClick={() => router.back()} style={{ marginTop: 16, border: 0, borderRadius: 12, padding: '10px 18px', background: 'var(--olive-600)', color: '#fff', cursor: 'pointer' }}>بازگشت</button>
+   555→      </main>
+   556→    );
+   557→  }
+   558→  if (!session) return null;
+   559→
+   560→  const statusLabel = status === 'live' ? 'اتصال زنده (وب‌سوکت)' : status === 'polling' ? 'اتصال پایدار (کانال پشتیبان)' : status === 'connecting' ? 'در حال اتصال…' : status === 'error' ? 'خطای دسترسی' : 'پایان';
+   561→
+   562→  if (phase === 'preflight') {
+   563→    return (
+   564→      <main style={{ padding: '28px 20px', maxWidth: 760, margin: '0 auto' }}>
+   565→        <h1 style={{ fontSize: 21, fontWeight: 800, marginBottom: 4 }}>ورود به کلاس زنده</h1>
+   566→        <p style={{ fontSize: 13, color: 'var(--ink-3)', marginBottom: 18 }}>{session.service} · {session.local_date} {session.local_start && <>· {faDigits(session.local_start)}</>}</p>
+   567→        <div style={{ background: '#fff', borderRadius: 18, padding: 18, boxShadow: 'var(--sh-sm)', border: '1px solid var(--sand-150)' }}>
+   568→          <div style={{ position: 'relative', borderRadius: 14, overflow: 'hidden', background: '#101510', aspectRatio: '16 / 9' }}>
+   569→            <video ref={localVideoRef} autoPlay muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }} />
+   570→            {(!previewStream || !camOn) && (
+   571→              <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', color: '#cbd5c8', fontSize: 13 }}>
+   572→                {camOn ? 'در حال دسترسی به دوربین…' : 'دوربین خاموش است'}
+   573→              </div>
+   574→            )}
+   575→          </div>
+   576→          <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 10, fontSize: 12.5, color: 'var(--ink-3)' }}>
+   577→            <span>سطح صدای میکروفون:</span>
+   578→            <div style={{ flex: 1, height: 8, borderRadius: 999, background: 'var(--sand-100)', overflow: 'hidden' }}>
+   579→              <div style={{ width: `${micLevel}%`, height: '100%', background: 'var(--olive-600)', transition: 'width .1s' }} />
+   580→            </div>
+   581→          </div>
+   582→          <div style={{ display: 'flex', gap: 10, marginTop: 14, flexWrap: 'wrap' }}>
+   583→            <select value={camId} onChange={(event) => setCamId(event.target.value)} aria-label="دوربین" style={{ flex: 1, minWidth: 200, padding: '10px 12px', borderRadius: 12, border: '1px solid var(--sand-150)', background: 'var(--surface)', fontSize: 13 }}>
+   584→              {devices.filter((device) => device.kind === 'videoinput').map((device) => <option key={device.deviceId} value={device.deviceId}>{device.label || 'دوربین'}</option>)}
+   585→            </select>
+   586→            <select value={micId} onChange={(event) => setMicId(event.target.value)} aria-label="میکروفون" style={{ flex: 1, minWidth: 200, padding: '10px 12px', borderRadius: 12, border: '1px solid var(--sand-150)', background: 'var(--surface)', fontSize: 13 }}>
+   587→              {devices.filter((device) => device.kind === 'audioinput').map((device) => <option key={device.deviceId} value={device.deviceId}>{device.label || 'میکروفون'}</option>)}
+   588→            </select>
+   589→          </div>
+   590→          {mediaError && <div style={{ marginTop: 12, padding: 12, borderRadius: 12, background: 'var(--gold-bg)', color: 'var(--gold)', fontSize: 12.5 }}>{mediaError}</div>}
+   591→          <div style={{ display: 'flex', gap: 10, marginTop: 18, flexWrap: 'wrap' }}>
+   592→            <button type="button" onClick={() => void joinClassroom(true)} style={{ flex: 1, minWidth: 180, padding: '13px 0', borderRadius: 14, border: 0, background: 'var(--olive-600)', color: '#fff', fontWeight: 800, fontSize: 14.5, cursor: 'pointer', boxShadow: 'var(--sh-olive)' }}>ورود به کلاس با دوربین و میکروفون</button>
+   593→            <button type="button" onClick={() => void joinClassroom(false)} style={{ flex: 1, minWidth: 160, padding: '13px 0', borderRadius: 14, border: '1px solid var(--sand-150)', background: 'var(--surface)', color: 'var(--ink-2)', fontWeight: 700, fontSize: 13.5, cursor: 'pointer' }}>ورود بدون رسانه (فروشوینده)</button>
+   594→          </div>
+   595→        </div>
+   596→      </main>
+   597→    );
+   598→  }
+   599→
+   600→  if (phase === 'ended') {
+   601→    return (
+   602→      <main style={{ padding: 40, textAlign: 'center' }}>
+   603→        <div style={{ fontSize: 42 }}>🎓</div>
+   604→        <h1 style={{ fontSize: 19, fontWeight: 800, marginTop: 10 }}>کلاس پایان یافت</h1>
+   605→        <p style={{ fontSize: 13, color: 'var(--ink-3)', marginTop: 8 }}>امیدواریم جلسهٔ مفیدی داشته باشید. برای ثبت نظر به صفحهٔ جلسات بروید.</p>
+   606→        <button type="button" onClick={() => router.push(isTeacherSide ? '/panel/teacher/sessions' : '/panel/user/sessions')} style={{ marginTop: 18, border: 0, borderRadius: 12, padding: '11px 22px', background: 'var(--olive-600)', color: '#fff', fontWeight: 800, cursor: 'pointer' }}>بازگشت به جلسات</button>
+   607→      </main>
+   608→    );
+   609→  }
+   610→
+   611→  return (
+   612→    <main style={{ padding: '18px 14px', maxWidth: 1200, margin: '0 auto', minHeight: '70vh' }}>
+   613→      <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', marginBottom: 12 }}>
+   614→        <div>
+   615→          <h1 style={{ fontSize: 17.5, fontWeight: 800 }}>کلاس زنده · {session.service}</h1>
+   616→          <p style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 3 }}>{session.local_date} {session.local_start && <>· {faDigits(session.local_start)} تا {faDigits(session.local_end)}</>} · {countdown}</p>
+   617→        </div>
+   618→        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+   619→          <span style={{ fontSize: 11.5, fontWeight: 700, padding: '5px 12px', borderRadius: 999, background: status === 'live' ? 'var(--olive-100)' : 'var(--gold-bg)', color: status === 'live' ? 'var(--olive-700)' : 'var(--gold)' }}>
+   620→            ● {statusLabel}
+   621→          </span>
+   622→          <span style={{ fontSize: 11.5, fontWeight: 700, padding: '5px 12px', borderRadius: 999, background: peerOnline ? 'var(--olive-100)' : 'var(--sand-100)', color: peerOnline ? 'var(--olive-700)' : 'var(--ink-3)' }}>
+   623→            {peerOnline ? 'طرف مقابل آنلاین' : 'در انتظار طرف مقابل'}
+   624→          </span>
+   625→        </div>
+   626→      </header>
+   627→
+   628→      {notice && <div role="status" style={{ marginBottom: 10, padding: '10px 14px', borderRadius: 12, background: 'var(--gold-bg)', color: 'var(--gold)', fontSize: 12.5, fontWeight: 700 }}>{notice}</div>}
+   629→
+   630→      <div style={{ display: 'grid', gridTemplateColumns: sideTab === 'none' || narrow ? '1fr' : 'minmax(0, 1.6fr) minmax(280px, 1fr)', gap: 12, alignItems: 'start' }}>
+   631→        {/* stage */}
+   632→        <section style={{ background: '#0e130e', borderRadius: 18, overflow: 'hidden', position: 'relative', aspectRatio: '16 / 10' }}>
+   633→          <video ref={remoteVideoRef} autoPlay playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+   634→          {!remoteActive && (
+   635→            <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', color: '#a7b3a5', textAlign: 'center', padding: 20 }}>
+   636→              <div>
+   637→                <div style={{ fontSize: 40, marginBottom: 8 }}>📵</div>
+   638→                <div style={{ fontSize: 13.5 }}>پس از ورود طرف مقابل، تصویر او اینجا نمایش داده می‌شود.</div>
+   639→                <div style={{ fontSize: 11.5, marginTop: 6, opacity: .75 }}>{connState ? `وضعیت شبکه: ${connState}` : 'صدا و تصویر به‌صورت مستقیم (P2P) منتقل می‌شود.'}</div>
+   640→              </div>
+   641→            </div>
+   642→          )}
+   643→          <div style={{ position: 'absolute', bottom: 12, left: 12, width: narrow ? 128 : 168, aspectRatio: '16 / 10', borderRadius: 12, overflow: 'hidden', background: '#1a211a', border: '1px solid rgba(255,255,255,.14)' }}>
+   644→            <video ref={localVideoRef} autoPlay muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', transform: sharing ? 'none' : facing === 'environment' ? 'none' : 'scaleX(-1)' }} />
+   645→          </div>
+   646→          {reactions.map((reaction) => (
+   647→            <span key={reaction.id} style={{ position: 'absolute', left: `${20 + (parseInt(reaction.id.slice(-2), 16) % 60)}%`, bottom: 90, fontSize: 34, animation: 'floatUp 2.6s ease-out forwards' }}>{reaction.emoji}</span>
+   648→          ))}
+   649→        </section>
+   650→
+   651→        {/* side panel */}
+   652→        {sideTab !== 'none' && (
+   653→          <section style={{ background: '#fff', borderRadius: 18, border: '1px solid var(--sand-150)', boxShadow: 'var(--sh-sm)', display: 'flex', flexDirection: 'column', height: narrow ? 430 : 520, overflow: 'hidden' }}>
+   654→            <div style={{ display: 'flex', borderBottom: '1px solid var(--sand-150)' }}>
+   655→              {([['chat', 'گفت‌وگو'], ['settings', 'تنظیمات'], ['reading', 'متن قرآنی']] as const).map(([key, label]) => (
+   656→                <button key={key} type="button" onClick={() => setSideTab(key)} style={{ flex: 1, padding: '11px 0', border: 0, cursor: 'pointer', fontSize: 13, fontWeight: 700, background: sideTab === key ? 'var(--olive-100)' : 'transparent', color: sideTab === key ? 'var(--olive-700)' : 'var(--ink-3)' }}>{label}</button>
+   657→              ))}
+   658→            </div>
+   659→
+   660→            {sideTab === 'chat' && (
+   661→              <>
+   662→                <div ref={chatBodyRef} style={{ flex: 1, overflowY: 'auto', padding: 14, display: 'flex', flexDirection: 'column', gap: 10, minHeight: 0 }}>
+   663→                  {chat.map((message) => message.role === 'system' ? (
+   664→                    <div key={message.id} style={{ alignSelf: 'center', maxWidth: '90%', padding: '5px 14px', borderRadius: 999, background: 'var(--sand-100)', color: 'var(--ink-3)', fontSize: 11.5, fontWeight: 600 }}>
+   665→                      {message.text}
+   666→                    </div>
+   667→                  ) : (
+   668→                    <div key={message.id} style={{ alignSelf: message.mine ? 'flex-start' : 'flex-end', maxWidth: '82%', display: 'grid', gap: 3 }}>
+   669→                      <span style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--ink-3)', padding: '0 6px' }}>{message.mine ? 'شما' : isTeacherSide ? 'قرآن‌آموز' : 'استاد'}</span>
+   670→                      <div style={{ padding: '9px 13px', borderRadius: message.mine ? '16px 16px 16px 4px' : '16px 16px 4px 16px', background: message.mine ? 'var(--olive-600)' : 'var(--olive-100)', color: message.mine ? '#fff' : 'var(--ink-2)', fontSize: 13.5, lineHeight: 1.8, whiteSpace: 'pre-wrap', boxShadow: 'var(--sh-sm)' }}>
+   671→                        {message.text}
+   672→                      </div>
+   673→                      <span style={{ fontSize: 10, color: 'var(--ink-3)', padding: '0 6px', textAlign: message.mine ? 'right' : 'left' }}>{chatTime(message.at)}</span>
+   674→                    </div>
+   675→                  ))}
+   676→                  {chat.length === 0 && (
+   677→                    <div style={{ margin: 'auto', textAlign: 'center', color: 'var(--ink-3)', fontSize: 12.5, display: 'grid', gap: 6, justifyItems: 'center' }}>
+   678→                      <span style={{ fontSize: 30 }}>💬</span>
+   679→                      <span>پیامی نیست؛ سلام کنید و گفت‌وگو را شروع کنید.</span>
+   680→                    </div>
+   681→                  )}
+   682→                </div>
+   683→                <div style={{ display: 'flex', gap: 8, padding: 12, borderTop: '1px solid var(--sand-150)' }}>
+   684→                  <input value={chatDraft} onChange={(event) => setChatDraft(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') sendChat(); }} placeholder="پیام خود را بنویسید…" maxLength={1000} style={{ flex: 1, padding: '11px 14px', borderRadius: 14, border: '1px solid var(--sand-150)', fontSize: 13.5, background: 'var(--surface)' }} />
+   685→                  <button type="button" onClick={sendChat} disabled={!chatDraft.trim()} style={{ border: 0, borderRadius: 14, padding: '0 20px', background: chatDraft.trim() ? 'var(--olive-600)' : 'var(--sand-100)', color: chatDraft.trim() ? '#fff' : 'var(--ink-3)', fontWeight: 800, cursor: chatDraft.trim() ? 'pointer' : 'default' }}>ارسال</button>
+   686→                </div>
+   687→              </>
+   688→            )}
+   689→
+   690→            {sideTab === 'settings' && (
+   691→              <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'grid', gap: 14, alignContent: 'start' }}>
+   692→                <div style={{ display: 'grid', gap: 8 }}>
+   693→                  <strong style={{ fontSize: 13.5, color: 'var(--ink-2)' }}>تنظیمات دوربین و میکروفون</strong>
+   694→                  <span style={{ fontSize: 12, color: 'var(--ink-3)', lineHeight: 1.9 }}>
+   695→                    دوربین و میکروفون را بدون خروج از کلاس عوض کنید؛ روی موبایل می‌توانید بین دوربین جلو و عقب جابه‌جا شوید.
+   696→                  </span>
+   697→                </div>
+   698→                <button type="button" onClick={() => void flipCamera()} disabled={settingsBusy} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '13px 15px', borderRadius: 14, border: '1px solid var(--sand-150)', background: 'var(--surface)', cursor: settingsBusy ? 'wait' : 'pointer' }}>
+   699→                  <span style={{ display: 'grid', justifyItems: 'start', gap: 2 }}>
+   700→                    <span style={{ fontSize: 13.5, fontWeight: 800, color: 'var(--ink-2)' }}>چرخش دوربین (جلو / عقب)</span>
+   701→                    <span style={{ fontSize: 11.5, color: 'var(--ink-3)' }}>مناسب موبایل — تصویر بلافاصله برای طرف مقابل عوض می‌شود.</span>
+   702→                  </span>
+   703→                  <span style={{ fontSize: 20 }}>🔄</span>
+   704→                </button>
+   705→                <label style={{ display: 'grid', gap: 6 }}>
+   706→                  <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--ink-3)' }}>دوربین</span>
+   707→                  <select
+   708→                    value={(liveDevices.find((device) => device.kind === 'videoinput' && device.deviceId === liveStreamRef.current?.getVideoTracks()[0]?.getSettings().deviceId)?.deviceId) ?? ''}
+   709→                    onChange={(event) => void switchCameraDevice(event.target.value)}
+   710→                    disabled={settingsBusy}
+   711→                    style={{ padding: '11px 12px', borderRadius: 12, border: '1px solid var(--sand-150)', background: 'var(--surface)', fontSize: 13 }}
+   712→                  >
+   713→                    {liveDevices.filter((device) => device.kind === 'videoinput').map((device) => (
+   714→                      <option key={device.deviceId} value={device.deviceId}>{device.label || 'دوربین'}</option>
+   715→                    ))}
+   716→                  </select>
+   717→                </label>
+   718→                <label style={{ display: 'grid', gap: 6 }}>
+   719→                  <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--ink-3)' }}>میکروفون</span>
+   720→                  <select
+   721→                    value={(liveDevices.find((device) => device.kind === 'audioinput' && device.deviceId === liveStreamRef.current?.getAudioTracks()[0]?.getSettings().deviceId)?.deviceId) ?? ''}
+   722→                    onChange={(event) => void switchMicDevice(event.target.value)}
+   723→                    disabled={settingsBusy}
+   724→                    style={{ padding: '11px 12px', borderRadius: 12, border: '1px solid var(--sand-150)', background: 'var(--surface)', fontSize: 13 }}
+   725→                  >
+   726→                    {liveDevices.filter((device) => device.kind === 'audioinput').map((device) => (
+   727→                      <option key={device.deviceId} value={device.deviceId}>{device.label || 'میکروفون'}</option>
+   728→                    ))}
+   729→                  </select>
+   730→                </label>
+   731→                {settingsBusy && <div style={{ padding: '9px 13px', borderRadius: 12, background: 'var(--gold-bg)', color: 'var(--gold)', fontSize: 12, fontWeight: 700 }}>در حال اعمال تغییرات…</div>}
+   732→              </div>
+   733→            )}
+   734→
+   735→            {sideTab === 'reading' && (
+   736→              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, padding: 12, gap: 10 }}>
+   737→                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+   738→                  {QURAN_SNIPPETS.map((snippet) => (
+   739→                    <button key={snippet.label} type="button" onClick={() => isTeacherSide && sendReading(snippet.text)} disabled={!isTeacherSide} style={{ border: '1px solid var(--sand-150)', background: 'var(--surface)', borderRadius: 999, padding: '6px 13px', fontSize: 12, cursor: isTeacherSide ? 'pointer' : 'default', opacity: isTeacherSide ? 1 : .6 }}>{snippet.label}</button>
+   740→                  ))}
+   741→                </div>
+   742→                {isTeacherSide ? (
+   743→                  <textarea value={readingText} onChange={(event) => setReadingText(event.target.value)} onBlur={(event) => sendReading(event.target.value)} placeholder={isTeacherSide ? 'متن تمرین تلاوت را بنویسید؛ با خروج از کادر برای دانش‌آموز ارسال می‌شود.' : ''} style={{ flex: 1, resize: 'none', padding: 14, borderRadius: 12, border: '1px solid var(--sand-150)', fontSize: 15.5, lineHeight: 2.2, background: 'var(--surface)', fontFamily: 'inherit' }} />
+   744→                ) : (
+   745→                  <div style={{ flex: 1, overflowY: 'auto', padding: 14, borderRadius: 12, border: '1px solid var(--sand-150)', background: 'var(--surface)', fontSize: 16.5, lineHeight: 2.3, whiteSpace: 'pre-wrap' }}>{readingText || 'مترببی هنوز متنی ارسال نکرده است.'}</div>
+   746→                )}
+   747→              </div>
+   748→            )}
+   749→          </section>
+   750→        )}
+   751→      </div>
+   752→
+   753→      {/* control bar */}
+   754→      <div style={{ marginTop: 12, display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+   755→        <ControlButton active={micOn} label={micOn ? 'میکروفون روشن' : 'میکروفون خاموش'} emoji={micOn ? '🎙️' : '🔇'} onClick={() => { setMicOn(!micOn); void engineRef.current?.toggleMic(!micOn); }} />
+   756→        <ControlButton active={camOn} label={camOn ? 'دوربین روشن' : 'دوربین خاموش'} emoji={camOn ? '📷' : '🚫'} onClick={() => { setCamOn(!camOn); void engineRef.current?.toggleCamera(!camOn); }} />
+   757→        <ControlButton active={sharing} label={sharing ? 'قطع اشتراک صفحه' : 'اشتراک صفحه'} emoji="🖥️" onClick={() => void toggleShare()} />
+   758→        <ControlButton active={handRaised} label={handRaised ? 'پایین آوردن دست' : 'اجازه صحبت'} emoji="✋" onClick={toggleHand} />
+   759→        {REACTIONS.map((emoji) => <ControlButton key={emoji} active={false} label={`واکنش ${emoji}`} emoji={emoji} onClick={() => sendReaction(emoji)} small />)}
+   760→        <ControlButton active={sideTab === 'chat'} label="گفت‌وگو" emoji="💬" onClick={() => openSide('chat')} badge={unread > 0 && sideTab !== 'chat' ? unread : 0} />
+   761→        <ControlButton active={sideTab === 'settings'} label="تنظیمات دوربین و صدا" emoji="⚙️" onClick={() => openSide('settings')} />
+   762→        <ControlButton active={sideTab === 'reading'} label="متن قرآنی" emoji="📖" onClick={() => openSide('reading')} />
+   763→        <ControlButton active={false} label={isTeacherSide ? 'پایان کلاس و تسویه' : 'خروج از کلاس'} emoji="🔚" danger onClick={() => { void confirmDialog(isTeacherSide ? 'کلاس پایان یابد و تسویهٔ جلسه انجام شود؟' : 'از کلاس خارج می‌شوید؟').then((confirmed) => { if (confirmed) void leaveClassroom(isTeacherSide); }); }} />
+   764→      </div>
+   765→
+   766→      <style jsx global>{`
+   767→        @keyframes floatUp {
+   768→          0% { transform: translateY(0) scale(1); opacity: 1; }
+   769→          100% { transform: translateY(-140px) scale(1.5); opacity: 0; }
+   770→        }
+   771→      `}</style>
+   772→    </main>
+   773→  );
+   774→}
+   775→
+   776→function ControlButton({ active, label, emoji, onClick, danger = false, small = false, badge = 0 }: {
+   777→  active: boolean;
+   778→  label: string;
+   779→  emoji: string;
+   780→  onClick: () => void;
+   781→  danger?: boolean;
+   782→  small?: boolean;
+   783→  badge?: number;
+   784→}) {
+   785→  return (
+   786→    <button
+   787→      type="button"
+   788→      onClick={onClick}
+   789→      title={label}
+   790→      aria-label={label}
+   791→      style={{
+   792→        position: 'relative',
+   793→        display: 'inline-flex',
+   794→        alignItems: 'center',
+   795→        gap: 7,
+   796→        padding: small ? '9px 12px' : '11px 16px',
+   797→        borderRadius: 13,
+   798→        border: '1px solid ' + (danger ? 'var(--clay)' : 'var(--sand-150)'),
+   799→        background: danger ? 'var(--rose)' : active ? 'var(--olive-600)' : '#fff',
+   800→        color: danger ? '#fff' : active ? '#fff' : 'var(--ink-2)',
+   801→        fontSize: small ? 15 : 13,
+   802→        fontWeight: 700,
+   803→        cursor: 'pointer',
+   804→        boxShadow: active && !danger ? 'var(--sh-olive)' : 'var(--sh-sm)',
+   805→      }}
+   806→    >
+   807→      <span>{emoji}</span>
+   808→      {!small && <span>{label}</span>}
+   809→      {badge > 0 && <span style={{ position: 'absolute', top: -6, left: -6, minWidth: 19, height: 19, borderRadius: 999, background: 'var(--rose)', color: '#fff', fontSize: 10.5, display: 'grid', placeItems: 'center', padding: '0 5px' }}>{faDigits(badge)}</span>}
+   810→    </button>
+   811→  );
+   812→}
+   813→

@@ -1,0 +1,1325 @@
+     1→"use client";
+     2→
+     3→import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
+     4→import { Icon } from "../../ui/Icon";
+     5→import { colors, gradients, radii, shadows, typography } from "../../ui/theme";
+     6→import { useAppearance } from "../../ui/appearance";
+     7→import { localizedDigits } from "../../ui/persian";
+     8→import { usePlatform } from "../../platform/context";
+     9→import {
+    10→  closeTicket,
+    11→  createTicket,
+    12→  fetchThread,
+    13→  fetchUnreadTotal,
+    14→  listMyTickets,
+    15→  sendChatMessage,
+    16→  uploadChatAttachment,
+    17→  type SupportChatMessage,
+    18→  type SupportTicketSummary,
+    19→} from "./api";
+    20→
+    21→/**
+    22→ * گفتگوی زندهٔ پشتیبانی وُدّا — جانشین «دستیار هوشمند».
+    23→ * کاربران و اساتید تیکت باز می‌کنند و با کارشناس پشتیبانی (پنل مدیریت)
+    24→ * گفتگوی لحظه‌ای دارند؛ متن، پیام صوتی و تصویر پشتیبانی می‌شود.
+    25→ * دستیار هوشمند فعلاً از رابط کاربری حذف شده تا بعداً توسعه داده شود.
+    26→ */
+    27→
+    28→type View = "list" | "new" | "thread";
+    29→
+    30→const HIDDEN_ROUTES = new Set<string>(["book"]);
+    31→const POLL_THREAD_MS = 3500;
+    32→const POLL_BADGE_MS = 18_000;
+    33→const MAX_RECORD_SECONDS = 300;
+    34→
+    35→function statusMeta(status: SupportTicketSummary["status"]): { label: string; ink: string; bg: string } {
+    36→  switch (status) {
+    37→    case "open":
+    38→      return { label: "در انتظار بررسی", ink: "var(--v-goldInk, #7a5e1e)", bg: "var(--v-goldBackground, #f7efd9)" };
+    39→    case "pending":
+    40→      return { label: "در انتظار پاسخ", ink: "var(--v-clay, #b0745a)", bg: "var(--v-clayBackground, #f6e7df)" };
+    41→    case "answered":
+    42→      return { label: "پاسخ داده شد", ink: "var(--v-success, #5e6e43)", bg: "var(--v-successBackground, #edf2e5)" };
+    43→    default:
+    44→      return { label: "بسته‌شده", ink: "var(--v-inkMuted, #6f6a5b)", bg: "var(--v-sand100, #f4f0e7)" };
+    45→  }
+    46→}
+    47→
+    48→function shortTime(value: string): string {
+    49→  const date = new Date(value);
+    50→  if (Number.isNaN(date.getTime())) return "";
+    51→  return new Intl.DateTimeFormat("fa-IR", { hour: "2-digit", minute: "2-digit" }).format(date);
+    52→}
+    53→
+    54→function shortDate(value: string): string {
+    55→  const date = new Date(value);
+    56→  if (Number.isNaN(date.getTime())) return "";
+    57→  return new Intl.DateTimeFormat("fa-IR", { day: "numeric", month: "short" }).format(date);
+    58→}
+    59→
+    60→function formatDuration(ms: number, lang: "fa" | "en"): string {
+    61→  const total = Math.max(0, Math.round(ms / 1000));
+    62→  const minutes = Math.floor(total / 60);
+    63→  const seconds = total % 60;
+    64→  return `${localizedDigits(minutes, lang)}:${localizedDigits(String(seconds).padStart(2, "0"), lang)}`;
+    65→}
+    66→
+    67→function pickRecorderMime(): string {
+    68→  if (typeof MediaRecorder === "undefined" || !MediaRecorder.isTypeSupported) return "";
+    69→  const candidates = ["audio/webm;codecs=opus", "audio/webm", "audio/ogg;codecs=opus", "audio/mp4"];
+    70→  return candidates.find((mime) => MediaRecorder.isTypeSupported(mime)) ?? "";
+    71→}
+    72→
+    73→function mimeToExtension(mime: string): string {
+    74→  if (mime.includes("webm")) return ".webm";
+    75→  if (mime.includes("ogg")) return ".ogg";
+    76→  if (mime.includes("mp4")) return ".m4a";
+    77→  return ".bin";
+    78→}
+    79→
+    80→/** downscales a picked image so uploads stay small and fast. */
+    81→async function compressImageFile(file: File): Promise<File> {
+    82→  if (!file.type.startsWith("image/") || file.size < 900_000) return file;
+    83→  try {
+    84→    const bitmap = await createImageBitmap(file);
+    85→    const maxSide = 1600;
+    86→    const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+    87→    const canvas = document.createElement("canvas");
+    88→    canvas.width = Math.round(bitmap.width * scale);
+    89→    canvas.height = Math.round(bitmap.height * scale);
+    90→    const ctx = canvas.getContext("2d");
+    91→    if (!ctx) return file;
+    92→    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    93→    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.85));
+    94→    if (!blob) return file;
+    95→    return new File([blob], `photo_${Date.now()}.jpg`, { type: "image/jpeg" });
+    96→  } catch {
+    97→    return file;
+    98→  }
+    99→}
+   100→
+   101→/** compact voice-note player used inside chat bubbles. */
+   102→function AudioBubble({
+   103→  url,
+   104→  durationMs,
+   105→  mine,
+   106→}: {
+   107→  url: string;
+   108→  durationMs: number;
+   109→  mine: boolean;
+   110→}) {
+   111→  const audioRef = useRef<HTMLAudioElement | null>(null);
+   112→  const [playing, setPlaying] = useState(false);
+   113→  const [progress, setProgress] = useState(0);
+   114→  const { L } = useAppearance();
+   115→
+   116→  useEffect(() => () => audioRef.current?.pause(), []);
+   117→
+   118→  function toggle() {
+   119→    const audio = audioRef.current;
+   120→    if (!audio) return;
+   121→    if (playing) {
+   122→      audio.pause();
+   123→    } else {
+   124→      void audio.play().catch(() => setPlaying(false));
+   125→    }
+   126→  }
+   127→
+   128→  return (
+   129→    <div
+   130→      style={{
+   131→        display: "flex",
+   132→        alignItems: "center",
+   133→        gap: 9,
+   134→        minWidth: 168,
+   135→        padding: "7px 10px",
+   136→        borderRadius: 999,
+   137→        border: `1px solid ${mine ? "rgba(255,250,240,.35)" : colors.olive200}`,
+   138→        background: mine ? colors.olive600 : colors.surface,
+   139→        color: mine ? colors.onOlive : colors.ink,
+   140→      }}
+   141→    >
+   142→      <button
+   143→        type="button"
+   144→        onClick={toggle}
+   145→        aria-label={playing ? L("توقف پخش پیام صوتی") : L("پخش پیام صوتی")}
+   146→        style={{
+   147→          width: 34,
+   148→          height: 34,
+   149→          flex: "0 0 auto",
+   150→          display: "grid",
+   151→          placeItems: "center",
+   152→          padding: 0,
+   153→          border: 0,
+   154→          borderRadius: "50%",
+   155→          cursor: "pointer",
+   156→          color: mine ? colors.onOlive : "#fffaf0",
+   157→          background: mine ? "rgba(255,255,255,.22)" : colors.olive600,
+   158→        }}
+   159→      >
+   160→        {playing ? (
+   161→          <span aria-hidden style={{ display: "inline-flex", gap: 2.5 }}>
+   162→            <span style={{ width: 3.5, height: 12, background: "currentColor", borderRadius: 2 }} />
+   163→            <span style={{ width: 3.5, height: 12, background: "currentColor", borderRadius: 2 }} />
+   164→          </span>
+   165→        ) : (
+   166→          <Icon name="play" size={15} stroke={2.2} />
+   167→        )}
+   168→      </button>
+   169→      <div style={{ flex: 1, minWidth: 0 }}>
+   170→        <div
+   171→          aria-hidden
+   172→          style={{
+   173→            height: 4,
+   174→            borderRadius: 999,
+   175→            overflow: "hidden",
+   176→            background: mine ? "rgba(255,255,255,.25)" : colors.olive100,
+   177→          }}
+   178→        >
+   179→          <div
+   180→            style={{
+   181→              width: `${Math.round(progress * 100)}%`,
+   182→              height: "100%",
+   183→              borderRadius: 999,
+   184→              background: mine ? "#fffaf0" : colors.olive600,
+   185→              transition: "width .2s linear",
+   186→            }}
+   187→          />
+   188→        </div>
+   189→        <span style={{ display: "block", marginTop: 3, fontSize: 10, fontWeight: 700, opacity: 0.9 }}>
+   190→          {formatDuration(durationMs || 0, "fa")}
+   191→        </span>
+   192→      </div>
+   193→      <audio
+   194→        ref={audioRef}
+   195→        src={url}
+   196→        preload="metadata"
+   197→        onPlay={() => setPlaying(true)}
+   198→        onPause={() => setPlaying(false)}
+   199→        onEnded={() => {
+   200→          setPlaying(false);
+   201→          setProgress(0);
+   202→        }}
+   203→        onTimeUpdate={(event) => {
+   204→          const audio = event.currentTarget;
+   205→          if (audio.duration > 0 && Number.isFinite(audio.duration)) {
+   206→            setProgress(audio.currentTime / audio.duration);
+   207→          }
+   208→        }}
+   209→      />
+   210→    </div>
+   211→  );
+   212→}
+   213→
+   214→export function SupportChat({ routeName }: { routeName: string }) {
+   215→  const runtime = usePlatform();
+   216→  const { L, lang } = useAppearance();
+   217→
+   218→  const [open, setOpen] = useState(false);
+   219→  const [authed, setAuthed] = useState(false);
+   220→  const [view, setView] = useState<View>("list");
+   221→  const [tickets, setTickets] = useState<SupportTicketSummary[]>([]);
+   222→  const [ticket, setTicket] = useState<SupportTicketSummary | null>(null);
+   223→  const [messages, setMessages] = useState<SupportChatMessage[]>([]);
+   224→  const [input, setInput] = useState("");
+   225→  const [subject, setSubject] = useState("");
+   226→  const [busy, setBusy] = useState(false);
+   227→  const [error, setError] = useState("");
+   228→  const [badge, setBadge] = useState(0);
+   229→  const [lightbox, setLightbox] = useState<string | null>(null);
+   230→
+   231→  const [recording, setRecording] = useState(false);
+   232→  const [recordSeconds, setRecordSeconds] = useState(0);
+   233→  const [voicePreview, setVoicePreview] = useState<{ blob: Blob; url: string; ms: number; mime: string } | null>(null);
+   234→  const [imagePreview, setImagePreview] = useState<{ file: File; url: string } | null>(null);
+   235→  const [sendingAttachment, setSendingAttachment] = useState(false);
+   236→
+   237→  const recorderRef = useRef<MediaRecorder | null>(null);
+   238→  const recordChunksRef = useRef<Blob[]>([]);
+   239→  const recordTimerRef = useRef<number | null>(null);
+   240→  const recordMimeRef = useRef<string>("");
+   241→  const recordSecondsRef = useRef<number>(0);
+   242→  const listRef = useRef<HTMLDivElement | null>(null);
+   243→  const lastMessageIdRef = useRef<number>(0);
+   244→  const fileInputRef = useRef<HTMLInputElement | null>(null);
+   245→
+   246→  // هویت کاربر؛ دکمهٔ شناور فقط برای کاربران وارد‌شده نمایش داده می‌شود.
+   247→  useEffect(() => {
+   248→    let active = true;
+   249→    runtime
+   250→      .restoreSession()
+   251→      .then((sessionUser) => {
+   252→        if (active) setAuthed(Boolean(sessionUser));
+   253→      })
+   254→      .catch(() => {
+   255→        if (active) setAuthed(false);
+   256→      });
+   257→    return () => {
+   258→      active = false;
+   259→    };
+   260→  }, [runtime]);
+   261→
+   262→  // نشان قرمز پیام‌های خوانده‌نشدهٔ پشتیبانی
+   263→  useEffect(() => {
+   264→    if (!authed) return;
+   265→    let active = true;
+   266→    const load = () => {
+   267→      fetchUnreadTotal(runtime)
+   268→        .then((value) => {
+   269→          if (active) setBadge(value);
+   270→        })
+   271→        .catch(() => {});
+   272→    };
+   273→    load();
+   274→    const timer = window.setInterval(load, POLL_BADGE_MS);
+   275→    return () => {
+   276→      active = false;
+   277→      window.clearInterval(timer);
+   278→    };
+   279→  }, [authed, runtime, open, messages.length]);
+   280→
+   281→  const refreshTickets = useCallback(() => {
+   282→    return listMyTickets(runtime)
+   283→      .then((rows) => {
+   284→        setTickets(rows);
+   285→        setError("");
+   286→      })
+   287→      .catch(() => {
+   288→        setTickets([]);
+   289→      });
+   290→  }, [runtime]);
+   291→
+   292→  // فهرست تیکت‌ها هنگام باز بودن پنل هر چند ثانیه تازه می‌شود.
+   293→  useEffect(() => {
+   294→    if (!open || view !== "list" || !authed) return;
+   295→    void refreshTickets();
+   296→    const timer = window.setInterval(() => void refreshTickets(), 10_000);
+   297→    return () => window.clearInterval(timer);
+   298→  }, [open, view, authed, refreshTickets]);
+   299→
+   300→  // گفتگوی باز: واکشی اولیه + نظرسنجی افزایندهٔ پیام‌های تازه.
+   301→  const threadTicketId = view === "thread" && ticket ? ticket.id : 0;
+   302→  useEffect(() => {
+   303→    if (!open || threadTicketId === 0 || !authed) return;
+   304→    let active = true;
+   305→    const ticketId = threadTicketId;
+   306→    lastMessageIdRef.current = 0;
+   307→    setMessages([]);
+   308→
+   309→    const pull = (reset: boolean) => {
+   310→      const afterId = reset ? 0 : lastMessageIdRef.current;
+   311→      fetchThread(runtime, ticketId, afterId)
+   312→        .then((payload) => {
+   313→          if (!active) return;
+   314→          setTicket(payload.ticket);
+   315→          if (reset) {
+   316→            setMessages(payload.messages);
+   317→          } else if (payload.messages.length > 0) {
+   318→            setMessages((current) => {
+   319→              const seen = new Set(current.map((item) => item.id));
+   320→              return [...current, ...payload.messages.filter((item) => !seen.has(item.id))];
+   321→            });
+   322→          }
+   323→          const all = payload.messages;
+   324→          if (all.length > 0) lastMessageIdRef.current = Math.max(lastMessageIdRef.current, all[all.length - 1].id);
+   325→        })
+   326→        .catch(() => {});
+   327→    };
+   328→
+   329→    pull(true);
+   330→    const timer = window.setInterval(() => pull(false), POLL_THREAD_MS);
+   331→    return () => {
+   332→      active = false;
+   333→      window.clearInterval(timer);
+   334→    };
+   335→  }, [open, threadTicketId, authed, runtime]);
+   336→
+   337→  // اسکرول خودکار به آخرین پیام
+   338→  useEffect(() => {
+   339→    const node = listRef.current;
+   340→    if (node) node.scrollTop = node.scrollHeight;
+   341→  }, [messages, view, open]);
+   342→
+   343→  function openThread(row: SupportTicketSummary) {
+   344→    setTicket(row);
+   345→    setMessages([]);
+   346→    setView("thread");
+   347→    setBadge((current) => Math.max(0, current - row.unreadUser));
+   348→  }
+   349→
+   350→  function backToList() {
+   351→    setView("list");
+   352→    setTicket(null);
+   353→    setMessages([]);
+   354→    void refreshTickets();
+   355→  }
+   356→
+   357→  async function handleCreateTicket() {
+   358→    const trimmedSubject = subject.trim();
+   359→    const trimmedBody = input.trim();
+   360→    if (!trimmedSubject || !trimmedBody || busy) return;
+   361→    setBusy(true);
+   362→    setError("");
+   363→    try {
+   364→      const created = await createTicket(runtime, trimmedSubject, trimmedBody);
+   365→      setSubject("");
+   366→      setInput("");
+   367→      setTicket(created);
+   368→      setMessages([]);
+   369→      setView("thread");
+   370→    } catch (cause) {
+   371→      setError(cause instanceof Error ? cause.message : L("ارسال انجام نشد؛ دوباره تلاش کنید."));
+   372→    } finally {
+   373→      setBusy(false);
+   374→    }
+   375→  }
+   376→
+   377→  async function handleSendText() {
+   378→    const trimmed = input.trim();
+   379→    if (!trimmed || busy || !ticket) return;
+   380→    setBusy(true);
+   381→    setError("");
+   382→    try {
+   383→      const message = await sendChatMessage(runtime, ticket.id, { kind: "text", body: trimmed });
+   384→      setInput("");
+   385→      lastMessageIdRef.current = Math.max(lastMessageIdRef.current, message.id);
+   386→      setMessages((current) => (current.some((item) => item.id === message.id) ? current : [...current, message]));
+   387→      setTicket((current) => (current ? { ...current, status: "pending" } : current));
+   388→    } catch (cause) {
+   389→      setError(cause instanceof Error ? cause.message : L("ارسال انجام نشد؛ دوباره تلاش کنید."));
+   390→    } finally {
+   391→      setBusy(false);
+   392→    }
+   393→  }
+   394→
+   395→  async function startRecording() {
+   396→    setError("");
+   397→    try {
+   398→      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+   399→      const mime = pickRecorderMime();
+   400→      recordMimeRef.current = mime;
+   401→      const recorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+   402→      recordChunksRef.current = [];
+   403→      recorder.ondataavailable = (event) => {
+   404→        if (event.data.size > 0) recordChunksRef.current.push(event.data);
+   405→      };
+   406→      recorder.onstop = () => {
+   407→        stream.getTracks().forEach((track) => track.stop());
+   408→        if (recordTimerRef.current !== null) {
+   409→          window.clearInterval(recordTimerRef.current);
+   410→          recordTimerRef.current = null;
+   411→        }
+   412→        const seconds = recordSecondsRef.current;
+   413→        setRecording(false);
+   414→        setRecordSeconds(0);
+   415→        if (recordChunksRef.current.length === 0) return;
+   416→        const blob = new Blob(recordChunksRef.current, { type: mime || "audio/webm" });
+   417→        setVoicePreview({
+   418→          blob,
+   419→          url: URL.createObjectURL(blob),
+   420→          ms: Math.max(600, seconds * 1000),
+   421→          mime: mime || "audio/webm",
+   422→        });
+   423→      };
+   424→      recorderRef.current = recorder;
+   425→      recordSecondsRef.current = 0;
+   426→      setRecordSeconds(0);
+   427→      setRecording(true);
+   428→      recorder.start(250);
+   429→      recordTimerRef.current = window.setInterval(() => {
+   430→        recordSecondsRef.current += 1;
+   431→        setRecordSeconds(recordSecondsRef.current);
+   432→        if (recordSecondsRef.current >= MAX_RECORD_SECONDS) {
+   433→          recorderRef.current?.stop();
+   434→        }
+   435→      }, 1000);
+   436→    } catch {
+   437→      setError(L("دسترسی به میکروفون ممکن نشد؛ اجازهٔ مرورگر را بررسی کنید."));
+   438→    }
+   439→  }
+   440→
+   441→  function stopRecording(send: boolean) {
+   442→    const recorder = recorderRef.current;
+   443→    if (!recorder) return;
+   444→    if (!send) {
+   445→      // لغو: جریان بسته و ذخیره‌ها دور ریخته می‌شوند.
+   446→      recorder.onstop = () => {
+   447→        recorder.stream.getTracks().forEach((track) => track.stop());
+   448→        if (recordTimerRef.current !== null) {
+   449→          window.clearInterval(recordTimerRef.current);
+   450→          recordTimerRef.current = null;
+   451→        }
+   452→        setRecording(false);
+   453→        setRecordSeconds(0);
+   454→      };
+   455→      recordChunksRef.current = [];
+   456→    }
+   457→    recorder.stop();
+   458→  }
+   459→
+   460→  async function handleSendVoice() {
+   461→    if (!ticket || !voicePreview || sendingAttachment) return;
+   462→    setSendingAttachment(true);
+   463→    setError("");
+   464→    try {
+   465→      const extension = mimeToExtension(voicePreview.mime);
+   466→      const file = new File([voicePreview.blob], `voice_${Date.now()}${extension}`, { type: voicePreview.mime });
+   467→      const uploaded = await uploadChatAttachment(runtime, file, "audio");
+   468→      const message = await sendChatMessage(runtime, ticket.id, {
+   469→        kind: "audio",
+   470→        attachmentUrl: uploaded.url,
+   471→        mime: uploaded.mime,
+   472→        durationMs: voicePreview.ms,
+   473→      });
+   474→      lastMessageIdRef.current = Math.max(lastMessageIdRef.current, message.id);
+   475→      setMessages((current) => (current.some((item) => item.id === message.id) ? current : [...current, message]));
+   476→      URL.revokeObjectURL(voicePreview.url);
+   477→      setVoicePreview(null);
+   478→    } catch (cause) {
+   479→      setError(cause instanceof Error ? cause.message : L("ارسال پیام صوتی انجام نشد."));
+   480→    } finally {
+   481→      setSendingAttachment(false);
+   482→    }
+   483→  }
+   484→
+   485→  async function pickImage() {
+   486→    setError("");
+   487→    fileInputRef.current?.click();
+   488→  }
+   489→
+   490→  async function handleImageChosen(event: ChangeEvent<HTMLInputElement>) {
+   491→    const file = event.target.files?.[0];
+   492→    event.target.value = "";
+   493→    if (!file) return;
+   494→    if (!file.type.startsWith("image/")) {
+   495→      setError(L("فقط تصویر انتخاب کنید."));
+   496→      return;
+   497→    }
+   498→    const compressed = await compressImageFile(file);
+   499→    setImagePreview({ file: compressed, url: URL.createObjectURL(compressed) });
+   500→  }
+   501→
+   502→  async function handleSendImage() {
+   503→    if (!ticket || !imagePreview || sendingAttachment) return;
+   504→    setSendingAttachment(true);
+   505→    setError("");
+   506→    try {
+   507→      const uploaded = await uploadChatAttachment(runtime, imagePreview.file, "image");
+   508→      const message = await sendChatMessage(runtime, ticket.id, {
+   509→        kind: "image",
+   510→        attachmentUrl: uploaded.url,
+   511→        mime: uploaded.mime,
+   512→      });
+   513→      lastMessageIdRef.current = Math.max(lastMessageIdRef.current, message.id);
+   514→      setMessages((current) => (current.some((item) => item.id === message.id) ? current : [...current, message]));
+   515→      URL.revokeObjectURL(imagePreview.url);
+   516→      setImagePreview(null);
+   517→    } catch (cause) {
+   518→      setError(cause instanceof Error ? cause.message : L("ارسال تصویر انجام نشد."));
+   519→    } finally {
+   520→      setSendingAttachment(false);
+   521→    }
+   522→  }
+   523→
+   524→  async function handleCloseTicket() {
+   525→    if (!ticket || busy) return;
+   526→    setBusy(true);
+   527→    try {
+   528→      await closeTicket(runtime, ticket.id);
+   529→      setTicket({ ...ticket, status: "closed" });
+   530→    } catch (cause) {
+   531→      setError(cause instanceof Error ? cause.message : L("بستن گفتگو انجام نشد."));
+   532→    } finally {
+   533→      setBusy(false);
+   534→    }
+   535→  }
+   536→
+   537→  const statusChip = useMemo(() => (ticket ? statusMeta(ticket.status) : null), [ticket]);
+   538→
+   539→  if (!authed || HIDDEN_ROUTES.has(routeName)) return null;
+   540→
+   541→  return (
+   542→    <div
+   543→      aria-hidden={!open}
+   544→      style={{
+   545→        position: "fixed",
+   546→        zIndex: 40,
+   547→        left: "50%",
+   548→        transform: "translateX(-50%)",
+   549→        width: "min(100%, 600px)",
+   550→        top: 0,
+   551→        bottom: 0,
+   552→        pointerEvents: "none",
+   553→        fontFamily: typography.fontFamily,
+   554→      }}
+   555→    >
+   556→      <input
+   557→        ref={fileInputRef}
+   558→        type="file"
+   559→        accept="image/*"
+   560→        aria-hidden="true"
+   561→        tabIndex={-1}
+   562→        style={{ display: "none" }}
+   563→        onChange={(event) => void handleImageChosen(event)}
+   564→      />
+   565→
+   566→      {/* دکمهٔ شناور پشتیبانی */}
+   567→      {!open ? (
+   568→        <button
+   569→          type="button"
+   570→          onClick={() => {
+   571→            setOpen(true);
+   572→            setView("list");
+   573→          }}
+   574→          aria-label={L("گفتگو با پشتیبانی وُدّا")}
+   575→          className="vodda-tappable"
+   576→          style={{
+   577→            pointerEvents: "auto",
+   578→            position: "absolute",
+   579→            bottom: "calc(96px + env(safe-area-inset-bottom))",
+   580→            insetInlineStart: 14,
+   581→            width: 48,
+   582→            height: 48,
+   583→            display: "grid",
+   584→            placeItems: "center",
+   585→            padding: 0,
+   586→            border: `1.5px solid ${colors.goldSoft}`,
+   587→            borderRadius: "50%",
+   588→            color: "#fffaf0",
+   589→            background: gradients.goldRich,
+   590→            boxShadow: "0 10px 24px rgba(139,104,31,.35), 0 3px 8px rgba(46,54,34,.18)",
+   591→            cursor: "pointer",
+   592→          }}
+   593→        >
+   594→          <Icon name="headphones" size={21} stroke={2} />
+   595→          {badge > 0 ? (
+   596→            <span
+   597→              aria-label={L("{n} پیام خوانده‌نشده از پشتیبانی").replace("{n}", localizedDigits(badge, lang))}
+   598→              style={{
+   599→                position: "absolute",
+   600→                top: -4,
+   601→                insetInlineEnd: -4,
+   602→                minWidth: 19,
+   603→                height: 19,
+   604→                display: "grid",
+   605→                placeItems: "center",
+   606→                padding: "0 5px",
+   607→                borderRadius: 999,
+   608→                background: colors.danger,
+   609→                border: "2px solid #fffaf0",
+   610→                color: "#ffffff",
+   611→                fontSize: 9.5,
+   612→                fontWeight: 900,
+   613→                lineHeight: 1,
+   614→              }}
+   615→            >
+   616→              {localizedDigits(badge > 99 ? "+99" : badge, lang)}
+   617→            </span>
+   618→          ) : null}
+   619→        </button>
+   620→      ) : null}
+   621→
+   622→      {/* پنل پشتیبانی */}
+   623→      {open ? (
+   624→        <section
+   625→          role="dialog"
+   626→          aria-label={L("گفتگو با پشتیبانی وُدّا")}
+   627→          className="vodda-enter"
+   628→          style={{
+   629→            pointerEvents: "auto",
+   630→            position: "absolute",
+   631→            insetInline: 10,
+   632→            bottom: "calc(84px + env(safe-area-inset-bottom))",
+   633→            maxHeight: "min(78dvh, 640px)",
+   634→            display: "flex",
+   635→            flexDirection: "column",
+   636→            overflow: "hidden",
+   637→            background: colors.surface,
+   638→            border: `1px solid ${colors.sand150}`,
+   639→            borderRadius: radii.lg,
+   640→            boxShadow: shadows.lg,
+   641→          }}
+   642→        >
+   643→          {/* سرصفحه */}
+   644→          <header
+   645→            style={{
+   646→              display: "flex",
+   647→              alignItems: "center",
+   648→              gap: 9,
+   649→              padding: "11px 13px",
+   650→              borderBottom: `1px solid ${colors.sand100}`,
+   651→              background: `linear-gradient(180deg, ${colors.olive50}, ${colors.surface})`,
+   652→              flex: "0 0 auto",
+   653→            }}
+   654→          >
+   655→            {view === "thread" ? (
+   656→              <button
+   657→                type="button"
+   658→                onClick={backToList}
+   659→                aria-label={L("بازگشت به فهرست گفتگوها")}
+   660→                style={{ background: "none", border: 0, color: colors.inkMuted, cursor: "pointer", padding: 4, fontFamily: typography.fontFamily }}
+   661→              >
+   662→                <Icon name="arrowL" size={18} />
+   663→              </button>
+   664→            ) : (
+   665→              <span
+   666→                aria-hidden="true"
+   667→                style={{
+   668→                  width: 34,
+   669→                  height: 34,
+   670→                  display: "grid",
+   671→                  placeItems: "center",
+   672→                  borderRadius: 12,
+   673→                  background: gradients.goldRich,
+   674→                  color: "#fffaf0",
+   675→                  flex: "0 0 auto",
+   676→                }}
+   677→              >
+   678→                <Icon name="headphones" size={17} stroke={2} />
+   679→              </span>
+   680→            )}
+   681→            <div style={{ minWidth: 0, flex: 1 }}>
+   682→              <strong style={{ display: "block", fontSize: 13, color: colors.ink }}>
+   683→                {view === "thread" && ticket ? ticket.subject : L("پشتیبانی وُدّا")}
+   684→              </strong>
+   685→              <span style={{ display: "block", fontSize: 10.5, color: colors.inkMuted }}>
+   686→                {view === "thread"
+   687→                  ? L("پاسخ‌گویی لحظه‌ای توسط کارشناسان وُدّا")
+   688→                  : view === "new"
+   689→                    ? L("گفتگوی جدید با تیم پشتیبانی")
+   690→                    : L("گفتگوهای شما با تیم پشتیبانی")}
+   691→              </span>
+   692→            </div>
+   693→            {view === "thread" && ticket && statusChip ? (
+   694→              <span
+   695→                style={{
+   696→                  flex: "0 0 auto",
+   697→                  fontSize: 10.5,
+   698→                  fontWeight: 800,
+   699→                  padding: "4px 10px",
+   700→                  borderRadius: 999,
+   701→                  color: statusChip.ink,
+   702→                  background: statusChip.bg,
+   703→                }}
+   704→              >
+   705→                {L(statusChip.label)}
+   706→              </span>
+   707→            ) : null}
+   708→            <button
+   709→              type="button"
+   710→              onClick={() => setOpen(false)}
+   711→              aria-label={L("بستن گفتگو")}
+   712→              style={{ background: "none", border: 0, color: colors.inkMuted, cursor: "pointer", padding: 6, fontFamily: typography.fontFamily }}
+   713→            >
+   714→              <Icon name="x" size={17} />
+   715→            </button>
+   716→          </header>
+   717→
+   718→          {error ? (
+   719→            <p role="alert" style={{ margin: 0, padding: "8px 14px", fontSize: 11.5, fontWeight: 700, color: colors.danger, background: colors.dangerBackground }}>
+   720→              {error}
+   721→            </p>
+   722→          ) : null}
+   723→
+   724→          {/* بدنه */}
+   725→          {view === "list" ? (
+   726→            <div
+   727→              aria-label={L("فهرست گفتگوهای پشتیبانی")}
+   728→              style={{ flex: "1 1 auto", overflowY: "auto", padding: "10px 12px 12px", display: "flex", flexDirection: "column", gap: 8 }}
+   729→            >
+   730→              <button
+   731→                type="button"
+   732→                onClick={() => {
+   733→                  setSubject("");
+   734→                  setInput("");
+   735→                  setView("new");
+   736→                }}
+   737→                className="vodda-tappable"
+   738→                style={{
+   739→                  display: "flex",
+   740→                  alignItems: "center",
+   741→                  gap: 10,
+   742→                  padding: "12px 14px",
+   743→                  border: `1.5px dashed ${colors.goldAccent}`,
+   744→                  borderRadius: radii.md,
+   745→                  background: "var(--v-goldSurface, #fdf6e3)",
+   746→                  color: "var(--v-goldInk, #7a5e1e)",
+   747→                  cursor: "pointer",
+   748→                  fontWeight: 800,
+   749→                  fontSize: 12.5,
+   750→                  fontFamily: typography.fontFamily,
+   751→                }}
+   752→              >
+   753→                <span
+   754→                  aria-hidden
+   755→                  style={{ width: 30, height: 30, display: "grid", placeItems: "center", borderRadius: 10, background: gradients.goldRich, color: "#fffaf0" }}
+   756→                >
+   757→                  <Icon name="plus" size={15} stroke={2.4} />
+   758→                </span>
+   759→                {L("گفتگوی جدید با پشتیبانی")}
+   760→              </button>
+   761→
+   762→              {tickets.length === 0 ? (
+   763→                <div style={{ padding: "26px 14px", textAlign: "center" }}>
+   764→                  <span
+   765→                    aria-hidden
+   766→                    style={{ margin: "0 auto 10px", width: 52, height: 52, display: "grid", placeItems: "center", borderRadius: "50%", background: colors.olive50, color: colors.olive700 }}
+   767→                  >
+   768→                    <Icon name="message" size={24} />
+   769→                  </span>
+   770→                  <strong style={{ display: "block", fontSize: 13, color: colors.ink, marginBottom: 4 }}>
+   771→                    {L("هنوز گفتگویی ندارید")}
+   772→                  </strong>
+   773→                  <span style={{ display: "block", fontSize: 11.5, lineHeight: 1.9, color: colors.inkMuted }}>
+   774→                    {L("سؤال، درخواست یا بازخورد خود را بپرسید؛ کارشناسان وُدّا در اسرع وقت پاسخ می‌دهند. امکان ارسال پیام صوتی و تصویر هم هست.")}
+   775→                  </span>
+   776→                </div>
+   777→              ) : (
+   778→                tickets.map((row) => {
+   779→                  const chip = statusMeta(row.status);
+   780→                  return (
+   781→                    <button
+   782→                      key={row.id}
+   783→                      type="button"
+   784→                      onClick={() => openThread(row)}
+   785→                      className="vodda-tappable"
+   786→                      style={{
+   787→                        display: "block",
+   788→                        width: "100%",
+   789→                        textAlign: "start",
+   790→                        padding: "11px 13px",
+   791→                        border: `1px solid ${colors.sand150}`,
+   792→                        borderRadius: radii.md,
+   793→                        background: row.unreadUser > 0 ? colors.olive50 : colors.surface,
+   794→                        cursor: "pointer",
+   795→                        fontFamily: typography.fontFamily,
+   796→                        position: "relative",
+   797→                      }}
+   798→                    >
+   799→                      <span style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+   800→                        <strong style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 12.5, color: colors.ink }}>
+   801→                          {row.subject}
+   802→                        </strong>
+   803→                        <span style={{ flex: "0 0 auto", fontSize: 10, fontWeight: 800, padding: "3px 8px", borderRadius: 999, color: chip.ink, background: chip.bg }}>
+   804→                          {L(chip.label)}
+   805→                        </span>
+   806→                      </span>
+   807→                      <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+   808→                        <span style={{ flex: 1, fontSize: 10.5, color: colors.inkMuted }}>
+   809→                          {L("گفتگو")} #{localizedDigits(row.id, lang)} · {shortDate(row.lastMessageAt)}
+   810→                        </span>
+   811→                        {row.unreadUser > 0 ? (
+   812→                          <span
+   813→                            style={{
+   814→                              flex: "0 0 auto",
+   815→                              minWidth: 18,
+   816→                              height: 18,
+   817→                              padding: "0 5px",
+   818→                              display: "grid",
+   819→                              placeItems: "center",
+   820→                              borderRadius: 999,
+   821→                              background: colors.danger,
+   822→                              color: "#fff",
+   823→                              fontSize: 9.5,
+   824→                              fontWeight: 900,
+   825→                            }}
+   826→                          >
+   827→                            {localizedDigits(row.unreadUser, lang)}
+   828→                          </span>
+   829→                        ) : null}
+   830→                      </span>
+   831→                    </button>
+   832→                  );
+   833→                })
+   834→              )}
+   835→            </div>
+   836→          ) : null}
+   837→
+   838→          {view === "new" ? (
+   839→            <div style={{ flex: "1 1 auto", overflowY: "auto", padding: "12px 14px" }}>
+   840→              <label style={{ display: "block", fontSize: 11.5, fontWeight: 800, color: colors.inkSecondary, marginBottom: 6 }}>
+   841→                {L("موضوع گفتگو")}
+   842→              </label>
+   843→              <input
+   844→                value={subject}
+   845→                onChange={(event) => setSubject(event.target.value)}
+   846→                placeholder={L("مثلاً: مشکل در رزرو جلسه")}
+   847→                aria-label={L("موضوع گفتگو")}
+   848→                maxLength={150}
+   849→                className="vodda-input"
+   850→                style={{
+   851→                  width: "100%",
+   852→                  minHeight: 44,
+   853→                  padding: "9px 13px",
+   854→                  marginBottom: 14,
+   855→                  border: `1px solid ${colors.sand200}`,
+   856→                  borderRadius: 14,
+   857→                  outline: "none",
+   858→                  background: colors.sand50,
+   859→                  color: colors.ink,
+   860→                  fontSize: 12.8,
+   861→                  fontFamily: typography.fontFamily,
+   862→                }}
+   863→              />
+   864→              <label style={{ display: "block", fontSize: 11.5, fontWeight: 800, color: colors.inkSecondary, marginBottom: 6 }}>
+   865→                {L("پیام شما")}
+   866→              </label>
+   867→              <textarea
+   868→                value={input}
+   869→                onChange={(event) => setInput(event.target.value)}
+   870→                placeholder={L("شرح سؤال یا درخواست خود را بنویسید…")}
+   871→                aria-label={L("متن پیام")}
+   872→                rows={5}
+   873→                maxLength={2000}
+   874→                className="vodda-input"
+   875→                style={{
+   876→                  width: "100%",
+   877→                  padding: "10px 13px",
+   878→                  border: `1px solid ${colors.sand200}`,
+   879→                  borderRadius: 14,
+   880→                  outline: "none",
+   881→                  background: colors.sand50,
+   882→                  color: colors.ink,
+   883→                  fontSize: 12.8,
+   884→                  lineHeight: 1.9,
+   885→                  resize: "vertical",
+   886→                  fontFamily: typography.fontFamily,
+   887→                }}
+   888→              />
+   889→              <button
+   890→                type="button"
+   891→                disabled={busy || !subject.trim() || !input.trim()}
+   892→                onClick={() => void handleCreateTicket()}
+   893→                className="vodda-tappable"
+   894→                style={{
+   895→                  width: "100%",
+   896→                  minHeight: 46,
+   897→                  marginTop: 14,
+   898→                  border: 0,
+   899→                  borderRadius: 14,
+   900→                  background: subject.trim() && input.trim() && !busy ? colors.olive600 : colors.sand200,
+   901→                  color: subject.trim() && input.trim() && !busy ? colors.onOlive : colors.inkMuted,
+   902→                  fontWeight: 800,
+   903→                  fontSize: 13,
+   904→                  cursor: subject.trim() && input.trim() && !busy ? "pointer" : "default",
+   905→                  fontFamily: typography.fontFamily,
+   906→                }}
+   907→              >
+   908→                {busy ? L("در حال ارسال…") : L("ثبت و شروع گفتگو")}
+   909→              </button>
+   910→            </div>
+   911→          ) : null}
+   912→
+   913→          {view === "thread" ? (
+   914→            <>
+   915→              <div
+   916→                ref={listRef}
+   917→                aria-live="polite"
+   918→                aria-label={L("پیام‌های گفتگو")}
+   919→                style={{
+   920→                  flex: "1 1 auto",
+   921→                  overflowY: "auto",
+   922→                  display: "flex",
+   923→                  flexDirection: "column",
+   924→                  gap: 8,
+   925→                  padding: "12px 12px 6px",
+   926→                }}
+   927→              >
+   928→                {messages.length === 0 ? (
+   929→                  <div style={{ padding: "18px 10px", textAlign: "center", fontSize: 11.5, color: colors.inkMuted, lineHeight: 1.9 }}>
+   930→                    {L("پیام شما ثبت شد؛ کارشناسان وُدّا به‌زودی پاسخ می‌دهند.")}
+   931→                  </div>
+   932→                ) : null}
+   933→                {messages.map((message) => {
+   934→                  const mine = message.senderSide === "user";
+   935→                  return (
+   936→                    <div key={message.id} style={{ display: "flex", justifyContent: mine ? "flex-start" : "flex-end" }}>
+   937→                      <div style={{ maxWidth: "88%", display: "flex", flexDirection: "column", gap: 3 }}>
+   938→                        {message.kind === "image" && message.attachmentUrl ? (
+   939→                          <button
+   940→                            type="button"
+   941→                            onClick={() => setLightbox(message.attachmentUrl ?? null)}
+   942→                            aria-label={L("نمایش تصویر")}
+   943→                            style={{
+   944→                              padding: 0,
+   945→                              border: `1px solid ${colors.sand150}`,
+   946→                              borderRadius: 16,
+   947→                              overflow: "hidden",
+   948→                              cursor: "zoom-in",
+   949→                              background: colors.olive50,
+   950→                              maxWidth: 260,
+   951→                            }}
+   952→                          >
+   953→                            
+   954→                            <img
+   955→                              src={message.attachmentUrl}
+   956→                              alt={L("تصویر ارسالی در گفتگو")}
+   957→                              style={{ display: "block", maxWidth: "100%", maxHeight: 320, objectFit: "cover" }}
+   958→                            />
+   959→                          </button>
+   960→                        ) : null}
+   961→                        {message.kind === "audio" && message.attachmentUrl ? (
+   962→                          <AudioBubble
+   963→                            url={message.attachmentUrl}
+   964→                            durationMs={message.durationMs}
+   965→                            mine={mine}
+   966→                          />
+   967→                        ) : null}
+   968→                        {message.kind === "text" && message.body ? (
+   969→                          <div
+   970→                            style={{
+   971→                              padding: "8px 12px",
+   972→                              borderRadius: 15,
+   973→                              borderEndEndRadius: mine ? 15 : 5,
+   974→                              borderEndStartRadius: mine ? 5 : 15,
+   975→                              fontSize: 12.6,
+   976→                              lineHeight: 1.9,
+   977→                              whiteSpace: "pre-wrap",
+   978→                              wordBreak: "break-word",
+   979→                              color: mine ? colors.onOlive : colors.ink,
+   980→                              background: mine ? colors.olive600 : colors.olive50,
+   981→                              border: mine ? "none" : `1px solid ${colors.olive100}`,
+   982→                            }}
+   983→                          >
+   984→                            {message.body}
+   985→                          </div>
+   986→                        ) : null}
+   987→                        <span
+   988→                          style={{
+   989→                            fontSize: 9.5,
+   990→                            color: colors.inkFaint,
+   991→                            textAlign: mine ? "start" : "end",
+   992→                            paddingInline: 6,
+   993→                          }}
+   994→                        >
+   995→                          {mine ? L("شما") : `${L("پشتیبانی وُدّا")}${message.senderName ? ` · ${message.senderName}` : ""}`}
+   996→                          {" · "}
+   997→                          {shortTime(message.createdAt)}
+   998→                        </span>
+   999→                      </div>
+  1000→                    </div>
+  1001→                  );
+  1002→                })}
+  1003→              </div>
+  1004→
+  1005→              {/* پیش‌نمایش پیوست پیش از ارسال */}
+  1006→              {voicePreview ? (
+  1007→                <div
+  1008→                  style={{
+  1009→                    flex: "0 0 auto",
+  1010→                    display: "flex",
+  1011→                    alignItems: "center",
+  1012→                    gap: 10,
+  1013→                    margin: "6px 12px 0",
+  1014→                    padding: "8px 12px",
+  1015→                    border: `1px solid ${colors.olive200}`,
+  1016→                    borderRadius: 14,
+  1017→                    background: colors.olive50,
+  1018→                  }}
+  1019→                >
+  1020→                  <AudioBubble url={voicePreview.url} durationMs={voicePreview.ms} mine />
+  1021→                  <button
+  1022→                    type="button"
+  1023→                    disabled={sendingAttachment}
+  1024→                    onClick={() => void handleSendVoice()}
+  1025→                    className="vodda-tappable"
+  1026→                    style={{
+  1027→                      flex: "0 0 auto",
+  1028→                      minHeight: 40,
+  1029→                      padding: "0 14px",
+  1030→                      border: 0,
+  1031→                      borderRadius: 12,
+  1032→                      background: colors.olive600,
+  1033→                      color: colors.onOlive,
+  1034→                      fontWeight: 800,
+  1035→                      fontSize: 12,
+  1036→                      cursor: sendingAttachment ? "default" : "pointer",
+  1037→                      fontFamily: typography.fontFamily,
+  1038→                    }}
+  1039→                  >
+  1040→                    {sendingAttachment ? L("…") : L("ارسال")}
+  1041→                  </button>
+  1042→                  <button
+  1043→                    type="button"
+  1044→                    disabled={sendingAttachment}
+  1045→                    onClick={() => {
+  1046→                      URL.revokeObjectURL(voicePreview.url);
+  1047→                      setVoicePreview(null);
+  1048→                    }}
+  1049→                    aria-label={L("لغو پیام صوتی")}
+  1050→                    style={{ background: "none", border: 0, color: colors.danger, cursor: "pointer", padding: 6 }}
+  1051→                  >
+  1052→                    <Icon name="trash" size={17} />
+  1053→                  </button>
+  1054→                </div>
+  1055→              ) : null}
+  1056→
+  1057→              {imagePreview ? (
+  1058→                <div
+  1059→                  style={{
+  1060→                    flex: "0 0 auto",
+  1061→                    display: "flex",
+  1062→                    alignItems: "center",
+  1063→                    gap: 10,
+  1064→                    margin: "6px 12px 0",
+  1065→                    padding: 8,
+  1066→                    border: `1px solid ${colors.olive200}`,
+  1067→                    borderRadius: 14,
+  1068→                    background: colors.olive50,
+  1069→                  }}
+  1070→                >
+  1071→                  
+  1072→                  <img
+  1073→                    src={imagePreview.url}
+  1074→                    alt={L("پیش‌نمایش تصویر")}
+  1075→                    style={{ width: 64, height: 64, objectFit: "cover", borderRadius: 10, border: `1px solid ${colors.olive100}` }}
+  1076→                  />
+  1077→                  <button
+  1078→                    type="button"
+  1079→                    disabled={sendingAttachment}
+  1080→                    onClick={() => void handleSendImage()}
+  1081→                    className="vodda-tappable"
+  1082→                    style={{
+  1083→                      flex: 1,
+  1084→                      minHeight: 40,
+  1085→                      border: 0,
+  1086→                      borderRadius: 12,
+  1087→                      background: colors.olive600,
+  1088→                      color: colors.onOlive,
+  1089→                      fontWeight: 800,
+  1090→                      fontSize: 12,
+  1091→                      cursor: sendingAttachment ? "default" : "pointer",
+  1092→                      fontFamily: typography.fontFamily,
+  1093→                    }}
+  1094→                  >
+  1095→                    {sendingAttachment ? L("در حال ارسال…") : L("ارسال تصویر")}
+  1096→                  </button>
+  1097→                  <button
+  1098→                    type="button"
+  1099→                    disabled={sendingAttachment}
+  1100→                    onClick={() => {
+  1101→                      URL.revokeObjectURL(imagePreview.url);
+  1102→                      setImagePreview(null);
+  1103→                    }}
+  1104→                    aria-label={L("لغو تصویر")}
+  1105→                    style={{ background: "none", border: 0, color: colors.danger, cursor: "pointer", padding: 6 }}
+  1106→                  >
+  1107→                    <Icon name="trash" size={17} />
+  1108→                  </button>
+  1109→                </div>
+  1110→              ) : null}
+  1111→
+  1112→              {/* نوار ضبط */}
+  1113→              {recording ? (
+  1114→                <div
+  1115→                  style={{
+  1116→                    flex: "0 0 auto",
+  1117→                    display: "flex",
+  1118→                    alignItems: "center",
+  1119→                    gap: 10,
+  1120→                    padding: "9px 12px",
+  1121→                    borderTop: `1px solid ${colors.sand100}`,
+  1122→                    background: colors.surface,
+  1123→                  }}
+  1124→                >
+  1125→                  <span
+  1126→                    aria-hidden
+  1127→                    className="vodda-rec-dot"
+  1128→                    style={{ width: 10, height: 10, borderRadius: "50%", background: colors.danger, display: "inline-block" }}
+  1129→                  />
+  1130→                  <span style={{ flex: 1, fontSize: 12.5, fontWeight: 800, color: colors.danger }}>
+  1131→                    {L("در حال ضبط…")} {formatDuration(recordSeconds * 1000, lang)}
+  1132→                  </span>
+  1133→                  <button
+  1134→                    type="button"
+  1135→                    onClick={() => stopRecording(false)}
+  1136→                    aria-label={L("لغو ضبط")}
+  1137→                    className="vodda-tappable"
+  1138→                    style={{
+  1139→                      minHeight: 40,
+  1140→                      padding: "0 12px",
+  1141→                      border: `1px solid ${colors.sand200}`,
+  1142→                      borderRadius: 12,
+  1143→                      background: colors.surface,
+  1144→                      color: colors.inkSecondary,
+  1145→                      fontWeight: 800,
+  1146→                      fontSize: 12,
+  1147→                      cursor: "pointer",
+  1148→                      fontFamily: typography.fontFamily,
+  1149→                    }}
+  1150→                  >
+  1151→                    {L("لغو")}
+  1152→                  </button>
+  1153→                  <button
+  1154→                    type="button"
+  1155→                    onClick={() => stopRecording(true)}
+  1156→                    aria-label={L("پایان ضبط و ارسال")}
+  1157→                    className="vodda-tappable"
+  1158→                    style={{
+  1159→                      minHeight: 40,
+  1160→                      padding: "0 14px",
+  1161→                      border: 0,
+  1162→                      borderRadius: 12,
+  1163→                      background: colors.olive600,
+  1164→                      color: colors.onOlive,
+  1165→                      fontWeight: 800,
+  1166→                      fontSize: 12,
+  1167→                      cursor: "pointer",
+  1168→                      fontFamily: typography.fontFamily,
+  1169→                    }}
+  1170→                  >
+  1171→                    {L("اتمام")}
+  1172→                  </button>
+  1173→                </div>
+  1174→              ) : (
+  1175→                /* نوار نوشتن */
+  1176→                <form
+  1177→                  onSubmit={(event) => {
+  1178→                    event.preventDefault();
+  1179→                    void handleSendText();
+  1180→                  }}
+  1181→                  style={{
+  1182→                    flex: "0 0 auto",
+  1183→                    display: "flex",
+  1184→                    alignItems: "center",
+  1185→                    gap: 7,
+  1186→                    padding: "9px 10px max(10px, env(safe-area-inset-bottom))",
+  1187→                    borderTop: `1px solid ${colors.sand100}`,
+  1188→                    background: colors.surface,
+  1189→                  }}
+  1190→                >
+  1191→                  <button
+  1192→                    type="button"
+  1193→                    onClick={() => void startRecording()}
+  1194→                    aria-label={L("ضبط پیام صوتی")}
+  1195→                    disabled={ticket?.status === "closed" || Boolean(voicePreview) || Boolean(imagePreview)}
+  1196→                    className="vodda-tappable"
+  1197→                    style={{
+  1198→                      flex: "0 0 auto",
+  1199→                      width: 42,
+  1200→                      height: 42,
+  1201→                      display: "grid",
+  1202→                      placeItems: "center",
+  1203→                      padding: 0,
+  1204→                      border: `1px solid ${colors.sand200}`,
+  1205→                      borderRadius: 14,
+  1206→                      background: colors.sand50,
+  1207→                      color: colors.olive700,
+  1208→                      cursor: "pointer",
+  1209→                    }}
+  1210→                  >
+  1211→                    <Icon name="mic" size={19} stroke={2} />
+  1212→                  </button>
+  1213→                  <button
+  1214→                    type="button"
+  1215→                    onClick={() => void pickImage()}
+  1216→                    aria-label={L("ارسال تصویر")}
+  1217→                    disabled={ticket?.status === "closed" || Boolean(voicePreview) || Boolean(imagePreview)}
+  1218→                    className="vodda-tappable"
+  1219→                    style={{
+  1220→                      flex: "0 0 auto",
+  1221→                      width: 42,
+  1222→                      height: 42,
+  1223→                      display: "grid",
+  1224→                      placeItems: "center",
+  1225→                      padding: 0,
+  1226→                      border: `1px solid ${colors.sand200}`,
+  1227→                      borderRadius: 14,
+  1228→                      background: colors.sand50,
+  1229→                      color: colors.olive700,
+  1230→                      cursor: "pointer",
+  1231→                    }}
+  1232→                  >
+  1233→                    <Icon name="camera" size={19} stroke={2} />
+  1234→                  </button>
+  1235→                  <input
+  1236→                    value={input}
+  1237→                    onChange={(event) => setInput(event.target.value)}
+  1238→                    placeholder={
+  1239→                      ticket?.status === "closed"
+  1240→                        ? L("این گفتگو بسته شده است")
+  1241→                        : voicePreview || imagePreview
+  1242→                          ? L("ابتدا پیام آماده‌شده را ارسال کنید")
+  1243→                          : L("پیام خود را بنویسید…")
+  1244→                    }
+  1245→                    aria-label={L("متن پیام")}
+  1246→                    maxLength={2000}
+  1247→                    disabled={ticket?.status === "closed" || Boolean(voicePreview) || Boolean(imagePreview)}
+  1248→                    className="vodda-input"
+  1249→                    style={{
+  1250→                      flex: 1,
+  1251→                      minWidth: 0,
+  1252→                      minHeight: 42,
+  1253→                      padding: "8px 13px",
+  1254→                      border: `1px solid ${colors.sand200}`,
+  1255→                      borderRadius: 14,
+  1256→                      outline: "none",
+  1257→                      background: colors.sand50,
+  1258→                      color: colors.ink,
+  1259→                      fontSize: 12.8,
+  1260→                      fontFamily: typography.fontFamily,
+  1261→                    }}
+  1262→                  />
+  1263→                  <button
+  1264→                    type="submit"
+  1265→                    disabled={busy || !input.trim() || ticket?.status === "closed"}
+  1266→                    aria-label={L("ارسال پیام")}
+  1267→                    style={{
+  1268→                      flex: "0 0 auto",
+  1269→                      width: 42,
+  1270→                      height: 42,
+  1271→                      display: "grid",
+  1272→                      placeItems: "center",
+  1273→                      padding: 0,
+  1274→                      border: 0,
+  1275→                      borderRadius: 14,
+  1276→                      color: colors.onOlive,
+  1277→                      background: input.trim() && !busy && ticket?.status !== "closed" ? colors.olive600 : colors.sand200,
+  1278→                      cursor: input.trim() && !busy && ticket?.status !== "closed" ? "pointer" : "default",
+  1279→                    }}
+  1280→                  >
+  1281→                    <Icon name="arrowL" size={19} stroke={2.2} />
+  1282→                  </button>
+  1283→                </form>
+  1284→              )}
+  1285→
+  1286→              {ticket?.status === "closed" ? (
+  1287→                <p style={{ margin: 0, padding: "8px 14px max(10px, env(safe-area-inset-bottom))", fontSize: 11, fontWeight: 700, color: colors.inkMuted, textAlign: "center", background: colors.sand100 }}>
+  1288→                  {L("این گفتگو بسته شده؛ برای پیگیری، گفتگوی جدیدی باز کنید.")}
+  1289→                </p>
+  1290→              ) : null}
+  1291→            </>
+  1292→          ) : null}
+  1293→        </section>
+  1294→      ) : null}
+  1295→
+  1296→      {/* نمای بزرگ تصویر */}
+  1297→      {lightbox ? (
+  1298→        <div
+  1299→          role="dialog"
+  1300→          aria-label={L("نمایش تصویر")}
+  1301→          onClick={() => setLightbox(null)}
+  1302→          style={{
+  1303→            pointerEvents: "auto",
+  1304→            position: "fixed",
+  1305→            inset: 0,
+  1306→            zIndex: 90,
+  1307→            display: "grid",
+  1308→            placeItems: "center",
+  1309→            padding: 20,
+  1310→            background: "rgba(20,22,14,.72)",
+  1311→            cursor: "zoom-out",
+  1312→          }}
+  1313→        >
+  1314→          
+  1315→          <img
+  1316→            src={lightbox}
+  1317→            alt={L("تصویر ارسالی در گفتگو")}
+  1318→            style={{ maxWidth: "100%", maxHeight: "100%", borderRadius: 14, boxShadow: shadows.lg }}
+  1319→          />
+  1320→        </div>
+  1321→      ) : null}
+  1322→    </div>
+  1323→  );
+  1324→}
+  1325→
