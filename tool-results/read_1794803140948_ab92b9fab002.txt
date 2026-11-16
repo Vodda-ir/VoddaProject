@@ -1,0 +1,972 @@
+     1→"use client";
+     2→
+     3→// کیت «فیلدهای هوشمند» خدمات حضوری قرآنی — اصل طراحی: انتخاب به‌جای تایپ.
+     4→//
+     5→// همهٔ فیلدهای متنیِ پرتکرار به انتخاب‌گر تبدیل شده‌اند: شهرهای پرتردد،
+     6→// موقعیت‌یاب دستگاه (GPS + معکوس‌یابی نشانی + پیش‌نمایش نقشه)، بازه‌های
+     7→// پیشنهادی بودجه، مبلغ‌های پیشنهادی، شمارنده‌های لمسی، ساعت‌های پیشنهادی
+     8→// نماز-محور و قالب‌های آمادهٔ یادداشت. هر فیلد همیشه ورودی دستی هم دارد تا
+     9→// در نبود GPS یا برای حالت‌های خاص، مسیر جایگزین وجود داشته باشد.
+    10→
+    11→import { useMemo, useState } from "react";
+    12→import type { CSSProperties } from "react";
+    13→import { Icon, colors, spacing, typography } from "../../ui";
+    14→import { digitsOnly, localizedDigits } from "../../ui/persian";
+    15→import { useAppearance } from "../../ui/appearance";
+    16→import { formatAmountFull, formatBudgetRange, formatToman, inputStyle } from "./elements";
+    17→
+    18→/* ─────────────────────────  داده‌های پرتردد  ───────────────────────── */
+    19→
+    20→export const POPULAR_CITIES: readonly string[] = [
+    21→  "تهران", "کرج", "مشهد", "قم", "اصفهان", "شیراز",
+    22→  "تبریز", "اهواز", "رشت", "یزد", "کرمان", "همدان",
+    23→];
+    24→
+    25→const VENUE_TYPES: readonly string[] = ["مسجد", "حسینیه", "مصلی", "سالن و تالار", "خانه", "فضای باز"];
+    26→
+    27→const TIME_PRESETS: ReadonlyArray<{ label: string; hh: number; mm: number }> = [
+    28→  { label: "صبح · ۱۰:۰۰", hh: 10, mm: 0 },
+    29→  { label: "ظهر · ۱۳:۰۰", hh: 13, mm: 0 },
+    30→  { label: "عصر · ۱۷:۰۰", hh: 17, mm: 0 },
+    31→  { label: "پس از مغرب · ۱۹:۰۰", hh: 19, mm: 0 },
+    32→  { label: "پس از عشا · ۲۱:۰۰", hh: 21, mm: 0 },
+    33→];
+    34→
+    35→const NOTE_TEMPLATES: ReadonlyArray<{ chip: string; text: string }> = [
+    36→  { chip: "تلاوت یک جزء", text: "تلاوت یک جزء کامل مدنظر است" },
+    37→  { chip: "ادعای پایانی", text: "ادعای پایانی مراسم هم اجرا شود" },
+    38→  { chip: "تواشیح و همخوانی", text: "برنامهٔ تواشیح و همخوانی هم دارند" },
+    39→  { chip: "نیاز به مداحی", text: "نیاز به مداحی هم داریم" },
+    40→  { chip: "میکروفن و صوت آماده", text: "سیستم صوتی و میکروفن آماده است" },
+    41→];
+    42→
+    43→/* ─────────────────────────  قالب‌های پایه  ───────────────────────── */
+    44→
+    45→function FieldShell({
+    46→  label,
+    47→  hint,
+    48→  children,
+    49→}: {
+    50→  label: string;
+    51→  hint?: string;
+    52→  children: React.ReactNode;
+    53→}) {
+    54→  const { L } = useAppearance();
+    55→  return (
+    56→    <div style={{ display: "grid", gap: 8 }}>
+    57→      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: spacing.sm }}>
+    58→        <strong style={{ fontSize: 13.5, color: colors.ink, display: "block" }}>{L(label)}</strong>
+    59→        {hint ? <span style={{ fontSize: 11, color: colors.inkFaint, textAlign: "left" }}>{L(hint)}</span> : null}
+    60→      </div>
+    61→      {children}
+    62→    </div>
+    63→  );
+    64→}
+    65→
+    66→/** تراشهٔ انتخاب — پایهٔ همهٔ انتخاب‌گرهای این کیت؛ صادرشده برای استفادهٔ مستقیم. */
+    67→export function Chip({
+    68→  active,
+    69→  onClick,
+    70→  children,
+    71→  accent = "olive",
+    72→  ariaPressed,
+    73→}: {
+    74→  active: boolean;
+    75→  onClick: () => void;
+    76→  children: React.ReactNode;
+    77→  accent?: "olive" | "gold";
+    78→  ariaPressed?: boolean;
+    79→}) {
+    80→  const pressed = ariaPressed ?? active;
+    81→  const tone: CSSProperties = active
+    82→    ? accent === "gold"
+    83→      ? { background: colors.goldBackground, borderColor: colors.goldSoft, color: colors.goldDark }
+    84→      : { background: colors.olive600, borderColor: colors.olive600, color: colors.surface }
+    85→    : { background: colors.surface, borderColor: colors.sand200, color: colors.inkSecondary };
+    86→  return (
+    87→    <button
+    88→      type="button"
+    89→      aria-pressed={pressed}
+    90→      onClick={onClick}
+    91→      style={{
+    92→        display: "inline-flex",
+    93→        alignItems: "center",
+    94→        gap: 5,
+    95→        minHeight: 40,
+    96→        padding: "8px 13px",
+    97→        borderRadius: 999,
+    98→        fontSize: 12.5,
+    99→        fontWeight: 700,
+   100→        cursor: "pointer",
+   101→        fontFamily: typography.fontFamily,
+   102→        whiteSpace: "nowrap",
+   103→        border: `1px solid ${tone.borderColor}`,
+   104→        ...tone,
+   105→      }}
+   106→    >
+   107→      {active && accent === "gold" ? <Icon name="check" size={13} stroke={2.6} /> : null}
+   108→      {children}
+   109→    </button>
+   110→  );
+   111→}
+   112→
+   113→/** فیلد کشویی مرتب — پایهٔ انتخاب‌های تکی؛ جایگزین ردیف‌های طولانی تراشه. */
+   114→export function SelectField({
+   115→  label,
+   116→  hint,
+   117→  value,
+   118→  onChange,
+   119→  options,
+   120→  ariaLabel,
+   121→}: {
+   122→  label?: string;
+   123→  hint?: string;
+   124→  value: string;
+   125→  onChange: (next: string) => void;
+   126→  options: ReadonlyArray<{ value: string; label: string }>;
+   127→  ariaLabel: string;
+   128→}) {
+   129→  const { L } = useAppearance();
+   130→  const body = (
+   131→    <div style={{ position: "relative" }}>
+   132→      <select
+   133→        value={value}
+   134→        onChange={(event) => onChange(event.target.value)}
+   135→        aria-label={L(ariaLabel)}
+   136→        style={{
+   137→          ...inputStyle,
+   138→          minHeight: 48,
+   139→          appearance: "none",
+   140→          WebkitAppearance: "none",
+   141→          fontWeight: 700,
+   142→          cursor: "pointer",
+   143→          paddingInlineEnd: 38,
+   144→        }}
+   145→      >
+   146→        {options.map((option) => (
+   147→          <option key={option.value} value={option.value}>{option.label}</option>
+   148→        ))}
+   149→      </select>
+   150→      <Icon
+   151→        name="chevronL"
+   152→        size={16}
+   153→        stroke={2.2}
+   154→        aria-hidden="true"
+   155→        style={{
+   156→          position: "absolute",
+   157→          insetInlineEnd: 14,
+   158→          top: "50%",
+   159→          transform: "translateY(-50%) rotate(-90deg)",
+   160→          color: colors.inkMuted,
+   161→          pointerEvents: "none",
+   162→        }}
+   163→      />
+   164→    </div>
+   165→  );
+   166→  if (!label) return body;
+   167→  return <FieldShell label={label} hint={hint}>{body}</FieldShell>;
+   168→}
+   169→
+   170→/* ─────────────────────────  ورودی مبلغ  ───────────────────────── */
+   171→
+   172→export function AmountInput({
+   173→  value,
+   174→  onChange,
+   175→  ariaLabel,
+   176→  placeholder = "مثلاً ۱۵۰۰۰۰۰",
+   177→}: {
+   178→  value: string;
+   179→  onChange: (next: string) => void;
+   180→  ariaLabel: string;
+   181→  placeholder?: string;
+   182→}) {
+   183→  const numeric = Number(digitsOnly(value) || 0);
+   184→  const { L, lang } = useAppearance();
+   185→  return (
+   186→    <div>
+   187→      <div style={{ position: "relative" }}>
+   188→        <input
+   189→          type="text"
+   190→          inputMode="numeric"
+   191→          value={localizedDigits(value, lang)}
+   192→          onChange={(event) => onChange(digitsOnly(event.target.value, 12))}
+   193→          placeholder={L(placeholder)}
+   194→          style={{ ...inputStyle, minHeight: 46, fontWeight: 700, paddingInlineEnd: 56 }}
+   195→          aria-label={L(ariaLabel)}
+   196→        />
+   197→        <span
+   198→          aria-hidden="true"
+   199→          style={{ position: "absolute", insetInlineEnd: 13, top: "50%", transform: "translateY(-50%)", fontSize: 11.5, color: colors.inkFaint }}
+   200→        >
+   201→          {L("تومان")}
+   202→        </span>
+   203→      </div>
+   204→      {numeric >= 1000 ? (
+   205→        <span style={{ display: "block", marginTop: 4, fontSize: 11, color: colors.olive700, fontVariantNumeric: "tabular-nums" }}>
+   206→          {formatAmountFull(numeric, lang)}
+   207→        </span>
+   208→      ) : null}
+   209→    </div>
+   210→  );
+   211→}
+   212→
+   213→/** مبلغ با پیشنهادهای آماده — فهرست کشویی انتخاب سریع + ورودی دستی. */
+   214→export function AmountPicker({
+   215→  label,
+   216→  hint,
+   217→  value,
+   218→  onChange,
+   219→  presets,
+   220→  ariaLabel,
+   221→  emptyHint,
+   222→}: {
+   223→  label: string;
+   224→  hint?: string;
+   225→  value: string;
+   226→  onChange: (next: string) => void;
+   227→  presets: readonly number[];
+   228→  ariaLabel: string;
+   229→  emptyHint?: string;
+   230→}) {
+   231→  const numeric = Number(digitsOnly(value) || 0);
+   232→  const [customMode, setCustomMode] = useState(false);
+   233→  const { L, lang } = useAppearance();
+   234→  const uniquePresets = useMemo(
+   235→    () => [...new Set(presets.filter((preset) => preset > 0))].sort((a, b) => a - b),
+   236→    [presets],
+   237→  );
+   238→  const showManual = customMode || (numeric > 0 && !uniquePresets.includes(numeric));
+   239→  const selectValue = numeric > 0
+   240→    ? uniquePresets.includes(numeric) && !customMode
+   241→      ? String(numeric)
+   242→      : "__custom__"
+   243→    : "";
+   244→  return (
+   245→    <FieldShell label={label} hint={hint}>
+   246→      {uniquePresets.length > 0 ? (
+   247→        <SelectField
+   248→          ariaLabel={ariaLabel}
+   249→          value={selectValue}
+   250→          onChange={(next) => {
+   251→            if (next === "__custom__") {
+   252→              setCustomMode(true);
+   253→              return;
+   254→            }
+   255→            setCustomMode(false);
+   256→            onChange(next);
+   257→          }}
+   258→          options={[
+   259→            { value: "", label: L("مبلغ توافقی — بدون مبلغ ثابت") },
+   260→            ...uniquePresets.map((preset) => ({ value: String(preset), label: formatToman(preset, lang) })),
+   261→            { value: "__custom__", label: L("مبلغ دلخواه…") },
+   262→          ]}
+   263→        />
+   264→      ) : null}
+   265→      {showManual || uniquePresets.length === 0 ? (
+   266→        <AmountInput value={value} onChange={onChange} ariaLabel={ariaLabel} />
+   267→      ) : null}
+   268→      {!value && emptyHint ? (
+   269→        <span style={{ display: "block", fontSize: 11, color: colors.inkFaint, lineHeight: 1.8 }}>{emptyHint}</span>
+   270→      ) : null}
+   271→    </FieldShell>
+   272→  );
+   273→}
+   274→
+   275→/* ─────────────────────────  بازهٔ بودجهٔ مراسم  ───────────────────────── */
+   276→
+   277→type BudgetTier = { key: string; label: string; sub: string; min: number; max: number };
+   278→
+   279→const BUDGET_TIERS: readonly BudgetTier[] = [
+   280→  { key: "open", label: "توافقی", sub: "بدون کف و سقف بودجه", min: 0, max: 0 },
+   281→  { key: "t500", label: "تا ۵۰۰ هزار", sub: "سقف ۵۰۰ هزار تومان", min: 0, max: 500_000 },
+   282→  { key: "500-1m", label: "۵۰۰ تا ۱ میلیون", sub: "بازهٔ اقتصادی", min: 500_000, max: 1_000_000 },
+   283→  { key: "1-2m", label: "۱ تا ۲ میلیون", sub: "پرترددترین بازه", min: 1_000_000, max: 2_000_000 },
+   284→  { key: "2-3m", label: "۲ تا ۳ میلیون", sub: "اجرای ویژه", min: 2_000_000, max: 3_000_000 },
+   285→  { key: "3m+", label: "بالای ۳ میلیون", sub: "مجلس بزرگ", min: 3_000_000, max: 0 },
+   286→  { key: "custom", label: "بازهٔ دلخواه", sub: "تعیین دقیق کف و سقف", min: -1, max: -1 },
+   287→];
+   288→
+   289→function activeBudgetKey(minValue: number, maxValue: number): string {
+   290→  for (const tier of BUDGET_TIERS) {
+   291→    if (tier.key === "custom") continue;
+   292→    if (tier.min === minValue && tier.max === maxValue) return tier.key;
+   293→  }
+   294→  return minValue > 0 || maxValue > 0 ? "custom" : "open";
+   295→}
+   296→
+   297→/** بازهٔ حق‌الزحمهٔ فراخوان مراسم — فهرست کشویی پیشنهادی + بازهٔ دلخواه. */
+   298→export function PriceRangePicker({
+   299→  minValue,
+   300→  maxValue,
+   301→  onChange,
+   302→}: {
+   303→  minValue: number;
+   304→  maxValue: number;
+   305→  onChange: (next: { min: string; max: string }) => void;
+   306→}) {
+   307→  // بازهٔ دلخواه حتی با مقادیر خالی هم باید فعال بماند — پس علاوه بر تطبیق
+   308→  // مقادیر، یک وضعیت محلی هم نگه می‌داریم.
+   309→  const [customMode, setCustomMode] = useState(false);
+   310→  const { L, lang } = useAppearance();
+   311→  const activeKey = customMode ? "custom" : activeBudgetKey(minValue, maxValue);
+   312→  const select = (tier: BudgetTier) => {
+   313→    if (tier.key === "custom") {
+   314→      setCustomMode(true);
+   315→      onChange({ min: minValue > 0 ? String(minValue) : "", max: maxValue > 0 ? String(maxValue) : "" });
+   316→      return;
+   317→    }
+   318→    setCustomMode(false);
+   319→    onChange({ min: tier.min > 0 ? String(tier.min) : "", max: tier.max > 0 ? String(tier.max) : "" });
+   320→  };
+   321→  return (
+   322→    <FieldShell label="بودجهٔ پیشنهادی" hint="حق‌الزحمهٔ منصفانه برای قاریان">
+   323→      <SelectField
+   324→        ariaLabel="بازهٔ بودجهٔ پیشنهادی"
+   325→        value={activeKey}
+   326→        onChange={(next) => select(BUDGET_TIERS.find((tier) => tier.key === next) ?? BUDGET_TIERS[0])}
+   327→        options={BUDGET_TIERS.map((tier) => ({
+   328→          value: tier.key,
+   329→          label: tier.key === "custom" ? L("بازهٔ دلخواه — تعیین دقیق کف و سقف") : `${L(tier.label)} — ${L(tier.sub)}`,
+   330→        }))}
+   331→      />
+   332→
+   333→      {activeKey === "custom" ? (
+   334→        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: spacing.md, marginTop: spacing.xs }}>
+   335→          <AmountInput value={minValue > 0 ? String(minValue) : ""} onChange={(next) => onChange({ min: next, max: String(maxValue || "") })} ariaLabel="حداقل بودجه به تومان" placeholder="حداقل" />
+   336→          <AmountInput value={maxValue > 0 ? String(maxValue) : ""} onChange={(next) => onChange({ min: String(minValue || ""), max: next })} ariaLabel="حداکثر بودجه به تومان" placeholder="حداکثر" />
+   337→        </div>
+   338→      ) : null}
+   339→
+   340→      <span style={{ display: "block", fontSize: 11.5, color: colors.inkMuted, marginTop: 2 }}>
+   341→        {L("بازهٔ اعلام‌شده به قاریان: {range}").replace("{range}", formatBudgetRange(minValue, maxValue, lang))}
+   342→      </span>
+   343→    </FieldShell>
+   344→  );
+   345→}
+   346→
+   347→/* ─────────────────────────  شمارندهٔ لمسی  ───────────────────────── */
+   348→
+   349→export function CountField({
+   350→  label,
+   351→  hint,
+   352→  value,
+   353→  onChange,
+   354→  presets,
+   355→  min,
+   356→  max,
+   357→  step = 1,
+   358→  unit = "نفر",
+   359→  ariaLabel,
+   360→}: {
+   361→  label: string;
+   362→  hint?: string;
+   363→  value: string;
+   364→  onChange: (next: string) => void;
+   365→  presets: readonly number[];
+   366→  min: number;
+   367→  max: number;
+   368→  step?: number;
+   369→  unit?: string;
+   370→  ariaLabel: string;
+   371→}) {
+   372→  const numeric = Number(digitsOnly(value) || 0);
+   373→  const set = (next: number) => onChange(String(Math.min(max, Math.max(min, Math.round(next)))));
+   374→  const { L, lang } = useAppearance();
+   375→  const presetOptions = presets.filter((preset) => preset >= min && preset <= max);
+   376→  const isPreset = presetOptions.includes(numeric);
+   377→  const stepButtonStyle: CSSProperties = {
+   378→    width: 46,
+   379→    height: 46,
+   380→    display: "grid",
+   381→    placeItems: "center",
+   382→    flex: "0 0 46px",
+   383→    borderRadius: 14,
+   384→    border: `1px solid ${colors.sand200}`,
+   385→    background: colors.surface,
+   386→    color: colors.olive700,
+   387→    cursor: "pointer",
+   388→    fontFamily: typography.fontFamily,
+   389→  };
+   390→  return (
+   391→    <FieldShell label={label} hint={hint}>
+   392→      <SelectField
+   393→        ariaLabel={ariaLabel}
+   394→        value={numeric > 0 ? String(numeric) : ""}
+   395→        onChange={(next) => {
+   396→          if (next) set(Number(next));
+   397→        }}
+   398→        options={[
+   399→          ...(numeric > 0 ? [] : [{ value: "", label: L("انتخاب کنید…") }]),
+   400→          ...presetOptions.map((preset) => ({ value: String(preset), label: `${localizedDigits(preset, lang)} ${L(unit)}` })),
+   401→          ...(numeric > 0 && !isPreset ? [{ value: String(numeric), label: `${localizedDigits(numeric, lang)} ${L(unit)} (${L("دلخواه")})` }] : []),
+   402→        ]}
+   403→      />
+   404→      <div style={{ display: "flex", alignItems: "center", gap: spacing.md }}>
+   405→        <button
+   406→          type="button"
+   407→          aria-label={L("کاهش {x}").replace("{x}", L(ariaLabel))}
+   408→          onClick={() => set((numeric > 0 ? numeric : min) - step)}
+   409→          disabled={numeric <= min}
+   410→          style={{ ...stepButtonStyle, opacity: numeric <= min ? 0.45 : 1 }}
+   411→        >
+   412→          <Icon name="x" size={18} stroke={2.4} />
+   413→        </button>
+   414→        <strong
+   415→          aria-live="polite"
+   416→          style={{
+   417→            flex: 1,
+   418→            textAlign: "center",
+   419→            fontSize: 23,
+   420→            fontWeight: 900,
+   421→            color: colors.olive700,
+   422→            fontVariantNumeric: "tabular-nums",
+   423→          }}
+   424→        >
+   425→          {numeric > 0 ? localizedDigits(numeric, lang) : "—"}
+   426→          {numeric > 0 && unit ? <span style={{ fontSize: 12, fontWeight: 700, color: colors.inkMuted }}> {L(unit)}</span> : null}
+   427→        </strong>
+   428→        <button
+   429→          type="button"
+   430→          aria-label={L("افزایش {x}").replace("{x}", L(ariaLabel))}
+   431→          onClick={() => set((numeric > 0 ? numeric : min - step) + step)}
+   432→          disabled={numeric >= max}
+   433→          style={{ ...stepButtonStyle, opacity: numeric >= max ? 0.45 : 1 }}
+   434→        >
+   435→          <Icon name="plus" size={18} stroke={2.4} />
+   436→        </button>
+   437→      </div>
+   438→    </FieldShell>
+   439→  );
+   440→}
+   441→
+   442→/* ─────────────────────────  شهر و مکان  ───────────────────────── */
+   443→
+   444→export function CityPicker({
+   445→  value,
+   446→  onChange,
+   447→  label = "شهر برگزاری",
+   448→  hint = "اجباری",
+   449→}: {
+   450→  value: string;
+   451→  onChange: (next: string) => void;
+   452→  label?: string;
+   453→  hint?: string;
+   454→}) {
+   455→  const trimmed = value.trim();
+   456→  const { L } = useAppearance();
+   457→  const known = POPULAR_CITIES.includes(trimmed);
+   458→  const selectValue = trimmed === "" ? "" : known ? trimmed : "__other__";
+   459→  return (
+   460→    <FieldShell label={label} hint={hint}>
+   461→      <SelectField
+   462→        ariaLabel={label}
+   463→        value={selectValue}
+   464→        onChange={(next) => onChange(next === "__other__" ? "" : next)}
+   465→        options={[
+   466→          { value: "", label: L("انتخاب شهر…") },
+   467→          ...POPULAR_CITIES.map((cityOption) => ({ value: cityOption, label: L(cityOption) })),
+   468→          { value: "__other__", label: L("شهر دیگر…") },
+   469→        ]}
+   470→      />
+   471→      {selectValue === "__other__" ? (
+   472→        <input
+   473→          type="text"
+   474→          value={value}
+   475→          onChange={(event) => onChange(event.target.value.slice(0, 60))}
+   476→          placeholder={L("نام شهر را بنویسید…")}
+   477→          style={{ ...inputStyle, minHeight: 46 }}
+   478→          aria-label={L("نام شهر")}
+   479→        />
+   480→      ) : null}
+   481→    </FieldShell>
+   482→  );
+   483→}
+   484→
+   485→/* ─────────────  موقعیت‌یاب دستگاه (GPS + معکوس‌یابی + نقشه)  ───────────── */
+   486→
+   487→type DetectedPlace = { city: string; address: string; lat: number; lon: number };
+   488→
+   489→function osmEmbedSrc(lat: number, lon: number): string {
+   490→  const dLat = 0.0032;
+   491→  const dLon = 0.0042;
+   492→  return `https://www.openstreetmap.org/export/embed.html?bbox=${(lon - dLon).toFixed(5)}%2C${(lat - dLat).toFixed(5)}%2C${(lon + dLon).toFixed(5)}%2C${(lat + dLat).toFixed(5)}&layer=mapnik&marker=${lat.toFixed(5)}%2C${lon.toFixed(5)}`;
+   493→}
+   494→
+   495→function osmLink(lat: number, lon: number): string {
+   496→  return `https://www.openstreetmap.org/?mlat=${lat.toFixed(5)}&mlon=${lon.toFixed(5)}#map=17/${lat.toFixed(5)}/${lon.toFixed(5)}`;
+   497→}
+   498→
+   499→function getCurrentPosition(): Promise<GeolocationPosition> {
+   500→  return new Promise((resolve, reject) => {
+   501→    if (typeof navigator === "undefined" || !navigator.geolocation) {
+   502→      reject(new Error("unsupported"));
+   503→      return;
+   504→    }
+   505→    navigator.geolocation.getCurrentPosition(
+   506→      resolve,
+   507→      reject,
+   508→      { enableHighAccuracy: true, timeout: 12000, maximumAge: 60_000 },
+   509→    );
+   510→  });
+   511→}
+   512→
+   513→async function reverseGeocodeNominatim(lat: number, lon: number): Promise<{ city: string; address: string } | null> {
+   514→  const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&zoom=17&addressdetails=1&accept-language=fa`;
+   515→  const response = await fetch(url, { headers: { Accept: "application/json" } });
+   516→  if (!response.ok) return null;
+   517→  const data = (await response.json()) as Record<string, unknown>;
+   518→  const address = (data.address && typeof data.address === "object" ? data.address : {}) as Record<string, unknown>;
+   519→  const pick = (key: string): string => (typeof address[key] === "string" ? (address[key] as string).trim() : "");
+   520→  const city = pick("city") || pick("town") || pick("village") || pick("municipality") || pick("county") || pick("state");
+   521→  const parts = [pick("amenity"), pick("road"), pick("neighbourhood"), pick("quarter"), pick("suburb")]
+   522→    .filter((part) => part.length > 0);
+   523→  const unique = [...new Set(parts)];
+   524→  if (!city && unique.length === 0) return null;
+   525→  return { city, address: unique.join("، ") };
+   526→}
+   527→
+   528→async function reverseGeocodeFallback(lat: number, lon: number): Promise<{ city: string; address: string } | null> {
+   529→  const url = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=fa`;
+   530→  const response = await fetch(url);
+   531→  if (!response.ok) return null;
+   532→  const data = (await response.json()) as Record<string, unknown>;
+   533→  const str = (value: unknown): string => (typeof value === "string" ? value.trim() : "");
+   534→  const city = str(data.city) || str(data.locality) || str(data.principalSubdivision);
+   535→  if (!city) return null;
+   536→  const locality = str(data.locality);
+   537→  return { city, address: locality && locality !== city ? locality : "" };
+   538→}
+   539→
+   540→function geoErrorText(error: unknown): string {
+   541→  const code = typeof (error as GeolocationPositionError)?.code === "number" ? (error as GeolocationPositionError).code : 0;
+   542→  if (code === 1) return "دسترسی به موقعیت دستگاه داده نشد؛ مجوز موقعیت را در تنظیمات فعال کنید یا نشانی را دستی وارد کنید.";
+   543→  if (code === 3) return "یافتن موقعیت بیش از حد طول کشید؛ لطفاً دوباره تلاش کنید.";
+   544→  return "موقعیت دستگاه در دسترس نیست؛ نشانی را دستی وارد کنید.";
+   545→}
+   546→
+   547→function stripVenuePrefix(value: string): string {
+   548→  let rest = value.trim();
+   549→  for (const venueType of VENUE_TYPES) {
+   550→    rest = rest.replace(new RegExp(`^${venueType}\\s*[-–—،,]?\\s*`), "");
+   551→  }
+   552→  return rest.trim();
+   553→}
+   554→
+   555→/**
+   556→ * انتخاب‌گر مکان مراسم: تراشه‌های نوع مکان + ورودی نشانی + دکمهٔ
+   557→ * «استفاده از موقعیت من» که شهر و نشانی را از GPS و معکوس‌یابی پر می‌کند
+   558→ * و پیش‌نمایش نقشهٔ همان نقطه را نشان می‌دهد.
+   559→ */
+   560→export function VenuePicker({
+   561→  city,
+   562→  venue,
+   563→  onCityChange,
+   564→  onVenueChange,
+   565→  label = "نشانی دقیق یا مشخصات مکان",
+   566→  hint = "اختیاری و محرمانه — فقط برای قاریِ انتخاب‌شده نشان داده می‌شود",
+   567→  cityLabel,
+   568→}: {
+   569→  city: string;
+   570→  venue: string;
+   571→  onCityChange: (next: string) => void;
+   572→  onVenueChange: (next: string) => void;
+   573→  label?: string;
+   574→  hint?: string;
+   575→  cityLabel?: string;
+   576→}) {
+   577→  const [geoState, setGeoState] = useState<"idle" | "locating" | "done" | "error">("idle");
+   578→  const [geoError, setGeoError] = useState("");
+   579→  const [detected, setDetected] = useState<DetectedPlace | null>(null);
+   580→  const [showMap, setShowMap] = useState(true);
+   581→  const { L, lang } = useAppearance();
+   582→
+   583→  const locate = async () => {
+   584→    if (geoState === "locating") return;
+   585→    setGeoState("locating");
+   586→    setGeoError("");
+   587→    try {
+   588→      const position = await getCurrentPosition();
+   589→      const lat = position.coords.latitude;
+   590→      const lon = position.coords.longitude;
+   591→      let resolved: { city: string; address: string } | null = null;
+   592→      try {
+   593→        resolved = await reverseGeocodeNominatim(lat, lon);
+   594→      } catch {
+   595→        resolved = null;
+   596→      }
+   597→      if (!resolved) {
+   598→        try {
+   599→          resolved = await reverseGeocodeFallback(lat, lon);
+   600→        } catch {
+   601→          resolved = null;
+   602→        }
+   603→      }
+   604→      if (resolved) {
+   605→        setDetected({ city: resolved.city, address: resolved.address, lat, lon });
+   606→        setShowMap(true);
+   607→        setGeoState("done");
+   608→        if (resolved.city) onCityChange(resolved.city.slice(0, 60));
+   609→        if (resolved.address && !venue.trim()) onVenueChange(resolved.address.slice(0, 200));
+   610→      } else {
+   611→        setDetected({ city: "", address: "", lat, lon });
+   612→        setShowMap(true);
+   613→        setGeoState("done");
+   614→        setGeoError(L("موقعیت یافت شد اما نشانی خودکار در دسترس نبود؛ شهر و نشانی را دستی وارد کنید."));
+   615→      }
+   616→    } catch (caught) {
+   617→      setGeoState("error");
+   618→      setGeoError(L(geoErrorText(caught)));
+   619→    }
+   620→  };
+   621→
+   622→  const detectedAddress = detected?.address ?? "";
+   623→  const venueTypePrefix = VENUE_TYPES.find((venueType) => {
+   624→    const trimmedVenue = venue.trim();
+   625→    return trimmedVenue.startsWith(venueType) || trimmedVenue.startsWith(L(venueType));
+   626→  }) ?? "";
+   627→  const applyDetected = () => {
+   628→    if (!detected) return;
+   629→    if (detected.address) onVenueChange(detected.address.slice(0, 200));
+   630→    if (detected.city) onCityChange(detected.city.slice(0, 60));
+   631→  };
+   632→
+   633→  const actionCard: CSSProperties = {
+   634→    display: "flex",
+   635→    alignItems: "center",
+   636→    gap: 10,
+   637→    padding: "11px 13px",
+   638→    borderRadius: 14,
+   639→    border: `1px solid ${geoState === "error" ? "rgba(166,81,81,.35)" : colors.goldSoft}`,
+   640→    background: geoState === "error" ? colors.dangerBackground : colors.goldBackground,
+   641→    color: geoState === "error" ? colors.danger : colors.goldDark,
+   642→  };
+   643→
+   644→  return (
+   645→    <div style={{ display: "grid", gap: spacing.lg }}>
+   646→      <CityPicker value={city} onChange={onCityChange} label={cityLabel ?? "شهر برگزاری"} hint="اجباری" />
+   647→
+   648→      <FieldShell label={label} hint={hint}>
+   649→        <SelectField
+   650→          label="نوع مکان"
+   651→          hint="برای پرکردن سریع"
+   652→          ariaLabel="نوع مکان مراسم"
+   653→          value={venueTypePrefix}
+   654→          onChange={(next) =>
+   655→            onVenueChange(next ? `${L(next)} ${stripVenuePrefix(venue)}`.trim() : stripVenuePrefix(venue))
+   656→          }
+   657→          options={[
+   658→            { value: "", label: L("بدون نوع مشخص…") },
+   659→            ...VENUE_TYPES.map((venueType) => ({ value: venueType, label: L(venueType) })),
+   660→          ]}
+   661→        />
+   662→        <input
+   663→          type="text"
+   664→          value={venue}
+   665→          onChange={(event) => onVenueChange(event.target.value.slice(0, 200))}
+   666→          placeholder={L("نشانی دقیق؛ مثلاً: مسجد جامع، سالن شماره ۲…")}
+   667→          style={{ ...inputStyle, minHeight: 46 }}
+   668→          aria-label={L(label)}
+   669→        />
+   670→      </FieldShell>
+   671→
+   672→      <div style={{ display: "grid", gap: spacing.sm }}>
+   673→        {geoState === "done" && detected ? (
+   674→          <div style={{ ...actionCard, border: `1px solid rgba(94,110,67,.35)`, background: colors.successBackground, color: colors.olive800 }}>
+   675→            <Icon name="checkCircle" size={19} style={{ flex: "0 0 auto" }} />
+   676→            <div style={{ minWidth: 0, flex: 1 }}>
+   677→              <strong style={{ display: "block", fontSize: 12.5, fontWeight: 800 }}>
+   678→                {detected.city
+   679→                  ? L("شهر «{city}» از موقعیت دستگاه ثبت شد").replace("{city}", detected.city)
+   680→                  : L("موقعیت دستگاه ثبت شد")}
+   681→              </strong>
+   682→              <span style={{ display: "block", fontSize: 11, opacity: 0.85, lineHeight: 1.7 }}>
+   683→                {detected.address
+   684→                  ? L("نشانی شناسایی‌شده: {address}").replace("{address}", detected.address)
+   685→                  : L("مختصات: {lat} ، {lon}")
+   686→                      .replace("{lat}", localizedDigits(detected.lat.toFixed(4), lang))
+   687→                      .replace("{lon}", localizedDigits(detected.lon.toFixed(4), lang))}
+   688→              </span>
+   689→            </div>
+   690→            <button
+   691→              type="button"
+   692→              onClick={() => void locate()}
+   693→              aria-label={L("تازه‌سازی موقعیت")}
+   694→              style={{ background: "none", border: "none", cursor: "pointer", color: "inherit", padding: 6, fontFamily: typography.fontFamily }}
+   695→            >
+   696→              <Icon name="refresh" size={17} />
+   697→            </button>
+   698→          </div>
+   699→        ) : null}
+   700→
+   701→        {detectedAddress && venue.trim() && venue.trim() !== detectedAddress ? (
+   702→          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 12px", borderRadius: 13, background: colors.sand100, border: `1px solid ${colors.sand200}` }}>
+   703→            <Icon name="pin" size={15} style={{ color: colors.olive600, flex: "0 0 auto" }} />
+   704→            <span style={{ minWidth: 0, flex: 1, fontSize: 11.5, color: colors.inkSecondary, lineHeight: 1.7 }}>
+   705→              {L("نشانی شناسایی‌شده: {address}").replace("{address}", detectedAddress)}
+   706→            </span>
+   707→            <button
+   708→              type="button"
+   709→              onClick={applyDetected}
+   710→              style={{
+   711→                flex: "0 0 auto",
+   712→                minHeight: 34,
+   713→                padding: "0 12px",
+   714→                borderRadius: 999,
+   715→                border: `1px solid ${colors.olive200}`,
+   716→                background: colors.surface,
+   717→                color: colors.olive700,
+   718→                fontSize: 11.5,
+   719→                fontWeight: 800,
+   720→                cursor: "pointer",
+   721→                fontFamily: typography.fontFamily,
+   722→              }}
+   723→            >
+   724→              {L("درج در نشانی")}
+   725→            </button>
+   726→          </div>
+   727→        ) : null}
+   728→
+   729→        {geoState !== "done" ? (
+   730→          <button
+   731→            type="button"
+   732→            onClick={() => void locate()}
+   733→            disabled={geoState === "locating"}
+   734→            aria-label={L("استفاده از موقعیت دستگاه برای پرکردن نشانی")}
+   735→            style={{ ...actionCard, cursor: geoState === "locating" ? "wait" : "pointer", fontFamily: typography.fontFamily, textAlign: "right" }}
+   736→          >
+   737→            {geoState === "locating" ? (
+   738→              <span aria-hidden="true" className="vodda-spinner" style={{ flex: "0 0 auto" }} />
+   739→            ) : (
+   740→              <Icon name="pin" size={19} style={{ flex: "0 0 auto" }} />
+   741→            )}
+   742→            <span style={{ minWidth: 0, flex: 1 }}>
+   743→              <strong style={{ display: "block", fontSize: 12.5, fontWeight: 800 }}>
+   744→                {geoState === "locating" ? L("در حال یافتن موقعیت…") : L("استفاده از موقعیت من")}
+   745→              </strong>
+   746→              <span style={{ display: "block", fontSize: 11, opacity: 0.85, lineHeight: 1.7 }}>
+   747→                {geoState === "error" ? geoError : L("شهر و نشانی به‌صورت خودکار از GPS پر می‌شود")}
+   748→              </span>
+   749→            </span>
+   750→          </button>
+   751→        ) : null}
+   752→
+   753→        {detected && showMap ? (
+   754→          <div style={{ borderRadius: 14, overflow: "hidden", border: `1px solid ${colors.sand200}`, position: "relative" }}>
+   755→            <iframe
+   756→              title={L("پیش‌نمایش نقشهٔ موقعیت مراسم")}
+   757→              src={osmEmbedSrc(detected.lat, detected.lon)}
+   758→              loading="lazy"
+   759→              style={{ width: "100%", height: 150, border: 0, display: "block", background: colors.sand100 }}
+   760→            />
+   761→            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: colors.surface, borderTop: `1px solid ${colors.sand150}` }}>
+   762→              <a
+   763→                href={osmLink(detected.lat, detected.lon)}
+   764→                target="_blank"
+   765→                rel="noopener noreferrer"
+   766→                style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11.5, fontWeight: 800, color: colors.olive700, textDecoration: "none" }}
+   767→              >
+   768→                <Icon name="arrowUpRight" size={13} />
+   769→                {L("مشاهده روی نقشه")}
+   770→              </a>
+   771→              <span aria-hidden="true" style={{ flex: 1 }} />
+   772→              <button
+   773→                type="button"
+   774→                onClick={() => setShowMap(false)}
+   775→                style={{ background: "none", border: "none", cursor: "pointer", color: colors.inkFaint, padding: 4, fontFamily: typography.fontFamily, fontSize: 11 }}
+   776→              >
+   777→                {L("بستن نقشه")}
+   778→              </button>
+   779→            </div>
+   780→          </div>
+   781→        ) : null}
+   782→
+   783→        <span style={{ display: "block", fontSize: 10.5, color: colors.inkFaint, lineHeight: 1.8 }}>
+   784→          {L("موقعیت دستگاه شما فقط برای پرکردن متن نشانی استفاده می‌شود و تنها به قاریِ انتخاب‌شده نمایش داده می‌شود.")}
+   785→        </span>
+   786→      </div>
+   787→    </div>
+   788→  );
+   789→}
+   790→
+   791→/* ─────────────────────────  ساعت‌های پیشنهادی  ───────────────────────── */
+   792→
+   793→/** انتخاب‌گر ساعت پیشنهادی نماز‌محور — فهرست کشویی به‌جای ردیف تراشه‌ها. */
+   794→export function TimePresetSelect({
+   795→  hh,
+   796→  mm,
+   797→  onPick,
+   798→}: {
+   799→  hh: number;
+   800→  mm: number;
+   801→  onPick: (next: { hh: number; mm: number }) => void;
+   802→}) {
+   803→  const value = TIME_PRESETS.some((preset) => preset.hh === hh && preset.mm === mm)
+   804→    ? `${hh}:${mm}`
+   805→    : "__manual__";
+   806→  const { L } = useAppearance();
+   807→  return (
+   808→    <SelectField
+   809→      label="ساعت پیشنهادی"
+   810→      hint="یا از پیکر بالا انتخاب کنید"
+   811→      ariaLabel="ساعت‌های پیشنهادی مراسم"
+   812→      value={value}
+   813→      onChange={(next) => {
+   814→        const preset = TIME_PRESETS.find((item) => `${item.hh}:${item.mm}` === next);
+   815→        if (preset) onPick({ hh: preset.hh, mm: preset.mm });
+   816→      }}
+   817→      options={[
+   818→        ...TIME_PRESETS.map((preset) => ({ value: `${preset.hh}:${preset.mm}`, label: L(preset.label) })),
+   819→        { value: "__manual__", label: L("ساعت دلخواه") },
+   820→      ]}
+   821→    />
+   822→  );
+   823→}
+   824→
+   825→/* ─────────────────────────  قالب‌های یادداشت  ───────────────────────── */
+   826→
+   827→export function NoteTemplateChips({ value, onChange }: { value: string; onChange: (next: string) => void }) {
+   828→  const { L, lang } = useAppearance();
+   829→  // جداکنندهٔ یادداشت‌ها در حالت انگلیسی نقطه‌ویرگول لاتین است.
+   830→  const sep = lang === "en" ? ";" : "؛";
+   831→  const toggle = (text: string) => {
+   832→    const current = value.trim();
+   833→    if (current.includes(text)) {
+   834→      const next = current
+   835→        .replace(`${sep} ${text}`, "")
+   836→        .replace(`${sep} ${text}${sep}`, "")
+   837→        .replace(`${text}${sep} `, "")
+   838→        .replace(text, "")
+   839→        .replace(new RegExp(`${sep}\\s*${sep}`, "g"), sep)
+   840→        .replace(new RegExp(`^[${sep}\\s]+|[${sep}\\s]+$`, "g"), "")
+   841→        .trim();
+   842→      onChange(next);
+   843→      return;
+   844→    }
+   845→    onChange(current ? `${current}${sep} ${text}` : text);
+   846→  };
+   847→  return (
+   848→    <div style={{ display: "flex", flexWrap: "wrap", gap: spacing.sm }}>
+   849→      {NOTE_TEMPLATES.map((template) => {
+   850→        const text = L(template.text);
+   851→        return (
+   852→          <Chip key={template.chip} active={value.includes(text)} onClick={() => toggle(text)}>
+   853→            {L(template.chip)}
+   854→          </Chip>
+   855→        );
+   856→      })}
+   857→    </div>
+   858→  );
+   859→}
+   860→
+   861→/* ─────────────────────────  مدت اجرا  ───────────────────────── */
+   862→
+   863→export function DurationPicker({ value, onChange }: { value: string; onChange: (next: string) => void }) {
+   864→  const presets: readonly number[] = [30, 45, 60, 90, 120, 180];
+   865→  const numeric = Number(digitsOnly(value) || 0);
+   866→  const isPreset = presets.includes(numeric);
+   867→  const { L, lang } = useAppearance();
+   868→  return (
+   869→    <FieldShell label="مدت اجرا" hint="دقیقه">
+   870→      <SelectField
+   871→        ariaLabel="مدت اجرا به دقیقه"
+   872→        value={numeric > 0 && isPreset ? String(numeric) : numeric > 0 ? "__custom__" : ""}
+   873→        onChange={(next) => {
+   874→          if (next && next !== "__custom__") onChange(next);
+   875→        }}
+   876→        options={[
+   877→          { value: "", label: L("انتخاب مدت اجرا…") },
+   878→          ...presets.map((preset) => ({ value: String(preset), label: `${localizedDigits(preset, lang)} ${L("دقیقه")}` })),
+   879→          { value: "__custom__", label: L("دقیقهٔ دلخواه…") },
+   880→        ]}
+   881→      />
+   882→      {numeric > 0 && !isPreset ? (
+   883→        <input
+   884→          type="text"
+   885→          inputMode="numeric"
+   886→          value={localizedDigits(value, lang)}
+   887→          onChange={(event) => onChange(digitsOnly(event.target.value, 4))}
+   888→          placeholder={L("دقیقهٔ دلخواه…")}
+   889→          style={{ ...inputStyle, minHeight: 46 }}
+   890→          aria-label={L("مدت اجرا به دقیقه")}
+   891→        />
+   892→      ) : null}
+   893→    </FieldShell>
+   894→  );
+   895→}
+   896→
+   897→/* ─────────────────────────  شهرهای پذیرش (چند انتخابی)  ───────────────────────── */
+   898→
+   899→export function CitiesChipsField({
+   900→  value,
+   901→  onChange,
+   902→  label = "شهرهای پذیرش مراسم",
+   903→}: {
+   904→  value: string;
+   905→  onChange: (next: string) => void;
+   906→  label?: string;
+   907→}) {
+   908→  const selected = useMemo(
+   909→    () => value.split(/[،,]/).map((part) => part.trim()).filter(Boolean),
+   910→    [value],
+   911→  );
+   912→  const available = POPULAR_CITIES.filter((cityOption) => !selected.includes(cityOption));
+   913→  const add = (cityOption: string) => onChange([...selected, cityOption].join("، "));
+   914→  const remove = (cityOption: string) => onChange(selected.filter((city) => city !== cityOption).join("، "));
+   915→  const customSelected = selected.filter((city) => !POPULAR_CITIES.includes(city));
+   916→  const { L } = useAppearance();
+   917→  return (
+   918→    <FieldShell label={label} hint="از فهرست انتخاب یا بنویسید">
+   919→      {selected.length === 0 ? (
+   920→        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700, color: colors.olive700, background: colors.olive50, border: `1px solid ${colors.olive200}`, borderRadius: 999, padding: "6px 12px" }}>
+   921→          <Icon name="checkCircle" size={14} />
+   922→          {L("همهٔ شهرها — بدون محدودیت")}
+   923→        </span>
+   924→      ) : (
+   925→        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+   926→          {selected.map((city, index) => (
+   927→            <span
+   928→              key={`${city}-${index}`}
+   929→              style={{ display: "inline-flex", alignItems: "center", gap: 5, minHeight: 34, padding: "5px 8px 5px 12px", borderRadius: 999, fontSize: 12, fontWeight: 700, color: colors.olive700, background: colors.olive50, border: `1px solid ${colors.olive200}` }}
+   930→            >
+   931→              {L(city)}
+   932→              <button
+   933→                type="button"
+   934→                aria-label={L("حذف {city}").replace("{city}", L(city))}
+   935→                onClick={() => remove(city)}
+   936→                className="vodda-hit"
+   937→                style={{ width: 24, height: 24, display: "grid", placeItems: "center", padding: 0, border: 0, borderRadius: "50%", color: colors.olive600, background: "transparent", cursor: "pointer", fontFamily: typography.fontFamily }}
+   938→              >
+   939→                <Icon name="x" size={12} stroke={2.4} />
+   940→              </button>
+   941→            </span>
+   942→          ))}
+   943→        </div>
+   944→      )}
+   945→      {available.length > 0 ? (
+   946→        <SelectField
+   947→          ariaLabel="افزودن شهر پذیرش"
+   948→          value=""
+   949→          onChange={(next) => {
+   950→            if (next) add(next);
+   951→          }}
+   952→          options={[
+   953→            { value: "", label: selected.length === 0 ? L("محدود به شهرهای…") : L("افزودن شهر…") },
+   954→            ...available.map((cityOption) => ({ value: cityOption, label: L(cityOption) })),
+   955→          ]}
+   956→        />
+   957→      ) : null}
+   958→      <input
+   959→        type="text"
+   960→        value={customSelected.join("، ")}
+   961→        onChange={(event) => {
+   962→          const typed = event.target.value.split(/[،,]/).map((part) => part.trim()).filter(Boolean);
+   963→          onChange([...selected.filter((city) => POPULAR_CITIES.includes(city)), ...typed].join("، "));
+   964→        }}
+   965→        placeholder={L("شهر دیگر را اینجا بنویسید (با ویرگول جدا کنید)…")}
+   966→        style={{ ...inputStyle, minHeight: 46 }}
+   967→        aria-label={L("شهرهای دیگر")}
+   968→      />
+   969→    </FieldShell>
+   970→  );
+   971→}
+   972→
