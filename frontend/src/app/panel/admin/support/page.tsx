@@ -157,7 +157,7 @@ function StaffAudioBubble({ url, durationMs, mine }: { url: string; durationMs: 
         padding: '7px 10px',
         borderRadius: 999,
         border: `1px solid ${mine ? 'rgba(255,255,255,.35)' : 'var(--olive-200, #d6dcc4)'}`,
-        background: mine ? 'rgba(255,255,255,.12)' : '#fff',
+        background: mine ? 'var(--olive-600, #5e6e43)' : '#fff',
       }}
     >
       <button

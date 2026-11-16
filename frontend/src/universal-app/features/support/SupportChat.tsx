@@ -135,7 +135,7 @@ function AudioBubble({
         padding: "7px 10px",
         borderRadius: 999,
         border: `1px solid ${mine ? "rgba(255,250,240,.35)" : colors.olive200}`,
-        background: mine ? "rgba(255,255,255,.12)" : colors.surface,
+        background: mine ? colors.olive600 : colors.surface,
         color: mine ? colors.onOlive : colors.ink,
       }}
     >
