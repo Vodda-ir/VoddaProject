@@ -10,6 +10,7 @@ import { usePlatform } from "../../platform/context";
 import { navigateApp } from "../../router";
 import { digitsOnly, localizedDigits } from "../../ui/persian";
 import { useAppearance } from "../../ui/appearance";
+import { localizeCityName } from "../../i18n/transliterate";
 import { formatAppDateTime } from "../../ui/jalali";
 import {
   Button,
@@ -129,7 +130,7 @@ function ServiceForm({
                 }}
               >
                 <TopicIcon icon={item.icon} size={14} />
-                {item.title}
+                {L(item.title)}
               </button>
             ))}
           </div>
@@ -180,7 +181,7 @@ function ServiceForm({
 
 export function TeacherPresenceScreen({ config }: { config: UniversalAppConfig }) {
   const runtime = usePlatform();
-  const { L, lang } = useAppearance();
+  const { L, lang, N } = useAppearance();
   const [tab, setTab] = useState<"services" | "bookings">("services");
   const [services, setServices] = useState<PresenceService[]>([]);
   const [bookings, setBookings] = useState<CeremonyBooking[]>([]);
@@ -404,7 +405,7 @@ export function TeacherPresenceScreen({ config }: { config: UniversalAppConfig }
                   <Button variant="secondary" onClick={() => { setForm(formOf(service)); setFormError(""); }} style={{ minHeight: 42, paddingInline: 14, marginInlineStart: "auto" }}>
                     {L("ویرایش")}
                   </Button>
-                  <Button variant="ghost" onClick={() => setDeleteTarget(service)} aria-label={L("حذف خدمت {title}").replace("{title}", service.title)} style={{ minHeight: 42, width: 42, padding: 0, color: colors.danger }}>
+                  <Button variant="ghost" onClick={() => setDeleteTarget(service)} aria-label={L("حذف خدمت {title}").replace("{title}", L(service.title))} style={{ minHeight: 42, width: 42, padding: 0, color: colors.danger }}>
                     <Icon name="trash" size={17} />
                   </Button>
                 </div>
@@ -469,15 +470,15 @@ export function TeacherPresenceScreen({ config }: { config: UniversalAppConfig }
                 }}
               >
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: spacing.md }}>
-                  <strong style={{ fontSize: 14, color: colors.ink, minWidth: 0 }}>{booking.service_title}</strong>
+                  <strong style={{ fontSize: 14, color: colors.ink, minWidth: 0 }}>{L(booking.service_title)}</strong>
                   <ToneChip tone={bookingStatusMeta[booking.status]} />
                 </div>
                 <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: colors.inkSecondary, background: colors.sand50, borderRadius: 12, padding: "8px 11px" }}>
                   <Icon name="calendar" size={14} style={{ color: colors.olive500, flex: "0 0 auto" }} />
-                  {formatAppDateTime(booking.scheduled_at, lang)} · 📍 {booking.city || "—"}
+                  {formatAppDateTime(booking.scheduled_at, lang)} · 📍 {localizeCityName(booking.city, lang) || "—"}
                 </span>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontSize: 12, color: colors.inkMuted }}>{L("برگزارکننده:")} {booking.organizer.name}</span>
+                  <span style={{ fontSize: 12, color: colors.inkMuted }}>{L("برگزارکننده:")} {N(booking.organizer.name)}</span>
                   <span style={{ marginInlineStart: "auto", fontSize: 12.5, fontWeight: 800, color: colors.goldDark }}>{formatAmountFull(booking.price, lang)}</span>
                   <Icon name="chevronL" size={15} style={{ color: colors.inkFaint }} />
                 </div>

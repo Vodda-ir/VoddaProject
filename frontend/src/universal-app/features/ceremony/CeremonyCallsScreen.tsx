@@ -10,6 +10,7 @@ import { usePlatform } from "../../platform/context";
 import { navigateApp } from "../../router";
 import { localizedDigits } from "../../ui/persian";
 import { useAppearance } from "../../ui/appearance";
+import { localizeCityName } from "../../i18n/transliterate";
 import {
   Button,
   Card,
@@ -53,9 +54,9 @@ function CallRow({ view, onOpen }: { view: CeremonyCallView; onOpen: () => void 
           <TopicIcon icon={call.icon} size={20} />
         </span>
         <div style={{ minWidth: 0, flex: 1 }}>
-          <strong style={{ display: "block", fontSize: 14.5, fontWeight: 800, color: colors.ink }}>{call.title}</strong>
+          <strong style={{ display: "block", fontSize: 14.5, fontWeight: 800, color: colors.ink }}>{L(call.title)}</strong>
           <span style={{ display: "block", fontSize: 12, color: colors.inkMuted, marginTop: 2 }}>
-            {ceremonyWhenLabel(call, lang)} · {call.city || L("شهر نامشخص")}
+            {ceremonyWhenLabel(call, lang)} · {localizeCityName(call.city, lang) || L("شهر نامشخص")}
           </span>
         </div>
         <Icon name="chevronL" size={16} style={{ color: colors.inkFaint, flex: "0 0 auto" }} />

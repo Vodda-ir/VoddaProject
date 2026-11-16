@@ -53,7 +53,7 @@ function formatDate(value: string, lang: "fa" | "en"): string {
 
 export function TeacherReviewsScreen() {
   const runtime = usePlatform();
-  const { L, lang } = useAppearance();
+  const { L, lang, N } = useAppearance();
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -115,7 +115,7 @@ export function TeacherReviewsScreen() {
             <div style={{ display: "flex", alignItems: "center", gap: spacing.sm }}>
               <Avatar name={review.learnerName} src={review.learnerAvatar} size={46} ring />
               <div style={{ minWidth: 0, flex: 1 }}>
-                <strong style={{ ...typography.body, display: "block" }}>{review.learnerName}</strong>
+                <strong style={{ ...typography.body, display: "block" }}>{N(review.learnerName)}</strong>
                 {review.createdAt ? (
                   <span style={{ ...typography.caption, color: colors.inkMuted }}>{formatDate(review.createdAt, lang)}</span>
                 ) : null}
@@ -123,7 +123,7 @@ export function TeacherReviewsScreen() {
               <span aria-label={L("امتیاز {n} از ۵").replace("{n}", localizedDigits(review.rating, lang))} style={{ display: "inline-flex", alignItems: "center", gap: 3, ...typography.body, color: colors.goldDark, fontWeight: 900 }}><Icon name="star" size={15} fill style={{ color: colors.gold }} />{localizedDigits(review.rating, lang)}</span>
             </div>
             {review.text.trim() ? (
-              <p style={{ ...typography.body, margin: 0, color: colors.inkSecondary, whiteSpace: "pre-wrap" }}>{review.text}</p>
+              <p style={{ ...typography.body, margin: 0, color: colors.inkSecondary, whiteSpace: "pre-wrap" }}>{L(review.text)}</p>
             ) : (
               <p style={{ ...typography.caption, margin: 0, color: colors.inkMuted }}>{L("بدون متن")}</p>
             )}

@@ -378,3 +378,11 @@ const f: Record<string, string> = {
   "استاد قرآن کریم": "Quran instructor",};
 
 export default f;
+
+/* ───────────  پشتیبان‌های باقی‌مانده (audit کامل انگلیسی‌سازی)  ─────────── */
+f["تعرفه ۳۰ دقیقه"] = "30-minute rate";
+f["تعرفه ۶۰ دقیقه"] = "60-minute rate";
+f["خدمات رسمی"] = "Official services";
+f["اینجا خدمات جلسهٔ آنلاین شماست: برای انتخاب هر خدمت فقط یک بار روی آن بزنید؛ خدمت انتخابی "] = "This is where your online session services live: tap each service once to select it; the selected service turns ";
+f[" می‌شود، قیمت پیش‌فرض دارد و بلافاصله قابل رزرو است. خدمات حضوری مراسم (تلاوت مجلسی، ختم، اذان و…) مسیر جداگانه‌ای دارد: بخش «خدمات حضوری»."] = ", gets a default price and becomes instantly bookable. In-person ceremony services (majlis recitation, khatm, azan and more) have a separate path: the In-person services section.";
+f["📖 معرفی کوتاه خود را اینجا بنویسید؛ سابقه، سبک تدریس و دستاورد‌ها…\n🎯 زمینه‌های تدریس:\n• روخوانی و تجوید قرآن کریم\n• حفظ قرآن به روش تکرار هوشمند\n• آموزش مقدماتی تجوید\n📍 مدرک یا اجازه | شهر"] = "📖 Write a short intro here; your background, teaching style and achievements…\n🎯 Teaching areas:\n• Recitation and tajwid of the Holy Quran\n• Quran memorization with the smart-repetition method\n• Introductory tajwid\n📍 Certificate or license | City";

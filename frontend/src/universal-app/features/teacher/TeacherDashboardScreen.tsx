@@ -52,7 +52,7 @@ async function loadFeatureSwitches(runtime: PlatformRuntime): Promise<FeatureSwi
 function amountLabel(value: number, lang: "fa" | "en"): string {
   return lang === "en"
     ? new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(Math.max(0, value))
-    : formatWalletAmount(value);
+    : formatWalletAmount(value, lang);
 }
 
 /** سوییچ زیبا با دستهٔ متحرک — پایهٔ کارت‌های امکانات. */
@@ -98,7 +98,7 @@ function FeatureSwitch({ checked, label, onChange }: { checked: boolean; label: 
 
 /** کارت امکانات مهم استاد — جلسات فوری، جلسات رایگان و پذیرش رزرو. */
 function QuickFeatureToggles({ runtime }: { runtime: PlatformRuntime }) {
-  const { L, lang } = useAppearance();
+  const { L, lang, N } = useAppearance();
   const [state, setState] = useState<FeatureSwitches | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -353,7 +353,7 @@ function officialTime(session: TeacherSession, L: Translate, lang: "fa" | "en"):
 
 export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig }) {
   const runtime = usePlatform();
-  const { L, lang } = useAppearance();
+  const { L, lang, N } = useAppearance();
   const [snapshot, setSnapshot] = useState<DashboardSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -415,7 +415,7 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
   const teacher = snapshot?.teacher ?? null;
   const pending = snapshot?.pending ?? [];
   const rating = teacher && teacher.reviews > 0 ? teacher.rating.toFixed(1) : "—";
-  const firstName = teacher?.name.trim().split(/\s+/)[0] || "";
+  const firstName = (N(teacher?.name) || "").trim().split(/\s+/)[0];
 
   return (
     <section className="vodda-screen" style={{ display: "grid", gap: spacing.xl }}>
@@ -594,8 +594,8 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <Avatar name={nextSession.learnerName} size={46} ring={false} />
               <div style={{ minWidth: 0, flex: 1 }}>
-                <strong style={{ display: "block", fontSize: 14.5, fontWeight: 800, color: colors.ink }}>{nextSession.learnerName}</strong>
-                <span style={{ display: "block", marginTop: 3, fontSize: 12.5, color: colors.inkSecondary }}>{nextSession.service}</span>
+                <strong style={{ display: "block", fontSize: 14.5, fontWeight: 800, color: colors.ink }}>{N(nextSession.learnerName)}</strong>
+                <span style={{ display: "block", marginTop: 3, fontSize: 12.5, color: colors.inkSecondary }}>{L(nextSession.service)}</span>
               </div>
               <span style={{ padding: "5px 9px", borderRadius: radii.pill, color: colors.surface, background: colors.olive600, ...typography.caption, fontWeight: 700 }}>
                 {L("تأییدشده")}
@@ -667,7 +667,7 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
 
 /** چک‌لیست تکمیل پروفایل استادی — تا استاد تازه‌وارد قدم‌به‌قدم حرفه‌ای شود. */
 function CompletionChecklist({ state, config }: { state: CompletionState; config: UniversalAppConfig }) {
-  const { L, lang } = useAppearance();
+  const { L, lang, N } = useAppearance();
   const items = useMemo(
     () =>
       [

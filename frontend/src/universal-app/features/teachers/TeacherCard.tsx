@@ -6,12 +6,13 @@ import { navigateApp } from "../../router";
 import { resolveAssetUrl } from "../../platform/asset";
 import { Button, Icon, colors, typography } from "../../ui";
 import { useAppearance } from "../../ui/appearance";
+import { localizeCityName } from "../../i18n/transliterate";
 import { TierBadge } from "./TierBadge";
 import type { Teacher } from "./types";
 
-function initialsOf(name: string) {
+function initialsOf(name: string, lang: "fa" | "en") {
   const parts = name.trim().split(/\s+/);
-  const first = parts[0]?.charAt(0) ?? "ا";
+  const first = parts[0]?.charAt(0) ?? (lang === "en" ? "V" : "ا");
   const second = parts[1]?.charAt(0) ?? "";
   return second ? `${first} ${second}` : first;
 }
@@ -25,7 +26,8 @@ export function TeacherCard({
   config: UniversalAppConfig;
   wide?: boolean;
 }) {
-  const { L, lang } = useAppearance();
+  const { L, lang, N } = useAppearance();
+  const localName = N(teacher.name);
   const goToTeacher = () => navigateApp(`/teacher/${teacher.id}`, config);
   const priceFrom = new Intl.NumberFormat(lang === "en" ? "en-US" : "fa-IR", { maximumFractionDigits: 0 }).format(
     Math.max(0, teacher.price30 / 1000),
@@ -79,14 +81,14 @@ export function TeacherCard({
             {teacher.avatarUrl ? (
               <img
                 src={resolveAssetUrl(teacher.avatarUrl)}
-                alt={teacher.name}
+                alt={localName}
                 loading="lazy"
                 style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
               />
             ) : (
               <div style={{ width: "100%", height: "100%", display: "grid", placeItems: "center" }}>
                 <span style={{ fontSize: 21, fontWeight: 900, color: colors.olive600, opacity: 0.8, lineHeight: 1 }}>
-                  {initialsOf(teacher.name)}
+                  {initialsOf(localName, lang)}
                 </span>
               </div>
             )}
@@ -138,7 +140,7 @@ export function TeacherCard({
                 color: colors.ink,
               }}
             >
-              {teacher.name}
+              {localName}
             </strong>
             <TierBadge tier={teacher.tier} />
           </button>
@@ -154,7 +156,7 @@ export function TeacherCard({
               color: colors.olive600,
             }}
           >
-            {teacher.field}
+            {L(teacher.field)}
           </span>
           {/* وضعیت دسترس‌پذیری با برچسب متنی، نه فقط رنگ (B6) — آفلاین = چراغ قرمز چشمک‌زن */}
           <span
@@ -227,7 +229,7 @@ export function TeacherCard({
         </span>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 2, minWidth: 0 }}>
           <Icon name="pin" size={13} />
-          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{teacher.city}</span>
+          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{localizeCityName(teacher.city, lang)}</span>
         </span>
       </div>
       <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: colors.inkMuted }}>

@@ -40,7 +40,7 @@ function ServiceCard({ service }: { service: TeacherService }) {
       <div style={{ display: "flex", alignItems: "center", gap: spacing.md }}>
         <IconBadge icon={service.icon.includes("mic") ? "mic" : "book"} tone={service.icon.includes("mic") ? "clay" : "olive"} size={44} />
         <div style={{ minWidth: 0, flex: 1 }}>
-          <strong style={{ ...typography.body, display: "block", color: colors.ink, fontWeight: 900 }}>{service.title}</strong>
+          <strong style={{ ...typography.body, display: "block", color: colors.ink, fontWeight: 900 }}>{L(service.title)}</strong>
           <span
             style={{
               display: "inline-flex",
@@ -91,14 +91,14 @@ function ServiceCard({ service }: { service: TeacherService }) {
 }
 
 function ReviewCard({ review }: { review: TeacherReview }) {
-  const { L, lang } = useAppearance();
+  const { L, lang, N } = useAppearance();
   const rating = Math.max(0, Math.min(5, Math.round(review.rating)));
   return (
     <Card style={{ padding: spacing.lg }}>
       <div style={{ display: "flex", alignItems: "center", gap: spacing.md }}>
         <Avatar name={review.learnerName} size={42} ring={false} />
         <div style={{ minWidth: 0, flex: 1 }}>
-          <strong style={{ ...typography.bodySmall, display: "block", color: colors.ink }}>{review.learnerName}</strong>
+          <strong style={{ ...typography.bodySmall, display: "block", color: colors.ink }}>{N(review.learnerName)}</strong>
           {review.createdAt ? (
             <span style={{ ...typography.caption, display: "block", marginTop: 1, color: colors.inkFaint }}>
               {reviewDate(review.createdAt, lang)}
@@ -113,7 +113,7 @@ function ReviewCard({ review }: { review: TeacherReview }) {
       </div>
       {review.text ? (
         <p style={{ ...typography.bodySmall, margin: `${spacing.md}px 0 0`, color: colors.inkSecondary, lineHeight: 1.9 }}>
-          {review.text}
+          {L(review.text)}
         </p>
       ) : null}
     </Card>
@@ -128,7 +128,7 @@ export function LearnerTeacherProfileScreen({
   config: UniversalAppConfig;
 }) {
   const runtime = usePlatform();
-  const { L, lang } = useAppearance();
+  const { L, lang, N } = useAppearance();
   const parsedId = useMemo(() => Number(teacherId), [teacherId]);
   const [detail, setDetail] = useState<TeacherDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -201,7 +201,7 @@ export function LearnerTeacherProfileScreen({
           ) : null}
         </div>
         <h2 style={{ fontSize: 20, fontWeight: 800, margin: "8px 0 0", color: colors.ink, display: "inline-flex", alignItems: "center", gap: 6 }}>
-          {teacher.name}
+          {N(teacher.name)}
           <TierBadge tier={teacher.tier} size={16} />
         </h2>
         <p style={{ fontSize: 13, fontWeight: 600, margin: 0, color: colors.olive600 }}>

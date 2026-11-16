@@ -6,8 +6,14 @@ import type { WalletTransaction } from "./types";
 
 export { toFaDigits } from "../../ui";
 
+/** زبان فعال سند — پیش از اولین رندر تنظیم می‌شود؛ برای فراخوانی‌های بدون lang. */
+function activeDocLang(): "fa" | "en" {
+  if (typeof document === "undefined") return "fa";
+  return document.documentElement.lang === "en" ? "en" : "fa";
+}
+
 /** مبلغ با ارقامِ متناسب با زبان اپ: فارسی «۱۲۳٬۴۵۶»، انگلیسی «123,456». */
-export function formatWalletAmount(value: number, lang: "fa" | "en" = "fa"): string {
+export function formatWalletAmount(value: number, lang: "fa" | "en" = activeDocLang()): string {
   return new Intl.NumberFormat(lang === "en" ? "en-US" : "fa-IR", { maximumFractionDigits: 0 }).format(value);
 }
 

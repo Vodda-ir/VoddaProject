@@ -307,7 +307,7 @@ function VerseStrip() {
 type PastTeacher = { id: number; name: string; avatarUrl: string };
 
 function RebookRail({ teachers, config }: { teachers: PastTeacher[]; config: UniversalAppConfig }) {
-  const { L } = useAppearance();
+  const { L, N } = useAppearance();
   if (teachers.length === 0) return null;
   return (
     <section aria-label={L("استادهای جلسه‌های قبلی تو")} className="vodda-enter" style={{ minWidth: 0 }}>
@@ -368,7 +368,7 @@ function RebookRail({ teachers, config }: { teachers: PastTeacher[]; config: Uni
                   fontWeight: 800,
                 }}
               >
-                {teacher.name}
+                {N(teacher.name)}
               </strong>
               <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 800, color: colors.olive700 }}>
                 {L("رزرو دوباره")}
@@ -458,7 +458,7 @@ function SpotlightSection({ teachers, config }: { teachers: Teacher[]; config: U
 }
 
 function FeaturedTeacher({ teacher, config }: { teacher: Teacher; config: UniversalAppConfig }) {
-  const { L, lang } = useAppearance();
+  const { L, lang, N } = useAppearance();
   const sample = teacher.samples.find((item) => item.url) ?? null;
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playing, setPlaying] = useState(false);
@@ -565,7 +565,7 @@ function FeaturedTeacher({ teacher, config }: { teacher: Teacher; config: Univer
           <Icon name="sparkle" size={14} stroke={2} />
           {L("استاد ویژهٔ امروز")}
         </p>
-        <h2 style={{ ...typography.title, margin: `${spacing.sm}px 0 0`, color: colors.surface }}>{teacher.name}</h2>
+        <h2 style={{ ...typography.title, margin: `${spacing.sm}px 0 0`, color: colors.surface }}>{N(teacher.name)}</h2>
         <p style={{ ...typography.bodySmall, margin: "3px 0 0", color: "rgba(255,255,255,0.72)" }}>
           {teacherSubtitle(teacher, lang) || L("مشاهده خدمات و زمان‌های قابل رزرو")}
         </p>
@@ -773,7 +773,7 @@ type SessionAreaState = "loading" | "ready";
 
 export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
   const runtime = usePlatform();
-  const { lang, L } = useAppearance();
+  const { lang, L, N } = useAppearance();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [teachersLoading, setTeachersLoading] = useState(!teachersCacheFresh());
@@ -873,7 +873,7 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
     return pool[dayOfYearIndex() % pool.length];
   }, [teachers, recommended]);
 
-  const firstName = user?.name?.trim().split(/\s+/)[0] || L("دوست");
+  const firstName = (N(user?.name) || "").trim().split(/\s+/)[0] || L("دوست");
   const canUseTeacherMode = user?.role === "teacher" || user?.role === "admin";
   const needsProfileNudge =
     user !== null && (!user.avatar_url || !user.city?.trim() || !user.bio?.trim());

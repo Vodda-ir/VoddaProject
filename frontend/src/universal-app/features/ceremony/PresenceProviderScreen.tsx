@@ -9,6 +9,7 @@ import { usePlatform } from "../../platform/context";
 import { navigateApp } from "../../router";
 import { localizedDigits } from "../../ui/persian";
 import { useAppearance } from "../../ui/appearance";
+import { localizeCityName } from "../../i18n/transliterate";
 import {
   Avatar,
   Button,
@@ -163,9 +164,9 @@ function ServiceCard({
     >
       <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
         <div style={{ minWidth: 0, flex: 1 }}>
-          <strong style={{ display: "block", fontSize: 14.5, fontWeight: 800, color: colors.ink }}>{service.title}</strong>
+          <strong style={{ display: "block", fontSize: 14.5, fontWeight: 800, color: colors.ink }}>{L(service.title)}</strong>
           <span style={{ display: "block", fontSize: 12, color: colors.inkMuted, marginTop: 2 }}>
-            ⏱ {localizedDigits(service.duration, lang)} {L("دقیقه")} · 📍 {service.cities || provider.city || L("همهٔ شهرها")}
+            ⏱ {localizedDigits(service.duration, lang)} {L("دقیقه")} · 📍 {localizeCityName(service.cities || provider.city, lang) || L("همهٔ شهرها")}
           </span>
         </div>
         <strong style={{ fontSize: 13.5, color: colors.goldDark, whiteSpace: "nowrap" }}>{formatToman(service.base_price, lang)}</strong>
@@ -191,7 +192,7 @@ function ServiceCard({
 
 export function PresenceProviderScreen({ providerId, config }: { providerId: string; config: UniversalAppConfig }) {
   const runtime = usePlatform();
-  const { L, lang } = useAppearance();
+  const { L, lang, N } = useAppearance();
   const numericId = Number(providerId);
   const validId = Number.isInteger(numericId) && numericId > 0;
   const [provider, setProvider] = useState<PresenceProvider | null>(null);
@@ -244,13 +245,13 @@ export function PresenceProviderScreen({ providerId, config }: { providerId: str
           <Avatar name={provider.name} src={provider.avatar_url || undefined} size={64} ring />
           <div style={{ minWidth: 0, flex: 1 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-              <strong style={{ fontSize: 17, fontWeight: 800, color: colors.ink }}>{provider.name}</strong>
+              <strong style={{ fontSize: 17, fontWeight: 800, color: colors.ink }}>{N(provider.name)}</strong>
               <TierBadge tier={provider.tier} />
             </div>
             <span style={{ display: "block", fontSize: 12.5, color: colors.olive700, marginTop: 2 }}>
-              {provider.tag || provider.field || L("قاری قرآن")}
-              {provider.level ? ` · ${provider.level}` : ""}
-              {provider.city ? ` · 📍 ${provider.city}` : ""}
+              {L(provider.tag || provider.field || "قاری قرآن")}
+              {provider.level ? ` · ${L(provider.level)}` : ""}
+              {provider.city ? ` · 📍 ${localizeCityName(provider.city, lang)}` : ""}
             </span>
           </div>
         </div>

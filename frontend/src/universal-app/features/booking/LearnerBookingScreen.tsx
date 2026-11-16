@@ -53,7 +53,7 @@ type DateGroup = {
 
 export function LearnerBookingScreen({ teacherId, config }: { teacherId: string; config: UniversalAppConfig }) {
   const runtime = usePlatform();
-  const { L, lang } = useAppearance();
+  const { L, lang, N } = useAppearance();
   const numericTeacherId = Number(teacherId);
   const [teacher, setTeacher] = useState<Teacher | null>(null);
   const [teacherLoading, setTeacherLoading] = useState(true);
@@ -316,8 +316,8 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
       <Card elevated className="vodda-enter" style={{ display: "flex", alignItems: "center", gap: 13, padding: 16, borderRadius: 20 }}>
         <Avatar name={teacher.name} src={teacher.avatarUrl || undefined} size={56} ring={false} />
         <div style={{ minWidth: 0, flex: 1 }}>
-          <strong style={{ fontSize: 16, fontWeight: 800, display: "block", color: colors.ink }}>{teacher.name}</strong>
-          <span style={{ fontSize: 12.5, color: colors.olive700 }}>{teacher.tag || teacher.field}</span>
+          <strong style={{ fontSize: 16, fontWeight: 800, display: "block", color: colors.ink }}>{N(teacher.name)}</strong>
+          <span style={{ fontSize: 12.5, color: colors.olive700 }}>{L(teacher.tag || teacher.field)}</span>
           {!teacher.available ? (
             <span
               style={{
@@ -456,7 +456,7 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
                   }}
                 >
                   <span>
-                    <strong style={{ display: "block", ...typography.body }}>{item.title}</strong>
+                    <strong style={{ display: "block", ...typography.body }}>{L(item.title)}</strong>
                     <span
                       style={{
                         display: "inline-flex",
@@ -601,8 +601,8 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
         ) : (
           <div style={{ display: "grid" }}>
             {[
-              [L("استاد"), teacher.name],
-              [L("خدمت"), service.title],
+              [L("استاد"), N(teacher.name)],
+              [L("خدمت"), L(service.title)],
               [L("تاریخ"), formatAppDate(slot.localDate, lang, { withWeekday: slot.weekday })],
               [L("ساعت"), `${slot.localStart} ${L("تا")} ${slot.localEnd}`],
               [L("مدت"), `${localizedDigits(service.duration, lang)} ${L("دقیقه")}`],

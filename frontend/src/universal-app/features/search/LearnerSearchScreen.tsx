@@ -19,6 +19,7 @@ import {
 } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
 import { useAppearance } from "../../ui/appearance";
+import { localizeCityName } from "../../i18n/transliterate";
 import { navigateApp } from "../../router";
 import { asArray, asRecord } from "../../platform/api";
 import { categoryVisual } from "../home/homeSections";
@@ -257,6 +258,7 @@ function ServiceRow({
   onClick: () => void;
   index?: number;
 }) {
+  const { L } = useAppearance();
   const known = new Set([
     "book", "mic", "quran", "star", "headphones", "award", "sparkle",
     "doc", "heart", "users", "grid", "list", "trending", "refresh",
@@ -297,7 +299,7 @@ function ServiceRow({
         <Icon name={(known.has(icon) ? icon : "book") as "book"} size={19} />
       </span>
       <span style={{ minWidth: 0, flex: 1 }}>
-        <strong style={{ display: "block", fontSize: 13.5, fontWeight: 800, color: colors.ink }}>{title}</strong>
+        <strong style={{ display: "block", fontSize: 13.5, fontWeight: 800, color: colors.ink }}>{L(title)}</strong>
         {description ? (
           <span
             style={{
@@ -335,14 +337,14 @@ function TopicTeacherRow({
   config: UniversalAppConfig;
   index?: number;
 }) {
-  const { L, lang } = useAppearance();
-  const subtitle = [teacher.tag || teacher.field, teacher.city].filter(Boolean).join(" · ");
+  const { L, lang, N } = useAppearance();
+  const subtitle = [L(teacher.tag || teacher.field), localizeCityName(teacher.city, lang)].filter(Boolean).join(" · ");
   return (
     <button
       type="button"
       onClick={() => navigateApp(`/teacher/${teacher.id}`, config)}
       className="vodda-tappable vodda-enter"
-      aria-label={L("پروفایل استاد {n}").replace("{n}", teacher.name)}
+      aria-label={L("پروفایل استاد {n}").replace("{n}", N(teacher.name))}
       style={{
         display: "flex",
         alignItems: "center",
@@ -361,7 +363,7 @@ function TopicTeacherRow({
       <Avatar name={teacher.name} src={teacher.avatarUrl || undefined} size={38} ring tone={teacher.female ? "gold" : "olive"} />
       <span style={{ minWidth: 0, flex: 1 }}>
         <strong style={{ display: "block", fontSize: 12.8, fontWeight: 800, color: colors.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {teacher.name}
+          {N(teacher.name)}
         </strong>
         <span style={{ display: "block", fontSize: 11, color: colors.inkMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {subtitle || L("استاد وُدّا")}
@@ -401,7 +403,7 @@ function SearchSkeleton() {
 
 export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) {
   const runtime = usePlatform();
-  const { L, lang } = useAppearance();
+  const { L, lang, N } = useAppearance();
   const initial = useMemo(readInitialFilters, []);
   const [mode, setMode] = useState<SearchMode>(() => {
     if (typeof window === "undefined") return "teachers";
@@ -984,7 +986,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
                     key={`${row.teacher_id}-${row.service_id}`}
                     icon="gift"
                     title={row.title || L("جلسهٔ رایگان")}
-                    description={[row.tag, row.city].filter(Boolean).join(" · ") || L("استاد {n}").replace("{n}", row.teacher_name)}
+                    description={[L(row.tag), localizeCityName(row.city, lang)].filter(Boolean).join(" · ") || L("استاد {n}").replace("{n}", N(row.teacher_name))}
                     trailing={L("رایگان")}
                     index={index}
                     onClick={() => navigateApp(`/book/${row.teacher_id}?free=1`, config)}
@@ -1537,7 +1539,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
               onClick={() => setFilters((current) => ({ ...current, city: "" }))}
               style={{ ...chipStyle(false), background: colors.sand100 }}
             >
-              {L("شهر: {n}").replace("{n}", filters.city)}
+              {L("شهر: {n}").replace("{n}", localizeCityName(filters.city, lang))}
               <Icon name="x" size={14} />
             </button>
           ) : null}
@@ -1706,7 +1708,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
                     }
                     style={chipStyle(advancedDraft.city === city)}
                   >
-                    {city}
+                    {localizeCityName(city, lang)}
                   </button>
                 ))
               )}

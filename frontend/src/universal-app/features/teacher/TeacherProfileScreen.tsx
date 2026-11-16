@@ -145,7 +145,7 @@ function validate(form: TeacherForm): string | null {
 
 export function TeacherProfileScreen({ config }: { config: UniversalAppConfig }) {
   const runtime = usePlatform();
-  const { L, lang } = useAppearance();
+  const { L, lang, N } = useAppearance();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [teacher, setTeacher] = useState<TeacherProfile | null>(null);
   const [form, setForm] = useState<TeacherForm | null>(null);
@@ -326,7 +326,7 @@ export function TeacherProfileScreen({ config }: { config: UniversalAppConfig })
           </div>
           <div style={{ minWidth: 0, flex: 1 }}>
             <strong style={{ fontSize: 16.5, fontWeight: 800, display: "block", color: colors.ink }}>
-              {user.name}
+              {N(user.name)}
             </strong>
             <span style={{ fontSize: 12.5, color: colors.olive600, fontWeight: 600 }}>
               {L(teacher.tag || teacher.field || "مدرس")}

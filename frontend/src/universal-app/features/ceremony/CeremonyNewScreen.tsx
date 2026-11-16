@@ -293,7 +293,7 @@ export function CeremonyNewScreen({ config }: { config: UniversalAppConfig }) {
                         }}
                       >
                         <TopicIcon icon={item.icon} size={16} />
-                        {item.title}
+                        {L(item.title)}
                       </button>
                     ))}
                   </div>

@@ -13,6 +13,7 @@ import { usePlatform } from "../../platform/context";
 import { navigateApp } from "../../router";
 import { digitsOnly, localizedDigits } from "../../ui/persian";
 import { useAppearance } from "../../ui/appearance";
+import { localizeCityName } from "../../i18n/transliterate";
 import {
   Avatar,
   Button,
@@ -45,7 +46,7 @@ function OpenCallCard({
   busy: boolean;
   onAccept: (call: TeacherCeremonyInboxCall["call"], suggested: PresenceService | null) => void;
 }) {
-  const { L, lang } = useAppearance();
+  const { L, lang, N } = useAppearance();
   const call = item.call;
   const accepted = item.accepted || item.my_offer !== null;
   return (
@@ -66,9 +67,9 @@ function OpenCallCard({
           <TopicIcon icon={call.icon} size={20} />
         </div>
         <div style={{ minWidth: 0, flex: 1 }}>
-          <strong style={{ display: "block", fontSize: 14.5, fontWeight: 800, color: colors.ink }}>{call.title}</strong>
+          <strong style={{ display: "block", fontSize: 14.5, fontWeight: 800, color: colors.ink }}>{L(call.title)}</strong>
           <span style={{ display: "block", fontSize: 12, color: colors.inkMuted, marginTop: 2 }}>
-            {ceremonyWhenLabel(call, lang)} · 📍 {call.city || L("شهر نامشخص")}
+            {ceremonyWhenLabel(call, lang)} · 📍 {localizeCityName(call.city, lang) || L("شهر نامشخص")}
           </span>
         </div>
         {item.matches_services ? (
@@ -95,14 +96,14 @@ function OpenCallCard({
 
       {call.note ? (
         <p style={{ margin: 0, fontSize: 12.5, color: colors.inkSecondary, background: colors.sand50, borderRadius: 12, padding: "8px 11px", lineHeight: 1.9 }}>
-          «{call.note}»
+          «{L(call.note)}»
         </p>
       ) : null}
 
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <Avatar name={call.organizer_name || L("برگزارکننده")} src={call.organizer_avatar || undefined} size={40} ring={false} />
         <span style={{ fontSize: 12, color: colors.inkMuted }}>
-          {L("برگزارکننده:")} <strong style={{ color: colors.inkSecondary }}>{(call.organizer_name || L("کاربر وُدّا")).split(" ")[0]}</strong>
+          {L("برگزارکننده:")} <strong style={{ color: colors.inkSecondary }}>{N(call.organizer_name || L("کاربر وُدّا")).split(" ")[0]}</strong>
         </span>
       </div>
 
@@ -142,7 +143,7 @@ function MyOfferRow({
   busy: boolean;
   onWithdraw: () => void;
 }) {
-  const { L, lang } = useAppearance();
+  const { L, lang, N } = useAppearance();
   const waiting = offer.status === "waiting";
   return (
     <div className="vodda-enter" style={{ ...offerRowStyle, borderColor: waiting ? colors.goldSoft : undefined }}>
@@ -153,7 +154,7 @@ function MyOfferRow({
         <ToneChip tone={offerStatusMeta[offer.status]} />
       </div>
       {offer.message ? (
-        <span style={{ fontSize: 12, color: colors.inkSecondary, lineHeight: 1.8 }}>«{offer.message}»</span>
+        <span style={{ fontSize: 12, color: colors.inkSecondary, lineHeight: 1.8 }}>«{L(offer.message)}»</span>
       ) : null}
       {waiting ? (
         <Button variant="secondary" onClick={onWithdraw} loading={busy} disabled={busy} style={{ minHeight: 40 }}>
@@ -174,7 +175,7 @@ function MyOfferRow({
 
 export function CeremonyInboxPanel({ config }: { config: UniversalAppConfig }) {
   const runtime = usePlatform();
-  const { L, lang } = useAppearance();
+  const { L, lang, N } = useAppearance();
   const [tab, setTab] = useState<"calls" | "offers">("calls");
   const [inbox, setInbox] = useState<{ calls: TeacherCeremonyInboxCall[]; offers: CeremonyOffer[] } | null>(null);
   const [myServices, setMyServices] = useState<PresenceService[]>([]);

@@ -70,7 +70,7 @@ type Translate = (text: string) => string;
 function amountLabel(value: number, lang: "fa" | "en"): string {
   return lang === "en"
     ? new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(Math.max(0, value))
-    : formatWalletAmount(value);
+    : formatWalletAmount(value, lang);
 }
 
 function dateLabel(value: string, lang: "fa" | "en"): string {

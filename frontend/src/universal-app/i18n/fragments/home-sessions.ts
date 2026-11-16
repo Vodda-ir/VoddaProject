@@ -454,3 +454,42 @@ const f: Record<string, string> = {
   "کارمزد پلتفرم": "Platform fee",};
 
 export default f;
+
+/* ───────────  پشتیبان‌های باقی‌مانده (audit کامل انگلیسی‌سازی)  ─────────── */
+f[" ({n} خوانده‌نشده)"] = " ({n} unread)";
+f[" است؛ بدون پرداخت هزینه و بدون کسر از کیف پول، درخواست شما مستقیم برای استاد ارسال می‌شود."] = " This session is free — no payment, no wallet deduction; your request goes straight to the teacher.";
+f[" — موجودی کافی نیست"] = " — insufficient balance";
+f["اطلاعات حساب دریافت نشد."] = "Could not load your account info.";
+f[" · {n} جلسه"] = " · {n} sessions";
+f["استاد قرآن خود را بیابید\nو زمان آزاد ایشان را رزرو کنید"] = "Find your Quran teacher\nand book their available times";
+f["شهر شما"] = "Your city";
+f["موقعیت شما"] = "Your location";
+
+/* ───────────  قالب‌های اعلان‌های بک‌اند  ─────────── */
+f["جلسهٔ فوری آماده است"] = "Instant session is ready";
+f["استاد فراخوان شما را پذیرفت و جلسه قطعی شد؛ همین حالا می‌توانید وارد کلاس تصویری شوید."] = "The teacher accepted your call and the session is confirmed; you can join the video class right now.";
+f["مدیریت: "] = "Admin: ";
+f["مدیریت: جلسهٔ فوری رزرو شد"] = "Admin: Instant session booked";
+f["جلسهٔ فوری جدید: "] = "New instant session: ";
+f["یک قرآن‌آموز همین حالا درخواست جلسهٔ فوری ثبت کرد؛ سریع تأیید کنید تا کلاس آغاز شود."] = "A learner just requested an instant session; approve it quickly so the class can start.";
+f["🎉 استاد آماده شد"] = "🎉 A teacher responded";
+f["📢 فراخوان جدید: "] = "📢 New call: ";
+f["مدیریت: ثبت‌نام کاربر جدید"] = "Admin: New user registered";
+f["کاربر تازه‌ای با شماره "] = "A new user joined Vodda with number ";
+f["مدیریت: پیام پشتیبانی جدید"] = "Admin: New support message";
+f["پیام تازه‌ای از «اعلان زنده» در صف پشتیبانی ثبت شد."] = "A new message from “Live call” was added to the support queue.";
+f["خدمت تأیید شد"] = "Service approved";
+f["خدمت «"] = "The service “";
+f["» توسط ادمین تأیید شد."] = "” was approved by the admin.";
+f["جلسه تأیید شد"] = "Session approved";
+f["استاد درخواست جلسه‌ی شما را تأیید کرد."] = "The teacher approved your session request.";
+f["درخواست جلسهٔ رایگان: "] = "Free session request: ";
+f["یک قرآن‌آموز جلسهٔ رایگان شما را رزرو کرد؛ از بخش درخواست‌های جلسه تأیید کنید."] = "A learner booked your free session; approve it from the session requests section.";
+f["پیام جدید در جلسه"] = "New message in a session";
+f["فراخوان لغو شد"] = "Call canceled";
+f["جلسه لغو شد"] = "Session canceled";
+f["انصراف قاری"] = "Reciter withdrew";
+f["پذیرش جدید برای مراسم"] = "New ceremony offer";
+f["پذیرش "] = "Offer ";
+f["کاربر پیشنهاد شما را انتخاب کرد و جلسه فوری قطعی شد؛ همین حالا وارد کلاس شوید"] = "A user chose your offer and the instant session is confirmed; join the class right now.";
+f["کاربر پیشنهاد شما را انتخاب کرد و جلسه فوری قطعی شد؛ همین حالا وارد کلاس شوید."] = "A user chose your offer and the instant session is confirmed; join the class right now.";

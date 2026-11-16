@@ -199,9 +199,9 @@ export type AvatarProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "children"> 
   tone?: "olive" | "gold";
 };
 
-function initials(name?: string) {
+function initials(name: string | null | undefined, lang: "fa" | "en") {
   const parts = name?.trim().split(/\s+/).filter(Boolean) ?? [];
-  if (parts.length === 0) return "و";
+  if (parts.length === 0) return lang === "en" ? "V" : "و";
   return `${parts[0]?.[0] ?? ""}${parts.length > 1 ? parts.at(-1)?.[0] ?? "" : ""}`;
 }
 
@@ -232,7 +232,10 @@ function avatarFrame(size: number, ring: boolean, tone: "olive" | "gold", style?
 }
 
 export function Avatar({ name, size = 48, ring = true, tone = "olive", src, alt, style, ...props }: AvatarProps) {
-  const { L } = useAppearance();
+  const { L, N, lang } = useAppearance();
+  // نام‌های داینامیک (استاد/قرآن‌آموز) در حالت انگلیسی لاتین می‌شوند تا هیچ
+  // نویسهٔ فارسی — حتی در حرف اول آواتار — دیده نشود.
+  const localName = N(name);
   // آدرس‌های نسبی آپلودها (مثل /uploads/avatars/…) پیش از رندر حل می‌شوند تا
   // هم در وب هم‌مبدأ و هم در WebView نیتیو درست نمایش داده شوند.
   const resolvedSrc = resolveAssetUrl(src);
@@ -240,7 +243,7 @@ export function Avatar({ name, size = 48, ring = true, tone = "olive", src, alt,
     return (
       <img
         src={resolvedSrc}
-        alt={alt ?? name ?? L("تصویر کاربر")}
+        alt={alt ?? localName ?? L("تصویر کاربر")}
         width={size}
         height={size}
         style={{
@@ -256,7 +259,7 @@ export function Avatar({ name, size = 48, ring = true, tone = "olive", src, alt,
   return (
     <span
       role="img"
-      aria-label={alt ?? name ?? L("کاربر")}
+      aria-label={alt ?? localName ?? L("کاربر")}
       style={{
         ...avatarFrame(size, ring, tone, style),
         color: colors.olive800,
@@ -266,7 +269,7 @@ export function Avatar({ name, size = 48, ring = true, tone = "olive", src, alt,
         fontWeight: 900,
       }}
     >
-      {initials(name)}
+      {initials(localName, lang)}
     </span>
   );
 }
@@ -282,6 +285,7 @@ export type StateProps = {
 };
 
 function StateView({ title, description, action, icon, illustration, style }: StateProps) {
+  const { lang } = useAppearance();
   return (
     <div
       style={mergeStyle(
@@ -318,7 +322,7 @@ function StateView({ title, description, action, icon, illustration, style }: St
             fontWeight: 900,
           }}
         >
-          {icon ?? "و"}
+          {icon ?? (lang === "en" ? "V" : "و")}
         </div>
       )}
       <strong style={typography.title}>{title}</strong>

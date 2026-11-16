@@ -105,7 +105,7 @@ export function LiveRoom({
   const engineRoleRef = useRef<EngineRole>(role);
   const wakeLockRef = useRef<{ release: () => Promise<void>; released: boolean } | null>(null);
   const [needsTapToPlay, setNeedsTapToPlay] = useState(false);
-  const { L, lang, dir } = useAppearance();
+  const { L, lang, dir, N } = useAppearance();
 
   const isTeacherSide = role !== "learner";
 
@@ -393,7 +393,7 @@ export function LiveRoom({
       >
         <Avatar name={peerName} src={peerAvatar || undefined} size={38} ring={false} />
         <div style={{ minWidth: 0, flex: 1 }}>
-          <strong style={{ display: "block", fontSize: 14, fontWeight: 800 }}>{peerName}</strong>
+          <strong style={{ display: "block", fontSize: 14, fontWeight: 800 }}>{N(peerName)}</strong>
           <span style={{ display: "block", fontSize: 11, color: remoteActive ? "#a8d08d" : "rgba(255,255,255,.55)" }}>
             {remoteActive ? L("متصل") : statusLabel}
             {countdown ? ` · ${countdown}` : ""}
@@ -454,7 +454,7 @@ export function LiveRoom({
             >
               <div>
                 <Avatar name={peerName} src={peerAvatar || undefined} size={84} ring tone="gold" />
-                <p style={{ margin: "14px 0 0", fontWeight: 700 }}>{peerName}</p>
+                <p style={{ margin: "14px 0 0", fontWeight: 700 }}>{N(peerName)}</p>
                 <p style={{ margin: "4px 0 0", fontSize: 12 }}>
                   {L("در انتظار ورود طرف مقابل… همین صفحه را باز نگه دارید.")}
                 </p>

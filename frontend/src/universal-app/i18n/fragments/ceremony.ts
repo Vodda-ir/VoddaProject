@@ -476,3 +476,21 @@ f["با حذف، این خدمت از کاتالوگ «قاریان حضوری»
 f["حذف خدمت"] = "Delete service";
 
 export default f;
+
+/* ───────────  پشتیبان‌های باقی‌مانده (audit کامل انگلیسی‌سازی)  ─────────── */
+f["پیگیری فراخوان‌های ثبت‌شده و پذیرش‌های رسیده"] = "Track your calls and incoming offers";
+f["پیگیری فراخوان‌های ثبت‌شدهٔ من"] = "Track your submitted calls";
+f["فهرست قاریان تأییدشده و رزرو مستقیم مراسم"] = "Verified in-person reciters with direct booking";
+f["فهرست قاریان حضوری و رزرو مستقیم"] = "In-person reciters and direct booking";
+f["، "] = ", ";
+f["؛"] = "; ";
+f["خدمات حضوری قرآنی"] = "In-person Quranic services";
+
+/* ───────────  خدمات حضوری رسمی (عنوان‌های بک‌اند presence_services)  ─────────── */
+f["تلاوت مجلسی قرآن کریم"] = "Majlis recitation of the Holy Quran";
+f["ختم قرآن برای درگذشتگان"] = "Quran khatm for the departed";
+f["تلاوت در جشن‌ها و جشنواره‌های قرآنی"] = "Recitation at Quranic festivals & celebrations";
+f["اذان و اقامه در مراسم"] = "Azan & iqamah at ceremonies";
+f["تواشیح و همخوانی مجلسی"] = "Group hymns & chorale at gatherings";
+f["قرائت دعا و زیارت در مراسم"] = "Prayer & ziyarah recitation at ceremonies";
+f["کلاس حضوری قرآن در مؤسسه"] = "In-person Quran class at institutes";

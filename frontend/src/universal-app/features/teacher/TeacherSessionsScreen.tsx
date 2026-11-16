@@ -130,7 +130,7 @@ type Translate = (text: string) => string;
 function amountLabel(value: number, lang: "fa" | "en"): string {
   return lang === "en"
     ? new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(Math.max(0, value))
-    : formatWalletAmount(value);
+    : formatWalletAmount(value, lang);
 }
 
 function officialTime(session: TeacherSession, L: Translate, lang: "fa" | "en"): string {
@@ -164,7 +164,7 @@ function SessionCard({
   onReject: () => void;
   onComplete: () => void;
 }) {
-  const { t, L, lang } = useAppearance();
+  const { t, L, lang, N } = useAppearance();
   const commonCardStyle = {
     display: "grid",
     gap: 13,
@@ -179,8 +179,8 @@ function SessionCard({
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <Avatar name={session.learnerName} src={session.learnerAvatar || undefined} size={46} ring={false} />
           <div style={{ minWidth: 0, flex: 1 }}>
-            <strong style={{ display: "block", fontSize: 14.5, fontWeight: 800, color: colors.ink }}>{session.learnerName}</strong>
-            <span style={{ display: "block", marginTop: 3, fontSize: 12.5, color: colors.inkSecondary }}>{session.service}</span>
+            <strong style={{ display: "block", fontSize: 14.5, fontWeight: 800, color: colors.ink }}>{N(session.learnerName)}</strong>
+            <span style={{ display: "block", marginTop: 3, fontSize: 12.5, color: colors.inkSecondary }}>{L(session.service)}</span>
           </div>
           {session.instant ? (
             <span style={{ padding: "4px 10px", borderRadius: radii.pill, color: "#fffaf0", background: "linear-gradient(145deg,#d8b869,#b8923c)", fontSize: 10.5, fontWeight: 800 }}>{L("فوری")}</span>
@@ -231,8 +231,8 @@ function SessionCard({
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <Avatar name={session.learnerName} src={session.learnerAvatar || undefined} size={46} ring={false} />
         <div style={{ minWidth: 0 }}>
-          <strong style={{ display: "block", fontSize: 14.5, fontWeight: 800, color: colors.ink }}>{session.learnerName}</strong>
-          <span style={{ display: "block", marginTop: 3, fontSize: 12.5, color: colors.inkSecondary }}>{session.service}</span>
+          <strong style={{ display: "block", fontSize: 14.5, fontWeight: 800, color: colors.ink }}>{N(session.learnerName)}</strong>
+          <span style={{ display: "block", marginTop: 3, fontSize: 12.5, color: colors.inkSecondary }}>{L(session.service)}</span>
         </div>
         <Icon name="chevronL" size={18} style={{ flex: "0 0 auto", marginInlineStart: "auto", color: colors.inkFaint }} />
       </div>
@@ -264,7 +264,7 @@ function SessionCard({
 
 export function TeacherSessionsScreen({ mode, config }: { mode: TeacherSessionsMode; config: UniversalAppConfig }) {
   const runtime = usePlatform();
-  const { L, lang } = useAppearance();
+  const { L, lang, N } = useAppearance();
   const [when, setWhen] = useState<TeacherSessionsWhen>(mode === "requests" ? "pending" : "upcoming");
   const [sessions, setSessions] = useState<TeacherSession[]>([]);
   const [loading, setLoading] = useState(true);

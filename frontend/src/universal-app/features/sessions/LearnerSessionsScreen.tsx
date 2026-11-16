@@ -82,7 +82,7 @@ function SessionCard({
   onRate: () => void;
   onPay: () => void;
 }) {
-  const { t, L, lang } = useAppearance();
+  const { t, L, lang, N } = useAppearance();
   return (
     <Card
       className="vodda-card--interactive"
@@ -106,7 +106,7 @@ function SessionCard({
       <div style={{ display: "flex", alignItems: "center", gap: spacing.md }}>
         <Avatar name={session.teacherName} src={session.teacherAvatar || undefined} size={46} ring />
         <div style={{ minWidth: 0 }}>
-          <strong style={{ ...typography.body, display: "block" }}>{session.teacherName}</strong>
+          <strong style={{ ...typography.body, display: "block" }}>{N(session.teacherName)}</strong>
           <span style={{ ...typography.bodySmall, color: colors.inkSecondary }}>{L(session.service)}</span>
         </div>
       </div>
@@ -175,7 +175,7 @@ function SessionCard({
 
 export function LearnerSessionsScreen({ config }: { config?: UniversalAppConfig }) {
   const runtime = usePlatform();
-  const { t, L, lang } = useAppearance();
+  const { t, L, lang, N } = useAppearance();
   const [when, setWhen] = useState<LearnerSessionsWhen>("upcoming");
   const [sessions, setSessions] = useState<LearnerSession[]>([]);
   const [loading, setLoading] = useState(true);
@@ -360,7 +360,7 @@ export function LearnerSessionsScreen({ config }: { config?: UniversalAppConfig 
 
       <Sheet
         open={ratingTarget !== null}
-        title={ratingTarget ? L("امتیاز جلسه با {name}").replace("{name}", ratingTarget.teacherName) : L("ثبت امتیاز")}
+        title={ratingTarget ? L("امتیاز جلسه با {name}").replace("{name}", N(ratingTarget.teacherName)) : L("ثبت امتیاز")}
         onClose={() => {
           if (!reviewSaving) setRatingTarget(null);
         }}

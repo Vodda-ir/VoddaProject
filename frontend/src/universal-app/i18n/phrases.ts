@@ -12,6 +12,7 @@ import areaHomeSessions from "./fragments/home-sessions";
 import areaSearchTeachers from "./fragments/search-teachers";
 import areaTeacherPanel from "./fragments/teacher-panel";
 import areaWalletMisc from "./fragments/wallet-misc";
+import { hasPersianScript, localizeCityName, transliterateFa } from "./transliterate";
 
 const fragments: Array<Record<string, string>> = [
   areaAuthProfile,
@@ -31,6 +32,29 @@ export const phraseMap: Map<string, string> = new Map(
  * متغیر دارند (مثل «درآمد ناخالص جلسه: تلاوت و روخوانی»). اول تطابق کامل،
  * بعد بلندترین کلیدِ پیشوندیِ «…: » و در انتها بازگشت به متن اصلی.
  */
+function translateSegment(text: string): string {
+  return phraseMap.get(text) ?? (hasPersianScript(text) ? localizeCityName(text, "en") : text);
+}
+
+/**
+ * گذر «...» — متن‌هایی که عنوان خدمت/فراخوان در گیومه داخلشان است (اعلان‌ها):
+ * هر قطعه جداگانه مپ می‌شود و عنوان داخل گیومه هم از phraseMap می‌گیرد.
+ */
+function translateQuoted(text: string): string | null {
+  if (!text.includes("«")) return null;
+  const parts = text.split(/(«[^»]*»)/);
+  if (parts.length < 2) return null;
+  return parts
+    .map((part) => {
+      if (part.startsWith("«") && part.endsWith("»")) {
+        const inner = part.slice(1, -1);
+        return "“" + (phraseMap.get(inner) ?? (hasPersianScript(inner) ? transliterateFa(inner) : inner)) + "”";
+      }
+      return part ? translateSegment(part) : "";
+    })
+    .join("");
+}
+
 export function translateLoose(text: string, lang: "fa" | "en"): string {
   if (lang !== "en" || !text) return text;
   const exact = phraseMap.get(text);
@@ -41,7 +65,15 @@ export function translateLoose(text: string, lang: "fa" | "en"): string {
       best = key;
     }
   }
-  if (best === null) return text;
-  const rest = text.slice(best.length);
-  return (phraseMap.get(best) ?? best) + (phraseMap.get(rest) ?? rest);
+  if (best !== null) {
+    const rest = text.slice(best.length);
+    return (
+      (phraseMap.get(best) ?? best) +
+      (phraseMap.get(rest) ?? (hasPersianScript(rest) ? localizeCityName(rest, "en") : rest))
+    );
+  }
+  const quoted = translateQuoted(text);
+  if (quoted !== null) return quoted;
+  // بدون کلید — بازنویسی لاتین تا هیچ نویسهٔ فارسی دیده نشود
+  return hasPersianScript(text) ? localizeCityName(text, "en") : text;
 }

@@ -29,7 +29,7 @@ const QUICK_CHIPS: string[] = [
 const HIDDEN_ROUTES = new Set<string>(["book"]);
 
 export function AssistantChat({ routeName }: { routeName: string }) {
-  const { L } = useAppearance();
+  const { L, lang } = useAppearance();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([WELCOME]);
   const [input, setInput] = useState("");
@@ -53,7 +53,10 @@ export function AssistantChat({ routeName }: { routeName: string }) {
       const response = await fetch("/api/ai/chat", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ messages: next.filter((m, i) => !(i === 0 && m.role === "assistant" && m === WELCOME)) }),
+        body: JSON.stringify({
+          messages: next.filter((m, i) => !(i === 0 && m.role === "assistant" && m === WELCOME)),
+          lang,
+        }),
       });
       const payload = (await response.json().catch(() => ({}))) as { reply?: string };
       const reply = typeof payload.reply === "string" && payload.reply.trim()

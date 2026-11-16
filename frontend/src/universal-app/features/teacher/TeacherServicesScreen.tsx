@@ -198,7 +198,7 @@ function quickChipStyle(active: boolean): CSSProperties {
 function amountLabel(value: number, lang: "fa" | "en"): string {
   return lang === "en"
     ? new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(Math.max(0, value))
-    : formatWalletAmount(value);
+    : formatWalletAmount(value, lang);
 }
 
 function pricePresetLabel(value: number, lang: "fa" | "en"): string {
@@ -544,7 +544,7 @@ export function TeacherServicesScreen() {
                       }}
                     >
                       <span style={{ flex: 1, display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-                        <strong style={{ ...typography.body, color: colors.ink }}>{group.category}</strong>
+                        <strong style={{ ...typography.body, color: colors.ink }}>{L(group.category)}</strong>
                         {selectedInGroup > 0 ? (
                           <span style={{ fontSize: 10.5, fontWeight: 800, color: greenTone.ink, background: greenTone.chip, borderRadius: radii.pill, padding: "3px 9px" }}>
                             {L("{n} انتخاب‌شده").replace("{n}", localizedDigits(selectedInGroup, lang))}
@@ -569,7 +569,7 @@ export function TeacherServicesScreen() {
                                 key={entry.id}
                                 type="button"
                                 onClick={() => openEditor(own)}
-                                aria-label={L("ویرایش خدمت {title}").replace("{title}", own.title)}
+                                aria-label={L("ویرایش خدمت {title}").replace("{title}", L(own.title))}
                                 style={{
                                   display: "flex",
                                   gap: 12,
@@ -587,7 +587,7 @@ export function TeacherServicesScreen() {
                               >
                                 <IconBadge icon={(entry.icon as "book") || "book"} tone={inactive ? "gold" : "olive"} size={40} />
                                 <span style={{ flex: 1, minWidth: 0, display: "grid", gap: 3 }}>
-                                  <strong style={{ ...typography.bodySmall, color: inactive ? colors.goldDark : greenTone.deep }}>{entry.title}</strong>
+                                  <strong style={{ ...typography.bodySmall, color: inactive ? colors.goldDark : greenTone.deep }}>{L(entry.title)}</strong>
                                   <span style={{ ...typography.caption, color: inactive ? colors.goldDark : greenTone.ink, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                                     <span>{L("{n} دقیقه").replace("{n}", localizedDigits(own.duration, lang))} · {own.price === 0 ? L("هر جلسه رایگان") : L("هر جلسه {n} تومان").replace("{n}", amountLabel(own.price, lang))}</span>
                                     <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontWeight: 700, opacity: 0.85 }}>
@@ -634,7 +634,7 @@ export function TeacherServicesScreen() {
                             >
                               <IconBadge icon={(entry.icon as "book") || "book"} tone="olive" size={40} />
                               <span style={{ flex: 1, minWidth: 0, display: "grid", gap: 3 }}>
-                                <strong style={{ ...typography.bodySmall, color: colors.ink }}>{entry.title}</strong>
+                                <strong style={{ ...typography.bodySmall, color: colors.ink }}>{L(entry.title)}</strong>
                                 <span style={{ ...typography.caption, color: colors.inkMuted, display: "block", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                                   {entry.description}
                                 </span>
@@ -683,7 +683,7 @@ export function TeacherServicesScreen() {
                 >
                   <IconBadge icon="book" tone={service.active ? "olive" : "gold"} size={40} />
                   <span style={{ flex: 1, minWidth: 0, display: "grid", gap: 3 }}>
-                    <strong style={{ ...typography.bodySmall }}>{service.title}</strong>
+                    <strong style={{ ...typography.bodySmall }}>{L(service.title)}</strong>
                     <span style={{ ...typography.caption, color: colors.inkMuted }}>
                       {L("{n} دقیقه").replace("{n}", localizedDigits(service.duration, lang))} · {service.price === 0 ? L("هر جلسه رایگان") : L("هر جلسه {n} تومان").replace("{n}", amountLabel(service.price, lang))}
                     </span>
@@ -711,7 +711,7 @@ export function TeacherServicesScreen() {
             <div style={{ display: "flex", gap: 10, alignItems: "center", border: `1.5px solid ${colors.olive200}`, background: colors.olive50, borderRadius: radii.lg, padding: 12 }}>
               <IconBadge icon={editingIcon || "book"} tone="olive" size={38} />
               <div style={{ flex: 1, minWidth: 0 }}>
-                <strong style={{ ...typography.body, display: "block" }}>{editing.title}</strong>
+                <strong style={{ ...typography.body, display: "block" }}>{L(editing.title)}</strong>
                 <span style={{ ...typography.caption, color: colors.inkMuted }}>{editing.active ? L("فعال و قابل رزرو") : L("غیرفعال — تا فعال‌سازی مجدد قابل رزرو نیست")}</span>
               </div>
             </div>

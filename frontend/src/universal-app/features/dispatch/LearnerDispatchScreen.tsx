@@ -111,7 +111,7 @@ function CandidateCard({
   onChoose: () => void;
   onDecline: () => void;
 }) {
-  const { L, lang } = useAppearance();
+  const { L, lang, N } = useAppearance();
   const badge = tierBadge[candidate.tier];
   return (
     <div
@@ -131,7 +131,7 @@ function CandidateCard({
         <Avatar name={candidate.name} src={candidate.avatar_url || undefined} size={52} ring={false} />
         <div style={{ minWidth: 0, flex: 1 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-            <strong style={{ fontSize: 15, fontWeight: 800, color: colors.ink }}>{candidate.name}</strong>
+            <strong style={{ fontSize: 15, fontWeight: 800, color: colors.ink }}>{N(candidate.name)}</strong>
             {badge ? (
               <span style={{ fontSize: 10, fontWeight: 700, color: badge.color, background: badge.bg, borderRadius: 999, padding: "2px 8px" }}>
                 {L(badge.label)}
@@ -199,7 +199,7 @@ type ScreenMode = "idle" | "searching" | "matched";
 
 export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }) {
   const runtime = usePlatform();
-  const { L, lang } = useAppearance();
+  const { L, lang, N } = useAppearance();
   const [catalog, setCatalog] = useState<OfficialService[]>([]);
   const [catalogLoading, setCatalogLoading] = useState(true);
   const [catalogError, setCatalogError] = useState("");
@@ -433,14 +433,14 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
             <p style={{ ...typography.body, color: colors.inkSecondary, marginBottom: 0, marginTop: 6 }}>
               {L("موضوع «{topic}» با استاد {name} ثبت شد و در انتظار تأیید نهایی استاد است.")
                 .replace("{topic}", L(call.topic_title))
-                .replace("{name}", L(candidate?.name ?? "انتخاب‌شده"))}
+                .replace("{name}", N(candidate?.name ?? "انتخاب‌شده"))}
             </p>
           </div>
           {candidate ? (
             <div style={{ display: "flex", alignItems: "center", gap: 12, textAlign: "right", background: colors.sand100, borderRadius: 16, padding: 12 }}>
               <Avatar name={candidate.name} src={candidate.avatar_url || undefined} size={48} ring={false} />
               <div style={{ minWidth: 0, flex: 1 }}>
-                <strong style={{ display: "block", fontSize: 14.5, color: colors.ink }}>{candidate.name}</strong>
+                <strong style={{ display: "block", fontSize: 14.5, color: colors.ink }}>{N(candidate.name)}</strong>
                 <span style={{ fontSize: 12, color: colors.inkMuted }}>
                   {priceLabel(candidate.price, lang, L)} · {timeLabelOf(call, lang, L)}
                 </span>
@@ -504,7 +504,7 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
         {call.note ? (
           <Card style={{ padding: 14, borderRadius: 18, display: "flex", gap: 9, alignItems: "flex-start" }}>
             <Icon name="message" size={17} />
-            <p style={{ margin: 0, fontSize: 13, color: colors.inkSecondary, lineHeight: 1.9 }}>{call.note}</p>
+            <p style={{ margin: 0, fontSize: 13, color: colors.inkSecondary, lineHeight: 1.9 }}>{L(call.note)}</p>
           </Card>
         ) : null}
 

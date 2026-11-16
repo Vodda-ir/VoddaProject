@@ -18,6 +18,7 @@ import {
   typography,
 } from "../../ui";
 import { useAppearance } from "../../ui/appearance";
+import { localizeCityName } from "../../i18n/transliterate";
 import { messageOf } from "../../ui/errorMessage";
 
 export type LearnerProfileScreenProps = {
@@ -28,7 +29,7 @@ const profileErrorMessage = "دریافت اطلاعات حساب انجام ن�
 
 export function LearnerProfileScreen({ config }: LearnerProfileScreenProps) {
   const platform = usePlatform();
-  const { t, L, lang, setLang, theme, toggleTheme } = useAppearance();
+  const { t, L, lang, setLang, theme, toggleTheme, N } = useAppearance();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [loggingOut, setLoggingOut] = useState(false);
@@ -98,11 +99,11 @@ export function LearnerProfileScreen({ config }: LearnerProfileScreenProps) {
           <Avatar name={user.name} src={user.avatar_url} size={62} ring />
           <div style={{ minWidth: 0, flex: 1 }}>
             <strong style={{ fontSize: 17, fontWeight: 800, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: colors.ink }}>
-              {user.name.trim() || t("profile_default_name")}
+              {(N(user.name) || t("profile_default_name"))}
             </strong>
             <span style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 3, fontSize: 12.5, color: colors.inkMuted }}>
               <Icon name="pin" size={13} />
-              {user.city.trim() || "—"}
+              {(localizeCityName(user.city, lang) || "—")}
             </span>
           </div>
           <button type="button" aria-label={L("ویرایش پروفایل")} onClick={() => navigateApp("/profile/edit", config)} className="vodda-tappable"

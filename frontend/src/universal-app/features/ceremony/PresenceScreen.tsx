@@ -8,6 +8,7 @@ import { usePlatform } from "../../platform/context";
 import { navigateApp } from "../../router";
 import { localizedDigits } from "../../ui/persian";
 import { useAppearance } from "../../ui/appearance";
+import { localizeCityName } from "../../i18n/transliterate";
 import {
   Avatar,
   Button,
@@ -30,7 +31,7 @@ import { SelectField } from "./fields";
 import type { OfficialInPersonService, PresenceProvider } from "./types";
 
 function ProviderCard({ provider, onOpen }: { provider: PresenceProvider; onOpen: () => void }) {
-  const { L, lang } = useAppearance();
+  const { L, lang, N } = useAppearance();
   return (
     <button
       type="button"
@@ -55,12 +56,12 @@ function ProviderCard({ provider, onOpen }: { provider: PresenceProvider; onOpen
         <Avatar name={provider.name} src={provider.avatar_url || undefined} size={52} ring={false} />
         <div style={{ minWidth: 0, flex: 1 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-            <strong style={{ fontSize: 15, fontWeight: 800, color: colors.ink }}>{provider.name}</strong>
+            <strong style={{ fontSize: 15, fontWeight: 800, color: colors.ink }}>{N(provider.name)}</strong>
             <TierBadge tier={provider.tier} />
           </div>
           <span style={{ display: "block", fontSize: 12, color: colors.olive700, marginTop: 2 }}>
-            {provider.tag || provider.field || L("قاری قرآن")}
-            {provider.city ? ` · 📍 ${provider.city}` : ""}
+            {L(provider.tag || provider.field || "قاری قرآن")}
+            {provider.city ? ` · 📍 ${localizeCityName(provider.city, lang)}` : ""}
             {provider.reviews > 0 ? ` · ⭐ ${localizedDigits(provider.rating.toFixed(1), lang)} (${localizedDigits(provider.reviews, lang)})` : ""}
             {provider.sessions > 0 ? ` · ${localizedDigits(provider.sessions, lang)} ${L("مراسم")}` : ""}
           </span>
@@ -71,7 +72,7 @@ function ProviderCard({ provider, onOpen }: { provider: PresenceProvider; onOpen
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
           {provider.services.slice(0, 3).map((service) => (
             <span key={service.id} style={chipStyle}>
-              {service.title}
+              {L(service.title)}
             </span>
           ))}
           {provider.services.length > 3 ? (
@@ -191,13 +192,13 @@ export function PresenceScreen({ config }: { config: UniversalAppConfig }) {
             onChange={(next) => setServiceId(Number(next) || 0)}
             options={[
               { value: "", label: L("همهٔ خدمات حضوری") },
-              ...catalog.map((item) => ({ value: String(item.id), label: item.title })),
+              ...catalog.map((item) => ({ value: String(item.id), label: L(item.title) })),
             ]}
           />
         ) : null}
         {appliedCity || activeService ? (
           <p style={{ margin: 0, fontSize: 11.5, color: colors.inkMuted }}>
-            {L("فیلتر فعال:")} {appliedCity ? L("شهر «{city}»").replace("{city}", appliedCity) : ""}{appliedCity && activeService ? " · " : ""}{activeService ? activeService.title : ""}
+            {L("فیلتر فعال:")} {appliedCity ? L("شهر «{city}»").replace("{city}", localizeCityName(appliedCity, lang)) : ""}{appliedCity && activeService ? " · " : ""}{activeService ? L(activeService.title) : ""}
             {" — "}
             <button
               type="button"

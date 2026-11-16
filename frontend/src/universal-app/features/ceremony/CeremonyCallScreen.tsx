@@ -10,6 +10,7 @@ import { usePlatform } from "../../platform/context";
 import { navigateApp } from "../../router";
 import { localizedDigits } from "../../ui/persian";
 import { useAppearance } from "../../ui/appearance";
+import { localizeCityName } from "../../i18n/transliterate";
 import { formatAppDateTime } from "../../ui/jalali";
 import {
   Avatar,
@@ -53,7 +54,7 @@ function OfferCard({
   busy: boolean;
   onChoose: () => void;
 }) {
-  const { L, lang } = useAppearance();
+  const { L, lang, N } = useAppearance();
   const provider = offer.provider;
   return (
     <div
@@ -73,12 +74,12 @@ function OfferCard({
         <Avatar name={provider.name} src={provider.avatar_url || undefined} size={52} ring={false} />
         <div style={{ minWidth: 0, flex: 1 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-            <strong style={{ fontSize: 15, fontWeight: 800, color: colors.ink }}>{provider.name}</strong>
+            <strong style={{ fontSize: 15, fontWeight: 800, color: colors.ink }}>{N(provider.name)}</strong>
             <TierBadge tier={provider.tier} />
           </div>
           <span style={{ display: "block", fontSize: 12, color: colors.olive700, marginTop: 2 }}>
-            {provider.tag || L("قاری قرآن")}
-            {provider.city ? ` · ${provider.city}` : ""}
+            {L(provider.tag || "قاری قرآن")}
+            {provider.city ? ` · ${localizeCityName(provider.city, lang)}` : ""}
             {provider.reviews > 0 ? ` · ⭐ ${localizedDigits(provider.rating.toFixed(1), lang)} (${localizedDigits(provider.reviews, lang)} ${L("نظر")})` : ""}
           </span>
         </div>
@@ -104,7 +105,7 @@ function OfferCard({
 
 export function CeremonyCallScreen({ callId, config }: { callId: string; config: UniversalAppConfig }) {
   const runtime = usePlatform();
-  const { L, lang } = useAppearance();
+  const { L, lang, N } = useAppearance();
   const numericId = Number(callId);
   const validId = Number.isInteger(numericId) && numericId > 0;
   const [view, setView] = useState<CeremonyCallView | null>(null);
@@ -249,7 +250,7 @@ export function CeremonyCallScreen({ callId, config }: { callId: string; config:
             <TopicIcon icon={call.icon} size={24} />
           </div>
           <div style={{ minWidth: 0 }}>
-            <strong style={{ display: "block", fontSize: 16.5, fontWeight: 800 }}>{call.title}</strong>
+            <strong style={{ display: "block", fontSize: 16.5, fontWeight: 800 }}>{L(call.title)}</strong>
             <span style={{ fontSize: 12.5, opacity: 0.86 }}>{ceremonyWhenLabel(call, lang)}</span>
           </div>
         </div>
@@ -274,7 +275,7 @@ export function CeremonyCallScreen({ callId, config }: { callId: string; config:
       {call.note ? (
         <Card style={{ padding: 14, borderRadius: 18, display: "flex", gap: 9, alignItems: "flex-start" }}>
           <Icon name="message" size={17} style={{ flex: "0 0 auto", color: colors.olive600 }} />
-          <p style={{ margin: 0, fontSize: 13, color: colors.inkSecondary, lineHeight: 1.9 }}>{call.note}</p>
+          <p style={{ margin: 0, fontSize: 13, color: colors.inkSecondary, lineHeight: 1.9 }}>{L(call.note)}</p>
         </Card>
       ) : null}
 
@@ -336,7 +337,7 @@ export function CeremonyCallScreen({ callId, config }: { callId: string; config:
               <div key={offer.id} style={{ border: `1px solid ${colors.sand200}`, borderRadius: 16, padding: 13, display: "flex", alignItems: "center", gap: 10, background: colors.surface }}>
                 <Avatar name={offer.provider.name} src={offer.provider.avatar_url || undefined} size={40} ring={false} />
                 <div style={{ minWidth: 0, flex: 1 }}>
-                  <strong style={{ display: "block", fontSize: 13.5, color: colors.ink }}>{offer.provider.name}</strong>
+                  <strong style={{ display: "block", fontSize: 13.5, color: colors.ink }}>{N(offer.provider.name)}</strong>
                   <span style={{ fontSize: 11.5, color: colors.inkMuted }}>{formatToman(offer.price, lang)}</span>
                 </div>
                 <ToneChip tone={offerStatusMeta[offer.status]} />

@@ -41,7 +41,7 @@ function fa(n: number, lang: "fa" | "en"): string {
 function amountLabel(value: number, lang: "fa" | "en"): string {
   return lang === "en"
     ? new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(Math.max(0, value))
-    : formatWalletAmount(value);
+    : formatWalletAmount(value, lang);
 }
 
 type Translate = (text: string) => string;
@@ -133,7 +133,7 @@ function IncomingCallCard({
 
       {call.note ? (
         <p style={{ margin: 0, fontSize: 12.5, color: colors.inkSecondary, background: colors.sand50, borderRadius: 12, padding: "8px 11px", lineHeight: 1.9 }}>
-          «{call.note}»
+          «{L(call.note)}»
         </p>
       ) : null}
 

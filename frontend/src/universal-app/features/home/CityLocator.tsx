@@ -19,6 +19,7 @@ import { Icon } from "../../ui/Icon";
 import { colors, radii, typography } from "../../ui";
 import { usePlatform } from "../../platform/context";
 import type { AuthUser } from "../../platform/types";
+import { localizeCityName } from "../../i18n/transliterate";
 
 /**
  * user: پروفایل فعلی در صورت دسترسی؛ undefined یعنی «نمی‌دانم» و هنگام ذخیره،
@@ -30,8 +31,12 @@ const LS_GEO_DENIED = "vodda:city:denied";
 
 type ResolvedCity = { name: string; source: "cache" | "geo" };
 
-async function reverseGeocode(lat: number, lon: number, lang: "fa" | "en"): Promise<string> {
-  const url = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=${lang === "en" ? "en" : "fa"}`;
+/**
+ * نام مرجع شهر همیشه فارسی است تا در پروفایل و حافظهٔ همهٔ زبان‌ها یکسان بماند؛
+ * نمایش با localizeCityName به زبان اپ برمی‌گردد.
+ */
+async function reverseGeocode(lat: number, lon: number, langCode: "fa" | "en"): Promise<string> {
+  const url = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=${langCode}`;
   const controller = new AbortController();
   const timer = window.setTimeout(() => controller.abort(), 7000);
   try {
@@ -74,16 +79,25 @@ export function CityLocator({ user }: { user?: AuthUser | null }) {
     }
     if (denied || !("geolocation" in navigator)) return;
 
-    // ۲) به‌روزرسانی پس‌زمینه‌ای با موقعیت‌یاب.
+    // ۲) به‌روزرسانی پس‌زمینه‌ای با موقعیت‌یاب — نام مرجع همیشه فارسی؛
+    //    نمایش به زبان اپ با localizeCityName انجام می‌شود.
     navigator.geolocation.getCurrentPosition(
       (position) => {
         if (!active) return;
         void (async () => {
-          const name = await reverseGeocode(
+          let name = await reverseGeocode(
             position.coords.latitude,
             position.coords.longitude,
-            lang,
+            "fa",
           );
+          if (!name) {
+            // سرویس برای بعضی مناطق نام فارسی ندارد — نام لاتین مرجع می‌شود
+            name = await reverseGeocode(
+              position.coords.latitude,
+              position.coords.longitude,
+              "en",
+            );
+          }
           if (!active || !name) return;
           setCity({ name, source: "geo" });
           try {
@@ -131,6 +145,8 @@ export function CityLocator({ user }: { user?: AuthUser | null }) {
 
   if (!city) return null;
 
+  const displayCity = localizeCityName(city.name, lang);
+
   return (
     <span
       aria-label={L("شهر شما")}
@@ -152,7 +168,7 @@ export function CityLocator({ user }: { user?: AuthUser | null }) {
     >
       <Icon name="pin" size={14} stroke={2} />
       <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-        {L("موقعیت شما")}: {city.name}
+        {L("موقعیت شما")}: {displayCity}
       </span>
     </span>
   );

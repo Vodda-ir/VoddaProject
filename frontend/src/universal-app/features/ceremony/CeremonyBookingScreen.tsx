@@ -11,6 +11,7 @@ import { navigateApp } from "../../router";
 import { payViaSamanGate } from "../../../lib/saman-gate";
 import { localizedDigits } from "../../ui/persian";
 import { useAppearance } from "../../ui/appearance";
+import { localizeCityName } from "../../i18n/transliterate";
 import { formatAppDateTime } from "../../ui/jalali";
 import {
   Avatar,
@@ -162,7 +163,7 @@ function PersonRow({
 
 export function CeremonyBookingScreen({ bookingId, config }: { bookingId: string; config: UniversalAppConfig }) {
   const runtime = usePlatform();
-  const { L, lang } = useAppearance();
+  const { L, lang, N } = useAppearance();
   const numericId = Number(bookingId);
   const validId = Number.isInteger(numericId) && numericId > 0;
   const [booking, setBooking] = useState<CeremonyBooking | null>(null);
@@ -323,10 +324,10 @@ export function CeremonyBookingScreen({ bookingId, config }: { bookingId: string
         <Timeline booking={booking} />
 
         <div style={{ display: "grid", gap: 8 }}>
-          <strong style={{ fontSize: 15.5, fontWeight: 800, color: colors.ink }}>{booking.service_title}</strong>
+          <strong style={{ fontSize: 15.5, fontWeight: 800, color: colors.ink }}>{L(booking.service_title)}</strong>
           {[
             { icon: "calendar" as const, text: booking.scheduled_at ? formatAppDateTime(booking.scheduled_at, lang, { withWeekday: true }) : L("زمان نامشخص") },
-            { icon: "pin" as const, text: booking.city || L("شهر نامشخص") },
+            { icon: "pin" as const, text: localizeCityName(booking.city, lang) || L("شهر نامشخص") },
             { icon: "heart" as const, text: booking.venue || L("پس از پرداخت ودیعه نمایش داده می‌شود") },
           ].map((row) => (
             <span key={row.icon} style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 12.5, color: colors.inkSecondary, background: colors.sand50, borderRadius: 12, padding: "9px 12px" }}>
@@ -486,7 +487,7 @@ export function CeremonyBookingScreen({ bookingId, config }: { bookingId: string
         onClose={() => { if (busy !== "confirm") setConfirmOpen(false); }}
       >
         <p style={{ ...typography.body, marginTop: 0, color: colors.inkSecondary, lineHeight: 2 }}>
-          {L("با تأیید اجرا، حق‌الزحمهٔ {name} پس از کسر کارمزد سامانه از ودیعه و ماندهٔ قرارداد تسویه می‌شود و قرارداد بسته می‌شود؛ این اقدام بازگشت‌پذیر نیست. مراسم برگزار شده است؟").replace("{name}", booking.provider.name)}
+          {L("با تأیید اجرا، حق‌الزحمهٔ {name} پس از کسر کارمزد سامانه از ودیعه و ماندهٔ قرارداد تسویه می‌شود و قرارداد بسته می‌شود؛ این اقدام بازگشت‌پذیر نیست. مراسم برگزار شده است؟").replace("{name}", N(booking.provider.name))}
         </p>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: spacing.sm }}>
           <Button variant="secondary" onClick={() => setConfirmOpen(false)} disabled={busy === "confirm"}>{L("بازگشت")}</Button>

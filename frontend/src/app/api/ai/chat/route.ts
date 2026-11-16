@@ -355,6 +355,23 @@ const FALLBACK: Record<string, string> = {
     'الان امکان پاسخ‌گویی خودکار نیست؛ کمی بعد دوباره امتحان کنید یا از «پشتیبانی» در بخش پروفایل بپرسید.',
 };
 
+/** پاسخ‌های جانشین و خوش‌آمد در حالت انگلیسی — هیچ متن فارسی در زبان انگلیسی دیده نمی‌شود. */
+const FALLBACK_EN: Record<string, string> = {
+  disabled:
+    "The smart assistant is not enabled on the platform yet. Until it is fully live, please ask your questions via “Support” in the Profile section.",
+  no_balance:
+    'The smart assistant is temporarily unavailable; please try again in a few minutes. Meanwhile, use “Support” in the Profile section.',
+  rate_limited:
+    'There are too many requests right now; please ask again in a few moments.',
+  timeout:
+    'The reply took too long; please try again. If you need an answer right away, ask via “Support” in the Profile section.',
+  upstream:
+    'Automatic replies are unavailable right now; please try again shortly or use “Support” in the Profile section.',
+};
+
+const WELCOME_EN =
+  "Hi! I am Vodda's smart assistant. Ask me anything about booking sessions, teacher calls, in-person ceremonies, the wallet or any other part of the app.";
+
 const WELCOME =
   'سلام! من دستیار هوشمند وُدّا هستم. دربارهٔ رزرو جلسه، فراخوان اساتید، مراسم حضوری، کیف پول یا هر بخش از اپ سؤال دارید، بپرسید.';
 
@@ -374,12 +391,14 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  let body: { messages?: unknown; page?: unknown };
+  let body: { messages?: unknown; page?: unknown; lang?: unknown };
   try {
-    body = (await request.json()) as { messages?: unknown; page?: unknown };
+    body = (await request.json()) as { messages?: unknown; page?: unknown; lang?: unknown };
   } catch {
     return NextResponse.json({ ok: false, reply: 'پیام نامعتبر بود.' }, { status: 400 });
   }
+
+  const englishMode = body.lang === 'en';
 
   const raw = Array.isArray(body.messages) ? body.messages : [];
   const history: AiMessage[] = [];
@@ -395,6 +414,19 @@ export async function POST(request: NextRequest) {
 
   const [catalog, roster] = await Promise.all([catalogLines(), teacherRoster()]);
   let system = buildSystemPrompt(catalog, roster?.lines ?? '');
+
+  if (englishMode) {
+    // حالت زبان انگلیسی — پاسخ همیشه انگلیسی و با نویسه‌های لاتین؛ نام‌های
+    // فارسی (استاد، خدمت، شهر) به‌صورت لاتین‌نویسی‌شده ذکر می‌شوند.
+    system += [
+      '',
+      '',
+      'LANGUAGE MODE — ENGLISH (MANDATORY):',
+      '- Reply ONLY in English, using Latin characters exclusively. Never output Persian/Arabic script in your reply.',
+      '- When mentioning a Persian proper name (a teacher, a service, a city), write it transliterated in Latin letters, e.g. Zahra Mousavi, Tehran, Talavat va Rokhani.',
+      '- Keep the same warm, polite and concise tone as the Persian persona.',
+    ].join('\n');
+  }
 
   // اگر نام استادی در آخرین پیام کاربر آمده، وقت‌های آزاد زندهٔ او را تزریق کن
   const lastUser = [...history].reverse().find((m) => m.role === 'user');
@@ -414,5 +446,6 @@ export async function POST(request: NextRequest) {
   }
   // خطای موتور AI به‌صورت پیام دوستانه در خود چت نمایش داده می‌شود (نه شکست UI)
   console.error('[ai/chat] fallback:', result.reason, result.detail);
-  return NextResponse.json({ ok: false, reply: FALLBACK[result.reason] ?? FALLBACK.upstream, degraded: true });
+  const fallbackPool = englishMode ? FALLBACK_EN : FALLBACK;
+  return NextResponse.json({ ok: false, reply: fallbackPool[result.reason] ?? fallbackPool.upstream, degraded: true });
 }

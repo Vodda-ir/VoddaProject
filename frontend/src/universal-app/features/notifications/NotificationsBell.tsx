@@ -21,6 +21,7 @@ import {
   typography,
 } from "../../ui";
 import { getNotifications, markNotificationRead, type AppNotification } from "./api";
+import { translateLoose } from "../../i18n/phrases";
 
 export function NotificationsBell({ config }: { config: UniversalAppConfig }) {
   const runtime = usePlatform();
@@ -182,10 +183,10 @@ export function NotificationsBell({ config }: { config: UniversalAppConfig }) {
                       {!notification.read ? (
                         <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: "50%", background: colors.olive600, flex: "0 0 auto" }} />
                       ) : null}
-                      {L(notification.title)}
+                      {translateLoose(notification.title, lang)}
                     </span>
                     {notification.body ? (
-                      <span style={{ ...typography.caption, color: colors.inkMuted, lineHeight: 1.7 }}>{L(notification.body)}</span>
+                      <span style={{ ...typography.caption, color: colors.inkMuted, lineHeight: 1.7 }}>{translateLoose(notification.body, lang)}</span>
                     ) : null}
                   </button>
                 ))}

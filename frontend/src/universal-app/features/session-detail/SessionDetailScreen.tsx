@@ -114,7 +114,7 @@ function CoordinationChat({
   peerLabel: string;
 }) {
   const [draft, setDraft] = useState("");
-  const { L } = useAppearance();
+  const { L, N } = useAppearance();
   const bodyRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -179,7 +179,7 @@ function CoordinationChat({
                   {message.body}
                 </span>
                 <span style={{ fontSize: 9.5, color: colors.inkFaint, textAlign: mine ? "right" : "left" }}>
-                  {mine ? L("شما") : peerLabel}
+                  {mine ? L("شما") : N(peerLabel)}
                 </span>
               </div>
             );
@@ -232,7 +232,7 @@ export function SessionDetailScreen({
   onRoleResolved?: (role: "learner" | "teacher") => void;
 }) {
   const runtime = usePlatform();
-  const { t, L, lang } = useAppearance();
+  const { t, L, lang, N } = useAppearance();
   const id = Number.parseInt(sessionId, 10);
   const [detail, setDetail] = useState<SessionDetailData | null>(null);
   const [messages, setMessages] = useState<SessionMessageData[]>([]);
@@ -449,7 +449,7 @@ export function SessionDetailScreen({
 
         {detail.note ? (
           <p style={{ margin: 0, fontSize: 12.5, lineHeight: 2, color: colors.inkSecondary, background: colors.sand50, borderRadius: 12, padding: "9px 12px" }}>
-            {L("یادداشت: {n}").replace("{n}", detail.note)}
+            {L("یادداشت: {n}").replace("{n}", L(detail.note))}
           </p>
         ) : null}
         {detail.rejectNote ? (

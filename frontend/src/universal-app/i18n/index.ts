@@ -259,7 +259,7 @@ export const en: Partial<Record<TranslationKey, string>> = {
   profile_theme: "Appearance",
   theme_light: "Light",
   theme_dark: "Dark",
-  lang_fa: "فارسی",
+  lang_fa: "Persian",
   lang_en: "English",
   profile_logout: "Log out",
   profile_become_teacher: "Become a teacher",

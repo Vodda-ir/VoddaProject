@@ -22,6 +22,7 @@ import {
 } from "../../ui";
 import { asArray, asRecord } from "../../platform/api";
 import { useAppearance } from "../../ui/appearance";
+import { localizeCityName } from "../../i18n/transliterate";
 
 /* ── نقشهٔ تصویر دسته‌ها ─────────────────────────────────────────────────── */
 
@@ -521,16 +522,16 @@ async function fetchFreeServices(): Promise<FreeServiceCardData[]> {
 }
 
 function FreeServiceTile({ item, config }: { item: FreeServiceCardData; config: UniversalAppConfig }) {
-  const { L, lang } = useAppearance();
+  const { L, lang, N } = useAppearance();
   const tagLabel = L(item.tag || item.field);
-  const subtitle = [tagLabel, item.city].filter(Boolean).join(" · ");
+  const subtitle = [tagLabel, localizeCityName(item.city, lang)].filter(Boolean).join(" · ");
   return (
     <button
       type="button"
       // ?free=1 → صفحهٔ رزرو فقط خدمات رایگان همین استاد را نشان می‌دهد، نه خدمات پولی را
       onClick={() => navigateApp(`/book/${item.teacher_id}?free=1`, config)}
       className="vodda-tappable vodda-enter"
-      aria-label={L("جلسهٔ رایگان {title} با {name}").replace("{title}", L(item.title)).replace("{name}", item.teacher_name)}
+      aria-label={L("جلسهٔ رایگان {title} با {name}").replace("{title}", L(item.title)).replace("{name}", N(item.teacher_name))}
       style={{
         flex: "0 0 236px",
         width: 236,

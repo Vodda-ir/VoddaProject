@@ -20,6 +20,7 @@ import {
 } from "react";
 import { dictionaries, type AppLanguage, type TranslationKey } from "../i18n";
 import { phraseMap } from "../i18n/phrases";
+import { hasPersianScript, localizeCityName, transliterateFa } from "../i18n/transliterate";
 
 export type ThemeMode = "light" | "dark";
 
@@ -36,10 +37,22 @@ export type AppearanceValue = {
   /** t("key") — i18n lookup with {placeholder} interpolation; missing keys fall back to Persian. */
   t: (key: TranslationKey, vars?: Record<string, string | number>) => string;
   /** L("متن فارسی") — literal-string translation; in English mode returns the
-   *  mapped English phrase (or the original text when unmapped), in Persian
-   *  mode returns the text untouched. */
+   *  mapped English phrase, or (when unmapped) a Latin transliteration so no
+   *  Persian script ever reaches the screen; in Persian mode returns the text
+   *  untouched. */
   L: (text: string) => string;
+  /** N(name) — dynamic names (teacher/learner, organizer, provider) localized
+   *  for the active language: English mode rewrites Persian names in Latin
+   *  letters; Persian mode returns the name untouched. */
+  N: (name: string | null | undefined) => string;
 };
+
+/** English-mode rendering of any dynamic Persian text: known cities get their
+ *  official English name, everything else is transliterated. */
+function renderDynamicEnglish(text: string): string {
+  if (!text || !hasPersianScript(text)) return text;
+  return localizeCityName(text, "en");
+}
 
 const AppearanceContext = createContext<AppearanceValue | null>(null);
 
@@ -140,7 +153,12 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
       }
       return text;
     };
-    const L = (text: string) => (lang === "en" ? phraseMap.get(text) ?? text : text);
+    const L = (text: string) => (lang === "en" ? phraseMap.get(text) ?? renderDynamicEnglish(text) : text);
+    const N = (name: string | null | undefined) => {
+      const value = (name ?? "").trim();
+      if (!value) return "";
+      return lang === "en" ? transliterateFa(value) : value;
+    };
     return {
       theme,
       setTheme,
@@ -150,6 +168,7 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
       dir: lang === "en" ? "ltr" : "rtl",
       t,
       L,
+      N,
     };
   }, [theme, lang, setTheme, setLang]);
 
@@ -169,6 +188,7 @@ export function useAppearance(): AppearanceValue {
       dir: "rtl",
       t: (key) => dictionaries.fa[key] ?? key,
       L: (text) => text,
+      N: (name) => (name ?? "").trim(),
     };
   }
   return value;
