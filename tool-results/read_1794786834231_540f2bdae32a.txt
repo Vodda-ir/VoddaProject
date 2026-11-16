@@ -1,0 +1,714 @@
+     1→"use client";
+     2→
+     3→// صفحهٔ جزئیات جلسه — برای هر دو نقش (قرآن‌آموز و استاد):
+     4→// کادر وضعیت با حاشیهٔ برجسته، مشخصات کامل جلسه، چت هماهنگی طرفین،
+     5→// شروع کلاس تصویری، تأیید/رد برای استاد، پایان جلسه و نظرسنجی برای شاگرد.
+     6→
+     7→import { useCallback, useEffect, useRef, useState } from "react";
+     8→import type { UniversalAppConfig } from "../../config";
+     9→import { usePlatform } from "../../platform/context";
+    10→import { navigateApp } from "../../router";
+    11→import {
+    12→  Avatar,
+    13→  Button,
+    14→  Card,
+    15→  EmptyState,
+    16→  ErrorState,
+    17→  formatJalaliDate,
+    18→  Icon,
+    19→  LoadingState,
+    20→  SectionHeader,
+    21→  Sheet,
+    22→  StatusPill,
+    23→  colors,
+    24→  gradients,
+    25→  radii,
+    26→  shadows,
+    27→  spacing,
+    28→  typography,
+    29→} from "../../ui";
+    30→import { messageOf } from "../../ui/errorMessage";
+    31→import { formatWalletAmount, toFaDigits } from "../wallet/WalletTransactionCard";
+    32→import { createSessionReview } from "../sessions/api";
+    33→import {
+    34→  acceptTeacherSession,
+    35→  cancelSessionAsLearner,
+    36→  completeTeacherSession,
+    37→  getTeacherUnseenSessionCount,
+    38→  getSessionDetail,
+    39→  getSessionMessages,
+    40→  isMyMessage,
+    41→  rejectTeacherSession,
+    42→  sendSessionMessage,
+    43→  type SessionDetailData,
+    44→  type SessionMessageData,
+    45→} from "./api";
+    46→import { LiveRoom } from "./LiveRoom";
+    47→import { useAppearance } from "../../ui/appearance";
+    48→import type { TranslationKey } from "../../i18n";
+    49→
+    50→function statusLabel(status: string, t: (key: TranslationKey) => string): string {
+    51→  switch (status) {
+    52→    case "pending": return t("status_pending");
+    53→    case "confirmed": return t("status_confirmed");
+    54→    case "done": return t("status_done");
+    55→    case "canceled": return t("status_canceled");
+    56→    case "awaiting_payment": return t("status_awaiting_payment");
+    57→    default: return status;
+    58→  }
+    59→}
+    60→
+    61→function officialTime(detail: SessionDetailData): string {
+    62→  if (!detail.localDate || !detail.localStart || !detail.localEnd) {
+    63→    return "زمان رسمی جلسه دریافت نشد";
+    64→  }
+    65→  return `${formatJalaliDate(detail.localDate)} · ${toFaDigits(detail.localStart)} تا ${toFaDigits(detail.localEnd)}`;
+    66→}
+    67→
+    68→function startMs(detail: SessionDetailData): number {
+    69→  return Date.parse(detail.scheduledAt);
+    70→}
+    71→
+    72→/** پنجرهٔ ورود به کلاس تصویری: ۱۰ دقیقه قبل از شروع تا بعد از پایان. */
+    73→function canJoinVideo(detail: SessionDetailData): boolean {
+    74→  const start = startMs(detail);
+    75→  if (detail.status !== "confirmed" || Number.isNaN(start)) return false;
+    76→  return Date.now() >= start - 10 * 60_000;
+    77→}
+    78→
+    79→/** پایان جلسه از لحظهٔ آغاز رسمی مجاز است. */
+    80→function canEndSession(detail: SessionDetailData): boolean {
+    81→  const start = startMs(detail);
+    82→  if (detail.status !== "confirmed" || Number.isNaN(start)) return false;
+    83→  return Date.now() >= start;
+    84→}
+    85→
+    86→function timeHint(detail: SessionDetailData): string {
+    87→  const start = startMs(detail);
+    88→  if (Number.isNaN(start)) return "";
+    89→  const diff = start - Date.now();
+    90→  if (diff <= 0) return "";
+    91→  const minutes = Math.ceil(diff / 60_000);
+    92→  if (minutes <= 60) return `شروع کلاس تا ${toFaDigits(minutes)} دقیقه دیگر`;
+    93→  return `شروع کلاس ${formatJalaliDate(detail.localDate)} ساعت ${toFaDigits(detail.localStart)}`;
+    94→}
+    95→
+    96→/* ─────────────────────────  چت هماهنگی  ───────────────────────── */
+    97→
+    98→function CoordinationChat({
+    99→  detail,
+   100→  messages,
+   101→  sending,
+   102→  onSend,
+   103→  peerLabel,
+   104→}: {
+   105→  detail: SessionDetailData;
+   106→  messages: SessionMessageData[];
+   107→  sending: boolean;
+   108→  onSend: (body: string) => void;
+   109→  peerLabel: string;
+   110→}) {
+   111→  const [draft, setDraft] = useState("");
+   112→  const bodyRef = useRef<HTMLDivElement | null>(null);
+   113→
+   114→  useEffect(() => {
+   115→    const body = bodyRef.current;
+   116→    if (body) body.scrollTop = body.scrollHeight;
+   117→  }, [messages.length]);
+   118→
+   119→  const submit = () => {
+   120→    const text = draft.trim();
+   121→    if (!text || sending) return;
+   122→    onSend(text);
+   123→    setDraft("");
+   124→  };
+   125→
+   126→  return (
+   127→    <section aria-label="چت هماهنگی جلسه" style={{ display: "grid", gap: 10 }}>
+   128→      <SectionHeader title="چت هماهنگی" description="برای هماهنگی شروع جلسه، پیام‌های شما اینجا رد و بدل می‌شود." />
+   129→      <Card style={{ display: "grid", gap: 0, padding: 0, overflow: "hidden" }}>
+   130→        <div
+   131→          ref={bodyRef}
+   132→          style={{
+   133→            maxHeight: 300,
+   134→            overflowY: "auto",
+   135→            display: "grid",
+   136→            gap: 8,
+   137→            alignContent: "start",
+   138→            padding: 14,
+   139→            background: colors.sand50,
+   140→          }}
+   141→        >
+   142→          {messages.length === 0 ? (
+   143→            <p style={{ margin: "8px 0", textAlign: "center", fontSize: 12, color: colors.inkMuted }}>
+   144→              هنوز پیامی رد و بدل نشده؛ اولین پیام را بفرستید.
+   145→            </p>
+   146→          ) : null}
+   147→          {messages.map((message) => {
+   148→            const mine = isMyMessage(message, detail);
+   149→            return (
+   150→              <div
+   151→                key={message.id}
+   152→                style={{
+   153→                  maxWidth: "84%",
+   154→                  justifySelf: mine ? "start" : "end",
+   155→                  display: "grid",
+   156→                  gap: 2,
+   157→                }}
+   158→              >
+   159→                <span
+   160→                  style={{
+   161→                    display: "block",
+   162→                    fontSize: 12.5,
+   163→                    lineHeight: 1.9,
+   164→                    color: colors.ink,
+   165→                    background: mine ? colors.olive50 : colors.surface,
+   166→                    border: `1px solid ${mine ? colors.olive100 : colors.sand150}`,
+   167→                    borderRadius: 14,
+   168→                    padding: "8px 12px",
+   169→                    whiteSpace: "pre-wrap",
+   170→                    wordBreak: "break-word",
+   171→                  }}
+   172→                >
+   173→                  {message.body}
+   174→                </span>
+   175→                <span style={{ fontSize: 9.5, color: colors.inkFaint, textAlign: mine ? "right" : "left" }}>
+   176→                  {mine ? "شما" : peerLabel}
+   177→                </span>
+   178→              </div>
+   179→            );
+   180→          })}
+   181→        </div>
+   182→        <div style={{ display: "flex", gap: 8, padding: 10, borderTop: `1px solid ${colors.sand150}`, background: colors.surface }}>
+   183→          <input
+   184→            value={draft}
+   185→            onChange={(event) => setDraft(event.target.value)}
+   186→            onKeyDown={(event) => {
+   187→              if (event.key === "Enter") {
+   188→                event.preventDefault();
+   189→                submit();
+   190→              }
+   191→            }}
+   192→            maxLength={1000}
+   193→            aria-label="متن پیام هماهنگی"
+   194→            placeholder="پیام خود را بنویسید…"
+   195→            style={{
+   196→              flex: 1,
+   197→              minWidth: 0,
+   198→              minHeight: 44,
+   199→              borderRadius: 14,
+   200→              border: `1px solid ${colors.sand200}`,
+   201→              background: colors.sand50,
+   202→              color: colors.ink,
+   203→              padding: "0 14px",
+   204→              fontFamily: typography.fontFamily,
+   205→              fontSize: 13,
+   206→            }}
+   207→          />
+   208→          <Button onClick={submit} loading={sending} style={{ minHeight: 44, padding: "0 18px" }} aria-label="ارسال پیام">
+   209→            <Icon name="chevronL" size={18} />
+   210→          </Button>
+   211→        </div>
+   212→      </Card>
+   213→    </section>
+   214→  );
+   215→}
+   216→
+   217→/* ─────────────────────────  صفحهٔ اصلی  ───────────────────────── */
+   218→
+   219→export function SessionDetailScreen({
+   220→  sessionId,
+   221→  config,
+   222→  onRoleResolved,
+   223→}: {
+   224→  sessionId: string;
+   225→  config: UniversalAppConfig;
+   226→  onRoleResolved?: (role: "learner" | "teacher") => void;
+   227→}) {
+   228→  const runtime = usePlatform();
+   229→  const { t } = useAppearance();
+   230→  const id = Number.parseInt(sessionId, 10);
+   231→  const [detail, setDetail] = useState<SessionDetailData | null>(null);
+   232→  const [messages, setMessages] = useState<SessionMessageData[]>([]);
+   233→  const [loading, setLoading] = useState(true);
+   234→  const [error, setError] = useState<string | null>(null);
+   235→  const [busy, setBusy] = useState(false);
+   236→  const [actionError, setActionError] = useState<string | null>(null);
+   237→  const [liveOpen, setLiveOpen] = useState(false);
+   238→  const [rejectOpen, setRejectOpen] = useState(false);
+   239→  const [rejectReason, setRejectReason] = useState("");
+   240→  const [cancelOpen, setCancelOpen] = useState(false);
+   241→  const [sending, setSending] = useState(false);
+   242→
+   243→  // نقش نمایشگر به پوستهٔ اپ گزارش می‌شود تا ناوبری استاد/شاگرد درست باشد.
+   244→  useEffect(() => {
+   245→    if (detail) onRoleResolved?.(detail.viewerRole === "admin" ? "teacher" : detail.viewerRole);
+   246→  }, [detail, onRoleResolved]);
+   247→
+   248→  // نظرسنجی شاگرد بعد از جلسه
+   249→  const [surveyOpen, setSurveyOpen] = useState(false);
+   250→  const [rating, setRating] = useState(5);
+   251→  const [reviewText, setReviewText] = useState("");
+   252→  const [reviewSaving, setReviewSaving] = useState(false);
+   253→  const [reviewError, setReviewError] = useState<string | null>(null);
+   254→
+   255→  const load = useCallback(async () => {
+   256→    if (!Number.isInteger(id) || id <= 0) {
+   257→      setError("شناسه جلسه نامعتبر است.");
+   258→      setLoading(false);
+   259→      return;
+   260→    }
+   261→    try {
+   262→      const next = await getSessionDetail(runtime, id);
+   263→      setDetail(next);
+   264→      setError(null);
+   265→    } catch (loadError) {
+   266→      setError(messageOf(loadError));
+   267→    } finally {
+   268→      setLoading(false);
+   269→    }
+   270→  }, [id, runtime]);
+   271→
+   272→  useEffect(() => {
+   273→    void load();
+   274→  }, [load]);
+   275→
+   276→  const loadMessages = useCallback(async () => {
+   277→    if (!Number.isInteger(id) || id <= 0) return;
+   278→    try {
+   279→      setMessages(await getSessionMessages(runtime, id));
+   280→    } catch {
+   281→      // خطای موقت چت — دور بعد تلاش می‌شود
+   282→    }
+   283→  }, [id, runtime]);
+   284→
+   285→  useEffect(() => {
+   286→    void loadMessages();
+   287→    const timer = window.setInterval(() => void loadMessages(), 10_000);
+   288→    return () => window.clearInterval(timer);
+   289→  }, [loadMessages]);
+   290→
+   291→  async function runAction(action: () => Promise<void>) {
+   292→    if (busy) return;
+   293→    setBusy(true);
+   294→    setActionError(null);
+   295→    try {
+   296→      await action();
+   297→      await load();
+   298→      void getTeacherUnseenSessionCount(runtime).catch(() => 0);
+   299→    } catch (actionFailure) {
+   300→      setActionError(messageOf(actionFailure));
+   301→    } finally {
+   302→      setBusy(false);
+   303→    }
+   304→  }
+   305→
+   306→  async function submitMessage(body: string) {
+   307→    setSending(true);
+   308→    try {
+   309→      await sendSessionMessage(runtime, id, body);
+   310→      await loadMessages();
+   311→    } catch (sendError) {
+   312→      setActionError(messageOf(sendError));
+   313→    } finally {
+   314→      setSending(false);
+   315→    }
+   316→  }
+   317→
+   318→  async function submitReview() {
+   319→    if (!detail || reviewSaving) return;
+   320→    setReviewSaving(true);
+   321→    setReviewError(null);
+   322→    try {
+   323→      await createSessionReview(runtime, { sessionId: detail.id, rating, text: reviewText });
+   324→      setSurveyOpen(false);
+   325→      await load();
+   326→    } catch (reviewFailure) {
+   327→      setReviewError(messageOf(reviewFailure));
+   328→    } finally {
+   329→      setReviewSaving(false);
+   330→    }
+   331→  }
+   332→
+   333→  if (loading) {
+   334→    return <LoadingState label="در حال دریافت جزئیات جلسه…" style={{ minHeight: 220 }} />;
+   335→  }
+   336→
+   337→  if (error || !detail) {
+   338→    return (
+   339→      <ErrorState
+   340→        title="جزئیات جلسه دریافت نشد"
+   341→        description={error ?? "این جلسه در دسترس شما نیست."}
+   342→        action={
+   343→          <Button onClick={() => navigateApp("/sessions", config)}>بازگشت به جلسات</Button>
+   344→        }
+   345→      />
+   346→    );
+   347→  }
+   348→
+   349→  const isTeacher = detail.viewerRole === "teacher" || detail.viewerRole === "admin";
+   350→  const isLearner = detail.viewerRole === "learner";
+   351→  const peerLabel = isTeacher ? detail.learnerName : detail.teacherName;
+   352→  const peerAvatar = isTeacher ? detail.learnerAvatar : detail.teacherAvatar;
+   353→  const joinReady = canJoinVideo(detail);
+   354→  const endReady = canEndSession(detail);
+   355→  const hint = timeHint(detail);
+   356→  const showSurvey = isLearner && detail.status === "done" && !detail.rated;
+   357→
+   358→  return (
+   359→    <section className="vodda-screen" style={{ display: "grid", gap: spacing.xl }}>
+   360→      {/* کادر وضعیت با حاشیهٔ برجسته */}
+   361→      <div
+   362→        role="status"
+   363→        aria-label={`وضعیت جلسه: ${statusLabel(detail.status, t)}`}
+   364→        className="vodda-enter"
+   365→        style={{
+   366→          position: "relative",
+   367→          overflow: "hidden",
+   368→          display: "grid",
+   369→          gap: 14,
+   370→          padding: 18,
+   371→          borderRadius: 26,
+   372→          border: `1.5px solid ${detail.status === "canceled" ? colors.sand200 : colors.goldSoft}`,
+   373→          background:
+   374→            detail.status === "canceled"
+   375→              ? colors.surface
+   376→              : `linear-gradient(150deg, ${colors.goldBackground}, #fffdf8 72%)`,
+   377→          boxShadow: "0 0 0 4px rgba(231,213,168,.18), 0 14px 30px rgba(139,104,31,.10)",
+   378→        }}
+   379→      >
+   380→        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: spacing.md }}>
+   381→          <StatusPill status={detail.status} label={statusLabel(detail.status, t)} />
+   382→          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+   383→            {detail.instant ? (
+   384→              <span
+   385→                aria-label="جلسهٔ فوری"
+   386→                style={{
+   387→                  display: "inline-flex", alignItems: "center", gap: 4,
+   388→                  padding: "4px 10px", borderRadius: radii.pill,
+   389→                  background: gradients.goldRich, color: "#fffaf0", fontSize: 10.5, fontWeight: 800,
+   390→                  boxShadow: "0 3px 8px rgba(139,104,31,.35)",
+   391→                }}
+   392→              >
+   393→                <Icon name="sparkle" size={12} stroke={2.2} />
+   394→                جلسهٔ فوری
+   395→              </span>
+   396→            ) : null}
+   397→            <span style={{ fontSize: 11.5, color: colors.inkMuted, fontWeight: 700 }}>
+   398→              {toFaDigits(detail.duration)} دقیقه
+   399→            </span>
+   400→          </div>
+   401→        </div>
+   402→
+   403→        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+   404→          <Avatar name={peerLabel} src={peerAvatar || undefined} size={48} ring tone="gold" />
+   405→          <div style={{ minWidth: 0, flex: 1 }}>
+   406→            <strong style={{ display: "block", fontSize: 15, fontWeight: 900, color: colors.ink }}>{peerLabel}</strong>
+   407→            <span style={{ display: "block", marginTop: 3, fontSize: 13, color: colors.inkSecondary }}>
+   408→              {isTeacher ? "قرآن‌آموز" : "استاد"} · جلسهٔ {detail.service || "قرآن"}
+   409→            </span>
+   410→          </div>
+   411→        </div>
+   412→
+   413→        <div
+   414→          style={{
+   415→            display: "flex",
+   416→            alignItems: "center",
+   417→            gap: 7,
+   418→            padding: "12px 14px",
+   419→            borderRadius: 14,
+   420→            background: "rgba(255,255,255,.75)",
+   421→            border: `1px solid ${colors.sand150}`,
+   422→            color: colors.inkSecondary,
+   423→            fontSize: 12.5,
+   424→            fontWeight: 600,
+   425→          }}
+   426→        >
+   427→          <Icon name="calendar" size={16} style={{ flex: "0 0 auto", color: colors.goldDark }} />
+   428→          {officialTime(detail)}
+   429→        </div>
+   430→
+   431→        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+   432→          <div style={{ display: "grid", gap: 3, padding: "10px 13px", borderRadius: 14, background: colors.surface, border: `1px solid ${colors.sand150}` }}>
+   433→            <span style={{ fontSize: 10.5, color: colors.inkMuted, fontWeight: 700 }}>مبلغ جلسه</span>
+   434→            <strong style={{ fontSize: 13.5, fontWeight: 800, color: colors.olive700 }}>
+   435→              {detail.price === 0 ? "رایگان" : `${formatWalletAmount(detail.price)} تومان`}
+   436→            </strong>
+   437→          </div>
+   438→          <div style={{ display: "grid", gap: 3, padding: "10px 13px", borderRadius: 14, background: colors.surface, border: `1px solid ${colors.sand150}` }}>
+   439→            <span style={{ fontSize: 10.5, color: colors.inkMuted, fontWeight: 700 }}>شناسه جلسه</span>
+   440→            <strong style={{ fontSize: 13.5, fontWeight: 800, color: colors.ink }}>#{toFaDigits(detail.id)}</strong>
+   441→          </div>
+   442→        </div>
+   443→
+   444→        {detail.note ? (
+   445→          <p style={{ margin: 0, fontSize: 12.5, lineHeight: 2, color: colors.inkSecondary, background: colors.sand50, borderRadius: 12, padding: "9px 12px" }}>
+   446→            یادداشت: {detail.note}
+   447→          </p>
+   448→        ) : null}
+   449→        {detail.rejectNote ? (
+   450→          <p style={{ margin: 0, fontSize: 12.5, color: colors.danger, background: "rgba(179,64,58,.08)", borderRadius: 12, padding: "9px 12px" }}>
+   451→            دلیل رد: {detail.rejectNote}
+   452→          </p>
+   453→        ) : null}
+   454→      </div>
+   455→
+   456→      {actionError ? (
+   457→        <p role="alert" style={{ margin: 0, fontSize: 12.5, color: colors.danger, background: "rgba(179,64,58,.08)", borderRadius: 12, padding: "10px 13px" }}>
+   458→          {actionError}
+   459→        </p>
+   460→      ) : null}
+   461→
+   462→      {/* اقدامات استاد */}
+   463→      {isTeacher && detail.status === "pending" ? (
+   464→        <Card style={{ display: "grid", gap: 12, padding: 16, borderRadius: 22, border: `1.5px solid ${colors.goldSoft}`, background: colors.goldBackground }}>
+   465→          <strong style={{ display: "block", fontSize: 13.5, fontWeight: 800, color: "#7a5e1e" }}>
+   466→            درخواست جلسه در انتظار پاسخ شماست
+   467→          </strong>
+   468→          <span style={{ fontSize: 12, color: "#9a7426", lineHeight: 1.9 }}>
+   469→            با تأیید، جلسه قطعی می‌شود و قرآن‌آموز می‌تواند کلاس تصویری را آغاز کند.
+   470→          </span>
+   471→          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+   472→            <Button variant="secondary" disabled={busy} onClick={() => setRejectOpen(true)}>رد درخواست</Button>
+   473→            <Button loading={busy} onClick={() => void runAction(() => acceptTeacherSession(runtime, detail.id))}>
+   474→              <Icon name="checkCircle" size={18} />
+   475→              تأیید جلسه
+   476→            </Button>
+   477→          </div>
+   478→        </Card>
+   479→      ) : null}
+   480→
+   481→      {/* کلاس تصویری */}
+   482→      {detail.status === "confirmed" ? (
+   483→        <Card style={{ display: "grid", gap: 12, padding: 16, borderRadius: 22 }}>
+   484→          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+   485→            <span style={{ width: 42, height: 42, display: "grid", placeItems: "center", borderRadius: 14, flex: "0 0 42px", background: colors.olive100, color: colors.olive700 }}>
+   486→              <Icon name="video" size={21} />
+   487→            </span>
+   488→            <div style={{ minWidth: 0, flex: 1 }}>
+   489→              <strong style={{ display: "block", fontSize: 13.5, fontWeight: 800, color: colors.ink }}>کلاس تصویری وُدّا</strong>
+   490→              <span style={{ display: "block", fontSize: 11.5, color: colors.inkMuted, marginTop: 1 }}>
+   491→                {joinReady ? "کلاس باز است — همین حالا وارد شوید." : hint || "پنجرهٔ ورود از ۱۰ دقیقه قبل از شروع باز می‌شود."}
+   492→              </span>
+   493→            </div>
+   494→          </div>
+   495→          <Button
+   496→            fullWidth
+   497→            disabled={!joinReady || busy}
+   498→            loading={busy && liveOpen}
+   499→            onClick={() => setLiveOpen(true)}
+   500→            style={{ minHeight: 48 }}
+   501→          >
+   502→            <Icon name="video" size={19} />
+   503→            {joinReady ? t("session_start_video") : t("session_not_time_yet")}
+   504→          </Button>
+   505→          {isTeacher && endReady ? (
+   506→            <Button
+   507→              variant="secondary"
+   508→              fullWidth
+   509→              disabled={busy}
+   510→              onClick={() =>
+   511→                void runAction(async () => {
+   512→                  await completeTeacherSession(runtime, detail.id);
+   513→                })
+   514→              }
+   515→            >
+   516→              <Icon name="checkCircle" size={18} />
+   517→              پایان جلسه و ثبت برگزاری
+   518→            </Button>
+   519→          ) : null}
+   520→          {isTeacher && !endReady ? (
+   521→            <span style={{ fontSize: 11, color: colors.inkMuted, textAlign: "center" }}>
+   522→              دکمهٔ «پایان جلسه» پس از آغاز رسمی جلسه فعال می‌شود.
+   523→            </span>
+   524→          ) : null}
+   525→        </Card>
+   526→      ) : null}
+   527→
+   528→      {/* اقدامات قرآن‌آموز */}
+   529→      {isLearner && (detail.status === "pending" || detail.status === "confirmed") ? (
+   530→        <Card style={{ display: "grid", gap: 10, padding: 15, borderRadius: 22 }}>
+   531→          <span style={{ fontSize: 12, color: colors.inkMuted, lineHeight: 1.9 }}>
+   532→            {detail.status === "pending"
+   533→              ? "درخواست شما برای استاد ارسال شده و در انتظار تأیید اوست. می‌توانید از چت زیر هماهنگ کنید یا جلسه را لغو کنید."
+   534→              : "جلسه تأیید شد. برای هماهنگی از چت زیر استفاده کنید و سر موعد وارد کلاس تصویری شوید."}
+   535→          </span>
+   536→          {canCancelSession(detail) ? (
+   537→            <Button variant="secondary" fullWidth loading={busy} onClick={() => setCancelOpen(true)}>
+   538→              <Icon name="x" size={17} />
+   539→              لغو جلسه
+   540→            </Button>
+   541→          ) : null}
+   542→        </Card>
+   543→      ) : null}
+   544→
+   545→      {/* نظرسنجی شاگرد پس از جلسه */}
+   546→      {detail.status === "done" ? (
+   547→        <Card style={{ display: "grid", gap: 12, padding: 16, borderRadius: 22 }}>
+   548→          {showSurvey ? (
+   549→            <>
+   550→              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+   551→                <span style={{ width: 42, height: 42, display: "grid", placeItems: "center", borderRadius: 14, flex: "0 0 42px", background: colors.goldBackground, border: `1px solid ${colors.goldSoft}`, color: colors.goldDark }}>
+   552→                  <Icon name="star" size={21} />
+   553→                </span>
+   554→                <div style={{ minWidth: 0, flex: 1 }}>
+   555→                  <strong style={{ display: "block", fontSize: 13.5, fontWeight: 800, color: colors.ink }}>جلسه برگزار شد</strong>
+   556→                  <span style={{ display: "block", fontSize: 11.5, color: colors.inkMuted, marginTop: 1 }}>
+   557→                    نظر شما به بهترشدن کلاس‌های استاد کمک می‌کند.
+   558→                  </span>
+   559→                </div>
+   560→              </div>
+   561→              <Button fullWidth onClick={() => setSurveyOpen(true)} style={{ background: colors.gold, borderColor: colors.gold }}>
+   562→                شرکت در نظرسنجی و ثبت امتیاز
+   563→              </Button>
+   564→            </>
+   565→          ) : isLearner && detail.rated ? (
+   566→            <span style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 12.5, color: colors.olive700, fontWeight: 700 }}>
+   567→              <Icon name="checkCircle" size={17} />
+   568→              امتیاز شما برای این جلسه ثبت شده است.
+   569→            </span>
+   570→          ) : null}
+   571→        </Card>
+   572→      ) : null}
+   573→
+   574→      <CoordinationChat
+   575→        detail={detail}
+   576→        messages={messages}
+   577→        sending={sending}
+   578→        onSend={(body) => void submitMessage(body)}
+   579→        peerLabel={peerLabel}
+   580→      />
+   581→
+   582→      {/* پوشش کلاس تصویری */}
+   583→      {liveOpen ? (
+   584→        <LiveRoom
+   585→          sessionId={detail.id}
+   586→          role={isTeacher ? "teacher" : "learner"}
+   587→          myUserId={isTeacher ? detail.teacherUserId : detail.learnerId}
+   588→          peerName={peerLabel}
+   589→          peerAvatar={peerAvatar || undefined}
+   590→          startAt={detail.scheduledAt}
+   591→          durationMinutes={detail.duration}
+   592→          onClose={() => {
+   593→            setLiveOpen(false);
+   594→            void load();
+   595→            void loadMessages();
+   596→          }}
+   597→        />
+   598→      ) : null}
+   599→
+   600→      {/* شیت رد درخواست (استاد) */}
+   601→      <Sheet open={rejectOpen} title="رد درخواست جلسه" onClose={() => { if (!busy) setRejectOpen(false); }}>
+   602→        <div style={{ display: "grid", gap: spacing.md }}>
+   603→          <label style={{ display: "grid", gap: spacing.sm, ...typography.bodySmall }}>
+   604→            <span style={{ fontWeight: 700 }}>دلیل رد</span>
+   605→            <textarea
+   606→              value={rejectReason}
+   607→              onChange={(event) => setRejectReason(event.target.value)}
+   608→              rows={4}
+   609→              maxLength={255}
+   610→              disabled={busy}
+   611→              placeholder="دلیل رد را برای قرآن‌آموز بنویسید…"
+   612→              style={{ width: "100%", resize: "vertical", padding: spacing.md, border: `1px solid ${colors.sand200}`, borderRadius: radii.md, color: colors.ink, background: colors.surface, boxShadow: shadows.xs, fontFamily: typography.fontFamily, ...typography.body }}
+   613→            />
+   614→          </label>
+   615→          <Button
+   616→            variant="danger"
+   617→            fullWidth
+   618→            loading={busy}
+   619→            onClick={() =>
+   620→              void runAction(async () => {
+   621→                if (!rejectReason.trim()) throw new Error("دلیل رد درخواست را وارد کنید.");
+   622→                await rejectTeacherSession(runtime, detail.id, rejectReason);
+   623→                setRejectOpen(false);
+   624→              })
+   625→            }
+   626→          >
+   627→            رد درخواست
+   628→          </Button>
+   629→        </div>
+   630→      </Sheet>
+   631→
+   632→      {/* دیالوگ لغو جلسه (قرآن‌آموز) */}
+   633→      <Sheet open={cancelOpen} title="لغو جلسه" onClose={() => { if (!busy) setCancelOpen(false); }}>
+   634→        <div style={{ display: "grid", gap: spacing.md }}>
+   635→          <p style={{ ...typography.body, margin: 0, color: colors.inkSecondary }}>
+   636→            لغو فقط پیش از زمان شروع مجاز است. در صورت موفقیت، مبلغ به کیف پول بازمی‌گردد.
+   637→          </p>
+   638→          <Button
+   639→            variant="danger"
+   640→            fullWidth
+   641→            loading={busy}
+   642→            onClick={() =>
+   643→              void runAction(async () => {
+   644→                await cancelSessionAsLearner(runtime, detail.id);
+   645→                setCancelOpen(false);
+   646→              })
+   647→            }
+   648→          >
+   649→            لغو جلسه
+   650→          </Button>
+   651→        </div>
+   652→      </Sheet>
+   653→
+   654→      {/* شیت نظرسنجی (قرآن‌آموز) */}
+   655→      <Sheet open={surveyOpen} title={`نظرسنجی جلسه با ${detail.teacherName}`} onClose={() => { if (!reviewSaving) setSurveyOpen(false); }}>
+   656→        <div style={{ display: "grid", gap: spacing.lg }}>
+   657→          <div style={{ display: "flex", justifyContent: "center", gap: spacing.sm, direction: "ltr" }}>
+   658→            {[1, 2, 3, 4, 5].map((value) => (
+   659→              <button
+   660→                key={value}
+   661→                type="button"
+   662→                aria-label={`${toFaDigits(value)} ستاره`}
+   663→                aria-pressed={value <= rating}
+   664→                onClick={() => setRating(value)}
+   665→                disabled={reviewSaving}
+   666→                style={{
+   667→                  border: 0,
+   668→                  padding: spacing.xs,
+   669→                  background: "transparent",
+   670→                  color: value <= rating ? colors.gold : colors.sand200,
+   671→                  fontSize: 34,
+   672→                  cursor: reviewSaving ? "not-allowed" : "pointer",
+   673→                }}
+   674→              >
+   675→                ★
+   676→              </button>
+   677→            ))}
+   678→          </div>
+   679→          <label style={{ display: "grid", gap: spacing.sm, ...typography.bodySmall, color: colors.ink }}>
+   680→            <span style={{ fontWeight: 700 }}>نظر شما (اختیاری)</span>
+   681→            <textarea
+   682→              value={reviewText}
+   683→              onChange={(event) => setReviewText(event.target.value)}
+   684→              maxLength={1000}
+   685→              rows={4}
+   686→              disabled={reviewSaving}
+   687→              placeholder="تجربهٔ خود از این جلسه را بنویسید…"
+   688→              style={{ width: "100%", resize: "vertical", padding: spacing.md, border: `1px solid ${colors.sand200}`, borderRadius: radii.md, color: colors.ink, background: colors.surface, boxShadow: shadows.xs, fontFamily: typography.fontFamily, ...typography.body }}
+   689→            />
+   690→          </label>
+   691→          {reviewError ? <span role="alert" style={{ ...typography.caption, color: colors.danger }}>{reviewError}</span> : null}
+   692→          <Button fullWidth loading={reviewSaving} onClick={() => void submitReview()}>
+   693→            ثبت امتیاز
+   694→          </Button>
+   695→        </div>
+   696→      </Sheet>
+   697→
+   698→      {messages.length === 0 && detail.status === "pending" && isTeacher ? (
+   699→        <EmptyState
+   700→          icon={<Icon name="message" size={30} />}
+   701→          title="پیش از تأیید، هماهنگ کنید"
+   702→          description="اگر دربارهٔ زمان یا محتوای جلسه سؤالی دارید، از چت هماهنگی بپرسید."
+   703→        />
+   704→      ) : null}
+   705→    </section>
+   706→  );
+   707→}
+   708→
+   709→function canCancelSession(detail: SessionDetailData): boolean {
+   710→  if (detail.status !== "pending" && detail.status !== "confirmed") return false;
+   711→  const timestamp = startMs(detail);
+   712→  return Number.isNaN(timestamp) || Date.now() < timestamp;
+   713→}
+   714→

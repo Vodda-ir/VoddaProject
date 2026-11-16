@@ -1,0 +1,668 @@
+     1→     1→"use client";
+     2→     2→
+     3→     3→import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+     4→     4→import type { UniversalAppConfig } from "../../config";
+     5→     5→import { asArray, asNumber, asRecord, asString, type ApiEnvelope } from "../../platform/api";
+     6→     6→import { usePlatform } from "../../platform/context";
+     7→     7→import { navigateApp } from "../../router";
+     8→     8→import {
+     9→     9→  Avatar,
+    10→    10→  Button,
+    11→    11→  Card,
+    12→    12→  ErrorState,
+    13→    13→  Icon,
+    14→    14→  Input,
+    15→    15→  LoadingState,
+    16→    16→  colors,
+    17→    17→  radii,
+    18→    18→  Sheet,
+    19→    19→  shadows,
+    20→    20→  spacing,
+    21→    21→  toFaDigits,
+    22→    22→  typography,
+    23→    23→} from "../../ui";
+    24→    24→import { messageOf } from "../../ui/errorMessage";
+    25→    25→import { showToast } from "../../ui/toast";
+    26→    26→import { TierBadge } from "../teachers/TierBadge";
+    27→    27→import { AmountPicker, CityPicker } from "../ceremony/fields";
+    28→    28→import { formatWalletAmount } from "../wallet/WalletTransactionCard";
+    29→    29→
+    30→    30→type UserProfile = {
+    31→    31→  name: string;
+    32→    32→  avatarUrl?: string;
+    33→    33→};
+    34→    34→
+    35→    35→type TeacherProfile = {
+    36→    36→  id: number;
+    37→    37→  field: string;
+    38→    38→  tag: string;
+    39→    39→  level: string;
+    40→    40→  city: string;
+    41→    41→  bio: string;
+    42→    42→  skills: string[];
+    43→    43→  price30: number;
+    44→    44→  price60: number;
+    45→    45→  available: boolean;
+    46→    46→  status: string;
+    47→    47→  verified: boolean;
+    48→    48→  tier: string;
+    49→    49→  rating: number;
+    50→    50→  reviews: number;
+    51→    51→  sessions: number;
+    52→    52→  services: Array<{ id: number; active: boolean }>;
+    53→    53→};
+    54→    54→
+    55→    55→type TeacherForm = {
+    56→    56→  field: string;
+    57→    57→  tag: string;
+    58→    58→  level: string;
+    59→    59→  city: string;
+    60→    60→  bio: string;
+    61→    61→  skills: string;
+    62→    62→  price30: string;
+    63→    63→  price60: string;
+    64→    64→};
+    65→    65→
+    66→    66→function parseUser(value: unknown): UserProfile | null {
+    67→    67→  const record = asRecord(value);
+    68→    68→  if (!record) return null;
+    69→    69→  return {
+    70→    70→    name: asString(record.name).trim() || "استاد",
+    71→    71→    avatarUrl: asString(record.avatar_url) || undefined,
+    72→    72→  };
+    73→    73→}
+    74→    74→
+    75→    75→function parseTeacher(value: unknown): TeacherProfile | null {
+    76→    76→  const record = asRecord(value);
+    77→    77→  if (!record) return null;
+    78→    78→  const services = asArray(record.services)
+    79→    79→    .map(asRecord)
+    80→    80→    .filter((item): item is Record<string, unknown> => item !== null);
+    81→    81→  const skills = asArray(record.skills)
+    82→    82→    .filter((item): item is string => typeof item === "string")
+    83→    83→    .map((item) => item.trim())
+    84→    84→    .filter(Boolean);
+    85→    85→
+    86→    86→  return {
+    87→    87→    id: asNumber(record.id),
+    88→    88→    field: asString(record.field),
+    89→    89→    tag: asString(record.tag),
+    90→    90→    level: asString(record.level),
+    91→    91→    city: asString(record.city),
+    92→    92→    bio: asString(record.bio),
+    93→    93→    skills,
+    94→    94→    price30: asNumber(record.price30),
+    95→    95→    price60: asNumber(record.price60),
+    96→    96→    available: record.available === true,
+    97→    97→    status: asString(record.status) || "pending",
+    98→    98→    verified: record.verified === true,
+    99→    99→    tier: asString(record.tier),
+   100→   100→    rating: asNumber(record.rating),
+   101→   101→    reviews: asNumber(record.reviews),
+   102→   102→    sessions: asNumber(record.sessions),
+   103→   103→    services: services.map((service) => ({ id: asNumber(service.id), active: service.active === true })),
+   104→   104→  };
+   105→   105→}
+   106→   106→
+   107→   107→function toForm(teacher: TeacherProfile): TeacherForm {
+   108→   108→  return {
+   109→   109→    field: teacher.field,
+   110→   110→    tag: teacher.tag,
+   111→   111→    level: teacher.level,
+   112→   112→    city: teacher.city,
+   113→   113→    bio: teacher.bio,
+   114→   114→    skills: teacher.skills.join("، "),
+   115→   115→    price30: teacher.price30 > 0 ? String(teacher.price30) : "",
+   116→   116→    price60: teacher.price60 > 0 ? String(teacher.price60) : "",
+   117→   117→  };
+   118→   118→}
+   119→   119→
+   120→   120→// قالب پیشنهادی «دربارهٔ استاد» — با ایموجی‌های ساختاری که صفحهٔ نمایش پروفایل
+   121→   121→// آن‌ها را به بند/چیپ مرتب تبدیل می‌کند؛ نتیجه همیشه خوش‌فرم می‌ماند.
+   122→   122→const BIO_TEMPLATE = "📖 معرفی کوتاه خود را اینجا بنویسید؛ سابقه، سبک تدریس و دستاورد‌ها…\n🎯 زمینه‌های تدریس:\n• روخوانی و تجوید قرآن کریم\n• حفظ قرآن به روش تکرار هوشمند\n• آموزش مقدماتی تجوید\n📍 مدرک یا اجازه | شهر";
+   123→   123→
+   124→   124→function validate(form: TeacherForm): string | null {
+   125→   125→  if (form.field.trim().length > 60) return "حوزه تخصص حداکثر ۶۰ کاراکتر است.";
+   126→   126→  if (form.tag.trim().length > 60) return "عنوان استاد حداکثر ۶۰ کاراکتر است.";
+   127→   127→  if (form.level.trim().length > 30) return "سطح حداکثر ۳۰ کاراکتر است.";
+   128→   128→  if (form.city.trim().length > 80) return "شهر حداکثر ۸۰ کاراکتر است.";
+   129→   129→  if (form.bio.trim().length > 1000) return "معرفی استاد حداکثر ۱۰۰۰ کاراکتر است.";
+   130→   130→
+   131→   131→  const skills = form.skills.split(/[،,]/).map((item) => item.trim()).filter(Boolean);
+   132→   132→  if (skills.length > 20) return "حداکثر ۲۰ مهارت قابل ثبت است.";
+   133→   133→  if (skills.some((skill) => skill.length > 50)) return "هر مهارت حداکثر ۵۰ کاراکتر است.";
+   134→   134→
+   135→   135→  for (const [label, raw] of [["تعرفه ۳۰ دقیقه", form.price30], ["تعرفه ۶۰ دقیقه", form.price60]] as const) {
+   136→   136→    if (!raw.trim()) continue;
+   137→   137→    const value = Number(raw);
+   138→   138→    if (!Number.isFinite(value) || value <= 0 || value > 1_000_000_000) {
+   139→   139→      return `${label} باید عددی مثبت و حداکثر یک میلیارد تومان باشد.`;
+   140→   140→    }
+   141→   141→  }
+   142→   142→  return null;
+   143→   143→}
+   144→   144→
+   145→   145→export function TeacherProfileScreen({ config }: { config: UniversalAppConfig }) {
+   146→   146→  const runtime = usePlatform();
+   147→   147→  const [user, setUser] = useState<UserProfile | null>(null);
+   148→   148→  const [teacher, setTeacher] = useState<TeacherProfile | null>(null);
+   149→   149→  const [form, setForm] = useState<TeacherForm | null>(null);
+   150→   150→  const [loading, setLoading] = useState(true);
+   151→   151→  const [saving, setSaving] = useState(false);
+   152→   152→  const [availabilitySaving, setAvailabilitySaving] = useState(false);
+   153→   153→  const [error, setError] = useState<string | null>(null);
+   154→   154→  const [notice, setNotice] = useState<string | null>(null);
+   155→   155→  const [editorOpen, setEditorOpen] = useState(false);
+   156→   156→  // دستیار هوش مصنوعی بازنویسی «معرفی استاد» طبق الگوی وُدّا
+   157→   157→  const [aiBusy, setAiBusy] = useState(false);
+   158→   158→  const [aiPreview, setAiPreview] = useState<string | null>(null);
+   159→   159→  const [aiError, setAiError] = useState("");
+   160→   160→
+   161→   161→  async function polishBioWithAi() {
+   162→   162→    if (!form || aiBusy) return;
+   163→   163→    const text = form.bio.trim();
+   164→   164→    if (text.length < 10) {
+   165→   165→      setAiError("برای بازنویسی، متن معرفی را بنویسید (حداقل چند جمله).");
+   166→   166→      return;
+   167→   167→    }
+   168→   168→    setAiBusy(true);
+   169→   169→    setAiError("");
+   170→   170→    setAiPreview(null);
+   171→   171→    try {
+   172→   172→      const response = await fetch("/api/ai/polish", {
+   173→   173→        method: "POST",
+   174→   174→        headers: { "content-type": "application/json" },
+   175→   175→        body: JSON.stringify({ kind: "bio", text }),
+   176→   176→      });
+   177→   177→      const payload = (await response.json().catch(() => ({}))) as { ok?: boolean; text?: string; reply?: string };
+   178→   178→      if (response.ok && payload.ok && typeof payload.text === "string" && payload.text.trim()) {
+   179→   179→        setAiPreview(payload.text.trim());
+   180→   180→      } else {
+   181→   181→        setAiError(typeof payload.reply === "string" && payload.reply ? payload.reply : "الان امکان بازنویسی نیست؛ کمی بعد دوباره تلاش کنید.");
+   182→   182→      }
+   183→   183→    } catch {
+   184→   184→      setAiError("ارتباط با دستیار هوشمند برقرار نشد؛ اتصال را بررسی کنید.");
+   185→   185→    } finally {
+   186→   186→      setAiBusy(false);
+   187→   187→    }
+   188→   188→  }
+   189→   189→
+   190→   190→  const load = useCallback(async () => {
+   191→   191→    setLoading(true);
+   192→   192→    setError(null);
+   193→   193→    try {
+   194→   194→      const [meResponse, teacherResponse] = await Promise.all([
+   195→   195→        runtime.request<ApiEnvelope<unknown>>("/me"),
+   196→   196→        runtime.request<ApiEnvelope<unknown>>("/teacher/me"),
+   197→   197→      ]);
+   198→   198→      const nextUser = parseUser(meResponse.data);
+   199→   199→      const nextTeacher = parseTeacher(teacherResponse.data);
+   200→   200→      if (!nextUser || !nextTeacher) throw new Error("اطلاعات پروفایل استاد دریافت نشد.");
+   201→   201→      setUser(nextUser);
+   202→   202→      setTeacher(nextTeacher);
+   203→   203→      setForm(toForm(nextTeacher));
+   204→   204→    } catch (loadError) {
+   205→   205→      setUser(null);
+   206→   206→      setTeacher(null);
+   207→   207→      setForm(null);
+   208→   208→      setError(messageOf(loadError));
+   209→   209→    } finally {
+   210→   210→      setLoading(false);
+   211→   211→    }
+   212→   212→  }, [runtime]);
+   213→   213→
+   214→   214→  useEffect(() => {
+   215→   215→    void load();
+   216→   216→  }, [load]);
+   217→   217→
+   218→   218→  const activeServices = useMemo(
+   219→   219→    () => teacher?.services.filter((service) => service.active).length ?? 0,
+   220→   220→    [teacher],
+   221→   221→  );
+   222→   222→
+   223→   223→  async function saveProfile(event: FormEvent) {
+   224→   224→    event.preventDefault();
+   225→   225→    if (!form) return;
+   226→   226→    const validationError = validate(form);
+   227→   227→    if (validationError) {
+   228→   228→      setNotice(validationError);
+   229→   229→      return;
+   230→   230→    }
+   231→   231→
+   232→   232→    const skills = form.skills.split(/[،,]/).map((item) => item.trim()).filter(Boolean);
+   233→   233→    const payload: Record<string, unknown> = {};
+   234→   234→    if (form.field.trim()) payload.field = form.field.trim();
+   235→   235→    if (form.tag.trim()) payload.tag = form.tag.trim();
+   236→   236→    if (form.level.trim()) payload.level = form.level.trim();
+   237→   237→    if (form.city.trim()) payload.city = form.city.trim();
+   238→   238→    if (form.bio.trim()) payload.bio = form.bio.trim();
+   239→   239→    if (skills.length) payload.skills = skills;
+   240→   240→    if (form.price30.trim()) payload.price30 = Number(form.price30);
+   241→   241→    if (form.price60.trim()) payload.price60 = Number(form.price60);
+   242→   242→
+   243→   243→    setSaving(true);
+   244→   244→    setNotice(null);
+   245→   245→    try {
+   246→   246→      const response = await runtime.request<ApiEnvelope<unknown>>("/teacher/me", {
+   247→   247→        method: "PUT",
+   248→   248→        body: JSON.stringify(payload),
+   249→   249→      });
+   250→   250→      const updated = parseTeacher(response.data);
+   251→   251→      if (!updated) throw new Error("پاسخ بروزرسانی پروفایل نامعتبر بود.");
+   252→   252→      setTeacher(updated);
+   253→   253→      setForm(toForm(updated));
+   254→   254→      setNotice("اطلاعات حرفه‌ای استاد ذخیره شد.");
+   255→   255→      showToast("اطلاعات حرفه‌ای ذخیره شد");
+   256→   256→      setEditorOpen(false);
+   257→   257→    } catch (saveError) {
+   258→   258→      setNotice(messageOf(saveError));
+   259→   259→    } finally {
+   260→   260→      setSaving(false);
+   261→   261→    }
+   262→   262→  }
+   263→   263→
+   264→   264→  async function setAvailability(nextValue: boolean) {
+   265→   265→    if (!teacher || availabilitySaving) return;
+   266→   266→    setAvailabilitySaving(true);
+   267→   267→    setNotice(null);
+   268→   268→    try {
+   269→   269→      const response = await runtime.request<ApiEnvelope<unknown>>("/teacher/me", {
+   270→   270→        method: "PUT",
+   271→   271→        body: JSON.stringify({ available: nextValue }),
+   272→   272→      });
+   273→   273→      const updated = parseTeacher(response.data);
+   274→   274→      if (!updated) throw new Error("وضعیت دسترس‌پذیری بروزرسانی نشد.");
+   275→   275→      setTeacher(updated);
+   276→   276→      setNotice(nextValue ? "برای رزرو در دسترس هستید." : "دسترس‌پذیری برای رزرو غیرفعال شد.");
+   277→   277→    } catch (updateError) {
+   278→   278→      setNotice(messageOf(updateError));
+   279→   279→    } finally {
+   280→   280→      setAvailabilitySaving(false);
+   281→   281→    }
+   282→   282→  }
+   283→   283→
+   284→   284→  if (loading) return <LoadingState label="در حال دریافت پروفایل استاد…" />;
+   285→   285→  if (error || !user || !teacher || !form) {
+   286→   286→    return (
+   287→   287→      <ErrorState
+   288→   288→        title="دریافت پروفایل ناموفق بود"
+   289→   289→        description={error ?? "اطلاعات پروفایل دریافت نشد."}
+   290→   290→        action={<Button onClick={() => void load()}>تلاش دوباره</Button>}
+   291→   291→      />
+   292→   292→    );
+   293→   293→  }
+   294→   294→
+   295→   295→  const rating = teacher.reviews > 0 ? teacher.rating.toFixed(1) : "—";
+   296→   296→
+   297→   297→  return (
+   298→   298→    <section className="vodda-screen" style={{ display: "grid", gap: 18 }}>
+   299→   299→      <h1 style={{ fontSize: 24, fontWeight: 800, margin: 0, color: colors.ink }}>پروفایل استاد</h1>
+   300→   300→
+   301→   301→      <Card elevated className="vodda-enter" style={{ padding: 16, borderRadius: 24 }}>
+   302→   302→        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+   303→   303→          <div style={{ position: "relative", flex: "0 0 auto" }}>
+   304→   304→            <Avatar name={user.name} src={user.avatarUrl} size={62} ring />
+   305→   305→            {teacher.tier ? (
+   306→   306→              <span
+   307→   307→                aria-label="نشان درجه استاد"
+   308→   308→                style={{
+   309→   309→                  position: "absolute",
+   310→   310→                  insetInlineEnd: -2,
+   311→   311→                  bottom: 1,
+   312→   312→                  width: 24,
+   313→   313→                  height: 24,
+   314→   314→                  display: "grid",
+   315→   315→                  placeItems: "center",
+   316→   316→                  border: "3px solid " + colors.surface,
+   317→   317→                  borderRadius: "50%",
+   318→   318→                  background: colors.surface,
+   319→   319→                }}
+   320→   320→              >
+   321→   321→                <TierBadge tier={teacher.tier} size={16} />
+   322→   322→              </span>
+   323→   323→            ) : null}
+   324→   324→          </div>
+   325→   325→          <div style={{ minWidth: 0, flex: 1 }}>
+   326→   326→            <strong style={{ fontSize: 16.5, fontWeight: 800, display: "block", color: colors.ink }}>
+   327→   327→              {user.name}
+   328→   328→            </strong>
+   329→   329→            <span style={{ fontSize: 12.5, color: colors.olive600, fontWeight: 600 }}>
+   330→   330→              {teacher.tag || teacher.field || "مدرس"}
+   331→   331→            </span>
+   332→   332→            <span style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 7, fontSize: 12, color: colors.goldDark }}>
+   333→   333→              <Icon name="star" size={14} fill style={{ color: colors.gold }} />
+   334→   334→              <strong>{rating === "—" ? rating : toFaDigits(rating)}</strong>
+   335→   335→              <span style={{ color: colors.inkFaint }}>({toFaDigits(teacher.reviews)} نظر)</span>
+   336→   336→            </span>
+   337→   337→          </div>
+   338→   338→          <button
+   339→   339→            type="button"
+   340→   340→            className="vodda-tappable"
+   341→   341→            onClick={() => navigateApp("/profile/edit", config)}
+   342→   342→            aria-label="ویرایش حساب"
+   343→   343→            style={{
+   344→   344→              width: 40,
+   345→   345→              height: 40,
+   346→   346→              display: "grid",
+   347→   347→              placeItems: "center",
+   348→   348→              flex: "0 0 40px",
+   349→   349→              padding: 0,
+   350→   350→              border: 0,
+   351→   351→              borderRadius: 12,
+   352→   352→              color: colors.olive700,
+   353→   353→              background: colors.olive50,
+   354→   354→              cursor: "pointer",
+   355→   355→            }}
+   356→   356→          >
+   357→   357→            <Icon name="edit" size={19} />
+   358→   358→          </button>
+   359→   359→        </div>
+   360→   360→
+   361→   361→        <div style={{ height: 1, margin: "15px 0", background: colors.sand100 }} />
+   362→   362→
+   363→   363→        <div style={{ display: "flex", alignItems: "center", gap: spacing.md }}>
+   364→   364→          <div style={{ minWidth: 0, flex: 1 }}>
+   365→   365→            <strong style={{ fontSize: 13.5, fontWeight: 700, display: "block", color: colors.ink }}>
+   366→   366→              وضعیت پذیرش جلسه
+   367→   367→            </strong>
+   368→   368→            <span style={{ fontSize: 11.5, lineHeight: 1.6, color: colors.inkMuted }}>
+   369→   369→              {teacher.available ? "آماده دریافت درخواست جدید" : "موقتاً غیرفعال"}
+   370→   370→            </span>
+   371→   371→          </div>
+   372→   372→          <button
+   373→   373→            type="button"
+   374→   374→            role="switch"
+   375→   375→            aria-checked={teacher.available}
+   376→   376→            aria-label="وضعیت پذیرش جلسه"
+   377→   377→            disabled={availabilitySaving}
+   378→   378→            onClick={() => void setAvailability(!teacher.available)}
+   379→   379→            style={{
+   380→   380→              width: 46,
+   381→   381→              height: 28,
+   382→   382→              position: "relative",
+   383→   383→              flex: "0 0 46px",
+   384→   384→              padding: 3,
+   385→   385→              border: 0,
+   386→   386→              borderRadius: radii.pill,
+   387→   387→              background: teacher.available ? colors.olive600 : colors.sand200,
+   388→   388→              opacity: availabilitySaving ? 0.6 : 1,
+   389→   389→              cursor: availabilitySaving ? "wait" : "pointer",
+   390→   390→              transition: "background 180ms ease",
+   391→   391→            }}
+   392→   392→          >
+   393→   393→            <span
+   394→   394→              aria-hidden="true"
+   395→   395→              style={{
+   396→   396→                position: "absolute",
+   397→   397→                top: 3,
+   398→   398→                insetInlineEnd: teacher.available ? 3 : 21,
+   399→   399→                width: 22,
+   400→   400→                height: 22,
+   401→   401→                borderRadius: "50%",
+   402→   402→                background: colors.surface,
+   403→   403→                boxShadow: "0 1px 3px rgba(0,0,0,.2)",
+   404→   404→                transition: "inset-inline-end 180ms ease",
+   405→   405→              }}
+   406→   406→            />
+   407→   407→          </button>
+   408→   408→        </div>
+   409→   409→      </Card>
+   410→   410→
+   411→   411→      {notice ? (
+   412→   412→        <div
+   413→   413→          role="status"
+   414→   414→          style={{
+   415→   415→            padding: "10px 14px",
+   416→   416→            borderRadius: 14,
+   417→   417→            color: colors.inkSecondary,
+   418→   418→            background: colors.olive50,
+   419→   419→            ...typography.bodySmall,
+   420→   420→          }}
+   421→   421→        >
+   422→   422→          {notice}
+   423→   423→        </div>
+   424→   424→      ) : null}
+   425→   425→
+   426→   426→      <Card className="vodda-enter vodda-enter-delay-1" style={{ padding: 0, overflow: "hidden", borderRadius: 24 }}>
+   427→   427→        {[
+   428→   428→          { icon: "book" as const, title: "خدمات من", meta: `${toFaDigits(activeServices)} خدمت فعال`, action: () => navigateApp("/t/services", config) },
+   429→   429→          { icon: "clock" as const, title: "زمان کاری", meta: "مدیریت برنامه هفتگی", action: () => navigateApp("/t/work-times", config) },
+   430→   430→          { icon: "star" as const, title: "نظرات", meta: `${toFaDigits(teacher.reviews)} نظر`, action: () => navigateApp("/t/reviews", config) },
+   431→   431→          { icon: "edit" as const, title: "اطلاعات حرفه‌ای", meta: "تخصص، مهارت و تعرفه", action: () => setEditorOpen(true) },
+   432→   432→        ].map((row, index, rows) => (
+   433→   433→          <button
+   434→   434→            key={row.title}
+   435→   435→            type="button"
+   436→   436→            className="vodda-tappable"
+   437→   437→            onClick={row.action}
+   438→   438→            style={{
+   439→   439→              width: "100%",
+   440→   440→              minHeight: 62,
+   441→   441→              display: "flex",
+   442→   442→              alignItems: "center",
+   443→   443→              gap: 12,
+   444→   444→              padding: "12px 16px",
+   445→   445→              textAlign: "right",
+   446→   446→              border: 0,
+   447→   447→              borderBottom: index < rows.length - 1 ? `1px solid ${colors.sand100}` : 0,
+   448→   448→              color: colors.ink,
+   449→   449→              background: colors.surface,
+   450→   450→              fontFamily: typography.fontFamily,
+   451→   451→              cursor: "pointer",
+   452→   452→            }}
+   453→   453→          >
+   454→   454→            <Icon name={row.icon} size={21} style={{ color: colors.olive600 }} />
+   455→   455→            <span style={{ minWidth: 0, flex: 1 }}>
+   456→   456→              <strong style={{ fontSize: 14.5, fontWeight: 600, display: "block" }}>{row.title}</strong>
+   457→   457→            </span>
+   458→   458→            <span style={{ fontSize: 12, color: colors.inkFaint, whiteSpace: "nowrap" }}>{row.meta}</span>
+   459→   459→            <Icon name="chevronL" size={18} style={{ color: colors.inkFaint }} />
+   460→   460→          </button>
+   461→   461→        ))}
+   462→   462→      </Card>
+   463→   463→
+   464→   464→      <button
+   465→   465→        type="button"
+   466→   466→        onClick={() => navigateApp("/", config)}
+   467→   467→        className="vodda-tappable vodda-enter vodda-enter-delay-2"
+   468→   468→        style={{
+   469→   469→          width: "100%",
+   470→   470→          display: "flex",
+   471→   471→          alignItems: "center",
+   472→   472→          gap: 13,
+   473→   473→          padding: 16,
+   474→   474→          textAlign: "right",
+   475→   475→          border: `1px solid ${colors.olive100}`,
+   476→   476→          borderRadius: 24,
+   477→   477→          color: colors.ink,
+   478→   478→          background: colors.olive50,
+   479→   479→          fontFamily: typography.fontFamily,
+   480→   480→          cursor: "pointer",
+   481→   481→        }}
+   482→   482→      >
+   483→   483→        <span style={{ width: 46, height: 46, display: "grid", placeItems: "center", flex: "0 0 46px", borderRadius: 14, color: colors.olive700, background: colors.surface }}>
+   484→   484→          <Icon name="refresh" size={22} />
+   485→   485→        </span>
+   486→   486→        <span style={{ minWidth: 0, flex: 1 }}>
+   487→   487→          <strong style={{ ...typography.body, display: "block", fontWeight: 800 }}>بازگشت به حساب قرآن‌آموز</strong>
+   488→   488→          <span style={{ ...typography.caption, display: "block", marginTop: 3, color: colors.inkSecondary }}>
+   489→   489→            به‌عنوان قرآن‌آموز جلسه رزرو کنید
+   490→   490→          </span>
+   491→   491→        </span>
+   492→   492→        <Icon name="chevronL" size={20} style={{ color: colors.olive500 }} />
+   493→   493→      </button>
+   494→   494→
+   495→   495→      <Sheet open={editorOpen} title="اطلاعات حرفه‌ای" onClose={() => { if (!saving) setEditorOpen(false); }}>
+   496→   496→        <form onSubmit={saveProfile} style={{ display: "grid", gap: spacing.lg }}>
+   497→   497→          <p style={{ ...typography.caption, margin: 0, color: colors.inkMuted }}>
+   498→   498→            فقط فیلدهای مجاز پروفایل استاد بروزرسانی می‌شوند؛ وضعیت تأیید و احراز هویت قابل تغییر نیست.
+   499→   499→          </p>
+   500→   500→          <Input label="حوزه تخصص" value={form.field} maxLength={60} onChange={(event) => setForm({ ...form, field: event.target.value })} />
+   501→   501→          <Input label="عنوان استاد" value={form.tag} maxLength={60} onChange={(event) => setForm({ ...form, tag: event.target.value })} />
+   502→   502→          <Input label="سطح" value={form.level} maxLength={30} onChange={(event) => setForm({ ...form, level: event.target.value })} />
+   503→   503→          <CityPicker
+   504→   504→            label="شهر"
+   505→   505→            hint={undefined}
+   506→   506→            value={form.city}
+   507→   507→            onChange={(next) => setForm({ ...form, city: next.slice(0, 80) })}
+   508→   508→          />
+   509→   509→          <label style={{ display: "grid", gap: spacing.xs }}>
+   510→   510→            <span style={{ ...typography.bodySmall, color: colors.inkSecondary }}>معرفی استاد</span>
+   511→   511→            <span style={{ ...typography.caption, color: colors.inkMuted, lineHeight: 1.8 }}>
+   512→   512→              ساختار پیشنهادی: بند معرفی، سپس فهرست زمینه‌های تدریس با نشانهٔ • در خط جدا، و در پایان سطر مشخصات با «|»؛ صفحهٔ عمومی همین ساختار را مرتب نمایش می‌دهد.
+   513→   513→            </span>
+   514→   514→            <textarea
+   515→   515→              value={form.bio}
+   516→   516→              maxLength={1000}
+   517→   517→              rows={7}
+   518→   518→              onChange={(event) => setForm({ ...form, bio: event.target.value })}
+   519→   519→              className="vodda-textarea"
+   520→   520→              style={{ width: "100%", resize: "vertical", padding: spacing.md, borderRadius: radii.md, border: `1px solid ${colors.line}`, outline: "none", boxShadow: shadows.xs, font: "inherit", background: colors.surface, color: colors.ink, lineHeight: 1.9 }}
+   521→   521→            />
+   522→   522→            <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: spacing.sm }}>
+   523→   523→              <span style={{ ...typography.caption, color: colors.inkFaint }}>{toFaDigits(String(form.bio.length))}/۱۰۰۰</span>
+   524→   524→              <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+   525→   525→                {form.bio.trim() ? (
+   526→   526→                  <button
+   527→   527→                    type="button"
+   528→   528→                    onClick={() => void polishBioWithAi()}
+   529→   529→                    disabled={aiBusy}
+   530→   530→                    aria-label="بهبود متن معرفی با هوش مصنوعی"
+   531→   531→                    style={{
+   532→   532→                      minHeight: 34,
+   533→   533→                      display: "inline-flex",
+   534→   534→                      alignItems: "center",
+   535→   535→                      gap: 5,
+   536→   536→                      padding: "0 12px",
+   537→   537→                      borderRadius: 999,
+   538→   538→                      border: "1px solid rgba(191,149,64,.4)",
+   539→   539→                      background: colors.goldBackground,
+   540→   540→                      color: colors.goldDark,
+   541→   541→                      fontSize: 11.5,
+   542→   542→                      fontWeight: 800,
+   543→   543→                      cursor: aiBusy ? "default" : "pointer",
+   544→   544→                      opacity: aiBusy ? 0.7 : 1,
+   545→   545→                      fontFamily: typography.fontFamily,
+   546→   546→                    }}
+   547→   547→                  >
+   548→   548→                    <Icon name="sparkle" size={13} stroke={2} />
+   549→   549→                    {aiBusy ? "در حال بازنویسی…" : "بهبود با هوش مصنوعی"}
+   550→   550→                  </button>
+   551→   551→                ) : null}
+   552→   552→                {!form.bio.trim() ? (
+   553→   553→                  <button
+   554→   554→                    type="button"
+   555→   555→                    onClick={() => setForm({ ...form, bio: BIO_TEMPLATE })}
+   556→   556→                    style={{
+   557→   557→                      minHeight: 34,
+   558→   558→                      padding: "0 12px",
+   559→   559→                      borderRadius: 999,
+   560→   560→                      border: `1px solid ${colors.olive200}`,
+   561→   561→                      background: colors.olive50,
+   562→   562→                      color: colors.olive700,
+   563→   563→                      fontSize: 11.5,
+   564→   564→                      fontWeight: 800,
+   565→   565→                      cursor: "pointer",
+   566→   566→                      fontFamily: typography.fontFamily,
+   567→   567→                    }}
+   568→   568→                  >
+   569→   569→                    درج قالب پیشنهادی
+   570→   570→                  </button>
+   571→   571→                ) : null}
+   572→   572→              </span>
+   573→   573→            </span>
+   574→   574→            {aiError ? (
+   575→   575→              <span style={{ ...typography.caption, color: "#b3261e", lineHeight: 1.8 }}>{aiError}</span>
+   576→   576→            ) : null}
+   577→   577→            {aiPreview ? (
+   578→   578→              <span
+   579→   579→                style={{
+   580→   580→                  display: "grid",
+   581→   581→                  gap: 8,
+   582→   582→                  padding: spacing.md,
+   583→   583→                  borderRadius: radii.md,
+   584→   584→                  border: "1px solid rgba(191,149,64,.45)",
+   585→   585→                  background: colors.goldBackground,
+   586→   586→                }}
+   587→   587→              >
+   588→   588→                <span style={{ display: "inline-flex", alignItems: "center", gap: 5, ...typography.caption, color: colors.goldDark, fontWeight: 800 }}>
+   589→   589→                  <Icon name="sparkle" size={13} stroke={2} />
+   590→   590→                  پیشنهاد هوش مصنوعی — طبق الگوی وُدّا
+   591→   591→                </span>
+   592→   592→                <span style={{ ...typography.caption, color: colors.ink, lineHeight: 1.9, whiteSpace: "pre-wrap" }}>
+   593→   593→                  {aiPreview}
+   594→   594→                </span>
+   595→   595→                <span style={{ display: "flex", gap: 8 }}>
+   596→   596→                  <button
+   597→   597→                    type="button"
+   598→   598→                    onClick={() => {
+   599→   599→                      setForm({ ...form, bio: aiPreview.slice(0, 1000) });
+   600→   600→                      setAiPreview(null);
+   601→   601→                      setAiError("");
+   602→   602→                    }}
+   603→   603→                    style={{
+   604→   604→                      minHeight: 36,
+   605→   605→                      flex: 1,
+   606→   606→                      padding: "0 12px",
+   607→   607→                      borderRadius: 999,
+   608→   608→                      border: 0,
+   609→   609→                      background: colors.goldDark,
+   610→   610→                      color: "#fffaf0",
+   611→   611→                      fontSize: 12,
+   612→   612→                      fontWeight: 800,
+   613→   613→                      cursor: "pointer",
+   614→   614→                      fontFamily: typography.fontFamily,
+   615→   615→                    }}
+   616→   616→                  >
+   617→   617→                    جایگزینی با این متن
+   618→   618→                  </button>
+   619→   619→                  <button
+   620→   620→                    type="button"
+   621→   621→                    onClick={() => setAiPreview(null)}
+   622→   622→                    style={{
+   623→   623→                      minHeight: 36,
+   624→   624→                      padding: "0 14px",
+   625→   625→                      borderRadius: 999,
+   626→   626→                      border: `1px solid ${colors.line}`,
+   627→   627→                      background: colors.surface,
+   628→   628→                      color: colors.inkSecondary,
+   629→   629→                      fontSize: 12,
+   630→   630→                      fontWeight: 800,
+   631→   631→                      cursor: "pointer",
+   632→   632→                      fontFamily: typography.fontFamily,
+   633→   633→                    }}
+   634→   634→                  >
+   635→   635→                    انصراف
+   636→   636→                  </button>
+   637→   637→                </span>
+   638→   638→              </span>
+   639→   639→            ) : null}
+   640→   640→          </label>
+   641→   641→          <Input label="مهارت‌ها" hint="با ویرگول جدا کنید؛ حداکثر ۲۰ مورد" value={form.skills} onChange={(event) => setForm({ ...form, skills: event.target.value })} />
+   642→   642→          <AmountPicker
+   643→   643→            label="تعرفهٔ جلسهٔ ۳۰ دقیقه‌ای"
+   644→   644→            hint="تومان"
+   645→   645→            ariaLabel="تعرفه ۳۰ دقیقه به تومان"
+   646→   646→            value={form.price30}
+   647→   647→            onChange={(next) => setForm({ ...form, price30: next })}
+   648→   648→            presets={[100_000, 150_000, 200_000, 300_000, 400_000, 500_000]}
+   649→   649→          />
+   650→   650→          <AmountPicker
+   651→   651→            label="تعرفهٔ جلسهٔ ۶۰ دقیقه‌ای"
+   652→   652→            hint="تومان"
+   653→   653→            ariaLabel="تعرفه ۶۰ دقیقه به تومان"
+   654→   654→            value={form.price60}
+   655→   655→            onChange={(next) => setForm({ ...form, price60: next })}
+   656→   656→            presets={[150_000, 200_000, 300_000, 450_000, 600_000, 800_000]}
+   657→   657→          />
+   658→   658→          {teacher.price30 > 0 || teacher.price60 > 0 ? (
+   659→   659→            <p style={{ ...typography.caption, margin: 0, color: colors.inkMuted }}>
+   660→   660→              تعرفه فعلی: ۳۰ دقیقه {formatWalletAmount(teacher.price30)} تومان · ۶۰ دقیقه {formatWalletAmount(teacher.price60)} تومان
+   661→   661→            </p>
+   662→   662→          ) : null}
+   663→   663→          <Button type="submit" fullWidth loading={saving} disabled={saving}>ذخیره اطلاعات حرفه‌ای</Button>
+   664→   664→        </form>
+   665→   665→      </Sheet>
+   666→   666→    </section>
+   667→   667→  );
+   668→   668→}

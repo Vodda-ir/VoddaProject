@@ -1,0 +1,850 @@
+     1→     1→"use client";
+     2→     2→
+     3→     3→import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
+     4→     4→import { asArray, asInteger, asRecord, asString, type ApiEnvelope } from "../../platform/api";
+     5→     5→import { usePlatform } from "../../platform/context";
+     6→     6→import type { PlatformRuntime } from "../../platform/types";
+     7→     7→import {
+     8→     8→  Button,
+     9→     9→  Card,
+    10→    10→  Dialog,
+    11→    11→  EmptyState,
+    12→    12→  ErrorState,
+    13→    13→  Icon,
+    14→    14→  IconBadge,
+    15→    15→  LoadingState,
+    16→    16→  colors,
+    17→    17→  gradients,
+    18→    18→  digitsOnly,
+    19→    19→  radii,
+    20→    20→  shadows,
+    21→    21→  spacing,
+    22→    22→  toFaDigits,
+    23→    23→  typography,
+    24→    24→} from "../../ui";
+    25→    25→import { showToast } from "../../ui/toast";
+    26→    26→import { messageOf } from "../../ui/errorMessage";
+    27→    27→import { formatWalletAmount } from "../wallet/WalletTransactionCard";
+    28→    28→import { AmountInput } from "../ceremony/fields";
+    29→    29→import { formatToman } from "../ceremony/elements";
+    30→    30→
+    31→    31→type UnknownRecord = Record<string, unknown>;
+    32→    32→
+    33→    33→type TeacherService = {
+    34→    34→  id: number;
+    35→    35→  official_service_id: number | null;
+    36→    36→  title: string;
+    37→    37→  duration: number;
+    38→    38→  price: number;
+    39→    39→  active: boolean;
+    40→    40→};
+    41→    41→
+    42→    42→type CatalogEntry = {
+    43→    43→  id: number;
+    44→    44→  category: string;
+    45→    45→  title: string;
+    46→    46→  description: string;
+    47→    47→  icon?: string;
+    48→    48→};
+    49→    49→
+    50→    50→type CatalogCategory = {
+    51→    51→  category: string;
+    52→    52→  services: CatalogEntry[];
+    53→    53→};
+    54→    54→
+    55→    55→type ServiceDraft = {
+    56→    56→  duration: string;
+    57→    57→  price: string;
+    58→    58→};
+    59→    59→
+    60→    60→function parseService(value: unknown): TeacherService | null {
+    61→    61→  const row = asRecord(value);
+    62→    62→  if (!row) return null;
+    63→    63→  const id = asInteger(row.id);
+    64→    64→  if (id <= 0) return null;
+    65→    65→
+    66→    66→  return {
+    67→    67→    id,
+    68→    68→    official_service_id: row.official_service_id == null ? null : asInteger(row.official_service_id) || null,
+    69→    69→    title: asString(row.title, "خدمت"),
+    70→    70→    duration: asInteger(row.duration, 30),
+    71→    71→    price: asInteger(row.price),
+    72→    72→    active: row.active === true,
+    73→    73→  };
+    74→    74→}
+    75→    75→
+    76→    76→async function getServices(runtime: PlatformRuntime): Promise<TeacherService[]> {
+    77→    77→  const response = await runtime.request<ApiEnvelope<UnknownRecord>>("/teacher/me");
+    78→    78→  const payload = asRecord(response.data);
+    79→    79→  return asArray(payload?.services).map(parseService).filter((item): item is TeacherService => item !== null);
+    80→    80→}
+    81→    81→
+    82→    82→async function createService(runtime: PlatformRuntime, draft: { official_service_id: number; duration: number; price: number }) {
+    83→    83→  return runtime.request<ApiEnvelope<unknown>>("/teacher/services", {
+    84→    84→    method: "POST",
+    85→    85→    body: JSON.stringify(draft),
+    86→    86→  });
+    87→    87→}
+    88→    88→
+    89→    89→async function updateService(
+    90→    90→  runtime: PlatformRuntime,
+    91→    91→  id: number,
+    92→    92→  draft: Partial<{ official_service_id: number; duration: number; price: number; active: false }>,
+    93→    93→) {
+    94→    94→  return runtime.request<ApiEnvelope<unknown>>(`/teacher/services/${id}`, {
+    95→    95→    method: "PUT",
+    96→    96→    body: JSON.stringify(draft),
+    97→    97→  });
+    98→    98→}
+    99→    99→
+   100→   100→async function deleteService(runtime: PlatformRuntime, id: number) {
+   101→   101→  return runtime.request<ApiEnvelope<unknown>>(`/teacher/services/${id}`, { method: "DELETE" });
+   102→   102→}
+   103→   103→
+   104→   104→/** دستهٔ خدمات حضوری (مراسم) — مسیر ثبتش این صفحه نیست؛ /t/presence است. */
+   105→   105→const IN_PERSON_CATEGORY = "خدمات حضوری قرآنی";
+   106→   106→
+   107→   107→async function getCatalog(runtime: PlatformRuntime): Promise<CatalogCategory[]> {
+   108→   108→  // فقط خدمات آنلاین — دستهٔ «خدمات حضوری قرآنی» حذف می‌شود تا ثبت خدمت
+   109→   109→  // حضوری فقط از مسیر مخصوص خودش («خدمات حضوری» /t/presence با موجودیت و
+   110→   110→  // قیمتی مستقل) انجام شود. قبلاً همین دسته این‌جا هم نمایش داده می‌شد و
+   111→   111→  // استادها را گیج می‌کرد (دو مسیر برای یک کار).
+   112→   112→  const response = await runtime.request<ApiEnvelope<UnknownRecord>>("/catalog/services");
+   113→   113→  const payload = asRecord(response.data);
+   114→   114→  const categories: CatalogCategory[] = [];
+   115→   115→  for (const group of asArray(payload?.categories)) {
+   116→   116→    const row = asRecord(group);
+   117→   117→    if (!row) continue;
+   118→   118→    const category = asString(row.category, "خدمات رسمی");
+   119→   119→    if (category === IN_PERSON_CATEGORY) continue;
+   120→   120→    const services: CatalogEntry[] = [];
+   121→   121→    for (const item of asArray(row.services)) {
+   122→   122→      const entry = asRecord(item);
+   123→   123→      if (!entry) continue;
+   124→   124→      const id = asInteger(entry.id);
+   125→   125→      if (id <= 0) continue;
+   126→   126→      services.push({
+   127→   127→        id,
+   128→   128→        category,
+   129→   129→        title: asString(entry.title, "خدمت رسمی"),
+   130→   130→        description: asString(entry.description, ""),
+   131→   131→        icon: entry.icon == null ? undefined : asString(entry.icon, undefined as unknown as string),
+   132→   132→      });
+   133→   133→    }
+   134→   134→    if (services.length > 0) categories.push({ category, services });
+   135→   135→  }
+   136→   136→  return categories;
+   137→   137→}
+   138→   138→
+   139→   139→/* ── قیمت و مدت پیش‌فرض هر خدمت ─────────────────────────────────────────────
+   140→   140→   استاد با یک لمس خدمت را انتخاب می‌کند؛ این مقادیر بلافاصله ثبت می‌شوند و
+   141→   141→   استاد هر زمان خواست می‌تواند قیمت/مدت را ویرایش کند. */
+   142→   142→type ServiceDefault = { duration: number; price: number };
+   143→   143→
+   144→   144→const CATEGORY_DEFAULTS: Record<string, ServiceDefault> = {
+   145→   145→  "قرآن‌آموزی پایه": { duration: 60, price: 150_000 },
+   146→   146→  "تجوید و علوم قرائت": { duration: 60, price: 200_000 },
+   147→   147→  "حفظ قرآن": { duration: 60, price: 250_000 },
+   148→   148→  "صوت و لحن و هنر قرآنی": { duration: 60, price: 250_000 },
+   149→   149→  "مفاهیم، تفسیر و علوم قرآن": { duration: 60, price: 180_000 },
+   150→   150→  "آموزش‌های ویژه": { duration: 45, price: 200_000 },
+   151→   151→  "آمادگی و مشاوره قرآنی": { duration: 60, price: 300_000 },
+   152→   152→  "خدمات حضوری قرآنی": { duration: 60, price: 1_000_000 },
+   153→   153→};
+   154→   154→
+   155→   155→const SERVICE_DEFAULT_OVERRIDES: Record<number, ServiceDefault> = {
+   156→   156→  8: { duration: 30, price: 150_000 }, // تصحیح تلاوت و اصلاح لهجه
+   157→   157→  15: { duration: 30, price: 150_000 }, // مرور و تثبیت محفوظات
+   158→   158→  40: { duration: 30, price: 150_000 }, // ارزیابی و رتبه‌بندی سطح قرآنی
+   159→   159→};
+   160→   160→
+   161→   161→const FALLBACK_DEFAULT: ServiceDefault = { duration: 60, price: 200_000 };
+   162→   162→
+   163→   163→function defaultFor(entry: CatalogEntry): ServiceDefault {
+   164→   164→  return SERVICE_DEFAULT_OVERRIDES[entry.id] ?? CATEGORY_DEFAULTS[entry.category] ?? FALLBACK_DEFAULT;
+   165→   165→}
+   166→   166→
+   167→   167→/* سبز انتخاب — کنتراست واضح با کارت‌های خنثی، هماهنگ با پالت طبیعی وُدّا */
+   168→   168→const greenTone = {
+   169→   169→  ink: "#2c5e3a",
+   170→   170→  deep: "#24512f",
+   171→   171→  border: "#a9cfb4",
+   172→   172→  chip: "#d9edde",
+   173→   173→  background: "#eef8f1",
+   174→   174→} as const;
+   175→   175→
+   176→   176→const emptyDraft: ServiceDraft = { duration: "60", price: "" };
+   177→   177→
+   178→   178→/** پیشنهادهای آماده — تنظیم یک‌ضربه‌ای مدت و قیمت */
+   179→   179→const DURATION_PRESETS = [30, 45, 60, 90] as const;
+   180→   180→const PRICE_PRESETS = [100_000, 150_000, 200_000, 300_000, 500_000] as const;
+   181→   181→
+   182→   182→function quickChipStyle(active: boolean): CSSProperties {
+   183→   183→  return {
+   184→   184→    minHeight: 38,
+   185→   185→    padding: "0 13px",
+   186→   186→    borderRadius: 999,
+   187→   187→    fontSize: 12.5,
+   188→   188→    fontWeight: active ? 800 : 600,
+   189→   189→    cursor: "pointer",
+   190→   190→    fontFamily: typography.fontFamily,
+   191→   191→    color: active ? colors.surface : colors.inkSecondary,
+   192→   192→    background: active ? colors.olive600 : colors.surface,
+   193→   193→    border: `1px solid ${active ? colors.olive600 : colors.sand200}`,
+   194→   194→  };
+   195→   195→}
+   196→   196→
+   197→   197→function normalizePersian(value: string): string {
+   198→   198→  return value
+   199→   199→    .replace(/[\u200c\u064b-\u0652]/g, "")
+   200→   200→    .replace(/[أإآ]/g, "ا")
+   201→   201→    .replace(/ة/g, "ه")
+   202→   202→    .replace(/ى/g, "ی")
+   203→   203→    .replace(/ك/g, "ک")
+   204→   204→    .trim()
+   205→   205→    .toLowerCase();
+   206→   206→}
+   207→   207→
+   208→   208→export function TeacherServicesScreen() {
+   209→   209→  const runtime = usePlatform();
+   210→   210→  const [services, setServices] = useState<TeacherService[]>([]);
+   211→   211→  const [loading, setLoading] = useState(true);
+   212→   212→  const [error, setError] = useState<string | null>(null);
+   213→   213→  const [categories, setCategories] = useState<CatalogCategory[]>([]);
+   214→   214→  const [catalogLoading, setCatalogLoading] = useState(true);
+   215→   215→  const [catalogError, setCatalogError] = useState<string | null>(null);
+   216→   216→  const [query, setQuery] = useState("");
+   217→   217→  const [creatingId, setCreatingId] = useState<number | null>(null);
+   218→   218→  const [actionError, setActionError] = useState<string | null>(null);
+   219→   219→  const [manualExpanded, setManualExpanded] = useState<Record<string, boolean>>({});
+   220→   220→  const [editing, setEditing] = useState<TeacherService | null>(null);
+   221→   221→  const [draft, setDraft] = useState<ServiceDraft>(emptyDraft);
+   222→   222→  const [saving, setSaving] = useState(false);
+   223→   223→  const [formError, setFormError] = useState<string | null>(null);
+   224→   224→  const [deactivateTarget, setDeactivateTarget] = useState<TeacherService | null>(null);
+   225→   225→  const [deleteTarget, setDeleteTarget] = useState<TeacherService | null>(null);
+   226→   226→
+   227→   227→  const load = useCallback(async () => {
+   228→   228→    setLoading(true);
+   229→   229→    setError(null);
+   230→   230→    try {
+   231→   231→      setServices(await getServices(runtime));
+   232→   232→    } catch (loadError) {
+   233→   233→      setServices([]);
+   234→   234→      setError(messageOf(loadError));
+   235→   235→    } finally {
+   236→   236→      setLoading(false);
+   237→   237→    }
+   238→   238→  }, [runtime]);
+   239→   239→
+   240→   240→  const loadCatalog = useCallback(async () => {
+   241→   241→    setCatalogLoading(true);
+   242→   242→    setCatalogError(null);
+   243→   243→    try {
+   244→   244→      setCategories(await getCatalog(runtime));
+   245→   245→    } catch (loadError) {
+   246→   246→      setCategories([]);
+   247→   247→      setCatalogError(messageOf(loadError));
+   248→   248→    } finally {
+   249→   249→      setCatalogLoading(false);
+   250→   250→    }
+   251→   251→  }, [runtime]);
+   252→   252→
+   253→   253→  useEffect(() => {
+   254→   254→    void load();
+   255→   255→    void loadCatalog();
+   256→   256→  }, [load, loadCatalog]);
+   257→   257→
+   258→   258→  /* خدمات استاد بر اساس شناسهٔ خدمت رسمی — برای تشخیص انتخاب‌شده‌ها */
+   259→   259→  const serviceByOfficialId = useMemo(() => {
+   260→   260→    const map = new Map<number, TeacherService>();
+   261→   261→    for (const service of services) {
+   262→   262→      if (service.official_service_id != null) map.set(service.official_service_id, service);
+   263→   263→    }
+   264→   264→    return map;
+   265→   265→  }, [services]);
+   266→   266→
+   267→   267→  /* خدمت‌های قدیمی بدون تطابق با کاتالوگ آنلاین — در بخش جداگانه حفظ می‌شوند.
+   268→   268→     ردیف‌های ثبت‌شده روی کاتالوگ حضوری (شناسه‌های ۱۰۱ به بالا) به مسیر
+   269→   269→     «خدمات حضوری» تعلق دارند و این‌جا نمایش داده نمی‌شوند. */
+   270→   270→  const orphanServices = useMemo(() => {
+   271→   271→    const catalogIds = new Set(categories.flatMap((group) => group.services.map((entry) => entry.id)));
+   272→   272→    return services.filter((service) => {
+   273→   273→      if (service.official_service_id == null) return true;
+   274→   274→      if (service.official_service_id >= 100) return false; // خدمات حضوری → /t/presence
+   275→   275→      return !catalogIds.has(service.official_service_id);
+   276→   276→    });
+   277→   277→  }, [services, categories]);
+   278→   278→
+   279→   279→  const activeCount = services.filter((service) => service.active).length;
+   280→   280→
+   281→   281→  const normalizedQuery = normalizePersian(query);
+   282→   282→  const searching = normalizedQuery.length > 0;
+   283→   283→
+   284→   284→  const visibleCategories = useMemo(() => {
+   285→   285→    if (!searching) return categories;
+   286→   286→    return categories
+   287→   287→      .map((group) => ({
+   288→   288→        ...group,
+   289→   289→        services: group.services.filter(
+   290→   290→          (entry) => normalizePersian(entry.title).includes(normalizedQuery) || normalizePersian(entry.description).includes(normalizedQuery),
+   291→   291→        ),
+   292→   292→      }))
+   293→   293→      .filter((group) => group.services.length > 0);
+   294→   294→  }, [categories, searching, normalizedQuery]);
+   295→   295→
+   296→   296→  function isExpanded(group: CatalogCategory): boolean {
+   297→   297→    if (searching) return true;
+   298→   298→    const manual = manualExpanded[group.category];
+   299→   299→    if (manual != null) return manual;
+   300→   300→    return group.services.some((entry) => {
+   301→   301→      const own = serviceByOfficialId.get(entry.id);
+   302→   302→      return own != null && own.active;
+   303→   303→    });
+   304→   304→  }
+   305→   305→
+   306→   306→  /** انتخاب با یک لمس — خدمت بلافاصله با قیمت و مدت پیش‌فرض ثبت و سبز می‌شود */
+   307→   307→  async function selectService(entry: CatalogEntry) {
+   308→   308→    if (creatingId !== null) return;
+   309→   309→    const own = serviceByOfficialId.get(entry.id);
+   310→   310→    if (own) {
+   311→   311→      openEditor(own);
+   312→   312→      return;
+   313→   313→    }
+   314→   314→    const preset = defaultFor(entry);
+   315→   315→    setCreatingId(entry.id);
+   316→   316→    setActionError(null);
+   317→   317→    try {
+   318→   318→      const response = await createService(runtime, {
+   319→   319→        official_service_id: entry.id,
+   320→   320→        duration: preset.duration,
+   321→   321→        price: preset.price,
+   322→   322→      });
+   323→   323→      const created = parseService((response.data as UnknownRecord) ?? null);
+   324→   324→      if (created) {
+   325→   325→        setServices((current) => [...current, created]);
+   326→   326→      } else {
+   327→   327→        await load();
+   328→   328→      }
+   329→   329→      showToast(`«${entry.title}» به خدمات شما اضافه شد`);
+   330→   330→    } catch (mutationError) {
+   331→   331→      setActionError(messageOf(mutationError));
+   332→   332→    } finally {
+   333→   333→      setCreatingId(null);
+   334→   334→    }
+   335→   335→  }
+   336→   336→
+   337→   337→  function openEditor(service: TeacherService) {
+   338→   338→    setEditing(service);
+   339→   339→    setDraft({ duration: String(service.duration), price: String(service.price) });
+   340→   340→    setFormError(null);
+   341→   341→  }
+   342→   342→
+   343→   343→  function closeEditor() {
+   344→   344→    if (saving) return;
+   345→   345→    setEditing(null);
+   346→   346→    setFormError(null);
+   347→   347→  }
+   348→   348→
+   349→   349→  async function saveService() {
+   350→   350→    if (!editing || saving) return;
+   351→   351→    const duration = Number.parseInt(draft.duration.trim(), 10);
+   352→   352→    const price = Number.parseInt(draft.price.trim(), 10);
+   353→   353→
+   354→   354→    if (!Number.isFinite(duration) || duration < 10 || duration > 240) {
+   355→   355→      setFormError("مدت خدمت باید بین ۱۰ تا ۲۴۰ دقیقه باشد.");
+   356→   356→      return;
+   357→   357→    }
+   358→   358→    // قیمت صفر = خدمت رایگان (جلسات رایگان اساتید)
+   359→   359→    if (!Number.isFinite(price) || price < 0) {
+   360→   360→      setFormError("مبلغ معتبر وارد کنید.");
+   361→   361→      return;
+   362→   362→    }
+   363→   363→
+   364→   364→    setSaving(true);
+   365→   365→    setFormError(null);
+   366→   366→    try {
+   367→   367→      await updateService(runtime, editing.id, { duration, price });
+   368→   368→      setServices((current) =>
+   369→   369→        current.map((service) => (service.id === editing.id ? { ...service, duration, price } : service)),
+   370→   370→      );
+   371→   371→      setEditing(null);
+   372→   372→      showToast("تغییرات خدمت ذخیره شد");
+   373→   373→    } catch (mutationError) {
+   374→   374→      setFormError(messageOf(mutationError));
+   375→   375→    } finally {
+   376→   376→      setSaving(false);
+   377→   377→    }
+   378→   378→  }
+   379→   379→
+   380→   380→  async function deactivate() {
+   381→   381→    if (!deactivateTarget || saving) return;
+   382→   382→    const target = deactivateTarget;
+   383→   383→    setSaving(true);
+   384→   384→    setDeactivateTarget(null);
+   385→   385→    setError(null);
+   386→   386→    try {
+   387→   387→      // Deliberately never send active=true. Re-activation is an admin moderation action.
+   388→   388→      await updateService(runtime, target.id, { active: false });
+   389→   389→      setServices((current) =>
+   390→   390→        current.map((service) => (service.id === target.id ? { ...service, active: false } : service)),
+   391→   391→      );
+   392→   392→      setEditing(null);
+   393→   393→      showToast("خدمت غیرفعال شد", "info");
+   394→   394→    } catch (mutationError) {
+   395→   395→      setError(messageOf(mutationError));
+   396→   396→    } finally {
+   397→   397→      setSaving(false);
+   398→   398→    }
+   399→   399→  }
+   400→   400→
+   401→   401→  async function remove() {
+   402→   402→    if (!deleteTarget || saving) return;
+   403→   403→    const target = deleteTarget;
+   404→   404→    setSaving(true);
+   405→   405→    setDeleteTarget(null);
+   406→   406→    setError(null);
+   407→   407→    try {
+   408→   408→      await deleteService(runtime, target.id);
+   409→   409→      setServices((current) => current.filter((service) => service.id !== target.id));
+   410→   410→      setEditing(null);
+   411→   411→      showToast("خدمت حذف شد", "info");
+   412→   412→    } catch (mutationError) {
+   413→   413→      setError(messageOf(mutationError));
+   414→   414→    } finally {
+   415→   415→      setSaving(false);
+   416→   416→    }
+   417→   417→  }
+   418→   418→
+   419→   419→  /* خدمت رایگان — قیمت صفر تومانی (جلسات رایگان اساتید) */
+   420→   420→  const isFreeService = draft.price.trim() === "0";
+   421→   421→
+   422→   422→  const editingIcon = (editing?.official_service_id != null
+   423→   423→    ? categories.flatMap((group) => group.services).find((entry) => entry.id === editing.official_service_id)?.icon
+   424→   424→    : undefined) as "book" | undefined;
+   425→   425→
+   426→   426→  return (
+   427→   427→    <section className="vodda-screen" style={{ display: "grid", gap: spacing.lg }}>
+   428→   428→      {/* خلاصه و راهنما */}
+   429→   429→      <Card style={{ display: "grid", gap: 10, padding: 16, borderRadius: radii.md, background: `linear-gradient(150deg, ${colors.olive50}, #ffffff 78%)`, border: `1px solid ${colors.olive100}` }}>
+   430→   430→        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+   431→   431→          <IconBadge icon="checkCircle" tone="olive" size={40} />
+   432→   432→          <div style={{ flex: 1, minWidth: 0 }}>
+   433→   433→            <strong style={{ ...typography.body, display: "block" }}>
+   434→   434→              {toFaDigits(activeCount)} خدمت فعال دارید
+   435→   435→            </strong>
+   436→   436→            <span style={{ ...typography.caption, color: colors.inkMuted, display: "block", lineHeight: 1.8 }}>
+   437→   437→              اینجا خدمات جلسهٔ آنلاین شماست: برای انتخاب هر خدمت فقط یک بار روی آن بزنید؛ خدمت انتخابی <b style={{ color: greenTone.ink }}>سبز</b> می‌شود، قیمت پیش‌فرض دارد و بلافاصله قابل رزرو است. خدمات حضوری مراسم (تلاوت مجلسی، ختم، اذان و…) مسیر جداگانه‌ای دارد: بخش «خدمات حضوری».
+   438→   438→            </span>
+   439→   439→          </div>
+   440→   440→        </div>
+   441→   441→      </Card>
+   442→   442→
+   443→   443→      {loading ? <LoadingState label="در حال دریافت خدمات…" /> : null}
+   444→   444→      {!loading && error ? (
+   445→   445→        <ErrorState
+   446→   446→          title="دریافت خدمات ناموفق بود"
+   447→   447→          description={error}
+   448→   448→          action={<Button onClick={() => void load()}>تلاش دوباره</Button>}
+   449→   449→        />
+   450→   450→      ) : null}
+   451→   451→
+   452→   452→      {!loading && !error ? (
+   453→   453→        <>
+   454→   454→          {/* جستجو */}
+   455→   455→          <div style={{ position: "relative" }}>
+   456→   456→            <span style={{ position: "absolute", insetInlineStart: 14, top: "50%", transform: "translateY(-50%)", color: colors.inkFaint, display: "grid" }}>
+   457→   457→              <Icon name="search" size={17} />
+   458→   458→            </span>
+   459→   459→            <input
+   460→   460→              value={query}
+   461→   461→              onChange={(event) => setQuery(event.target.value)}
+   462→   462→              placeholder="جستجوی خدمت…"
+   463→   463→              aria-label="جستجوی خدمت"
+   464→   464→              style={{
+   465→   465→                width: "100%",
+   466→   466→                padding: "12px 42px",
+   467→   467→                border: `1px solid ${colors.sand200}`,
+   468→   468→                borderRadius: radii.sm,
+   469→   469→                background: colors.surface,
+   470→   470→                color: colors.ink,
+   471→   471→                boxShadow: shadows.xs,
+   472→   472→                fontFamily: typography.fontFamily,
+   473→   473→                fontSize: 13.5,
+   474→   474→              }}
+   475→   475→            />
+   476→   476→            {query ? (
+   477→   477→              <button
+   478→   478→                type="button"
+   479→   479→                aria-label="پاک کردن جستجو"
+   480→   480→                onClick={() => setQuery("")}
+   481→   481→                style={{ position: "absolute", insetInlineEnd: 10, top: "50%", transform: "translateY(-50%)", border: 0, background: "transparent", color: colors.inkFaint, cursor: "pointer", display: "grid", padding: 6 }}
+   482→   482→              >
+   483→   483→                <Icon name="x" size={15} />
+   484→   484→              </button>
+   485→   485→            ) : null}
+   486→   486→          </div>
+   487→   487→
+   488→   488→          {actionError ? (
+   489→   489→            <div role="alert" style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", borderRadius: radii.sm, background: colors.dangerBackground, color: colors.danger, ...typography.caption }}>
+   490→   490→              <Icon name="info" size={16} />
+   491→   491→              <span style={{ flex: 1 }}>{actionError}</span>
+   492→   492→            </div>
+   493→   493→          ) : null}
+   494→   494→
+   495→   495→          {catalogLoading ? <LoadingState label="در حال دریافت فهرست خدمات رسمی…" /> : null}
+   496→   496→          {!catalogLoading && catalogError ? (
+   497→   497→            <ErrorState
+   498→   498→              title="دریافت فهرست خدمات رسمی ناموفق بود"
+   499→   499→              description={catalogError}
+   500→   500→              action={<Button onClick={() => void loadCatalog()}>تلاش دوباره</Button>}
+   501→   501→            />
+   502→   502→          ) : null}
+   503→   503→
+   504→   504→          {!catalogLoading && !catalogError && visibleCategories.length === 0 ? (
+   505→   505→            <EmptyState icon={<Icon name="search" size={28} />} title="خدمتی یافت نشد" description="عبارت دیگری را جستجو کنید." />
+   506→   506→          ) : null}
+   507→   507→
+   508→   508→          {/* دسته‌بندی‌ها */}
+   509→   509→          {!catalogLoading && !catalogError
+   510→   510→            ? visibleCategories.map((group) => {
+   511→   511→                const expanded = isExpanded(group);
+   512→   512→                const selectedInGroup = group.services.filter((entry) => serviceByOfficialId.has(entry.id)).length;
+   513→   513→                return (
+   514→   514→                  <div key={group.category} style={{ display: "grid", gap: spacing.sm }}>
+   515→   515→                    <button
+   516→   516→                      type="button"
+   517→   517→                      aria-expanded={expanded}
+   518→   518→                      onClick={() => setManualExpanded((current) => ({ ...current, [group.category]: !expanded }))}
+   519→   519→                      style={{
+   520→   520→                        display: "flex",
+   521→   521→                        alignItems: "center",
+   522→   522→                        gap: 8,
+   523→   523→                        width: "100%",
+   524→   524→                        border: 0,
+   525→   525→                        background: "transparent",
+   526→   526→                        padding: "2px 2px",
+   527→   527→                        cursor: "pointer",
+   528→   528→                        fontFamily: typography.fontFamily,
+   529→   529→                        textAlign: "right",
+   530→   530→                      }}
+   531→   531→                    >
+   532→   532→                      <span style={{ flex: 1, display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+   533→   533→                        <strong style={{ ...typography.body, color: colors.ink }}>{group.category}</strong>
+   534→   534→                        {selectedInGroup > 0 ? (
+   535→   535→                          <span style={{ fontSize: 10.5, fontWeight: 800, color: greenTone.ink, background: greenTone.chip, borderRadius: radii.pill, padding: "3px 9px" }}>
+   536→   536→                            {toFaDigits(selectedInGroup)} انتخاب‌شده
+   537→   537→                          </span>
+   538→   538→                        ) : null}
+   539→   539→                      </span>
+   540→   540→                      <span style={{ color: colors.inkFaint, display: "grid", transform: expanded ? "rotate(180deg)" : "none", transition: "transform .18s ease" }}>
+   541→   541→                        <Icon name="chevronUp" size={16} />
+   542→   542→                      </span>
+   543→   543→                    </button>
+   544→   544→
+   545→   545→                    {expanded ? (
+   546→   546→                      <div style={{ display: "grid", gap: 8 }}>
+   547→   547→                        {group.services.map((entry) => {
+   548→   548→                          const own = serviceByOfficialId.get(entry.id);
+   549→   549→                          const busy = creatingId === entry.id;
+   550→   550→                          if (own) {
+   551→   551→                            /* انتخاب‌شده — سبز؛ لمس = ویرایش قیمت و مدت */
+   552→   552→                            const inactive = !own.active;
+   553→   553→                            return (
+   554→   554→                              <button
+   555→   555→                                key={entry.id}
+   556→   556→                                type="button"
+   557→   557→                                onClick={() => openEditor(own)}
+   558→   558→                                aria-label={`ویرایش خدمت ${own.title}`}
+   559→   559→                                style={{
+   560→   560→                                  display: "flex",
+   561→   561→                                  gap: 12,
+   562→   562→                                  alignItems: "center",
+   563→   563→                                  width: "100%",
+   564→   564→                                  textAlign: "right",
+   565→   565→                                  padding: "12px 14px",
+   566→   566→                                  borderRadius: 16,
+   567→   567→                                  cursor: "pointer",
+   568→   568→                                  fontFamily: typography.fontFamily,
+   569→   569→                                  border: `1.5px solid ${inactive ? colors.goldSoft : greenTone.border}`,
+   570→   570→                                  background: inactive ? colors.goldBackground : greenTone.background,
+   571→   571→                                  opacity: busy ? 0.6 : 1,
+   572→   572→                                }}
+   573→   573→                              >
+   574→   574→                                <IconBadge icon={(entry.icon as "book") || "book"} tone={inactive ? "gold" : "olive"} size={40} />
+   575→   575→                                <span style={{ flex: 1, minWidth: 0, display: "grid", gap: 3 }}>
+   576→   576→                                  <strong style={{ ...typography.bodySmall, color: inactive ? colors.goldDark : greenTone.deep }}>{entry.title}</strong>
+   577→   577→                                  <span style={{ ...typography.caption, color: inactive ? colors.goldDark : greenTone.ink, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+   578→   578→                                    <span>{toFaDigits(own.duration)} دقیقه · {own.price === 0 ? "هر جلسه رایگان" : `هر جلسه ${formatWalletAmount(own.price)} تومان`}</span>
+   579→   579→                                    <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontWeight: 700, opacity: 0.85 }}>
+   580→   580→                                      <Icon name="edit" size={12} />
+   581→   581→                                      ویرایش
+   582→   582→                                    </span>
+   583→   583→                                  </span>
+   584→   584→                                </span>
+   585→   585→                                {inactive ? (
+   586→   586→                                  <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 800, color: colors.goldDark, background: "#fff", borderRadius: radii.pill, padding: "4px 10px" }}>
+   587→   587→                                    غیرفعال
+   588→   588→                                  </span>
+   589→   589→                                ) : (
+   590→   590→                                  <span style={{ flexShrink: 0, width: 30, height: 30, borderRadius: "50%", display: "grid", placeItems: "center", color: "#fff", background: greenTone.ink }}>
+   591→   591→                                    <Icon name="check" size={15} stroke={2.4} />
+   592→   592→                                  </span>
+   593→   593→                                )}
+   594→   594→                              </button>
+   595→   595→                            );
+   596→   596→                          }
+   597→   597→                          /* انتخاب‌نشده — لمس = افزودن با قیمت پیش‌فرض */
+   598→   598→                          const preset = defaultFor(entry);
+   599→   599→                          return (
+   600→   600→                            <button
+   601→   601→                              key={entry.id}
+   602→   602→                              type="button"
+   603→   603→                              disabled={creatingId !== null}
+   604→   604→                              onClick={() => void selectService(entry)}
+   605→   605→                              aria-label={`افزودن خدمت ${entry.title}`}
+   606→   606→                              style={{
+   607→   607→                                display: "flex",
+   608→   608→                                gap: 12,
+   609→   609→                                alignItems: "center",
+   610→   610→                                width: "100%",
+   611→   611→                                textAlign: "right",
+   612→   612→                                padding: "12px 14px",
+   613→   613→                                borderRadius: 16,
+   614→   614→                                cursor: creatingId !== null ? "wait" : "pointer",
+   615→   615→                                fontFamily: typography.fontFamily,
+   616→   616→                                border: `1.5px dashed ${colors.sand200}`,
+   617→   617→                                background: colors.surface,
+   618→   618→                                opacity: busy ? 0.72 : 1,
+   619→   619→                              }}
+   620→   620→                            >
+   621→   621→                              <IconBadge icon={(entry.icon as "book") || "book"} tone="olive" size={40} />
+   622→   622→                              <span style={{ flex: 1, minWidth: 0, display: "grid", gap: 3 }}>
+   623→   623→                                <strong style={{ ...typography.bodySmall, color: colors.ink }}>{entry.title}</strong>
+   624→   624→                                <span style={{ ...typography.caption, color: colors.inkMuted, display: "block", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+   625→   625→                                  {entry.description}
+   626→   626→                                </span>
+   627→   627→                                <span style={{ ...typography.caption, color: colors.olive700, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 4 }}>
+   628→   628→                                  پیش‌فرض: {formatToman(preset.price)} · {toFaDigits(preset.duration)} دقیقه
+   629→   629→                                </span>
+   630→   630→                              </span>
+   631→   631→                              <span
+   632→   632→                                aria-hidden="true"
+   633→   633→                                style={{ flexShrink: 0, width: 32, height: 32, borderRadius: "50%", display: "grid", placeItems: "center", color: colors.olive700, border: `1.5px solid ${colors.olive200}`, background: colors.olive50 }}
+   634→   634→                              >
+   635→   635→                                {busy ? <span className="vodda-spinner" style={{ width: 14, height: 14 }} /> : <Icon name="plus" size={16} stroke={2.2} />}
+   636→   636→                              </span>
+   637→   637→                            </button>
+   638→   638→                          );
+   639→   639→                        })}
+   640→   640→                      </div>
+   641→   641→                    ) : null}
+   642→   642→                  </div>
+   643→   643→                );
+   644→   644→              })
+   645→   645→            : null}
+   646→   646→
+   647→   647→          {/* خدمت‌های قدیمی بدون تطابق کاتالوگ */}
+   648→   648→          {!catalogLoading && orphanServices.length > 0 ? (
+   649→   649→            <div style={{ display: "grid", gap: spacing.sm }}>
+   650→   650→              <strong style={{ ...typography.body, color: colors.ink }}>سایر خدمات ثبت‌شده</strong>
+   651→   651→              {orphanServices.map((service) => (
+   652→   652→                <button
+   653→   653→                  key={service.id}
+   654→   654→                  type="button"
+   655→   655→                  onClick={() => openEditor(service)}
+   656→   656→                  style={{
+   657→   657→                    display: "flex",
+   658→   658→                    gap: 12,
+   659→   659→                    alignItems: "center",
+   660→   660→                    width: "100%",
+   661→   661→                    textAlign: "right",
+   662→   662→                    padding: "12px 14px",
+   663→   663→                    borderRadius: 16,
+   664→   664→                    cursor: "pointer",
+   665→   665→                    fontFamily: typography.fontFamily,
+   666→   666→                    border: `1.5px solid ${service.active ? greenTone.border : colors.goldSoft}`,
+   667→   667→                    background: service.active ? greenTone.background : colors.goldBackground,
+   668→   668→                  }}
+   669→   669→                >
+   670→   670→                  <IconBadge icon="book" tone={service.active ? "olive" : "gold"} size={40} />
+   671→   671→                  <span style={{ flex: 1, minWidth: 0, display: "grid", gap: 3 }}>
+   672→   672→                    <strong style={{ ...typography.bodySmall }}>{service.title}</strong>
+   673→   673→                    <span style={{ ...typography.caption, color: colors.inkMuted }}>
+   674→   674→                      {toFaDigits(service.duration)} دقیقه · {service.price === 0 ? "هر جلسه رایگان" : `هر جلسه ${formatWalletAmount(service.price)} تومان`}
+   675→   675→                    </span>
+   676→   676→                  </span>
+   677→   677→                  {service.active ? (
+   678→   678→                    <span style={{ flexShrink: 0, width: 30, height: 30, borderRadius: "50%", display: "grid", placeItems: "center", color: "#fff", background: greenTone.ink }}>
+   679→   679→                      <Icon name="check" size={15} stroke={2.4} />
+   680→   680→                    </span>
+   681→   681→                  ) : (
+   682→   682→                    <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 800, color: colors.goldDark, background: "#fff", borderRadius: radii.pill, padding: "4px 10px" }}>
+   683→   683→                      غیرفعال
+   684→   684→                    </span>
+   685→   685→                  )}
+   686→   686→                </button>
+   687→   687→              ))}
+   688→   688→            </div>
+   689→   689→          ) : null}
+   690→   690→        </>
+   691→   691→      ) : null}
+   692→   692→
+   693→   693→      {/* ویرایشگر قیمت و مدت */}
+   694→   694→      <Dialog open={editing !== null} title="ویرایش خدمت" onClose={closeEditor}>
+   695→   695→        <div style={{ display: "grid", gap: spacing.md }}>
+   696→   696→          {editing ? (
+   697→   697→            <div style={{ display: "flex", gap: 10, alignItems: "center", border: `1.5px solid ${colors.olive200}`, background: colors.olive50, borderRadius: radii.lg, padding: 12 }}>
+   698→   698→              <IconBadge icon={editingIcon || "book"} tone="olive" size={38} />
+   699→   699→              <div style={{ flex: 1, minWidth: 0 }}>
+   700→   700→                <strong style={{ ...typography.body, display: "block" }}>{editing.title}</strong>
+   701→   701→                <span style={{ ...typography.caption, color: colors.inkMuted }}>{editing.active ? "فعال و قابل رزرو" : "غیرفعال — تا فعال‌سازی مجدد قابل رزرو نیست"}</span>
+   702→   702→              </div>
+   703→   703→            </div>
+   704→   704→          ) : null}
+   705→   705→          <label style={{ display: "grid", gap: spacing.xs, ...typography.bodySmall }}>
+   706→   706→            <span style={{ fontWeight: 700 }}>مدت جلسه (دقیقه)</span>
+   707→   707→            <div role="group" aria-label="مدت‌های پیشنهادی" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+   708→   708→              {DURATION_PRESETS.map((preset) => (
+   709→   709→                <button
+   710→   710→                  key={preset}
+   711→   711→                  type="button"
+   712→   712→                  aria-pressed={draft.duration === String(preset)}
+   713→   713→                  onClick={() => setDraft((current) => ({ ...current, duration: String(preset) }))}
+   714→   714→                  style={quickChipStyle(draft.duration === String(preset))}
+   715→   715→                >
+   716→   716→                  {toFaDigits(preset)} دقیقه
+   717→   717→                </button>
+   718→   718→              ))}
+   719→   719→            </div>
+   720→   720→            <input
+   721→   721→              inputMode="numeric"
+   722→   722→              value={toFaDigits(draft.duration)}
+   723→   723→              disabled={saving}
+   724→   724→              onChange={(event) => setDraft((current) => ({ ...current, duration: digitsOnly(event.target.value, 3) }))}
+   725→   725→              placeholder="یا مدت دلخواه — بین ۱۰ تا ۲۴۰"
+   726→   726→              style={{ width: "100%", padding: spacing.md, border: `1px solid ${colors.sand200}`, borderRadius: radii.md, background: colors.surface, color: colors.ink, boxShadow: shadows.xs, fontFamily: typography.fontFamily }}
+   727→   727→            />
+   728→   728→          </label>
+   729→   729→          <div style={{ display: "grid", gap: spacing.xs, ...typography.bodySmall }}>
+   730→   730→            <span style={{ fontWeight: 700 }}>قیمت هر جلسه (تومان)</span>
+   731→   731→            <button
+   732→   732→              type="button"
+   733→   733→              role="switch"
+   734→   734→              aria-checked={isFreeService}
+   735→   735→              onClick={() => setDraft((current) => ({ ...current, price: isFreeService ? "" : "0" }))}
+   736→   736→              style={{
+   737→   737→                display: "flex",
+   738→   738→                alignItems: "center",
+   739→   739→                gap: 10,
+   740→   740→                padding: "11px 13px",
+   741→   741→                textAlign: "right",
+   742→   742→                borderRadius: radii.md,
+   743→   743→                cursor: "pointer",
+   744→   744→                fontFamily: typography.fontFamily,
+   745→   745→                border: isFreeService ? `1.6px solid ${colors.gold}` : `1px solid ${colors.sand200}`,
+   746→   746→                background: isFreeService ? colors.goldBackground : colors.surface,
+   747→   747→              }}
+   748→   748→            >
+   749→   749→              <span
+   750→   750→                aria-hidden="true"
+   751→   751→                style={{
+   752→   752→                  flexShrink: 0,
+   753→   753→                  width: 20,
+   754→   754→                  height: 20,
+   755→   755→                  display: "grid",
+   756→   756→                  placeItems: "center",
+   757→   757→                  borderRadius: 7,
+   758→   758→                  border: isFreeService ? "none" : `1.6px solid ${colors.sand200}`,
+   759→   759→                  background: isFreeService ? gradients.goldRich : colors.surface,
+   760→   760→                  color: "#fffaf0",
+   761→   761→                }}
+   762→   762→              >
+   763→   763→                {isFreeService ? <Icon name="check" size={13} stroke={3} /> : null}
+   764→   764→              </span>
+   765→   765→              <span style={{ flex: 1, minWidth: 0, display: "grid", gap: 1 }}>
+   766→   766→                <strong style={{ fontSize: 13, fontWeight: 800, color: isFreeService ? colors.goldDark : colors.ink }}>
+   767→   767→                  ارائهٔ رایگان این خدمت
+   768→   768→                </strong>
+   769→   769→                <span style={{ fontSize: 11.5, color: colors.inkMuted, lineHeight: 1.7 }}>
+   770→   770→                  با فعال‌کردن این گزینه، قرآن‌آموزان بدون پرداخت هزینه رزرو می‌کنند و جلسه در بخش «خدمات رایگان» صفحهٔ نخست نمایش داده می‌شود.
+   771→   771→                </span>
+   772→   772→              </span>
+   773→   773→            </button>
+   774→   774→            {isFreeService ? (
+   775→   775→              <span style={{ ...typography.caption, color: colors.goldDark, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 4 }}>
+   776→   776→                <Icon name="gift" size={13} />
+   777→   777→                این خدمت رایگان ارائه می‌شود (۰ تومان)
+   778→   778→              </span>
+   779→   779→            ) : (
+   780→   780→              <>
+   781→   781→                <div role="group" aria-label="قیمت‌های پیشنهادی" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+   782→   782→                  {PRICE_PRESETS.map((preset) => (
+   783→   783→                    <button
+   784→   784→                      key={preset}
+   785→   785→                      type="button"
+   786→   786→                      aria-pressed={draft.price === String(preset)}
+   787→   787→                      onClick={() => setDraft((current) => ({ ...current, price: String(preset) }))}
+   788→   788→                      style={quickChipStyle(draft.price === String(preset))}
+   789→   789→                    >
+   790→   790→                      {formatToman(preset)}
+   791→   791→                    </button>
+   792→   792→                  ))}
+   793→   793→                </div>
+   794→   794→                <AmountInput
+   795→   795→                  value={draft.price}
+   796→   796→                  onChange={(next) => setDraft((current) => ({ ...current, price: next }))}
+   797→   797→                  ariaLabel="قیمت خدمت به تومان"
+   798→   798→                  placeholder="یا مبلغ دلخواه…"
+   799→   799→                />
+   800→   800→              </>
+   801→   801→            )}
+   802→   802→          </div>
+   803→   803→          {formError ? <span role="alert" style={{ ...typography.caption, color: colors.danger }}>{formError}</span> : null}
+   804→   804→          <Button fullWidth loading={saving} onClick={() => void saveService()}>ذخیره تغییرات</Button>
+   805→   805→          {editing ? (
+   806→   806→            <div style={{ display: "flex", gap: spacing.sm, justifyContent: "center" }}>
+   807→   807→              {editing.active ? (
+   808→   808→                <button
+   809→   809→                  type="button"
+   810→   810→                  disabled={saving}
+   811→   811→                  onClick={() => setDeactivateTarget(editing)}
+   812→   812→                  style={{ border: 0, background: "transparent", color: colors.goldDark, fontWeight: 700, fontSize: 12, cursor: "pointer", fontFamily: typography.fontFamily, padding: "6px 10px" }}
+   813→   813→                >
+   814→   814→                  غیرفعال‌کردن خدمت
+   815→   815→                </button>
+   816→   816→              ) : null}
+   817→   817→              <button
+   818→   818→                type="button"
+   819→   819→                disabled={saving}
+   820→   820→                onClick={() => setDeleteTarget(editing)}
+   821→   821→                style={{ border: 0, background: "transparent", color: colors.danger, fontWeight: 700, fontSize: 12, cursor: "pointer", fontFamily: typography.fontFamily, padding: "6px 10px" }}
+   822→   822→              >
+   823→   823→                حذف خدمت
+   824→   824→              </button>
+   825→   825→            </div>
+   826→   826→          ) : null}
+   827→   827→        </div>
+   828→   828→      </Dialog>
+   829→   829→
+   830→   830→      <Dialog open={deactivateTarget !== null} title="غیرفعال‌کردن خدمت" onClose={() => { if (!saving) setDeactivateTarget(null); }}>
+   831→   831→        <p style={{ ...typography.body, marginTop: 0, color: colors.inkSecondary }}>
+   832→   832→          این خدمت غیرفعال می‌شود و تا فعال‌سازی مجدد قابل رزرو نیست.
+   833→   833→        </p>
+   834→   834→        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: spacing.sm }}>
+   835→   835→          <Button variant="secondary" disabled={saving} onClick={() => setDeactivateTarget(null)}>انصراف</Button>
+   836→   836→          <Button loading={saving} onClick={() => void deactivate()}>غیرفعال‌کردن</Button>
+   837→   837→        </div>
+   838→   838→      </Dialog>
+   839→   839→
+   840→   840→      <Dialog open={deleteTarget !== null} title="حذف خدمت" onClose={() => { if (!saving) setDeleteTarget(null); }}>
+   841→   841→        <p style={{ ...typography.body, marginTop: 0, color: colors.inkSecondary }}>این خدمت حذف شود؟</p>
+   842→   842→        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: spacing.sm }}>
+   843→   843→          <Button variant="secondary" disabled={saving} onClick={() => setDeleteTarget(null)}>انصراف</Button>
+   844→   844→          <Button variant="danger" loading={saving} onClick={() => void remove()}>حذف</Button>
+   845→   845→        </div>
+   846→   846→      </Dialog>
+   847→   847→    </section>
+   848→   848→  );
+   849→   849→}
+   850→   850→

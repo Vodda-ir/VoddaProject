@@ -1,0 +1,752 @@
+     1→"use client";
+     2→
+     3→import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+     4→import type { UniversalAppConfig } from "../../config";
+     5→import { PlatformHttpError } from "../../platform/http";
+     6→import { usePlatform } from "../../platform/context";
+     7→import { navigateApp } from "../../router";
+     8→import { getTeacherDetail } from "../teachers/api";
+     9→import type { Teacher, TeacherService } from "../teachers/types";
+    10→import { Avatar, Button, Card, EmptyState, ErrorState, formatJalaliDate, Icon, LoadingState, Sheet, colors, radii, shadows, spacing, typography } from "../../ui";
+    11→import { messageOf } from "../../ui/errorMessage";
+    12→import { formatWalletAmount } from "../wallet/WalletTransactionCard";
+    13→import { createBooking, getBookingAvailability, getBookingMe, type BookingPaymentMethod } from "./api";
+    14→import { payViaSamanGate } from "../../../lib/saman-gate";
+    15→import type { BookingSlot } from "./types";
+    16→
+    17→const weekdays = ["شنبه", "یکشنبه", "دوشنبه", "سه‌شنبه", "چهارشنبه", "پنجشنبه", "جمعه"];
+    18→const numberFormatter = new Intl.NumberFormat("fa-IR");
+    19→
+    20→function BookingStepHeader({ number, title }: { number: number; title: string }) {
+    21→  return (
+    22→    <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+    23→      <span
+    24→        aria-hidden="true"
+    25→        style={{
+    26→          width: 28,
+    27→          height: 28,
+    28→          display: "grid",
+    29→          placeItems: "center",
+    30→          flex: "0 0 28px",
+    31→          borderRadius: "50%",
+    32→          color: colors.surface,
+    33→          background: colors.olive600,
+    34→          fontSize: 13,
+    35→          fontWeight: 800,
+    36→        }}
+    37→      >
+    38→        {numberFormatter.format(number)}
+    39→      </span>
+    40→      <strong style={{ fontSize: 16, fontWeight: 800, color: colors.ink }}>{title}</strong>
+    41→    </div>
+    42→  );
+    43→}
+    44→
+    45→type DateGroup = {
+    46→  localDate: string;
+    47→  weekday: number;
+    48→  slots: BookingSlot[];
+    49→};
+    50→
+    51→export function LearnerBookingScreen({ teacherId, config }: { teacherId: string; config: UniversalAppConfig }) {
+    52→  const runtime = usePlatform();
+    53→  const numericTeacherId = Number(teacherId);
+    54→  const [teacher, setTeacher] = useState<Teacher | null>(null);
+    55→  const [teacherLoading, setTeacherLoading] = useState(true);
+    56→  const [teacherError, setTeacherError] = useState("");
+    57→  const [service, setService] = useState<TeacherService | null>(null);
+    58→  const [availability, setAvailability] = useState<BookingSlot[]>([]);
+    59→  const [availabilityLoading, setAvailabilityLoading] = useState(false);
+    60→  const [availabilityError, setAvailabilityError] = useState("");
+    61→  const [localDate, setLocalDate] = useState<string | null>(null);
+    62→  const [slot, setSlot] = useState<BookingSlot | null>(null);
+    63→  const [saving, setSaving] = useState(false);
+    64→  const [submitError, setSubmitError] = useState("");
+    65→  const [submitted, setSubmitted] = useState(false);
+    66→  const [redirecting, setRedirecting] = useState(false);
+    67→  // جلسهٔ فوری — رزرو همین‌لحظه (فقط وقتی استاد کلید آن را روشن کرده)
+    68→  const [instantSheet, setInstantSheet] = useState(false);
+    69→  const [wasInstant, setWasInstant] = useState(false);
+    70→  const [instantSessionId, setInstantSessionId] = useState(0);
+    71→  const [meId, setMeId] = useState(0);
+    72→  const [wallet, setWallet] = useState<number | null>(null);
+    73→  const [paymentMethod, setPaymentMethod] = useState<BookingPaymentMethod>("wallet");
+    74→  // ?free=1 → ورود از کارت «خدمات رایگان» خانه؛ فقط خدمات رایگان این استاد نمایش داده می‌شود
+    75→  const [freeOnly, setFreeOnly] = useState(() => {
+    76→    if (typeof window === "undefined") return false;
+    77→    return new URLSearchParams(window.location.search).get("free") === "1";
+    78→  });
+    79→  const availabilityRequest = useRef(0);
+    80→
+    81→  const loadTeacher = useCallback(async () => {
+    82→    if (!Number.isInteger(numericTeacherId) || numericTeacherId <= 0) {
+    83→      setTeacherError("شناسه استاد نامعتبر است.");
+    84→      setTeacherLoading(false);
+    85→      return;
+    86→    }
+    87→    setTeacherLoading(true);
+    88→    setTeacherError("");
+    89→    try {
+    90→      const detail = await getTeacherDetail(runtime, numericTeacherId);
+    91→      setTeacher(detail.teacher);
+    92→    } catch (error) {
+    93→      setTeacher(null);
+    94→      setTeacherError(messageOf(error, "اطلاعات استاد دریافت نشد."));
+    95→    } finally {
+    96→      setTeacherLoading(false);
+    97→    }
+    98→  }, [numericTeacherId, runtime]);
+    99→
+   100→  useEffect(() => {
+   101→    void loadTeacher();
+   102→    let active = true;
+   103→    getBookingMe(runtime)
+   104→      .then((me) => {
+   105→        if (!active) return;
+   106→        setMeId(me.id);
+   107→        setWallet(me.wallet);
+   108→      })
+   109→      .catch(() => { /* wallet display stays unknown; booking still works */ });
+   110→    return () => { active = false; };
+   111→  }, [loadTeacher, runtime]);
+   112→
+   113→  const loadAvailability = useCallback(
+   114→    async (selectedService: TeacherService) => {
+   115→      const requestId = ++availabilityRequest.current;
+   116→      setAvailabilityLoading(true);
+   117→      setAvailabilityError("");
+   118→      try {
+   119→        const rows = await getBookingAvailability(runtime, numericTeacherId, selectedService.id, 14);
+   120→        if (availabilityRequest.current !== requestId) return;
+   121→        setAvailability(rows);
+   122→      } catch (error) {
+   123→        if (availabilityRequest.current !== requestId) return;
+   124→        setAvailability([]);
+   125→        setAvailabilityError(messageOf(error, "زمان‌های آزاد استاد دریافت نشد."));
+   126→      } finally {
+   127→        if (availabilityRequest.current === requestId) setAvailabilityLoading(false);
+   128→      }
+   129→    },
+   130→    [numericTeacherId, runtime],
+   131→  );
+   132→
+   133→  const chooseService = useCallback(
+   134→    (selectedService: TeacherService) => {
+   135→      setService(selectedService);
+   136→      setAvailability([]);
+   137→      setLocalDate(null);
+   138→      setSlot(null);
+   139→      setSubmitError("");
+   140→      setSubmitted(false);
+   141→      void loadAvailability(selectedService);
+   142→    },
+   143→    [loadAvailability],
+   144→  );
+   145→
+   146→  const dateGroups = useMemo<DateGroup[]>(() => {
+   147→    const grouped = new Map<string, BookingSlot[]>();
+   148→    for (const item of availability) {
+   149→      const rows = grouped.get(item.localDate) ?? [];
+   150→      rows.push(item);
+   151→      grouped.set(item.localDate, rows);
+   152→    }
+   153→    return [...grouped.entries()].map(([date, rows]) => ({
+   154→      localDate: date,
+   155→      weekday: rows[0]?.weekday ?? -1,
+   156→      slots: [...rows].sort((left, right) => left.startAt.localeCompare(right.startAt)),
+   157→    }));
+   158→  }, [availability]);
+   159→
+   160→  const selectedDateSlots = useMemo(
+   161→    () => dateGroups.find((group) => group.localDate === localDate)?.slots ?? [],
+   162→    [dateGroups, localDate],
+   163→  );
+   164→
+   165→  const allServices = teacher?.services.filter((item) => item.active && item.id > 0) ?? [];
+   166→  // فیلتر خدمات رایگان: وقتی از کارت جلسهٔ رایگان آمده‌ایم، خدمات پولی نمایش داده نمی‌شوند
+   167→  const services = useMemo(
+   168→    () => (freeOnly ? allServices.filter((item) => item.price === 0) : allServices),
+   169→    [allServices, freeOnly],
+   170→  );
+   171→  const isSelfTeacher = Boolean(teacher?.userId && meId && teacher.userId === meId);
+   172→  const isFreeService = service ? service.price === 0 : false;
+   173→  const walletCovers = wallet !== null && service ? wallet >= service.price : false;
+   174→
+   175→  // Keep the sensible default as the selection changes: wallet when it covers
+   176→  // the price, otherwise the online gateway is the only viable method.
+   177→  useEffect(() => {
+   178→    if (!service || service.price === 0) return;
+   179→    setPaymentMethod(walletCovers ? "wallet" : "gateway");
+   180→  }, [service?.id, service?.price, walletCovers]);
+   181→
+   182→  const submit = useCallback(async () => {
+   183→    if (!teacher || !service || !slot || saving) return;
+   184→    if (isSelfTeacher) {
+   185→      setSubmitError("نمی‌توانید استاد خودتان را رزرو کنید؛ برای رزرو با حساب قرآن‌آموز وارد شوید.");
+   186→      return;
+   187→    }
+   188→    setSaving(true);
+   189→    setSubmitError("");
+   190→    try {
+   191→      const response = await createBooking(runtime, {
+   192→        teacherId: teacher.id,
+   193→        serviceId: service.id,
+   194→        // startAt is emitted by the authoritative backend in UTC. Do not rebuild
+   195→        // scheduled_at from the device timezone or the local display fields.
+   196→        scheduledAt: slot.startAt,
+   197→        // خدمات رایگان: روش پرداخت ارسال نمی‌شود — رزرو بدون تراکنش ثبت می‌شود.
+   198→        paymentMethod: service.price === 0 ? "" : paymentMethod,
+   199→      });
+   200→      if (response.data?.token) {
+   201→        // پرداخت درگاه: فرم توکن از مرورگر خود کاربر به OnlinePG پست می‌شود —
+   202→        // دقیقاً مثل منافسه، در همان تب تا در مرورگر موبایل و وب‌ویو اپ هم
+   203→        // درست باز شود. جلسه تا پایان پرداخت در حالت «awaiting payment» نگه
+   204→        // داشته می‌شود و بعد از تسویه خودکار فعال می‌شود.
+   205→        setRedirecting(true);
+   206→        payViaSamanGate(response.data.token);
+   207→        return;
+   208→      }
+   209→      setSubmitted(true);
+   210→    } catch (error) {
+   211→      if (error instanceof PlatformHttpError && error.status === 409) {
+   212→        setLocalDate(null);
+   213→        setSlot(null);
+   214→        setSubmitError("این زمان همین حالا رزرو شده است. زمان‌های آزاد دوباره دریافت شدند؛ لطفاً زمان دیگری انتخاب کنید.");
+   215→        await loadAvailability(service);
+   216→      } else {
+   217→        setSubmitError(messageOf(error, "ثبت درخواست رزرو انجام نشد."));
+   218→      }
+   219→    } finally {
+   220→      setSaving(false);
+   221→    }
+   222→  }, [isSelfTeacher, loadAvailability, paymentMethod, runtime, saving, service, slot, teacher]);
+   223→
+   224→  /** ثبت جلسهٔ فوری — زمان آغاز: دو دقیقه بعد از همین لحظه. */
+   225→  const submitInstant = useCallback(async () => {
+   226→    if (!teacher || !service || saving) return;
+   227→    if (isSelfTeacher) {
+   228→      setSubmitError("نمی‌توانید استاد خودتان را رزرو کنید.");
+   229→      return;
+   230→    }
+   231→    setSaving(true);
+   232→    setSubmitError("");
+   233→    try {
+   234→      const response = await createBooking(runtime, {
+   235→        teacherId: teacher.id,
+   236→        serviceId: service.id,
+   237→        scheduledAt: new Date(Date.now() + 2 * 60_000).toISOString(),
+   238→        paymentMethod: service.price === 0 ? "" : paymentMethod,
+   239→        instant: true,
+   240→      });
+   241→      const createdId = (response.data?.session as { id?: number } | undefined)?.id ?? 0;
+   242→      setInstantSessionId(createdId);
+   243→      if (response.data?.token) {
+   244→        setRedirecting(true);
+   245→        payViaSamanGate(response.data.token);
+   246→        return;
+   247→      }
+   248→      setWasInstant(true);
+   249→      setSubmitted(true);
+   250→    } catch (error) {
+   251→      setInstantSheet(false);
+   252→      setSubmitError(messageOf(error, "ثبت جلسهٔ فوری انجام نشد."));
+   253→    } finally {
+   254→      setSaving(false);
+   255→    }
+   256→  }, [isSelfTeacher, paymentMethod, runtime, saving, service, teacher]);
+   257→
+   258→  if (teacherLoading) return <LoadingState label="در حال دریافت اطلاعات استاد…" />;
+   259→  if (teacherError || !teacher) {
+   260→    return (
+   261→      <ErrorState
+   262→        title="دریافت اطلاعات استاد ناموفق بود"
+   263→        description={teacherError || "اطلاعات استاد دریافت نشد."}
+   264→        action={<Button variant="secondary" onClick={() => void loadTeacher()}>تلاش دوباره</Button>}
+   265→      />
+   266→    );
+   267→  }
+   268→
+   269→  if (submitted) {
+   270→    return (
+   271→      <Card elevated style={{ display: "grid", gap: spacing.lg, textAlign: "center" }}>
+   272→        <div aria-hidden="true" style={{ width: 68, height: 68, display: "grid", placeItems: "center", marginInline: "auto", borderRadius: "50%", color: colors.surface, background: colors.olive600, boxShadow: shadows.olive }}><Icon name="check" size={30} stroke={2.5} /></div>
+   273→        <div>
+   274→          <h2 style={{ ...typography.title, margin: 0 }}>{wasInstant ? "جلسهٔ فوری ثبت شد" : "درخواست جلسه ثبت شد"}</h2>
+   275→          <p style={{ ...typography.body, color: colors.inkSecondary, marginBottom: 0 }}>
+   276→            {wasInstant
+   277→              ? "درخواست شما همین حالا برای استاد ارسال شد. به‌محض تأیید، از جزئیات جلسه وارد کلاس تصویری شوید و برای هماهنگی چت در دسترس است."
+   278→              : "تأیید، رد یا بازگشت وجه را از بخش «جلسات من» پیگیری کنید."}
+   279→          </p>
+   280→        </div>
+   281→        <Button
+   282→          fullWidth
+   283→          onClick={() =>
+   284→            wasInstant && instantSessionId > 0
+   285→              ? navigateApp(`/session/${instantSessionId}`, config)
+   286→              : navigateApp("/sessions", config)
+   287→          }
+   288→        >
+   289→          {wasInstant ? "مشاهدهٔ جزئیات جلسه" : "مشاهده جلسات من"}
+   290→        </Button>
+   291→      </Card>
+   292→    );
+   293→  }
+   294→
+   295→  if (redirecting) {
+   296→    return (
+   297→      <Card elevated style={{ display: "grid", gap: spacing.lg, textAlign: "center" }}>
+   298→        <div aria-hidden="true" style={{ width: 68, height: 68, display: "grid", placeItems: "center", marginInline: "auto", borderRadius: "50%", color: colors.surface, background: colors.olive600, boxShadow: shadows.olive }}><Icon name="shield" size={30} stroke={2.2} /></div>
+   299→        <div>
+   300→          <h2 style={{ ...typography.title, margin: 0 }}>در حال انتقال به درگاه پرداخت…</h2>
+   301→          <p style={{ ...typography.body, color: colors.inkSecondary, marginBottom: 0 }}>
+   302→            رزرو شما ثبت و تا پایان پرداخت برای شما نگه داشته شده است.
+   303→          </p>
+   304→        </div>
+   305→        <Button variant="secondary" fullWidth onClick={() => navigateApp("/sessions", config)}>مشاهده جلسات من</Button>
+   306→      </Card>
+   307→    );
+   308→  }
+   309→
+   310→  return (
+   311→    <div className="vodda-screen" style={{ display: "grid", gap: spacing.xl }}>
+   312→      <Card elevated className="vodda-enter" style={{ display: "flex", alignItems: "center", gap: 13, padding: 16, borderRadius: 20 }}>
+   313→        <Avatar name={teacher.name} src={teacher.avatarUrl || undefined} size={56} ring={false} />
+   314→        <div style={{ minWidth: 0, flex: 1 }}>
+   315→          <strong style={{ fontSize: 16, fontWeight: 800, display: "block", color: colors.ink }}>{teacher.name}</strong>
+   316→          <span style={{ fontSize: 12.5, color: colors.olive700 }}>{teacher.tag || teacher.field}</span>
+   317→          {!teacher.available ? (
+   318→            <span
+   319→              style={{
+   320→                display: "inline-flex",
+   321→                alignItems: "center",
+   322→                gap: 4,
+   323→                marginTop: 4,
+   324→                padding: "2px 8px",
+   325→                borderRadius: 999,
+   326→                fontSize: 11,
+   327→                fontWeight: 700,
+   328→                color: colors.danger,
+   329→                background: colors.dangerBackground,
+   330→              }}
+   331→            >
+   332→              <span aria-hidden="true" className="vodda-offline-dot" style={{ width: 7, height: 7, borderRadius: "50%", flex: "0 0 auto", background: colors.danger }} />
+   333→              استاد آفلاین است — فعلاً زمان آزاد ندارد
+   334→            </span>
+   335→          ) : null}
+   336→        </div>
+   337→      </Card>
+   338→
+   339→      {teacher.instantEnabled ? (
+   340→        <Card
+   341→          className="vodda-enter vodda-enter-delay-1"
+   342→          style={{
+   343→            display: "flex",
+   344→            alignItems: "center",
+   345→            gap: 12,
+   346→            padding: "14px 16px",
+   347→            borderRadius: 20,
+   348→            border: `1.5px solid ${colors.goldSoft}`,
+   349→            background: `linear-gradient(150deg, ${colors.goldBackground}, #fffdf8 72%)`,
+   350→            boxShadow: "0 0 0 4px rgba(231,213,168,.18), 0 10px 24px rgba(139,104,31,.10)",
+   351→          }}
+   352→        >
+   353→          <span
+   354→            aria-hidden="true"
+   355→            style={{
+   356→              width: 42, height: 42, display: "grid", placeItems: "center", flex: "0 0 42px", borderRadius: 14,
+   357→              background: "linear-gradient(145deg,#d8b869,#b8923c)", color: "#fffaf0",
+   358→              boxShadow: "0 6px 14px rgba(139,104,31,.35)",
+   359→            }}
+   360→          >
+   361→            <Icon name="sparkle" size={21} stroke={2.2} />
+   362→          </span>
+   363→          <span style={{ minWidth: 0, flex: 1, display: "grid", gap: 2 }}>
+   364→            <strong style={{ fontSize: 13.5, fontWeight: 800, color: "#7a5e1e" }}>همین حالا وقت می‌خواهید؟</strong>
+   365→            <span style={{ fontSize: 11, color: "#9a7426", lineHeight: 1.7 }}>
+   366→              این استاد جلسهٔ فوری فعال کرده — درخواست شما مستقیم و فوری برایش ارسال می‌شود.
+   367→            </span>
+   368→          </span>
+   369→          <Button
+   370→            onClick={() => setInstantSheet(true)}
+   371→            disabled={!service}
+   372→            style={{ flex: "0 0 auto", minHeight: 44, padding: "0 16px", fontSize: 12.5 }}
+   373→          >
+   374→            جلسهٔ فوری
+   375→          </Button>
+   376→        </Card>
+   377→      ) : null}
+   378→
+   379→      <Card className="vodda-enter vodda-enter-delay-1" style={{ padding: 18, borderRadius: 20, borderColor: colors.sand200, boxShadow: "none" }}>
+   380→        <BookingStepHeader number={1} title="انتخاب خدمت" />
+   381→        {freeOnly ? (
+   382→          <div
+   383→            style={{
+   384→              display: "flex",
+   385→              alignItems: "center",
+   386→              gap: 8,
+   387→              marginTop: 12,
+   388→              padding: "9px 12px",
+   389→              borderRadius: 14,
+   390→              background: colors.goldBackground,
+   391→              border: `1px solid ${colors.gold}`,
+   392→            }}
+   393→          >
+   394→            <Icon name="gift" size={15} stroke={2.3} style={{ color: colors.goldDark, flex: "0 0 auto" }} />
+   395→            <span style={{ flex: 1, minWidth: 0, fontSize: 12, fontWeight: 700, color: colors.goldDark, lineHeight: 1.7 }}>
+   396→              فقط خدمات رایگان این استاد نمایش داده می‌شود
+   397→            </span>
+   398→            <button
+   399→              type="button"
+   400→              onClick={() => setFreeOnly(false)}
+   401→              style={{
+   402→                flex: "0 0 auto",
+   403→                padding: "5px 10px",
+   404→                borderRadius: 999,
+   405→                border: `1px solid ${colors.gold}`,
+   406→                background: colors.surface,
+   407→                color: colors.goldDark,
+   408→                fontSize: 11,
+   409→                fontWeight: 800,
+   410→                cursor: "pointer",
+   411→                fontFamily: typography.fontFamily,
+   412→              }}
+   413→            >
+   414→              نمایش همهٔ خدمات
+   415→            </button>
+   416→          </div>
+   417→        ) : (
+   418→          <div style={{ height: 16 }} />
+   419→        )}
+   420→        {services.length === 0 ? (
+   421→          freeOnly ? (
+   422→            <EmptyState
+   423→              title="خدمت رایگان فعالی ندارد"
+   424→              description="این استاد در حال حاضر خدمت رایگان فعالی ندارد؛ می‌توانید همهٔ خدمات او را ببینید."
+   425→              action={<Button variant="secondary" onClick={() => setFreeOnly(false)}>نمایش همهٔ خدمات</Button>}
+   426→            />
+   427→          ) : (
+   428→            <EmptyState title="خدمت قابل رزرو وجود ندارد" description="این استاد فعلاً خدمت فعال و قابل رزروی ندارد." />
+   429→          )
+   430→        ) : (
+   431→          <div style={{ display: "grid", gap: spacing.sm }}>
+   432→            {services.map((item) => {
+   433→              const selected = service?.id === item.id;
+   434→              return (
+   435→                <button
+   436→                  key={item.id}
+   437→                  type="button"
+   438→                  onClick={() => chooseService(item)}
+   439→                  aria-pressed={selected}
+   440→                  style={{
+   441→                    display: "grid",
+   442→                    gridTemplateColumns: "1fr auto",
+   443→                    gap: spacing.md,
+   444→                    padding: 13,
+   445→                    textAlign: "right",
+   446→                    color: colors.ink,
+   447→                    background: selected ? colors.olive50 : colors.sand50,
+   448→                    border: selected ? `1.6px solid ${colors.olive600}` : `1px solid ${colors.sand200}`,
+   449→                    borderRadius: 16,
+   450→                    cursor: "pointer",
+   451→                    fontFamily: typography.fontFamily,
+   452→                  }}
+   453→                >
+   454→                  <span>
+   455→                    <strong style={{ display: "block", ...typography.body }}>{item.title}</strong>
+   456→                    <span
+   457→                      style={{
+   458→                        display: "inline-flex",
+   459→                        alignItems: "center",
+   460→                        gap: 4,
+   461→                        marginTop: 4,
+   462→                        padding: "2px 9px",
+   463→                        borderRadius: 999,
+   464→                        background: colors.surface,
+   465→                        border: `1px solid ${colors.sand200}`,
+   466→                        color: colors.inkSecondary,
+   467→                        fontSize: 11.5,
+   468→                        fontWeight: 700,
+   469→                      }}
+   470→                    >
+   471→                      <Icon name="clock" size={12} stroke={2} />
+   472→                      {numberFormatter.format(item.duration)} دقیقه
+   473→                    </span>
+   474→                  </span>
+   475→                  {item.price === 0 ? (
+   476→                    <span
+   477→                      style={{
+   478→                        display: "inline-flex",
+   479→                        alignItems: "center",
+   480→                        gap: 4,
+   481→                        padding: "4px 11px",
+   482→                        borderRadius: 999,
+   483→                        background: colors.goldBackground,
+   484→                        border: `1px solid ${colors.gold}`,
+   485→                        color: colors.goldDark,
+   486→                        fontSize: 11.5,
+   487→                        fontWeight: 900,
+   488→                        whiteSpace: "nowrap",
+   489→                      }}
+   490→                    >
+   491→                      <Icon name="gift" size={12} stroke={2.4} />
+   492→                      رایگان
+   493→                    </span>
+   494→                  ) : (
+   495→                    <strong style={{ ...typography.bodySmall, color: colors.olive700 }}>{formatWalletAmount(Math.max(0, item.price))} تومان</strong>
+   496→                  )}
+   497→                </button>
+   498→              );
+   499→            })}
+   500→          </div>
+   501→        )}
+   502→      </Card>
+   503→
+   504→      <Card className="vodda-enter vodda-enter-delay-2" style={{ padding: 18, borderRadius: 20, borderColor: colors.sand200, boxShadow: "none" }}>
+   505→        <BookingStepHeader number={2} title="انتخاب تاریخ و ساعت" />
+   506→        <div style={{ height: 16 }} />
+   507→        {!service ? (
+   508→          <EmptyState title="یک خدمت انتخاب کنید" description="بعد از انتخاب خدمت، زمان‌های آزاد رسمی استاد دریافت می‌شوند." />
+   509→        ) : availabilityLoading ? (
+   510→          <LoadingState label="در حال دریافت زمان‌های آزاد…" />
+   511→        ) : availabilityError ? (
+   512→          <ErrorState
+   513→            title="دریافت زمان‌های آزاد ناموفق بود"
+   514→            description={availabilityError}
+   515→            action={<Button variant="secondary" onClick={() => void loadAvailability(service)}>تلاش دوباره</Button>}
+   516→          />
+   517→        ) : dateGroups.length === 0 ? (
+   518→          <EmptyState title="زمان آزادی پیدا نشد" description="در ۱۴ روز آینده زمان آزاد و قابل رزروی برای این خدمت وجود ندارد." />
+   519→        ) : (
+   520→          <div style={{ display: "grid", gap: spacing.lg }}>
+   521→            <div className="vodda-scroll-rail" style={{ display: "flex", gap: spacing.sm, overflowX: "auto", paddingBottom: spacing.xs }}>
+   522→              {dateGroups.map((group) => {
+   523→                const selected = localDate === group.localDate;
+   524→                return (
+   525→                  <button
+   526→                    key={group.localDate}
+   527→                    type="button"
+   528→                    aria-pressed={selected}
+   529→                    onClick={() => {
+   530→                      setLocalDate(group.localDate);
+   531→                      setSlot(null);
+   532→                      setSubmitError("");
+   533→                    }}
+   534→                    style={{
+   535→                      flex: "0 0 auto",
+   536→                      width: 102,
+   537→                      minHeight: 76,
+   538→                      padding: "10px 8px",
+   539→                      color: selected ? colors.surface : colors.inkSecondary,
+   540→                      background: selected ? colors.olive600 : colors.sand50,
+   541→                      border: `1px solid ${selected ? colors.olive600 : colors.sand200}`,
+   542→                      borderRadius: 15,
+   543→                      cursor: "pointer",
+   544→                      fontFamily: typography.fontFamily,
+   545→                      ...typography.bodySmall,
+   546→                    }}
+   547→                  >
+   548→                    <strong style={{ display: "block", fontSize: 12, fontWeight: 700 }}>
+   549→                      {weekdays[group.weekday] ?? "روز"}
+   550→                    </strong>
+   551→                    <span style={{ display: "block", marginTop: 4, opacity: 0.82, fontSize: 10.5 }}>
+   552→                      {formatJalaliDate(group.localDate, { withYear: false })} · {numberFormatter.format(group.slots.length)} زمان
+   553→                    </span>
+   554→                  </button>
+   555→                );
+   556→              })}
+   557→            </div>
+   558→            {localDate ? (
+   559→              <div style={{ display: "flex", flexWrap: "wrap", gap: spacing.sm }}>
+   560→                {selectedDateSlots.map((item) => {
+   561→                  const selected = slot?.startAt === item.startAt;
+   562→                  return (
+   563→                    <button
+   564→                      key={item.startAt}
+   565→                      type="button"
+   566→                      aria-pressed={selected}
+   567→                      onClick={() => {
+   568→                        setSlot(item);
+   569→                        setSubmitError("");
+   570→                      }}
+   571→                      style={{
+   572→                        padding: `${spacing.sm}px ${spacing.md}px`,
+   573→                        color: selected ? colors.surface : colors.inkSecondary,
+   574→                        background: selected ? colors.olive600 : colors.surface,
+   575→                        border: `1px solid ${selected ? colors.olive600 : colors.sand200}`,
+   576→                        borderRadius: radii.pill,
+   577→                        cursor: "pointer",
+   578→                        fontFamily: typography.fontFamily,
+   579→                        ...typography.bodySmall,
+   580→                      }}
+   581→                    >
+   582→                      {item.localStart} تا {item.localEnd}
+   583→                    </button>
+   584→                  );
+   585→                })}
+   586→              </div>
+   587→            ) : null}
+   588→          </div>
+   589→        )}
+   590→      </Card>
+   591→
+   592→      <Card className="vodda-enter vodda-enter-delay-3" style={{ padding: 18, borderRadius: 20, borderColor: colors.sand200, boxShadow: "none" }}>
+   593→        <BookingStepHeader number={3} title="بررسی نهایی" />
+   594→        <div style={{ height: 16 }} />
+   595→        {!service || !slot ? (
+   596→          <EmptyState title="رزرو هنوز آماده ثبت نیست" description="پس از انتخاب خدمت و زمان، خلاصه رزرو اینجا نمایش داده می‌شود." />
+   597→        ) : (
+   598→          <div style={{ display: "grid" }}>
+   599→            {[
+   600→              ["استاد", teacher.name],
+   601→              ["خدمت", service.title],
+   602→              ["تاریخ", formatJalaliDate(slot.localDate, { withWeekday: slot.weekday })],
+   603→              ["ساعت", `${slot.localStart} تا ${slot.localEnd}`],
+   604→              ["مدت", `${numberFormatter.format(service.duration)} دقیقه`],
+   605→              ["مبلغ", service.price === 0 ? "رایگان — بدون پرداخت" : `${formatWalletAmount(Math.max(0, service.price))} تومان`],
+   606→            ].map(([label, value]) => (
+   607→              <div key={label} style={{ display: "flex", justifyContent: "space-between", gap: spacing.md, paddingBlock: 8 }}>
+   608→                <span style={{ color: colors.inkMuted }}>{label}</span>
+   609→                <strong style={{ textAlign: "left" }}>{value}</strong>
+   610→              </div>
+   611→            ))}
+   612→            <div style={{ height: 1, marginBlock: 4, background: colors.sand150 }} />
+   613→            {service.price === 0 ? (
+   614→              <div
+   615→                role="status"
+   616→                style={{
+   617→                  display: "flex",
+   618→                  alignItems: "center",
+   619→                  gap: 9,
+   620→                  padding: "11px 13px",
+   621→                  borderRadius: 16,
+   622→                  background: colors.goldBackground,
+   623→                  border: `1px solid ${colors.gold}`,
+   624→                  color: colors.goldDark,
+   625→                  fontSize: 12.5,
+   626→                  fontWeight: 700,
+   627→                  lineHeight: 1.8,
+   628→                  marginBlock: spacing.md,
+   629→                }}
+   630→              >
+   631→                <Icon name="gift" size={17} stroke={2.2} style={{ flex: "0 0 auto" }} />
+   632→                <span>
+   633→                  این جلسه <b>رایگان</b> است؛ بدون پرداخت هزینه و بدون کسر از کیف پول، درخواست شما مستقیم برای استاد ارسال می‌شود.
+   634→                </span>
+   635→              </div>
+   636→            ) : (
+   637→            <>
+   638→            <div role="radiogroup" aria-label="روش پرداخت" style={{ display: "grid", gap: spacing.sm, marginBlock: spacing.md }}>
+   639→              <button
+   640→                type="button"
+   641→                role="radio"
+   642→                aria-checked={paymentMethod === "wallet"}
+   643→                disabled={!walletCovers}
+   644→                onClick={() => walletCovers && setPaymentMethod("wallet")}
+   645→                style={{
+   646→                  display: "flex",
+   647→                  alignItems: "center",
+   648→                  gap: spacing.md,
+   649→                  padding: 13,
+   650→                  textAlign: "right",
+   651→                  color: colors.ink,
+   652→                  background: paymentMethod === "wallet" ? colors.olive50 : colors.surface,
+   653→                  border: paymentMethod === "wallet" ? `1.6px solid ${colors.olive600}` : `1px solid ${colors.sand200}`,
+   654→                  borderRadius: 16,
+   655→                  cursor: walletCovers ? "pointer" : "not-allowed",
+   656→                  opacity: walletCovers ? 1 : 0.55,
+   657→                  fontFamily: typography.fontFamily,
+   658→                }}
+   659→              >
+   660→                <span style={{ display: "grid", gap: 2, flex: 1 }}>
+   661→                  <strong style={{ fontSize: 13.5, fontWeight: 800 }}>پرداخت از کیف پول</strong>
+   662→                  <span style={{ ...typography.caption, color: colors.inkMuted }}>
+   663→                    {wallet !== null ? `موجودی: ${formatWalletAmount(wallet)} تومان` : "موجودی نامشخص"}{walletCovers ? "" : " — موجودی کافی نیست"}
+   664→                  </span>
+   665→                </span>
+   666→                <Icon name="wallet" size={20} style={{ color: paymentMethod === "wallet" ? colors.olive600 : colors.inkMuted }} />
+   667→              </button>
+   668→              <button
+   669→                type="button"
+   670→                role="radio"
+   671→                aria-checked={paymentMethod === "gateway"}
+   672→                onClick={() => setPaymentMethod("gateway")}
+   673→                style={{
+   674→                  display: "flex",
+   675→                  alignItems: "center",
+   676→                  gap: spacing.md,
+   677→                  padding: 13,
+   678→                  textAlign: "right",
+   679→                  color: colors.ink,
+   680→                  background: paymentMethod === "gateway" ? colors.olive50 : colors.surface,
+   681→                  border: paymentMethod === "gateway" ? `1.6px solid ${colors.olive600}` : `1px solid ${colors.sand200}`,
+   682→                  borderRadius: 16,
+   683→                  cursor: "pointer",
+   684→                  fontFamily: typography.fontFamily,
+   685→                }}
+   686→              >
+   687→                <span style={{ display: "grid", gap: 2, flex: 1 }}>
+   688→                  <strong style={{ fontSize: 13.5, fontWeight: 800 }}>پرداخت آنلاین با درگاه سامان‌سپ</strong>
+   689→                  <span style={{ ...typography.caption, color: colors.inkMuted }}>پرداخت امن با کارت بانکی؛ زمان رزرو تا پایان پرداخت نگه داشته می‌شود</span>
+   690→                </span>
+   691→                <Icon name="shield" size={20} style={{ color: paymentMethod === "gateway" ? colors.olive600 : colors.inkMuted }} />
+   692→              </button>
+   693→            </div>
+   694→            <p style={{ ...typography.caption, margin: "8px 0 0", color: colors.inkMuted, lineHeight: 1.8 }}>
+   695→              {paymentMethod === "gateway"
+   696→                ? "با ثبت رزرو به درگاه امن سامان‌سپ منتقل می‌شوید و پس از پرداخت موفق، درخواست برای استاد ارسال می‌شود."
+   697→                : "مبلغ هنگام ثبت رزرو از کیف پول کسر می‌شود."}{" "}
+   698→              زمان‌ها با timezone رسمی سامانه و تداخل جلسات فعال محاسبه شده‌اند. ممکن است تا لحظهٔ ثبت توسط کاربر دیگری رزرو شوند.
+   699→            </p>
+   700→            </>
+   701→            )}
+   702→          </div>
+   703→        )}
+   704→      </Card>
+   705→
+   706→      {isSelfTeacher ? (
+   707→        <p role="alert" style={{ ...typography.bodySmall, padding: spacing.md, borderRadius: radii.md, background: colors.goldBackground, color: colors.goldDark, margin: 0 }}>
+   708→          این پروفایل متعلق به حساب شماست؛ رزرو جلسه با خودتان ممکن نیست. برای آزمایش فرآیند، با حساب قرآن‌آموز وارد شوید و استاد دیگری را رزرو کنید.
+   709→        </p>
+   710→      ) : null}
+   711→      {submitError ? <p role="alert" style={{ ...typography.bodySmall, padding: spacing.md, borderRadius: radii.md, background: colors.dangerBackground, color: colors.danger, margin: 0 }}>{submitError}</p> : null}
+   712→
+   713→      {/* شیت تأیید جلسهٔ فوری */}
+   714→      <Sheet open={instantSheet} title="درخواست جلسهٔ فوری" onClose={() => { if (!saving) setInstantSheet(false); }}>
+   715→        {service ? (
+   716→          <div style={{ display: "grid", gap: spacing.md }}>
+   717→            <p style={{ ...typography.body, margin: 0, color: colors.inkSecondary, lineHeight: 2 }}>
+   718→              با تأیید، درخواست جلسه <b>همین حالا</b> برای {teacher.name} ارسال می‌شود و زمان آغاز دو دقیقه بعد در نظر گرفته می‌شود. به‌محض تأیید استاد می‌توانید وارد کلاس تصویری شوید.
+   719→            </p>
+   720→            <div style={{ display: "grid", gap: 0, padding: "4px 14px", borderRadius: 14, background: colors.sand50 }}>
+   721→              {[
+   722→                ["خدمت", service.title],
+   723→                ["مدت", `${numberFormatter.format(service.duration)} دقیقه`],
+   724→                ["مبلغ", service.price === 0 ? "رایگان — بدون پرداخت" : `${formatWalletAmount(Math.max(0, service.price))} تومان`],
+   725→                ["پرداخت", service.price === 0 ? "بدون تراکنش" : paymentMethod === "wallet" ? "از کیف پول" : "درگاه سامان‌سپ"],
+   726→              ].map(([label, value]) => (
+   727→                <div key={label} style={{ display: "flex", justifyContent: "space-between", gap: spacing.md, paddingBlock: 8 }}>
+   728→                  <span style={{ color: colors.inkMuted, fontSize: 12.5 }}>{label}</span>
+   729→                  <strong style={{ textAlign: "left", fontSize: 12.5 }}>{value}</strong>
+   730→                </div>
+   731→              ))}
+   732→            </div>
+   733→            {service.price > 0 && paymentMethod === "wallet" && !walletCovers ? (
+   734→              <p role="alert" style={{ margin: 0, fontSize: 12, color: colors.danger }}>
+   735→                موجودی کیف پول کافی نیست؛ در مرحلهٔ بعد به درگاه پرداخت منتقل می‌شوید.
+   736→              </p>
+   737→            ) : null}
+   738→            <Button fullWidth loading={saving} onClick={() => void submitInstant()} style={{ minHeight: 50, background: colors.gold, borderColor: colors.gold }}>
+   739→              <Icon name="sparkle" size={18} />
+   740→              ارسال درخواست جلسهٔ فوری
+   741→            </Button>
+   742→          </div>
+   743→        ) : null}
+   744→      </Sheet>
+   745→      <div style={{ position: "sticky", zIndex: 12, bottom: "calc(68px + env(safe-area-inset-bottom))", padding: "8px 0 12px", background: colors.sand50 }}>
+   746→        <Button fullWidth loading={saving} disabled={!service || !slot || isSelfTeacher} onClick={() => void submit()} style={{ minHeight: 52 }}>
+   747→          {service && service.price === 0 ? "ثبت درخواست جلسهٔ رایگان" : paymentMethod === "gateway" ? "پرداخت و ثبت رزرو" : "ثبت درخواست رزرو"}
+   748→        </Button>
+   749→      </div>
+   750→    </div>
+   751→  );
+   752→}

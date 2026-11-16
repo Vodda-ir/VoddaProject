@@ -1,0 +1,1039 @@
+     1→"use client";
+     2→
+     3→import { useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from "react";
+     4→import type { UniversalAppConfig } from "../../config";
+     5→import { usePlatform } from "../../platform/context";
+     6→import type { AuthUser } from "../../platform/types";
+     7→import { navigateApp } from "../../router";
+     8→import {
+     9→  Avatar,
+    10→  Button,
+    11→  Card,
+    12→  CornerOrnament,
+    13→  HeroPanel,
+    14→  Icon,
+    15→  IconBadge,
+    16→  LoadingState,
+    17→  OrnamentDivider,
+    18→  SectionHeader,
+    19→  Sheet,
+    20→  todayJalaliLabel,
+    21→  colors,
+    22→  gradients,
+    23→  radii,
+    24→  shadows,
+    25→  spacing,
+    26→  typography,
+    27→} from "../../ui";
+    28→import { messageOf } from "../../ui/errorMessage";
+    29→import { useAppearance } from "../../ui/appearance";
+    30→import { resolveAssetUrl } from "../../platform/asset";
+    31→import { RoleModeSheet } from "../auth/RoleModeSheet";
+    32→import { TopicCategoryGrid, TopServicesRail, FreeServicesBoard } from "./homeSections";
+    33→import {
+    34→  getNotifications,
+    35→  markNotificationRead,
+    36→  type AppNotification,
+    37→} from "../notifications/api";
+    38→import { getLearnerSessions } from "../sessions/api";
+    39→import { searchTeachers } from "../teachers/api";
+    40→import { TeacherCard } from "../teachers/TeacherCard";
+    41→import type { Teacher } from "../teachers/types";
+    42→
+    43→export type LearnerHomeScreenProps = {
+    44→  config: UniversalAppConfig;
+    45→};
+    46→
+    47→/* ─────────────────────────  کش لیست استادان (۵ دقیقه)  ───────────────────────── */
+    48→
+    49→const TEACHERS_CACHE_TTL = 5 * 60 * 1000;
+    50→const teachersCache: { data: Teacher[] | null; at: number } = { data: null, at: 0 };
+    51→
+    52→function teachersCacheFresh() {
+    53→  return teachersCache.data !== null && Date.now() - teachersCache.at < TEACHERS_CACHE_TTL;
+    54→}
+    55→
+    56→/* ─────────────────────────  سلام ساعت‌محور و تاریخ شمسی  ───────────────────────── */
+    57→
+    58→function tehranHour() {
+    59→  try {
+    60→    return Number(
+    61→      new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Tehran", hour: "numeric", hour12: false }).format(new Date()),
+    62→    );
+    63→  } catch {
+    64→    return new Date().getHours();
+    65→  }
+    66→}
+    67→
+    68→function greetingLabel(lang: "fa" | "en"): string {
+    69→  const hour = tehranHour();
+    70→  if (lang === "en") {
+    71→    if (hour < 12) return "Good morning";
+    72→    if (hour < 15) return "Good afternoon";
+    73→    if (hour < 20) return "Good evening";
+    74→    return "Good night";
+    75→  }
+    76→  if (hour < 12) return "صبح بخیر";
+    77→  if (hour < 15) return "ظهر بخیر";
+    78→  if (hour < 20) return "عصر بخیر";
+    79→  return "شب بخیر";
+    80→}
+    81→
+    82→function todayLabel() {
+    83→  return todayJalaliLabel();
+    84→}
+    85→
+    86→function dayOfYearIndex() {
+    87→  const now = new Date();
+    88→  const start = new Date(now.getFullYear(), 0, 0);
+    89→  return Math.floor((now.getTime() - start.getTime()) / 86_400_000);
+    90→}
+    91→
+    92→/* آیه و حدیث روز — فقط متون معروف و معتبر درباره علم و آموزش؛ چرخش روزانه */
+    93→const DAILY_QUOTES: Array<{ text: string; source: string }> = [
+    94→  { text: "وَقُل رَّبِّ زِدْنِي عِلْمًا", source: "قرآن — طه: ۱۱۴" },
+    95→  { text: "خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ", source: "حدیث نبوی" },
+    96→  { text: "هَلْ يَسْتَوِي الَّذِينَ يَعْلَمُونَ وَالَّذِينَ لَا يَعْلَمُونَ", source: "قرآن — الزمر: ۹" },
+    97→  { text: "مَنْ سَلَكَ طَرِيقًا يَطْلُبُ فِيهِ عِلْمًا سَهَّلَ اللَّهُ لَهُ طَرِيقًا إِلَى الْجَنَّةِ", source: "حدیث نبوی" },
+    98→  { text: "يَرْفَعِ اللَّهُ الَّذِينَ آمَنُوا مِنكُمْ وَالَّذِينَ أُوتُوا الْعِلْمَ دَرَجَاتٍ", source: "قرآن — المجادلة: ۱۱" },
+    99→  { text: "اقْرَأْ بِاسْمِ رَبِّكَ الَّذِي خَلَقَ", source: "قرآن — العلق: ۱" },
+   100→  { text: "إِنَّمَا يَخْشَى اللَّهَ مِنْ عِبَادِهِ الْعُلَمَاءُ", source: "قرآن — فاطر: ۲۸" },
+   101→  { text: "فَاسْأَلُوا أَهْلَ الذِّكْرِ إِن كُنتُمْ لَا تَعْلَمُونَ", source: "قرآن — النحل: ۴۳" },
+   102→  { text: "سَنُرِيهِمْ آيَاتِنَا فِي الْآفَاقِ وَفِي أَنفُسِهِمْ حَتَّىٰ يَتَبَيَّنَ لَهُمْ أَنَّهُ الْحَقُّ", source: "قرآن — فصلت: ۵۳" },
+   103→  { text: "وَمَن يُؤْتَ الْحِكْمَةَ فَقَدْ أُوتِيَ خَيْرًا كَثِيرًا", source: "قرآن — البقرة: ۲۶۹" },
+   104→  { text: "أَلَا بِذِكْرِ اللَّهِ تَطْمَئِنُّ الْقُلُوبُ", source: "قرآن — الرعد: ۲۸" },
+   105→  { text: "طَلَبُ الْعِلْمِ فَرِيضَةٌ عَلَى كُلِّ مُسْلِمٍ", source: "حدیث نبوی" },
+   106→];
+   107→
+   108→function faNumber(value: number, maximumFractionDigits = 1) {
+   109→  return new Intl.NumberFormat("fa-IR", { maximumFractionDigits }).format(value);
+   110→}
+   111→
+   112→function walletShort(wallet: number) {
+   113→  if (wallet >= 1_000_000) return `${faNumber(wallet / 1_000_000)} میلیون`;
+   114→  return `${faNumber(Math.round(wallet / 1000), 0)} هزار`;
+   115→}
+   116→
+   117→/* ─────────────────────────  منطق انتخاب اساتید صفحهٔ نخست  ───────────────────────── */
+   118→
+   119→/** وزن رتبهٔ استاد — بین‌المللی (۳) > کشوری (۲) > استانی (۱). */
+   120→const TIER_WEIGHT: Record<string, number> = { international: 3, grade2: 2, grade3: 1 };
+   121→
+   122→/**
+   123→ * امتیاز عملکرد کلی استاد — ترکیب رتبه + عملکرد + فعالیت:
+   124→ *   رتبه (تیک): بین‌المللی/کشوری/استانی
+   125→ *   عملکرد: امتیاز رضایت و تعداد نظرها
+   126→ *   فعالیت: تعداد جلسات موفق + آمادهٔ رزرو بودن امروز
+   127→ */
+   128→function performanceScore(teacher: Teacher) {
+   129→  const tier = TIER_WEIGHT[teacher.tier] ?? 0;
+   130→  const rating = Math.max(0, teacher.rating);
+   131→  const reviews = Math.log10(10 + Math.max(0, teacher.reviews));
+   132→  const sessions = Math.log10(10 + Math.max(0, teacher.sessions));
+   133→  const availability = teacher.available ? 0.6 : 0;
+   134→  return tier * 2.4 + rating * 1.3 + sessions * 1.9 + reviews * 0.9 + availability;
+   135→}
+   136→
+   137→const SPOTLIGHT_POOL_SIZE = 24;
+   138→const SPOTLIGHT_COUNT = 7;
+   139→
+   140→/** مولد شبه‌تصادفی با seed — چیدمان هر بازدید متفاوت اما تابع خالص (بدون خطای hydration). */
+   141→function mulberry32(seed: number) {
+   142→  let state = seed >>> 0;
+   143→  return () => {
+   144→    state = (state + 0x6d2b79f5) | 0;
+   145→    let t = Math.imul(state ^ (state >>> 15), 1 | state);
+   146→    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+   147→    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+   148→  };
+   149→}
+   150→
+   151→/**
+   152→ * انتخاب ۷ استاد صفحهٔ نخست: از میان ۲۴ استادِ برتر (بر اساس عملکرد، رتبه و فعالیت)،
+   153→ * هر بار ۷ نفر به‌صورت رندوم؛ ترتیب نمایش هم بر اساس همان امتیاز.
+   154→ */
+   155→function pickSpotlight(teachers: Teacher[], seed: number): Teacher[] {
+   156→  const pool = [...teachers]
+   157→    .sort((a, b) => performanceScore(b) - performanceScore(a))
+   158→    .slice(0, SPOTLIGHT_POOL_SIZE);
+   159→  const random = mulberry32(seed);
+   160→  for (let i = pool.length - 1; i > 0; i -= 1) {
+   161→    const j = Math.floor(random() * (i + 1));
+   162→    [pool[i], pool[j]] = [pool[j], pool[i]];
+   163→  }
+   164→  return pool.slice(0, SPOTLIGHT_COUNT).sort((a, b) => performanceScore(b) - performanceScore(a));
+   165→}
+   166→
+   167→function newSpotlightSeed() {
+   168→  return Math.floor(Math.random() * 2147483647);
+   169→}
+   170→
+   171→/* ─────────────────────────  دسته‌بندی‌های سریع داده‌محور  ───────────────────────── */
+   172→
+   173→const MADDAHI_PATTERN = /مداح|هم‌نوا|همنوا/;
+   174→
+   175→function isMaddahiTeacher(teacher: Teacher) {
+   176→  return MADDAHI_PATTERN.test(teacher.field) || MADDAHI_PATTERN.test(teacher.tag);
+   177→}
+   178→
+   179→function teacherSubtitle(teacher: Teacher) {
+   180→  return [teacher.tag || teacher.field, teacher.city].filter(Boolean).join(" · ");
+   181→}
+   182→
+   183→/* ─────────────────────────  زیرکامپوننت‌ها  ───────────────────────── */
+   184→
+   185→function Skeleton({ style }: { style?: CSSProperties }) {
+   186→  return <span aria-hidden="true" className="vodda-skeleton" style={{ display: "block", ...style }} />;
+   187→}
+   188→
+   189→function HomeSkeleton() {
+   190→  return (
+   191→    <div role="status" aria-label="در حال بارگذاری" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 26 }}>
+   192→      <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
+   193→        <Skeleton style={{ width: 48, height: 48, borderRadius: "50%" }} />
+   194→        <div style={{ display: "grid", gap: 7, flex: 1 }}>
+   195→          <Skeleton style={{ width: 96, height: 12 }} />
+   196→          <Skeleton style={{ width: 150, height: 16 }} />
+   197→        </div>
+   198→        <Skeleton style={{ width: 44, height: 44, borderRadius: 16 }} />
+   199→      </div>
+   200→      <Skeleton style={{ height: 168, borderRadius: radii.xl }} />
+   201→      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
+   202→        <Skeleton style={{ height: 142, borderRadius: radii.lg }} />
+   203→        <Skeleton style={{ height: 142, borderRadius: radii.lg }} />
+   204→      </div>
+   205→      <div style={{ display: "grid", gap: 12 }}>
+   206→        <Skeleton style={{ width: 130, height: 18 }} />
+   207→        <div style={{ display: "flex", gap: spacing.md, overflow: "hidden" }}>
+   208→          {[0, 1, 2].map((index) => (
+   209→            <Skeleton key={index} style={{ flex: "0 0 232px", height: 176, borderRadius: 24 }} />
+   210→          ))}
+   211→        </div>
+   212→      </div>
+   213→    </div>
+   214→  );
+   215→}
+   216→
+   217→function ProfileNudgeBar({ config }: { config: UniversalAppConfig }) {
+   218→  return (
+   219→    <button
+   220→      type="button"
+   221→      onClick={() => navigateApp("/profile/edit", config)}
+   222→      className="vodda-tappable vodda-enter"
+   223→      style={{
+   224→        width: "100%",
+   225→        display: "flex",
+   226→        alignItems: "center",
+   227→        gap: spacing.sm,
+   228→        padding: "10px 14px",
+   229→        textAlign: "right",
+   230→        border: `1px dashed ${colors.olive100}`,
+   231→        borderRadius: radii.md,
+   232→        background: colors.surface,
+   233→        color: colors.ink,
+   234→        cursor: "pointer",
+   235→        fontFamily: typography.fontFamily,
+   236→      }}
+   237→    >
+   238→      <IconBadge icon="edit" tone="gold" size={34} />
+   239→      <span style={{ flex: 1, minWidth: 0, ...typography.caption, color: colors.inkMuted, fontWeight: 600 }}>
+   240→        پروفایل خود را کامل کنید تا اساتید شما را بهتر بشناسند
+   241→      </span>
+   242→      <Icon name="chevronL" size={16} style={{ color: colors.inkMuted }} />
+   243→    </button>
+   244→  );
+   245→}
+   246→
+   247→function VerseStrip() {
+   248→  const quote = DAILY_QUOTES[dayOfYearIndex() % DAILY_QUOTES.length];
+   249→  const isQuran = quote.source.startsWith("قرآن");
+   250→  return (
+   251→    <div
+   252→      className="vodda-enter"
+   253→      style={{
+   254→        position: "relative",
+   255→        overflow: "hidden",
+   256→        display: "flex",
+   257→        alignItems: "center",
+   258→        gap: spacing.sm,
+   259→        padding: "12px 16px",
+   260→        borderRadius: radii.lg,
+   261→        /* رنگ طلایی کاغذی + خط طلا — لحظهٔ آیه باید از بقیهٔ صفحه متمایز باشد */
+   262→        background: `linear-gradient(150deg, ${colors.goldBackground}, ${colors.surfaceWarm} 78%)`,
+   263→        border: `1px solid ${colors.goldSoft}`,
+   264→        boxShadow: "0 4px 14px rgba(191,149,64,.10)",
+   265→      }}
+   266→    >
+   267→      <CornerOrnament tone="olive" size={92} style={{ insetInlineStart: -26, top: -30, opacity: 0.8 }} />
+   268→      <Icon
+   269→        name="quran"
+   270→        size={18}
+   271→        style={{ color: colors.goldDark, flex: "0 0 auto", position: "relative" }}
+   272→      />
+   273→      <p
+   274→        style={{
+   275→          margin: 0,
+   276→          minWidth: 0,
+   277→          flex: 1,
+   278→          position: "relative",
+   279→          fontSize: 13.5,
+   280→          color: colors.ink,
+   281→          fontWeight: 600,
+   282→          ...(isQuran ? { fontFamily: "VoddaQuran, IRANYekanXFaNum, sans-serif", fontSize: 15, fontWeight: 400, lineHeight: 2.05 } : null),
+   283→        }}
+   284→      >
+   285→        {isQuran ? "﴿" : "«"} {quote.text} {isQuran ? "﴾" : "»"}
+   286→        <span
+   287→          style={{
+   288→            color: colors.goldDark,
+   289→            fontFamily: "IRANYekanXFaNum, sans-serif",
+   290→            fontWeight: 800,
+   291→            fontSize: 11.5,
+   292→            marginInlineStart: 6,
+   293→            whiteSpace: "nowrap",
+   294→          }}
+   295→        >
+   296→          — {quote.source}
+   297→        </span>
+   298→      </p>
+   299→    </div>
+   300→  );
+   301→}
+   302→
+   303→type PastTeacher = { id: number; name: string; avatarUrl: string };
+   304→
+   305→function RebookRail({ teachers, config }: { teachers: PastTeacher[]; config: UniversalAppConfig }) {
+   306→  if (teachers.length === 0) return null;
+   307→  return (
+   308→    <section aria-label="استادهای جلسه‌های قبلی تو" className="vodda-enter" style={{ minWidth: 0 }}>
+   309→      <SectionHeader title="استادهای جلسه‌های قبلی تو" />
+   310→      <div
+   311→        className="vodda-scroll-rail"
+   312→        style={{
+   313→          display: "flex",
+   314→          width: "100%",
+   315→          minWidth: 0,
+   316→          gap: spacing.md,
+   317→          overflowX: "auto",
+   318→          marginInline: -spacing.xl,
+   319→          padding: `${spacing.md}px ${spacing.xl}px ${spacing.sm}px`,
+   320→          scrollSnapType: "x proximity",
+   321→        }}
+   322→      >
+   323→        {teachers.map((teacher) => {
+   324→          const open = () => navigateApp(`/teacher/${teacher.id}`, config);
+   325→          return (
+   326→            <div
+   327→              key={teacher.id}
+   328→              role="button"
+   329→              tabIndex={0}
+   330→              className="vodda-card vodda-card--interactive vodda-tappable"
+   331→              onClick={open}
+   332→              onKeyDown={(event) => {
+   333→                if (event.key !== "Enter" && event.key !== " ") return;
+   334→                event.preventDefault();
+   335→                open();
+   336→              }}
+   337→              style={{
+   338→                flex: "0 0 172px",
+   339→                width: 172,
+   340→                display: "grid",
+   341→                justifyItems: "center",
+   342→                alignContent: "center",
+   343→                gap: 10,
+   344→                padding: 16,
+   345→                textAlign: "center",
+   346→                color: colors.ink,
+   347→                background: colors.surface,
+   348→                border: 0,
+   349→                borderRadius: 24,
+   350→                boxShadow: "0 6px 22px rgba(46,54,34,.07)",
+   351→                cursor: "pointer",
+   352→                fontFamily: typography.fontFamily,
+   353→              }}
+   354→            >
+   355→              <Avatar name={teacher.name} src={teacher.avatarUrl || undefined} size={54} ring tone="gold" />
+   356→              <strong
+   357→                style={{
+   358→                  maxWidth: "100%",
+   359→                  overflow: "hidden",
+   360→                  textOverflow: "ellipsis",
+   361→                  whiteSpace: "nowrap",
+   362→                  fontSize: 13.5,
+   363→                  fontWeight: 800,
+   364→                }}
+   365→              >
+   366→                {teacher.name}
+   367→              </strong>
+   368→              <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 800, color: colors.olive700 }}>
+   369→                رزرو دوباره
+   370→                <Icon name="chevronL" size={13} />
+   371→              </span>
+   372→            </div>
+   373→          );
+   374→        })}
+   375→      </div>
+   376→    </section>
+   377→  );
+   378→}
+   379→
+   380→function TeacherRail({
+   381→  title,
+   382→  teachers,
+   383→  config,
+   384→}: {
+   385→  title: string;
+   386→  teachers: Teacher[];
+   387→  config: UniversalAppConfig;
+   388→}) {
+   389→  if (teachers.length === 0) return null;
+   390→
+   391→  return (
+   392→    <section aria-label={title} className="vodda-enter" style={{ minWidth: 0 }}>
+   393→      <SectionHeader title={title} action="مشاهدهٔ همه" onAction={() => navigateApp("/search", config)} />
+   394→      <div
+   395→        className="vodda-scroll-rail"
+   396→        style={{
+   397→          display: "flex",
+   398→          width: "100%",
+   399→          minWidth: 0,
+   400→          gap: spacing.md,
+   401→          overflowX: "auto",
+   402→          marginInline: -spacing.xl,
+   403→          padding: `${spacing.md}px ${spacing.xl}px ${spacing.sm}px`,
+   404→          scrollSnapType: "x proximity",
+   405→        }}
+   406→      >
+   407→        {teachers.map((teacher) => (
+   408→          <div key={teacher.id} style={{ flex: "0 0 auto", scrollSnapAlign: "start" }}>
+   409→            <TeacherCard teacher={teacher} config={config} />
+   410→          </div>
+   411→        ))}
+   412→      </div>
+   413→    </section>
+   414→  );
+   415→}
+   416→
+   417→/** اساتید منتخب صفحهٔ نخست — ۷ استادِ رندوم از میان برترین‌ها (عملکرد + رتبه + فعالیت). */
+   418→function SpotlightSection({ teachers, config }: { teachers: Teacher[]; config: UniversalAppConfig }) {
+   419→  const [seed, setSeed] = useState(newSpotlightSeed);
+   420→  const spotlight = useMemo(() => pickSpotlight(teachers, seed), [teachers, seed]);
+   421→  if (spotlight.length === 0) return null;
+   422→  return (
+   423→    <section aria-label="اساتید منتخب وُدّا" className="vodda-enter" style={{ minWidth: 0 }}>
+   424→      <SectionHeader
+   425→        title="اساتید منتخب وُدّا"
+   426→        description="هر بار منتخبی متفاوت از توانمندترین استادان — بر پایهٔ عملکرد، رتبه و فعالیت"
+   427→        action="چیدمان تازه"
+   428→        onAction={() => setSeed(newSpotlightSeed())}
+   429→      />
+   430→      <div
+   431→        className="vodda-scroll-rail"
+   432→        style={{
+   433→          display: "flex",
+   434→          width: "100%",
+   435→          minWidth: 0,
+   436→          gap: spacing.md,
+   437→          overflowX: "auto",
+   438→          marginInline: -spacing.xl,
+   439→          padding: `${spacing.md}px ${spacing.xl}px ${spacing.sm}px`,
+   440→          scrollSnapType: "x proximity",
+   441→        }}
+   442→      >
+   443→        {spotlight.map((teacher) => (
+   444→          <div key={teacher.id} style={{ flex: "0 0 auto", scrollSnapAlign: "start" }}>
+   445→            <TeacherCard teacher={teacher} config={config} />
+   446→          </div>
+   447→        ))}
+   448→      </div>
+   449→    </section>
+   450→  );
+   451→}
+   452→
+   453→function FeaturedTeacher({ teacher, config }: { teacher: Teacher; config: UniversalAppConfig }) {
+   454→  const sample = teacher.samples.find((item) => item.url) ?? null;
+   455→  const audioRef = useRef<HTMLAudioElement | null>(null);
+   456→  const [playing, setPlaying] = useState(false);
+   457→
+   458→  useEffect(() => () => {
+   459→    audioRef.current?.pause();
+   460→  }, []);
+   461→
+   462→  const toggleSample = (event: { stopPropagation(): void }) => {
+   463→    event.stopPropagation();
+   464→    if (!sample) return;
+   465→    if (!audioRef.current) {
+   466→      audioRef.current = new Audio(resolveAssetUrl(sample.url) ?? sample.url);
+   467→      audioRef.current.addEventListener("ended", () => setPlaying(false));
+   468→    }
+   469→    if (playing) {
+   470→      audioRef.current.pause();
+   471→      setPlaying(false);
+   472→    } else {
+   473→      void audioRef.current.play().catch(() => setPlaying(false));
+   474→      setPlaying(true);
+   475→    }
+   476→  };
+   477→
+   478→  return (
+   479→    <div
+   480→      onClick={() => navigateApp(`/teacher/${teacher.id}`, config)}
+   481→      className="vodda-enter"
+   482→      style={{
+   483→        width: "100%",
+   484→        position: "relative",
+   485→        overflow: "hidden",
+   486→        display: "flex",
+   487→        alignItems: "center",
+   488→        gap: spacing.lg,
+   489→        padding: spacing.lg,
+   490→        textAlign: "right",
+   491→        color: colors.surface,
+   492→        background: gradients.deep,
+   493→        borderRadius: radii.xl,
+   494→        boxShadow: shadows.md,
+   495→        cursor: "pointer",
+   496→        fontFamily: typography.fontFamily,
+   497→      }}
+   498→    >
+   499→      {/* تذهیب گوشه — هویت قرآنی روی کارت استاد ویژه (فاز ۲) */}
+   500→      <CornerOrnament tone="light" size={118} style={{ insetInlineEnd: -30, top: -34, opacity: 0.9 }} />
+   501→      <span
+   502→        aria-hidden="true"
+   503→        style={{
+   504→          position: "absolute",
+   505→          width: 145,
+   506→          height: 145,
+   507→          insetInlineEnd: -70,
+   508→          top: -82,
+   509→          borderRadius: "50%",
+   510→          background: "rgba(255,255,255,.06)",
+   511→        }}
+   512→      />
+   513→      {/* چهرهٔ استاد به‌جای ایموجی (C3) — با حلقهٔ طلایی و نشان پخش نمونهٔ صوت */}
+   514→      <div style={{ position: "relative", flex: "0 0 auto" }}>
+   515→        <Avatar
+   516→          name={teacher.name}
+   517→          src={teacher.avatarUrl || undefined}
+   518→          size={76}
+   519→          ring={false}
+   520→          style={{
+   521→            border: "2px solid rgba(231,213,168,.85)",
+   522→            boxShadow: "0 6px 18px rgba(0,0,0,.35)",
+   523→            background: colors.olive800,
+   524→          }}
+   525→        />
+   526→        {sample ? (
+   527→          <button
+   528→            type="button"
+   529→            aria-label={playing ? "توقف نمونه‌صوت" : `پخش نمونه‌صوت: ${sample.title}`}
+   530→            onClick={toggleSample}
+   531→            style={{
+   532→              position: "absolute",
+   533→              bottom: -6,
+   534→              insetInlineEnd: -6,
+   535→              width: 32,
+   536→              height: 32,
+   537→              display: "grid",
+   538→              placeItems: "center",
+   539→              borderRadius: "50%",
+   540→              background: gradients.goldRich,
+   541→              border: `2px solid ${colors.surface}`,
+   542→              color: colors.surface,
+   543→              cursor: "pointer",
+   544→              boxShadow: shadows.sm,
+   545→            }}
+   546→          >
+   547→            {playing ? (
+   548→              <span aria-hidden="true" style={{ width: 10, height: 10, background: "currentColor", borderRadius: 2 }} />
+   549→            ) : (
+   550→              <Icon name="play" size={14} fill />
+   551→            )}
+   552→          </button>
+   553→        ) : null}
+   554→      </div>
+   555→      <div style={{ minWidth: 0, flex: 1, position: "relative" }}>
+   556→        <p style={{ ...typography.caption, display: "flex", alignItems: "center", gap: 5, margin: 0, color: colors.goldSoft, fontWeight: 800 }}>
+   557→          <Icon name="sparkle" size={14} stroke={2} />
+   558→          استاد ویژهٔ امروز
+   559→        </p>
+   560→        <h2 style={{ ...typography.title, margin: `${spacing.sm}px 0 0`, color: colors.surface }}>{teacher.name}</h2>
+   561→        <p style={{ ...typography.bodySmall, margin: "3px 0 0", color: "rgba(255,255,255,0.72)" }}>
+   562→          {teacherSubtitle(teacher) || "مشاهده خدمات و زمان‌های قابل رزرو"}
+   563→        </p>
+   564→        <p style={{ ...typography.caption, display: "flex", alignItems: "center", gap: 8, margin: `${spacing.sm}px 0 0`, color: colors.goldSoft, fontWeight: 800 }}>
+   565→          <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>
+   566→            <Icon name="star" size={13} fill />
+   567→            {faNumber(teacher.rating)}
+   568→          </span>
+   569→          {teacher.reviews > 0 ? <span>({faNumber(teacher.reviews, 0)} نظر)</span> : null}
+   570→          <button
+   571→            type="button"
+   572→            onClick={(event) => {
+   573→              event.stopPropagation();
+   574→              navigateApp(`/teacher/${teacher.id}`, config);
+   575→            }}
+   576→            style={{
+   577→              display: "inline-flex",
+   578→              alignItems: "center",
+   579→              gap: 3,
+   580→              marginInlineStart: "auto",
+   581→              border: "1px solid rgba(231,213,168,.55)",
+   582→              borderRadius: 999,
+   583→              padding: "6px 12px",
+   584→              background: "rgba(255,255,255,.08)",
+   585→              color: colors.surface,
+   586→              fontSize: 12,
+   587→              fontWeight: 800,
+   588→              fontFamily: typography.fontFamily,
+   589→              cursor: "pointer",
+   590→              minHeight: 32,
+   591→            }}
+   592→          >
+   593→            مشاهده و رزرو
+   594→            <Icon name="chevronL" size={14} />
+   595→          </button>
+   596→        </p>
+   597→      </div>
+   598→    </div>
+   599→  );
+   600→}
+   601→
+   602→function NotificationsBell({
+   603→  runtime,
+   604→  user,
+   605→}: {
+   606→  runtime: ReturnType<typeof usePlatform>;
+   607→  user: AuthUser | null;
+   608→}) {
+   609→  const [unread, setUnread] = useState(0);
+   610→  const [open, setOpen] = useState(false);
+   611→  const [items, setItems] = useState<AppNotification[] | null>(null);
+   612→  const [loading, setLoading] = useState(false);
+   613→  const [marking, setMarking] = useState(false);
+   614→
+   615→  useEffect(() => {
+   616→    if (!user) {
+   617→      setUnread(0);
+   618→      return;
+   619→    }
+   620→    let active = true;
+   621→    getNotifications(runtime)
+   622→      .then((list) => {
+   623→        if (active) setUnread(list.filter((notification) => !notification.read).length);
+   624→      })
+   625→      .catch(() => {});
+   626→    return () => {
+   627→      active = false;
+   628→    };
+   629→  }, [runtime, user]);
+   630→
+   631→  const openSheet = async () => {
+   632→    setOpen(true);
+   633→    setLoading(true);
+   634→    try {
+   635→      const list = await getNotifications(runtime);
+   636→      setItems(list);
+   637→      setUnread(list.filter((notification) => !notification.read).length);
+   638→    } catch {
+   639→      setItems([]);
+   640→    } finally {
+   641→      setLoading(false);
+   642→    }
+   643→  };
+   644→
+   645→  const markAllRead = async () => {
+   646→    if (!items) return;
+   647→    setMarking(true);
+   648→    for (const notification of items.filter((item) => !item.read)) {
+   649→      try {
+   650→        await markNotificationRead(runtime, notification.id);
+   651→      } catch {
+   652→        // تلاش برای بقیه ادامه پیدا می‌کند
+   653→      }
+   654→    }
+   655→    setItems(items.map((item) => ({ ...item, read: true })));
+   656→    setUnread(0);
+   657→    setMarking(false);
+   658→  };
+   659→
+   660→  if (!user) return null;
+   661→
+   662→  return (
+   663→    <>
+   664→      <button
+   665→        type="button"
+   666→        aria-label="اعلان‌ها"
+   667→        className="vodda-tappable"
+   668→        onClick={openSheet}
+   669→        style={{
+   670→          position: "relative",
+   671→          width: 44,
+   672→          height: 44,
+   673→          display: "grid",
+   674→          placeItems: "center",
+   675→          flex: "0 0 44px",
+   676→          padding: 0,
+   677→          border: `1px solid ${colors.olive100}`,
+   678→          borderRadius: 16,
+   679→          color: colors.olive700,
+   680→          background: colors.olive50,
+   681→          cursor: "pointer",
+   682→        }}
+   683→      >
+   684→        <Icon name="bell" size={20} />
+   685→        {unread > 0 ? (
+   686→          <span
+   687→            style={{
+   688→              position: "absolute",
+   689→              top: -5,
+   690→              insetInlineEnd: -5,
+   691→              minWidth: 18,
+   692→              height: 18,
+   693→              display: "grid",
+   694→              placeItems: "center",
+   695→              padding: "0 4px",
+   696→              borderRadius: 999,
+   697→              border: `2px solid ${colors.surface}`,
+   698→              background: colors.danger,
+   699→              color: colors.surface,
+   700→              fontSize: 11,
+   701→              fontWeight: 800,
+   702→              lineHeight: 1,
+   703→            }}
+   704→          >
+   705→            {unread > 9 ? "۹+" : faNumber(unread, 0)}
+   706→          </span>
+   707→        ) : null}
+   708→      </button>
+   709→      <Sheet open={open} title="اعلان‌ها" onClose={() => setOpen(false)}>
+   710→        <div style={{ display: "grid", gap: spacing.md }}>
+   711→          {loading ? (
+   712→            <LoadingState label="در حال دریافت اعلان‌ها…" style={{ minHeight: 140 }} />
+   713→          ) : items === null || items.length === 0 ? (
+   714→            <div style={{ display: "grid", justifyItems: "center", gap: spacing.sm, paddingBlock: spacing.xl, textAlign: "center" }}>
+   715→              <IconBadge icon="bell" tone="olive" size={52} />
+   716→              <strong style={{ ...typography.body, color: colors.ink }}>اعلانی نداری</strong>
+   717→              <span style={{ ...typography.caption, color: colors.inkMuted }}>
+   718→                وقتی خبر تازه‌ای داشته باشیم اینجا می‌بینی.
+   719→              </span>
+   720→            </div>
+   721→          ) : (
+   722→            <>
+   723→              <div style={{ display: "grid", gap: 8, maxHeight: 320, overflowY: "auto" }}>
+   724→                {items.map((notification) => (
+   725→                  <div
+   726→                    key={notification.id}
+   727→                    style={{
+   728→                      display: "grid",
+   729→                      gap: 3,
+   730→                      padding: "10px 12px",
+   731→                      borderRadius: radii.md,
+   732→                      background: notification.read ? colors.surface : colors.olive50,
+   733→                      border: `1px solid ${notification.read ? colors.sand150 : colors.olive100}`,
+   734→                    }}
+   735→                  >
+   736→                    <span style={{ ...typography.bodySmall, display: "flex", alignItems: "center", gap: 6, color: colors.ink, fontWeight: notification.read ? 700 : 900 }}>
+   737→                      {!notification.read ? (
+   738→                        <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: "50%", background: colors.olive600, flex: "0 0 auto" }} />
+   739→                      ) : null}
+   740→                      {notification.title}
+   741→                    </span>
+   742→                    {notification.body ? (
+   743→                      <span style={{ ...typography.caption, color: colors.inkMuted, lineHeight: 1.7 }}>{notification.body}</span>
+   744→                    ) : null}
+   745→                  </div>
+   746→                ))}
+   747→              </div>
+   748→              {unread > 0 ? (
+   749→                <Button variant="secondary" disabled={marking} onClick={markAllRead} style={{ minHeight: 42 }}>
+   750→                  {marking ? "در حال ثبت…" : "علامت‌گذاری همه به‌عنوان خوانده‌شده"}
+   751→                </Button>
+   752→              ) : null}
+   753→            </>
+   754→          )}
+   755→        </div>
+   756→      </Sheet>
+   757→    </>
+   758→  );
+   759→}
+   760→
+   761→/* ─────────────────────────  صفحه خانه  ───────────────────────── */
+   762→
+   763→type SessionAreaState = "loading" | "ready";
+   764→
+   765→export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
+   766→  const runtime = usePlatform();
+   767→  const { lang } = useAppearance();
+   768→  const [user, setUser] = useState<AuthUser | null>(null);
+   769→  const [teachers, setTeachers] = useState<Teacher[]>([]);
+   770→  const [teachersLoading, setTeachersLoading] = useState(!teachersCacheFresh());
+   771→  const [teachersError, setTeachersError] = useState<string | null>(null);
+   772→  const [reloadKey, setReloadKey] = useState(0);
+   773→  const [roleSheetOpen, setRoleSheetOpen] = useState(false);
+   774→  const [sessionArea, setSessionArea] = useState<SessionAreaState>("loading");
+   775→  const [pastTeachers, setPastTeachers] = useState<PastTeacher[]>([]);
+   776→
+   777→  useEffect(() => {
+   778→    let active = true;
+   779→    runtime.restoreSession()
+   780→      .then((sessionUser) => {
+   781→        if (active) setUser(sessionUser);
+   782→      })
+   783→      .catch(() => {
+   784→        if (active) setUser(null);
+   785→      });
+   786→    return () => {
+   787→      active = false;
+   788→    };
+   789→  }, [runtime]);
+   790→
+   791→  useEffect(() => {
+   792→    let active = true;
+   793→    if (teachersCacheFresh() && teachersCache.data) {
+   794→      setTeachers(teachersCache.data);
+   795→      setTeachersLoading(false);
+   796→    } else {
+   797→      setTeachersLoading(true);
+   798→    }
+   799→    searchTeachers(runtime, { limit: 100 })
+   800→      .then((items) => {
+   801→        if (!active) return;
+   802→        const visible = items.filter((teacher) => !isMaddahiTeacher(teacher));
+   803→        teachersCache.data = visible;
+   804→        teachersCache.at = Date.now();
+   805→        setTeachers(visible);
+   806→        setTeachersError(null);
+   807→      })
+   808→      .catch((error: unknown) => {
+   809→        if (!active || teachersCacheFresh()) return;
+   810→        setTeachers([]);
+   811→        setTeachersError(messageOf(error, "دریافت استادان ناموفق بود."));
+   812→      })
+   813→      .finally(() => {
+   814→        if (active) setTeachersLoading(false);
+   815→      });
+   816→
+   817→    return () => {
+   818→      active = false;
+   819→    };
+   820→  }, [runtime, reloadKey]);
+   821→
+   822→  useEffect(() => {
+   823→    if (!user) {
+   824→      setSessionArea("ready");
+   825→      setPastTeachers([]);
+   826→      return;
+   827→    }
+   828→    let active = true;
+   829→    (async () => {
+   830→      try {
+   831→        const past = await getLearnerSessions(runtime, "past");
+   832→        if (!active) return;
+   833→        const seen = new Set<number>();
+   834→        const unique: PastTeacher[] = [];
+   835→        for (const session of [...past].sort((a, b) => b.scheduledAt.localeCompare(a.scheduledAt))) {
+   836→          if (session.teacherId > 0 && !seen.has(session.teacherId)) {
+   837→            seen.add(session.teacherId);
+   838→            unique.push({ id: session.teacherId, name: session.teacherName, avatarUrl: session.teacherAvatar });
+   839→          }
+   840→        }
+   841→        setPastTeachers(unique.slice(0, 8));
+   842→        setSessionArea("ready");
+   843→      } catch {
+   844→        if (active) setSessionArea("ready");
+   845→      }
+   846→    })();
+   847→    return () => {
+   848→      active = false;
+   849→    };
+   850→  }, [runtime, user]);
+   851→
+   852→  const recommended = useMemo(
+   853→    () => [...teachers].sort((a, b) => performanceScore(b) - performanceScore(a)).slice(0, 12),
+   854→    [teachers],
+   855→  );
+   856→
+   857→  const featured = useMemo(() => {
+   858→    const strong = teachers
+   859→      .filter((teacher) => teacher.verified && teacher.reviews >= 3)
+   860→      .sort((a, b) => b.rating - a.rating)
+   861→      .slice(0, 3);
+   862→    const pool = strong.length > 0 ? strong : recommended.slice(0, 3);
+   863→    if (pool.length === 0) return null;
+   864→    return pool[dayOfYearIndex() % pool.length];
+   865→  }, [teachers, recommended]);
+   866→
+   867→  const firstName = user?.name?.trim().split(/\s+/)[0] || "دوست";
+   868→  const canUseTeacherMode = user?.role === "teacher" || user?.role === "admin";
+   869→  const needsProfileNudge =
+   870→    user !== null && (!user.avatar_url || !user.city?.trim() || !user.bio?.trim());
+   871→  const today = todayLabel();
+   872→
+   873→  if (teachersLoading && teachers.length === 0 && !teachersError) {
+   874→    return <HomeSkeleton />;
+   875→  }
+   876→
+   877→  return (
+   878→    <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", minWidth: 0, gap: 26 }}>
+   879→      <header
+   880→        className="vodda-enter"
+   881→        style={{
+   882→          display: "flex",
+   883→          alignItems: "center",
+   884→          justifyContent: "space-between",
+   885→          gap: spacing.md,
+   886→          paddingBlock: spacing.xs,
+   887→        }}
+   888→      >
+   889→        <button
+   890→          type="button"
+   891→          onClick={() => { if (canUseTeacherMode) setRoleSheetOpen(true); }}
+   892→          className="vodda-tappable"
+   893→          style={{
+   894→            minWidth: 0,
+   895→            display: "flex",
+   896→            alignItems: "center",
+   897→            gap: 11,
+   898→            padding: 0,
+   899→            textAlign: "right",
+   900→            border: 0,
+   901→            color: colors.ink,
+   902→            background: "transparent",
+   903→            fontFamily: typography.fontFamily,
+   904→            cursor: canUseTeacherMode ? "pointer" : "default",
+   905→          }}
+   906→        >
+   907→          <Avatar name={user?.name} src={user?.avatar_url} size={48} ring />
+   908→          <span style={{ minWidth: 0 }}>
+   909→            <span style={{ ...typography.caption, display: "block", color: colors.inkMuted }}>
+   910→              {greetingLabel(lang)}،{today ? ` امروز ${today}` : ""}
+   911→            </span>
+   912→            <strong
+   913→              style={{
+   914→                ...typography.body,
+   915→                display: "block",
+   916→                overflow: "hidden",
+   917→                textOverflow: "ellipsis",
+   918→                whiteSpace: "nowrap",
+   919→                color: colors.ink,
+   920→                fontWeight: 900,
+   921→              }}
+   922→            >
+   923→              {user?.name?.trim() ? `${firstName} جان` : "کاربر عزیز"} 🌿
+   924→            </strong>
+   925→            {canUseTeacherMode ? (
+   926→              <span style={{ display: "block", marginTop: 1, fontSize: 11.5, color: colors.olive700, fontWeight: 600 }}>
+   927→                برای تغییر پنل، به پروفایل بروید
+   928→              </span>
+   929→            ) : null}
+   930→          </span>
+   931→        </button>
+   932→        <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "0 0 auto" }}>
+   933→          <NotificationsBell runtime={runtime} user={user} />
+   934→          <button
+   935→            type="button"
+   936→            aria-label="کیف پول"
+   937→            className="vodda-tappable"
+   938→            onClick={() => navigateApp("/wallet", config)}
+   939→            style={{
+   940→              minWidth: 44,
+   941→              height: 44,
+   942→              display: "grid",
+   943→              placeItems: "center",
+   944→              alignContent: "center",
+   945→              gap: 1,
+   946→              padding: "4px 8px",
+   947→              border: `1px solid ${colors.olive100}`,
+   948→              borderRadius: 16,
+   949→              color: colors.olive700,
+   950→              background: colors.olive50,
+   951→              cursor: "pointer",
+   952→            }}
+   953→          >
+   954→            <Icon name="wallet" size={18} />
+   955→            <span style={{ fontSize: 12, fontWeight: 700, lineHeight: 1, whiteSpace: "nowrap" }}>
+   956→              {user && user.wallet > 0 ? walletShort(user.wallet) : "کیف پول"}
+   957→            </span>
+   958→          </button>
+   959→        </div>
+   960→      </header>
+   961→
+   962→      <VerseStrip />
+   963→
+   964→      {/* دسته‌بندی موضوعات — همیشه بلافاصله پس از کادر آیه نمایش داده می‌شود */}
+   965→      <TopicCategoryGrid config={config} />
+   966→
+   967→      {/* بنر «جلسه دیگری رزرو می‌کنید؟» حذف شد — فقط پنل خوش‌آمد مهمان */}
+   968→      {sessionArea === "ready" && !user ? (
+   969→        <HeroPanel
+   970→          eyebrow="به وُدّا خوش آمدید"
+   971→          title={"استاد قرآن خود را بیابید\nو زمان آزاد ایشان را رزرو کنید"}
+   972→          description="پروفایل استادان تأییدشده و خدمات قابل رزرو را ببینید."
+   973→        >
+   974→          <Button
+   975→            onClick={() => navigateApp("/search", config)}
+   976→            style={{
+   977→              minHeight: 44,
+   978→              color: colors.olive700,
+   979→              background: colors.surface,
+   980→              borderColor: colors.surface,
+   981→              boxShadow: "none",
+   982→            }}
+   983→          >
+   984→            <Icon name="search" size={18} />
+   985→            جستجوی استاد
+   986→          </Button>
+   987→        </HeroPanel>
+   988→      ) : null}
+   989→
+   990→      {needsProfileNudge ? <ProfileNudgeBar config={config} /> : null}
+   991→
+   992→      {/* خدمات برتر و پراستفاده — کارت خدمات اول صفحه، پس از دسته‌بندی موضوعات */}
+   993→      <TopServicesRail config={config} />
+   994→
+   995→      {/* خدمات رایگان اساتید — جلسات صفر تومانی فعال (D-3) */}
+   996→      {user ? <FreeServicesBoard config={config} /> : null}
+   997→
+   998→      {teachersLoading && teachers.length === 0 ? (
+   999→        <HomeSkeleton />
+  1000→      ) : teachersError ? (
+  1001→        <Card elevated style={{ display: "grid", gap: spacing.md, textAlign: "center" }}>
+  1002→          <IconBadge icon="users" tone="olive" size={52} />
+  1003→          <strong style={{ ...typography.title, color: colors.ink }}>دریافت استادان ناموفق بود</strong>
+  1004→          <span style={{ ...typography.caption, color: colors.inkMuted }}>{teachersError}</span>
+  1005→          <Button variant="secondary" onClick={() => setReloadKey((value) => value + 1)}>
+  1006→            تلاش دوباره
+  1007→          </Button>
+  1008→        </Card>
+  1009→      ) : teachers.length === 0 ? (
+  1010→        <Card style={{ paddingBlock: spacing.huge, textAlign: "center" }}>
+  1011→          <IconBadge icon="users" tone="olive" size={58} />
+  1012→          <strong style={{ ...typography.title, display: "block", marginTop: spacing.md }}>هنوز استادی منتشر نشده</strong>
+  1013→          <p style={{ ...typography.caption, margin: `${spacing.sm}px 0 0`, color: colors.inkMuted }}>
+  1014→            پس از تأیید اولین استاد، پروفایل او در این بخش نمایش داده می‌شود.
+  1015→          </p>
+  1016→        </Card>
+  1017→      ) : (
+  1018→        <>
+  1019→          <RebookRail teachers={pastTeachers} config={config} />
+  1020→
+  1021→          {/* اساتید منتخب — هر بار ۷ استادِ رندوم از میان برترین‌ها (عملکرد، رتبه، فعالیت) */}
+  1022→          <SpotlightSection teachers={teachers} config={config} />
+  1023→
+  1024→          {featured ? <FeaturedTeacher teacher={featured} config={config} /> : null}
+  1025→
+  1026→          <OrnamentDivider style={{ margin: `${spacing.xs}px 0 ${spacing.xs}px` }} />
+  1027→        </>
+  1028→      )}
+  1029→
+  1030→      <RoleModeSheet
+  1031→        open={roleSheetOpen}
+  1032→        mode="learner"
+  1033→        config={config}
+  1034→        onClose={() => setRoleSheetOpen(false)}
+  1035→      />
+  1036→    </div>
+  1037→  );
+  1038→}
+  1039→
