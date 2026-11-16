@@ -1,6 +1,7 @@
 import { Card, Icon, colors, spacing, typography } from "../../ui";
 import { useAppearance } from "../../ui/appearance";
 import { formatAppDateTime } from "../../ui/jalali";
+import { translateLoose } from "../../i18n/phrases";
 import type { WalletTransaction } from "./types";
 
 export { toFaDigits } from "../../ui";
@@ -77,7 +78,7 @@ export function WalletTransactionCard({
             fontWeight: 800,
           }}
         >
-          {transaction.title ? L(transaction.title) : L(visual.label)}
+          {transaction.title ? translateLoose(transaction.title, lang) : L(visual.label)}
         </strong>
         <span style={{ ...typography.caption, display: "block", marginTop: 3, color: colors.inkMuted }}>
           {L(visual.label)}
