@@ -1,0 +1,894 @@
+     1→'use client';
+     2→
+     3→import { useCallback, useEffect, useMemo, useState } from 'react';
+     4→import { Avatar } from '@/components/web/ui';
+     5→import { Icon } from '@/components/Icon';
+     6→import {
+     7→  PanelButton,
+     8→  PanelPageHeader,
+     9→  PanelStatus,
+    10→} from '@/components/panel/PanelUI';
+    11→import {
+    12→  DataTable,
+    13→  Drawer,
+    14→  exportCsv,
+    15→  FilterTabs,
+    16→  KeyValueRow,
+    17→  SearchInput,
+    18→  StatCard,
+    19→  TablePagination,
+    20→} from '@/components/admin/AdminUI';
+    21→import { fullUrl, getToken } from '@/lib/auth';
+    22→import { formatFaNumber, toFaDigits } from '@/lib/persian';
+    23→import { confirmDialog } from '@/lib/confirm';
+    24→
+    25→const LIMIT = 30;
+    26→type RoleFilter = '' | 'learner' | 'teacher' | 'admin';
+    27→type ActiveFilter = '' | 'active' | 'inactive';
+    28→type SortKey = 'newest' | 'oldest' | 'wallet-high' | 'wallet-low' | 'name';
+    29→
+    30→type AdminUser = {
+    31→  id: number;
+    32→  name?: string;
+    33→  mobile?: string;
+    34→  role?: RoleFilter;
+    35→  city?: string;
+    36→  bio?: string;
+    37→  wallet?: number;
+    38→  active?: boolean;
+    39→  avatar_url?: string;
+    40→  created_at?: string;
+    41→  updated_at?: string;
+    42→  teacher?: {
+    43→    id?: number;
+    44→    status?: string;
+    45→    verified?: boolean;
+    46→    field?: string;
+    47→    tier?: string;
+    48→    rating?: number;
+    49→    reviews?: number;
+    50→    sessions?: number;
+    51→  } | null;
+    52→};
+    53→
+    54→type DetailTx = { id: number; type: string; title: string; amount: number; created_at: string };
+    55→
+    56→type DetailSession = {
+    57→  id: number;
+    58→  service?: string;
+    59→  scheduled_at: string;
+    60→  duration?: number;
+    61→  price?: number;
+    62→  status: string;
+    63→  learner?: { id?: number; name?: string; avatar_url?: string } | null;
+    64→  teacher?: { id?: number; user?: { name?: string; avatar_url?: string } | null } | null;
+    65→};
+    66→
+    67→type DetailReview = {
+    68→  id: number;
+    69→  rating: number;
+    70→  text?: string;
+    71→  created_at: string;
+    72→  learner?: { id?: number; name?: string; avatar_url?: string } | null;
+    73→};
+    74→
+    75→type AdminUserDetailData = {
+    76→  user: AdminUser;
+    77→  stats: { as_learner: number; learner_done: number; as_teacher: number; teacher_done: number; upcoming: number };
+    78→  sums: { charge: number; session: number; earning: number; withdrawal: number; commission: number; adjust: number };
+    79→  transactions: DetailTx[];
+    80→  sessions: DetailSession[];
+    81→  reviews: DetailReview[];
+    82→  reviews_count: number;
+    83→};
+    84→
+    85→const ROLES: Array<{ value: RoleFilter; label: string }> = [
+    86→  { value: '', label: 'همه' },
+    87→  { value: 'learner', label: 'قرآن‌آموز' },
+    88→  { value: 'teacher', label: 'استاد' },
+    89→  { value: 'admin', label: 'ادمین' },
+    90→];
+    91→
+    92→const ACTIVE_TABS: Array<{ value: ActiveFilter; label: string }> = [
+    93→  { value: '', label: 'همه' },
+    94→  { value: 'active', label: 'فعال' },
+    95→  { value: 'inactive', label: 'غیرفعال' },
+    96→];
+    97→
+    98→const SORTS: Array<{ value: SortKey; label: string }> = [
+    99→  { value: 'newest', label: 'جدیدترین عضویت' },
+   100→  { value: 'oldest', label: 'قدیمی‌ترین عضویت' },
+   101→  { value: 'wallet-high', label: 'بیشترین موجودی' },
+   102→  { value: 'wallet-low', label: 'کم‌ترین موجودی' },
+   103→  { value: 'name', label: 'ترتیب نام' },
+   104→];
+   105→
+   106→const ROLE_BADGE: Record<string, { label: string; tone: string }> = {
+   107→  learner: { label: 'قرآن‌آموز', tone: 'info' },
+   108→  teacher: { label: 'استاد', tone: 'gold' },
+   109→  admin: { label: 'ادمین', tone: 'olive' },
+   110→};
+   111→
+   112→const TX_META: Record<string, { label: string; icon: 'coins' | 'video' | 'trending' | 'download' | 'x' | 'info'; credit: boolean }> = {
+   113→  charge: { label: 'شارژ کیف پول', icon: 'coins', credit: true },
+   114→  session: { label: 'پرداخت جلسه', icon: 'video', credit: false },
+   115→  earning: { label: 'درآمد جلسه', icon: 'trending', credit: true },
+   116→  withdrawal: { label: 'برداشت', icon: 'download', credit: false },
+   117→  commission: { label: 'کارمزد سامانه', icon: 'x', credit: false },
+   118→  adjust: { label: 'اصلاحیه حساب', icon: 'info', credit: true },
+   119→};
+   120→
+   121→const SESSION_BADGE: Record<string, { label: string; status: 'active' | 'pending' | 'inactive' | 'canceled' }> = {
+   122→  pending: { label: 'در انتظار تأیید', status: 'pending' },
+   123→  confirmed: { label: 'تأییدشده', status: 'active' },
+   124→  done: { label: 'برگزارشده', status: 'inactive' },
+   125→  canceled: { label: 'لغوشده', status: 'canceled' },
+   126→};
+   127→
+   128→function roleLabel(role?: string) {
+   129→  return ROLE_BADGE[role ?? 'learner']?.label ?? 'قرآن‌آموز';
+   130→}
+   131→
+   132→function faDate(iso?: string): string {
+   133→  if (!iso) return '—';
+   134→  try {
+   135→    return new Intl.DateTimeFormat('fa-IR', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(iso));
+   136→  } catch {
+   137→    return '—';
+   138→  }
+   139→}
+   140→
+   141→function faDateTime(iso?: string): string {
+   142→  if (!iso) return '—';
+   143→  try {
+   144→    const day = new Intl.DateTimeFormat('fa-IR', { day: 'numeric', month: 'short' }).format(new Date(iso));
+   145→    const time = new Intl.DateTimeFormat('fa-IR', { hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
+   146→    return `${day} · ${time}`;
+   147→  } catch {
+   148→    return '—';
+   149→  }
+   150→}
+   151→
+   152→function teacherStatusLabel(status?: string): string {
+   153→  if (status === 'approved') return 'تأییدشده';
+   154→  if (status === 'pending') return 'در انتظار بررسی';
+   155→  if (status === 'rejected') return 'ردشده';
+   156→  return '—';
+   157→}
+   158→
+   159→type DrawerTab = 'sessions' | 'transactions' | 'reviews';
+   160→
+   161→function DrawerTabs({ value, onChange, counts }: { value: DrawerTab; onChange: (value: DrawerTab) => void; counts: Record<DrawerTab, number> }) {
+   162→  const items: Array<{ value: DrawerTab; label: string }> = [
+   163→    { value: 'sessions', label: 'جلسات' },
+   164→    { value: 'transactions', label: 'تراکنش‌ها' },
+   165→    { value: 'reviews', label: 'نظرها' },
+   166→  ];
+   167→  return (
+   168→    <div className="adm-drawer-tabs" role="tablist" aria-label="سابقه کاربر">
+   169→      {items.map((item) => (
+   170→        <button
+   171→          key={item.value}
+   172→          type="button"
+   173→          role="tab"
+   174→          aria-selected={value === item.value}
+   175→          data-active={value === item.value ? 'true' : undefined}
+   176→          onClick={() => onChange(item.value)}
+   177→        >
+   178→          {item.label}
+   179→          <span>{toFaDigits(counts[item.value])}</span>
+   180→        </button>
+   181→      ))}
+   182→    </div>
+   183→  );
+   184→}
+   185→
+   186→function MiniStat({ icon, label, value, tone = 'olive' }: { icon: React.ComponentProps<typeof Icon>['name']; label: string; value: string | number; tone?: string }) {
+   187→  return (
+   188→    <div className="adm-mini-stat" data-tone={tone}>
+   189→      <span className="adm-mini-stat-icon"><Icon name={icon} size={15} /></span>
+   190→      <div>
+   191→        <strong>{typeof value === 'number' ? toFaDigits(value) : value}</strong>
+   192→        <small>{label}</small>
+   193→      </div>
+   194→    </div>
+   195→  );
+   196→}
+   197→
+   198→export default function AdminUsers() {
+   199→  const [users, setUsers] = useState<AdminUser[]>([]);
+   200→  const [role, setRole] = useState<RoleFilter>('');
+   201→  const [activeFilter, setActiveFilter] = useState<ActiveFilter>('');
+   202→  const [sort, setSort] = useState<SortKey>('newest');
+   203→  const [query, setQuery] = useState('');
+   204→  const [total, setTotal] = useState(0);
+   205→  const [page, setPage] = useState(0);
+   206→  const [loading, setLoading] = useState(true);
+   207→  const [error, setError] = useState('');
+   208→  const [busyId, setBusyId] = useState<number | null>(null);
+   209→  const [selected, setSelected] = useState<AdminUser | null>(null);
+   210→  const [detail, setDetail] = useState<AdminUserDetailData | null>(null);
+   211→  const [detailLoading, setDetailLoading] = useState(false);
+   212→  const [detailTab, setDetailTab] = useState<DrawerTab>('sessions');
+   213→  const [adjustAmount, setAdjustAmount] = useState('');
+   214→  const [adjustReason, setAdjustReason] = useState('');
+   215→  const [adjustBusy, setAdjustBusy] = useState(false);
+   216→  const [notifyTitle, setNotifyTitle] = useState('');
+   217→  const [notifyBody, setNotifyBody] = useState('');
+   218→  const [notifyBusy, setNotifyBusy] = useState(false);
+   219→  const [notifyDone, setNotifyDone] = useState(false);
+   220→  const token = getToken();
+   221→
+   222→  const fetchUsers = useCallback(async () => {
+   223→    if (!token) return;
+   224→    setLoading(true);
+   225→    setError('');
+   226→    try {
+   227→      const sp = new URLSearchParams({
+   228→        limit: String(LIMIT),
+   229→        offset: String(page * LIMIT),
+   230→      });
+   231→      if (role) sp.set('role', role);
+   232→      if (activeFilter) sp.set('active', activeFilter === 'active' ? 'true' : 'false');
+   233→      if (query.trim()) sp.set('q', query.trim());
+   234→      const response = await fetch(`/api/backend/admin/users?${sp.toString()}`, { cache: 'no-store' });
+   235→      const body = await response.json().catch(() => ({}));
+   236→      if (!response.ok) throw new Error(body.error || 'فهرست کاربران دریافت نشد.');
+   237→      setUsers(body.data || []);
+   238→      setTotal(Number(body.total || 0));
+   239→    } catch (cause) {
+   240→      setError(cause instanceof Error ? cause.message : 'فهرست کاربران دریافت نشد.');
+   241→      setUsers([]);
+   242→      setTotal(0);
+   243→    } finally {
+   244→      setLoading(false);
+   245→    }
+   246→  }, [token, page, role, activeFilter, query]);
+   247→
+   248→  useEffect(() => { void fetchUsers(); }, [fetchUsers]);
+   249→
+   250→  const sortedUsers = useMemo(() => {
+   251→    const rows = [...users];
+   252→    switch (sort) {
+   253→      case 'oldest':
+   254→        return rows.sort((a, b) => new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime());
+   255→      case 'wallet-high':
+   256→        return rows.sort((a, b) => Number(b.wallet || 0) - Number(a.wallet || 0));
+   257→      case 'wallet-low':
+   258→        return rows.sort((a, b) => Number(a.wallet || 0) - Number(b.wallet || 0));
+   259→      case 'name':
+   260→        return rows.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'fa'));
+   261→      default:
+   262→        return rows;
+   263→    }
+   264→  }, [users, sort]);
+   265→
+   266→  async function loadDetail(user: AdminUser) {
+   267→    if (!token) return;
+   268→    setDetail(null);
+   269→    setDetailLoading(true);
+   270→    setDetailTab('sessions');
+   271→    setNotifyTitle('');
+   272→    setNotifyBody('');
+   273→    setNotifyDone(false);
+   274→    setAdjustAmount('');
+   275→    setAdjustReason('');
+   276→    try {
+   277→      const response = await fetch(`/api/backend/admin/users/${user.id}`, { cache: 'no-store' });
+   278→      const body = await response.json().catch(() => ({}));
+   279→      if (!response.ok) throw new Error(body.error || 'جزئیات کاربر دریافت نشد.');
+   280→      setDetail(body.data as AdminUserDetailData);
+   281→    } catch (cause) {
+   282→      setError(cause instanceof Error ? cause.message : 'جزئیات کاربر دریافت نشد.');
+   283→    } finally {
+   284→      setDetailLoading(false);
+   285→    }
+   286→  }
+   287→
+   288→  function openUser(user: AdminUser) {
+   289→    setSelected(user);
+   290→    void loadDetail(user);
+   291→  }
+   292→
+   293→  function patchSelected(patch: Partial<AdminUser>) {
+   294→    setSelected((current) => (current ? { ...current, ...patch } : current));
+   295→    if (selected) {
+   296→      const id = selected.id;
+   297→      setUsers((previous) => previous.map((item) => (item.id === id ? { ...item, ...patch } : item)));
+   298→    }
+   299→  }
+   300→
+   301→  async function toggleActive(user: AdminUser) {
+   302→    if (!token || busyId !== null) return;
+   303→    const next = !user.active;
+   304→    const verb = next ? 'فعال' : 'غیرفعال';
+   305→    if (!(await confirmDialog(`حساب «${user.name || (user.mobile ? toFaDigits(user.mobile) : 'کاربر')}» ${verb} شود؟`))) return;
+   306→
+   307→    setBusyId(user.id);
+   308→    setError('');
+   309→    try {
+   310→      const response = await fetch(`/api/backend/admin/users/${user.id}/active`, {
+   311→        method: 'PATCH',
+   312→        headers: { 'Content-Type': 'application/json' },
+   313→        body: JSON.stringify({ active: next }),
+   314→      });
+   315→      const body = await response.json().catch(() => ({}));
+   316→      if (!response.ok) throw new Error(body.error || 'تغییر وضعیت حساب انجام نشد.');
+   317→      patchSelected({ active: next });
+   318→    } catch (cause) {
+   319→      setError(cause instanceof Error ? cause.message : 'تغییر وضعیت حساب انجام نشد.');
+   320→    } finally {
+   321→      setBusyId(null);
+   322→    }
+   323→  }
+   324→
+   325→  async function changeRole(user: AdminUser, role: RoleFilter) {
+   326→    if (!token || busyId !== null || role === user.role) return;
+   327→    const label = ROLES.find((item) => item.value === role)?.label || role;
+   328→    if (!(await confirmDialog(`نقش «${user.name || 'کاربر'}» به ${label} تغییر کند؟`))) return;
+   329→
+   330→    setBusyId(user.id);
+   331→    setError('');
+   332→    try {
+   333→      const response = await fetch(`/api/backend/admin/users/${user.id}/role`, {
+   334→        method: 'PATCH',
+   335→        headers: { 'Content-Type': 'application/json' },
+   336→        body: JSON.stringify({ role }),
+   337→      });
+   338→      const body = await response.json().catch(() => ({}));
+   339→      if (!response.ok) throw new Error(body.error || 'تغییر نقش انجام نشد.');
+   340→      patchSelected({ role });
+   341→      if (selected?.id === user.id) void loadDetail(user);
+   342→    } catch (cause) {
+   343→      setError(cause instanceof Error ? cause.message : 'تغییر نقش انجام نشد.');
+   344→    } finally {
+   345→      setBusyId(null);
+   346→    }
+   347→  }
+   348→
+   349→  async function submitAdjust() {
+   350→    if (!token || !selected || adjustBusy) return;
+   351→    const parsed = Number(adjustAmount.replace(/[^0-9\-]/g, ''));
+   352→    if (!Number.isFinite(parsed) || parsed === 0) {
+   353→      setError('مبلغ تعدیل را وارد کنید؛ عدد مثبت افزودن و عدد منفی کسر است.');
+   354→      return;
+   355→    }
+   356→    if (!(await confirmDialog(`${parsed > 0 ? 'افزودن' : 'کسر'} ${formatFaNumber(Math.abs(parsed))} تومان ${parsed > 0 ? 'به' : 'از'} کیف پول «${selected.name || 'کاربر'}» ثبت شود؟`))) return;
+   357→
+   358→    setAdjustBusy(true);
+   359→    setError('');
+   360→    try {
+   361→      const response = await fetch(`/api/backend/admin/users/${selected.id}/wallet-adjust`, {
+   362→        method: 'POST',
+   363→        headers: { 'Content-Type': 'application/json' },
+   364→        body: JSON.stringify({ amount: parsed, reason: adjustReason.trim() }),
+   365→      });
+   366→      const body = await response.json().catch(() => ({}));
+   367→      if (!response.ok) throw new Error(body.error || 'ثبت تعدیل کیف پول انجام نشد.');
+   368→      const nextWallet = Number(selected.wallet || 0) + parsed;
+   369→      patchSelected({ wallet: nextWallet });
+   370→      setAdjustAmount('');
+   371→      setAdjustReason('');
+   372→      void loadDetail(selected);
+   373→    } catch (cause) {
+   374→      setError(cause instanceof Error ? cause.message : 'ثبت تعدیل کیف پول انجام نشد.');
+   375→    } finally {
+   376→      setAdjustBusy(false);
+   377→    }
+   378→  }
+   379→
+   380→  async function submitNotify() {
+   381→    if (!token || !selected || notifyBusy) return;
+   382→    if (!notifyTitle.trim() || !notifyBody.trim()) {
+   383→      setError('عنوان و متن اعلان را وارد کنید.');
+   384→      return;
+   385→    }
+   386→    setNotifyBusy(true);
+   387→    setError('');
+   388→    try {
+   389→      const response = await fetch(`/api/backend/admin/users/${selected.id}/notify`, {
+   390→        method: 'POST',
+   391→        headers: { 'Content-Type': 'application/json' },
+   392→        body: JSON.stringify({ title: notifyTitle.trim(), body: notifyBody.trim() }),
+   393→      });
+   394→      const body = await response.json().catch(() => ({}));
+   395→      if (!response.ok) throw new Error(body.error || 'ارسال اعلان انجام نشد.');
+   396→      setNotifyTitle('');
+   397→      setNotifyBody('');
+   398→      setNotifyDone(true);
+   399→    } catch (cause) {
+   400→      setError(cause instanceof Error ? cause.message : 'ارسال اعلان انجام نشد.');
+   401→    } finally {
+   402→      setNotifyBusy(false);
+   403→    }
+   404→  }
+   405→
+   406→  const detailUser = detail?.user ?? selected;
+   407→
+   408→  return (
+   409→    <main className="ops-page">
+   410→      <PanelPageHeader
+   411→        eyebrow="حساب‌ها و دسترسی"
+   412→        title="مدیریت کاربران"
+   413→        description="جست‌وجو، فیلتر، جزئیات کامل هر حساب، تعدیل کیف پول، ارسال اعلان و کنترل دسترسی — همه در یک نما."
+   414→        actions={
+   415→          <>
+   416→            <PanelButton
+   417→              icon="download"
+   418→              onClick={() =>
+   419→                exportCsv(
+   420→                  'vodda-users',
+   421→                  ['شناسه', 'نام', 'موبایل', 'نقش', 'کیف پول', 'وضعیت', 'تاریخ عضویت'],
+   422→                  sortedUsers.map((user) => [user.id, user.name || '', user.mobile || '', roleLabel(user.role), Number(user.wallet || 0), user.active ? 'فعال' : 'غیرفعال', faDate(user.created_at)]),
+   423→                )
+   424→              }
+   425→            >
+   426→              خروجی CSV
+   427→            </PanelButton>
+   428→            <PanelButton icon="refresh" onClick={() => void fetchUsers()}>به‌روزرسانی</PanelButton>
+   429→          </>
+   430→        }
+   431→      />
+   432→
+   433→      <div className="adm-stat-grid" style={{ marginBottom: 16 }}>
+   434→        <StatCard icon="users" tone="olive" label="حساب‌های این نما" value={loading ? '—' : toFaDigits(total)} hint={role ? roleLabel(role) : 'همه نقش‌ها'} />
+   435→        <StatCard
+   436→          icon="checkCircle"
+   437→          tone="olive"
+   438→          label="فعال"
+   439→          value={loading ? '—' : toFaDigits(users.filter((user) => user.active).length)}
+   440→          hint="در همین صفحه"
+   441→        />
+   442→        <StatCard
+   443→          icon="x"
+   444→          tone="clay"
+   445→          label="غیرفعال"
+   446→          value={loading ? '—' : toFaDigits(users.filter((user) => !user.active).length)}
+   447→          hint="در همین صفحه"
+   448→        />
+   449→        <StatCard
+   450→          icon="wallet"
+   451→          tone="gold"
+   452→          label="مجموع کیف پول صفحه"
+   453→          value={loading ? '—' : `${formatFaNumber(users.reduce((sum, user) => sum + Number(user.wallet || 0), 0))} ت`}
+   454→          hint="بر اساس داده همین صفحه"
+   455→        />
+   456→      </div>
+   457→
+   458→      <div className="adm-toolbar">
+   459→        <FilterTabs
+   460→          ariaLabel="نقش کاربران"
+   461→          items={ROLES}
+   462→          value={role}
+   463→          onChange={(value) => { setRole(value); setPage(0); }}
+   464→        />
+   465→        <FilterTabs
+   466→          ariaLabel="وضعیت حساب"
+   467→          items={ACTIVE_TABS}
+   468→          value={activeFilter}
+   469→          onChange={(value) => { setActiveFilter(value); setPage(0); }}
+   470→        />
+   471→        <SearchInput value={query} onChange={(value) => { setQuery(value); setPage(0); }} placeholder="جست‌وجوی نام یا شماره موبایل…" />
+   472→        <label className="adm-select">
+   473→          <span>ترتیب:</span>
+   474→          <select value={sort} onChange={(event) => setSort(event.target.value as SortKey)} aria-label="ترتیب نمایش">
+   475→            {SORTS.map((item) => (
+   476→              <option key={item.value} value={item.value}>{item.label}</option>
+   477→            ))}
+   478→          </select>
+   479→        </label>
+   480→      </div>
+   481→
+   482→      {error && <div className="ops-error" role="alert"><span>{error}</span><PanelButton onClick={() => void fetchUsers()}>تلاش دوباره</PanelButton></div>}
+   483→
+   484→      {/* Desktop table */}
+   485→      <div className="adm-users-table">
+   486→        <DataTable
+   487→          columns={[
+   488→            {
+   489→              key: 'user',
+   490→              header: 'کاربر',
+   491→              render: (user) => (
+   492→                <div className="adm-cell-main">
+   493→                  <Avatar size={38} imageUrl={fullUrl(user.avatar_url)} />
+   494→                  <div style={{ minWidth: 0 }}>
+   495→                    <strong>{user.name || 'کاربر بدون نام'}</strong>
+   496→                    <small dir="ltr">{toFaDigits(user.mobile || '—')}</small>
+   497→                  </div>
+   498→                </div>
+   499→              ),
+   500→            },
+   501→            {
+   502→              key: 'role',
+   503→              header: 'نقش',
+   504→              width: 110,
+   505→              render: (user) => (
+   506→                <span className="adm-badge" data-tone={ROLE_BADGE[user.role ?? 'learner']?.tone}>{roleLabel(user.role)}</span>
+   507→              ),
+   508→            },
+   509→            {
+   510→              key: 'teacher',
+   511→              header: 'استادی',
+   512→              width: 120,
+   513→              render: (user) => (
+   514→                user.teacher?.id
+   515→                  ? <span className="adm-badge" data-tone={user.teacher.status === 'approved' ? 'olive' : user.teacher.status === 'pending' ? 'gold' : 'rose'}>{teacherStatusLabel(user.teacher.status)}</span>
+   516→                  : <span style={{ color: 'var(--ink-4)', fontSize: 11 }}>—</span>
+   517→              ),
+   518→            },
+   519→            {
+   520→              key: 'wallet',
+   521→              header: 'کیف پول',
+   522→              width: 120,
+   523→              render: (user) => <strong style={{ fontSize: 12 }}>{formatFaNumber(Number(user.wallet || 0))}</strong>,
+   524→            },
+   525→            {
+   526→              key: 'created',
+   527→              header: 'عضویت',
+   528→              width: 110,
+   529→              render: (user) => <span style={{ color: 'var(--ink-3)', fontSize: 10.5 }}>{faDate(user.created_at)}</span>,
+   530→            },
+   531→            {
+   532→              key: 'status',
+   533→              header: 'وضعیت',
+   534→              width: 100,
+   535→              render: (user) => <PanelStatus status={user.active ? 'active' : 'inactive'}>{user.active ? 'فعال' : 'غیرفعال'}</PanelStatus>,
+   536→            },
+   537→            {
+   538→              key: 'actions',
+   539→              header: '',
+   540→              width: 150,
+   541→              align: 'end',
+   542→              render: (user) => {
+   543→                const busy = busyId === user.id;
+   544→                return (
+   545→                  <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+   546→                    <PanelButton icon="edit" onClick={() => openUser(user)}>جزئیات</PanelButton>
+   547→                    <PanelButton
+   548→                      tone={user.active ? 'danger' : 'success'}
+   549→                      disabled={busy}
+   550→                      onClick={() => void toggleActive(user)}
+   551→                    >
+   552→                      {busy ? '…' : user.active ? 'غیرفعال' : 'فعال'}
+   553→                    </PanelButton>
+   554→                  </div>
+   555→                );
+   556→              },
+   557→            },
+   558→          ]}
+   559→          rows={sortedUsers}
+   560→          loading={loading}
+   561→          emptyIcon="users"
+   562→          emptyTitle="کاربری در این نما وجود ندارد"
+   563→          emptyDescription="با تغییر فیلتر نقش یا عبارت جست‌وجو دوباره تلاش کنید."
+   564→          onRowClick={(user) => openUser(user)}
+   565→        />
+   566→      </div>
+   567→
+   568→      {/* Mobile cards */}
+   569→      <div className="adm-users-cards" aria-hidden={false}>
+   570→        {loading &&
+   571→          Array.from({ length: 4 }).map((_, index) => (
+   572→            <div key={`sk-${index}`} className="adm-skeleton" style={{ height: 92, borderRadius: 16 }} />
+   573→          ))}
+   574→        {!loading && sortedUsers.length === 0 && (
+   575→          <div className="ops-section-card" style={{ padding: 24, textAlign: 'center', color: 'var(--ink-3)' }}>
+   576→            کاربری در این نما وجود ندارد.
+   577→          </div>
+   578→        )}
+   579→        {!loading && sortedUsers.map((user) => (
+   580→          <article key={user.id} className="adm-user-card" onClick={() => openUser(user)}>
+   581→            <div className="adm-user-card-head">
+   582→              <Avatar size={44} imageUrl={fullUrl(user.avatar_url)} />
+   583→              <div style={{ flex: 1, minWidth: 0 }}>
+   584→                <strong>{user.name || 'کاربر بدون نام'}</strong>
+   585→                <small dir="ltr">{toFaDigits(user.mobile || '—')}</small>
+   586→              </div>
+   587→              <PanelStatus status={user.active ? 'active' : 'inactive'}>{user.active ? 'فعال' : 'غیرفعال'}</PanelStatus>
+   588→            </div>
+   589→            <div className="adm-user-card-badges">
+   590→              <span className="adm-badge" data-tone={ROLE_BADGE[user.role ?? 'learner']?.tone}>{roleLabel(user.role)}</span>
+   591→              {user.teacher?.id && (
+   592→                <span className="adm-badge" data-tone={user.teacher.status === 'approved' ? 'olive' : user.teacher.status === 'pending' ? 'gold' : 'rose'}>
+   593→                  {teacherStatusLabel(user.teacher.status)}
+   594→                </span>
+   595→              )}
+   596→            </div>
+   597→            <div className="adm-user-card-foot">
+   598→              <span><Icon name="wallet" size={13} /> {formatFaNumber(Number(user.wallet || 0))} تومان</span>
+   599→              <span><Icon name="calendar" size={13} /> {faDate(user.created_at)}</span>
+   600→            </div>
+   601→            <div className="adm-user-card-actions" onClick={(event) => event.stopPropagation()}>
+   602→              <PanelButton icon="edit" onClick={() => openUser(user)}>جزئیات</PanelButton>
+   603→              <PanelButton
+   604→                tone={user.active ? 'danger' : 'success'}
+   605→                disabled={busyId === user.id}
+   606→                onClick={() => void toggleActive(user)}
+   607→              >
+   608→                {busyId === user.id ? '…' : user.active ? 'غیرفعال' : 'فعال'}
+   609→              </PanelButton>
+   610→            </div>
+   611→          </article>
+   612→        ))}
+   613→      </div>
+   614→
+   615→      <TablePagination page={page} pageSize={LIMIT} total={total} onPage={setPage} />
+   616→
+   617→      <Drawer
+   618→        open={selected !== null}
+   619→        onClose={() => { setSelected(null); setDetail(null); }}
+   620→        title={selected?.name || 'کاربر بدون نام'}
+   621→      >
+   622→        {selected && (
+   623→          <>
+   624→            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '6px 2px 14px' }}>
+   625→              <Avatar size={56} imageUrl={fullUrl(selected.avatar_url)} />
+   626→              <div style={{ minWidth: 0 }}>
+   627→                <strong style={{ display: 'block', fontSize: 14 }}>{selected.name || 'کاربر بدون نام'}</strong>
+   628→                <div style={{ display: 'flex', gap: 5, marginTop: 5, flexWrap: 'wrap' }}>
+   629→                  <span className="adm-badge" data-tone={ROLE_BADGE[selected.role ?? 'learner']?.tone}>{roleLabel(selected.role)}</span>
+   630→                  <PanelStatus status={selected.active ? 'active' : 'inactive'}>{selected.active ? 'فعال' : 'غیرفعال'}</PanelStatus>
+   631→                  {selected.teacher?.id && (
+   632→                    <span className="adm-badge" data-tone={selected.teacher.status === 'approved' ? 'olive' : 'gold'}>
+   633→                      {teacherStatusLabel(selected.teacher.status)}
+   634→                    </span>
+   635→                  )}
+   636→                </div>
+   637→              </div>
+   638→            </div>
+   639→
+   640→            {detailLoading && (
+   641→              <div style={{ display: 'grid', gap: 10 }}>
+   642→                <div className="adm-skeleton" style={{ height: 74, borderRadius: 14 }} />
+   643→                <div className="adm-skeleton" style={{ height: 120, borderRadius: 14 }} />
+   644→              </div>
+   645→            )}
+   646→
+   647→            {!detailLoading && detail && detailUser && (
+   648→              <>
+   649→                <div className="adm-mini-stat-grid">
+   650→                  <MiniStat icon="video" label="جلسات خریداری‌شده" value={detail.stats.as_learner} />
+   651→                  <MiniStat icon="checkCircle" label="برگزارشده (دانش‌آموز)" value={detail.stats.learner_done} tone="olive" />
+   652→                  {Number(detail.stats.as_teacher) > 0 && (
+   653→                    <>
+   654→                      <MiniStat icon="award" label="جلسات تدریس‌شده" value={detail.stats.as_teacher} tone="gold" />
+   655→                      <MiniStat icon="checkCircle" label="برگزارشده (استاد)" value={detail.stats.teacher_done} tone="gold" />
+   656→                    </>
+   657→                  )}
+   658→                  <MiniStat icon="clock" label="در پیش‌رو" value={detail.stats.upcoming} tone="info" />
+   659→                  <MiniStat icon="star" label="نظرها" value={detail.reviews_count} tone="gold" />
+   660→                </div>
+   661→
+   662→                <section className="adm-detail-card">
+   663→                  <strong className="adm-detail-card-title"><Icon name="wallet" size={14} /> مالی حساب</strong>
+   664→                  <div className="adm-sums-grid">
+   665→                    <span>شارژ<strong>{formatFaNumber(Number(detail.sums.charge || 0))}</strong></span>
+   666→                    <span>هزینه جلسات<strong>{formatFaNumber(Math.abs(Number(detail.sums.session || 0)))}</strong></span>
+   667→                    <span>درآمد جلسات<strong>{formatFaNumber(Number(detail.sums.earning || 0))}</strong></span>
+   668→                    <span>برداشت<strong>{formatFaNumber(Math.abs(Number(detail.sums.withdrawal || 0)))}</strong></span>
+   669→                    <span>کارمزد<strong>{formatFaNumber(Math.abs(Number(detail.sums.commission || 0)))}</strong></span>
+   670→                    <span>موجودی فعلی<strong className="adm-sums-total">{formatFaNumber(Number(detailUser.wallet || 0))}</strong></span>
+   671→                  </div>
+   672→                </section>
+   673→
+   674→                <DrawerTabs
+   675→                  value={detailTab}
+   676→                  onChange={setDetailTab}
+   677→                  counts={{
+   678→                    sessions: detail.sessions.length,
+   679→                    transactions: detail.transactions.length,
+   680→                    reviews: detail.reviews.length,
+   681→                  }}
+   682→                />
+   683→
+   684→                <div className="adm-detail-list">
+   685→                  {detailTab === 'sessions' && (
+   686→                    detail.sessions.length === 0
+   687→                      ? <p className="adm-detail-empty">جلسه‌ای ثبت نشده است.</p>
+   688→                      : detail.sessions.map((session) => {
+   689→                        const counterpart = selected.role === 'teacher'
+   690→                          ? session.learner?.name
+   691→                          : session.teacher?.user?.name;
+   692→                        const badge = SESSION_BADGE[session.status] ?? SESSION_BADGE.pending;
+   693→                        return (
+   694→                          <div key={session.id} className="adm-detail-row">
+   695→                            <div style={{ minWidth: 0, flex: 1 }}>
+   696→                              <strong>{session.service || 'جلسه'}</strong>
+   697→                              <small>{counterpart ? `با ${counterpart} · ` : ''}{faDateTime(session.scheduled_at)}</small>
+   698→                            </div>
+   699→                            <div style={{ textAlign: 'end' }}>
+   700→                              <PanelStatus status={badge.status}>{badge.label}</PanelStatus>
+   701→                              {Number(session.price || 0) > 0 && (
+   702→                                <small style={{ display: 'block', marginTop: 4, color: 'var(--ink-3)' }}>{formatFaNumber(Number(session.price))} تومان</small>
+   703→                              )}
+   704→                            </div>
+   705→                          </div>
+   706→                        );
+   707→                      })
+   708→                  )}
+   709→
+   710→                  {detailTab === 'transactions' && (
+   711→                    detail.transactions.length === 0
+   712→                      ? <p className="adm-detail-empty">تراکنشی ثبت نشده است.</p>
+   713→                      : detail.transactions.map((tx) => {
+   714→                        const meta = TX_META[tx.type] ?? TX_META.adjust;
+   715→                        const amount = Number(tx.amount) || 0;
+   716→                        const credit = amount >= 0;
+   717→                        return (
+   718→                          <div key={tx.id} className="adm-detail-row">
+   719→                            <span className="adm-mini-stat-icon" style={{ '--tone-ink': credit ? 'var(--olive-700)' : 'var(--clay)', '--tone-bg': credit ? 'var(--olive-100)' : 'var(--clay-bg)' } as React.CSSProperties}>
+   720→                              <Icon name={meta.icon} size={14} />
+   721→                            </span>
+   722→                            <div style={{ minWidth: 0, flex: 1 }}>
+   723→                              <strong>{tx.title || meta.label}</strong>
+   724→                              <small>{meta.label} · {faDateTime(tx.created_at)}</small>
+   725→                            </div>
+   726→                            <strong style={{ color: credit ? 'var(--olive-700)' : 'var(--clay)', fontSize: 12, whiteSpace: 'nowrap' }}>
+   727→                              {credit ? '+' : '−'}{formatFaNumber(Math.abs(amount))}
+   728→                            </strong>
+   729→                          </div>
+   730→                        );
+   731→                      })
+   732→                  )}
+   733→
+   734→                  {detailTab === 'reviews' && (
+   735→                    detail.reviews.length === 0
+   736→                      ? <p className="adm-detail-empty">نظری ثبت نشده است.</p>
+   737→                      : detail.reviews.map((review) => (
+   738→                        <div key={review.id} className="adm-detail-row">
+   739→                          <div style={{ minWidth: 0, flex: 1 }}>
+   740→                            <strong>
+   741→                              {'★'.repeat(Math.max(0, Math.min(5, Number(review.rating) || 0)))}
+   742→                              {review.learner?.name ? ` · ${review.learner.name}` : ''}
+   743→                            </strong>
+   744→                            {review.text && <small>{review.text}</small>}
+   745→                            <small>{faDate(review.created_at)}</small>
+   746→                          </div>
+   747→                        </div>
+   748→                      ))
+   749→                  )}
+   750→                </div>
+   751→              </>
+   752→            )}
+   753→
+   754→            <KeyValueRow label="شناسه">{toFaDigits(selected.id)}</KeyValueRow>
+   755→            <KeyValueRow label="موبایل"><span dir="ltr">{toFaDigits(selected.mobile || '—')}</span></KeyValueRow>
+   756→            <KeyValueRow label="شهر">{selected.city || '—'}</KeyValueRow>
+   757→            <KeyValueRow label="تاریخ عضویت">{faDate(selected.created_at)}</KeyValueRow>
+   758→            {selected.teacher?.id && (
+   759→              <KeyValueRow label="رشته استادی">{selected.teacher.field || '—'}</KeyValueRow>
+   760→            )}
+   761→            {selected.bio && <KeyValueRow label="بیو">{selected.bio}</KeyValueRow>}
+   762→
+   763→            <section style={{ marginTop: 16, padding: 14, border: '1px solid var(--sand-150)', borderRadius: 15, background: 'var(--surface-warm)' }}>
+   764→              <strong style={{ display: 'block', marginBottom: 3, fontSize: 12.5 }}>نقش حساب</strong>
+   765→              <p style={{ margin: '0 0 10px', color: 'var(--ink-3)', fontSize: 10.5, lineHeight: 1.9 }}>
+   766→                نقش، پنل و دسترسی‌های حساب را تعیین می‌کند. نقش حساب خودتان قابل تغییر نیست.
+   767→              </p>
+   768→              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+   769→                {ROLES.filter((item) => item.value).map((item) => (
+   770→                  <button
+   771→                    key={item.value}
+   772→                    type="button"
+   773→                    disabled={busyId === selected.id || selected.role === item.value}
+   774→                    onClick={() => void changeRole(selected, item.value)}
+   775→                    style={{
+   776→                      minHeight: 36, padding: '7px 13px', borderRadius: 999, cursor: 'pointer',
+   777→                      border: '1px solid',
+   778→                      borderColor: selected.role === item.value ? 'var(--olive-600)' : 'var(--sand-200)',
+   779→                      background: selected.role === item.value ? 'var(--olive-100)' : '#fff',
+   780→                      color: selected.role === item.value ? 'var(--olive-700)' : 'var(--ink-2s)',
+   781→                      fontFamily: 'inherit', fontSize: 11.5, fontWeight: selected.role === item.value ? 800 : 500,
+   782→                    }}
+   783→                  >
+   784→                    {item.label}
+   785→                  </button>
+   786→                ))}
+   787→              </div>
+   788→              {busyId === selected.id && <small style={{ display: 'block', marginTop: 8, color: 'var(--olive-700)' }}>در حال ثبت تغییر…</small>}
+   789→            </section>
+   790→
+   791→            <section style={{ marginTop: 14, padding: 14, border: '1px solid #ecd5c8', borderRadius: 15, background: 'var(--clay-bg)' }}>
+   792→              <strong style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3, fontSize: 12.5 }}>
+   793→                <Icon name="wallet" size={15} style={{ color: 'var(--clay)' }} />
+   794→                تعدیل دستی کیف پول
+   795→              </strong>
+   796→              <p style={{ margin: '0 0 10px', color: 'var(--ink-3)', fontSize: 10.5, lineHeight: 1.9 }}>
+   797→                مبلغ مثبت شارژ و مبلغ منفی کسر می‌کند. تراکنش در دفتر مالی کاربر با عنوان «تعدیل دستی» ثبت و در گزارش عملیات لاگ می‌شود.
+   798→              </p>
+   799→              <div style={{ display: 'grid', gap: 8 }}>
+   800→                <input
+   801→                  dir="ltr"
+   802→                  inputMode="numeric"
+   803→                  value={adjustAmount}
+   804→                  onChange={(event) => setAdjustAmount(event.target.value)}
+   805→                  placeholder="مثلاً 500000 یا -250000"
+   806→                  aria-label="مبلغ تعدیل (تومان)"
+   807→                  style={{
+   808→                    minHeight: 42, padding: '9px 12px', border: '1px solid var(--sand-200)',
+   809→                    borderRadius: 12, background: '#fff', fontFamily: 'inherit', fontSize: 12.5, textAlign: 'left',
+   810→                  }}
+   811→                />
+   812→                <input
+   813→                  value={adjustReason}
+   814→                  onChange={(event) => setAdjustReason(event.target.value)}
+   815→                  maxLength={120}
+   816→                  placeholder="دلیل تعدیل (اختیاری)"
+   817→                  aria-label="دلیل تعدیل"
+   818→                  style={{
+   819→                    minHeight: 42, padding: '9px 12px', border: '1px solid var(--sand-200)',
+   820→                    borderRadius: 12, background: '#fff', fontFamily: 'inherit', fontSize: 12.5,
+   821→                  }}
+   822→                />
+   823→                <PanelButton
+   824→                  tone={adjustAmount.trim().startsWith('-') ? 'danger' : 'success'}
+   825→                  icon="coins"
+   826→                  disabled={adjustBusy || !adjustAmount.trim()}
+   827→                  onClick={() => void submitAdjust()}
+   828→                >
+   829→                  {adjustBusy ? 'در حال ثبت…' : 'ثبت تعدیل'}
+   830→                </PanelButton>
+   831→              </div>
+   832→            </section>
+   833→
+   834→            <section style={{ marginTop: 14, padding: 14, border: '1px solid var(--olive-100)', borderRadius: 15, background: 'var(--olive-50)' }}>
+   835→              <strong style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3, fontSize: 12.5 }}>
+   836→                <Icon name="bell" size={15} style={{ color: 'var(--olive-700)' }} />
+   837→                ارسال اعلان به کاربر
+   838→              </strong>
+   839→              <p style={{ margin: '0 0 10px', color: 'var(--ink-3)', fontSize: 10.5, lineHeight: 1.9 }}>
+   840→                پیام شما بلافاصله در اعلان‌های پنل و اپ کاربر نمایش داده می‌شود.
+   841→              </p>
+   842→              <div style={{ display: 'grid', gap: 8 }}>
+   843→                <input
+   844→                  value={notifyTitle}
+   845→                  onChange={(event) => { setNotifyTitle(event.target.value); setNotifyDone(false); }}
+   846→                  maxLength={160}
+   847→                  placeholder="عنوان اعلان"
+   848→                  aria-label="عنوان اعلان"
+   849→                  style={{
+   850→                    minHeight: 42, padding: '9px 12px', border: '1px solid var(--sand-200)',
+   851→                    borderRadius: 12, background: '#fff', fontFamily: 'inherit', fontSize: 12.5,
+   852→                  }}
+   853→                />
+   854→                <textarea
+   855→                  value={notifyBody}
+   856→                  onChange={(event) => { setNotifyBody(event.target.value); setNotifyDone(false); }}
+   857→                  maxLength={500}
+   858→                  rows={3}
+   859→                  placeholder="متن اعلان…"
+   860→                  aria-label="متن اعلان"
+   861→                  style={{
+   862→                    padding: '9px 12px', border: '1px solid var(--sand-200)',
+   863→                    borderRadius: 12, background: '#fff', fontFamily: 'inherit', fontSize: 12.5, lineHeight: 1.9, resize: 'vertical',
+   864→                  }}
+   865→                />
+   866→                <PanelButton
+   867→                  tone="primary"
+   868→                  icon="bell"
+   869→                  disabled={notifyBusy || !notifyTitle.trim() || !notifyBody.trim()}
+   870→                  onClick={() => void submitNotify()}
+   871→                >
+   872→                  {notifyBusy ? 'در حال ارسال…' : 'ارسال اعلان'}
+   873→                </PanelButton>
+   874→                {notifyDone && <small style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'var(--olive-700)', fontWeight: 700 }}><Icon name="checkCircle" size={13} /> اعلان با موفقیت ارسال شد.</small>}
+   875→              </div>
+   876→            </section>
+   877→
+   878→            <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+   879→              <PanelButton
+   880→                tone={selected.active ? 'danger' : 'success'}
+   881→                icon={selected.active ? 'x' : 'check'}
+   882→                disabled={busyId === selected.id}
+   883→                onClick={() => void toggleActive(selected)}
+   884→              >
+   885→                {busyId === selected.id ? 'در حال ثبت…' : selected.active ? 'غیرفعال‌کردن حساب' : 'فعال‌کردن حساب'}
+   886→              </PanelButton>
+   887→            </div>
+   888→          </>
+   889→        )}
+   890→      </Drawer>
+   891→    </main>
+   892→  );
+   893→}
+   894→
