@@ -1,0 +1,202 @@
+/home/z/vodda-remote/frontend/src/universal-app/features/home/homeSections.tsx:249:                  color: "#fffaf0",
+/home/z/vodda-remote/frontend/src/universal-app/features/home/homeSections.tsx:421:                    color: "#fffaf0",
+/home/z/vodda-remote/frontend/src/universal-app/features/home/homeSections.tsx:560:            color: "#fffaf0",
+/home/z/vodda-remote/frontend/src/universal-app/features/teachers/TeacherCard.tsx:201:                color: "#7a5e1e",
+/home/z/vodda-remote/frontend/src/universal-app/features/teachers/BioBlocks.tsx:105:              <span key={item} style={{ display: "inline-flex", padding: "5px 10px", borderRadius: 999, fontSize: 11.5, fontWeight: 700, color: "#8b681f", background: colors.goldBackground, border: "1px solid rgba(191,149,64,.35)" }}>
+/home/z/vodda-remote/frontend/src/universal-app/features/teachers/TierBadge.tsx:8:  international: { color: "#0095f6", label: "استاد بین‌المللی (درجه ۱) — تیک آبی" },
+/home/z/vodda-remote/frontend/src/universal-app/features/teachers/TierBadge.tsx:9:  grade2: { color: "#12b76a", label: "استاد کشوری (درجه ۲) — تیک سبز" },
+/home/z/vodda-remote/frontend/src/universal-app/features/teachers/TierBadge.tsx:10:  grade3: { color: "#e0245e", label: "استاد استانی (درجه ۳) — تیک قرمز" },
+/home/z/vodda-remote/frontend/src/universal-app/features/teachers/LearnerTeacherProfileScreen.tsx:244:                color: "#7a5e1e",
+/home/z/vodda-remote/frontend/src/universal-app/features/teachers/LearnerTeacherProfileScreen.tsx:323:            style={{ marginBottom: 8, borderColor: colors.goldSoft, color: "#7a5e1e", background: colors.goldBackground }}
+/home/z/vodda-remote/frontend/src/universal-app/features/wallet/WalletTransactionCard.tsx:28:  session: { icon: "video", label: "پرداخت جلسه", ink: "#8d6d1f", background: colors.goldBackground },
+/home/z/vodda-remote/frontend/src/universal-app/features/search/LearnerSearchScreen.tsx:66:  ["international", "بین‌المللی", "#0095f6"],
+/home/z/vodda-remote/frontend/src/universal-app/features/search/LearnerSearchScreen.tsx:67:  ["grade2", "کشوری", "#12b76a"],
+/home/z/vodda-remote/frontend/src/universal-app/features/search/LearnerSearchScreen.tsx:68:  ["grade3", "استانی", "#e0245e"],
+/home/z/vodda-remote/frontend/src/universal-app/features/search/LearnerSearchScreen.tsx:1126:                    background: "linear-gradient(180deg, #ffffff, #fffdf8)",
+/home/z/vodda-remote/frontend/src/universal-app/features/search/LearnerSearchScreen.tsx:1162:                          boxShadow: "0 0 0 2.5px #ffffff, 0 0 0 4px rgba(212,171,82,.3), 0 3px 8px rgba(46,54,34,.12)",
+/home/z/vodda-remote/frontend/src/universal-app/features/search/LearnerSearchScreen.tsx:1223:                    background: "linear-gradient(170deg, #fffdf6, " + colors.goldBackground + ")",
+/home/z/vodda-remote/frontend/src/universal-app/features/search/LearnerSearchScreen.tsx:1233:                    style={{ display: "grid", placeItems: "center", width: 40, height: 40, borderRadius: 13, flex: "0 0 40px", background: gradients.goldRich, color: "#fffaf0" }}
+/home/z/vodda-remote/frontend/src/universal-app/features/search/LearnerSearchScreen.tsx:1508:            ...(filters.instantOnly ? { borderColor: "#d8b869", color: "#7a5e1e", background: "#fdf6e3" } : null),
+/home/z/vodda-remote/frontend/src/universal-app/features/session-detail/SessionDetailScreen.tsx:382:              : `linear-gradient(150deg, ${colors.goldBackground}, #fffdf8 72%)`,
+/home/z/vodda-remote/frontend/src/universal-app/features/session-detail/SessionDetailScreen.tsx:395:                  background: gradients.goldRich, color: "#fffaf0", fontSize: 10.5, fontWeight: 800,
+/home/z/vodda-remote/frontend/src/universal-app/features/session-detail/SessionDetailScreen.tsx:471:          <strong style={{ display: "block", fontSize: 13.5, fontWeight: 800, color: "#7a5e1e" }}>
+/home/z/vodda-remote/frontend/src/universal-app/features/session-detail/SessionDetailScreen.tsx:474:          <span style={{ fontSize: 12, color: "#9a7426", lineHeight: 1.9 }}>
+/home/z/vodda-remote/frontend/src/universal-app/features/session-detail/LiveRoom.tsx:69:  background: active ? "rgba(255,255,255,.14)" : "#b3403a",
+/home/z/vodda-remote/frontend/src/universal-app/features/session-detail/LiveRoom.tsx:375:        background: "#171b14",
+/home/z/vodda-remote/frontend/src/universal-app/features/session-detail/LiveRoom.tsx:397:          <span style={{ display: "block", fontSize: 11, color: remoteActive ? "#a8d08d" : "rgba(255,255,255,.55)" }}>
+/home/z/vodda-remote/frontend/src/universal-app/features/session-detail/LiveRoom.tsx:418:        <div style={{ position: "relative", minHeight: 0, background: "#10130e" }}>
+/home/z/vodda-remote/frontend/src/universal-app/features/session-detail/LiveRoom.tsx:425:            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", background: "#10130e" }}
+/home/z/vodda-remote/frontend/src/universal-app/features/session-detail/LiveRoom.tsx:441:                background: "rgba(23,27,20,.9)", color: "#ffd98c", fontFamily: "inherit",
+/home/z/vodda-remote/frontend/src/universal-app/features/session-detail/LiveRoom.tsx:489:            <p style={{ position: "absolute", insetInline: 16, bottom: 14, margin: 0, zIndex: 2, fontSize: 11.5, lineHeight: 1.8, color: "#ffd9d0", background: "rgba(179,64,58,.24)", borderRadius: 12, padding: "8px 12px" }}>
+/home/z/vodda-remote/frontend/src/universal-app/features/session-detail/LiveRoom.tsx:537:                  style={{ height: 42, padding: "0 18px", borderRadius: 999, border: 0, background: "linear-gradient(145deg,#d8b869,#b8923c)", color: "#221a08", fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}
+/home/z/vodda-remote/frontend/src/universal-app/features/session-detail/LiveRoom.tsx:561:                    background: `linear-gradient(90deg, #d8b869 ${Math.max(6, micLevel)}%, rgba(255,255,255,.16) ${Math.max(6, micLevel)}%)`,
+/home/z/vodda-remote/frontend/src/universal-app/features/session-detail/LiveRoom.tsx:573:                  background: "linear-gradient(145deg,#8fa873,#5f7a48)", color: "#fff", cursor: "pointer", fontSize: 27,
+/home/z/vodda-remote/frontend/src/universal-app/features/session-detail/LiveRoom.tsx:580:              <button type="button" onClick={() => leave(false)} style={{ ...controlButton(false), width: "auto", padding: "0 22px", borderRadius: 999, background: "#b3403a", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800 }}>
+/home/z/vodda-remote/frontend/src/universal-app/features/session-detail/LiveRoom.tsx:595:                style={{ width: 62, height: 62, borderRadius: "50%", border: 0, background: "#b3403a", color: "#fff", cursor: "pointer", fontSize: 24, boxShadow: "0 12px 26px rgba(179,64,58,.5)" }}
+/home/z/vodda-remote/frontend/src/universal-app/features/session-detail/LiveRoom.tsx:604:                  style={{ width: "auto", height: 52, padding: "0 20px", borderRadius: 999, border: "1px solid rgba(216,184,105,.6)", background: "linear-gradient(145deg,#d8b869,#b8923c)", color: "#221a08", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 800 }}
+/home/z/vodda-remote/frontend/src/universal-app/features/session-detail/LiveRoom.tsx:622:          <span style={{ background: "rgba(216,184,105,.95)", color: "#221a08", fontSize: 12, fontWeight: 700, borderRadius: 999, padding: "8px 18px" }}>{notice}</span>
+/home/z/vodda-remote/frontend/src/universal-app/features/teacher/TeacherServicesScreen.tsx:170:  ink: "#2c5e3a",
+/home/z/vodda-remote/frontend/src/universal-app/features/teacher/TeacherServicesScreen.tsx:171:  deep: "#24512f",
+/home/z/vodda-remote/frontend/src/universal-app/features/teacher/TeacherServicesScreen.tsx:172:  border: "#a9cfb4",
+/home/z/vodda-remote/frontend/src/universal-app/features/teacher/TeacherServicesScreen.tsx:173:  chip: "#d9edde",
+/home/z/vodda-remote/frontend/src/universal-app/features/teacher/TeacherServicesScreen.tsx:174:  background: "#eef8f1",
+/home/z/vodda-remote/frontend/src/universal-app/features/teacher/TeacherServicesScreen.tsx:441:      <Card style={{ display: "grid", gap: 10, padding: 16, borderRadius: radii.md, background: `linear-gradient(150deg, ${colors.olive50}, #ffffff 78%)`, border: `1px solid ${colors.olive100}` }}>
+/home/z/vodda-remote/frontend/src/universal-app/features/teacher/TeacherServicesScreen.tsx:774:                  color: "#fffaf0",
+/home/z/vodda-remote/frontend/src/universal-app/features/teacher/TeacherSessionsScreen.tsx:186:            <span style={{ padding: "4px 10px", borderRadius: radii.pill, color: "#fffaf0", background: "linear-gradient(145deg,#d8b869,#b8923c)", fontSize: 10.5, fontWeight: 800 }}>{L("فوری")}</span>
+/home/z/vodda-remote/frontend/src/universal-app/features/teacher/TeacherSessionsScreen.tsx:220:            <span style={{ padding: "3px 9px", borderRadius: radii.pill, color: "#fffaf0", background: "linear-gradient(145deg,#d8b869,#b8923c)", fontSize: 10, fontWeight: 800 }}>{L("فوری")}</span>
+/home/z/vodda-remote/frontend/src/universal-app/features/teacher/TeacherSessionsScreen.tsx:223:            <span aria-label={L("جلسهٔ دیده‌نشده")} style={{ padding: "3px 9px", borderRadius: radii.pill, color: "#ffffff", background: colors.danger, fontSize: 10, fontWeight: 800 }}>{L("جدید")}</span>
+/home/z/vodda-remote/frontend/src/universal-app/features/teacher/TeacherDashboardScreen.tsx:77:        background: checked ? "linear-gradient(145deg,#8fa873,#5f7a48)" : colors.sand200,
+/home/z/vodda-remote/frontend/src/universal-app/features/teacher/TeacherDashboardScreen.tsx:90:          background: "#ffffff",
+/home/z/vodda-remote/frontend/src/universal-app/features/teacher/TeacherDashboardScreen.tsx:184:    <section aria-label={L("امکانات سریع")} className="vodda-enter" style={{ display: "grid", gap: 12, padding: 16, borderRadius: 24, border: `1.5px solid ${colors.goldSoft}`, background: `linear-gradient(150deg, ${colors.goldBackground}, #fffdf8 70%)`, boxShadow: shadows.sm }}>
+/home/z/vodda-remote/frontend/src/universal-app/features/teacher/TeacherDashboardScreen.tsx:186:        <span aria-hidden="true" style={{ width: 38, height: 38, display: "grid", placeItems: "center", flex: "0 0 38px", borderRadius: 12, background: "linear-gradient(145deg,#d8b869,#b8923c)", color: "#fff" }}>
+/home/z/vodda-remote/frontend/src/universal-app/features/teacher/TeacherDashboardScreen.tsx:220:                background: row.gold ? "linear-gradient(145deg,#f7ecd0,#fffaf0)" : colors.olive50,
+/home/z/vodda-remote/frontend/src/universal-app/features/teacher/TeacherDashboardScreen.tsx:505:          background: dispatchBadge > 0 ? "linear-gradient(135deg, #f2f5ea 0%, #ffffff 62%)" : colors.surface,
+/home/z/vodda-remote/frontend/src/universal-app/features/teacher/TeacherDashboardScreen.tsx:574:            <strong style={{ display: "block", fontSize: 14.5, fontWeight: 800, color: "#7a5e1e" }}>{L("{n} درخواست جدید").replace("{n}", localizedDigits(pending.length, lang))}</strong>
+/home/z/vodda-remote/frontend/src/universal-app/features/teacher/TeacherDashboardScreen.tsx:575:            <span style={{ display: "block", marginTop: 2, fontSize: 12, color: "#9a7426" }}>{L("برای تأیید یا رد، لمس کنید")}</span>
+/home/z/vodda-remote/frontend/src/universal-app/features/teacher/TeacherDashboardScreen.tsx:577:          <Icon name="chevronL" size={20} style={{ color: "#9a7426" }} />
+/home/z/vodda-remote/frontend/src/universal-app/features/teacher/TeacherDashboardScreen.tsx:734:            borderRadius: 12, background: "linear-gradient(145deg, #d8b869, #b8923c)", color: "#fff",
+/home/z/vodda-remote/frontend/src/universal-app/features/teacher/TeacherDashboardScreen.tsx:752:            color: "#7a5e1e", background: colors.goldBackground, border: `1px solid ${colors.goldSoft}`,
+/home/z/vodda-remote/frontend/src/universal-app/features/teacher/TeacherDashboardScreen.tsx:770:            background: "linear-gradient(90deg, #b8923c, #d8b869)",
+/home/z/vodda-remote/frontend/src/universal-app/features/teacher/TeacherDashboardScreen.tsx:822:                color: item.done ? colors.olive600 : "#9a7426",
+/home/z/vodda-remote/frontend/src/universal-app/features/teacher/TeacherProfileScreen.tsx:577:              <span style={{ ...typography.caption, color: "#b3261e", lineHeight: 1.8 }}>{L(aiError)}</span>
+/home/z/vodda-remote/frontend/src/universal-app/features/teacher/TeacherProfileScreen.tsx:612:                      color: "#fffaf0",
+/home/z/vodda-remote/frontend/src/universal-app/features/dispatch/LearnerDispatchScreen.tsx:84:  international: { label: "استاد بین‌المللی", bg: "rgba(0,149,246,.10)", color: "#0095f6" },
+/home/z/vodda-remote/frontend/src/universal-app/features/dispatch/LearnerDispatchScreen.tsx:85:  grade2: { label: "استاد کشوری", bg: "rgba(18,183,106,.12)", color: "#0e9f5e" },
+/home/z/vodda-remote/frontend/src/universal-app/features/dispatch/LearnerDispatchScreen.tsx:86:  grade3: { label: "استاد استانی", bg: "rgba(224,36,94,.10)", color: "#e0245e" },
+/home/z/vodda-remote/frontend/src/universal-app/features/dispatch/LearnerDispatchScreen.tsx:707:                  border: "1px solid #ecd9a8",
+/home/z/vodda-remote/frontend/src/universal-app/features/dispatch/LearnerDispatchScreen.tsx:708:                  background: "linear-gradient(150deg,#fdf6e3,#fffdf8 75%)",
+/home/z/vodda-remote/frontend/src/universal-app/features/dispatch/LearnerDispatchScreen.tsx:711:                <span aria-hidden="true" style={{ width: 30, height: 30, display: "grid", placeItems: "center", flex: "0 0 30px", borderRadius: 10, background: "linear-gradient(145deg,#d8b869,#b8923c)", color: "#fffaf0" }}>
+/home/z/vodda-remote/frontend/src/universal-app/features/dispatch/LearnerDispatchScreen.tsx:715:                  <strong style={{ display: "block", fontSize: 12.5, fontWeight: 800, color: "#7a5e1e" }}>{L("فراخوان فوری فقط به اساتید آمادهٔ همین لحظه می‌رسد")}</strong>
+/home/z/vodda-remote/frontend/src/universal-app/features/dispatch/LearnerDispatchScreen.tsx:716:                  <span style={{ display: "block", fontSize: 11.5, color: "#9a7426", lineHeight: 1.8, marginTop: 2 }}>
+/home/z/vodda-remote/frontend/src/universal-app/features/dispatch/LearnerDispatchScreen.tsx:845:  color: active ? (gold ? "#7a5e1e" : colors.surface) : colors.inkSecondary,
+/home/z/vodda-remote/frontend/src/universal-app/features/dispatch/LearnerDispatchScreen.tsx:846:  background: active ? (gold ? "#fdf6e3" : colors.olive600) : colors.surface,
+/home/z/vodda-remote/frontend/src/universal-app/features/dispatch/LearnerDispatchScreen.tsx:847:  border: `1px solid ${active ? (gold ? "#d8b869" : colors.olive600) : colors.sand200}`,
+/home/z/vodda-remote/frontend/src/universal-app/features/notifications/CallAlertBar.tsx:268:            background: "linear-gradient(145deg, #d8b869, #b8923c)",
+/home/z/vodda-remote/frontend/src/universal-app/features/notifications/CallAlertBar.tsx:269:            color: "#ffffff",
+/home/z/vodda-remote/frontend/src/universal-app/features/notifications/CallAlertBar.tsx:284:              color: "#ecd9a8",
+/home/z/vodda-remote/frontend/src/universal-app/features/notifications/CallAlertBar.tsx:296:              color: "#ffffff",
+/home/z/vodda-remote/frontend/src/universal-app/features/dispatch/DispatchPairCards.tsx:166:                style={{ width: 7, height: 7, borderRadius: "50%", background: "#e8c15c", animation: "vodda-live-dot 1.6s ease-out infinite" }}
+/home/z/vodda-remote/frontend/src/universal-app/features/dispatch/DispatchPairCards.tsx:177:                color: olive ? colors.goldSoft : "#fdf6e3",
+/home/z/vodda-remote/frontend/src/universal-app/features/dispatch/DispatchPairCards.tsx:188:          <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.2, color: olive ? colors.goldSoft : "#f6e9c8" }}>
+/home/z/vodda-remote/frontend/src/universal-app/features/sessions/LearnerSessionsScreen.tsx:96:            <span aria-label={L("جلسهٔ فوری")} style={{ padding: "3px 9px", borderRadius: radii.pill, color: "#fffaf0", background: "linear-gradient(145deg,#d8b869,#b8923c)", fontSize: 10, fontWeight: 800 }}>
+/home/z/vodda-remote/frontend/src/universal-app/features/auth/AuthExperience.tsx:624:                  <path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3l5.7-5.7C34.3 6.1 29.4 4 24 4 13 4 4 13 4 24s9 20 20 20 20-9 20-20c0-1.3-.1-2.7-.4-3.9z" />
+/home/z/vodda-remote/frontend/src/universal-app/features/auth/AuthExperience.tsx:625:                  <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.9 1.2 8 3l5.7-5.7C34.3 6.1 29.4 4 24 4 16.3 4 9.7 8.3 6.3 14.7z" />
+/home/z/vodda-remote/frontend/src/universal-app/features/auth/AuthExperience.tsx:626:                  <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.3 0-9.7-3.4-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z" />
+/home/z/vodda-remote/frontend/src/universal-app/features/auth/AuthExperience.tsx:627:                  <path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C36.9 39.2 44 34 44 24c0-1.3-.1-2.7-.4-3.9z" />
+/home/z/vodda-remote/frontend/src/universal-app/ui/illustrations.tsx:35:const ink = "#5e6e43";
+/home/z/vodda-remote/frontend/src/universal-app/ui/illustrations.tsx:37:const gold = "#bf9540";
+/home/z/vodda-remote/frontend/src/universal-app/ui/illustrations.tsx:38:const goldSoft = "#e7d5a8";
+/home/z/vodda-remote/frontend/src/universal-app/ui/illustrations.tsx:39:const cream = "#fcfaf4";
+/home/z/vodda-remote/frontend/src/universal-app/ui/illustrations.tsx:61:        fill="#ffffff"
+/home/z/vodda-remote/frontend/src/universal-app/ui/illustrations.tsx:81:      <rect x="48" y="62" width="104" height="56" rx="14" fill="#ffffff" stroke={ink} strokeWidth="2" />
+/home/z/vodda-remote/frontend/src/universal-app/ui/illustrations.tsx:84:      <path d="M136 84 L 152 84 C 158 84, 162 88, 162 94 C 162 100, 158 104, 152 104 L 136 104" fill="#ffffff" stroke={ink} strokeWidth="2" strokeLinejoin="round" />
+/home/z/vodda-remote/frontend/src/universal-app/ui/illustrations.tsx:104:        fill="#ffffff"
+/home/z/vodda-remote/frontend/src/universal-app/ui/illustrations.tsx:131:      <path d="M128 96 C 128 88, 136 84, 144 84 C 152 84, 160 88, 160 96 L 156 118 L 132 118 Z" fill="#ffffff" stroke={ink} strokeWidth="2" strokeLinejoin="round" />
+/home/z/vodda-remote/frontend/src/universal-app/ui/toast.tsx:69:      style={toast.tone === "info" ? { background: "linear-gradient(145deg, #5e6e43, #728350)" } : undefined}
+/home/z/vodda-remote/frontend/src/universal-app/ui/primitives.tsx:179:          background: "linear-gradient(180deg, var(--v-surface, #ffffff) 0%, var(--v-surfaceWarm, #fffdf8) 100%)",
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:7:        --v-sand50: #faf8f2;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:8:        --v-sand100: #f4f0e7;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:9:        --v-sand150: #ede8db;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:10:        --v-sand200: #e4ddcc;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:11:        --v-line: #e4ddcc;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:12:        --v-border: #e4ddcc;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:13:        --v-surface: #ffffff;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:14:        --v-surfaceWarm: #fcfaf4;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:15:        --v-surfaceSoft: #f8f6ef;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:16:        --v-surfaceElevated: #ffffff;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:17:        --v-olive950: #252c1c;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:18:        --v-olive900: #2e3622;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:19:        --v-olive800: #3c472b;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:20:        --v-olive700: #4c5a36;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:21:        --v-olive600: #5e6e43;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:22:        --v-olive500: #728350;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:23:        --v-olive400: #93a172;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:24:        --v-olive300: #b6c09b;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:25:        --v-olive200: #d6dcc4;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:26:        --v-olive100: #e8ecdb;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:27:        --v-olive50: #f2f5ea;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:28:        --v-ink: #2a2820;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:29:        --v-inkSecondary: #565247;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:30:        --v-inkMuted: #6f6a5b;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:31:        --v-inkFaint: #7a7463;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:32:        --v-gold: #bf9540;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:33:        --v-goldDark: #8b681f;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:34:        --v-goldSoft: #e7d5a8;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:35:        --v-goldBackground: #f7efd9;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:36:        --v-clay: #b0745a;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:37:        --v-clayBackground: #f6e7df;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:38:        --v-danger: #a65151;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:39:        --v-dangerBackground: #faeeee;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:40:        --v-success: #5e6e43;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:41:        --v-successBackground: #edf2e5;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:42:        --v-info: #5e7e8c;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:43:        --v-infoBackground: #edf3f5;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:44:        --v-grad-hero: linear-gradient(145deg, #4c5a36 0%, #5e6e43 52%, #728350 100%);
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:45:        --v-grad-deep: linear-gradient(145deg, #2e3622 0%, #3c472b 58%, #4c5a36 100%);
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:46:        --v-grad-oliveCard: linear-gradient(150deg, #4c5a36 0%, #5e6e43 55%, #6e7f4d 100%);
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:47:        --v-grad-soft: linear-gradient(145deg, #f2f5ea 0%, #ffffff 72%);
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:48:        --v-grad-gold: linear-gradient(145deg, #f7efd9 0%, #fffaf0 100%);
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:49:        --v-grad-goldRich: linear-gradient(145deg, #d4ab52 0%, #bf9540 52%, #8b681f 100%);
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:55:        --v-sand50: #14170f;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:56:        --v-sand100: #1a1e15;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:57:        --v-sand150: #21261b;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:58:        --v-sand200: #2b3122;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:59:        --v-line: #2b3122;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:60:        --v-border: #2b3122;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:61:        --v-surface: #1d2118;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:62:        --v-surfaceWarm: #20251b;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:63:        --v-surfaceSoft: #181c13;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:64:        --v-surfaceElevated: #242a1e;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:65:        --v-olive950: #0e1209;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:66:        --v-olive900: #171c10;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:67:        --v-olive800: #2e3820;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:68:        --v-olive700: #a4b485;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:69:        --v-olive600: #7c8f58;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:70:        --v-olive500: #8a9c66;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:71:        --v-olive400: #93a172;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:72:        --v-olive300: #5a6644;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:73:        --v-olive200: #3a4229;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:74:        --v-olive100: #2c3420;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:75:        --v-olive50: #262d1b;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:76:        --v-ink: #eceada;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:77:        --v-inkSecondary: #cbc7b8;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:78:        --v-inkMuted: #a5a191;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:79:        --v-inkFaint: #8b8778;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:80:        --v-gold: #d2aa55;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:81:        --v-goldDark: #e3c377;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:82:        --v-goldSoft: #6b5c33;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:83:        --v-goldBackground: #2a2416;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:84:        --v-clay: #c98d72;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:85:        --v-clayBackground: #322520;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:86:        --v-danger: #e09a9a;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:87:        --v-dangerBackground: #332220;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:88:        --v-success: #a4b485;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:89:        --v-successBackground: #242c18;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:90:        --v-info: #93b3bf;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:91:        --v-infoBackground: #1a2528;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:92:        --v-grad-hero: linear-gradient(145deg, #4c5a36 0%, #5e6e43 52%, #728350 100%);
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:93:        --v-grad-deep: linear-gradient(145deg, #1a2012 0%, #232b17 58%, #2e3820 100%);
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:94:        --v-grad-oliveCard: linear-gradient(150deg, #4c5a36 0%, #5e6e43 55%, #6e7f4d 100%);
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:95:        --v-grad-soft: linear-gradient(145deg, #1d2118 0%, #23281c 72%);
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:96:        --v-grad-gold: linear-gradient(145deg, #2b2517 0%, #1f1c12 100%);
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:97:        --v-grad-goldRich: linear-gradient(145deg, #d4ab52 0%, #bf9540 52%, #8b681f 100%);
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:229:        border-color: #728350 !important;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:233:        color: #7a7463;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:306:        border: 3px solid #e8ecdb;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:307:        border-top-color: #5e6e43;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:316:        background: #eceadf;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:453:        color: #ffffff;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:454:        background: linear-gradient(145deg, #3c472b, #4c5a36);
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:499:        color: #ffffff;
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:504:        background: linear-gradient(140deg, #37422a 0%, #4c5a36 58%, #56653e 100%);
+/home/z/vodda-remote/frontend/src/universal-app/ui/UniversalVisualStyles.tsx:510:        outline: 2px solid #e7d5a8;
+/home/z/vodda-remote/frontend/src/universal-app/ui/shells.tsx:212:                border: "2px solid #ffffff",
+/home/z/vodda-remote/frontend/src/universal-app/ui/shells.tsx:213:                color: "#ffffff",
+/home/z/vodda-remote/frontend/src/universal-app/features/booking/LearnerBookingScreen.tsx:353:            background: `linear-gradient(150deg, ${colors.goldBackground}, #fffdf8 72%)`,
+/home/z/vodda-remote/frontend/src/universal-app/features/booking/LearnerBookingScreen.tsx:361:              background: "linear-gradient(145deg,#d8b869,#b8923c)", color: "#fffaf0",
+/home/z/vodda-remote/frontend/src/universal-app/features/booking/LearnerBookingScreen.tsx:368:            <strong style={{ fontSize: 13.5, fontWeight: 800, color: "#7a5e1e" }}>{L("همین حالا وقت می‌خواهید؟")}</strong>
+/home/z/vodda-remote/frontend/src/universal-app/features/booking/LearnerBookingScreen.tsx:369:            <span style={{ fontSize: 11, color: "#9a7426", lineHeight: 1.7 }}>
+/home/z/vodda-remote/frontend/src/universal-app/features/assistant/AssistantChat.tsx:117:            color: "#fffaf0",
+/home/z/vodda-remote/frontend/src/universal-app/features/assistant/AssistantChat.tsx:136:              border: "2px solid #fffaf0",
+
+[Showing results with pagination = limit: 200]
