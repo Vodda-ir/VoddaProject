@@ -65,6 +65,7 @@ func main() {
         otpRepo := repository.NewOTPRepository(db)
         notifRepo := repository.NewNotificationRepository(db)
         supportRepo := repository.NewSupportMessageRepository(db)
+        supportChatRepo := repository.NewSupportChatRepository(db)
         auditRepo := repository.NewAdminAuditRepository(db)
         analyticsRepo := repository.NewAnalyticsRepository(db)
         settingsRepo := repository.NewSettingRepository(db)
@@ -73,6 +74,7 @@ func main() {
         tm := token.NewManager(cfg.JWTSecret, cfg.TokenExpiration)
         sender := sms.New(cfg.SMS)
         supportUsecase := usecase.NewSupportUsecase(supportRepo).WithObservers(notifRepo, userRepo)
+        supportChatUsecase := usecase.NewSupportChatUsecase(supportChatRepo).WithObservers(notifRepo, userRepo)
 
         paymentRepo := repository.NewPaymentRepository(db)
         samanClient := payment.NewSaman(cfg.Saman.TerminalID, cfg.Saman.SiteURL, cfg.Saman.BaseURL)
@@ -106,11 +108,12 @@ func main() {
                 Review: usecase.NewReviewUsecase(reviewRepo, sessionRepo, teacherRepo, reviewTransactionRepo),
                 Admin: usecase.NewAdminUsecase(userRepo, teacherRepo, sessionRepo, walletRepo, notifRepo, analyticsRepo,
                         usecase.AdminExtendedDeps{
-                                ReviewRepo: reviewRepo,
-                                ReviewTx:   reviewTransactionRepo,
-                                Financial:  financialRepo,
-                                Support:    supportRepo,
-                                Settings:   settingsRepo,
+                                ReviewRepo:  reviewRepo,
+                                ReviewTx:    reviewTransactionRepo,
+                                Financial:   financialRepo,
+                                Support:     supportRepo,
+                                SupportChat: supportChatRepo,
+                                Settings:    settingsRepo,
                         }),
                 Notif:   notifRepo,
                 Live:    delivery.NewLiveHub(),
@@ -123,6 +126,7 @@ func main() {
         router := delivery.NewRouter(cfg, h, tm, readiness, delivery.RouterOperations{
                 Users:   userRepo,
                 Support: supportUsecase,
+                SupportChat: supportChatUsecase,
                 Audit:   auditRepo,
         })
 

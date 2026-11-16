@@ -71,6 +71,9 @@ type User struct {
         Bio       string    `gorm:"size:500" json:"bio"`
         Active    bool      `gorm:"default:true" json:"active"`
         Wallet    int64     `gorm:"default:0" json:"wallet"`
+        // کارشناس پشتیبانی — هر کاربری که مدیر او را منصوب کند به صندوق
+        // پشتیبانی پنل مدیریت دسترسی پیدا می‌کند و به تیکت‌ها پاسخ می‌دهد.
+        IsSupportAgent bool `gorm:"default:false;index" json:"is_support_agent"`
         // Google login (کاربران خارج از کشور): pointer columns so NULL never
         // collides in the unique indexes; OTP accounts keep them NULL.
         Email       *string   `gorm:"size:190;uniqueIndex" json:"email,omitempty"`

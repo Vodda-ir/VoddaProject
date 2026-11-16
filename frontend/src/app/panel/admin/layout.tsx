@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Icon } from '@/components/Icon';
 import { Avatar } from '@/components/web/ui';
@@ -63,6 +63,7 @@ type AdminSummary = {
   pending_services: number;
   pending_withdrawals: number;
   new_support: number;
+  open_tickets: number;
 };
 
 const SUMMARY_ITEMS: Array<{ key: keyof AdminSummary; label: string; href: string; icon: React.ComponentProps<typeof Icon>['name']; tone: string; ink: string; bg: string }> = [
@@ -70,6 +71,7 @@ const SUMMARY_ITEMS: Array<{ key: keyof AdminSummary; label: string; href: strin
   { key: 'pending_services', label: 'خدمت در صف تأیید', href: '/panel/admin/services', icon: 'book', tone: 'info', ink: '#4f6f7c', bg: '#e8f0f2' },
   { key: 'pending_withdrawals', label: 'درخواست برداشت در صف', href: '/panel/admin/withdrawals', icon: 'download', tone: 'clay', ink: 'var(--clay)', bg: 'var(--clay-bg)' },
   { key: 'new_support', label: 'پیام پشتیبانی جدید', href: '/panel/admin/support', icon: 'message', tone: 'green', ink: 'var(--olive-700)', bg: 'var(--olive-100)' },
+  { key: 'open_tickets', label: 'گفتگوی بی‌پاسخ پشتیبانی', href: '/panel/admin/support', icon: 'headphones', tone: 'gold', ink: '#8d6d1f', bg: 'var(--gold-bg)' },
 ];
 
 function AdminAlertsBell() {
@@ -176,10 +178,11 @@ function AdminAlertsBell() {
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [userOpen, setUserOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [access, setAccess] = useState<'checking' | 'allowed' | 'unauthorized' | 'forbidden' | 'error'>('checking');
-  const [user, setUser] = useState({ name: '...', role: 'admin', avatarUrl: '', hasTeacherProfile: false });
+  const [user, setUser] = useState({ name: '...', role: 'admin', avatarUrl: '', hasTeacherProfile: false, isSupportAgent: false });
   const token = getToken();
 
   useEffect(() => {
@@ -204,13 +207,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       .then((payload) => {
         if (!payload?.data) return;
         const role = payload.data.role || 'learner';
+        const isAgent = payload.data.is_support_agent === true;
         setUser({
           name: payload.data.name || 'مدیر',
           role,
           avatarUrl: fullUrl(payload.data.avatar_url) || '',
           hasTeacherProfile: Boolean(payload.data.teacher?.id),
+          isSupportAgent: isAgent,
         });
-        setAccess(role === 'admin' ? 'allowed' : 'forbidden');
+        setAccess(role === 'admin' || isAgent ? 'allowed' : 'forbidden');
       })
       .catch((cause) => {
         if (cause instanceof DOMException && cause.name === 'AbortError') return;
@@ -219,13 +224,27 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return () => controller.abort();
   }, [token]);
 
+  // کارشناس پشتیبانی به داشبورد مدیریتی دسترسی ندارد؛ به صندوق پشتیبانی هدایت می‌شود.
+  useEffect(() => {
+    if (access === 'allowed' && user.role !== 'admin' && pathname === '/panel/admin') {
+      router.replace('/panel/admin/support');
+    }
+  }, [access, user.role, pathname, router]);
+
   if (access !== 'allowed') {
     return <AdminAccessState access={access} />;
   }
 
-  const active = NAV.find((item) => item.id === 'dash' ? pathname === '/panel/admin' : pathname.startsWith(item.href));
+  const isAdminUser = user.role === 'admin';
+  const navGroups: AdminNavigationGroup[] = isAdminUser
+    ? NAV_GROUPS
+    : [{ label: 'پشتیبانی', items: [{ id: 'support', icon: 'headphones', label: 'صندوق پشتیبانی', href: '/panel/admin/support' }] }];
+
+  const active = navGroups
+    .flatMap((group) => group.items)
+    .find((item) => (item.id === 'dash' ? pathname === '/panel/admin' : pathname.startsWith(item.href)));
   const allPanels = [
-    { href: '/panel/admin', label: 'پنل مدیریت', icon: 'shield' as const },
+    ...(isAdminUser ? [{ href: '/panel/admin', label: 'پنل مدیریت', icon: 'shield' as const }] : []),
     ...(user.hasTeacherProfile ? [{ href: '/panel/teacher', label: 'پنل استاد', icon: 'award' as const }] : []),
     { href: '/panel/user', label: 'پنل کاربری', icon: 'user' as const },
   ];
@@ -274,7 +293,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </Link>
 
         <nav aria-label="ناوبری مدیریت" style={{ display: 'grid', gap: 15, flex: 1 }}>
-          {NAV_GROUPS.map((group) => (
+          {navGroups.map((group) => (
             <div key={group.label}>
               <div style={{ padding: '0 10px 6px', color: 'rgba(255,255,255,.33)', fontSize: 9, fontWeight: 700 }}>{group.label}</div>
               <div style={{ display: 'grid', gap: 3 }}>
@@ -327,7 +346,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <Avatar size={35} imageUrl={user.avatarUrl} />
               <span style={{ minWidth: 0, flex: 1 }}>
                 <strong style={{ display: 'block', overflow: 'hidden', fontSize: 11.5, textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.name}</strong>
-                <small style={{ display: 'block', marginTop: 1, color: 'rgba(255,255,255,.42)', fontSize: 9 }}>مدیر سامانه</small>
+                <small style={{ display: 'block', marginTop: 1, color: 'rgba(255,255,255,.42)', fontSize: 9 }}>{user.role === 'admin' ? 'مدیر سامانه' : 'کارشناس پشتیبانی'}</small>
               </span>
               <Icon name="chevronUp" size={14} style={{ opacity: .45, transform: userOpen ? 'rotate(180deg)' : undefined }} />
             </button>
@@ -358,7 +377,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <small>پنل عملیاتی وُدّا</small>
           </div>
           <div className="panel-top-links">
-            <AdminAlertsBell />
+            {user.role === 'admin' && <AdminAlertsBell />}
             {user.hasTeacherProfile && <Link href="/panel/teacher" className="ops-button"><Icon name="award" size={15} /> پنل استاد</Link>}
             <Link href="/panel/user" className="ops-button"><Icon name="user" size={15} /> پنل کاربری</Link>
           </div>

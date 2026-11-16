@@ -3,8 +3,8 @@ import type { UniversalAppConfig } from "../config";
 import { appRouteUrl, navigateAppRoute, type AppRouteName, type StaticAppRouteName } from "../router";
 import { CallAlertBar } from "../features/notifications/CallAlertBar";
 import { getTeacherUnseenSessionCount } from "../features/session-detail/api";
+import { SupportChat } from "../features/support/SupportChat";
 import { usePlatform } from "../platform/context";
-import { AssistantChat } from "../features/assistant/AssistantChat";
 import { useAppearance } from "./appearance";
 import { localizedDigits } from "./persian";
 import type { TranslationKey } from "../i18n";
@@ -405,7 +405,8 @@ function Shell({
         />
       </div>
       <ToastHost />
-      {mode === "learner" ? <AssistantChat routeName={routeName} /> : null}
+      {/* گفتگوی زندهٔ پشتیبانی برای هر دو پوسته (کاربر/استاد) — دستیار هوشمند فعلاً پنهان شده است */}
+      <SupportChat routeName={routeName} />
       {/* اعلان‌های زنده در هر دو حالت (استاد/کاربر) — برای مدیران شامل رویدادهای پنل مدیریت */}
       <CallAlertBar config={config} />
     </div>

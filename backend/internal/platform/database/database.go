@@ -89,6 +89,8 @@ func Migrate(db *gorm.DB) error {
                 &domain.OTPCode{},
                 &domain.Notification{},
                 &domain.SupportMessage{},
+                &domain.SupportTicket{},
+                &domain.SupportChatMessage{},
                 &domain.AdminAuditLog{},
                 &domain.Setting{},
                 &domain.Post{},

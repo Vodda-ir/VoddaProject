@@ -189,6 +189,36 @@ type SupportMessageRepository interface {
         Resolve(ctx context.Context, id uint) error
 }
 
+// StaffTicketFilter narrows the staff-side ticket listing.
+type StaffTicketFilter struct {
+        Status    TicketStatus
+        AssignedTo uint // 0 = everyone; >0 = only tickets assigned to that staff id
+        Limit     int
+        Offset    int
+}
+
+// SupportChatRepository persists live support conversations (tickets + chat
+// messages) for both the app side and the admin-panel support inbox.
+type SupportChatRepository interface {
+        CreateTicket(ctx context.Context, ticket *SupportTicket) error
+        GetTicket(ctx context.Context, id uint) (*SupportTicket, error)
+        UpdateTicket(ctx context.Context, ticket *SupportTicket) error
+        ListTicketsForUser(ctx context.Context, userID uint, limit, offset int) ([]SupportTicket, int64, error)
+        ListTicketsForStaff(ctx context.Context, filter StaffTicketFilter) ([]SupportTicket, int64, error)
+        AppendMessage(ctx context.Context, message *SupportChatMessage) error
+        ListMessages(ctx context.Context, ticketID uint, afterID uint, limit int) ([]SupportChatMessage, error)
+        LastMessage(ctx context.Context, ticketID uint) (*SupportChatMessage, error)
+        ResetUserUnread(ctx context.Context, ticketID uint) error
+        ResetStaffUnread(ctx context.Context, ticketID uint) error
+        UserUnreadTotal(ctx context.Context, userID uint) (int64, error)
+        StaffUnreadTotal(ctx context.Context) (int64, error)
+        CountByStatus(ctx context.Context, status TicketStatus) (int64, error)
+        SupportAgents(ctx context.Context) ([]User, error)
+        SetSupportAgent(ctx context.Context, userID uint, enabled bool) error
+        FindUserByMobile(ctx context.Context, mobile string) (*User, error)
+        FindUserByID(ctx context.Context, userID uint) (*User, error)
+}
+
 // AdminAuditRepository persists privileged action logs.
 type AdminAuditRepository interface {
         Create(ctx context.Context, entry *AdminAuditLog) error

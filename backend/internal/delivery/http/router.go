@@ -20,6 +20,7 @@ import (
 type RouterOperations struct {
         Users   domain.UserRepository
         Support *usecase.SupportUsecase
+        SupportChat *usecase.SupportChatUsecase
         Audit   domain.AdminAuditRepository
 }
 
@@ -176,6 +177,39 @@ func NewRouter(cfg *config.Config, h *Handler, tm *token.Manager, readiness func
                         ceremony.POST("/bookings/:id/confirm", financialLimiter.Middleware("financial"), h.ConfirmCeremonyBooking)
                         ceremony.POST("/bookings/:id/cancel", financialLimiter.Middleware("financial"), h.CancelCeremonyBooking)
                 }
+
+                // گفتگوی زندهٔ پشتیبانی — سمت کاربر: تیکت‌ها، پیام‌ها و پیوست‌های صوتی/تصویری.
+                if operations.SupportChat != nil {
+                        chat := operations.SupportChat
+                        chatLimiter := NewRateLimiter(120, time.Minute)
+                        supportChat := authed.Group("/support")
+                        {
+                                supportChat.POST("/tickets", chatLimiter.Middleware("chat-write"), createTicketHandler(chat))
+                                supportChat.GET("/tickets", listUserTicketsHandler(chat))
+                                supportChat.GET("/tickets/:id", userThreadHandler(chat))
+                                supportChat.POST("/tickets/:id/messages", chatLimiter.Middleware("chat-write"), sendUserMessageHandler(chat))
+                                supportChat.POST("/tickets/:id/close", chatLimiter.Middleware("chat-write"), userCloseTicketHandler(chat))
+                                supportChat.GET("/chat/unread", userChatUnreadHandler(chat))
+                                supportChat.POST("/chat/upload", chatLimiter.Middleware("chat-upload"), uploadChatAttachmentHandler())
+                        }
+                }
+        }
+
+        // صندوق پشتیبانی پنل مدیریت — مدیران و کارشناسان منصوب پشتیبانی.
+        if operations.SupportChat != nil {
+                staffChat := operations.SupportChat
+                staffLimiter := NewRateLimiter(240, time.Minute)
+                staff := api.Group("/support-staff")
+                staff.Use(AuthRequired(tm, operations.Users), staffLimiter.Middleware("staff"), StaffRequired(operations.Users))
+                {
+                        staff.GET("/tickets", staffTicketsHandler(staffChat))
+                        staff.GET("/tickets/:id", staffThreadHandler(staffChat))
+                        staff.POST("/tickets/:id/messages", staffLimiter.Middleware("staff-write"), sendStaffMessageHandler(staffChat))
+                        staff.POST("/tickets/:id/assign", staffLimiter.Middleware("staff-write"), assignTicketHandler(staffChat, operations.Users))
+                        staff.POST("/tickets/:id/status", staffLimiter.Middleware("staff-write"), staffTicketStatusHandler(staffChat))
+                        staff.GET("/unread", staffChatUnreadHandler(staffChat))
+                        staff.POST("/upload", staffLimiter.Middleware("staff-upload"), uploadChatAttachmentHandler())
+                }
         }
 
         teacher := api.Group("/teacher")
@@ -265,6 +299,11 @@ func NewRouter(cfg *config.Config, h *Handler, tm *token.Manager, readiness func
                 if operations.Support != nil {
                         admin.GET("/support/messages", listSupportMessagesHandler(operations.Support))
                         admin.PATCH("/support/messages/:id/resolve", mutationLimiter.Middleware("admin-mutation"), resolveSupportMessageHandler(operations.Support))
+                }
+                if operations.SupportChat != nil {
+                        admin.GET("/support/agents", listAgentsHandler(operations.SupportChat))
+                        admin.POST("/support/agents", mutationLimiter.Middleware("admin-mutation"), appointAgentHandler(operations.SupportChat))
+                        admin.DELETE("/support/agents/:id", mutationLimiter.Middleware("admin-mutation"), revokeAgentHandler(operations.SupportChat))
                 }
                 if operations.Audit != nil {
                         admin.GET("/audit-logs", listAdminAuditHandler(operations.Audit))
