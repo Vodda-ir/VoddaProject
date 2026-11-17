@@ -131,9 +131,14 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
     };
   }, [runtime]);
 
+  // باگ refresh-loop: پاسخ دیرهنگام شمارندهٔ فراخوان نباید با دادهٔ کهنه بازنویسی شود.
+  const badgeGeneration = useRef(0);
+
   const loadDispatchBadge = useCallback(async () => {
+    const generation = ++badgeGeneration.current;
     try {
       const inbox = await getTeacherDispatchInbox(runtime);
+      if (badgeGeneration.current !== generation) return;
       const waiting = inbox.offers.filter((offer) => offer.status === "waiting").length;
       setDispatchBadge(inbox.calls.length + waiting);
     } catch {

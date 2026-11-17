@@ -29,7 +29,8 @@ export default function TeacherRegisterPage() {
   async function submit() {
     const token = getToken();
     if (!token) {
-      router.push(`/panel/login?redirect=${encodeURIComponent('/panel/teacher/register')}`);
+      // باگ refresh-loop: replace به‌جای push تا تاریخچهٔ مرورگر به صفحهٔ ورود آلوده نشود.
+      router.replace(`/panel/login?redirect=${encodeURIComponent('/panel/teacher/register')}`);
       return;
     }
 

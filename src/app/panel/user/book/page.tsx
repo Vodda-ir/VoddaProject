@@ -128,7 +128,8 @@ export default function BookingPage() {
     const token = getToken();
     if (!token) {
       const redirect = encodeURIComponent(`/panel/user/book?teacher=${teacherId}`);
-      router.push(`/panel/login?redirect=${redirect}`);
+      // باگ refresh-loop: replace تا صفحهٔ رزرو در تاریخچه بماند و پس از ورود با بازگشت قابل دسترس باشد.
+      router.replace(`/panel/login?redirect=${redirect}`);
       return;
     }
     if (isSelfTeacher) {

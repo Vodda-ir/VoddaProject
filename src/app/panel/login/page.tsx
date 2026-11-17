@@ -163,6 +163,14 @@ export default function PanelLogin() {
   const mobileRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
+  // باگ refresh-loop: مقصد پس از ورود از ?redirect= خوانده می‌شود اما فقط مسیرهای داخلی
+  // /panel/ پذیرفته می‌شوند (جلوگیری از open redirect)؛ در غیر این صورت مقصد پیش‌فرض نقش.
+  const redirectTarget = useMemo(() => {
+    if (typeof window === 'undefined') return '';
+    const target = new URLSearchParams(window.location.search).get('redirect') || '';
+    return target.startsWith('/panel/') && !target.startsWith('/panel/login') ? target : '';
+  }, []);
+
   useEffect(() => { if (!codeSent) mobileRef.current?.focus(); }, [codeSent]);
 
   async function sendOTP() {
@@ -183,12 +191,14 @@ export default function PanelLogin() {
       setToken(res.data.token);
       // Redirect based on role: admin → teacher → learner
       const role = res.data.user?.role || res.data.role || 'learner';
-      const panel = role === 'admin' ? '/panel/admin' : role === 'teacher' ? '/panel/teacher' : '/panel/user';
-      router.push(panel);
+      const panel = redirectTarget
+        || (role === 'admin' ? '/panel/admin' : role === 'teacher' ? '/panel/teacher' : '/panel/user');
+      // باگ refresh-loop: replace به‌جای push تا دکمهٔ بازگشت مرورگر کاربر را به صفحهٔ ورود برنگرداند.
+      router.replace(panel);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'کد وارد شده صحیح نیست');
     } finally { setLoading(false); }
-  }, [mobile, router]);
+  }, [mobile, router, redirectTarget]);
 
   function resetMobile() { setCodeSent(false); setError(''); }
 
