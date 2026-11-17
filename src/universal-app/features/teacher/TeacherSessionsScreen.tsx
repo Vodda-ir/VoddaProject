@@ -346,7 +346,7 @@ export function TeacherSessionsScreen({ mode }: { mode: TeacherSessionsMode }) {
         <div style={{ display: "grid", gap: spacing.md }}>
           <label style={{ display: "grid", gap: spacing.sm, ...typography.bodySmall }}>
             <span style={{ fontWeight: 700 }}>دلیل رد</span>
-            <textarea
+            <textarea className="vodda-textarea"
               value={rejectReason}
               onChange={(event) => setRejectReason(event.target.value)}
               rows={4}

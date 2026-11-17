@@ -432,7 +432,7 @@ export default function DispatchPage() {
                   </button>
                 </div>
                 {whenMode === 'later' ? (
-                  <input
+                  <input className="input-base"
                     type="datetime-local"
                     value={laterAt}
                     min={new Date(Date.now() + 3600000).toISOString().slice(0, 16)}
@@ -447,7 +447,7 @@ export default function DispatchPage() {
                 </p>
 
                 <strong style={{ fontSize: 13.5, display: 'block', marginBottom: 8 }}>یادداشت برای اساتید (اختیاری)</strong>
-                <textarea
+                <textarea className="input-base"
                   value={note}
                   onChange={(event) => setNote(event.target.value.slice(0, 300))}
                   rows={2}
@@ -488,7 +488,7 @@ export default function DispatchPage() {
                 <div className="web-search-fields" style={{ marginBottom: 14 }}>
                   <label>
                     <Icon name="search" size={18} />
-                    <input
+                    <input className="input-base"
                       type="search"
                       value={query}
                       onChange={(event) => setQuery(event.target.value)}

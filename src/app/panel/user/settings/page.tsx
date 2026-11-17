@@ -198,7 +198,7 @@ export default function UserSettingsPage() {
                 >
                   <Icon name="camera" size={14} />
                 </button>
-                <input
+                <input className="input-base"
                   ref={fileRef}
                   type="file"
                   accept="image/png,image/jpeg,image/webp,.jpg,.jpeg,.png,.webp"
@@ -226,15 +226,15 @@ export default function UserSettingsPage() {
 
             <label style={{ display: 'grid', gap: 6, fontSize: 11.5, fontWeight: 700, color: 'var(--ink-2s)' }}>
               نام و نام خانوادگی
-              <input value={name} onChange={(event) => setName(event.target.value)} style={inputStyle} maxLength={120} />
+              <input className="input-base" value={name} onChange={(event) => setName(event.target.value)} style={inputStyle} maxLength={120} />
             </label>
             <label style={{ display: 'grid', gap: 6, fontSize: 11.5, fontWeight: 700, color: 'var(--ink-2s)' }}>
               شهر
-              <input value={city} onChange={(event) => setCity(event.target.value)} style={inputStyle} maxLength={80} />
+              <input className="input-base" value={city} onChange={(event) => setCity(event.target.value)} style={inputStyle} maxLength={80} />
             </label>
             <label style={{ display: 'grid', gap: 6, fontSize: 11.5, fontWeight: 700, color: 'var(--ink-2s)' }}>
               درباره من
-              <textarea value={bio} onChange={(event) => setBio(event.target.value)} rows={4} style={{ ...inputStyle, resize: 'vertical' }} maxLength={500} />
+              <textarea className="input-base" value={bio} onChange={(event) => setBio(event.target.value)} rows={4} style={{ ...inputStyle, resize: 'vertical' }} maxLength={500} />
               <span style={{ fontSize: 9.5, fontWeight: 500, color: 'var(--ink-4)', textAlign: 'left' }}>{faDigits(bio.length)} / {faDigits(500)}</span>
             </label>
 

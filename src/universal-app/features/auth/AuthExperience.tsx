@@ -361,7 +361,7 @@ export function LoginScreen({ config }: LoginScreenProps) {
                   color: codeSent ? colors.inkFaint : colors.olive600,
                 }}
               />
-              <input
+              <input className="vodda-input"
                 name="mobile"
                 inputMode="numeric"
                 autoComplete="tel"
@@ -441,7 +441,7 @@ export function LoginScreen({ config }: LoginScreenProps) {
                     </span>
                   );
                 })}
-                <input
+                <input className="vodda-input"
                   ref={otpRef}
                   value={toFaDigits(code)}
                   inputMode="numeric"

@@ -237,7 +237,7 @@ export default function AdminSettings() {
                           </small>
                         </span>
                       ) : field.type === 'textarea' ? (
-                        <textarea
+                        <textarea className="input-base"
                           value={value}
                           placeholder={field.placeholder}
                           dir={field.ltr ? 'ltr' : 'rtl'}
@@ -246,7 +246,7 @@ export default function AdminSettings() {
                           style={{ ...inputStyle, minHeight: 84, resize: 'vertical', lineHeight: 1.9 }}
                         />
                       ) : (
-                        <input
+                        <input className="input-base"
                           value={value}
                           type={field.type === 'url' ? 'url' : 'text'}
                           dir={field.ltr ? 'ltr' : 'rtl'}

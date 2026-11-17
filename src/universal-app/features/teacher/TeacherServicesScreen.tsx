@@ -371,7 +371,7 @@ export function TeacherServicesScreen() {
           ) : (
             <div style={{ display: "grid", gap: spacing.sm }}>
               <span style={{ fontWeight: 700, ...typography.bodySmall }}>انتخاب خدمت رسمی</span>
-              <input
+              <input className="vodda-input"
                 value={catalogQuery}
                 placeholder="جستجو میان خدمات رسمی…"
                 onChange={(event) => setCatalogQuery(event.target.value)}
@@ -400,7 +400,7 @@ export function TeacherServicesScreen() {
           )}
           <label style={{ display: "grid", gap: spacing.xs, ...typography.bodySmall }}>
             <span style={{ fontWeight: 700 }}>مدت (۱۰ تا ۲۴۰ دقیقه)</span>
-            <input
+            <input className="vodda-input"
               inputMode="numeric"
               value={toFaDigits(draft.duration)}
               disabled={busyId !== null}
@@ -410,7 +410,7 @@ export function TeacherServicesScreen() {
           </label>
           <label style={{ display: "grid", gap: spacing.xs, ...typography.bodySmall }}>
             <span style={{ fontWeight: 700 }}>قیمت (تومان)</span>
-            <input
+            <input className="vodda-input"
               inputMode="numeric"
               value={toFaDigits(draft.price)}
               disabled={busyId !== null}

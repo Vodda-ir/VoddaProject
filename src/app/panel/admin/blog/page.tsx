@@ -481,7 +481,7 @@ export default function AdminBlogPage() {
                 <PanelButton type="button" disabled={uploading} onClick={() => fileRef.current?.click()}>
                   {uploading ? '…' : 'بارگذاری'}
                 </PanelButton>
-                <input
+                <input className="input-base"
                   ref={fileRef}
                   type="file"
                   accept="image/jpeg,image/png,image/webp"

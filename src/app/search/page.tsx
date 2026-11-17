@@ -166,7 +166,7 @@ export default function SearchPage() {
           <div className="web-search-fields">
             <label>
               <Icon name="search" size={19} />
-              <input
+              <input className="input-base"
                 type="search"
                 value={query}
                 onChange={(event) => resetPage(() => setQuery(event.target.value))}
@@ -176,7 +176,7 @@ export default function SearchPage() {
             </label>
             <label>
               <Icon name="pin" size={18} />
-              <input
+              <input className="input-base"
                 type="search"
                 value={city}
                 onChange={(event) => resetPage(() => setCity(event.target.value))}

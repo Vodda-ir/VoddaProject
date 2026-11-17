@@ -199,7 +199,7 @@ export default function BookingPage() {
           <Icon name="shield" size={20} style={{ color: paymentMethod === 'gateway' ? 'var(--olive-600)' : 'var(--ink-4)' }} />
         </button>
       </div>
-      <textarea aria-label="یادداشت برای استاد" value={note} maxLength={500} onChange={(event) => setNote(event.target.value)} placeholder="یادداشت برای استاد (اختیاری)…" style={{ width: '100%', minHeight: 90, padding: 14, borderRadius: 14, border: '1px solid var(--sand-200)', resize: 'vertical', marginBottom: 14 }} />
+      <textarea className="input-base" aria-label="یادداشت برای استاد" value={note} maxLength={500} onChange={(event) => setNote(event.target.value)} placeholder="یادداشت برای استاد (اختیاری)…" style={{ width: '100%', minHeight: 90, padding: 14, borderRadius: 14, border: '1px solid var(--sand-200)', resize: 'vertical', marginBottom: 14 }} />
       <p style={{ fontSize: 12.5, color: 'var(--ink-3)', lineHeight: 1.9, marginBottom: 16 }}>{paymentMethod === 'gateway' ? 'با ثبت رزرو به درگاه امن سامان‌سپ منتقل می‌شوید و پس از پرداخت موفق، درخواست برای استاد ارسال می‌شود. در صورت لغو یا انقضای پرداخت، زمان آزاد می‌شود.' : 'مبلغ هنگام ثبت رزرو از کیف پول کسر می‌شود.'} زمان‌ها در timezone رسمی سامانه محاسبه شده‌اند و ممکن است تا لحظهٔ ثبت توسط کاربر دیگری رزرو شوند.</p>
       <button type="button" onClick={submitBooking} disabled={submitting || isSelfTeacher} style={{ ...primaryButton, width: '100%', border: 0, cursor: submitting ? 'wait' : 'pointer', opacity: submitting ? .65 : 1 }}>{submitting ? 'در حال ثبت…' : paymentMethod === 'gateway' ? 'پرداخت و ثبت رزرو' : 'ثبت درخواست رزرو'}</button></>}</Card>
   </div></main>;

@@ -360,7 +360,7 @@ export function LearnerSessionsScreen() {
 
           <label style={{ display: "grid", gap: spacing.sm, ...typography.bodySmall, color: colors.ink }}>
             <span style={{ fontWeight: 700 }}>نظر شما (اختیاری)</span>
-            <textarea
+            <textarea className="vodda-textarea"
               value={reviewText}
               onChange={(event) => setReviewText(event.target.value)}
               maxLength={1000}

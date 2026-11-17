@@ -446,11 +446,11 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
             stroke={1.8}
             style={{ position: "absolute", zIndex: 1, insetInlineStart: 14, top: "50%", transform: "translateY(-50%)", color: colors.inkMuted }}
           />
-          <input
+          <input className="vodda-input"
             value={filters.query}
             onChange={(event) => setFilters((current) => ({ ...current, query: event.target.value }))}
             placeholder="نام استاد یا تخصص…"
-            className="vodda-input"
+           
             style={{
               width: "100%",
               minHeight: 50,
@@ -760,11 +760,11 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
           <div style={{ display: "grid", gap: 8 }}>
             <strong style={{ ...typography.bodySmall }}>شهر</strong>
             {cities.length > 8 ? (
-              <input
+              <input className="vodda-input"
                 value={cityQuery}
                 onChange={(event) => setCityQuery(event.target.value)}
                 placeholder="جستجوی شهر…"
-                className="vodda-input"
+               
                 style={{
                   width: "100%",
                   minHeight: 46,

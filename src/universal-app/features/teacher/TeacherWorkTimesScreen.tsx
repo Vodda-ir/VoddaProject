@@ -316,7 +316,7 @@ export function TeacherWorkTimesScreen() {
         <div style={{ display: "grid", gap: spacing.md }}>
           <label style={{ display: "grid", gap: spacing.xs, ...typography.bodySmall }}>
             <span style={{ fontWeight: 700 }}>از ساعت</span>
-            <input
+            <input className="vodda-input"
               type="text"
               inputMode="numeric"
               value={toFaDigits(draft.from)}
@@ -328,7 +328,7 @@ export function TeacherWorkTimesScreen() {
           </label>
           <label style={{ display: "grid", gap: spacing.xs, ...typography.bodySmall }}>
             <span style={{ fontWeight: 700 }}>تا ساعت</span>
-            <input
+            <input className="vodda-input"
               type="text"
               inputMode="numeric"
               value={toFaDigits(draft.to)}

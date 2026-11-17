@@ -584,7 +584,7 @@ export default function LiveClassroomPage() {
                   {chat.length === 0 && <div style={{ margin: 'auto', color: 'var(--ink-3)', fontSize: 12.5 }}>پیامی نیست. سلام کنید! 👋</div>}
                 </div>
                 <div style={{ display: 'flex', gap: 8, padding: 12, borderTop: '1px solid var(--sand-150)' }}>
-                  <input value={chatDraft} onChange={(event) => setChatDraft(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') sendChat(); }} placeholder="پیام خود را بنویسید…" style={{ flex: 1, padding: '10px 12px', borderRadius: 12, border: '1px solid var(--sand-150)', fontSize: 13, background: 'var(--surface)' }} />
+                  <input className="input-base" value={chatDraft} onChange={(event) => setChatDraft(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') sendChat(); }} placeholder="پیام خود را بنویسید…" style={{ flex: 1, padding: '10px 12px', borderRadius: 12, border: '1px solid var(--sand-150)', fontSize: 13, background: 'var(--surface)' }} />
                   <button type="button" onClick={sendChat} style={{ border: 0, borderRadius: 12, padding: '0 18px', background: 'var(--olive-600)', color: '#fff', fontWeight: 800, cursor: 'pointer' }}>ارسال</button>
                 </div>
               </>
@@ -596,7 +596,7 @@ export default function LiveClassroomPage() {
                   {STROKE_COLORS.map((color) => (
                     <button key={color} type="button" aria-label={`رنگ ${color}`} onClick={() => setStrokeColor(color)} style={{ width: 24, height: 24, borderRadius: 999, background: color, border: strokeColor === color ? '2px solid var(--olive-700)' : '2px solid transparent', cursor: 'pointer' }} />
                   ))}
-                  <input type="range" min={2} max={10} value={strokeWidth} onChange={(event) => setStrokeWidth(Number(event.target.value))} aria-label="ضخامت قلم" style={{ width: 90 }} />
+                  <input className="input-base" type="range" min={2} max={10} value={strokeWidth} onChange={(event) => setStrokeWidth(Number(event.target.value))} aria-label="ضخامت قلم" style={{ width: 90 }} />
                   <button type="button" onClick={() => { setStrokes((items) => items.slice(0, -1)); clientRef.current?.send('wb', { action: 'undo' }); }} style={{ border: '1px solid var(--sand-150)', background: 'var(--surface)', borderRadius: 10, padding: '6px 12px', fontSize: 12, cursor: 'pointer' }}>برگشت</button>
                   <button type="button" onClick={() => { setStrokes([]); clientRef.current?.send('wb', { action: 'clear' }); }} style={{ border: '1px solid var(--clay)', background: 'var(--clay-bg)', color: 'var(--rose)', borderRadius: 10, padding: '6px 12px', fontSize: 12, cursor: 'pointer' }}>پاک کردن همه</button>
                 </div>
@@ -639,7 +639,7 @@ export default function LiveClassroomPage() {
                   ))}
                 </div>
                 {isTeacherSide ? (
-                  <textarea value={readingText} onChange={(event) => setReadingText(event.target.value)} onBlur={(event) => sendReading(event.target.value)} placeholder={isTeacherSide ? 'متن تمرین تلاوت را بنویسید؛ با خروج از کادر برای دانش‌آموز ارسال می‌شود.' : ''} style={{ flex: 1, resize: 'none', padding: 14, borderRadius: 12, border: '1px solid var(--sand-150)', fontSize: 15.5, lineHeight: 2.2, background: 'var(--surface)', fontFamily: 'inherit' }} />
+                  <textarea className="input-base" value={readingText} onChange={(event) => setReadingText(event.target.value)} onBlur={(event) => sendReading(event.target.value)} placeholder={isTeacherSide ? 'متن تمرین تلاوت را بنویسید؛ با خروج از کادر برای دانش‌آموز ارسال می‌شود.' : ''} style={{ flex: 1, minWidth: 0, resize: 'vertical', padding: 14, borderRadius: 12, border: '1px solid var(--sand-150)', fontSize: 15.5, lineHeight: 2.2, background: 'var(--surface)', fontFamily: 'inherit' }} />
                 ) : (
                   <div style={{ flex: 1, overflowY: 'auto', padding: 14, borderRadius: 12, border: '1px solid var(--sand-150)', background: 'var(--surface)', fontSize: 16.5, lineHeight: 2.3, whiteSpace: 'pre-wrap' }}>{readingText || 'مترببی هنوز متنی ارسال نکرده است.'}</div>
                 )}

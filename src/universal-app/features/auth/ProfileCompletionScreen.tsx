@@ -253,7 +253,7 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
               >
                 <Icon name="camera" size={16} />
               </span>
-              <input type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" disabled={saving || preparingAvatar} onChange={selectAvatar} style={{ display: "none" }} />
+              <input className="vodda-input" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" disabled={saving || preparingAvatar} onChange={selectAvatar} style={{ display: "none" }} />
             </label>
             <label style={{ color: colors.olive600, fontSize: 13, fontWeight: 600, cursor: saving ? "not-allowed" : "pointer" }}>
               {preparingAvatar
@@ -261,7 +261,7 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
                 : avatar || user?.avatar_url
                   ? "تغییر تصویر"
                   : "افزودن تصویر"}
-              <input type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" disabled={saving || preparingAvatar} onChange={selectAvatar} style={{ display: "none" }} />
+              <input className="vodda-input" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" disabled={saving || preparingAvatar} onChange={selectAvatar} style={{ display: "none" }} />
             </label>
             <span aria-hidden="true" style={{ width: 48, height: 3, marginTop: 2, borderRadius: 3, background: colors.olive200 }} />
           </div>
@@ -270,7 +270,7 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
             <span style={{ fontSize: 13.5, fontWeight: 700, color: colors.inkSecondary }}>نام و نام خانوادگی</span>
             <div style={{ position: "relative" }}>
               <Icon name="user" size={19} style={{ position: "absolute", insetInlineStart: 16, top: "50%", transform: "translateY(-50%)", color: colors.inkFaint }} />
-              <input
+              <input className="vodda-input"
                 name="name"
                 autoComplete="name"
                 value={name}
@@ -298,7 +298,7 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
             <span style={{ fontSize: 13.5, fontWeight: 700, color: colors.inkSecondary }}>شهر</span>
             <div style={{ position: "relative" }}>
               <Icon name="pin" size={19} style={{ position: "absolute", insetInlineStart: 16, top: "50%", transform: "translateY(-50%)", color: colors.inkFaint }} />
-              <input
+              <input className="vodda-input"
                 name="city"
                 autoComplete="address-level2"
                 value={city}
@@ -312,7 +312,7 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
 
           <label style={{ display: "grid", gap: 6 }}>
             <span style={{ fontSize: 13.5, fontWeight: 700, color: colors.inkSecondary }}>دربارهٔ شما</span>
-            <textarea
+            <textarea className="vodda-textarea"
               name="bio"
               rows={4}
               value={bio}
@@ -320,7 +320,7 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
               maxLength={200}
               placeholder="چند خط دربارهٔ خودتان بنویسید…"
               onChange={(event) => setBio(event.target.value)}
-              className="vodda-textarea"
+             
               style={{ width: "100%", resize: "vertical", padding: 14, border: `1px solid ${colors.sand200}`, borderRadius: 16, outline: "none", color: colors.ink, background: colors.surface, fontFamily: typography.fontFamily, fontSize: 15, fontWeight: 500, lineHeight: 1.8 }}
             />
             <span style={{ fontSize: 11, color: colors.inkFaint, textAlign: "left" }}>{bio.length}/200</span>

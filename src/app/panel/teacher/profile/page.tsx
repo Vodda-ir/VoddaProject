@@ -150,12 +150,12 @@ export default function TeacherProfilePage() {
                 <ChipSelect options={LEVEL_OPTIONS} value={form.level} allowFree placeholder="سطح…" freeValue={form.level} onFreeChange={(value) => patch({ level: value })} maxLength={30} />
               </Field>
               <Field label="شهر">
-                <input value={form.city} maxLength={80} placeholder="مثلاً: رشت" onChange={(event) => patch({ city: event.target.value })} style={inputStyle} />
+                <input className="input-base" value={form.city} maxLength={80} placeholder="مثلاً: رشت" onChange={(event) => patch({ city: event.target.value })} style={inputStyle} />
               </Field>
             </div>
 
             <Field label="معرفی و سوابق" hint={`${toFaDigits(form.bio.length)} / ${toFaDigits(1000)} کاراکتر`}>
-              <textarea value={form.bio} rows={5} maxLength={1000} placeholder="سوابق، روش تدریس و هر چیزی که قرآن‌آموزان باید بدانند…" onChange={(event) => patch({ bio: event.target.value })} style={{ ...inputStyle, resize: 'vertical' }} />
+              <textarea className="input-base" value={form.bio} rows={5} maxLength={1000} placeholder="سوابق، روش تدریس و هر چیزی که قرآن‌آموزان باید بدانند…" onChange={(event) => patch({ bio: event.target.value })} style={{ ...inputStyle, resize: 'vertical' }} />
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginTop: 8 }}>
                 <button
                   type="button"
@@ -171,15 +171,15 @@ export default function TeacherProfilePage() {
             </Field>
 
             <Field label="مهارت‌ها" hint="مهارت‌ها را با ویرگول جدا کنید (حداکثر ۲۰ مورد)">
-              <input value={form.skills} placeholder="مثلاً: تجوید، روخوانی، حفظ جزء ۳۰" onChange={(event) => patch({ skills: event.target.value })} style={inputStyle} />
+              <input className="input-base" value={form.skills} placeholder="مثلاً: تجوید، روخوانی، حفظ جزء ۳۰" onChange={(event) => patch({ skills: event.target.value })} style={inputStyle} />
             </Field>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: 14 }}>
               <Field label="تعرفه ۳۰ دقیقه (تومان)">
-                <input type="text" inputMode="numeric" value={form.price30 ? toFaDigits(form.price30) : ''} placeholder={teacher.price30 > 0 ? `فعلی: ${formatFaNumber(teacher.price30)}` : 'عدد…'} onChange={(event) => patch({ price30: digitsOnly(event.target.value) })} style={inputStyle} />
+                <input className="input-base" type="text" inputMode="numeric" value={form.price30 ? toFaDigits(form.price30) : ''} placeholder={teacher.price30 > 0 ? `فعلی: ${formatFaNumber(teacher.price30)}` : 'عدد…'} onChange={(event) => patch({ price30: digitsOnly(event.target.value) })} style={inputStyle} />
               </Field>
               <Field label="تعرفه ۶۰ دقیقه (تومان)">
-                <input type="text" inputMode="numeric" value={form.price60 ? toFaDigits(form.price60) : ''} placeholder={teacher.price60 > 0 ? `فعلی: ${formatFaNumber(teacher.price60)}` : 'عدد…'} onChange={(event) => patch({ price60: digitsOnly(event.target.value) })} style={inputStyle} />
+                <input className="input-base" type="text" inputMode="numeric" value={form.price60 ? toFaDigits(form.price60) : ''} placeholder={teacher.price60 > 0 ? `فعلی: ${formatFaNumber(teacher.price60)}` : 'عدد…'} onChange={(event) => patch({ price60: digitsOnly(event.target.value) })} style={inputStyle} />
               </Field>
             </div>
 
@@ -321,7 +321,7 @@ function ChipSelect({
         })}
       </div>
       {allowFree && (
-        <input
+        <input className="input-base"
           value={freeActive ? (freeValue || '') : ''}
           maxLength={maxLength}
           placeholder={placeholder}

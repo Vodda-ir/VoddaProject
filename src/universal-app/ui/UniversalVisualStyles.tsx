@@ -82,6 +82,20 @@ export function UniversalVisualStyles() {
       [data-app-shell] textarea {
         resize: vertical;
       }
+      /* باگ input-overflow — کلاس پایهٔ خودکفا برای فیلدهایی که className="vodda-input"
+         یا "vodda-textarea" دارند؛ همان قواعد عنصرمحور بالا به‌صورت کلاس‌محور تکرار شده
+         تا هر فیلد آینده هم فقط با این کلاس از قواعد پایه پیروی کند. */
+      [data-universal-app="vodda"] .vodda-input,
+      [data-universal-app="vodda"] .vodda-textarea,
+      [data-app-shell] .vodda-input,
+      [data-app-shell] .vodda-textarea {
+        box-sizing: border-box;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+      }
       /* باگ input-overflow — فرم‌گریدهای بدون ستون صریح با محتوای بلند باد نمی‌کنند.
          بدون !important تا ستون‌های صریح inline دست‌نخورده بمانند. */
       [data-universal-app="vodda"] label:has(> input),

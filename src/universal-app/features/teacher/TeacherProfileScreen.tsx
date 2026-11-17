@@ -479,12 +479,12 @@ export function TeacherProfileScreen({ config }: { config: UniversalAppConfig })
           <Input label="شهر" value={form.city} maxLength={80} onChange={(event) => setForm({ ...form, city: event.target.value })} />
           <label style={{ display: "grid", gap: spacing.xs }}>
             <span style={{ ...typography.bodySmall, color: colors.inkSecondary }}>معرفی استاد</span>
-            <textarea
+            <textarea className="vodda-textarea"
               value={form.bio}
               maxLength={1000}
               rows={5}
               onChange={(event) => setForm({ ...form, bio: event.target.value })}
-              className="vodda-textarea"
+             
               style={{ width: "100%", resize: "vertical", padding: spacing.md, borderRadius: radii.md, border: `1px solid ${colors.line}`, outline: "none", boxShadow: shadows.xs, font: "inherit", background: colors.surface, color: colors.ink }}
             />
           </label>

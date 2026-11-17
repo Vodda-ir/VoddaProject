@@ -118,7 +118,7 @@ export function SearchInput({
   return (
     <label className="adm-search">
       <Icon name="search" size={16} />
-      <input
+      <input className="input-base"
         type="search"
         value={draft}
         placeholder={placeholder}

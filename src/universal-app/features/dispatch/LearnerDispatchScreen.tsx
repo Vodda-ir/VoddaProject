@@ -632,7 +632,7 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
               </button>
             </div>
             {whenMode === "later" ? (
-              <input
+              <input className="vodda-input"
                 type="datetime-local"
                 value={laterAt}
                 min={new Date(Date.now() + 3600000).toISOString().slice(0, 16)}
@@ -649,12 +649,12 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
 
           <div>
             <strong style={{ fontSize: 13.5, color: colors.ink, display: "block", marginBottom: 8 }}>یادداشت برای اساتید (اختیاری)</strong>
-            <textarea
+            <textarea className="vodda-textarea"
               value={note}
               onChange={(event) => setNote(event.target.value.slice(0, 300))}
               rows={2}
               placeholder="مثلاً: مبتدی هستم، برای شروع کمکم کنید…"
-              style={{ ...inputStyle, resize: "none", lineHeight: 1.9 }}
+              style={{ ...inputStyle, resize: "vertical", lineHeight: 1.9 }}
               aria-label="یادداشت فراخوان"
             />
           </div>
@@ -680,7 +680,7 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
           <span style={{ fontSize: 12, color: colors.inkMuted, display: "block", margin: "4px 0 12px" }}>
             از فهرست رسمی خدمات وُدّا — {fa(catalog.length)} موضوع تأییدشده
           </span>
-          <input
+          <input className="vodda-input"
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}

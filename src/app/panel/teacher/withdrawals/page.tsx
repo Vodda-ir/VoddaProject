@@ -103,9 +103,9 @@ export default function TeacherWithdrawalsPage() {
           </div>
           <div style={{ padding: 17 }}>
             <div style={{ display: 'grid', gap: 12 }}>
-              <label style={labelStyle}>مبلغ (تومان)<input inputMode="numeric" value={toFaDigits(amount)} onChange={(event) => setAmount(digitsOnly(event.target.value))} placeholder="مثلاً ۵۰۰۰۰۰" style={panelInputStyle} /></label>
-              <label style={labelStyle}>شماره کارت<input inputMode="numeric" value={toFaDigits(card)} maxLength={16} onChange={(event) => setCard(digitsOnly(event.target.value, 16))} placeholder="۱۶ رقم، اختیاری" style={panelInputStyle} /></label>
-              <label style={labelStyle}>شماره شبا<input dir="ltr" value={toFaDigits(sheba)} maxLength={26} onChange={(event) => setSheba(toLatinDigits(event.target.value).replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 26))} placeholder="IR۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰" style={{ ...panelInputStyle, textAlign: 'left' }} /></label>
+              <label style={labelStyle}>مبلغ (تومان)<input className="input-base" inputMode="numeric" value={toFaDigits(amount)} onChange={(event) => setAmount(digitsOnly(event.target.value))} placeholder="مثلاً ۵۰۰۰۰۰" style={panelInputStyle} /></label>
+              <label style={labelStyle}>شماره کارت<input className="input-base" inputMode="numeric" value={toFaDigits(card)} maxLength={16} onChange={(event) => setCard(digitsOnly(event.target.value, 16))} placeholder="۱۶ رقم، اختیاری" style={panelInputStyle} /></label>
+              <label style={labelStyle}>شماره شبا<input className="input-base" dir="ltr" value={toFaDigits(sheba)} maxLength={26} onChange={(event) => setSheba(toLatinDigits(event.target.value).replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 26))} placeholder="IR۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰" style={{ ...panelInputStyle, textAlign: 'left' }} /></label>
             </div>
 
             <div className="ops-inline-note" style={{ marginTop: 12 }}>

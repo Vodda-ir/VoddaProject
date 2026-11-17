@@ -238,7 +238,7 @@ export default function UserWalletPage() {
           <div style={{ display: 'flex', gap: 10, alignItems: 'stretch', flexWrap: 'wrap' }}>
             <label style={{ position: 'relative', flex: '1 1 220px', minWidth: 0 }}>
               <span className="sr-only">مبلغ شارژ (تومان)</span>
-              <input
+              <input className="input-base"
                 inputMode="numeric"
                 value={topupAmount ? faDigits(formatFaNumber(parsedTopup)) : ''}
                 onChange={(event) => {
@@ -249,7 +249,7 @@ export default function UserWalletPage() {
                 placeholder="مثلاً ۱۵۰٬۰۰۰"
                 aria-label="مبلغ شارژ (تومان)"
                 style={{
-                  width: '100%', padding: '12px 14px', borderRadius: 13,
+                  width: '100%', paddingInline: '14px 46px', paddingBlock: 12, borderRadius: 13,
                   border: '1px solid var(--line, #e4e0d5)', background: '#fff',
                   fontSize: 15, fontWeight: 700, color: 'var(--ink, #3c4433)',
                   outline: 'none', textAlign: 'left',

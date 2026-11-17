@@ -122,7 +122,7 @@ function OtpInput({
       onPaste={handlePaste}
     >
       {Array.from({ length }).map((_, i) => (
-        <input
+        <input className="input-base"
           key={i}
           ref={el => { refs.current[i] = el; }}
           value={toFaDigits(values[i])}
@@ -225,7 +225,7 @@ export default function PanelLogin() {
               شماره موبایل
             </label>
           )}
-          <input
+          <input className="input-base"
             ref={mobileRef}
             value={toFaDigits(mobile)}
             onChange={e => setMobile(digitsOnly(e.target.value, 11))}

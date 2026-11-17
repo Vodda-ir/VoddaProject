@@ -210,7 +210,7 @@ export function TeacherWithdrawScreen({ config }: { config: UniversalAppConfig }
             <div style={{ display: "grid", gap: spacing.md }}>
             <label style={{ display: "grid", gap: spacing.xs }}>
               <span style={{ ...typography.bodySmall, fontWeight: 700 }}>مبلغ برداشت</span>
-              <input value={toFaDigits(amount)} onChange={(event) => setAmount(digitsOnly(event.target.value))} inputMode="numeric" placeholder="مثلاً ۵۰۰۰۰۰" style={inputStyle} />
+              <input className="vodda-input" value={toFaDigits(amount)} onChange={(event) => setAmount(digitsOnly(event.target.value))} inputMode="numeric" placeholder="مثلاً ۵۰۰۰۰۰" style={inputStyle} />
             </label>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: spacing.xs }}>
               {[500000, 1000000, 2000000].map((quickAmount) => (
@@ -224,11 +224,11 @@ export function TeacherWithdrawScreen({ config }: { config: UniversalAppConfig }
             </div>
             <label style={{ display: "grid", gap: spacing.xs }}>
               <span style={{ ...typography.bodySmall, fontWeight: 700 }}>شماره کارت (اختیاری)</span>
-              <input value={cardDisplay(card)} onChange={(event) => setCard(cleanCard(event.target.value))} inputMode="numeric" dir="ltr" maxLength={19} placeholder="۶۰۳۷ ۹۹۷۵ ۱۲۳۴ ۵۶۷۸" style={inputStyle} />
+              <input className="vodda-input" value={cardDisplay(card)} onChange={(event) => setCard(cleanCard(event.target.value))} inputMode="numeric" dir="ltr" maxLength={19} placeholder="۶۰۳۷ ۹۹۷۵ ۱۲۳۴ ۵۶۷۸" style={inputStyle} />
             </label>
             <label style={{ display: "grid", gap: spacing.xs }}>
               <span style={{ ...typography.bodySmall, fontWeight: 700 }}>شماره شبا (اختیاری)</span>
-              <input value={toFaDigits(sheba)} onChange={(event) => setSheba(cleanSheba(event.target.value))} dir="ltr" maxLength={26} placeholder="IR۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰" style={inputStyle} />
+              <input className="vodda-input" value={toFaDigits(sheba)} onChange={(event) => setSheba(cleanSheba(event.target.value))} dir="ltr" maxLength={26} placeholder="IR۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰" style={inputStyle} />
             </label>
 
             <Card style={{ background: colors.goldBackground, border: `1px solid ${colors.goldSoft}` }}>

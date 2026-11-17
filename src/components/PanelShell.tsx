@@ -133,7 +133,7 @@ export function PanelShell({
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#fff', borderRadius: 11, padding: '9px 14px', boxShadow: 'var(--sh-sm)', width: 240 }} className="hide-sm">
               <Icon name="search" size={18} style={{ color: 'var(--ink-3)' }} />
-              <input placeholder="جستجو…" style={{ flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent', fontSize: 13.5, fontFamily: 'var(--font)' }} />
+              <input className="input-base" placeholder="جستجو…" style={{ flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent', fontSize: 13.5, fontFamily: 'var(--font)' }} />
             </div>
             <button style={{ position: 'relative', width: 42, height: 42, borderRadius: 12, background: '#fff', boxShadow: 'var(--sh-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--ink-2s)' }}>
               <Icon name="bell" size={20} />

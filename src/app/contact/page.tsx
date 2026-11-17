@@ -119,15 +119,15 @@ export default function ContactPage() {
             <form onSubmit={submit} className="contact-form">
               <label>
                 <span>نام و نام خانوادگی</span>
-                <input aria-label="نام و نام خانوادگی" value={name} onChange={(event) => setName(event.target.value)} maxLength={120} autoComplete="name" placeholder="نام شما" style={inputStyle} disabled={submitting} />
+                <input className="input-base" aria-label="نام و نام خانوادگی" value={name} onChange={(event) => setName(event.target.value)} maxLength={120} autoComplete="name" placeholder="نام شما" style={inputStyle} disabled={submitting} />
               </label>
               <label>
                 <span>ایمیل یا شماره تماس</span>
-                <input aria-label="ایمیل یا شماره تماس" value={contact} onChange={(event) => setContact(event.target.value)} maxLength={160} autoComplete="email" placeholder="راه ارتباطی برای پاسخ" style={inputStyle} disabled={submitting} />
+                <input className="input-base" aria-label="ایمیل یا شماره تماس" value={contact} onChange={(event) => setContact(event.target.value)} maxLength={160} autoComplete="email" placeholder="راه ارتباطی برای پاسخ" style={inputStyle} disabled={submitting} />
               </label>
               <label>
                 <span>متن پیام</span>
-                <textarea aria-label="متن پیام" value={message} onChange={(event) => setMessage(event.target.value)} maxLength={4000} placeholder="سؤال یا توضیح خود را بنویسید…" style={{ ...inputStyle, minHeight: 145, resize: 'vertical' }} disabled={submitting} />
+                <textarea className="input-base" aria-label="متن پیام" value={message} onChange={(event) => setMessage(event.target.value)} maxLength={4000} placeholder="سؤال یا توضیح خود را بنویسید…" style={{ ...inputStyle, minHeight: 145, resize: 'vertical' }} disabled={submitting} />
               </label>
 
               {error && <div role="alert" className="contact-form-message error"><Icon name="info" size={17} />{error}</div>}

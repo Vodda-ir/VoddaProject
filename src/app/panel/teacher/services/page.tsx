@@ -248,7 +248,7 @@ function ServiceDialog({
           <div style={{ padding: 30, textAlign: 'center', color: 'var(--ink-3)', fontSize: 12 }}>در حال دریافت خدمات رسمی…</div>
         ) : (
           <div style={{ marginBottom: 12 }}>
-            <input
+            <input className="input-base"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="جستجو میان خدمات رسمی…"
@@ -288,9 +288,9 @@ function ServiceDialog({
           </div>
         )}
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-          <label style={labelStyle}>مدت (دقیقه)<input type="text" inputMode="numeric" value={toFaDigits(duration)} onChange={(event) => setDuration(digitsOnly(event.target.value))} style={inputStyle} /></label>
-          <label style={labelStyle}>قیمت (تومان)<input type="text" inputMode="numeric" value={toFaDigits(price)} onChange={(event) => setPrice(digitsOnly(event.target.value))} style={inputStyle} /></label>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 10 }}>
+          <label style={labelStyle}>مدت (دقیقه)<input className="input-base" type="text" inputMode="numeric" value={toFaDigits(duration)} onChange={(event) => setDuration(digitsOnly(event.target.value))} style={inputStyle} /></label>
+          <label style={labelStyle}>قیمت (تومان)<input className="input-base" type="text" inputMode="numeric" value={toFaDigits(price)} onChange={(event) => setPrice(digitsOnly(event.target.value))} style={inputStyle} /></label>
         </div>
         {error && <div role="alert" style={{ marginTop: 4, color: 'var(--rose)', background: 'var(--clay-bg)', padding: 10, borderRadius: 10, fontSize: 12 }}>{error}</div>}
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 18 }}>

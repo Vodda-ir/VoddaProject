@@ -355,7 +355,7 @@ function ReviewDialog({
 
         <label style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 12, fontSize: 11.5, fontWeight: 700, color: 'var(--ink-3)' }}>
           متن نظر (اختیاری)
-          <textarea
+          <textarea className="input-base"
             value={text}
             maxLength={1000}
             rows={4}

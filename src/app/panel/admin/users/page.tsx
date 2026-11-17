@@ -789,7 +789,7 @@ export default function AdminUsers() {
                 مبلغ مثبت شارژ و مبلغ منفی کسر می‌کند. تراکنش در دفتر مالی کاربر با عنوان «تعدیل دستی» ثبت و در گزارش عملیات لاگ می‌شود.
               </p>
               <div style={{ display: 'grid', gap: 8 }}>
-                <input
+                <input className="input-base"
                   dir="ltr"
                   inputMode="numeric"
                   value={adjustAmount}
@@ -801,7 +801,7 @@ export default function AdminUsers() {
                     borderRadius: 12, background: '#fff', fontFamily: 'inherit', fontSize: 12.5, textAlign: 'left',
                   }}
                 />
-                <input
+                <input className="input-base"
                   value={adjustReason}
                   onChange={(event) => setAdjustReason(event.target.value)}
                   maxLength={120}
@@ -832,7 +832,7 @@ export default function AdminUsers() {
                 پیام شما بلافاصله در اعلان‌های پنل و اپ کاربر نمایش داده می‌شود.
               </p>
               <div style={{ display: 'grid', gap: 8 }}>
-                <input
+                <input className="input-base"
                   value={notifyTitle}
                   onChange={(event) => { setNotifyTitle(event.target.value); setNotifyDone(false); }}
                   maxLength={160}
@@ -843,7 +843,7 @@ export default function AdminUsers() {
                     borderRadius: 12, background: '#fff', fontFamily: 'inherit', fontSize: 12.5,
                   }}
                 />
-                <textarea
+                <textarea className="input-base"
                   value={notifyBody}
                   onChange={(event) => { setNotifyBody(event.target.value); setNotifyDone(false); }}
                   maxLength={500}

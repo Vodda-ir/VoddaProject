@@ -319,12 +319,12 @@ export function Hero() {
           <form onSubmit={submit} className="landing-search-box">
             <label>
               <Icon name="search" size={19} />
-              <input value={query} onChange={(event) => setQuery(event.target.value)} aria-label="نام یا تخصص استاد" placeholder="نام یا تخصص استاد" />
+              <input className="input-base" value={query} onChange={(event) => setQuery(event.target.value)} aria-label="نام یا تخصص استاد" placeholder="نام یا تخصص استاد" />
             </label>
             <span className="landing-search-divider" />
             <label className="landing-city-field">
               <Icon name="pin" size={18} />
-              <input value={city} onChange={(event) => setCity(event.target.value)} aria-label="شهر" placeholder="شهر" />
+              <input className="input-base" value={city} onChange={(event) => setCity(event.target.value)} aria-label="شهر" placeholder="شهر" />
             </label>
             <button type="submit">جستجوی استاد <Icon name="arrowL" size={17} /></button>
           </form>

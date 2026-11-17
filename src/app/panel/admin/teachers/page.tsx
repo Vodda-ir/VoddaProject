@@ -253,11 +253,11 @@ export default function AdminTeachers() {
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <label className="adm-search" style={{ maxWidth: 150 }}>
             <Icon name="pin" size={15} />
-            <input value={city} onChange={(event) => { setCity(event.target.value); setPage(0); }} placeholder="شهر" aria-label="فیلتر شهر" />
+            <input className="input-base" value={city} onChange={(event) => { setCity(event.target.value); setPage(0); }} placeholder="شهر" aria-label="فیلتر شهر" />
           </label>
           <label className="adm-search" style={{ maxWidth: 150 }}>
             <Icon name="book" size={15} />
-            <input value={field} onChange={(event) => { setField(event.target.value); setPage(0); }} placeholder="حوزه" aria-label="فیلتر حوزه" />
+            <input className="input-base" value={field} onChange={(event) => { setField(event.target.value); setPage(0); }} placeholder="حوزه" aria-label="فیلتر حوزه" />
           </label>
           <SearchInput value={query} onChange={(value) => { setQuery(value); setPage(0); }} placeholder="جست‌وجوی استاد…" />
           {hasFilters && <PanelButton icon="x" onClick={() => { setQuery(''); setCity(''); setField(''); setStatus(''); setPage(0); }}>پاک‌کردن</PanelButton>}
