@@ -19,6 +19,9 @@ import { formatDateTime } from '@/lib/datetime';
 
 type Phase = 'idle' | 'searching' | 'matched';
 
+// باگ dispatch-stuck-pending — پیام دقیق وقتی فراخوان فعال قبلی مانع ثبت فراخوان جدید است.
+const PENDING_CALL_MESSAGE = 'فراخوان قبلی شما در انتظار پاسخ است — ابتدا آن را لغو کنید.';
+
 const TIER_BADGE: Record<string, { label: string; bg: string; color: string }> = {
   international: { label: 'درجه یک بین‌المللی', bg: 'var(--gold-bg, #f7efd9)', color: '#8b681f' },
   grade2: { label: 'درجه دو', bg: 'var(--olive-50, #f2f5ea)', color: '#4c5a36' },
@@ -150,6 +153,15 @@ export default function DispatchPage() {
     setCreating(true);
     setError('');
     try {
+      // باگ dispatch-stuck-pending — پیش از ثبت، فراخوان فعال قبلی بررسی می‌شود تا کاربر
+      // به‌جای خطای مبهم سرور، پیام دقیق بگیرد و همان فراخوان با دکمهٔ لغو نمایش داده شود.
+      const precheck = await api.dispatchCurrent(token);
+      const precheckCall = precheck.data?.call;
+      if (precheckCall && (precheckCall.status === 'searching' || precheckCall.status === 'matched')) {
+        setView(precheck.data ?? null);
+        setError(PENDING_CALL_MESSAGE);
+        return;
+      }
       const scheduledAt = whenMode === 'later' && laterAt ? new Date(laterAt).toISOString() : undefined;
       const created = await api.dispatchCreate(token, {
         official_service_id: topic.id,
@@ -159,6 +171,19 @@ export default function DispatchPage() {
       });
       setView(created.data ?? null);
     } catch (cause) {
+      // رقابت احتمالی (مثلاً ثبت در دستگاه دیگر): وضعیت واقعی را بگیر؛
+      // اگر فراخوان فعال هست، همان با دکمهٔ لغو نشان داده می‌شود نه خطای بی‌مسیر.
+      try {
+        const current = await api.dispatchCurrent(token);
+        const active = current.data?.call;
+        if (active && (active.status === 'searching' || active.status === 'matched')) {
+          setView(current.data ?? null);
+          setError(PENDING_CALL_MESSAGE);
+          return;
+        }
+      } catch {
+        // بررسی وضعیت ناموفق بود — پیام اصلی خطا نشان داده می‌شود
+      }
       setError(cause instanceof Error ? cause.message : 'ثبت فراخوان انجام نشد.');
     } finally {
       setCreating(false);
@@ -269,7 +294,13 @@ export default function DispatchPage() {
             </Link>
           </section>
         ) : phase === 'matched' && call ? (
-          <MatchedCard call={call} candidates={candidates} onNew={() => setView({ call: null, candidates: [] })} />
+          <MatchedCard
+            call={call}
+            candidates={candidates}
+            onNew={() => { setView({ call: null, candidates: [] }); void refresh(); }}
+            onCancel={() => void cancel()}
+            canceling={canceling}
+          />
         ) : phase === 'searching' && call ? (
           <div style={{ display: 'grid', gap: 16 }}>
             <section className="ops-data-surface neon-frame" style={{ position: 'relative', overflow: 'hidden' }}>
@@ -558,10 +589,14 @@ function MatchedCard({
   call,
   candidates,
   onNew,
+  onCancel,
+  canceling,
 }: {
   call: DispatchCallItem;
   candidates: DispatchCandidateItem[];
   onNew: () => void;
+  onCancel: () => void;
+  canceling: boolean;
 }) {
   const chosen = candidates.find((item) => item.teacher_id === call.matched_teacher_id);
   return (
@@ -579,6 +614,8 @@ function MatchedCard({
       <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
         <Link href="/panel/user/sessions" className="ops-primary-btn" style={{ display: 'inline-flex' }}>پیگیری در جلسات من</Link>
         <button type="button" className="ops-ghost-btn" onClick={onNew}>فراخوان جدید</button>
+        <button type="button" className="ops-ghost-btn" onClick={onCancel} disabled={canceling} style={{ color: 'var(--rose)' }}>
+          {canceling ? 'در حال لغو…' : 'لغو فراخوان'}</button>
       </div>
     </section>
   );

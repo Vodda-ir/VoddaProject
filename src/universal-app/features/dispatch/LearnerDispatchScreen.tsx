@@ -183,6 +183,9 @@ const chipStyle: React.CSSProperties = {
 
 type ScreenMode = "idle" | "searching" | "matched";
 
+// باگ dispatch-stuck-pending — پیام دقیق وقتی فراخوان فعال قبلی مانع ثبت فراخوان جدید است.
+const PENDING_CALL_MESSAGE = "فراخوان قبلی شما در انتظار پاسخ است — ابتدا آن را لغو کنید.";
+
 export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }) {
   const runtime = usePlatform();
   const [catalog, setCatalog] = useState<OfficialService[]>([]);
@@ -288,6 +291,14 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
     setCreating(true);
     setActionError("");
     try {
+      // باگ dispatch-stuck-pending — پیش از ثبت، فراخوان فعال قبلی بررسی می‌شود تا کاربر
+      // به‌جای خطای مبهم سرور، پیام دقیق بگیرد و همان فراخوان با دکمهٔ لغو نمایش داده شود.
+      const precheck = await getCurrentDispatchCall(runtime);
+      if (precheck.call && (precheck.call.status === "searching" || precheck.call.status === "matched")) {
+        setView(precheck);
+        setActionError(PENDING_CALL_MESSAGE);
+        return;
+      }
       const scheduledAt =
         whenMode === "later" && laterAt ? new Date(laterAt).toISOString() : null;
       const created = await createDispatchCall(runtime, {
@@ -298,6 +309,18 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
       });
       setView(created);
     } catch (error) {
+      // رقابت احتمالی (مثلاً ثبت در دستگاه دیگر): وضعیت واقعی را بگیر؛
+      // اگر فراخوان فعال هست، همان با دکمهٔ لغو نشان داده می‌شود نه خطای بی‌مسیر.
+      try {
+        const current = await getCurrentDispatchCall(runtime);
+        if (current.call && (current.call.status === "searching" || current.call.status === "matched")) {
+          setView(current);
+          setActionError(PENDING_CALL_MESSAGE);
+          return;
+        }
+      } catch {
+        // بررسی وضعیت ناموفق بود — پیام اصلی خطا نشان داده می‌شود
+      }
       setActionError(messageOf(error, "ثبت فراخوان انجام نشد."));
     } finally {
       setCreating(false);
@@ -395,6 +418,9 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
           <Button fullWidth onClick={() => navigateApp("/sessions", config)}>پیگیری در جلسات من</Button>
           <Button variant="secondary" fullWidth onClick={() => { setView({ call: null, candidates: [] }); setResuming(true); void refresh(); }}>
             فراخوان جدید
+          </Button>
+          <Button variant="secondary" fullWidth loading={canceling} disabled={canceling} onClick={() => void cancel()}>
+            لغو فراخوان
           </Button>
         </Card>
       </div>
