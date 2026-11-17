@@ -107,17 +107,17 @@ function isTodayInTehran(dateIso: string) {
 
 /* آیه و حدیث روز — فقط متون معروف و معتبر درباره علم و آموزش؛ چرخش روزانه */
 const DAILY_QUOTES: Array<{ text: string; source: string }> = [
-  { text: "وَقُل رَّبِّ زِدْنِي عِلْمًا", source: "قرآن — طه: ۱۱۴" },
+  { text: "وَقُل رَّبِّ زِدْنِي عِلْمًا", source: "قرآن · طه: ۱۱۴" },
   { text: "خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ", source: "حدیث نبوی" },
-  { text: "هَلْ يَسْتَوِي الَّذِينَ يَعْلَمُونَ وَالَّذِينَ لَا يَعْلَمُونَ", source: "قرآن — الزمر: ۹" },
+  { text: "هَلْ يَسْتَوِي الَّذِينَ يَعْلَمُونَ وَالَّذِينَ لَا يَعْلَمُونَ", source: "قرآن · الزمر: ۹" },
   { text: "مَنْ سَلَكَ طَرِيقًا يَطْلُبُ فِيهِ عِلْمًا سَهَّلَ اللَّهُ لَهُ طَرِيقًا إِلَى الْجَنَّةِ", source: "حدیث نبوی" },
-  { text: "يَرْفَعِ اللَّهُ الَّذِينَ آمَنُوا مِنكُمْ وَالَّذِينَ أُوتُوا الْعِلْمَ دَرَجَاتٍ", source: "قرآن — المجادلة: ۱۱" },
-  { text: "اقْرَأْ بِاسْمِ رَبِّكَ الَّذِي خَلَقَ", source: "قرآن — العلق: ۱" },
-  { text: "إِنَّمَا يَخْشَى اللَّهَ مِنْ عِبَادِهِ الْعُلَمَاءُ", source: "قرآن — فاطر: ۲۸" },
-  { text: "فَاسْأَلُوا أَهْلَ الذِّكْرِ إِن كُنتُمْ لَا تَعْلَمُونَ", source: "قرآن — النحل: ۴۳" },
-  { text: "سَنُرِيهِمْ آيَاتِنَا فِي الْآفَاقِ وَفِي أَنفُسِهِمْ حَتَّىٰ يَتَبَيَّنَ لَهُمْ أَنَّهُ الْحَقُّ", source: "قرآن — فصلت: ۵۳" },
-  { text: "وَمَن يُؤْتَ الْحِكْمَةَ فَقَدْ أُوتِيَ خَيْرًا كَثِيرًا", source: "قرآن — البقرة: ۲۶۹" },
-  { text: "أَلَا بِذِكْرِ اللَّهِ تَطْمَئِنُّ الْقُلُوبُ", source: "قرآن — الرعد: ۲۸" },
+  { text: "يَرْفَعِ اللَّهُ الَّذِينَ آمَنُوا مِنكُمْ وَالَّذِينَ أُوتُوا الْعِلْمَ دَرَجَاتٍ", source: "قرآن · المجادلة: ۱۱" },
+  { text: "اقْرَأْ بِاسْمِ رَبِّكَ الَّذِي خَلَقَ", source: "قرآن · العلق: ۱" },
+  { text: "إِنَّمَا يَخْشَى اللَّهَ مِنْ عِبَادِهِ الْعُلَمَاءُ", source: "قرآن · فاطر: ۲۸" },
+  { text: "فَاسْأَلُوا أَهْلَ الذِّكْرِ إِن كُنتُمْ لَا تَعْلَمُونَ", source: "قرآن · النحل: ۴۳" },
+  { text: "سَنُرِيهِمْ آيَاتِنَا فِي الْآفَاقِ وَفِي أَنفُسِهِمْ حَتَّىٰ يَتَبَيَّنَ لَهُمْ أَنَّهُ الْحَقُّ", source: "قرآن · فصلت: ۵۳" },
+  { text: "وَمَن يُؤْتَ الْحِكْمَةَ فَقَدْ أُوتِيَ خَيْرًا كَثِيرًا", source: "قرآن · البقرة: ۲۶۹" },
+  { text: "أَلَا بِذِكْرِ اللَّهِ تَطْمَئِنُّ الْقُلُوبُ", source: "قرآن · الرعد: ۲۸" },
   { text: "طَلَبُ الْعِلْمِ فَرِيضَةٌ عَلَى كُلِّ مُسْلِمٍ", source: "حدیث نبوی" },
 ];
 
@@ -288,7 +288,7 @@ function VerseStrip() {
       <Icon name="quran" size={18} style={{ color: colors.olive700, flex: "0 0 auto" }} />
       <p style={{ margin: 0, minWidth: 0, flex: 1, fontSize: 12.5, lineHeight: 1.9, color: colors.ink, fontWeight: 600 }}>
         {isQuran ? "﴿" : "«"} {quote.text} {isQuran ? "﴾" : "»"}
-        <span style={{ color: colors.olive700, fontWeight: 800, fontSize: 11 }}> — {quote.source}</span>
+        <span style={{ color: colors.olive700, fontWeight: 800, fontSize: 11 }}> · {quote.source}</span>
       </p>
     </div>
   );
@@ -331,7 +331,7 @@ function DispatchBanner({ config }: { config: UniversalAppConfig }) {
       type="button"
       onClick={() => navigateApp("/dispatch", config)}
       className="vodda-card vodda-card--interactive vodda-tappable vodda-enter vodda-neon-gold"
-      aria-label="فراخوان اساتید — درخواست زنده استاد"
+      aria-label="فراخوان اساتید · درخواست زنده استاد"
       style={{
         width: "100%",
         display: "flex",
@@ -438,7 +438,7 @@ function OnboardingChecklist({ user, config }: { user: AuthUser; config: Univers
       <span style={{ ...typography.caption, color: colors.inkMuted }}>
         {remaining > 0
           ? `${faNumber(remaining, 0)} قدم مانده تا آماده شدن برای اولین جلسه`
-          : "همه‌چیز آماده‌ست — وقت رزرو اولین جلسه!"}
+          : "همه‌چیز آماده‌ست؛ وقت رزرو اولین جلسه!"}
       </span>
     </Card>
   );
@@ -675,7 +675,7 @@ function FeaturedTeacher({ teacher, config }: { teacher: Teacher; config: Univer
         padding: spacing.lg,
         textAlign: "right",
         color: colors.surface,
-        background: `linear-gradient(145deg, ${colors.olive900}, ${colors.olive800})`,
+        background: `linear-gradient(150deg, ${colors.olive800} 0%, ${colors.olive700} 100%)`,
         border: 0,
         borderRadius: radii.xl,
         boxShadow: shadows.md,
@@ -683,37 +683,9 @@ function FeaturedTeacher({ teacher, config }: { teacher: Teacher; config: Univer
         fontFamily: typography.fontFamily,
       }}
     >
-      <span
-        aria-hidden="true"
-        style={{
-          position: "absolute",
-          width: 145,
-          height: 145,
-          insetInlineEnd: -70,
-          top: -82,
-          borderRadius: "50%",
-          background: "rgba(255,255,255,.06)",
-        }}
-      />
-      <div
-        aria-hidden="true"
-        style={{
-          width: 78,
-          height: 96,
-          flex: "0 0 78px",
-          display: "grid",
-          placeItems: "center",
-          borderRadius: radii.md,
-          background: "rgba(255,255,255,0.1)",
-          border: "1px solid rgba(255,255,255,0.16)",
-          fontSize: 34,
-        }}
-      >
-        {"📖"}
-      </div>
+      <Avatar name={teacher.name} src={teacher.avatarUrl || undefined} size={64} style={{ borderColor: "rgba(255,255,255,.35)", outline: "1px solid rgba(255,255,255,.5)", flex: "0 0 64px" }} />
       <div style={{ minWidth: 0, flex: 1, position: "relative" }}>
         <p style={{ ...typography.caption, display: "flex", alignItems: "center", gap: 5, margin: 0, color: colors.goldSoft, fontWeight: 800 }}>
-          <Icon name="checkCircle" size={14} stroke={2} />
           استاد ویژهٔ امروز
         </p>
         <h2 style={{ ...typography.title, margin: `${spacing.sm}px 0 0`, color: colors.surface }}>{teacher.name}</h2>
@@ -1065,7 +1037,6 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
   }, [teachers]);
 
   const firstName = user?.name?.trim().split(/\s+/)[0] || "دوست";
-  const canUseTeacherMode = user?.role === "teacher" || user?.role === "admin";
   const needsProfileNudge =
     user !== null && (!user.avatar_url || !user.city?.trim() || !user.bio?.trim());
   const today = todayLabel();
@@ -1088,7 +1059,8 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
       >
         <button
           type="button"
-          onClick={() => { if (canUseTeacherMode) setRoleSheetOpen(true); }}
+          onClick={() => { if (user) setRoleSheetOpen(true); }}
+          aria-label="تغییر حساب"
           className="vodda-tappable"
           style={{
             minWidth: 0,
@@ -1101,10 +1073,32 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
             color: colors.ink,
             background: "transparent",
             fontFamily: typography.fontFamily,
-            cursor: canUseTeacherMode ? "pointer" : "default",
+            cursor: user ? "pointer" : "default",
           }}
         >
-          <Avatar name={user?.name} src={user?.avatar_url} size={48} ring />
+          <span style={{ position: "relative", display: "inline-flex" }}>
+            <Avatar name={user?.name} src={user?.avatar_url} size={48} ring />
+            {user ? (
+              <span
+                aria-hidden="true"
+                style={{
+                  position: "absolute",
+                  insetInlineStart: -4,
+                  bottom: -2,
+                  width: 18,
+                  height: 18,
+                  display: "grid",
+                  placeItems: "center",
+                  borderRadius: "50%",
+                  border: `2px solid ${colors.sand50}`,
+                  color: colors.goldDark,
+                  background: colors.goldBackground,
+                }}
+              >
+                <Icon name="refresh" size={9} stroke={2.4} />
+              </span>
+            ) : null}
+          </span>
           <span style={{ minWidth: 0 }}>
             <span style={{ ...typography.caption, display: "block", color: colors.inkMuted }}>
               {greetingLabel()}،{today ? ` امروز ${today}` : ""}
@@ -1122,9 +1116,9 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
             >
               {firstName} جان 🌿
             </strong>
-            {canUseTeacherMode ? (
+            {user ? (
               <span style={{ display: "block", marginTop: 1, fontSize: 11.5, color: colors.olive700, fontWeight: 600 }}>
-                برای تغییر پنل روی پروفایل بزنید
+                برای تغییر حساب روی تصویر بزنید
               </span>
             ) : null}
           </span>
@@ -1266,6 +1260,7 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
         open={roleSheetOpen}
         mode="learner"
         config={config}
+        user={user}
         onClose={() => setRoleSheetOpen(false)}
       />
     </div>

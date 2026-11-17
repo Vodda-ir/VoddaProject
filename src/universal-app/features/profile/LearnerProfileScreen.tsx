@@ -18,6 +18,7 @@ import {
   typography,
 } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
+import { RoleModeSheet } from "../auth/RoleModeSheet";
 
 export type LearnerProfileScreenProps = {
   config: UniversalAppConfig;
@@ -31,6 +32,7 @@ export function LearnerProfileScreen({ config }: LearnerProfileScreenProps) {
   const [loading, setLoading] = useState(true);
   const [loggingOut, setLoggingOut] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [roleSheetOpen, setRoleSheetOpen] = useState(false);
 
   const loadProfile = useCallback(
     async (isCancelled: () => boolean = () => false) => {
@@ -91,7 +93,21 @@ export function LearnerProfileScreen({ config }: LearnerProfileScreenProps) {
     <div className="vodda-screen" style={{ display: "grid", gap: 18 }}>
       <h1 style={{ fontSize: 24, fontWeight: 800, margin: 0, color: colors.ink }}>پروفایل</h1>
 
-      <Card elevated className="vodda-enter" style={{ padding: 16, borderRadius: 24 }}>
+      <Card
+        elevated
+        className="vodda-enter"
+        style={{ padding: 16, borderRadius: 24, cursor: "pointer" }}
+        onClick={() => setRoleSheetOpen(true)}
+        role="button"
+        tabIndex={0}
+        aria-label="تغییر حساب"
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            setRoleSheetOpen(true);
+          }
+        }}
+      >
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <Avatar name={user.name} src={user.avatar_url} size={62} ring />
           <div style={{ minWidth: 0, flex: 1 }}>
@@ -102,8 +118,12 @@ export function LearnerProfileScreen({ config }: LearnerProfileScreenProps) {
               <Icon name="pin" size={13} />
               {user.city.trim() || "—"}
             </span>
+            <span style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 3, fontSize: 11.5, color: colors.olive700, fontWeight: 600 }}>
+              <Icon name="refresh" size={12} />
+              برای تغییر حساب بزنید
+            </span>
           </div>
-          <button type="button" aria-label="ویرایش پروفایل" onClick={() => navigateApp("/profile/edit", config)} className="vodda-tappable"
+          <button type="button" aria-label="ویرایش پروفایل" onClick={(event) => { event.stopPropagation(); navigateApp("/profile/edit", config); }} className="vodda-tappable"
             style={{ width: 40, height: 40, display: "grid", placeItems: "center", flex: "0 0 40px", padding: 0, border: 0, borderRadius: 12, color: colors.olive700, background: colors.olive50, cursor: "pointer" }}>
             <Icon name="edit" size={19} />
           </button>
@@ -124,19 +144,42 @@ export function LearnerProfileScreen({ config }: LearnerProfileScreenProps) {
         </button>
       ) : null}
 
-      <Card className="vodda-enter vodda-enter-delay-2" style={{ padding: 0, overflow: "hidden", borderRadius: 24 }}>
-        {[
+      {(() => {
+        const isAdmin = user.role === "admin";
+        const rows: Array<{ icon: "user" | "wallet" | "shield"; label: string; path: string; external?: boolean }> = [
           { icon: "user" as const, label: "ویرایش پروفایل", path: "/profile/edit" },
           { icon: "wallet" as const, label: "کیف پول و تراکنش‌ها", path: "/wallet" },
-        ].map((row, index, rows) => (
-          <button key={row.path} type="button" onClick={() => navigateApp(row.path, config)} className="vodda-tappable"
-            style={{ width: "100%", minHeight: 58, display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", textAlign: "right", border: 0, borderBottom: index < rows.length - 1 ? `1px solid ${colors.sand100}` : 0, color: colors.ink, background: colors.surface, fontFamily: typography.fontFamily, cursor: "pointer" }}>
-            <Icon name={row.icon} size={21} style={{ color: colors.olive600 }} />
-            <span style={{ flex: 1, fontSize: 14.5, fontWeight: 600 }}>{row.label}</span>
-            <Icon name="chevronL" size={18} style={{ color: colors.inkFaint }} />
-          </button>
-        ))}
-      </Card>
+          ...(isAdmin ? [{ icon: "shield" as const, label: "پنل مدیریت", path: "/panel/admin", external: true }] : []),
+        ];
+        return (
+          <Card className="vodda-enter vodda-enter-delay-2" style={{ padding: 0, overflow: "hidden", borderRadius: 24 }}>
+            {rows.map((row, index) => (
+              <button
+                key={row.label}
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  if (row.external) window.location.assign(row.path);
+                  else navigateApp(row.path, config);
+                }}
+                className="vodda-tappable"
+                style={{ width: "100%", minHeight: 58, display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", textAlign: "right", border: 0, borderBottom: index < rows.length - 1 ? `1px solid ${colors.sand100}` : 0, color: row.external ? colors.goldDark : colors.ink, background: colors.surface, fontFamily: typography.fontFamily, cursor: "pointer" }}>
+                <Icon name={row.icon} size={21} style={{ color: row.external ? colors.goldDark : colors.olive600 }} />
+                <span style={{ flex: 1, fontSize: 14.5, fontWeight: 600 }}>{row.label}</span>
+                <Icon name="chevronL" size={18} style={{ color: colors.inkFaint }} />
+              </button>
+            ))}
+          </Card>
+        );
+      })()}
+
+      <RoleModeSheet
+        open={roleSheetOpen}
+        mode="learner"
+        config={config}
+        user={user}
+        onClose={() => setRoleSheetOpen(false)}
+      />
 
       {error ? (
         <div role="alert" style={{ display: "flex", alignItems: "center", gap: spacing.sm, padding: spacing.md, borderRadius: radii.md, background: colors.dangerBackground, color: colors.danger, ...typography.bodySmall }}>
