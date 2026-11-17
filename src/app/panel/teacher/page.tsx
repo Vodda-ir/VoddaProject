@@ -13,7 +13,7 @@ import {
   PanelStatus,
 } from '@/components/panel/PanelUI';
 import { api, type SessionListItem, type Teacher } from '@/lib/api';
-import { fullUrl, getToken } from '@/lib/auth';
+import { avatarUrl, fullUrl, getToken } from '@/lib/auth';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
 
 export default function TeacherDashboard() {
@@ -103,7 +103,7 @@ export default function TeacherDashboard() {
         background: 'linear-gradient(120deg,#fff,var(--olive-50))',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
-          <Avatar size={58} ring tier={teacher?.tier} imageUrl={fullUrl(teacher?.user?.avatar_url)} />
+          <Avatar size={58} ring tier={teacher?.tier} imageUrl={avatarUrl(teacher?.user?.avatar_url, teacher?.user?.updated_at)} />
           <div style={{ minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap' }}>
               <strong style={{ fontSize: 16 }}>{teacher?.user?.name || 'استاد وُدّا'}</strong>
@@ -148,7 +148,7 @@ export default function TeacherDashboard() {
               const busy = busyId === session.id;
               return (
                 <article className="ops-row" key={session.id} style={{ opacity: busy ? .55 : 1 }}>
-                  <Avatar size={42} imageUrl={fullUrl(session.learner?.avatar_url)} />
+                  <Avatar size={42} imageUrl={avatarUrl(session.learner?.avatar_url, session.learner?.updated_at)} />
                   <div className="ops-row-main">
                     <div className="ops-row-title">
                       <strong>{session.learner?.name || 'قرآن‌آموز'}</strong>

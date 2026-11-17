@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { asArray, asNumber, asRecord, asString, type ApiEnvelope } from "../../platform/api";
 import { formatDate } from "@/lib/datetime";
 import { usePlatform } from "../../platform/context";
+import { avatarSrc, uploadsOriginOf } from "@/lib/avatarImage";
 import { messageOf } from "../../ui/errorMessage";
 import {
   Avatar,
@@ -114,7 +115,7 @@ export function TeacherReviewsScreen() {
         {reviews.map((review) => (
           <Card key={review.id} className="vodda-card--interactive vodda-enter" style={{ display: "grid", gap: spacing.md, padding: spacing.lg }}>
             <div style={{ display: "flex", alignItems: "center", gap: spacing.sm }}>
-              <Avatar name={review.learnerName} src={review.learnerAvatar} size={46} ring />
+              <Avatar name={review.learnerName} src={avatarSrc(review.learnerAvatar, undefined, uploadsOriginOf(runtime.apiBaseUrl))} size={46} ring />
               <div style={{ minWidth: 0, flex: 1 }}>
                 <strong style={{ ...typography.body, display: "block" }}>{review.learnerName}</strong>
                 {review.createdAt ? (

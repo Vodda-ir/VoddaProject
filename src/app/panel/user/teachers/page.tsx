@@ -13,7 +13,7 @@ import {
 } from '@/components/panel/PanelUI';
 import { SearchInput } from '@/components/admin/AdminUI';
 import { api, type Teacher } from '@/lib/api';
-import { fullUrl } from '@/lib/auth';
+import { avatarUrl, fullUrl } from '@/lib/auth';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
 
 export default function UserTeachersPage() {
@@ -85,7 +85,7 @@ export default function UserTeachersPage() {
             {teachers.map((teacher) => (
               <article className="usr-teacher-card" key={teacher.id}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
-                  <Avatar size={48} ring tier={teacher.tier} imageUrl={fullUrl(teacher.user?.avatar_url)} />
+                  <Avatar size={48} ring tier={teacher.tier} imageUrl={avatarUrl(teacher.user?.avatar_url, teacher.user?.updated_at)} />
                   <div style={{ minWidth: 0, flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       <strong style={{ fontSize: 13.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

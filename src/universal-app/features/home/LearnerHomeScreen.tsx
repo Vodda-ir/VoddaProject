@@ -439,7 +439,7 @@ function OnboardingChecklist({ user, config }: { user: AuthUser; config: Univers
 
 type PastTeacher = { id: number; name: string; avatarUrl: string };
 
-function RebookRail({ teachers, config }: { teachers: PastTeacher[]; config: UniversalAppConfig }) {
+function RebookRail({ teachers, config, runtime }: { teachers: PastTeacher[]; config: UniversalAppConfig; runtime: ReturnType<typeof usePlatform> }) {
   if (teachers.length === 0) return null;
   return (
     <section aria-label="استادهای جلسه‌های قبلی تو" className="vodda-enter" style={{ minWidth: 0 }}>
@@ -489,7 +489,7 @@ function RebookRail({ teachers, config }: { teachers: PastTeacher[]; config: Uni
                 fontFamily: typography.fontFamily,
               }}
             >
-              <Avatar name={teacher.name} src={teacher.avatarUrl || undefined} size={54} ring />
+              <Avatar name={teacher.name} src={avatarSrc(teacher.avatarUrl, undefined, uploadsOriginOf(runtime.apiBaseUrl))} size={54} ring />
               <strong
                 style={{
                   maxWidth: "100%",
@@ -1274,7 +1274,7 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
         </Card>
       ) : (
         <>
-          <RebookRail teachers={pastTeachers} config={config} />
+          <RebookRail teachers={pastTeachers} config={config} runtime={runtime} />
           <TeacherRail title="اساتید پیشنهادی" teachers={recommended} config={config} />
           {featured ? <FeaturedTeacher teacher={featured} config={config} /> : null}
           <TeacherRail title="اساتید بانو" teachers={women} config={config} />

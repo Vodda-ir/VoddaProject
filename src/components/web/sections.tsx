@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import type { CSSProperties, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Teacher } from '@/lib/api';
-import { clearToken, fullUrl } from '@/lib/auth';
+import { clearToken, avatarUrl, fullUrl } from '@/lib/auth';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
 import { Icon } from '../Icon';
 import { Avatar, GeoPattern, SectionTitle, WebBtn } from './ui';
@@ -20,7 +20,7 @@ function PanelLink({ href, icon, label }: { href: string; icon: 'shield' | 'awar
   );
 }
 
-function UserMenu({ name, role, avatar, hasTeacherProfile }: { name: string; role: string; avatar?: string; hasTeacherProfile: boolean }) {
+function UserMenu({ name, role, avatar, avatarVersion, hasTeacherProfile }: { name: string; role: string; avatar?: string; avatarVersion?: string | number | null; hasTeacherProfile: boolean }) {
   const [open, setOpen] = useState(false);
   const roleLabel = role === 'admin' ? 'ادمین' : role === 'teacher' ? 'استاد' : 'قرآن‌آموز';
 
@@ -34,7 +34,8 @@ function UserMenu({ name, role, avatar, hasTeacherProfile }: { name: string; rol
           <button aria-label="بستن منوی کاربر" style={menuBackdropStyle} onClick={() => setOpen(false)} />
           <div style={menuStyle}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, paddingBottom: 14, borderBottom: '1px solid var(--sand-100)', marginBottom: 8 }}>
-              {avatar ? <img src={fullUrl(avatar)} alt="" style={{ width: 46, height: 46, borderRadius: '50%', objectFit: 'cover' }} /> : <Avatar size={46} ring />}
+              {/* باگ avatar-upload — آواتار خود کاربر با کش‌باستینگ ?v= تا پس از تغییر، نسخهٔ جدید فوراً دیده شود */}
+              {avatar ? <img src={avatarUrl(avatar, avatarVersion)} alt="" style={{ width: 46, height: 46, borderRadius: '50%', objectFit: 'cover' }} /> : <Avatar size={46} ring />}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 14, fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</div>
                 <div style={{ marginTop: 2, color: 'var(--ink-3)', fontSize: 11.5 }}>{roleLabel}</div>
@@ -65,7 +66,7 @@ function UserMenu({ name, role, avatar, hasTeacherProfile }: { name: string; rol
 }
 
 export function Nav() {
-  const [user, setUser] = useState<{ name: string; role: string; avatar_url?: string; hasTeacherProfile: boolean } | null>(null);
+  const [user, setUser] = useState<{ name: string; role: string; avatar_url?: string; avatar_updated_at?: string | null; hasTeacherProfile: boolean } | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [announcement, setAnnouncement] = useState<{ text: string; link: string } | null>(null);
 
@@ -79,6 +80,7 @@ export function Nav() {
             name: body.data.name || 'کاربر',
             role: body.data.role || 'learner',
             avatar_url: body.data.avatar_url,
+            avatar_updated_at: body.data.updated_at ?? null,
             hasTeacherProfile: Boolean(body.data.teacher?.id),
           });
         }
@@ -174,7 +176,7 @@ export function Nav() {
             <Icon name="grid" size={17} />
             ورود به اپ
           </Link>
-          {user ? <UserMenu name={user.name} role={user.role} avatar={user.avatar_url} hasTeacherProfile={user.hasTeacherProfile} /> : <WebBtn size="sm" href="/panel/login">ورود</WebBtn>}
+          {user ? <UserMenu name={user.name} role={user.role} avatar={user.avatar_url} avatarVersion={user.avatar_updated_at} hasTeacherProfile={user.hasTeacherProfile} /> : <WebBtn size="sm" href="/panel/login">ورود</WebBtn>}
           <button
             type="button"
             className="mobile-nav-toggle"
@@ -480,7 +482,7 @@ function WebTeacherCard({ teacher }: { teacher: Teacher }) {
   return (
     <article className="landing-teacher-card">
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <Avatar size={54} ring tier={teacher.tier} imageUrl={fullUrl(teacher.user?.avatar_url)} />
+        <Avatar size={54} ring tier={teacher.tier} imageUrl={avatarUrl(teacher.user?.avatar_url, teacher.user?.updated_at)} />
         <div style={{ minWidth: 0, flex: 1 }}>
           <strong className="landing-teacher-name">{name}</strong>
           <span className="landing-teacher-tag">{teacher.tag || teacher.field}</span>

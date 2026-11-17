@@ -17,7 +17,7 @@ import {
   StatCard,
   TablePagination,
 } from '@/components/admin/AdminUI';
-import { fullUrl, getToken } from '@/lib/auth';
+import { avatarUrl, fullUrl, getToken } from '@/lib/auth';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
 import { formatDateTime } from '@/lib/datetime';
 
@@ -30,7 +30,7 @@ type Withdrawal = {
   sheba?: string;
   status?: Exclude<WithdrawalStatus, ''>;
   created_at?: string;
-  user?: { name?: string; avatar_url?: string };
+  user?: { name?: string; avatar_url?: string; updated_at?: string };
 };
 
 const PAGE_SIZE = 30;
@@ -190,7 +190,7 @@ export default function AdminWithdrawals() {
             header: 'استاد',
             render: (withdrawal) => (
               <div className="adm-cell-main">
-                <Avatar size={40} imageUrl={fullUrl(withdrawal.user?.avatar_url)} />
+                <Avatar size={40} imageUrl={avatarUrl(withdrawal.user?.avatar_url, withdrawal.user?.updated_at)} />
                 <div style={{ minWidth: 0 }}>
                   <strong>{withdrawal.user?.name || 'استاد'}</strong>
                   <small>#{toFaDigits(withdrawal.id)}</small>
@@ -268,7 +268,7 @@ export default function AdminWithdrawals() {
         {selected && (
           <>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '6px 2px 14px' }}>
-              <Avatar size={54} imageUrl={fullUrl(selected.user?.avatar_url)} />
+              <Avatar size={54} imageUrl={avatarUrl(selected.user?.avatar_url, selected.user?.updated_at)} />
               <div>
                 <strong style={{ display: 'block', fontSize: 14, color: 'var(--olive-700)' }}>{formatFaNumber(Number(selected.amount || 0))} تومان</strong>
                 <span className="adm-badge" data-tone={STATUS_BADGE[selected.status || 'pending']?.tone} style={{ marginTop: 5 }}>

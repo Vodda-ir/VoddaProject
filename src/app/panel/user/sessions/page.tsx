@@ -14,7 +14,7 @@ import {
 } from '@/components/panel/PanelUI';
 import { SearchInput, exportCsv } from '@/components/admin/AdminUI';
 import { api, type SessionListItem } from '@/lib/api';
-import { fullUrl, getToken } from '@/lib/auth';
+import { avatarUrl, fullUrl, getToken } from '@/lib/auth';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
 
 type TabKey = 'all' | 'upcoming' | 'past';
@@ -216,7 +216,7 @@ export default function UserSessionsPage() {
           <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
             {rows.map((session) => (
               <article className="ops-row" key={`${session.when}-${session.id}`} style={{ opacity: busyId === session.id ? .55 : 1, flexWrap: 'wrap' }}>
-                <Avatar size={46} ring tier={session.teacher?.tier} imageUrl={fullUrl(session.teacher?.user?.avatar_url)} />
+                <Avatar size={46} ring tier={session.teacher?.tier} imageUrl={avatarUrl(session.teacher?.user?.avatar_url, session.teacher?.user?.updated_at)} />
                 <div className="ops-row-main">
                   <div className="ops-row-title">
                     <strong>{session.teacher?.user?.name || 'استاد'}</strong>

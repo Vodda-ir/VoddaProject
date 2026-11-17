@@ -6,7 +6,7 @@ import type { Teacher } from '@/lib/api';
 import { Icon } from '@/components/Icon';
 import { Nav, Footer, bioIntro } from '@/components/web/sections';
 import { Avatar, PublicPageHero } from '@/components/web/ui';
-import { fullUrl } from '@/lib/auth';
+import { avatarUrl, fullUrl } from '@/lib/auth';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
 
 const LIMIT = 20;
@@ -257,7 +257,7 @@ function SearchTeacherCard({ teacher }: { teacher: Teacher }) {
   return (
     <Link href={`/teachers/${teacher.id}`} className="web-search-teacher-card">
       <div className="web-search-teacher-top">
-        <Avatar size={58} ring tier={teacher.tier} imageUrl={fullUrl(teacher.user?.avatar_url)} />
+        <Avatar size={58} ring tier={teacher.tier} imageUrl={avatarUrl(teacher.user?.avatar_url, teacher.user?.updated_at)} />
         <div style={{ minWidth: 0, flex: 1 }}>
           <strong>{name}</strong>
           <span>{teacher.tag || teacher.field}</span>

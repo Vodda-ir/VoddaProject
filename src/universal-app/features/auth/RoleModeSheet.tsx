@@ -2,7 +2,9 @@
 
 import type { UniversalAppConfig } from "../../config";
 import { navigateApp } from "../../router";
+import { usePlatform } from "../../platform/context";
 import type { AuthUser } from "../../platform/types";
+import { avatarSrc, uploadsOriginOf } from "@/lib/avatarImage";
 import { Avatar, Icon, Sheet, colors, gradients, radii, shadows, typography } from "../../ui";
 
 export function RoleModeSheet({
@@ -19,6 +21,8 @@ export function RoleModeSheet({
   user?: AuthUser | null;
 }) {
   const isAdmin = user?.role === "admin";
+  // باگ avatar-upload — آواتار خود کاربر با کش‌باستینگ و بازنویسی مسیر /uploads در اپ نیتیو
+  const runtime = usePlatform();
 
   function roleLabel(role?: string) {
     if (role === "admin") return "مدیر سامانه";
@@ -59,7 +63,7 @@ export function RoleModeSheet({
             boxShadow: shadows.xs,
           }}
         >
-          <Avatar name={user.name} src={user.avatar_url} size={44} ring />
+          <Avatar name={user.name} src={avatarSrc(user.avatar_url, user.updated_at, uploadsOriginOf(runtime.apiBaseUrl))} size={44} ring />
           <span style={{ minWidth: 0, flex: 1 }}>
             <strong
               style={{

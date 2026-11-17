@@ -13,7 +13,7 @@ import type {
   OfficialServiceItem,
   Teacher,
 } from '@/lib/api';
-import { fullUrl, getToken } from '@/lib/auth';
+import { avatarUrl, fullUrl, getToken } from '@/lib/auth';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
 import { formatDateTime } from '@/lib/datetime';
 
@@ -552,7 +552,7 @@ function CandidateRow({
   return (
     <section className="ops-data-surface" style={{ animationDelay: `${index * 80}ms` }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-        <Avatar size={52} ring imageUrl={fullUrl(candidate.avatar_url)} />
+        <Avatar size={52} ring imageUrl={avatarUrl(candidate.avatar_url, candidate.updated_at)} />
         <div style={{ minWidth: 0, flex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap' }}>
             <strong style={{ fontSize: 15 }}>{candidate.name}</strong>
@@ -781,7 +781,7 @@ function ListTeacherRow({ teacher, index }: { teacher: Teacher; index: number })
         color: 'inherit', textDecoration: 'none', animationDelay: `${index * 60}ms`,
       }}
     >
-      <Avatar size={50} ring tier={teacher.tier} imageUrl={fullUrl(teacher.user?.avatar_url)} />
+      <Avatar size={50} ring tier={teacher.tier} imageUrl={avatarUrl(teacher.user?.avatar_url, teacher.user?.updated_at)} />
       <div style={{ minWidth: 0, flex: 1 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap' }}>
           <strong style={{ fontSize: 14.5 }}>{teacher.user?.name || 'استاد وُدّا'}</strong>

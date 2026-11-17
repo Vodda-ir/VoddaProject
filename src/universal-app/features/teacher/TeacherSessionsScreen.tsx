@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { asInteger, asRecord, asString, type ApiEnvelope } from "../../platform/api";
 import { usePlatform } from "../../platform/context";
+import { avatarSrc, uploadsOriginOf } from "@/lib/avatarImage";
 import type { PlatformRuntime } from "../../platform/types";
 import {
   Avatar,
@@ -122,6 +123,7 @@ function SessionCard({
   onReject: () => void;
   onComplete: () => void;
 }) {
+  const runtime = usePlatform();
   const commonCardStyle = {
     display: "grid",
     gap: 13,
@@ -134,7 +136,7 @@ function SessionCard({
     return (
       <Card className="vodda-card--interactive" style={commonCardStyle}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <Avatar name={session.learnerName} src={session.learnerAvatar || undefined} size={46} ring={false} />
+          <Avatar name={session.learnerName} src={avatarSrc(session.learnerAvatar, undefined, uploadsOriginOf(runtime.apiBaseUrl))} size={46} ring={false} />
           <div style={{ minWidth: 0, flex: 1 }}>
             <strong style={{ display: "block", fontSize: 14.5, fontWeight: 800, color: colors.ink }}>{session.learnerName}</strong>
             <span style={{ display: "block", marginTop: 3, fontSize: 12.5, color: colors.inkSecondary }}>{session.service}</span>
@@ -174,7 +176,7 @@ function SessionCard({
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <Avatar name={session.learnerName} src={session.learnerAvatar || undefined} size={46} ring={false} />
+        <Avatar name={session.learnerName} src={avatarSrc(session.learnerAvatar, undefined, uploadsOriginOf(runtime.apiBaseUrl))} size={46} ring={false} />
         <div style={{ minWidth: 0 }}>
           <strong style={{ display: "block", fontSize: 14.5, fontWeight: 800, color: colors.ink }}>{session.learnerName}</strong>
           <span style={{ display: "block", marginTop: 3, fontSize: 12.5, color: colors.inkSecondary }}>{session.service}</span>

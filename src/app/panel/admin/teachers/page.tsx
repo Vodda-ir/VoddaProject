@@ -19,7 +19,7 @@ import {
   SearchInput,
   TablePagination,
 } from '@/components/admin/AdminUI';
-import { fullUrl, getToken } from '@/lib/auth';
+import { avatarUrl, fullUrl, getToken } from '@/lib/auth';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
 
 type TeacherStatus = '' | 'pending' | 'approved' | 'rejected';
@@ -46,6 +46,7 @@ type TeacherRow = {
     mobile?: string;
     avatar_url?: string;
     active?: boolean;
+    updated_at?: string;
   };
 };
 
@@ -278,7 +279,7 @@ export default function AdminTeachers() {
             header: 'استاد',
             render: (teacher) => (
               <div className="adm-cell-main">
-                <Avatar size={40} imageUrl={fullUrl(teacher.user?.avatar_url)} />
+                <Avatar size={40} imageUrl={avatarUrl(teacher.user?.avatar_url, teacher.user?.updated_at)} />
                 <div style={{ minWidth: 0 }}>
                   <strong style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                     {teacher.user?.name || 'استاد بدون نام'}
@@ -373,7 +374,7 @@ export default function AdminTeachers() {
         {selected && (
           <>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '6px 2px 14px' }}>
-              <Avatar size={56} imageUrl={fullUrl(selected.user?.avatar_url)} />
+              <Avatar size={56} imageUrl={avatarUrl(selected.user?.avatar_url, selected.user?.updated_at)} />
               <div>
                 <strong style={{ display: 'block', fontSize: 14 }}>{selected.user?.name || 'استاد بدون نام'}</strong>
                 <div style={{ display: 'flex', gap: 5, marginTop: 5, flexWrap: 'wrap' }}>

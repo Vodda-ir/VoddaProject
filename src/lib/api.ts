@@ -52,7 +52,7 @@ export type Teacher = {
   sessions: number;
   followers: number;
   skills?: string[];
-  user?: { id: number; name: string; avatar_url: string; active?: boolean };
+  user?: { id: number; name: string; avatar_url: string; active?: boolean; updated_at?: string };
   services?: TeacherService[];
 };
 
@@ -63,7 +63,7 @@ export type Review = {
   learner_id?: number;
   rating: number;
   text: string;
-  learner?: { id: number; name: string; avatar_url?: string };
+  learner?: { id: number; name: string; avatar_url?: string; updated_at?: string };
   created_at: string;
 };
 
@@ -102,7 +102,7 @@ export type SessionListItem = {
   note?: string;
   reject_note?: string;
   rated: boolean;
-  learner?: { id: number; name: string; avatar_url?: string };
+  learner?: { id: number; name: string; avatar_url?: string; updated_at?: string };
   teacher?: Teacher;
 };
 
@@ -188,6 +188,7 @@ export type LearnerAnalytics = {
     rating: number;
     sessions: number;
     last_at: string | null;
+    updated_at?: string;
   }> | null;
 };
 
@@ -227,6 +228,7 @@ export type CatalogResponse = {
 
 export type DispatchCandidateItem = {
   offer_id: number;
+  updated_at?: string;
   responded_at: string;
   service_id: number;
   duration: number;

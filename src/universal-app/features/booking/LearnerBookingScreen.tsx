@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { UniversalAppConfig } from "../../config";
 import { PlatformHttpError } from "../../platform/http";
 import { usePlatform } from "../../platform/context";
+import { avatarSrc, uploadsOriginOf } from "@/lib/avatarImage";
 import { navigateApp } from "../../router";
 import { getTeacherDetail } from "../teachers/api";
 import type { Teacher, TeacherService } from "../teachers/types";
@@ -274,7 +275,7 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
   return (
     <div className="vodda-screen" style={{ display: "grid", gap: spacing.xl }}>
       <Card elevated className="vodda-enter" style={{ display: "flex", alignItems: "center", gap: 13, padding: 16, borderRadius: 20 }}>
-        <Avatar name={teacher.name} src={teacher.avatarUrl || undefined} size={56} ring={false} />
+        <Avatar name={teacher.name} src={avatarSrc(teacher.avatarUrl, undefined, uploadsOriginOf(runtime.apiBaseUrl))} size={56} ring={false} />
         <div style={{ minWidth: 0, flex: 1 }}>
           <strong style={{ fontSize: 16, fontWeight: 800, display: "block", color: colors.ink }}>{teacher.name}</strong>
           <span style={{ fontSize: 12.5, color: colors.olive700 }}>{teacher.tag || teacher.field}</span>

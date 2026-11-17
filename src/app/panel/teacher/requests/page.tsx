@@ -10,7 +10,7 @@ import {
   PanelStatus,
 } from '@/components/panel/PanelUI';
 import { api, type SessionListItem } from '@/lib/api';
-import { fullUrl, getToken } from '@/lib/auth';
+import { avatarUrl, fullUrl, getToken } from '@/lib/auth';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
 
 export default function TeacherRequests() {
@@ -88,7 +88,7 @@ export default function TeacherRequests() {
             const busy = busyId === session.id;
             return (
               <article className="ops-row" key={session.id} style={{ opacity: busy ? .55 : 1 }}>
-                <Avatar size={46} imageUrl={fullUrl(session.learner?.avatar_url)} />
+                <Avatar size={46} imageUrl={avatarUrl(session.learner?.avatar_url, session.learner?.updated_at)} />
                 <div className="ops-row-main">
                   <div className="ops-row-title">
                     <strong>{session.learner?.name || 'قرآن‌آموز'}</strong>

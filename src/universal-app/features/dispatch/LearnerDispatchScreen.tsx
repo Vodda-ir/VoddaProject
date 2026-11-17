@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { UniversalAppConfig } from "../../config";
 import { PlatformHttpError } from "../../platform/http";
 import { usePlatform } from "../../platform/context";
+import { avatarSrc, uploadsOriginOf } from "@/lib/avatarImage";
 import { navigateApp } from "../../router";
 import { toFaDigits } from "../../ui/persian";
 import { formatDateTime } from "@/lib/datetime";
@@ -98,6 +99,7 @@ function CandidateCard({
   onChoose: () => void;
   onDecline: () => void;
 }) {
+  const runtime = usePlatform();
   const badge = tierBadge[candidate.tier];
   return (
     <div
@@ -114,7 +116,7 @@ function CandidateCard({
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
-        <Avatar name={candidate.name} src={candidate.avatar_url || undefined} size={52} ring={false} />
+        <Avatar name={candidate.name} src={avatarSrc(candidate.avatar_url, candidate.updated_at, uploadsOriginOf(runtime.apiBaseUrl))} size={52} ring={false} />
         <div style={{ minWidth: 0, flex: 1 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
             <strong style={{ fontSize: 15, fontWeight: 800, color: colors.ink }}>{candidate.name}</strong>
@@ -406,7 +408,7 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
           </div>
           {candidate ? (
             <div style={{ display: "flex", alignItems: "center", gap: 12, textAlign: "right", background: colors.sand100, borderRadius: 16, padding: 12 }}>
-              <Avatar name={candidate.name} src={candidate.avatar_url || undefined} size={48} ring={false} />
+              <Avatar name={candidate.name} src={avatarSrc(candidate.avatar_url, candidate.updated_at, uploadsOriginOf(runtime.apiBaseUrl))} size={48} ring={false} />
               <div style={{ minWidth: 0, flex: 1 }}>
                 <strong style={{ display: "block", fontSize: 14.5, color: colors.ink }}>{candidate.name}</strong>
                 <span style={{ fontSize: 12, color: colors.inkMuted }}>

@@ -3,7 +3,7 @@ import { Icon } from '@/components/Icon';
 import { Avatar, PublicSurface, Stars, TeacherBio, WebBtn } from '@/components/web/ui';
 import { TierChip } from '@/components/web/tier';
 import { Nav, Footer } from '@/components/web/sections';
-import { fullUrl } from '@/lib/auth';
+import { avatarUrl, fullUrl } from '@/lib/auth';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
@@ -40,7 +40,7 @@ export default async function TeacherDetailPage({ params }: { params: Promise<{ 
 
         <section className="teacher-public-hero">
           <div className="teacher-public-profile">
-            <Avatar size={92} ring tier={teacher.tier} imageUrl={fullUrl(teacher.user?.avatar_url)} />
+            <Avatar size={92} ring tier={teacher.tier} imageUrl={avatarUrl(teacher.user?.avatar_url, teacher.user?.updated_at)} />
             <div style={{ minWidth: 0, flex: 1 }}>
               <div className="teacher-public-name-row">
                 <h1>{name}</h1>

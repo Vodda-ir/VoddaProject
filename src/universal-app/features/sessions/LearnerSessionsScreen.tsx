@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePlatform } from "../../platform/context";
+import { avatarSrc, uploadsOriginOf } from "@/lib/avatarImage";
 import {
   Avatar,
   Button,
@@ -67,6 +68,7 @@ function SessionCard({
   onRate: () => void;
   onPay: () => void;
 }) {
+  const runtime = usePlatform();
   return (
     <Card className="vodda-card--interactive" style={{ display: "grid", gap: 13, borderRadius: 24, padding: 15, boxShadow: "0 0 6px rgba(46,54,34,.04)" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: spacing.md }}>
@@ -77,7 +79,7 @@ function SessionCard({
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: spacing.md }}>
-        <Avatar name={session.teacherName} src={session.teacherAvatar || undefined} size={46} ring />
+        <Avatar name={session.teacherName} src={avatarSrc(session.teacherAvatar, undefined, uploadsOriginOf(runtime.apiBaseUrl))} size={46} ring />
         <div style={{ minWidth: 0 }}>
           <strong style={{ ...typography.body, display: "block" }}>{session.teacherName}</strong>
           <span style={{ ...typography.bodySmall, color: colors.inkSecondary }}>{session.service}</span>

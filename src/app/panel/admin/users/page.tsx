@@ -18,7 +18,7 @@ import {
   StatCard,
   TablePagination,
 } from '@/components/admin/AdminUI';
-import { fullUrl, getToken } from '@/lib/auth';
+import { avatarUrl, fullUrl, getToken } from '@/lib/auth';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
 import { formatDate, formatTime } from '@/lib/datetime';
 
@@ -482,7 +482,7 @@ export default function AdminUsers() {
               header: 'کاربر',
               render: (user) => (
                 <div className="adm-cell-main">
-                  <Avatar size={38} imageUrl={fullUrl(user.avatar_url)} />
+                  <Avatar size={38} imageUrl={avatarUrl(user.avatar_url, user.updated_at)} />
                   <div style={{ minWidth: 0 }}>
                     <strong>{user.name || 'کاربر بدون نام'}</strong>
                     <small dir="ltr">{toFaDigits(user.mobile || '—')}</small>
@@ -571,7 +571,7 @@ export default function AdminUsers() {
         {!loading && sortedUsers.map((user) => (
           <article key={user.id} className="adm-user-card" onClick={() => openUser(user)}>
             <div className="adm-user-card-head">
-              <Avatar size={44} imageUrl={fullUrl(user.avatar_url)} />
+              <Avatar size={44} imageUrl={avatarUrl(user.avatar_url, user.updated_at)} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <strong>{user.name || 'کاربر بدون نام'}</strong>
                 <small dir="ltr">{toFaDigits(user.mobile || '—')}</small>
@@ -614,7 +614,7 @@ export default function AdminUsers() {
         {selected && (
           <>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '6px 2px 14px' }}>
-              <Avatar size={56} imageUrl={fullUrl(selected.avatar_url)} />
+              <Avatar size={56} imageUrl={avatarUrl(selected.avatar_url, selected.updated_at)} />
               <div style={{ minWidth: 0 }}>
                 <strong style={{ display: 'block', fontSize: 14 }}>{selected.name || 'کاربر بدون نام'}</strong>
                 <div style={{ display: 'flex', gap: 5, marginTop: 5, flexWrap: 'wrap' }}>

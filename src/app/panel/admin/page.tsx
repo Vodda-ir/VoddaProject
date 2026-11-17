@@ -12,7 +12,7 @@ import {
 } from '@/components/panel/PanelUI';
 import { AreaChart, BarsChart, DonutChart, HBarList, faCompact } from '@/components/admin/charts';
 import { StatCard, deltaOf, exportCsv, FilterTabs } from '@/components/admin/AdminUI';
-import { fullUrl, getToken } from '@/lib/auth';
+import { avatarUrl, fullUrl, getToken } from '@/lib/auth';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
 import { formatDateTime, formatNumber } from '@/lib/datetime';
 
@@ -37,7 +37,7 @@ type Analytics = {
   rating: { avg: number; count: number };
   status_breakdown: Array<{ status: string; count: number }> | null;
   fields: Array<{ name: string; count: number }> | null;
-  top_teachers: Array<{ id: number; name: string; avatar_url: string; field: string; city: string; tier: string; rating: number; reviews: number; done_sessions: number; earned: number }> | null;
+  top_teachers: Array<{ id: number; name: string; avatar_url: string; field: string; city: string; tier: string; rating: number; reviews: number; done_sessions: number; earned: number; updated_at?: string }> | null;
   recent_users: Array<{ id: number; name: string; avatar_url: string; role: string; created_at: string }> | null;
   recent_sessions: Array<{ id: number; title: string; status: string; price: number; scheduled_at: string; learner_name: string; learner_avatar: string; teacher_name: string }> | null;
 };
@@ -47,7 +47,7 @@ type PendingTeacher = {
   field?: string;
   tag?: string;
   city?: string;
-  user?: { name?: string; avatar_url?: string };
+  user?: { name?: string; avatar_url?: string; updated_at?: string };
 };
 
 type RangeKey = '7' | '14' | '30';
@@ -421,7 +421,7 @@ export default function AdminDashboard() {
               {(analytics?.top_teachers ?? []).slice(0, 7).map((teacher, index) => (
                 <div className="adm-leader-row" key={teacher.id}>
                   <span className="adm-leader-rank">{toFaDigits(index + 1)}</span>
-                  <Avatar size={40} imageUrl={fullUrl(teacher.avatar_url)} />
+                  <Avatar size={40} imageUrl={avatarUrl(teacher.avatar_url, teacher.updated_at)} />
                   <div className="adm-leader-main">
                     <strong>
                       {teacher.name || 'استاد'}
@@ -464,7 +464,7 @@ export default function AdminDashboard() {
               const busy = busyId === teacher.id;
               return (
                 <article className="ops-row" key={teacher.id} style={{ opacity: busy ? .55 : 1 }}>
-                  <Avatar size={44} imageUrl={fullUrl(teacher.user?.avatar_url)} />
+                  <Avatar size={44} imageUrl={avatarUrl(teacher.user?.avatar_url, teacher.user?.updated_at)} />
                   <div className="ops-row-main">
                     <div className="ops-row-title">
                       <strong>{teacher.user?.name || 'استاد بدون نام'}</strong>

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { UniversalAppConfig } from "../../config";
 import { asNumber, asRecord, asString, type ApiEnvelope } from "../../platform/api";
 import { usePlatform } from "../../platform/context";
+import { avatarSrc, uploadsOriginOf } from "@/lib/avatarImage";
 import type { AuthUser, PlatformRuntime } from "../../platform/types";
 import { navigateApp } from "../../router";
 import { messageOf } from "../../ui/errorMessage";
@@ -212,7 +213,7 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
           cursor: "pointer",
         }}
       >
-        <Avatar name={teacher?.name} src={teacher?.avatarUrl} size={46} ring />
+        <Avatar name={teacher?.name} src={avatarSrc(teacher?.avatarUrl, undefined, uploadsOriginOf(runtime.apiBaseUrl))} size={46} ring />
         <span style={{ minWidth: 0, flex: 1 }}>
           <span style={{ ...typography.caption, display: "block", color: colors.inkMuted }}>پنل استاد · {firstName}</span>
           <strong style={{ ...typography.body, display: "inline-flex", alignItems: "center", gap: 5, color: colors.olive700 }}>
