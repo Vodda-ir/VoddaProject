@@ -9,6 +9,7 @@ import { LearnerDispatchScreen } from "./features/dispatch/LearnerDispatchScreen
 import { LearnerHomeScreen } from "./features/home/LearnerHomeScreen";
 import { LearnerProfileScreen } from "./features/profile/LearnerProfileScreen";
 import { LearnerSearchScreen } from "./features/search/LearnerSearchScreen";
+import { CategoryScreen } from "./features/categories/CategoryScreen";
 import { LearnerSessionsScreen } from "./features/sessions/LearnerSessionsScreen";
 import { TeacherDashboardScreen } from "./features/teacher/TeacherDashboardScreen";
 import { TeacherDispatchScreen } from "./features/teacher/TeacherDispatchScreen";
@@ -35,6 +36,7 @@ export type UniversalAppProps = {
 const routeTitles: Record<AppRouteName, string> = {
   home: "وُدّا",
   login: "ورود",
+  category: "دسته‌بندی موضوعات",
   search: "جستجوی استاد",
   teacher: "پروفایل استاد",
   book: "رزرو جلسه",
@@ -125,6 +127,8 @@ function UniversalAppContent({ config, runtime }: { config: UniversalAppConfig; 
     <LearnerHomeScreen config={config} />
   ) : route.name === "search" ? (
     <LearnerSearchScreen config={config} />
+  ) : route.name === "category" ? (
+    <CategoryScreen config={config} />
   ) : route.name === "teacher" ? (
     <LearnerTeacherProfileScreen teacherId={route.params.id ?? ""} config={config} />
   ) : route.name === "book" ? (

@@ -1932,6 +1932,27 @@ a.blog-card:hover .blog-card-action {
   background: var(--sand-50);
 }
 
+/* باگ category-routing — چیپ‌های زیردسته در جستجو با حالت دسته */
+.web-topic-chip {
+  min-height: 34px;
+  padding: 6px 14px;
+  border: 1px solid var(--sand-200);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ink-2, #5a5648);
+  font-size: 12px;
+  font-weight: 700;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.web-topic-chip:hover { border-color: var(--olive-400); }
+.web-topic-chip[data-active='true'] {
+  background: var(--olive-600);
+  border-color: var(--olive-600);
+  color: #fff;
+}
+
 .web-search-fields input {
   min-width: 0;
   width: 100%;

@@ -26,6 +26,8 @@ import { messageOf } from "../../ui/errorMessage";
 import { RoleModeSheet } from "../auth/RoleModeSheet";
 import { avatarSrc, uploadsOriginOf } from "@/lib/avatarImage";
 import { formatDate, formatLocalDate, formatNumber, tehranDayKey, tehranHour } from "@/lib/datetime";
+import { groupCatalog, teachersForCategory, type CatalogCategory, type CatalogRow } from "@/lib/category";
+import { getCatalog } from "../dispatch/api";
 import {
   getNotifications,
   markNotificationRead,
@@ -154,6 +156,25 @@ function categoryMetaFor(field: string): CategoryMeta {
     if (match.test(field)) return { title: field, ...meta };
   }
   return { title: field, ...CATEGORY_FALLBACK_META };
+}
+
+// باگ category-routing — متادیتای کارت دسته از نام واقعی دستهٔ کاتالوگ
+const CATALOG_CATEGORY_META: Array<{ match: RegExp; meta: Omit<CategoryMeta, "title"> }> = [
+  { match: /صوت|لحن/, meta: { description: "آوای قرآنی", icon: "headphones", tone: "gold" } },
+  { match: /حفظ/, meta: { description: "حفظ و مرور", icon: "book", tone: "info" } },
+  { match: /تجوید|قرائت/, meta: { description: "علوم قرائت", icon: "doc", tone: "olive" } },
+  { match: /تفسیر|مفاهیم|علوم/, meta: { description: "مفاهیم و علوم", icon: "doc", tone: "info" } },
+  { match: /ویژه|کودک|نوجوان|زبان/, meta: { description: "گروه‌های خاص", icon: "mic", tone: "clay" } },
+  { match: /حضوری|مراسم/, meta: { description: "خدمات مراسم", icon: "mic", tone: "clay" } },
+  { match: /آمادگی|مشاوره/, meta: { description: "آمادگی و مسابقات", icon: "headphones", tone: "gold" } },
+  { match: /قرآن|پایه/, meta: { description: "روخوانی و آموزش", icon: "quran", tone: "olive" } },
+];
+
+function catalogCategoryMeta(name: string): CategoryMeta {
+  for (const { match, meta } of CATALOG_CATEGORY_META) {
+    if (match.test(name)) return { title: name, ...meta };
+  }
+  return { title: name, ...CATEGORY_FALLBACK_META };
 }
 
 function teacherSubtitle(teacher: Teacher) {
@@ -1038,18 +1059,34 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
     return pool[dayOfYearIndex() % pool.length];
   }, [teachers, recommended]);
 
-  const categories = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const teacher of teachers) {
-      const field = teacher.field?.trim();
-      if (!field) continue;
-      counts.set(field, (counts.get(field) ?? 0) + 1);
-    }
-    return [...counts.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 3)
-      .map(([field, count]) => ({ field, count, meta: categoryMetaFor(field) }));
-  }, [teachers]);
+  // باگ category-routing — دسته‌های صفحهٔ نخست از کاتالوگ رسمی خدمات می‌آیند
+  // (نه از فیلد متنی استاد) و شمارش هر دسته از اجتماع اساتید زیردسته‌هایش.
+  const [catalogCategories, setCatalogCategories] = useState<CatalogCategory[]>([]);
+  const categories = useMemo(
+    () =>
+      catalogCategories.map((group) => ({
+        name: group.category,
+        count: teachersForCategory(teachers, group).length,
+        meta: catalogCategoryMeta(group.category),
+      })),
+    [catalogCategories, teachers],
+  );
+
+  useEffect(() => {
+    let active = true;
+    getCatalog(runtime)
+      .then((rows) => {
+        if (!active) return;
+        const groups = groupCatalog(rows as CatalogRow[]);
+        setCatalogCategories(groups);
+      })
+      .catch(() => {
+        if (active) setCatalogCategories([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, [runtime]);
 
   const firstName = user?.name?.trim().split(/\s+/)[0] || "دوست";
   const needsProfileNudge =
@@ -1212,12 +1249,12 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
 
       {!teachersLoading && !teachersError && categories.length > 0 ? (
         <section className="vodda-enter vodda-enter-delay-1">
-          <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(categories.length, 3)}, minmax(0, 1fr))`, gap: 10 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 10 }}>
             {categories.map((category) => (
               <button
-                key={category.field}
+                key={category.name}
                 type="button"
-                onClick={() => navigateApp(`/search?field=${encodeURIComponent(category.field)}`, config)}
+                onClick={() => navigateApp(`/category?name=${encodeURIComponent(category.name)}`, config)}
                 className="vodda-card vodda-card--interactive vodda-tappable"
                 style={{
                   minHeight: 142,

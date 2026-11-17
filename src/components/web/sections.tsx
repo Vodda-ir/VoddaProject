@@ -6,6 +6,7 @@ import type { CSSProperties, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Teacher } from '@/lib/api';
 import { clearToken, avatarUrl, fullUrl } from '@/lib/auth';
+import type { CatalogCategory } from '@/lib/category';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
 import { Icon } from '../Icon';
 import { Avatar, GeoPattern, SectionTitle, WebBtn } from './ui';
@@ -410,22 +411,34 @@ export function DispatchCallout() {
   );
 }
 
-export function Categories() {
-  const categories = [
-    {
-      icon: 'quran' as const,
-      title: 'آموزش قرآن کریم',
-      desc: 'روخوانی، روان‌خوانی، تجوید، صوت و لحن و حفظ قرآن با استاد مناسب.',
-      href: '/search?field=%D8%A2%D9%85%D9%88%D8%B2%D8%B4+%D9%82%D8%B1%D8%A2%D9%86+%DA%A9%D8%B1%DB%8C%D9%85',
-      meta: 'قرآن',
-    },
-  ];
+// باگ category-routing — کارت‌های دسته از کاتالوگ رسمی خدمات می‌آیند و به
+// صفحهٔ دسته می‌روند که فقط زیردسته‌های همان دسته و اساتید همان دسته را می‌بیند.
+const CATEGORY_ICONS: Array<{ match: RegExp; icon: 'quran' | 'mic' | 'book' | 'doc' | 'headphones' | 'users' }> = [
+  { match: /صوت|لحن/, icon: 'headphones' },
+  { match: /حفظ/, icon: 'book' },
+  { match: /تجوید|قرائت|تفسیر|مفاهیم|علوم/, icon: 'doc' },
+  { match: /حضوری|مراسم/, icon: 'mic' },
+];
+
+function categoryIcon(name: string): 'quran' | 'mic' | 'book' | 'doc' | 'headphones' | 'users' {
+  for (const rule of CATEGORY_ICONS) if (rule.match.test(name)) return rule.icon;
+  return 'quran';
+}
+
+export function Categories({ categories = [] as CatalogCategory[] }: { categories?: CatalogCategory[] }) {
+  const cards = categories.slice(0, 6).map((group) => ({
+    icon: categoryIcon(group.category),
+    title: group.category,
+    desc: `${group.topics.length} زیردستهٔ رسمی — فقط اساتید همین دسته.`,
+    href: `/search?category=${encodeURIComponent(group.category)}`,
+    meta: 'دستهٔ قرآنی',
+  }));
 
   return (
     <section className="landing-categories">
       <div className="public-container">
         <div className="landing-category-grid">
-          {categories.map((category) => (
+          {cards.map((category) => (
             <Link key={category.title} href={category.href} className="landing-category-card neon-frame-gold">
               <span className="landing-category-icon"><Icon name={category.icon} size={26} /></span>
               <span style={{ minWidth: 0, flex: 1 }}>

@@ -6,6 +6,7 @@ export type AppRouteName =
   | "home"
   | "login"
   | "search"
+  | "category"
   | "teacher"
   | "book"
   | "sessions"
@@ -35,6 +36,7 @@ export const appRoutePaths = {
   home: "/",
   login: "/login",
   search: "/search",
+  category: "/category",
   sessions: "/sessions",
   wallet: "/wallet",
   profile: "/profile",
