@@ -65,6 +65,41 @@ export function UniversalVisualStyles() {
       [data-app-shell] * {
         box-sizing: border-box;
       }
+      /* باگ input-overflow — قواعد پایه همهٔ فیلدهای ورودی اپ:
+         متن بدون‌فاصله از کادر بیرون نمی‌زند و فیلد در flex/grid جمع می‌شود. */
+      [data-universal-app="vodda"] input,
+      [data-universal-app="vodda"] textarea,
+      [data-app-shell] input,
+      [data-app-shell] textarea {
+        box-sizing: border-box;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+      }
+      [data-universal-app="vodda"] textarea,
+      [data-app-shell] textarea {
+        resize: vertical;
+      }
+      /* باگ input-overflow — فرم‌گریدهای بدون ستون صریح با محتوای بلند باد نمی‌کنند.
+         بدون !important تا ستون‌های صریح inline دست‌نخورده بمانند. */
+      [data-universal-app="vodda"] label:has(> input),
+      [data-universal-app="vodda"] label:has(> textarea),
+      [data-app-shell] label:has(> input),
+      [data-app-shell] label:has(> textarea) {
+        grid-template-columns: minmax(0, 1fr);
+      }
+      [data-universal-app="vodda"] div:has(> label > input),
+      [data-universal-app="vodda"] div:has(> label > textarea),
+      [data-universal-app="vodda"] div:has(> input),
+      [data-universal-app="vodda"] div:has(> textarea),
+      [data-app-shell] div:has(> label > input),
+      [data-app-shell] div:has(> label > textarea),
+      [data-app-shell] div:has(> input),
+      [data-app-shell] div:has(> textarea) {
+        grid-template-columns: minmax(0, 1fr);
+      }
       [data-universal-app="vodda"] button,
       [data-universal-app="vodda"] a,
       [data-app-shell] button,
@@ -97,6 +132,9 @@ export function UniversalVisualStyles() {
       .vodda-scroll-rail {
         scrollbar-width: none;
         overscroll-behavior-inline: contain;
+        /* باگ input-overflow/responsive — ریل با margin منفی در RTL نباید از
+           لبهٔ دید بیرون بزند (۱px overflow در scrollWidth). */
+        max-width: 100vw;
       }
       .vodda-scroll-rail::-webkit-scrollbar {
         display: none;

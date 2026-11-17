@@ -119,6 +119,50 @@ optgroup {
   font-family: var(--font) !important;
 }
 
+/* ── باگ input-overflow — کلاس پایه فیلدهای ورودی ─────────────────────
+   هیچ فیلدی نباید با متن بدون‌فاصله از کادر بیرون بزند؛ در flex/grid هم
+   با min-width:0 اجازهٔ جمع‌شدن دارد. */
+.input-base {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+input,
+textarea {
+  box-sizing: border-box;
+  max-width: 100%;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+textarea {
+  resize: vertical;
+}
+
+textarea.resize-none {
+  resize: none;
+}
+
+/* باگ input-overflow — گریدهای فرمِ بدون ستون صریح نباید با محتوای بلند
+   (مثلاً ۵۰۰ کاراکتر بدون فاصله) باد کنند. بدون !important نوشته شده تا
+   گریدهای دارای ستون صریح (inline یا کلاس) دست‌نخورده بمانند. */
+label:has(> input),
+label:has(> textarea) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+div:has(> label > input),
+div:has(> label > textarea),
+div:has(> input),
+div:has(> textarea) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 a {
   color: inherit;
   text-decoration: none;
