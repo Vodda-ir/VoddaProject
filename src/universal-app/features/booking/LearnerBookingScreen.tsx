@@ -10,6 +10,7 @@ import { getTeacherDetail } from "../teachers/api";
 import type { Teacher, TeacherService } from "../teachers/types";
 import { Avatar, Button, Card, EmptyState, ErrorState, Icon, LoadingState, colors, radii, shadows, spacing, typography } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
+import { payViaSamanGate } from "../../../lib/saman-gate";
 import { formatWalletAmount } from "../wallet/WalletTransactionCard";
 import { createBooking, getBookingAvailability, getBookingMe, type BookingPaymentMethod } from "./api";
 import { formatDate, formatLocalDate, formatNumber } from "@/lib/datetime";
@@ -198,16 +199,13 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
         scheduledAt: slot.startAt,
         paymentMethod,
       });
-      if (response.data?.redirect_url) {
-        // Gateway payment: hand the payer to Saman Sep. The session is held as
-        // «awaiting payment» and activates automatically after settlement.
+      if (response.data?.token) {
+        // پرداخت درگاه: فرم توکن از مرورگر خود کاربر به OnlinePG پست می‌شود —
+        // دقیقاً مثل منافسه، در همان تب تا در مرورگر موبایل و وب‌ویو اپ هم
+        // درست باز شود. جلسه تا پایان پرداخت در حالت «awaiting payment» نگه
+        // داشته می‌شود و بعد از تسویه خودکار فعال می‌شود.
         setRedirecting(true);
-        if (runtime.kind === "native") {
-          window.open(response.data.redirect_url, "_blank");
-          setSubmitted(true);
-        } else {
-          window.location.href = response.data.redirect_url;
-        }
+        payViaSamanGate(response.data.token);
         return;
       }
       setSubmitted(true);

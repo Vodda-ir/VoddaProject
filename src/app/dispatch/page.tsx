@@ -6,6 +6,7 @@ import { Icon } from '@/components/Icon';
 import { Nav, Footer } from '@/components/web/sections';
 import { Avatar, PublicPageHero } from '@/components/web/ui';
 import { api, toman } from '@/lib/api';
+import { payViaSamanGate } from '@/lib/saman-gate';
 import type {
   DispatchCallItem,
   DispatchCallViewData,
@@ -212,7 +213,10 @@ export default function DispatchPage() {
       try {
         const result = await api.dispatchChoose(token, call.id, offerId, payMethod);
         await refresh();
-        if (result.data?.redirect_url) window.location.href = result.data.redirect_url;
+        if (result.data?.token) {
+          // پست فرم توکن به OnlinePG از مرورگر کاربر — دقیقاً مثل منافسه، در همان تب
+          payViaSamanGate(result.data.token);
+        }
       } catch (cause) {
         const message = cause instanceof Error ? cause.message : 'ثبت رزرو انجام نشد.';
         setError(

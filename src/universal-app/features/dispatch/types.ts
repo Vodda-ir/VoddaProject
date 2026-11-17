@@ -91,7 +91,8 @@ export type ChooseOfferResult = {
     price?: number;
     scheduled_at?: string;
   };
-  redirect_url?: string;
+  /** توکن بانک برای پست فرم به OnlinePG از مرورگر کاربر (مانند منافسه). */
+  token?: string;
   res_num?: string;
   paid_via_wallet?: boolean;
 };

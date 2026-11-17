@@ -24,6 +24,7 @@ import {
   typography,
 } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
+import { payViaSamanGate } from "../../../lib/saman-gate";
 import { formatWalletAmount } from "../wallet/WalletTransactionCard";
 import {
   cancelDispatchCall,
@@ -352,8 +353,9 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
       try {
         const result = await chooseDispatchOffer(runtime, call.id, offerId, payMethod);
         await refresh();
-        if (result.redirect_url) {
-          window.location.href = result.redirect_url;
+        if (result.token) {
+          // پست فرم توکن به OnlinePG از مرورگر کاربر — دقیقاً مثل منافسه، در همان تب
+          payViaSamanGate(result.token);
         }
       } catch (error) {
         if (payMethod === "wallet" && error instanceof PlatformHttpError && error.status === 400) {

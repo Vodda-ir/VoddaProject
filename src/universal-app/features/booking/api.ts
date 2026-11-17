@@ -35,7 +35,8 @@ export type BookingPaymentMethod = "wallet" | "gateway";
 
 export type BookingGatewayResult = {
   session: unknown;
-  redirect_url?: string;
+  /** توکن بانک برای پست فرم به OnlinePG از مرورگر کاربر (مانند منافسه). */
+  token?: string;
   res_num?: string;
   paid_via_wallet?: boolean;
 };
@@ -60,13 +61,13 @@ export async function createBooking(
 export async function payBooking(
   runtime: PlatformRuntime,
   sessionId: number,
-): Promise<{ redirect_url: string; res_num: string; amount: number }> {
-  const response = await runtime.request<ApiEnvelope<{ redirect_url: string; res_num: string; amount: number }>>(
+): Promise<{ token: string; res_num: string; amount: number }> {
+  const response = await runtime.request<ApiEnvelope<{ token?: string; res_num?: string; amount?: number }>>(
     `/sessions/${sessionId}/pay`,
     { method: "POST" },
   );
-  if (!response.data?.redirect_url) throw new Error("لینک درگاه پرداخت دریافت نشد.");
-  return response.data;
+  if (!response.data?.token) throw new Error("توکن درگاه پرداخت دریافت نشد.");
+  return { token: response.data.token, res_num: response.data.res_num ?? "", amount: response.data.amount ?? 0 };
 }
 
 export async function getBookingMe(runtime: PlatformRuntime): Promise<{ id: number; wallet: number }> {

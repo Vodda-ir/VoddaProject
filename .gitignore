@@ -55,3 +55,4 @@ server.log
 # local preview/test screenshots
 preview-*.png
 test-*.png
+tool-results/

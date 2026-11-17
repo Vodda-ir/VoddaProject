@@ -204,10 +204,11 @@ export type NotificationItem = {
 
 export type PaymentMethod = 'wallet' | 'gateway';
 
-/** Response of POST /sessions — gateway bookings carry redirect_url. */
+/** Response of POST /sessions — gateway bookings carry the Sep token the
+ *  browser posts to OnlinePG (Monafaseh flow). */
 export type BookingResult = {
   session: SessionListItem;
-  redirect_url?: string;
+  token?: string;
   res_num?: string;
   paid_via_wallet: boolean;
 };
@@ -289,11 +290,11 @@ export type TeacherInboxData = {
 };
 
 /** Response of the dispatch «choose» action — wallet bookings settle instantly;
- *  gateway bookings carry redirect_url to Saman Sep. */
+ *  gateway bookings carry the Sep token for the browser form post. */
 export type DispatchChooseResult = {
   session?: SessionListItem;
   paid_via_wallet?: boolean;
-  redirect_url?: string;
+  token?: string;
   res_num?: string;
 };
 
@@ -350,7 +351,7 @@ export const api = {
       headers: auth(token),
     }),
   paySession: (token: string, id: number) =>
-    request<{ data: { res_num: string; redirect_url: string; amount: number } }>(`/sessions/${id}/pay`, {
+    request<{ data: { res_num: string; token: string; amount: number } }>(`/sessions/${id}/pay`, {
       method: 'POST',
       headers: auth(token),
     }),
@@ -368,7 +369,7 @@ export const api = {
   transactions: (token: string) =>
     request<{ data: Transaction[] }>('/wallet/transactions', { headers: auth(token) }),
   walletTopup: (token: string, amount: number) =>
-    request<{ data: { res_num: string; redirect_url: string; amount: number } }>('/wallet/topup', {
+    request<{ data: { res_num: string; token: string; amount: number } }>('/wallet/topup', {
       method: 'POST',
       body: JSON.stringify({ amount }),
       headers: auth(token),
