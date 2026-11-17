@@ -14,6 +14,7 @@ import { AreaChart, BarsChart, DonutChart, HBarList, faCompact } from '@/compone
 import { StatCard, deltaOf, exportCsv, FilterTabs } from '@/components/admin/AdminUI';
 import { fullUrl, getToken } from '@/lib/auth';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
+import { formatDateTime, formatNumber } from '@/lib/datetime';
 
 // ─────────────────────────── types ───────────────────────────
 
@@ -72,15 +73,11 @@ const ROLE_BADGE: Record<string, { label: string; tone: string }> = {
 };
 
 function faDateTime(iso: string): string {
-  try {
-    return new Intl.DateTimeFormat('fa-IR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
-  } catch {
-    return '';
-  }
+  return formatDateTime(iso, 'fa', 'short');
 }
 
 function faRating(value: number): string {
-  return new Intl.NumberFormat('fa-IR', { maximumFractionDigits: 1 }).format(value);
+  return formatNumber(value, 'fa', { maximumFractionDigits: 1 });
 }
 
 export default function AdminDashboard() {

@@ -14,6 +14,7 @@ import {
 } from '@/components/admin/AdminUI';
 import { fullUrl, getToken } from '@/lib/auth';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
+import { formatDate } from '@/lib/datetime';
 
 type AdminPostRow = {
   id: number;
@@ -70,11 +71,7 @@ const STATUS_TABS = [
 
 function faDate(iso?: string | null): string {
   if (!iso) return '—';
-  try {
-    return new Intl.DateTimeFormat('fa-IR', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(iso));
-  } catch {
-    return '—';
-  }
+  return formatDate(iso) || '—';
 }
 
 export default function AdminBlogPage() {

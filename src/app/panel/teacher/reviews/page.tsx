@@ -12,6 +12,7 @@ import {
 import { api, type Review } from '@/lib/api';
 import { fullUrl, getToken } from '@/lib/auth';
 import { toFaDigits } from '@/lib/persian';
+import { formatDate as formatDateFa } from '@/lib/datetime';
 
 export default function TeacherReviewsPage() {
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -101,5 +102,5 @@ export default function TeacherReviewsPage() {
 
 function formatDate(value: string) {
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? '—' : new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium' }).format(date);
+  return Number.isNaN(date.getTime()) ? '—' : formatDateFa(date);
 }

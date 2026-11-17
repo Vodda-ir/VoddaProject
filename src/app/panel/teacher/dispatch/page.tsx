@@ -6,6 +6,7 @@ import { PanelButton, PanelEmpty, PanelPageHeader, PanelStatus } from '@/compone
 import { api, toman } from '@/lib/api';
 import type { TeacherInboxData } from '@/lib/api';
 import { getToken } from '@/lib/auth';
+import { formatDateTime } from '@/lib/datetime';
 import { toFaDigits } from '@/lib/persian';
 
 function countdown(total: number) {
@@ -24,7 +25,7 @@ function whenLabel(call: { flexible: boolean; scheduled_at?: string | null }) {
   if (call.flexible || !call.scheduled_at) return '⚡ در اسرع وقت';
   const at = new Date(call.scheduled_at);
   if (Number.isNaN(at.getTime())) return '⚡ در اسرع وقت';
-  return `📅 ${at.toLocaleString('fa-IR', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}`;
+  return `📅 ${formatDateTime(at, 'fa', 'weekdayDayMonth')}`;
 }
 
 export default function TeacherDispatchPanel() {

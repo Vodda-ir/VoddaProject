@@ -5,6 +5,7 @@ import type { UniversalAppConfig } from "../../config";
 import { usePlatform } from "../../platform/context";
 import { navigateApp } from "../../router";
 import { toFaDigits } from "../../ui/persian";
+import { formatDateTime } from "@/lib/datetime";
 import {
   Button,
   Card,
@@ -65,7 +66,7 @@ function whenLabel(call: TeacherInboxCall["call"]): string {
   if (call.flexible || !call.scheduled_at) return "⚡ در اسرع وقت";
   const at = new Date(call.scheduled_at);
   if (Number.isNaN(at.getTime())) return "⚡ در اسرع وقت";
-  return `📅 ${at.toLocaleString("fa-IR", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}`;
+  return `📅 ${formatDateTime(at, "fa", "weekdayDayMonth")}`;
 }
 
 const chipStyle: React.CSSProperties = {

@@ -20,6 +20,7 @@ import {
 } from '@/components/admin/AdminUI';
 import { fullUrl, getToken } from '@/lib/auth';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
+import { formatDate, formatTime } from '@/lib/datetime';
 
 const LIMIT = 30;
 type RoleFilter = '' | 'learner' | 'teacher' | 'admin';
@@ -130,22 +131,14 @@ function roleLabel(role?: string) {
 
 function faDate(iso?: string): string {
   if (!iso) return '—';
-  try {
-    return new Intl.DateTimeFormat('fa-IR', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(iso));
-  } catch {
-    return '—';
-  }
+  return formatDate(iso) || '—';
 }
 
 function faDateTime(iso?: string): string {
   if (!iso) return '—';
-  try {
-    const day = new Intl.DateTimeFormat('fa-IR', { day: 'numeric', month: 'short' }).format(new Date(iso));
-    const time = new Intl.DateTimeFormat('fa-IR', { hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
-    return `${day} · ${time}`;
-  } catch {
-    return '—';
-  }
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '—';
+  return `${formatDate(date, 'fa', 'short')} · ${formatTime(date)}` || '—';
 }
 
 function teacherStatusLabel(status?: string): string {

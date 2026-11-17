@@ -19,6 +19,7 @@ import {
 } from '@/components/admin/AdminUI';
 import { fullUrl, getToken } from '@/lib/auth';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
+import { formatDateTime } from '@/lib/datetime';
 
 type WithdrawalStatus = '' | 'pending' | 'paid' | 'rejected';
 
@@ -49,9 +50,7 @@ const STATUS_BADGE: Record<string, { label: string; tone: string }> = {
 function formatDate(value?: string) {
   if (!value) return '—';
   const date = new Date(value);
-  return Number.isNaN(date.getTime())
-    ? '—'
-    : new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium', timeStyle: 'short' }).format(date);
+  return Number.isNaN(date.getTime()) ? '—' : formatDateTime(date);
 }
 
 function bankAccount(withdrawal: Withdrawal): string {

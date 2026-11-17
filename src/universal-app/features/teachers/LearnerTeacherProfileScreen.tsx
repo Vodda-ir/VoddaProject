@@ -19,6 +19,7 @@ import {
   typography,
 } from "../../ui";
 import { avatarSrc, uploadsOriginOf } from "@/lib/avatarImage";
+import { formatDate, formatNumber } from "@/lib/datetime";
 import { TierBadge } from "./TierBadge";
 import { messageOf } from "../../ui/errorMessage";
 import { formatWalletAmount } from "../wallet/WalletTransactionCard";
@@ -27,9 +28,7 @@ import type { TeacherDetail, TeacherReview, TeacherService } from "./types";
 
 function reviewDate(value: string) {
   if (!value) return "";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  return new Intl.DateTimeFormat("fa-IR", { year: "numeric", month: "long", day: "numeric" }).format(date);
+  return formatDate(value);
 }
 
 /* ═══ «دربارهٔ استاد» — بازچینش ساختاریافته (هم‌الگو با نسخهٔ وب) ═══ */
@@ -216,7 +215,7 @@ export function LearnerTeacherProfileScreen({
   const { teacher, reviews } = detail;
   const services = teacher.services.filter((service) => service.active);
   const ratingLabel = teacher.reviews > 0
-    ? teacher.rating.toLocaleString("fa-IR", { maximumFractionDigits: 1 })
+    ? formatNumber(teacher.rating, "fa", { maximumFractionDigits: 1 })
     : "—";
 
   return (

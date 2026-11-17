@@ -25,6 +25,7 @@ import {
 import { messageOf } from "../../ui/errorMessage";
 import { RoleModeSheet } from "../auth/RoleModeSheet";
 import { avatarSrc, uploadsOriginOf } from "@/lib/avatarImage";
+import { formatDate } from "@/lib/datetime";
 import {
   getNotifications,
   markNotificationRead,
@@ -70,16 +71,7 @@ function greetingLabel() {
 }
 
 function todayLabel() {
-  try {
-    return new Intl.DateTimeFormat("fa-IR-u-ca-persian", {
-      timeZone: "Asia/Tehran",
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-    }).format(new Date());
-  } catch {
-    return "";
-  }
+  return formatDate(new Date(), "fa", "weekdayDayMonth");
 }
 
 function dayOfYearIndex() {

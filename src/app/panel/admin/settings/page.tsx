@@ -10,6 +10,7 @@ import {
 import { StatCard } from '@/components/admin/AdminUI';
 import { getToken } from '@/lib/auth';
 import { toFaDigits } from '@/lib/persian';
+import { formatTime } from '@/lib/datetime';
 
 type SettingsMap = Record<string, string>;
 
@@ -126,7 +127,7 @@ export default function AdminSettings() {
       for (const key of ALL_KEYS) normalized[key] = data[key] ?? '';
       setValues(normalized);
       setLoaded(normalized);
-      setSavedAt(new Intl.DateTimeFormat('fa-IR', { hour: '2-digit', minute: '2-digit' }).format(new Date()));
+      setSavedAt(formatTime(new Date()));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'ثبت تنظیمات انجام نشد.');
     } finally {

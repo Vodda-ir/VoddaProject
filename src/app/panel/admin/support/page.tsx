@@ -10,6 +10,7 @@ import {
 import { FilterTabs, StatCard, TablePagination } from '@/components/admin/AdminUI';
 import { getToken } from '@/lib/auth';
 import { toFaDigits } from '@/lib/persian';
+import { formatDateTime } from '@/lib/datetime';
 
 type SupportStatus = 'new' | 'resolved';
 
@@ -27,7 +28,7 @@ const PAGE_SIZE = 30;
 
 function formatDate(value: string) {
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? '—' : new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium', timeStyle: 'short' }).format(date);
+  return Number.isNaN(date.getTime()) ? '—' : formatDateTime(date);
 }
 
 export default function AdminSupportPage() {

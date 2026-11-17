@@ -19,6 +19,7 @@ import {
 } from '@/components/admin/AdminUI';
 import { fullUrl, getToken } from '@/lib/auth';
 import { toFaDigits } from '@/lib/persian';
+import { formatDate } from '@/lib/datetime';
 
 type AdminReviewRow = {
   id: number;
@@ -46,11 +47,7 @@ type RatingFilter = (typeof RATING_FILTERS)[number]['value'];
 
 function faDate(iso?: string): string {
   if (!iso) return '—';
-  try {
-    return new Intl.DateTimeFormat('fa-IR', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(iso));
-  } catch {
-    return '—';
-  }
+  return formatDate(iso) || '—';
 }
 
 function Stars({ rating }: { rating: number }) {

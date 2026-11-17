@@ -20,6 +20,7 @@ import {
 import { fullUrl, getToken } from '@/lib/auth';
 import type { SessionListItem } from '@/lib/api';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
+import { formatDateTime } from '@/lib/datetime';
 
 type SessionStatusFilter = '' | 'pending' | 'confirmed' | 'done' | 'canceled';
 const PAGE_SIZE = 30;
@@ -40,11 +41,7 @@ const STATUS_BADGE: Record<string, { label: string; tone: string }> = {
 
 function faDateTime(iso?: string): string {
   if (!iso) return '—';
-  try {
-    return new Intl.DateTimeFormat('fa-IR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
-  } catch {
-    return '—';
-  }
+  return formatDateTime(iso, 'fa', 'short') || '—';
 }
 
 export default function AdminSessions() {

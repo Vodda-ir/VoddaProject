@@ -12,6 +12,7 @@ import {
 import { api, type Withdrawal } from '@/lib/api';
 import { getToken } from '@/lib/auth';
 import { digitsOnly, formatFaNumber, toFaDigits, toLatinDigits } from '@/lib/persian';
+import { formatDateTime } from '@/lib/datetime';
 
 export default function TeacherWithdrawalsPage() {
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
@@ -173,7 +174,7 @@ function withdrawalTone(status: Withdrawal['status']): 'paid' | 'rejected' | 'pe
 
 function formatDate(value: string) {
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? '—' : new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium', timeStyle: 'short' }).format(date);
+  return Number.isNaN(date.getTime()) ? '—' : formatDateTime(date);
 }
 
 const labelStyle: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: 6, color: 'var(--ink-3)', fontSize: 11.5, fontWeight: 700 };

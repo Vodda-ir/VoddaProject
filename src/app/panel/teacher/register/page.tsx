@@ -7,6 +7,7 @@ import { getToken } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { digitsOnly, toFaDigits } from '@/lib/persian';
+import { formatNumber } from '@/lib/datetime';
 
 const fields = [
   { id: 'quran', label: 'آموزش قرآن کریم' },
@@ -136,7 +137,7 @@ export default function TeacherRegisterPage() {
         <div style={{ marginBottom: 24 }}>
           <label htmlFor="teacher-bio" style={labelStyle}>درباره شما</label>
           <textarea id="teacher-bio" value={bio} maxLength={1000} onChange={(event) => setBio(event.target.value)} placeholder="سوابق، تجربیات و تخصص خود را بنویسید…" style={{ ...inputStyle, minHeight: 120, resize: 'vertical' }} />
-          <div style={{ marginTop: 5, fontSize: 11.5, color: 'var(--ink-4)' }}>{bio.length.toLocaleString('fa-IR')} از ۱۰۰۰ کاراکتر</div>
+          <div style={{ marginTop: 5, fontSize: 11.5, color: 'var(--ink-4)' }}>{formatNumber(bio.length)} از ۱۰۰۰ کاراکتر</div>
         </div>
 
         {error && <div role="alert" style={{ fontSize: 13, color: 'var(--rose)', marginBottom: 14 }}>{error}</div>}

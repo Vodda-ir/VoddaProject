@@ -6,6 +6,7 @@ import { usePlatform } from "../../platform/context";
 import { navigateApp } from "../../router";
 import { Button, Icon, colors, typography } from "../../ui";
 import { avatarSrc, uploadsOriginOf } from "@/lib/avatarImage";
+import { formatNumber } from "@/lib/datetime";
 import { TierBadge } from "./TierBadge";
 import type { Teacher } from "./types";
 
@@ -149,9 +150,9 @@ export function TeacherCard({
       >
         <span style={{ display: "inline-flex", alignItems: "center", gap: 3, color: colors.gold, fontWeight: 800 }}>
           <Icon name="star" size={13} fill />
-          {teacher.rating.toLocaleString("fa-IR", { maximumFractionDigits: 1 })}
+          {formatNumber(teacher.rating, "fa", { maximumFractionDigits: 1 })}
           {teacher.reviews > 0 ? (
-            <span style={{ fontWeight: 600 }}>({teacher.reviews.toLocaleString("fa-IR")})</span>
+            <span style={{ fontWeight: 600 }}>({formatNumber(teacher.reviews)})</span>
           ) : null}
         </span>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 2, minWidth: 0 }}>
@@ -161,7 +162,7 @@ export function TeacherCard({
       </div>
       <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, color: colors.inkMuted }}>
         <Icon name="award" size={12} />
-        {teacher.sessions.toLocaleString("fa-IR")} جلسهٔ موفق
+        {formatNumber(teacher.sessions)} جلسهٔ موفق
       </span>
 
       <div

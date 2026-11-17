@@ -14,6 +14,7 @@ import { SearchInput, exportCsv, FilterTabs } from '@/components/admin/AdminUI';
 import { api, type LearnerAnalytics, type Transaction } from '@/lib/api';
 import { getToken } from '@/lib/auth';
 import { formatFaNumber } from '@/lib/persian';
+import { formatDate, formatTime } from '@/lib/datetime';
 
 type TabKey = 'all' | 'in' | 'out';
 type RangeKey = '7' | '14' | '30';
@@ -44,14 +45,9 @@ const RANGE_LABELS: Array<{ value: RangeKey; label: string }> = [
 ];
 
 function txTime(iso: string): string {
-  try {
-    const date = new Date(iso);
-    const day = new Intl.DateTimeFormat('fa-IR', { day: 'numeric', month: 'short' }).format(date);
-    const time = new Intl.DateTimeFormat('fa-IR', { hour: '2-digit', minute: '2-digit' }).format(date);
-    return `${day} · ${time}`;
-  } catch {
-    return '';
-  }
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+  return `${formatDate(date, 'fa', 'short')} · ${formatTime(date)}`;
 }
 
 export default function UserWalletPage() {

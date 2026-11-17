@@ -13,6 +13,7 @@ import {
 import { KeyValueRow } from '@/components/admin/AdminUI';
 import { avatarUrl as withVersion, getToken } from '@/lib/auth';
 import { toFaDigits } from '@/lib/persian';
+import { formatDate } from '@/lib/datetime';
 import {
   announceAvatarUpdated,
   compressAvatarFile,
@@ -295,9 +296,5 @@ export default function UserSettingsPage() {
 }
 
 function faDate(iso: string): string {
-  try {
-    return new Intl.DateTimeFormat('fa-IR', { year: 'numeric', month: 'long', day: 'numeric' }).format(new Date(iso));
-  } catch {
-    return '';
-  }
+  return formatDate(iso);
 }

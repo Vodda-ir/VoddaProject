@@ -10,6 +10,7 @@ import {
 import { DataTable, exportCsv, StatCard, TablePagination } from '@/components/admin/AdminUI';
 import { getToken } from '@/lib/auth';
 import { toFaDigits } from '@/lib/persian';
+import { formatDateTime } from '@/lib/datetime';
 
 type AuditEntry = {
   id: number;
@@ -43,7 +44,7 @@ function actionMeta(action: string) {
 
 function formatDate(value: string) {
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? '—' : new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium', timeStyle: 'medium' }).format(date);
+  return Number.isNaN(date.getTime()) ? '—' : formatDateTime(date);
 }
 
 export default function AdminAuditPage() {

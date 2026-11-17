@@ -14,6 +14,7 @@ import { StatCard, deltaOf, exportCsv, FilterTabs } from '@/components/admin/Adm
 import { api, type LearnerAnalytics, type SessionListItem } from '@/lib/api';
 import { fullUrl, getToken } from '@/lib/auth';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
+import { formatDateTime } from '@/lib/datetime';
 
 type RangeKey = '7' | '14' | '30';
 type ChartTab = 'sessions' | 'minutes' | 'money';
@@ -30,10 +31,6 @@ const SESSION_STATUS_META: Record<string, { label: string; color: string }> = {
   done: { label: 'برگزارشده', color: 'var(--olive-500)' },
   canceled: { label: 'لغوشده', color: 'var(--rose)' },
 };
-
-const tehranFullDate = new Intl.DateTimeFormat('fa-IR', {
-  weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tehran',
-});
 
 export default function LearnerDashboard() {
   const [analytics, setAnalytics] = useState<LearnerAnalytics | null>(null);
@@ -150,7 +147,7 @@ export default function LearnerDashboard() {
           <span className="usr-next-icon"><Icon name="video" size={21} /></span>
           <div style={{ minWidth: 0, flex: 1 }}>
             <strong>جلسه بعدی شما</strong>
-            <small>{tehranFullDate.format(nextSession)} · به‌وقت رسمی ایران</small>
+            <small>{formatDateTime(nextSession, 'fa', 'weekdayDayMonth')} · به‌وقت رسمی ایران</small>
           </div>
           <Link href="/panel/user/sessions" className="ops-button" data-tone="primary">جزئیات و ورود به کلاس</Link>
         </section>

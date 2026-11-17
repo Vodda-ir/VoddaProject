@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { asArray, asNumber, asRecord, asString, type ApiEnvelope } from "../../platform/api";
+import { formatDate } from "@/lib/datetime";
 import { usePlatform } from "../../platform/context";
 import { messageOf } from "../../ui/errorMessage";
 import {
@@ -42,13 +43,6 @@ function parseReview(value: unknown): Review | null {
     learnerName: learnerName || "قرآن‌آموز",
     learnerAvatar: learnerAvatar || undefined,
   };
-}
-
-function formatDate(value: string): string {
-  if (!value) return "";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  return new Intl.DateTimeFormat("fa-IR", { year: "numeric", month: "long", day: "numeric" }).format(date);
 }
 
 export function TeacherReviewsScreen() {

@@ -6,6 +6,7 @@ import { PlatformHttpError } from "../../platform/http";
 import { usePlatform } from "../../platform/context";
 import { navigateApp } from "../../router";
 import { toFaDigits } from "../../ui/persian";
+import { formatDateTime } from "@/lib/datetime";
 import {
   Avatar,
   Button,
@@ -50,13 +51,7 @@ function timeLabelOf(call: { flexible: boolean; scheduled_at?: string | null }):
   const now = new Date();
   const diffMin = Math.round((at.getTime() - now.getTime()) / 60000);
   if (diffMin < 60 && diffMin > -60) return `⚡ حدود ${fa(Math.max(0, diffMin))} دقیقه دیگر`;
-  const local = at.toLocaleString("fa-IR", {
-    weekday: "long",
-    hour: "2-digit",
-    minute: "2-digit",
-    month: "long",
-    day: "numeric",
-  });
+  const local = formatDateTime(at, "fa", "weekdayDayMonth");
   return `📅 ${local}`;
 }
 
