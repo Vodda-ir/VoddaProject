@@ -9,8 +9,13 @@ import { navigateApp } from "../../router";
 import { Avatar, Icon, LoadingState, colors, radii, toFaDigits, typography } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
 import { defaultRouteForUser } from "./AuthExperience";
-
-const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
+import {
+  announceAvatarUpdated,
+  avatarSrc,
+  compressAvatarFile,
+  uploadsOriginOf,
+  validateAvatarFile,
+} from "@/lib/avatarImage";
 
 function normalizeUser(payload: unknown): AuthUser | null {
   if (!payload || typeof payload !== "object") return null;
@@ -35,6 +40,8 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
   const [bio, setBio] = useState("");
   const [avatar, setAvatar] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [preparingAvatar, setPreparingAvatar] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -88,16 +95,17 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
     const file = event.target.files?.[0] ?? null;
     event.target.value = "";
     if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      setError("فایل انتخاب‌شده باید تصویر باشد.");
-      return;
-    }
-    if (file.size > MAX_AVATAR_BYTES) {
-      setError("حجم تصویر پروفایل نباید بیشتر از ۵ مگابایت باشد.");
+    const validationError = validateAvatarFile(file);
+    if (validationError) {
+      setError(validationError);
       return;
     }
     setError(null);
-    setAvatar(file);
+    setPreparingAvatar(true);
+    void compressAvatarFile(file)
+      .then((prepared) => setAvatar(prepared))
+      .catch(() => setAvatar(file))
+      .finally(() => setPreparingAvatar(false));
   }
 
   async function submit(event: FormEvent) {
@@ -109,29 +117,37 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
 
     setSaving(true);
     setError(null);
+    setUploadProgress(null);
     try {
       const profile = {
         name: name.trim(),
         city: city.trim(),
         bio: bio.trim(),
       };
-      const response = avatar
-        ? await platform.request<unknown>("/me", {
-            method: "PUT",
-            body: (() => {
-              const form = new FormData();
-              form.set("name", profile.name);
-              form.set("city", profile.city);
-              form.set("bio", profile.bio);
-              form.set("avatar", avatar, avatar.name || "avatar.jpg");
-              return form;
-            })(),
-          })
-        : await platform.request<unknown>("/me", {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(profile),
-          });
+      let response: unknown;
+      if (avatar) {
+        if (!platform.requestWithProgress) {
+          throw new Error("آپلود تصویر در این محیط پشتیبانی نمی‌شود.");
+        }
+        const form = new FormData();
+        form.set("name", profile.name);
+        form.set("city", profile.city);
+        form.set("bio", profile.bio);
+        form.set("avatar", avatar, avatar.name || "avatar.jpg");
+        // باگ avatar-upload — آپلود مستقیم به دامنهٔ سرور (در نیتیو api.vodda.ir)
+        // با توکن، همراه progress واقعی.
+        response = await platform.requestWithProgress<unknown>(
+          "/me",
+          { method: "PUT", body: form },
+          (fraction) => setUploadProgress(fraction),
+        );
+      } else {
+        response = await platform.request<unknown>("/me", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(profile),
+        });
+      }
 
       const updated = normalizeUser(response) ?? await platform.restoreSession();
       if (!updated) {
@@ -139,11 +155,14 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
         return;
       }
       setUser(updated);
+      // باگ avatar-upload — همگام‌سازی بلافاصلهٔ avatar_url در کش کاربر و همهٔ منوها.
+      announceAvatarUpdated(updated.avatar_url, updated.updated_at);
       navigateApp(onboarding ? defaultRouteForUser(updated) : "/profile", config, { replace: true });
     } catch (saveError) {
       setError(messageOf(saveError, "ذخیره پروفایل انجام نشد. دوباره تلاش کنید."));
     } finally {
       setSaving(false);
+      setUploadProgress(null);
     }
   }
 
@@ -203,14 +222,19 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
               cursor: canSubmit ? "pointer" : "not-allowed",
             }}
           >
-            {saving ? "…" : "ذخیره"}
+            {saving ? (uploadProgress !== null ? `ذخیره ${toFaDigits(Math.round(uploadProgress * 100))}٪` : "…") : "ذخیره"}
           </button>
         </header>
 
         <form id="profile-edit-form" onSubmit={submit} style={{ display: "grid", gap: 18, padding: "20px 20px 28px" }}>
           <div style={{ display: "grid", justifyItems: "center", gap: 8, marginBottom: 2 }}>
             <label style={{ position: "relative", display: "block", cursor: saving ? "not-allowed" : "pointer" }}>
-              <Avatar name={name || user?.name} src={avatarPreview ?? user?.avatar_url} size={88} ring />
+              <Avatar
+                name={name || user?.name}
+                src={avatarSrc(avatarPreview ?? user?.avatar_url, avatarPreview ? undefined : user?.updated_at, uploadsOriginOf(platform.apiBaseUrl))}
+                size={88}
+                ring
+              />
               <span
                 aria-hidden="true"
                 style={{
@@ -229,11 +253,15 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
               >
                 <Icon name="camera" size={16} />
               </span>
-              <input type="file" accept="image/*" disabled={saving} onChange={selectAvatar} style={{ display: "none" }} />
+              <input type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" disabled={saving || preparingAvatar} onChange={selectAvatar} style={{ display: "none" }} />
             </label>
             <label style={{ color: colors.olive600, fontSize: 13, fontWeight: 600, cursor: saving ? "not-allowed" : "pointer" }}>
-              {avatar || user?.avatar_url ? "تغییر تصویر" : "افزودن تصویر"}
-              <input type="file" accept="image/*" disabled={saving} onChange={selectAvatar} style={{ display: "none" }} />
+              {preparingAvatar
+                ? "در حال آماده‌سازی تصویر…"
+                : avatar || user?.avatar_url
+                  ? "تغییر تصویر"
+                  : "افزودن تصویر"}
+              <input type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" disabled={saving || preparingAvatar} onChange={selectAvatar} style={{ display: "none" }} />
             </label>
             <span aria-hidden="true" style={{ width: 48, height: 3, marginTop: 2, borderRadius: 3, background: colors.olive200 }} />
           </div>

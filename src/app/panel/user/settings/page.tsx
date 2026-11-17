@@ -11,8 +11,14 @@ import {
   PanelSection,
 } from '@/components/panel/PanelUI';
 import { KeyValueRow } from '@/components/admin/AdminUI';
-import { fullUrl, getToken } from '@/lib/auth';
+import { avatarUrl as withVersion, getToken } from '@/lib/auth';
 import { toFaDigits } from '@/lib/persian';
+import {
+  announceAvatarUpdated,
+  compressAvatarFile,
+  uploadWithProgress,
+  validateAvatarFile,
+} from '@/lib/avatarImage';
 
 type MeState = {
   name: string;
@@ -52,6 +58,7 @@ export default function UserSettingsPage() {
   const [avatarUrl, setAvatarUrl] = useState('');
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadPercent, setUploadPercent] = useState(0);
   const [msg, setMsg] = useState('');
   const [error, setError] = useState('');
   const fileRef = useRef<HTMLInputElement | null>(null);
@@ -70,14 +77,14 @@ export default function UserSettingsPage() {
           bio: data.bio || '',
           mobile: data.mobile || '',
           role: data.role || 'learner',
-          avatarUrl: fullUrl(data.avatar_url) || '',
+          avatarUrl: withVersion(data.avatar_url, data.updated_at) || '',
           created_at: data.created_at || '',
           hasTeacherProfile: Boolean(data.teacher?.id),
         });
         setName(data.name || '');
         setCity(data.city || '');
         setBio(data.bio || '');
-        setAvatarUrl(fullUrl(data.avatar_url) || '');
+        setAvatarUrl(withVersion(data.avatar_url, data.updated_at) || '');
       })
       .catch(() => setError('اطلاعات حساب دریافت نشد.'));
   }, [token]);
@@ -108,24 +115,42 @@ export default function UserSettingsPage() {
   async function uploadAvatar(file: File) {
     if (!token || !file) return;
     setUploading(true);
+    setUploadPercent(0);
     setMsg('');
     setError('');
-    const form = new FormData();
-    form.append('name', name);
-    form.append('city', city);
-    form.append('bio', bio);
-    form.append('avatar', file);
+    // باگ avatar-upload — اعتبارسنجی شفاف حجم/فرمت قبل از ارسال (بدون خطای بی‌صدا).
+    const validationError = validateAvatarFile(file);
+    if (validationError) {
+      setError(validationError);
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = '';
+      return;
+    }
     try {
-      const response = await fetch('/api/backend/me', { method: 'PUT', body: form });
-      const body = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(body.error || 'بارگذاری تصویر انجام نشد.');
-      const next = body?.data?.avatar_url ? fullUrl(body.data.avatar_url) : '';
+      const prepared = await compressAvatarFile(file);
+      const form = new FormData();
+      form.append('name', name);
+      form.append('city', city);
+      form.append('bio', bio);
+      form.append('avatar', prepared, prepared.name || 'avatar.jpg');
+      // باگ avatar-upload — آپلود با progress واقعی و پیام خطای دقیق سرور.
+      const result = await uploadWithProgress('/api/backend/me', form, (fraction) => {
+        setUploadPercent(Math.round(fraction * 100));
+      });
+      const nextPath = result.data?.avatar_url;
+      const next = withVersion(nextPath, new Date().toISOString());
       if (next) setAvatarUrl(next);
-      setMsg('تصویر پروفایل به‌روزرسانی شد.');
+      if (nextPath) {
+        // باگ avatar-upload — همگام‌سازی فوری state محلی + منوهای بالای هر پنل.
+        setMe((current) => (current ? { ...current, avatarUrl: next } : current));
+        announceAvatarUpdated(nextPath, new Date().toISOString());
+      }
+      setMsg('تصویر پروفایل با موفقیت به‌روزرسانی شد.');
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'بارگذاری تصویر انجام نشد.');
     } finally {
       setUploading(false);
+      setUploadPercent(0);
       if (fileRef.current) fileRef.current.value = '';
     }
   }
@@ -175,7 +200,7 @@ export default function UserSettingsPage() {
                 <input
                   ref={fileRef}
                   type="file"
-                  accept="image/png,image/jpeg,image/webp"
+                  accept="image/png,image/jpeg,image/webp,.jpg,.jpeg,.png,.webp"
                   style={{ display: 'none' }}
                   onChange={(event) => {
                     const file = event.target.files?.[0];
@@ -189,7 +214,11 @@ export default function UserSettingsPage() {
                   {me?.mobile ? toFaDigits(me.mobile) : ''}
                 </div>
                 <div style={{ fontSize: 10, color: 'var(--ink-4)', marginTop: 3 }}>
-                  {uploading ? 'در حال بارگذاری تصویر…' : 'برای تغییر تصویر روی دوربین بزنید (حداکثر ۵ مگابایت)'}
+                  {uploading
+                    ? uploadPercent > 0
+                      ? `در حال بارگذاری تصویر… ${toFaDigits(uploadPercent)}٪`
+                      : 'در حال بارگذاری تصویر…'
+                    : 'برای تغییر تصویر روی دوربین بزنید (حداکثر ۵ مگابایت)'}
                 </div>
               </div>
             </div>

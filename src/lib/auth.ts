@@ -8,6 +8,16 @@ export function fullUrl(path: string | null | undefined): string | undefined {
   return path;
 }
 
+/** باگ avatar-upload — نشانی نمایش تصویر با کش‌باستینگ ?v=<version> (مثلاً updated_at). */
+export function avatarUrl(path: string | null | undefined, version?: string | number | null): string {
+  const base = fullUrl(path);
+  if (!base) return '';
+  const versionValue = version != null && version !== '' ? String(version) : null;
+  if (!versionValue) return base;
+  const separator = base.includes('?') ? '&' : '?';
+  return `${base}${separator}v=${encodeURIComponent(versionValue)}`;
+}
+
 export type AuthUser = {
   id: number;
   name: string;

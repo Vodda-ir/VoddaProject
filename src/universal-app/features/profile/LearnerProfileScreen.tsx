@@ -19,6 +19,7 @@ import {
 } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
 import { RoleModeSheet } from "../auth/RoleModeSheet";
+import { avatarSrc, onAvatarUpdated, uploadsOriginOf } from "@/lib/avatarImage";
 
 export type LearnerProfileScreenProps = {
   config: UniversalAppConfig;
@@ -58,8 +59,13 @@ export function LearnerProfileScreen({ config }: LearnerProfileScreenProps) {
   useEffect(() => {
     let cancelled = false;
     void loadProfile(() => cancelled);
+    // باگ avatar-upload — پس از آپلود تصویر، پروفایل بلافاصله همگام می‌شود.
+    const offAvatarUpdated = onAvatarUpdated((detail) => {
+      setUser((current) => (current ? { ...current, avatar_url: detail.url ?? current.avatar_url } : current));
+    });
     return () => {
       cancelled = true;
+      offAvatarUpdated();
     };
   }, [loadProfile]);
 
@@ -109,7 +115,12 @@ export function LearnerProfileScreen({ config }: LearnerProfileScreenProps) {
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <Avatar name={user.name} src={user.avatar_url} size={62} ring />
+          <Avatar
+            name={user.name}
+            src={avatarSrc(user.avatar_url, user.updated_at, uploadsOriginOf(platform.apiBaseUrl))}
+            size={62}
+            ring
+          />
           <div style={{ minWidth: 0, flex: 1 }}>
             <strong style={{ fontSize: 17, fontWeight: 800, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: colors.ink }}>
               {user.name.trim() || "کاربر وُدّا"}

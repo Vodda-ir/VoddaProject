@@ -6,7 +6,8 @@ import Link from 'next/link';
 import { Icon } from '@/components/Icon';
 import { Avatar } from '@/components/web/ui';
 import { PanelButton } from '@/components/panel/PanelUI';
-import { clearToken, fullUrl, getToken } from '@/lib/auth';
+import { clearToken, avatarUrl as withVersion, getToken } from '@/lib/auth';
+import { onAvatarUpdated } from '@/lib/avatarImage';
 
 type TeacherNavigationItem = {
   id: string;
@@ -83,7 +84,7 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
         setUser({
           name: payload.data.name || 'کاربر',
           role: payload.data.role || 'learner',
-          avatarUrl: fullUrl(payload.data.avatar_url) || '',
+          avatarUrl: withVersion(payload.data.avatar_url, payload.data.updated_at) || '',
           hasTeacherProfile,
         });
         setAccess(hasTeacherProfile ? 'allowed' : 'missing');
@@ -94,6 +95,14 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
       });
     return () => controller.abort();
   }, [token]);
+
+  // باگ avatar-upload — پس از آپلود تصویر در تنظیمات، منوی پنل استاد بلافاصله به‌روز می‌شود.
+  useEffect(() => {
+    const offAvatarUpdated = onAvatarUpdated((detail) => {
+      setUser((current) => ({ ...current, avatarUrl: withVersion(detail.url, detail.version) || current.avatarUrl }));
+    });
+    return offAvatarUpdated;
+  }, []);
 
   const registrationAllowed =
     pathname === '/panel/teacher/register' &&

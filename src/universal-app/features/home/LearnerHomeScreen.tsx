@@ -24,6 +24,7 @@ import {
 } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
 import { RoleModeSheet } from "../auth/RoleModeSheet";
+import { avatarSrc, uploadsOriginOf } from "@/lib/avatarImage";
 import {
   getNotifications,
   markNotificationRead,
@@ -1105,7 +1106,12 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
           }}
         >
           <span style={{ position: "relative", display: "inline-flex" }}>
-            <Avatar name={user?.name} src={user?.avatar_url} size={48} ring />
+            <Avatar
+              name={user?.name}
+              src={avatarSrc(user?.avatar_url, user?.updated_at, uploadsOriginOf(runtime.apiBaseUrl))}
+              size={48}
+              ring
+            />
             {user ? (
               <span
                 aria-hidden="true"

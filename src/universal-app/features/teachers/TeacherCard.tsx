@@ -2,8 +2,10 @@
 
 import type { KeyboardEvent } from "react";
 import type { UniversalAppConfig } from "../../config";
+import { usePlatform } from "../../platform/context";
 import { navigateApp } from "../../router";
 import { Button, Icon, colors, typography } from "../../ui";
+import { avatarSrc, uploadsOriginOf } from "@/lib/avatarImage";
 import { TierBadge } from "./TierBadge";
 import type { Teacher } from "./types";
 
@@ -23,6 +25,7 @@ export function TeacherCard({
   config: UniversalAppConfig;
   wide?: boolean;
 }) {
+  const runtime = usePlatform();
   const goToTeacher = () => navigateApp(`/teacher/${teacher.id}`, config);
   const priceFrom = new Intl.NumberFormat("fa-IR", { maximumFractionDigits: 0 }).format(
     Math.max(0, teacher.price30 / 1000),
@@ -72,7 +75,7 @@ export function TeacherCard({
           >
             {teacher.avatarUrl ? (
               <img
-                src={teacher.avatarUrl}
+                src={avatarSrc(teacher.avatarUrl, undefined, uploadsOriginOf(runtime.apiBaseUrl))}
                 alt={teacher.name}
                 loading="lazy"
                 style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}

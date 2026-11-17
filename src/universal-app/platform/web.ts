@@ -3,6 +3,7 @@ import { joinUrl, PlatformHttpError, requestJson } from "./http";
 import type {
   PlatformRequestInit,
   PlatformRuntime,
+  PlatformUploadProgress,
   VerifyOtpResult,
 } from "./types";
 
@@ -30,10 +31,56 @@ export function createWebPlatformRuntime(
       credentials: "include",
     });
 
+  // باگ avatar-upload — آپلود multipart با progress واقعی (XHR) از مسیر BFF
+  // با کوکی HttpOnly؛ خطای سرور با پیام دقیق برمی‌گردد.
+  const requestWithProgress = <T>(
+    path: string,
+    init: PlatformRequestInit = {},
+    onProgress?: PlatformUploadProgress,
+  ): Promise<T> =>
+    new Promise<T>((resolve, reject) => {
+      if (typeof XMLHttpRequest === "undefined") {
+        reject(new Error("آپلود در این محیط پشتیبانی نمی‌شود."));
+        return;
+      }
+      const method = (init.method ?? "GET").toUpperCase();
+      const headers = new Headers(init.headers);
+      const isFormData = typeof FormData !== "undefined" && init.body instanceof FormData;
+      const xhr = new XMLHttpRequest();
+      xhr.open(method, joinUrl(apiBaseUrl, path));
+      xhr.responseType = "json";
+      xhr.withCredentials = true;
+      if (init.body != null && !isFormData && !headers.has("Content-Type")) {
+        xhr.setRequestHeader("Content-Type", "application/json");
+      }
+      if (onProgress) {
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable && event.total > 0) {
+            onProgress(Math.min(1, event.loaded / event.total));
+          }
+        };
+      }
+      xhr.onload = () => {
+        const responseBody = (xhr.response ?? {}) as Record<string, unknown>;
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve(responseBody as T);
+          return;
+        }
+        const message =
+          typeof responseBody.error === "string"
+            ? responseBody.error
+            : `request failed: ${xhr.status}`;
+        reject(new PlatformHttpError(message, xhr.status, responseBody));
+      };
+      xhr.onerror = () => reject(new Error("ارتباط با سرور برقرار نشد."));
+      xhr.send(init.body as XMLHttpRequestBodyInit | null);
+    });
+
   return {
     kind: "web",
     apiBaseUrl,
     request,
+    requestWithProgress,
     async requestOtp(mobile) {
       await requestJson(joinUrl(authBaseUrl, "/request-otp"), {
         method: "POST",

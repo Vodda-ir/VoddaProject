@@ -9,6 +9,7 @@ export type AuthUser = {
   bio: string;
   wallet: number;
   avatar_url?: string;
+  updated_at?: string;
   needProfile: boolean;
 };
 
@@ -44,12 +45,19 @@ export interface SecureTokenStorage {
   clearToken(): Promise<void>;
 }
 
+export type PlatformUploadProgress = (fraction: number) => void;
+
 export interface PlatformRuntime {
   readonly kind: PlatformKind;
   readonly apiBaseUrl: string;
   readonly capabilities?: PlatformCapabilities;
 
   request<T>(path: string, init?: PlatformRequestInit): Promise<T>;
+  /**
+   * باگ avatar-upload — آپلود multipart با progress واقعی. در وب از مسیر BFF
+   * با کوکی HttpOnly و در نیتیو با Bearer token به دامنهٔ سرور می‌رود.
+   */
+  requestWithProgress?<T>(path: string, init?: PlatformRequestInit, onProgress?: PlatformUploadProgress): Promise<T>;
   requestOtp(mobile: string): Promise<void>;
   verifyOtp(mobile: string, code: string): Promise<VerifyOtpResult>;
   restoreSession(): Promise<AuthUser | null>;

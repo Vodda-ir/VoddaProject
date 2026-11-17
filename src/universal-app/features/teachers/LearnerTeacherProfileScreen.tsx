@@ -18,6 +18,7 @@ import {
   spacing,
   typography,
 } from "../../ui";
+import { avatarSrc, uploadsOriginOf } from "@/lib/avatarImage";
 import { TierBadge } from "./TierBadge";
 import { messageOf } from "../../ui/errorMessage";
 import { formatWalletAmount } from "../wallet/WalletTransactionCard";
@@ -222,7 +223,12 @@ export function LearnerTeacherProfileScreen({
     <section className="vodda-screen" style={{ display: "grid", gap: spacing.xl }}>
       <div className="vodda-enter" style={{ display: "grid", justifyItems: "center", textAlign: "center", gap: 4 }}>
         <div style={{ position: "relative" }}>
-          <Avatar name={teacher.name} src={teacher.avatarUrl || undefined} size={88} ring />
+          <Avatar
+            name={teacher.name}
+            src={avatarSrc(teacher.avatarUrl || undefined, undefined, uploadsOriginOf(runtime.apiBaseUrl))}
+            size={88}
+            ring
+          />
           {teacher.tier ? (
             <span
               aria-label="نشان درجه استاد"

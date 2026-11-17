@@ -25,10 +25,12 @@ import {
 import { messageOf } from "../../ui/errorMessage";
 import { TierBadge } from "../teachers/TierBadge";
 import { formatWalletAmount } from "../wallet/WalletTransactionCard";
+import { avatarSrc, uploadsOriginOf } from "@/lib/avatarImage";
 
 type UserProfile = {
   name: string;
   avatarUrl?: string;
+  updated_at?: string;
 };
 
 type TeacherProfile = {
@@ -68,6 +70,7 @@ function parseUser(value: unknown): UserProfile | null {
   return {
     name: asString(record.name).trim() || "استاد",
     avatarUrl: asString(record.avatar_url) || undefined,
+    updated_at: asString(record.updated_at) || undefined,
   };
 }
 
@@ -269,7 +272,12 @@ export function TeacherProfileScreen({ config }: { config: UniversalAppConfig })
       <Card elevated className="vodda-enter" style={{ padding: 16, borderRadius: 24 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <div style={{ position: "relative", flex: "0 0 auto" }}>
-            <Avatar name={user.name} src={user.avatarUrl} size={62} ring />
+            <Avatar
+              name={user.name}
+              src={avatarSrc(user.avatarUrl, user.updated_at, uploadsOriginOf(runtime.apiBaseUrl))}
+              size={62}
+              ring
+            />
             {teacher.tier ? (
               <span
                 aria-label="نشان درجه استاد"
