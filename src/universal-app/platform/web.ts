@@ -1,6 +1,7 @@
 import { normalizeAuthUser, type AuthUserPayload } from "./auth";
 import { joinUrl, PlatformHttpError, requestJson } from "./http";
 import type {
+  PlatformGeoCapabilities,
   PlatformRequestInit,
   PlatformRuntime,
   PlatformUploadProgress,
@@ -10,6 +11,47 @@ import type {
 type WebPlatformOptions = {
   apiBaseUrl?: string;
   authBaseUrl?: string;
+};
+
+/* ۱.ب.۱ — موقعیت‌یاب وب برای chip شهر:
+ *  - hasPermission فقط با permissions API (بدون پنجرهٔ مجوز) بررسی می‌شود.
+ *  - requestPermission اگر denied قطعی باشد false؛ در "prompt" درخواست مرورگر
+ *    هنگام currentPosition پر می‌شود (تقارن رفتار با اپ).
+ *  - currentPosition هیچ‌وقت نمی‌شکند — خطا → null. */
+async function geoPermissionState(): Promise<"granted" | "denied" | "unknown"> {
+  try {
+    if (typeof navigator === "undefined" || !navigator.permissions) return "unknown";
+    const status = await navigator.permissions.query({ name: "geolocation" as PermissionName });
+    if (status.state === "granted") return "granted";
+    if (status.state === "denied") return "denied";
+    return "unknown";
+  } catch {
+    return "unknown";
+  }
+}
+
+const webGeo: PlatformGeoCapabilities = {
+  async hasPermission() {
+    if (typeof navigator === "undefined" || !navigator.geolocation) return false;
+    return (await geoPermissionState()) === "granted";
+  },
+  async requestPermission() {
+    if (typeof navigator === "undefined" || !navigator.geolocation) return false;
+    return (await geoPermissionState()) !== "denied";
+  },
+  currentPosition() {
+    return new Promise((resolve) => {
+      if (typeof navigator === "undefined" || !navigator.geolocation) {
+        resolve(null);
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        (position) => resolve({ lat: position.coords.latitude, lon: position.coords.longitude }),
+        () => resolve(null),
+        { enableHighAccuracy: false, timeout: 10_000, maximumAge: 5 * 60_000 },
+      );
+    });
+  },
 };
 
 type VerifyResponse = {
@@ -79,6 +121,7 @@ export function createWebPlatformRuntime(
   return {
     kind: "web",
     apiBaseUrl,
+    capabilities: { geo: webGeo },
     request,
     requestWithProgress,
     async requestOtp(mobile) {

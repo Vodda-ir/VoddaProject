@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { CSSProperties, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Teacher } from '@/lib/api';
@@ -12,6 +12,8 @@ import { Icon } from '../Icon';
 import { Avatar, GeoPattern, SectionTitle, WebBtn } from './ui';
 import { hexToRgbTriplet, tierNeonColor } from '@/lib/tierMeta';
 import { resolveOnline } from '@/lib/presence';
+import { CityChip, sortByCityPriority } from './CityChip';
+import { CITY_CHANGE_EVENT, readStoredCity, storedCityUsable } from '@/lib/userCity';
 
 function PanelLink({ href, icon, label }: { href: string; icon: 'shield' | 'award' | 'user'; label: string }) {
   return (
@@ -155,13 +157,17 @@ export function Nav() {
         </div>
       )}
       <div className="public-container public-nav-inner">
-        <Link href="/" style={brandStyle} aria-label="صفحه اصلی وُدّا">
-          <img src="/vodda-logo.svg" alt="" style={{ width: 38, height: 38 }} />
-          <span>
-            <strong style={{ display: 'block', fontSize: 18, lineHeight: 1.2 }}>وُدّا</strong>
-            <span className="brand-subtitle">همراه یادگیری</span>
-          </span>
-        </Link>
+        {/* ۱.ب.۱ — chip شهر: گوشهٔ بالا (RTL راست / LTR چپ) — کنار برند در سمت شروع */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+          <CityChip />
+          <Link href="/" style={brandStyle} aria-label="صفحه اصلی وُدّا">
+            <img src="/vodda-logo.svg" alt="" style={{ width: 38, height: 38 }} />
+            <span>
+              <strong style={{ display: 'block', fontSize: 18, lineHeight: 1.2 }}>وُدّا</strong>
+              <span className="brand-subtitle">همراه یادگیری</span>
+            </span>
+          </Link>
+        </div>
 
         <nav className="desktop-nav" aria-label="ناوبری اصلی">
           {links.map(([label, href]) => (
@@ -599,17 +605,31 @@ function WebTeacherCard({ teacher }: { teacher: Teacher }) {
 }
 
 export function FeaturedTeachers({ teachers, unavailable = false }: { teachers: Teacher[]; unavailable?: boolean }) {
+  /* ۱.ب.۱ — اولویت هم‌شهری: chip شهر انتخاب شد → اساتید همان شهر در ابتدای فهرست
+   * (فقط اولویت، نه محدودیت). تغییر chip با رویداد vodda-city-changed این‌جا هم اعمال می‌شود. */
+  const [city, setCity] = useState('');
+  useEffect(() => {
+    const sync = () => {
+      const stored = readStoredCity();
+      setCity(stored && storedCityUsable(stored) ? stored.name : '');
+    };
+    sync();
+    window.addEventListener(CITY_CHANGE_EVENT, sync);
+    return () => window.removeEventListener(CITY_CHANGE_EVENT, sync);
+  }, []);
+  const visible = useMemo(() => sortByCityPriority(teachers, city), [teachers, city]);
+
   return (
     <section id="teachers" className="landing-section">
       <div className="public-container">
         <div className="landing-section-head">
-          <SectionTitle kicker="استادان وُدّا" title="پروفایل‌های تأییدشده" sub="قبل از رزرو، تخصص، سابقه، خدمات، امتیاز و زمان‌های قابل رزرو را ببین." center={false} />
+          <SectionTitle kicker="استادان وُدّا" title="پروفایل‌های تأییدشده" sub={city ? `اساتید ${city} در ابتدای فهرست اولویت دارند.` : 'قبل از رزرو، تخصص، سابقه، خدمات، امتیاز و زمان‌های قابل رزرو را ببین.'} center={false} />
           <WebBtn variant="ghost" icon="arrowL" href="/search">مشاهده همه استادان</WebBtn>
         </div>
 
-        {teachers.length ? (
+        {visible.length ? (
           <div className="landing-teacher-grid">
-            {teachers.slice(0, 6).map((teacher) => <WebTeacherCard key={teacher.id} teacher={teacher} />)}
+            {visible.slice(0, 6).map((teacher) => <WebTeacherCard key={teacher.id} teacher={teacher} />)}
           </div>
         ) : (
           <div className="landing-empty-state" role="status">

@@ -3,8 +3,10 @@ import {
   CameraResultType,
   CameraSource,
 } from "@capacitor/camera";
+import { Geolocation } from "@capacitor/geolocation";
 import type {
   PlatformCapabilities,
+  PlatformGeoCapabilities,
   PlatformImagePickerOptions,
 } from "../../src/universal-app/platform/types";
 
@@ -57,8 +59,55 @@ async function pickImage(options: PlatformImagePickerOptions = {}) {
   }
 }
 
+/* ۱.ب.۱ — موقعیت‌یاب نیتیو (@capacitor/geolocation):
+ *  - اگر مجوز رد شده باشد، هرگز requestPermissions زده نمی‌شود (مشخصات اپ اندروید).
+ *  - currentPosition با عدد چک مجوز شروع می‌کند تا بدون درخواست جدید، نتیجه برگردد. */
+async function geoHasPermission(): Promise<boolean> {
+  try {
+    const status = await Geolocation.checkPermissions();
+    return status.location === "granted" || status.coarseLocation === "granted";
+  } catch {
+    return false;
+  }
+}
+
+async function geoRequestPermission(): Promise<boolean> {
+  try {
+    const status = await Geolocation.checkPermissions();
+    if (status.location === "granted" || status.coarseLocation === "granted") return true;
+    if (status.location === "denied" || status.coarseLocation === "denied") return false; // هرگز دوباره نمی‌پرسیم
+    const result = await Geolocation.requestPermissions({
+      permissions: ["location", "coarseLocation"],
+    });
+    return result.location === "granted" || result.coarseLocation === "granted";
+  } catch {
+    return false;
+  }
+}
+
+async function geoCurrentPosition() {
+  try {
+    if (!(await geoHasPermission())) return null;
+    const position = await Geolocation.getCurrentPosition({
+      enableHighAccuracy: false,
+      timeout: 10_000,
+      maximumAge: 5 * 60_000,
+    });
+    return { lat: position.coords.latitude, lon: position.coords.longitude };
+  } catch {
+    return null;
+  }
+}
+
+const nativeGeo: PlatformGeoCapabilities = {
+  hasPermission: geoHasPermission,
+  requestPermission: geoRequestPermission,
+  currentPosition: geoCurrentPosition,
+};
+
 export const nativeCapabilities: PlatformCapabilities = {
   media: {
     pickImage,
   },
+  geo: nativeGeo,
 };

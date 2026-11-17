@@ -31,12 +31,26 @@ export type PlatformImagePickerOptions = {
   maxHeight?: number;
 };
 
+/* ۱.ب.۱ — موقعیت‌یاب (شهر کاربر) — با الگوی capabilities موجود. */
+export type PlatformGeoPosition = { lat: number; lon: number };
+
+export interface PlatformGeoCapabilities {
+  /** فقط وقتی مجوز از قبل داده شده true — هرگز درخواست نمی‌کند. */
+  hasPermission(): Promise<boolean>;
+  /** یک‌بار درخواست مجوز — فراخوان مسئول پرچم «نه‌مکرر» است؛ denied → false. */
+  requestPermission(): Promise<boolean>;
+  /** مختصات فعلی — هر خطا/عدم‌مجوز → null (هرگز نمی‌شکند). */
+  currentPosition(): Promise<PlatformGeoPosition | null>;
+}
+
 export interface PlatformMediaCapabilities {
   pickImage(options?: PlatformImagePickerOptions): Promise<File | null>;
 }
 
 export interface PlatformCapabilities {
   media?: PlatformMediaCapabilities;
+  /** ۱.ب.۱ — موقعیت‌یاب برای chip شهر؛ در وب با navigator و در نیتیو با @capacitor/geolocation. */
+  geo?: PlatformGeoCapabilities;
 }
 
 export interface SecureTokenStorage {

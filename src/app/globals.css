@@ -1077,13 +1077,16 @@ textarea::placeholder {
 }
 
 /* فوتر چسبان — صفحهٔ عمومی ستون فلکس می‌شود تا فوتر روی صفحات کوتاه هم
-   به ته دید بچسبد و روی صفحات بلند به‌طور طبیعی پایین رانده شود. */
-body:has(.public-footer) > div {
+   به ته دید بچسبد و روی صفحات بلند به‌طور طبیعی پایین رانده شود.
+   ۱.ب.۱ (باگ کشف‌شده هنگام تست): `:not([hidden])` لازم است تا placeholder
+   استریم React (`<div hidden><!--$--><!--/$--></div>`) که فرزند مستقیم body است
+   ستون ۱۰۰vh نگیرد — وگرنه یک فضای خالی تمام‌صفحه بالای محتوا می‌سازد. */
+body:has(.public-footer) > div:not([hidden]):not(.vodda-city-sheet) {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
 }
-body:has(.public-footer) > div > .public-footer {
+body:has(.public-footer) > div:not([hidden]):not(.vodda-city-sheet) > .public-footer {
   margin-top: auto;
 }
 
@@ -5804,4 +5807,261 @@ a.blog-card:hover .blog-card-action {
   border-color: rgba(191, 149, 64, .35);
   color: #8b681f;
   background: var(--gold-bg);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ۱.ب.۱ — chip شهر + bottom sheet انتخاب شهر (وب)
+═══════════════════════════════════════════════════════════ */
+.vodda-city-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  min-height: 34px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--olive-200);
+  background: var(--surface);
+  color: var(--olive-700);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color .16s ease, box-shadow .16s ease;
+}
+.vodda-city-chip-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.vodda-city-chip:hover,
+.vodda-city-chip:focus-visible {
+  border-color: var(--olive-400);
+  box-shadow: 0 0 9px rgba(147, 161, 114, .28);
+}
+
+/* sheet پایین صفحه */
+.vodda-city-sheet-backdrop {
+  position: fixed;
+  z-index: 120;
+  inset: 0;
+  border: 0;
+  padding: 0;
+  background: rgba(32, 35, 27, .5);
+  backdrop-filter: blur(6px);
+  cursor: pointer;
+}
+.vodda-city-sheet {
+  position: fixed;
+  z-index: 121;
+  inset-inline: 0;
+  bottom: 0;
+  margin-inline: auto;
+  width: min(100%, 560px);
+  max-height: 82dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 16px 18px calc(20px + env(safe-area-inset-bottom));
+  border-radius: 20px 20px 0 0;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 -12px 44px rgba(31, 36, 24, .22);
+  animation: vodda-city-sheet-in 240ms ease-out both;
+}
+@keyframes vodda-city-sheet-in {
+  from { transform: translateY(24px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vodda-city-sheet { animation: none; }
+}
+.vodda-city-sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.vodda-city-sheet-head strong { font-size: 15.5px; font-weight: 800; }
+.vodda-city-sheet-close {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--sand-200);
+  border-radius: 11px;
+  background: var(--surface);
+  color: var(--ink-2s);
+  cursor: pointer;
+}
+.vodda-city-use-location {
+  width: 100%;
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--olive-600);
+  color: #fff;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 8px 22px rgba(94, 110, 67, .16);
+}
+.vodda-city-use-location:disabled { opacity: .65; cursor: default; }
+.vodda-city-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid rgba(191, 149, 64, .35);
+  border-radius: 12px;
+  background: var(--gold-bg);
+  color: #8b681f;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.7;
+}
+.vodda-city-search { display: grid; gap: 6px; }
+.vodda-city-search > span { font-size: 12.5px; font-weight: 700; color: var(--ink-2s); }
+.vodda-city-search input {
+  width: 100%;
+  min-height: 46px;
+  padding: 11px 40px 11px 12px;
+  border: 1px solid var(--sand-200);
+  border-radius: 13px;
+  outline: none;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.vodda-city-search input:focus { border-color: var(--olive-400); }
+.vodda-city-group { display: grid; gap: 8px; margin-top: 4px; }
+.vodda-city-group > strong { font-size: 12.5px; font-weight: 800; color: var(--ink-2s); }
+.vodda-city-group-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.vodda-city-group-head small { font-size: 11px; color: var(--ink-4); font-weight: 700; }
+.vodda-city-popular { display: flex; flex-wrap: wrap; gap: 8px; }
+.vodda-city-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 13px;
+  border: 1px solid var(--sand-200);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.vodda-city-pill[data-active="true"] {
+  border-color: var(--olive-600);
+  background: var(--olive-50);
+  color: var(--olive-700);
+  font-weight: 800;
+}
+.vodda-city-list {
+  display: grid;
+  gap: 3px;
+  max-height: 236px;
+  overflow-y: auto;
+  padding: 4px;
+  border: 1px solid var(--sand-150);
+  border-radius: 13px;
+  overscroll-behavior: contain;
+}
+.vodda-city-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: start;
+}
+.vodda-city-row:hover { background: var(--sand-100); }
+.vodda-city-row[data-active="true"] {
+  background: var(--olive-50);
+  color: var(--olive-700);
+  font-weight: 800;
+}
+.vodda-city-empty { font-size: 12.5px; color: var(--ink-3); padding: 10px 2px; }
+
+/* دارک‌مود — chip با حاشیهٔ نئونی ملایم + sheet تیره (مشخصات ۱.ب.۱) */
+@media (prefers-color-scheme: dark) {
+  .vodda-city-chip {
+    background: rgba(23, 27, 18, .82);
+    border-color: rgba(147, 161, 114, .5);
+    color: #dfe6cf;
+    box-shadow:
+      0 0 10px rgba(147, 161, 114, .22),
+      inset 0 0 6px rgba(147, 161, 114, .14);
+  }
+  .vodda-city-chip:hover,
+  .vodda-city-chip:focus-visible {
+    border-color: rgba(182, 192, 155, .72);
+    box-shadow:
+      0 0 14px rgba(147, 161, 114, .34),
+      inset 0 0 8px rgba(147, 161, 114, .18);
+  }
+  .vodda-city-sheet {
+    background: #191d13;
+    color: #e8ecdb;
+    box-shadow: 0 -12px 44px rgba(0, 0, 0, .5);
+  }
+  .vodda-city-sheet-close {
+    background: rgba(255, 255, 255, .04);
+    border-color: rgba(214, 220, 196, .22);
+    color: #cfd6bd;
+  }
+  .vodda-city-search input {
+    background: rgba(255, 255, 255, .04);
+    border-color: rgba(214, 220, 196, .22);
+    color: #e8ecdb;
+  }
+  .vodda-city-pill,
+  .vodda-city-row { background: transparent; color: #e8ecdb; }
+  .vodda-city-row:hover { background: rgba(255, 255, 255, .05); }
+  .vodda-city-pill[data-active="true"],
+  .vodda-city-row[data-active="true"] {
+    background: rgba(147, 161, 114, .16);
+    border-color: rgba(147, 161, 114, .6);
+    color: #dfe6cf;
+  }
+  .vodda-city-list { border-color: rgba(214, 220, 196, .18); }
+  .vodda-city-note {
+    background: rgba(191, 149, 64, .12);
+    color: #e7d5a8;
+    border-color: rgba(191, 149, 64, .4);
+  }
+}
+
+/* عرض‌های خیلی باریک — chip فشرده تا هیچ overflow در 320px نداشته باشیم */
+@media (max-width: 400px) {
+  .vodda-city-chip {
+    padding: 5px 9px;
+    min-height: 31px;
+    font-size: 11.5px;
+    gap: 5px;
+  }
 }

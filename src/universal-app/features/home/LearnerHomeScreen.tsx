@@ -38,6 +38,16 @@ import { isUpcomingSession, type LearnerSession } from "../sessions/types";
 import { searchTeachers } from "../teachers/api";
 import { TeacherCard } from "../teachers/TeacherCard";
 import type { Teacher } from "../teachers/types";
+import { nearestCity } from "@/lib/cities";
+import {
+  cityPermissionAsked,
+  markCityPermissionAsked,
+  readStoredCity,
+  storedCityUsable,
+  writeStoredCity,
+  type UserCitySource,
+} from "@/lib/userCity";
+import { CityChipButton, CityPickerSheet } from "./CityPickerSheet";
 
 export type LearnerHomeScreenProps = {
   config: UniversalAppConfig;
@@ -950,6 +960,11 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
   const [sessionArea, setSessionArea] = useState<SessionAreaState>("loading");
   const [nextSession, setNextSession] = useState<LearnerSession | null>(null);
   const [pastTeachers, setPastTeachers] = useState<PastTeacher[]>([]);
+  /* ۱.ب.۱ — شهر کاربر برای chip هدر و اولویت هم‌شهری */
+  const [city, setCity] = useState("");
+  const [citySheetOpen, setCitySheetOpen] = useState(false);
+  const [cityDetecting, setCityDetecting] = useState(false);
+  const [cityDetectNote, setCityDetectNote] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -964,6 +979,44 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
       active = false;
     };
   }, [runtime]);
+
+  /* ۱.ب.۱ — فرآیند تشخیص شهر (مشخصات):
+   *  ① انتخاب ذخیره‌شدهٔ کاربر → فوری؛
+   *  ② مجوز از قبل داده شده → GPS بی‌صدا؛
+   *  ③ مجوز نبود و تا حالا نپرسیده‌ایم → فقط یک‌بار درخواست (پرچم asked)؛
+   *  ④ رد/خطا/خارج از ایران → شهر پروفایل کاربر؛ در اپ اندروید اگر مجوز رد شده
+   *     باشد، هرگز درخواست زده نمی‌شود (checkPermissions در geo.hasPermission). */
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      const stored = readStoredCity();
+      if (storedCityUsable(stored)) {
+        if (active && stored) setCity(stored.name);
+        return;
+      }
+      const geo = runtime.capabilities?.geo;
+      if (geo) {
+        const granted = await geo.hasPermission();
+        const mayAsk = !granted && !cityPermissionAsked();
+        if (granted || mayAsk) {
+          if (!granted) markCityPermissionAsked();
+          const position = await geo.currentPosition();
+          if (position) {
+            const detected = nearestCity(position.lat, position.lon);
+            if (detected) {
+              writeStoredCity(detected, "gps");
+              if (active) setCity(detected);
+              return;
+            }
+          }
+        }
+      }
+      if (active) setCity(user?.city?.trim() ?? "");
+    })();
+    return () => {
+      active = false;
+    };
+  }, [runtime, user]);
 
   useEffect(() => {
     let active = true;
@@ -1039,6 +1092,76 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
 
   const women = useMemo(() => teachers.filter((teacher) => teacher.female), [teachers]);
 
+  /* ۱.ب.۱ — شهرهای واقعی سکو (از فهرست استادها) برای «همهٔ شهرها» در شیت */
+  const platformCities = useMemo(
+    () => [...new Set(teachers.map((teacher) => teacher.city.trim()).filter(Boolean))],
+    [teachers],
+  );
+
+  /* ۱.ب.۱ — اولویت هم‌شهری: درجه ۱ نخست (حفظ ۱.الف.۵)، سپس هم‌شهری،
+   * سپس ترتیب قبلی — فقط اولویت نمایش، نه محدودیت. مرتب‌سازی JS پایدار است. */
+  const cityKey = city.trim();
+  const withCityPriority = (items: Teacher[]): Teacher[] => {
+    if (!cityKey) return items;
+    return [...items].sort((left, right) => {
+      const tier1 = Number(right.isTier1 === true) - Number(left.isTier1 === true);
+      if (tier1 !== 0) return tier1;
+      return Number(right.city.trim() === cityKey) - Number(left.city.trim() === cityKey);
+    });
+  };
+
+  /* ۱.ب.۱ — ذخیرهٔ شهر انتخابی: localStorage + پروفایل (PUT /me برای کاربر واردشده)
+   * نکته: این تابع note خطا را پاک نمی‌کند تا پیام «مجوز رد شد» همراه شهر پروفایل بماند. */
+  const applyCity = (name: string, source: UserCitySource) => {
+    const clean = name.trim();
+    if (!clean) return;
+    setCity(clean);
+    writeStoredCity(clean, source);
+    if (!user) return; // مهمان — فقط localStorage
+    runtime
+      .request("/me", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: user.name, city: clean, bio: user.bio ?? "" }),
+      })
+      .catch(() => {
+        /* ذخیرهٔ پروفایل ناموفق — chip از localStorage پابرجا می‌ماند */
+      });
+  };
+
+  /* «استفاده از موقعیت من» — کنش صریح کاربر؛ درخواست مجوز این‌جا مجاز است */
+  const useMyLocation = async () => {
+    const geo = runtime.capabilities?.geo;
+    if (!geo) {
+      setCityDetectNote("موقعیت‌یاب در این دستگاه در دسترس نیست؛ شهر را از فهرست انتخاب کنید.");
+      return;
+    }
+    setCityDetecting(true);
+    setCityDetectNote(null);
+    try {
+      const granted = (await geo.hasPermission()) || (await geo.requestPermission());
+      if (!granted) {
+        setCityDetectNote("مجوز موقعیت داده نشد؛ شهر پروفایل شما استفاده می‌شود.");
+        const profileCity = user?.city?.trim();
+        if (profileCity) applyCity(profileCity, "saved");
+        return;
+      }
+      const position = await geo.currentPosition();
+      if (!position) {
+        setCityDetectNote("موقعیت دریافت نشد؛ لطفاً دوباره تلاش کنید.");
+        return;
+      }
+      const detected = nearestCity(position.lat, position.lon);
+      if (!detected) {
+        setCityDetectNote("نزدیک‌ترین شهر ایران به موقعیت شما پیدا نشد.");
+        return;
+      }
+      applyCity(detected, "gps");
+    } finally {
+      setCityDetecting(false);
+    }
+  };
+
   const recommended = useMemo(
     () => [...teachers].sort((a, b) => recommendationScore(b) - recommendationScore(a)).slice(0, 12),
     [teachers],
@@ -1102,13 +1225,29 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
       <header
         className="vodda-enter"
         style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: spacing.md,
+          display: "grid",
+          gap: spacing.sm + 2,
           paddingBlock: spacing.xs,
         }}
       >
+        {/* ۱.ب.۱ — chip شهر: گوشهٔ بالا (RTL راست / LTR چپ) */}
+        <div style={{ display: "flex", justifyContent: "flex-start", minWidth: 0 }}>
+          <CityChipButton
+            city={city}
+            onClick={() => {
+              setCityDetectNote(null);
+              setCitySheetOpen(true);
+            }}
+          />
+        </div>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: spacing.md,
+          }}
+        >
         <button
           type="button"
           onClick={() => { if (user) setRoleSheetOpen(true); }}
@@ -1207,6 +1346,7 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
               {user && user.wallet > 0 ? walletShort(user.wallet) : "کیف پول"}
             </span>
           </button>
+          </div>
         </div>
       </header>
 
@@ -1306,12 +1446,24 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
       ) : (
         <>
           <RebookRail teachers={pastTeachers} config={config} runtime={runtime} />
-          <TeacherRail title="اساتید پیشنهادی" teachers={recommended} config={config} />
+          <TeacherRail title="اساتید پیشنهادی" teachers={withCityPriority(recommended)} config={config} />
           {featured ? <FeaturedTeacher teacher={featured} config={config} /> : null}
-          <TeacherRail title="اساتید بانو" teachers={women} config={config} />
-          <TeacherRail title="فعال‌ترین استادها" teachers={mostActive} config={config} />
+          <TeacherRail title="اساتید بانو" teachers={withCityPriority(women)} config={config} />
+          <TeacherRail title="فعال‌ترین استادها" teachers={withCityPriority(mostActive)} config={config} />
         </>
       )}
+
+      {/* ۱.ب.۱ — sheet انتخاب شهر (موقعیت من / جستجو / ۱۲ پرتردد / همهٔ شهرها) */}
+      <CityPickerSheet
+        open={citySheetOpen}
+        onClose={() => setCitySheetOpen(false)}
+        selectedCity={city}
+        platformCities={platformCities}
+        onSelect={(selected) => applyCity(selected, "saved")}
+        onUseLocation={() => void useMyLocation()}
+        detecting={cityDetecting}
+        detectNote={cityDetectNote}
+      />
 
       <RoleModeSheet
         open={roleSheetOpen}
