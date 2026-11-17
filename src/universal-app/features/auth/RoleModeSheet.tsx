@@ -18,7 +18,6 @@ export function RoleModeSheet({
   onClose: () => void;
   user?: AuthUser | null;
 }) {
-  const canUseTeacherMode = user?.role === "teacher" || user?.role === "admin";
   const isAdmin = user?.role === "admin";
 
   function roleLabel(role?: string) {
@@ -27,29 +26,20 @@ export function RoleModeSheet({
     return "قرآن‌آموز";
   }
 
-  const options: Array<{
-    mode: "learner" | "teacher";
-    icon: "user" | "award";
-    title: string;
-    description: string;
-    path: string;
-    locked: boolean;
-  }> = [
+  const options = [
     {
       mode: "learner" as const,
       icon: "user" as const,
       title: "حساب قرآن‌آموز",
       description: "یافتن استاد و رزرو جلسه",
       path: "/",
-      locked: false,
     },
     {
       mode: "teacher" as const,
       icon: "award" as const,
       title: "حساب استاد",
-      description: canUseTeacherMode ? "مدیریت جلسات و درآمد" : "مخصوص حساب‌های استاد",
+      description: "مدیریت جلسات و درآمد",
       path: "/t",
-      locked: !canUseTeacherMode,
     },
   ];
 
@@ -99,13 +89,11 @@ export function RoleModeSheet({
             <button
               key={option.mode}
               type="button"
-              className={option.locked ? "vodda-card" : "vodda-card vodda-tappable"}
+              className="vodda-card vodda-tappable"
               onClick={() => {
-                if (option.locked) return;
                 onClose();
                 if (!active) navigateApp(option.path, config);
               }}
-              aria-disabled={option.locked || undefined}
               style={{
                 width: "100%",
                 display: "flex",
@@ -113,16 +101,13 @@ export function RoleModeSheet({
                 gap: 14,
                 padding: 16,
                 textAlign: "right",
-                border: active
-                  ? `1.5px solid ${colors.olive600}`
-                  : `1px solid ${colors.sand200}`,
+                border: active ? `1.5px solid ${colors.olive600}` : `1px solid ${colors.sand200}`,
                 borderRadius: 18,
                 color: colors.ink,
                 background: active ? colors.olive50 : colors.surface,
                 boxShadow: shadows.xs,
-                opacity: option.locked ? 0.55 : 1,
                 fontFamily: typography.fontFamily,
-                cursor: option.locked ? "not-allowed" : "pointer",
+                cursor: "pointer",
               }}
             >
               <span
@@ -155,11 +140,7 @@ export function RoleModeSheet({
                   {option.description}
                 </span>
               </span>
-              {active ? (
-                <Icon name="checkCircle" size={22} style={{ color: colors.olive600 }} />
-              ) : option.locked ? (
-                <Icon name="shield" size={20} style={{ color: colors.inkFaint }} />
-              ) : null}
+              {active ? <Icon name="checkCircle" size={22} style={{ color: colors.olive600 }} /> : null}
             </button>
           );
         })}
