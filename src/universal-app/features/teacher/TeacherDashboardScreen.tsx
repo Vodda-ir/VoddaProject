@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { UniversalAppConfig } from "../../config";
 import { asNumber, asRecord, asString, type ApiEnvelope } from "../../platform/api";
 import { usePlatform } from "../../platform/context";
-import type { PlatformRuntime } from "../../platform/types";
+import type { AuthUser, PlatformRuntime } from "../../platform/types";
 import { navigateApp } from "../../router";
 import { messageOf } from "../../ui/errorMessage";
 import { RoleModeSheet } from "../auth/RoleModeSheet";
@@ -117,6 +117,19 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
   const [error, setError] = useState<string | null>(null);
   const [roleSheetOpen, setRoleSheetOpen] = useState(false);
   const [dispatchBadge, setDispatchBadge] = useState(0);
+  const [user, setUser] = useState<AuthUser | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    runtime.restoreSession()
+      .then((sessionUser) => {
+        if (!cancelled) setUser(sessionUser);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [runtime]);
 
   const loadDispatchBadge = useCallback(async () => {
     try {
@@ -171,7 +184,7 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
         type="button"
         className="vodda-tappable vodda-enter"
         onClick={() => setRoleSheetOpen(true)}
-        aria-label="تغییر به فضای قرآن‌آموز"
+        aria-label="تغییر حساب"
         style={{
           width: "100%",
           display: "flex",
@@ -395,6 +408,7 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
         open={roleSheetOpen}
         mode="teacher"
         config={config}
+        user={user}
         onClose={() => setRoleSheetOpen(false)}
       />
     </section>

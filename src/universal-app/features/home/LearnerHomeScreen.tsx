@@ -1065,7 +1065,6 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
   }, [teachers]);
 
   const firstName = user?.name?.trim().split(/\s+/)[0] || "دوست";
-  const canUseTeacherMode = user?.role === "teacher" || user?.role === "admin";
   const needsProfileNudge =
     user !== null && (!user.avatar_url || !user.city?.trim() || !user.bio?.trim());
   const today = todayLabel();
@@ -1088,7 +1087,8 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
       >
         <button
           type="button"
-          onClick={() => { if (canUseTeacherMode) setRoleSheetOpen(true); }}
+          onClick={() => { if (user) setRoleSheetOpen(true); }}
+          aria-label="تغییر حساب"
           className="vodda-tappable"
           style={{
             minWidth: 0,
@@ -1101,10 +1101,32 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
             color: colors.ink,
             background: "transparent",
             fontFamily: typography.fontFamily,
-            cursor: canUseTeacherMode ? "pointer" : "default",
+            cursor: user ? "pointer" : "default",
           }}
         >
-          <Avatar name={user?.name} src={user?.avatar_url} size={48} ring />
+          <span style={{ position: "relative", display: "inline-flex" }}>
+            <Avatar name={user?.name} src={user?.avatar_url} size={48} ring />
+            {user ? (
+              <span
+                aria-hidden="true"
+                style={{
+                  position: "absolute",
+                  insetInlineStart: -4,
+                  bottom: -2,
+                  width: 18,
+                  height: 18,
+                  display: "grid",
+                  placeItems: "center",
+                  borderRadius: "50%",
+                  border: `2px solid ${colors.sand50}`,
+                  color: colors.goldDark,
+                  background: colors.goldBackground,
+                }}
+              >
+                <Icon name="refresh" size={9} stroke={2.4} />
+              </span>
+            ) : null}
+          </span>
           <span style={{ minWidth: 0 }}>
             <span style={{ ...typography.caption, display: "block", color: colors.inkMuted }}>
               {greetingLabel()}،{today ? ` امروز ${today}` : ""}
@@ -1122,9 +1144,9 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
             >
               {firstName} جان 🌿
             </strong>
-            {canUseTeacherMode ? (
+            {user ? (
               <span style={{ display: "block", marginTop: 1, fontSize: 11.5, color: colors.olive700, fontWeight: 600 }}>
-                برای تغییر پنل روی پروفایل بزنید
+                برای تغییر حساب روی تصویر بزنید
               </span>
             ) : null}
           </span>
@@ -1266,6 +1288,7 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
         open={roleSheetOpen}
         mode="learner"
         config={config}
+        user={user}
         onClose={() => setRoleSheetOpen(false)}
       />
     </div>
