@@ -1827,6 +1827,9 @@ a.blog-card:hover .blog-card-action {
 
 .blog-article-cover {
   width: 100%;
+  /* باگ responsive-overflow — نسبت ثابت + object-fit؛ تصویر بزرگ هرگز صفحه را نمی‌شکند */
+  aspect-ratio: 16 / 9;
+  height: auto;
   max-height: 380px;
   margin: 20px 0 4px;
   border-radius: 20px;
@@ -2019,6 +2022,8 @@ a.blog-card:hover .blog-card-action {
 
 .web-search-teacher-card {
   display: grid;
+  /* باگ responsive-overflow — ردپای تک‌ستونه که با محتوا هم هرگز از عرض ستون بیرون نمی‌زند */
+  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
   padding: 16px;
   border: 1px solid var(--sand-150);
@@ -2031,6 +2036,14 @@ a.blog-card:hover .blog-card-action {
   display: flex;
   align-items: center;
   gap: 11px;
+}
+
+/* باگ responsive-overflow — بدون min-width:0، نام بلند استاد کل ستون را می‌شکند */
+.web-search-teacher-top > div,
+.web-search-teacher-card,
+.usr-teacher-card {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .web-search-teacher-top > div > strong {
@@ -3137,6 +3150,69 @@ a.blog-card:hover .blog-card-action {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 18px;
+}
+
+/* باگ responsive-overflow — داشبورد استاد ≤۶۴۰px تک‌ستونه */
+@media (max-width: 640px) {
+  .ops-metric-grid {
+    grid-template-columns: 1fr;
+  }
+  .adm-table-wrap {
+    border: none;
+    background: none;
+    box-shadow: none;
+    overflow: visible;
+  }
+  /* جدول‌های مدیریتی در موبایل → کارت */
+  .adm-table thead {
+    display: none;
+  }
+  .adm-table,
+  .adm-table tbody,
+  .adm-table tr,
+  .adm-table td {
+    display: block;
+    width: 100%;
+  }
+  .adm-table {
+    border: none;
+  }
+  .adm-table tr {
+    border: 1px solid var(--sand-150);
+    border-radius: 16px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    background: #fff;
+  }
+  .adm-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 0;
+    border: none;
+    text-align: start;
+    min-width: 0;
+  }
+  .adm-table td[data-label]::before {
+    content: attr(data-label);
+    flex: 0 0 auto;
+    color: var(--ink-3);
+    font-size: 11.5px;
+    font-weight: 700;
+  }
+  .adm-table td[data-label] > * {
+    min-width: 0;
+    text-align: end;
+  }
+  .adm-table td[colspan],
+  .adm-table td:not([data-label]) {
+    justify-content: center;
+  }
+  .adm-table td[colspan]::before,
+  .adm-table td:not([data-label])::before {
+    content: none;
+  }
 }
 
 .ops-metric-card {
@@ -4582,7 +4658,8 @@ a.blog-card:hover .blog-card-action {
 
 .usr-teacher-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(285px, 1fr));
+  /* باگ responsive-overflow — ستون حداقل ۱۸۰px تا در عرض ۳۲۰ هم جای بگیرد */
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 14px;
 }
 

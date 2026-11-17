@@ -206,7 +206,11 @@ export function DataTable<T extends { id: number | string }>({
                 onClick={onRowClick ? () => onRowClick(row) : undefined}
               >
                 {columns.map((column) => (
-                  <td key={column.key} style={{ textAlign: column.align ?? 'start' }}>
+                  <td
+                    key={column.key}
+                    style={{ textAlign: column.align ?? 'start' }}
+                    data-label={typeof column.header === 'string' ? column.header : undefined}
+                  >
                     {column.render(row)}
                   </td>
                 ))}

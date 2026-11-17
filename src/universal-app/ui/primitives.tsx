@@ -427,6 +427,8 @@ export function Sheet({ open, title, children, onClose, closeLabel = "بستن" 
         className="vodda-sheet"
         style={{
           width: "min(100%, 640px)",
+          // باگ responsive-overflow — شیت هیچ‌وقت کل عرض ویوپورت را نمی‌گیرد؛ ۱۶px حاشیه در هر سمت.
+          maxWidth: "calc(100vw - 32px)",
           maxHeight: "88dvh",
           marginInline: "auto",
           overflowY: "auto",
