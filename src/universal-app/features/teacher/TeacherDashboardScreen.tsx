@@ -27,6 +27,7 @@ import {
 } from "../../ui";
 import { formatWalletAmount, toFaDigits } from "../wallet/WalletTransactionCard";
 import { formatLocalDate } from "@/lib/datetime";
+import { useMinWidth } from "../../ui/useMediaQuery";
 
 type TeacherSummary = {
   id: number;
@@ -115,6 +116,8 @@ function officialTime(session: TeacherSession): string {
 
 export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig }) {
   const runtime = usePlatform();
+  // قاعدهٔ ۰.۶ ریسپانسیو — داشبورد استاد تک‌ستونی تا ۶۴۰px، دو ستون از ۶۴۰px به بالا
+  const twoColumns = useMinWidth(640);
   const [snapshot, setSnapshot] = useState<DashboardSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -237,7 +240,7 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
         <>
       <div>
         <WalletHero label="موجودی قابل برداشت" amount={formatWalletAmount(teacher.wallet)}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1px 1fr 1px 1fr", alignItems: "center" }}>
+          <div style={{ display: "grid", gridTemplateColumns: twoColumns ? "1fr 1px 1fr 1px 1fr" : "minmax(0, 1fr)", alignItems: "center", gap: twoColumns ? 0 : 8 }}>
             {[
               ["امتیاز", (rating === "—" ? rating : toFaDigits(rating)) + " ★"],
               ["نظرها", toFaDigits(teacher.reviews)],
@@ -380,7 +383,7 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
 
       <section>
         <SectionHeader title="مدیریت سریع" />
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12, marginTop: spacing.md }}>
+        <div style={{ display: "grid", gridTemplateColumns: twoColumns ? "repeat(2, minmax(0, 1fr))" : "minmax(0, 1fr)", gap: 12, marginTop: spacing.md }}>
           {([
             ["book" as const, "خدمات من", "/t/services"],
             ["clock" as const, "زمان‌های کاری", "/t/work-times"],

@@ -378,6 +378,8 @@ export function Dialog({ open, title, children, onClose, closeLabel = "بستن"
         className="vodda-dialog"
         style={{
           width: "min(100%, 460px)",
+          // قاعدهٔ ۰.۶ ریسپانسیو — همیشه ۱۶px فاصله از هر دو لبهٔ دید
+          maxWidth: "calc(100vw - 32px)",
           maxHeight: "min(82dvh, 720px)",
           overflowY: "auto",
           padding: spacing.xl,
