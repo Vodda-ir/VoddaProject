@@ -1,7 +1,29 @@
 import Link from 'next/link';
 import type { CSSProperties, ReactNode } from 'react';
 import { Icon } from '../Icon';
-import { TierSeal, tierOf } from './tier';
+import { Avatar as UnifiedAvatar } from '../Avatar';
+
+export function Avatar({
+  size = 48,
+  ring = false,
+  tier,
+  emoji,
+  imageUrl,
+  name,
+}: {
+  size?: number;
+  ring?: boolean;
+  /** درجه استاد — مهر رنگی درجه گوشهٔ آواتار؛ بدون درجه هیچ نشانی نیست. */
+  tier?: string | null;
+  emoji?: string;
+  imageUrl?: string;
+  /** نام برای fallback حرف اول. */
+  name?: string;
+}) {
+  /* آواتار مربعی واحد — پیاده‌سازی واقعی در src/components/Avatar.tsx است تا
+   * اپ و وب از یک منبع رندر بگیرند (پارتی کامل). امضای قبلی وب حفظ شده است. */
+  return <UnifiedAvatar size={size} ring={ring} tier={tier ?? undefined} emoji={emoji} src={imageUrl} name={name} />;
+}
 
 export function GeoPattern({ color = '#fff', opacity = 0.08 }: { color?: string; opacity?: number }) {
   const id = 'wgeo' + color.replace(/[^a-z0-9]/gi, '');
@@ -71,69 +93,6 @@ export function WebBtn({
     <Link href={href} style={buttonStyle}>{content}</Link>
   ) : (
     <a href={href} style={buttonStyle} rel="noreferrer">{content}</a>
-  );
-}
-
-export function Avatar({
-  size = 48,
-  ring = false,
-  tier,
-  emoji,
-  imageUrl,
-}: {
-  size?: number;
-  ring?: boolean;
-  /** درجه استاد — مهر رنگی درجه جای تیک سبز ثابت می‌نشیند؛ بدون درجه هیچ نشانی نیست. */
-  tier?: string | null;
-  emoji?: string;
-  imageUrl?: string;
-}) {
-  const seal = tierOf(tier);
-  const sealSize = Math.max(13, Math.round(size * 0.36));
-  return (
-    <div style={{ position: 'relative', flexShrink: 0 }}>
-      <div
-        style={{
-          width: size,
-          height: size,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          overflow: 'hidden',
-          borderRadius: '50%',
-          background: imageUrl ? 'transparent' : 'linear-gradient(135deg,var(--olive-200),var(--olive-100))',
-          boxShadow: ring ? '0 0 0 3px var(--surface), 0 0 0 4.5px var(--olive-200)' : undefined,
-          fontSize: size * 0.42,
-        }}
-      >
-        {imageUrl ? (
-          <img src={imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-        ) : emoji ? (
-          emoji
-        ) : (
-          <Icon name="user" size={size * 0.55} stroke={1.6} style={{ color: 'var(--olive-500)' }} />
-        )}
-      </div>
-      {seal && (
-        <span
-          style={{
-            position: 'absolute',
-            insetInlineEnd: -2,
-            bottom: -2,
-            width: sealSize,
-            height: sealSize,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            border: `2px solid var(--surface)`,
-            borderRadius: '50%',
-            background: 'var(--surface)',
-          }}
-        >
-          <TierSeal tier={seal} size={sealSize - 4} />
-        </span>
-      )}
-    </div>
   );
 }
 

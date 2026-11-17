@@ -191,7 +191,7 @@ function HomeSkeleton() {
   return (
     <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 26 }} aria-label="در حال بارگذاری">
       <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
-        <Skeleton style={{ width: 48, height: 48, borderRadius: "50%" }} />
+        <Skeleton style={{ width: 48, height: 48, borderRadius: 7 }} />
         <div style={{ display: "grid", gap: 7, flex: 1 }}>
           <Skeleton style={{ width: 96, height: 12 }} />
           <Skeleton style={{ width: 150, height: 16 }} />

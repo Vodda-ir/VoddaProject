@@ -7,6 +7,7 @@ import type {
   ReactNode,
 } from "react";
 import { colors, gradients, radii, shadows, spacing, typography } from "./theme";
+import { Avatar as UnifiedAvatar } from "../../components/Avatar";
 
 function mergeStyle(base: CSSProperties, style?: CSSProperties): CSSProperties {
   return style ? { ...base, ...style } : base;
@@ -187,65 +188,28 @@ export type AvatarProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "children"> 
   name?: string;
   size?: number;
   ring?: boolean;
+  /** درجه استاد برای مهر گوشهٔ آواتار. */
+  tier?: string | null;
+  /** چراغ آنلاین/آفلاین گوشهٔ آواتار. */
+  online?: boolean;
 };
 
-function initials(name?: string) {
-  const parts = name?.trim().split(/\s+/).filter(Boolean) ?? [];
-  if (parts.length === 0) return "و";
-  return `${parts[0]?.[0] ?? ""}${parts.length > 1 ? parts.at(-1)?.[0] ?? "" : ""}`;
-}
-
-function avatarFrame(size: number, ring: boolean, style?: CSSProperties): CSSProperties {
-  return mergeStyle(
-    {
-      display: "inline-grid",
-      placeItems: "center",
-      flex: `0 0 ${size}px`,
-      width: size,
-      height: size,
-      boxSizing: "border-box",
-      borderRadius: "50%",
-      border: ring ? `3px solid ${colors.surface}` : undefined,
-      outline: ring ? `2px solid ${colors.olive200}` : undefined,
-      boxShadow: ring ? shadows.sm : undefined,
-    },
-    style,
-  );
-}
-
-export function Avatar({ name, size = 48, ring = true, src, alt, style, ...props }: AvatarProps) {
-  if (src) {
-    return (
-      <img
-        src={src}
-        alt={alt ?? name ?? "تصویر کاربر"}
-        width={size}
-        height={size}
-        style={{
-          ...avatarFrame(size, ring, style),
-          objectFit: "cover",
-          background: colors.olive50,
-        }}
-        {...props}
-      />
-    );
-  }
-
+/* آواتار مربعی واحد — پیاده‌سازی واقعی در src/components/Avatar.tsx است تا
+ * اپ و وب از یک منبع رندر بگیرند (پارتی کامل، شکل مربعی با گوشهٔ نرم ۱۴٪).
+ * امضای قبلی اپ (name/size/ring/src/alt) دقیقاً حفظ شده است. */
+export function Avatar({ name, size = 48, ring = true, src, alt, style, tier, online, ...props }: AvatarProps) {
   return (
-    <span
-      role="img"
-      aria-label={alt ?? name ?? "کاربر"}
-      style={{
-        ...avatarFrame(size, ring, style),
-        color: colors.olive800,
-        background: gradients.soft,
-        fontFamily: typography.fontFamily,
-        fontSize: Math.max(12, Math.round(size * 0.29)),
-        fontWeight: 900,
-      }}
-    >
-      {initials(name)}
-    </span>
+    <UnifiedAvatar
+      name={name}
+      size={size}
+      ring={ring}
+      src={src}
+      alt={alt}
+      style={style}
+      tier={tier ?? undefined}
+      online={online}
+      {...props}
+    />
   );
 }
 

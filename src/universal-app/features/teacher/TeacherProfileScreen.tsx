@@ -23,7 +23,6 @@ import {
   typography,
 } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
-import { TierBadge } from "../teachers/TierBadge";
 import { formatWalletAmount } from "../wallet/WalletTransactionCard";
 import { avatarSrc, uploadsOriginOf } from "@/lib/avatarImage";
 
@@ -271,33 +270,14 @@ export function TeacherProfileScreen({ config }: { config: UniversalAppConfig })
 
       <Card elevated className="vodda-enter" style={{ padding: 16, borderRadius: 24 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <div style={{ position: "relative", flex: "0 0 auto" }}>
-            <Avatar
-              name={user.name}
-              src={avatarSrc(user.avatarUrl, user.updated_at, uploadsOriginOf(runtime.apiBaseUrl))}
-              size={62}
-              ring
-            />
-            {teacher.tier ? (
-              <span
-                aria-label="نشان درجه استاد"
-                style={{
-                  position: "absolute",
-                  insetInlineEnd: -2,
-                  bottom: 1,
-                  width: 24,
-                  height: 24,
-                  display: "grid",
-                  placeItems: "center",
-                  border: "3px solid " + colors.surface,
-                  borderRadius: "50%",
-                  background: colors.surface,
-                }}
-              >
-                <TierBadge tier={teacher.tier} size={16} />
-              </span>
-            ) : null}
-          </div>
+          {/* آواتار مربعی واحد — مهر درجه داخل خود کامپوننت رندر می‌شود */}
+          <Avatar
+            name={user.name}
+            src={avatarSrc(user.avatarUrl, user.updated_at, uploadsOriginOf(runtime.apiBaseUrl))}
+            size={62}
+            ring
+            tier={teacher.tier || undefined}
+          />
           <div style={{ minWidth: 0, flex: 1 }}>
             <strong style={{ fontSize: 16.5, fontWeight: 800, display: "block", color: colors.ink }}>
               {user.name}

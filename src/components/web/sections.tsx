@@ -35,8 +35,8 @@ function UserMenu({ name, role, avatar, avatarVersion, hasTeacherProfile }: { na
           <button aria-label="بستن منوی کاربر" style={menuBackdropStyle} onClick={() => setOpen(false)} />
           <div style={menuStyle}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, paddingBottom: 14, borderBottom: '1px solid var(--sand-100)', marginBottom: 8 }}>
-              {/* باگ avatar-upload — آواتار خود کاربر با کش‌باستینگ ?v= تا پس از تغییر، نسخهٔ جدید فوراً دیده شود */}
-              {avatar ? <img src={avatarUrl(avatar, avatarVersion)} alt="" style={{ width: 46, height: 46, borderRadius: '50%', objectFit: 'cover' }} /> : <Avatar size={46} ring />}
+              {/* آواتار مربعی واحد — آواتار خود کاربر با کش‌باستینگ ?v= تا پس از تغییر، نسخهٔ جدید فوراً دیده شود */}
+              <Avatar size={46} name={name} ring={!avatar} imageUrl={avatar ? avatarUrl(avatar, avatarVersion) : undefined} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 14, fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</div>
                 <div style={{ marginTop: 2, color: 'var(--ink-3)', fontSize: 11.5 }}>{roleLabel}</div>

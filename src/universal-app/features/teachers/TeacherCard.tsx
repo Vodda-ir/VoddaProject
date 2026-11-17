@@ -4,18 +4,11 @@ import type { KeyboardEvent } from "react";
 import type { UniversalAppConfig } from "../../config";
 import { usePlatform } from "../../platform/context";
 import { navigateApp } from "../../router";
-import { Button, Icon, colors, typography } from "../../ui";
+import { Avatar, Button, Icon, colors, typography } from "../../ui";
 import { avatarSrc, uploadsOriginOf } from "@/lib/avatarImage";
 import { formatNumber } from "@/lib/datetime";
 import { TierBadge } from "./TierBadge";
 import type { Teacher } from "./types";
-
-function initialsOf(name: string) {
-  const parts = name.trim().split(/\s+/);
-  const first = parts[0]?.charAt(0) ?? "ا";
-  const second = parts[1]?.charAt(0) ?? "";
-  return second ? `${first} ${second}` : first;
-}
 
 export function TeacherCard({
   teacher,
@@ -66,48 +59,15 @@ export function TeacherCard({
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <div style={{ position: "relative", flex: "0 0 auto" }}>
-          <div
-            style={{
-              width: 62,
-              height: 62,
-              borderRadius: 18,
-              overflow: "hidden",
-              border: `2.5px solid ${teacher.available ? colors.olive600 : colors.danger}`,
-              background: `linear-gradient(150deg, ${colors.olive100}, ${colors.olive50})`,
-            }}
-          >
-            {teacher.avatarUrl ? (
-              <img
-                src={avatarSrc(teacher.avatarUrl, undefined, uploadsOriginOf(runtime.apiBaseUrl))}
-                alt={teacher.name}
-                loading="lazy"
-                style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-              />
-            ) : (
-              <div style={{ width: "100%", height: "100%", display: "grid", placeItems: "center" }}>
-                <span style={{ fontSize: 21, fontWeight: 900, color: colors.olive600, opacity: 0.8, lineHeight: 1 }}>
-                  {initialsOf(teacher.name)}
-                </span>
-              </div>
-            )}
-          </div>
-          <span
-            aria-hidden="true"
-            className={teacher.available ? "vodda-live-dot" : undefined}
-            style={{
-              position: "absolute",
-              bottom: -3,
-              insetInlineEnd: -3,
-              width: 14,
-              height: 14,
-              borderRadius: "50%",
-              border: `2.5px solid ${colors.surface}`,
-              background: teacher.available ? colors.olive600 : colors.danger,
-              color: teacher.available ? colors.olive600 : colors.danger,
-            }}
-          />
-        </div>
+        {/* آواتار مربعی واحد — مهر درجه پایین-راست، چراغ وضعیت بالا-راست */}
+        <Avatar
+          name={teacher.name}
+          src={avatarSrc(teacher.avatarUrl, undefined, uploadsOriginOf(runtime.apiBaseUrl))}
+          size={62}
+          ring={false}
+          tier={teacher.tier || undefined}
+          online={teacher.available}
+        />
 
         <div style={{ minWidth: 0, flex: 1 }}>
           <span style={{ display: "flex", alignItems: "center", gap: 5, minWidth: 0 }}>

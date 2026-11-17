@@ -222,31 +222,14 @@ export function LearnerTeacherProfileScreen({
     <section className="vodda-screen" style={{ display: "grid", gap: spacing.xl }}>
       <div className="vodda-enter" style={{ display: "grid", justifyItems: "center", textAlign: "center", gap: 4 }}>
         <div style={{ position: "relative" }}>
+          {/* آواتار مربعی واحد — مهر درجه داخل خود کامپوننت رندر می‌شود */}
           <Avatar
             name={teacher.name}
             src={avatarSrc(teacher.avatarUrl || undefined, undefined, uploadsOriginOf(runtime.apiBaseUrl))}
             size={88}
             ring
+            tier={teacher.tier || undefined}
           />
-          {teacher.tier ? (
-            <span
-              aria-label="نشان درجه استاد"
-              style={{
-                position: "absolute",
-                insetInlineEnd: -2,
-                bottom: 1,
-                width: 25,
-                height: 25,
-                display: "grid",
-                placeItems: "center",
-                border: "3px solid " + colors.sand50,
-                borderRadius: "50%",
-                background: colors.sand50,
-              }}
-            >
-              <TierBadge tier={teacher.tier} size={17} />
-            </span>
-          ) : null}
         </div>
         <h2 style={{ fontSize: 20, fontWeight: 800, margin: "8px 0 0", color: colors.ink, display: "inline-flex", alignItems: "center", gap: 6 }}>
           {teacher.name}
