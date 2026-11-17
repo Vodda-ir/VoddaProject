@@ -1,0 +1,1338 @@
+     1→diff --git a/backend/internal/delivery/http/live.go b/backend/internal/delivery/http/live.go
+     2→index f7d0fdd..9ce9455 100644
+     3→--- a/backend/internal/delivery/http/live.go
+     4→+++ b/backend/internal/delivery/http/live.go
+     5→@@ -1,252 +1,284 @@
+     6→ package http
+     7→ 
+     8→ import (
+     9→-       "context"
+    10→-       "encoding/json"
+    11→-       "net/http"
+    12→-       "strings"
+    13→-       "sync"
+    14→-       "time"
+    15→+        "context"
+    16→+        "encoding/json"
+    17→+        "net/http"
+    18→+        "strconv"
+    19→+        "strings"
+    20→+        "sync"
+    21→+        "time"
+    22→ 
+    23→-       "github.com/gin-gonic/gin"
+    24→-       "github.com/gorilla/websocket"
+    25→+        "github.com/gin-gonic/gin"
+    26→+        "github.com/gorilla/websocket"
+    27→ 
+    28→-       "vodda/backend/internal/domain"
+    29→+        "vodda/backend/internal/domain"
+    30→ )
+    31→ 
+    32→ const (
+    33→-       liveTypeChat       = "chat"
+    34→-       liveTypeWhiteboard = "wb"
+    35→-       liveTypeReading    = "reading"
+    36→-       liveTypeControl    = "control"
+    37→-       liveTypeOffer      = "offer"
+    38→-       liveTypeAnswer     = "answer"
+    39→-       liveTypeIce        = "ice"
+    40→-       liveTypeSystem     = "system"
+    41→+        liveTypeChat       = "chat"
+    42→+        liveTypeWhiteboard = "wb"
+    43→+        liveTypeReading    = "reading"
+    44→+        liveTypeControl    = "control"
+    45→+        liveTypeOffer      = "offer"
+    46→+        liveTypeAnswer     = "answer"
+    47→+        liveTypeIce        = "ice"
+    48→+        liveTypeSystem     = "system"
+    49→ )
+    50→ 
+    51→ var (
+    52→-       liveSweepOnce sync.Once
+    53→+        liveSweepOnce sync.Once
+    54→ )
+    55→ 
+    56→ // liveIdentity resolves the calling user for the classroom endpoints.
+    57→ func liveIdentity(c *gin.Context) (uint, domain.Role, bool) {
+    58→-       value, exists := c.Get(ctxUserID)
+    59→-       if !exists {
+    60→-               return 0, "", false
+    61→-       }
+    62→-       uid, _ := value.(uint)
+    63→-       role, _ := c.Get(ctxRole)
+    64→-       roleValue, _ := role.(domain.Role)
+    65→-       return uid, roleValue, uid > 0
+    66→+        value, exists := c.Get(ctxUserID)
+    67→+        if !exists {
+    68→+                return 0, "", false
+    69→+        }
+    70→+        uid, _ := value.(uint)
+    71→+        role, _ := c.Get(ctxRole)
+    72→+        roleValue, _ := role.(domain.Role)
+    73→+        return uid, roleValue, uid > 0
+    74→ }
+    75→ 
+    76→ // LiveTicket issues a short-lived single-use WebSocket ticket. The web panel
+    77→ // stores its JWT in an HttpOnly cookie and cannot attach headers to a WebSocket
+    78→ // handshake, so the browser exchanges the cookie for this ticket first.
+    79→ func (h *Handler) LiveTicket(c *gin.Context) {
+    80→-       uid, role, identOk := liveIdentity(c)
+    81→-       if !identOk {
+    82→-               fail(c, domain.ErrUnauthorized)
+    83→-               return
+    84→-       }
+    85→-       ticket, _ := h.liveHub().MintTicket(uid, role)
+    86→-       if ticket == "" {
+    87→-               fail(c, domain.ErrInternal)
+    88→-               return
+    89→-       }
+    90→-       ok(c, gin.H{"ticket": ticket})
+    91→+        uid, role, identOk := liveIdentity(c)
+    92→+        if !identOk {
+    93→+                fail(c, domain.ErrUnauthorized)
+    94→+                return
+    95→+        }
+    96→+        ticket, _ := h.liveHub().MintTicket(uid, role)
+    97→+        if ticket == "" {
+    98→+                fail(c, domain.ErrInternal)
+    99→+                return
+   100→+        }
+   101→+        ok(c, gin.H{"ticket": ticket})
+   102→ }
+   103→ 
+   104→ // LiveSignal is the HTTP fallback send path (used when WebSockets are blocked,
+   105→ // e.g. by restrictive CDNs or proxies).
+   106→ func (h *Handler) LiveSignal(c *gin.Context) {
+   107→-       uid, role, identOk := liveIdentity(c)
+   108→-       if !identOk {
+   109→-               fail(c, domain.ErrUnauthorized)
+   110→-               return
+   111→-       }
+   112→-       var in struct {
+   113→-               Session uint            `json:"session" binding:"required"`
+   114→-               Type    string          `json:"type" binding:"required"`
+   115→-               Payload json.RawMessage `json:"payload"`
+   116→-       }
+   117→-       if err := c.ShouldBindJSON(&in); err != nil {
+   118→-               fail(c, domain.ErrValidation)
+   119→-               return
+   120→-       }
+   121→-       if !liveEventTypeAllowed(in.Type) || (in.Payload != nil && len(in.Payload) > liveEventMaxBytes) {
+   122→-               fail(c, domain.ErrValidation)
+   123→-               return
+   124→-       }
+   125→-       session, _, err := h.Session.LiveAccess(c.Request.Context(), uid, role, in.Session)
+   126→-       if err != nil {
+   127→-               fail(c, err)
+   128→-               return
+   129→-       }
+   130→-       ev := h.liveHub().Publish(session.ID, uid, role, in.Type, in.Payload)
+   131→-       ok(c, gin.H{"seq": ev.Seq})
+   132→+        uid, role, identOk := liveIdentity(c)
+   133→+        if !identOk {
+   134→+                fail(c, domain.ErrUnauthorized)
+   135→+                return
+   136→+        }
+   137→+        var in struct {
+   138→+                Session uint            `json:"session" binding:"required"`
+   139→+                Type    string          `json:"type" binding:"required"`
+   140→+                Payload json.RawMessage `json:"payload"`
+   141→+        }
+   142→+        if err := c.ShouldBindJSON(&in); err != nil {
+   143→+                fail(c, domain.ErrValidation)
+   144→+                return
+   145→+        }
+   146→+        if !liveEventTypeAllowed(in.Type) || (in.Payload != nil && len(in.Payload) > liveEventMaxBytes) {
+   147→+                fail(c, domain.ErrValidation)
+   148→+                return
+   149→+        }
+   150→+        session, _, err := h.Session.LiveAccess(c.Request.Context(), uid, role, in.Session)
+   151→+        if err != nil {
+   152→+                fail(c, err)
+   153→+                return
+   154→+        }
+   155→+        ev := h.liveHub().Publish(session.ID, uid, role, in.Type, in.Payload)
+   156→+        ok(c, gin.H{"seq": ev.Seq})
+   157→ }
+   158→ 
+   159→ // LiveEvents is the HTTP fallback receive path: a long-poll that returns as
+   160→ // soon as new events arrive or the wait budget elapses.
+   161→ func (h *Handler) LiveEvents(c *gin.Context) {
+   162→-       uid, role, identOk := liveIdentity(c)
+   163→-       if !identOk {
+   164→-               fail(c, domain.ErrUnauthorized)
+   165→-               return
+   166→-       }
+   167→-       sessionID := uint(queryInt(c, "session", 0))
+   168→-       after := uint64(queryInt(c, "after", 0))
+   169→-       if sessionID == 0 {
+   170→-               fail(c, domain.ErrValidation)
+   171→-               return
+   172→-       }
+   173→-       if _, _, err := h.Session.LiveAccess(c.Request.Context(), uid, role, sessionID); err != nil {
+   174→-               fail(c, err)
+   175→-               return
+   176→-       }
+   177→-
+   178→-       sub, backlog, release := h.liveHub().Join(sessionID, uid, role, after)
+   179→-       defer release()
+   180→-
+   181→-       events := backlog
+   182→-       if len(events) == 0 {
+   183→-               ctx, cancel := context.WithTimeout(c.Request.Context(), liveLongPollWait)
+   184→-               defer cancel()
+   185→-               done := make(chan []*LiveEvent, 1)
+   186→-               go func() { done <- h.liveHub().Subscribe(sub, time.Now().Add(liveLongPollWait)) }()
+   187→-               select {
+   188→-               case batch := <-done:
+   189→-                       events = batch
+   190→-               case <-ctx.Done():
+   191→-                       events = nil
+   192→-               }
+   193→-       }
+   194→-
+   195→-       if events == nil {
+   196→-               events = []*LiveEvent{}
+   197→-       }
+   198→-       c.Header("Cache-Control", "no-store")
+   199→-       c.JSON(http.StatusOK, gin.H{"data": events})
+   200→+        uid, role, identOk := liveIdentity(c)
+   201→+        if !identOk {
+   202→+                fail(c, domain.ErrUnauthorized)
+   203→+                return
+   204→+        }
+   205→+        sessionID := uint(queryInt(c, "session", 0))
+   206→+        after := uint64(queryInt(c, "after", 0))
+   207→+        if sessionID == 0 {
+   208→+                fail(c, domain.ErrValidation)
+   209→+                return
+   210→+        }
+   211→+        if _, _, err := h.Session.LiveAccess(c.Request.Context(), uid, role, sessionID); err != nil {
+   212→+                fail(c, err)
+   213→+                return
+   214→+        }
+   215→+
+   216→+        sub, backlog, release := h.liveHub().Join(sessionID, uid, role, after)
+   217→+        defer release()
+   218→+
+   219→+        events := backlog
+   220→+        if len(events) == 0 {
+   221→+                ctx, cancel := context.WithTimeout(c.Request.Context(), liveLongPollWait)
+   222→+                defer cancel()
+   223→+                done := make(chan []*LiveEvent, 1)
+   224→+                go func() { done <- h.liveHub().Subscribe(sub, time.Now().Add(liveLongPollWait)) }()
+   225→+                select {
+   226→+                case batch := <-done:
+   227→+                        events = batch
+   228→+                case <-ctx.Done():
+   229→+                        events = nil
+   230→+                }
+   231→+        }
+   232→+
+   233→+        if events == nil {
+   234→+                events = []*LiveEvent{}
+   235→+        }
+   236→+        c.Header("Cache-Control", "no-store")
+   237→+        c.JSON(http.StatusOK, gin.H{"data": events})
+   238→ }
+   239→ 
+   240→ // LiveWS upgrades to a WebSocket and pumps classroom events both ways.
+   241→ func (h *Handler) LiveWS(c *gin.Context) {
+   242→-       sessionID := uint(queryInt(c, "session", 0))
+   243→-       ticket := strings.TrimSpace(c.Query("ticket"))
+   244→-       if sessionID == 0 || ticket == "" {
+   245→-               c.JSON(http.StatusUnauthorized, gin.H{"error": "missing ticket"})
+   246→-               return
+   247→-       }
+   248→-       uid, role, valid := h.liveHub().RedeemTicket(ticket)
+   249→-       if !valid {
+   250→-               c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid ticket"})
+   251→-               return
+   252→-       }
+   253→-       session, roomRole, err := h.Session.LiveAccess(c.Request.Context(), uid, role, sessionID)
+   254→-       if err != nil {
+   255→-               c.JSON(http.StatusForbidden, gin.H{"error": "not allowed"})
+   256→-               return
+   257→-       }
+   258→-
+   259→-       conn, err := h.liveHub().upgrader.Upgrade(c.Writer, c.Request, nil)
+   260→-       if err != nil {
+   261→-               return
+   262→-       }
+   263→-
+   264→-       hub := h.liveHub()
+   265→-       sub, _, release := hub.Join(session.ID, uid, roomRole, 0)
+   266→-       defer release()
+   267→-
+   268→-       _ = conn.SetReadDeadline(time.Now().Add(90 * time.Second))
+   269→-       conn.SetPongHandler(func(string) error {
+   270→-               _ = conn.SetReadDeadline(time.Now().Add(90 * time.Second))
+   271→-               return nil
+   272→-       })
+   273→-
+   274→-       // writer: hub -> socket
+   275→-       writeDone := make(chan struct{})
+   276→-       go func() {
+   277→-               defer close(writeDone)
+   278→-               ping := time.NewTicker(25 * time.Second)
+   279→-               defer ping.Stop()
+   280→-               for {
+   281→-                       select {
+   282→-                       case ev, okChan := <-sub.ch:
+   283→-                               if !okChan {
+   284→-                                       _ = conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseGoingAway, "room closed"))
+   285→-                                       return
+   286→-                               }
+   287→-                               _ = conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+   288→-                               if err := conn.WriteJSON(ev); err != nil {
+   289→-                                       _ = conn.Close()
+   290→-                                       return
+   291→-                               }
+   292→-                       case <-ping.C:
+   293→-                               _ = conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+   294→-                               if err := conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+   295→-                                       _ = conn.Close()
+   296→-                                       return
+   297→-                               }
+   298→-                       }
+   299→-               }
+   300→-       }()
+   301→-
+   302→-       hub.Publish(session.ID, uid, roomRole, liveTypeSystem, mustJSON(gin.H{"action": "join", "user_id": uid, "role": string(roomRole)}))
+   303→-
+   304→-       // reader: socket -> hub
+   305→-       defer func() {
+   306→-               _ = conn.Close()
+   307→-               <-writeDone
+   308→-               hub.Publish(session.ID, uid, roomRole, liveTypeSystem, mustJSON(gin.H{"action": "leave", "user_id": uid, "role": string(roomRole)}))
+   309→-       }()
+   310→-       for {
+   311→-               messageType, raw, err := conn.ReadMessage()
+   312→-               if err != nil {
+   313→-                       return
+   314→-               }
+   315→-               if messageType != websocket.TextMessage || len(raw) > liveEventMaxBytes {
+   316→-                       continue
+   317→-               }
+   318→-               var frame struct {
+   319→-                       Type    string          `json:"type"`
+   320→-                       Payload json.RawMessage `json:"payload"`
+   321→-               }
+   322→-               if err := json.Unmarshal(raw, &frame); err != nil || !liveEventTypeAllowed(frame.Type) {
+   323→-                       continue
+   324→-               }
+   325→-               _ = conn.SetReadDeadline(time.Now().Add(90 * time.Second))
+   326→-               hub.Publish(session.ID, uid, roomRole, frame.Type, frame.Payload)
+   327→-       }
+   328→+        sessionID := uint(queryInt(c, "session", 0))
+   329→+        ticket := strings.TrimSpace(c.Query("ticket"))
+   330→+        if sessionID == 0 || ticket == "" {
+   331→+                c.JSON(http.StatusUnauthorized, gin.H{"error": "missing ticket"})
+   332→+                return
+   333→+        }
+   334→+        // after optionally resumes from the client's cursor (a poller upgrading
+   335→+        // to a socket can skip already-seen events); a bad or out-of-range value
+   336→+        // falls back to 0 so a full replay stays the safe default.
+   337→+        after := uint64(0)
+   338→+        if afterStr := c.Query("after"); afterStr != "" {
+   339→+                if value, err := strconv.ParseUint(afterStr, 10, 64); err == nil {
+   340→+                        if value > 1<<31 {
+   341→+                                value = 1 << 31
+   342→+                        }
+   343→+                        after = value
+   344→+                }
+   345→+        }
+   346→+        uid, role, valid := h.liveHub().RedeemTicket(ticket)
+   347→+        if !valid {
+   348→+                c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid ticket"})
+   349→+                return
+   350→+        }
+   351→+        session, roomRole, err := h.Session.LiveAccess(c.Request.Context(), uid, role, sessionID)
+   352→+        if err != nil {
+   353→+                c.JSON(http.StatusForbidden, gin.H{"error": "not allowed"})
+   354→+                return
+   355→+        }
+   356→+
+   357→+        conn, err := h.liveHub().upgrader.Upgrade(c.Writer, c.Request, nil)
+   358→+        if err != nil {
+   359→+                return
+   360→+        }
+   361→+
+   362→+        hub := h.liveHub()
+   363→+        sub, backlog, release := hub.Join(session.ID, uid, roomRole, after)
+   364→+        defer release()
+   365→+
+   366→+        _ = conn.SetReadDeadline(time.Now().Add(90 * time.Second))
+   367→+        conn.SetPongHandler(func(string) error {
+   368→+                _ = conn.SetReadDeadline(time.Now().Add(90 * time.Second))
+   369→+                return nil
+   370→+        })
+   371→+
+   372→+        // Replay the signaling backlog synchronously: history first, then the
+   373→+        // join announce below, then live events from the writer goroutine. Join
+   374→+        // subscribed us atomically before snapshotting history, so nothing
+   375→+        // published after Join is lost — it queues on sub.ch until the writer
+   376→+        // starts. Only signaling-critical types are replayed; stale chat/control
+   377→+        // frames from a previous class-life must not poison a fresh session.
+   378→+        for _, ev := range backlog {
+   379→+                switch ev.Type {
+   380→+                case liveTypeOffer, liveTypeAnswer, liveTypeIce, liveTypeSystem:
+   381→+                default:
+   382→+                        continue
+   383→+                }
+   384→+                _ = conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+   385→+                if err := conn.WriteJSON(ev); err != nil {
+   386→+                        _ = conn.Close()
+   387→+                        return
+   388→+                }
+   389→+        }
+   390→+
+   391→+        // writer: hub -> socket
+   392→+        writeDone := make(chan struct{})
+   393→+        go func() {
+   394→+                defer close(writeDone)
+   395→+                ping := time.NewTicker(25 * time.Second)
+   396→+                defer ping.Stop()
+   397→+                for {
+   398→+                        select {
+   399→+                        case ev, okChan := <-sub.ch:
+   400→+                                if !okChan {
+   401→+                                        _ = conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseGoingAway, "room closed"))
+   402→+                                        return
+   403→+                                }
+   404→+                                _ = conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+   405→+                                if err := conn.WriteJSON(ev); err != nil {
+   406→+                                        _ = conn.Close()
+   407→+                                        return
+   408→+                                }
+   409→+                        case <-ping.C:
+   410→+                                _ = conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+   411→+                                if err := conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+   412→+                                        _ = conn.Close()
+   413→+                                        return
+   414→+                                }
+   415→+                        }
+   416→+                }
+   417→+        }()
+   418→+
+   419→+        hub.Publish(session.ID, uid, roomRole, liveTypeSystem, mustJSON(gin.H{"action": "join", "user_id": uid, "role": string(roomRole)}))
+   420→+
+   421→+        // reader: socket -> hub
+   422→+        defer func() {
+   423→+                _ = conn.Close()
+   424→+                <-writeDone
+   425→+                hub.Publish(session.ID, uid, roomRole, liveTypeSystem, mustJSON(gin.H{"action": "leave", "user_id": uid, "role": string(roomRole)}))
+   426→+        }()
+   427→+        for {
+   428→+                messageType, raw, err := conn.ReadMessage()
+   429→+                if err != nil {
+   430→+                        return
+   431→+                }
+   432→+                if messageType != websocket.TextMessage || len(raw) > liveEventMaxBytes {
+   433→+                        continue
+   434→+                }
+   435→+                var frame struct {
+   436→+                        Type    string          `json:"type"`
+   437→+                        Payload json.RawMessage `json:"payload"`
+   438→+                }
+   439→+                if err := json.Unmarshal(raw, &frame); err != nil || !liveEventTypeAllowed(frame.Type) {
+   440→+                        continue
+   441→+                }
+   442→+                _ = conn.SetReadDeadline(time.Now().Add(90 * time.Second))
+   443→+                hub.Publish(session.ID, uid, roomRole, frame.Type, frame.Payload)
+   444→+        }
+   445→ }
+   446→ 
+   447→ // liveHub lazily builds the process-wide classroom hub.
+   448→ func (h *Handler) liveHub() *LiveHub {
+   449→-       liveSweepOnce.Do(func() {
+   450→-               go func() {
+   451→-                       ticker := time.NewTicker(2 * time.Minute)
+   452→-                       defer ticker.Stop()
+   453→-                       for range ticker.C {
+   454→-                               h.Live.Sweep()
+   455→-                       }
+   456→-               }()
+   457→-       })
+   458→-       return h.Live
+   459→+        liveSweepOnce.Do(func() {
+   460→+                go func() {
+   461→+                        ticker := time.NewTicker(2 * time.Minute)
+   462→+                        defer ticker.Stop()
+   463→+                        for range ticker.C {
+   464→+                                h.Live.Sweep()
+   465→+                        }
+   466→+                }()
+   467→+        })
+   468→+        return h.Live
+   469→ }
+   470→ 
+   471→ func liveEventTypeAllowed(eventType string) bool {
+   472→-       switch eventType {
+   473→-       case liveTypeChat, liveTypeWhiteboard, liveTypeReading, liveTypeControl, liveTypeOffer, liveTypeAnswer, liveTypeIce:
+   474→-               return true
+   475→-       }
+   476→-       return false
+   477→+        switch eventType {
+   478→+        case liveTypeChat, liveTypeWhiteboard, liveTypeReading, liveTypeControl, liveTypeOffer, liveTypeAnswer, liveTypeIce:
+   479→+                return true
+   480→+        }
+   481→+        return false
+   482→ }
+   483→ 
+   484→ func mustJSON(v any) json.RawMessage {
+   485→-       raw, err := json.Marshal(v)
+   486→-       if err != nil {
+   487→-               return json.RawMessage(`{}`)
+   488→-       }
+   489→-       return raw
+   490→+        raw, err := json.Marshal(v)
+   491→+        if err != nil {
+   492→+                return json.RawMessage(`{}`)
+   493→+        }
+   494→+        return raw
+   495→ }
+   496→diff --git a/docker-compose.deploy.yml b/docker-compose.deploy.yml
+   497→index ff2c269..3849f95 100644
+   498→--- a/docker-compose.deploy.yml
+   499→+++ b/docker-compose.deploy.yml
+   500→@@ -198,6 +198,23 @@ services:
+   501→     security_opt:
+   502→       - no-new-privileges:true
+   503→ 
+   504→+  turn:
+   505→+    image: coturn/coturn:alpine
+   506→+    container_name: vodda-turn-1
+   507→+    restart: unless-stopped
+   508→+    network_mode: host
+   509→+    command:
+   510→+      - -n
+   511→+      - --realm=vodda.ir
+   512→+      - --fingerprint
+   513→+      - --lt-cred-mech
+   514→+      - --user=vodda:Vd-turn-2026!x7Kq
+   515→+      - --listening-port=3478
+   516→+      - --external-ip=80.91.208.240
+   517→+      - --min-port=49160
+   518→+      - --max-port=49200
+   519→+      - --log-file=stdout
+   520→+
+   521→ volumes:
+   522→   monafaseh_db:
+   523→     name: monafaseh_monafaseh-db
+   524→diff --git a/docs/native-capabilities.md b/docs/native-capabilities.md
+   525→index 0367f06..df0a362 100644
+   526→--- a/docs/native-capabilities.md
+   527→+++ b/docs/native-capabilities.md
+   528→@@ -16,3 +16,13 @@ Implementation فعلی native در `frontend/native/src/native-capabilities.ts`
+   529→ 4. feature مشترک فقط از `usePlatform().capabilities` استفاده کند و برای web یا platform فاقد capability fallback مناسب داشته باشد.
+   530→ 
+   531→ این boundary باعث می‌شود Web auth همچنان HttpOnly/BFF بماند، Native auth همچنان secure token/Bearer باشد و Universal Source از `next/*` و Capacitor packages مستقل بماند.
+   532→+
+   533→+## WebView media permissions (کلاس تصویری / پیام صوتی)
+   534→+
+   535→+`android/` scaffold باید همیشه همراه repo باشد. `AndroidManifest.xml` دارای
+   536→+`CAMERA`, `RECORD_AUDIO`, `MODIFY_AUDIO_SETTINGS` است؛ WebView در زمان
+   537→+`getUserMedia` درخواست را از طریق `BridgeWebViewController.onPermissionRequest`
+   538→+به ران‌تایم اندروید منتقل می‌کند و کادر مجوز سیستم نمایش داده می‌شود.
+   539→+بدون این مجوزها در manifest، WebView درخواست‌ها را بی‌صدا رد می‌کند و
+   540→+نه کلاس تصویری و نه ضبط صوت پشتیبانی کار نمی‌کند.
+   541→+
+   542→diff --git a/frontend/src/app/panel/admin/support/page.tsx b/frontend/src/app/panel/admin/support/page.tsx
+   543→index 2f54258..36520d4 100644
+   544→--- a/frontend/src/app/panel/admin/support/page.tsx
+   545→+++ b/frontend/src/app/panel/admin/support/page.tsx
+   546→@@ -12,6 +12,7 @@ import { FilterTabs, StatCard, TablePagination } from '@/components/admin/AdminU
+   547→ import { getToken } from '@/lib/auth';
+   548→ import { toFaDigits } from '@/lib/persian';
+   549→ import { confirmDialog } from '@/lib/confirm';
+   550→+import { acquireMediaStream } from '@/universal-app/platform/media-permissions';
+   551→ 
+   552→ /**
+   553→  * صندوق پشتیبانی زندهٔ وُدّا — سیستم چت و تیکتینگ آنلاین.
+   554→@@ -242,6 +243,7 @@ export default function AdminSupportPage() {
+   555→   const [reply, setReply] = useState('');
+   556→   const [replyBusy, setReplyBusy] = useState(false);
+   557→   const [threadError, setThreadError] = useState('');
+   558→+  const [deniedHint, setDeniedHint] = useState(false);
+   559→ 
+   560→   const [recording, setRecording] = useState(false);
+   561→   const [recordSeconds, setRecordSeconds] = useState(0);
+   562→@@ -499,42 +501,52 @@ export default function AdminSupportPage() {
+   563→     }
+   564→   }
+   565→ 
+   566→-  function startRecording() {
+   567→+  async function startRecording() {
+   568→     setThreadError('');
+   569→-    navigator.mediaDevices
+   570→-      ?.getUserMedia({ audio: true })
+   571→-      .then((stream) => {
+   572→-        const mime = pickRecorderMime();
+   573→-        const recorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+   574→-        recordChunksRef.current = [];
+   575→-        recorder.ondataavailable = (event) => {
+   576→-          if (event.data.size > 0) recordChunksRef.current.push(event.data);
+   577→-        };
+   578→-        recorder.onstop = () => {
+   579→-          stream.getTracks().forEach((track) => track.stop());
+   580→-          if (recordTimerRef.current !== null) {
+   581→-            window.clearInterval(recordTimerRef.current);
+   582→-            recordTimerRef.current = null;
+   583→-          }
+   584→-          const seconds = recordSecondsRef.current;
+   585→-          setRecording(false);
+   586→-          setRecordSeconds(0);
+   587→-          if (recordChunksRef.current.length === 0) return;
+   588→-          const blob = new Blob(recordChunksRef.current, { type: mime || 'audio/webm' });
+   589→-          setVoicePreview({ blob, url: URL.createObjectURL(blob), ms: Math.max(600, seconds * 1000), mime: mime || 'audio/webm' });
+   590→-        };
+   591→-        recorderRef.current = recorder;
+   592→-        recordSecondsRef.current = 0;
+   593→+    const acquired = await acquireMediaStream('audio');
+   594→+    if (!acquired.ok) {
+   595→+      // پیام راهنمای رفع انسداد را هم در بر دارد؛ دکمهٔ «تلاش دوباره» ظاهر می‌شود.
+   596→+      setThreadError(acquired.message);
+   597→+      setDeniedHint(acquired.denied);
+   598→+      return;
+   599→+    }
+   600→+    setDeniedHint(false);
+   601→+    const stream = acquired.stream;
+   602→+    try {
+   603→+      const mime = pickRecorderMime();
+   604→+      const recorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+   605→+      recordChunksRef.current = [];
+   606→+      recorder.ondataavailable = (event) => {
+   607→+        if (event.data.size > 0) recordChunksRef.current.push(event.data);
+   608→+      };
+   609→+      recorder.onstop = () => {
+   610→+        stream.getTracks().forEach((track) => track.stop());
+   611→+        if (recordTimerRef.current !== null) {
+   612→+          window.clearInterval(recordTimerRef.current);
+   613→+          recordTimerRef.current = null;
+   614→+        }
+   615→+        const seconds = recordSecondsRef.current;
+   616→+        setRecording(false);
+   617→         setRecordSeconds(0);
+   618→-        setRecording(true);
+   619→-        recorder.start(250);
+   620→-        recordTimerRef.current = window.setInterval(() => {
+   621→-          recordSecondsRef.current += 1;
+   622→-          setRecordSeconds(recordSecondsRef.current);
+   623→-          if (recordSecondsRef.current >= 300) recorderRef.current?.stop();
+   624→-        }, 1000);
+   625→-      })
+   626→-      .catch(() => setThreadError('دسترسی به میکروفون ممکن نشد؛ اجازهٔ مرورگر را بررسی کنید.'));
+   627→+        if (recordChunksRef.current.length === 0) return;
+   628→+        const blob = new Blob(recordChunksRef.current, { type: mime || 'audio/webm' });
+   629→+        setVoicePreview({ blob, url: URL.createObjectURL(blob), ms: Math.max(600, seconds * 1000), mime: mime || 'audio/webm' });
+   630→+      };
+   631→+      recorderRef.current = recorder;
+   632→+      recordSecondsRef.current = 0;
+   633→+      setRecordSeconds(0);
+   634→+      setRecording(true);
+   635→+      recorder.start(250);
+   636→+      recordTimerRef.current = window.setInterval(() => {
+   637→+        recordSecondsRef.current += 1;
+   638→+        setRecordSeconds(recordSecondsRef.current);
+   639→+        if (recordSecondsRef.current >= 300) recorderRef.current?.stop();
+   640→+      }, 1000);
+   641→+    } catch {
+   642→+      // میکروفون گرفته شده ولی ساخت MediaRecorder شکسته است؛ جریان را رها نکنیم.
+   643→+      stream.getTracks().forEach((track) => track.stop());
+   644→+      setThreadError('ضبط صدا در این مرورگر ممکن نشد؛ کروم را به‌روزرسانی کنید.');
+   645→+    }
+   646→   }
+   647→ 
+   648→   function stopRecording(send: boolean) {
+   649→@@ -904,6 +916,7 @@ export default function AdminSupportPage() {
+   650→                 {threadError && (
+   651→                   <div className="ops-error" role="alert" style={{ margin: '10px 14px 0' }}>
+   652→                     <span>{threadError}</span>
+   653→+                    {deniedHint && <PanelButton onClick={() => void startRecording()}>تلاش دوباره</PanelButton>}
+   654→                   </div>
+   655→                 )}
+   656→ 
+   657→@@ -1019,7 +1032,7 @@ export default function AdminSupportPage() {
+   658→                   >
+   659→                     <button
+   660→                       type="button"
+   661→-                      onClick={() => startRecording()}
+   662→+                      onClick={() => void startRecording()}
+   663→                       aria-label="ضبط پیام صوتی"
+   664→                       disabled={Boolean(voicePreview) || Boolean(imagePreview) || selectedTicket?.status === 'closed'}
+   665→                       className="ops-button"
+   666→diff --git a/frontend/src/app/panel/live/[id]/page.tsx b/frontend/src/app/panel/live/[id]/page.tsx
+   667→index eda5245..c5a6b81 100644
+   668→--- a/frontend/src/app/panel/live/[id]/page.tsx
+   669→+++ b/frontend/src/app/panel/live/[id]/page.tsx
+   670→@@ -8,6 +8,7 @@ import { getToken } from '@/lib/auth';
+   671→ import { LiveClient, type LiveEvent, type LiveStatus } from '@/lib/live/client';
+   672→ import { LiveEngine, type EngineRole } from '@/lib/live/engine';
+   673→ import { confirmDialog } from '@/lib/confirm';
+   674→+import { acquireMediaStream } from '@/universal-app/platform/media-permissions';
+   675→ 
+   676→ type ChatMessage = { id: string; from: number; role: string; text: string; at: number; mine: boolean };
+   677→ type Reaction = { id: string; emoji: string; at: number };
+   678→@@ -43,6 +44,15 @@ function chatTime(at: number): string {
+   679→   return `${faDigits(String(date.getHours()).padStart(2, '0'))}:${faDigits(String(date.getMinutes()).padStart(2, '0'))}`;
+   680→ }
+   681→ 
+   682→+/** پیام فارسی رده‌بندی‌شده برای خطاهای getUserMedia — هم‌رده با helper مشترک media-permissions. */
+   683→+function mediaFailureMessage(error: unknown): string {
+   684→+  const name = error instanceof Error ? error.name : '';
+   685→+  if (name === 'NotAllowedError' || name === 'SecurityError') return 'دسترسی دوربین/میکروفون مسدود شده است؛ از تنظیمات مرورگر اجازه دهید و صفحه را دوباره باز کنید.';
+   686→+  if (name === 'NotFoundError' || name === 'OverconstrainedError') return 'دوربین یا میکروفون درخواستی پیدا نشد.';
+   687→+  if (name === 'NotReadableError' || name === 'TrackStartError') return 'دوربین/میکروفون در برنامهٔ دیگری باز است.';
+   688→+  return 'گرفتن دسترسی دوربین/میکروفون ناموفق بود؛ دوباره تلاش کنید.';
+   689→+}
+   690→+
+   691→ export default function LiveClassroomPage() {
+   692→   const router = useRouter();
+   693→   const routeParams = useParams<{ id: string }>();
+   694→@@ -65,6 +75,7 @@ export default function LiveClassroomPage() {
+   695→   const [status, setStatus] = useState<LiveStatus>('connecting');
+   696→   const icOn, setMicOn] = useState(true);
+   697→   const [camOn, setCamOn] = useState(true);
+   698→+  const asLiveMedia, setHasLiveMedia] = useState(false);
+   699→   const [sharing, setSharing] = useState(false);
+   700→   const [remoteActive, setRemoteActive] = useState(false);
+   701→   const [connState, setConnState] = useState('');
+   702→@@ -97,6 +108,8 @@ export default function LiveClassroomPage() {
+   703→   const screenRef = useRef<MediaStream | null>(null);
+   704→   const audioCtxRef = useRef<AudioContext | null>(null);
+   705→   const myIdRef = useRef<number>(0);
+   706→+  const joinAnnouncedRef = useRef(false);
+   707→+  const peerSignaledRef = useRef(false);
+   708→ 
+   709→   const isTeacherSide = role !== 'learner';
+   710→ 
+   711→@@ -180,10 +193,22 @@ export default function LiveClassroomPage() {
+   712→     let ctx: AudioContext | null = null;
+   713→     (async () => {
+   714→       try {
+   715→-        stream = await navigator.mediaDevices.getUserMedia({
+   716→-          video: camId ? { deviceId: { exact: camId } } : { width: { ideal: 1280 } },
+   717→-          audio: micId ? { deviceId: { exact: micId } } : { echoCancellation: true, noiseSuppression: true },
+   718→-        });
+   719→+        let acquired: MediaStream;
+   720→+        try {
+   721→+          acquired = await navigator.mediaDevices.getUserMedia({
+   722→+            video: camId ? { deviceId: { exact: camId } } : { width: { ideal: 1280 } },
+   723→+            audio: micId ? { deviceId: { exact: micId } } : { echoCancellation: true, noiseSuppression: true },
+   724→+          });
+   725→+        } catch {
+   726→+          // قید دقیق دستگاه (یا نخستین تلاش) رد شد — پیش از تسلیم، نردبان عمومی helper را امتحان می‌کنیم
+   727→+          const result = await acquireMediaStream('both');
+   728→+          if (!result.ok) {
+   729→+            setMediaError(result.message);
+   730→+            return;
+   731→+          }
+   732→+          acquired = result.stream;
+   733→+        }
+   734→+        stream = acquired;
+   735→         setPreviewStream(stream);
+   736→         setMediaError('');
+   737→         if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+   738→@@ -264,6 +289,7 @@ export default function LiveClassroomPage() {
+   739→       case 'offer':
+   740→       case 'answer':
+   741→       case 'ice':
+   742→+        peerSignaledRef.current = true;
+   743→         void engineRef.current?.handleSignal(event.type, event.payload);
+   744→         break;
+   745→       case 'system': {
+   746→@@ -271,7 +297,12 @@ export default function LiveClassroomPage() {
+   747→         if (payload?.action === 'join') {
+   748→           setPeerOnline(true);
+   749→           setChat((items) => [...items, { id: uid(), from: 0, role: 'system', text: 'طرف مقابل وارد کلاس شد.', at: event.at, mine: false }]);
+   750→-          if (isTeacherSide) void engineRef.current?.initiate();
+   751→+          // هر ورود به کلاس فقط یک‌بار خودکار initiate می‌فرستد؛ join بازپخش‌شده/اکوشده
+   752→+          // (replay سرور یا کانال زنده) نباید دوباره offer بفرستد.
+   753→+          if (isTeacherSide && !joinAnnouncedRef.current) {
+   754→+            joinAnnouncedRef.current = true;
+   755→+            void engineRef.current?.initiate();
+   756→+          }
+   757→         }
+   758→         if (payload?.action === 'leave') {
+   759→           setPeerOnline(false);
+   760→@@ -282,6 +313,15 @@ export default function LiveClassroomPage() {
+   761→     }
+   762→   }, [isTeacherSide, pushReaction]);
+   763→ 
+   764→+  /* ---------------- معلم: اگر ۹ ثانیه پس از ورود هیچ قاب سیگنالینگ از طرف مقابل نرسید، یک‌بار initiate می‌فرستد ---------------- */
+   765→+  useEffect(() => {
+   766→+    if (phase !== 'live' || !isTeacherSide) return;
+   767→+    const timer = window.setTimeout(() => {
+   768→+      if (!peerSignaledRef.current) void engineRef.current?.initiate();
+   769→+    }, 9_000);
+   770→+    return () => window.clearTimeout(timer);
+   771→+  }, [phase, isTeacherSide]);
+   772→+
+   773→   /* ---------------- classroom countdown ---------------- */
+   774→   useEffect(() => {
+   775→     if (!session?.scheduled_at) return;
+   776→@@ -372,8 +412,8 @@ export default function LiveClassroomPage() {
+   777→       const [track] = media.getVideoTracks();
+   778→       if (track) await replaceVideoTrack(track);
+   779→       else media.getTracks().forEach((item) => item.stop());
+   780→-    } catch {
+   781→-      setNotice('تغییر دوربین انجام نشد.');
+   782→+    } catch (cause) {
+   783→+      setNotice(mediaFailureMessage(cause));
+   784→       setTimeout(() => setNotice(''), 3000);
+   785→     } finally {
+   786→       setSettingsBusy(false);
+   787→@@ -389,8 +429,8 @@ export default function LiveClassroomPage() {
+   788→       const [track] = media.getAudioTracks();
+   789→       if (track) await replaceAudioTrack(track);
+   790→       else media.getTracks().forEach((item) => item.stop());
+   791→-    } catch {
+   792→-      setNotice('تغییر میکروفون انجام نشد.');
+   793→+    } catch (cause) {
+   794→+      setNotice(mediaFailureMessage(cause));
+   795→       setTimeout(() => setNotice(''), 3000);
+   796→     } finally {
+   797→       setSettingsBusy(false);
+   798→@@ -412,8 +452,8 @@ export default function LiveClassroomPage() {
+   799→       } else {
+   800→         media.getTracks().forEach((item) => item.stop());
+   801→       }
+   802→-    } catch {
+   803→-      setNotice('دوربین دیگری در دسترس نیست.');
+   804→+    } catch (cause) {
+   805→+      setNotice(mediaFailureMessage(cause));
+   806→       setTimeout(() => setNotice(''), 3000);
+   807→     } finally {
+   808→       setSettingsBusy(false);
+   809→@@ -436,22 +476,25 @@ export default function LiveClassroomPage() {
+   810→   /* ---------------- actions ---------------- */
+   811→   async function joinClassroom(withMedia: boolean) {
+   812→     if (!session) return;
+   813→+    joinAnnouncedRef.current = false;
+   814→     stopPreview();
+   815→     void audioCtxRef.current?.close();
+   816→     audioCtxRef.current = null;
+   817→ 
+   818→     let stream: MediaStream | null = null;
+   819→     if (withMedia) {
+   820→-      try {
+   821→-        stream = await navigator.mediaDevices.getUserMedia({
+   822→-          video: camId ? { deviceId: { exact: camId } } : true,
+   823→-          audio: micId ? { deviceId: { exact: micId } } : true,
+   824→-        });
+   825→-      } catch {
+   826→-        setMediaError('ورود با دوربین/میکروفون ناموفق بود؛ بدون رسانه وارد می‌شوید.');
+   827→+      const result = await acquireMediaStream('both');
+   828→+      if (!result.ok) {
+   829→+        // بدون رسانه وارد کلاس می‌شویم — هیچ‌چیز نباید برگزاری کلاس را متوقف کند؛
+   830→+        // دلیل کامل در نوار خطای بالای کلاس زنده نمایش داده می‌شود.
+   831→+        setMediaError(result.message);
+   832→+      } else {
+   833→+        stream = result.stream;
+   834→+        setMediaError('');
+   835→       }
+   836→     }
+   837→     liveStreamRef.current = stream;
+   838→+    setHasLiveMedia(Boolean(stream));
+   839→     setPhase('live');
+   840→ 
+   841→     const client = new LiveClient({
+   842→@@ -480,6 +523,25 @@ export default function LiveClassroomPage() {
+   843→     await client.connect();
+   844→   }
+   845→ 
+   846→+  /** تلاش دوباره برای وصل دوربین/میکروفون در میانهٔ کلاس — خروج از کلاس لازم نیست. */
+   847→+  async function retryLiveMedia() {
+   848→+    const result = await acquireMediaStream('both');
+   849→+    if (!result.ok) {
+   850→+      setNotice(result.message);
+   851→+      setTimeout(() => setNotice(''), 4000);
+   852→+      return;
+   853→+    }
+   854→+    const stream = result.stream;
+   855→+    liveStreamRef.current = stream;
+   856→+    setHasLiveMedia(true);
+   857→+    setMediaError('');
+   858→+    await engineRef.current?.setLocalMedia(stream);
+   859→+    engineRef.current?.setCameraTrack(stream.getVideoTracks()[0] ?? null);
+   860→+    if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+   861→+    setMicOn(true);
+   862→+    setCamOn(stream.getVideoTracks().length > 0);
+   863→+  }
+   864→+
+   865→   function sendChat() {
+   866→     const text = chatDraft.trim();
+   867→     if (!text || !clientRef.current) return;
+   868→@@ -627,6 +689,13 @@ export default function LiveClassroomPage() {
+   869→ 
+   870→       {notice && <div role="status" style={{ marginBottom: 10, padding: '10px 14px', borderRadius: 12, background: 'var(--gold-bg)', color: 'var(--gold)', fontSize: 12.5, fontWeight: 700 }}>{notice}</div>}
+   871→ 
+   872→+      {mediaError && !hasLiveMedia && (
+   873→+        <div style={{ marginBottom: 10, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', padding: '10px 14px', borderRadius: 12, background: 'var(--clay-bg)', color: 'var(--rose)', fontSize: 12.5, fontWeight: 700 }}>
+   874→+          <span style={{ flex: 1, minWidth: 220 }}>{mediaError}</span>
+   875→+          <button type="button" onClick={() => void retryLiveMedia()} style={{ border: 0, borderRadius: 12, padding: '9px 16px', background: 'var(--olive-600)', color: '#fff', fontWeight: 800, fontSize: 12.5, cursor: 'pointer' }}>تلاش دوباره</button>
+   876→+        </div>
+   877→+      )}
+   878→+
+   879→       <div style={{ display: 'grid', gridTemplateColumns: sideTab === 'none' || narrow ? '1fr' : 'minmax(0, 1.6fr) minmax(280px, 1fr)', gap: 12, alignItems: 'start' }}>
+   880→         {/* stage */}
+   881→         <section style={{ background: '#0e130e', borderRadius: 18, overflow: 'hidden', position: 'relative', aspectRatio: '16 / 10' }}>
+   882→diff --git a/frontend/src/lib/live/client.ts b/frontend/src/lib/live/client.ts
+   883→index a4b258a..90fcee3 100644
+   884→--- a/frontend/src/lib/live/client.ts
+   885→+++ b/frontend/src/lib/live/client.ts
+   886→@@ -90,7 +90,7 @@ export class LiveClient {
+   887→     return new Promise((resolve) => {
+   888→       let settled = false;
+   889→       try {
+   890→-        const socket = new WebSocket(`${WS_BASE}/api/v1/live/ws?session=${this.sessionId}&ticket=${encodeURIComponent(ticket)}`);
+   891→+        const socket = new WebSocket(`${WS_BASE}/api/v1/live/ws?session=${this.sessionId}&ticket=${encodeURIComponent(ticket)}&after=${this.cursor}`);
+   892→         this.ws = socket;
+   893→ 
+   894→         // Some CDNs complete the WS handshake but silently drop data frames.
+   895→@@ -127,6 +127,9 @@ export class LiveClient {
+   896→           }
+   897→           try {
+   898→             const event = JSON.parse(String(raw.data)) as LiveEvent;
+   899→+            // The server replays pre-join events recorded before our join, and the
+   900→+            // live channel can overlap that replay — never double-deliver a seq.
+   901→+            if (event.seq <= this.cursor) return;
+   902→             this.track(event);
+   903→             this.onEvent(event);
+   904→           } catch { /* ignore malformed frames */ }
+   905→diff --git a/frontend/src/universal-app/features/session-detail/LiveRoom.tsx b/frontend/src/universal-app/features/session-detail/LiveRoom.tsx
+   906→index ac03c71..f7c772e 100644
+   907→--- a/frontend/src/universal-app/features/session-detail/LiveRoom.tsx
+   908→+++ b/frontend/src/universal-app/features/session-detail/LiveRoom.tsx
+   909→@@ -7,6 +7,7 @@
+   910→ import { useCallback, useEffect, useRef, useState } from "react";
+   911→ import { LiveClient, type LiveEvent, type LiveStatus } from "../../../lib/live/client";
+   912→ import { LiveEngine, type EngineRole } from "../../../lib/live/engine";
+   913→+import { acquireMediaStream } from "../../platform/media-permissions";
+   914→ import { localizedDigits } from "../../ui/persian";
+   915→ import { Avatar } from "../../ui";
+   916→ import { useAppearance } from "../../ui/appearance";
+   917→@@ -28,31 +29,6 @@ function uid(): string {
+   918→   return Math.random().toString(36).slice(2) + Date.now().toString(36);
+   919→ }
+   920→ 
+   921→-/**
+   922→- * تلاش پلکانی برای گرفتن دوربین/میکروفون — موبایل‌ها به دلایل مختلف
+   923→- * (محدودیت دقت، اشغال بودن سخت‌افزار، مجوز ناقص) درخواست سخت‌گیرانه را رد
+   924→- * می‌کنند؛ اول آسان‌ترین قید، بعد بدون قید، و در نهایت فقط صدا.
+   925→- */
+   926→-async function acquireMedia(): Promise<MediaStream | null> {
+   927→-  if (!navigator.mediaDevices?.getUserMedia) return null;
+   928→-  const attempts: MediaStreamConstraints[] = [
+   929→-    {
+   930→-      video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
+   931→-      audio: { echoCancellation: true, noiseSuppression: true },
+   932→-    },
+   933→-    { video: true, audio: true },
+   934→-    { video: false, audio: true },
+   935→-  ];
+   936→-  for (const constraints of attempts) {
+   937→-    try {
+   938→-      return await navigator.mediaDevices.getUserMedia(constraints);
+   939→-    } catch {
+   940→-      /* تلاش بعدی */
+   941→-    }
+   942→-  }
+   943→-  return null;
+   944→-}
+   945→-
+   946→ function chatTime(at: number, lang: "fa" | "en"): string {
+   947→   const date = new Date(at);
+   948→   return `${localizedDigits(String(date.getHours()).padStart(2, "0"), lang)}:${localizedDigits(String(date.getMinutes()).padStart(2, "0"), lang)}`;
+   949→@@ -71,6 +47,20 @@ const controlButton = (active: boolean): React.CSSProperties => ({
+   950→   fontSize: 21,
+   951→ });
+   952→ 
+   953→+const retryButtonStyle: React.CSSProperties = {
+   954→+  height: 30,
+   955→+  padding: "0 14px",
+   956→+  borderRadius: 999,
+   957→+  border: "1px solid rgba(255,255,255,.24)",
+   958→+  background: "rgba(255,255,255,.12)",
+   959→+  color: "#fff",
+   960→+  cursor: "pointer",
+   961→+  fontFamily: "inherit",
+   962→+  fontSize: 11.5,
+   963→+  fontWeight: 800,
+   964→+  whiteSpace: "nowrap",
+   965→+};
+   966→+
+   967→ export function LiveRoom({
+   968→   sessionId,
+   969→   role,
+   970→@@ -84,6 +74,9 @@ export function LiveRoom({
+   971→   const [phase, setPhase] = useState<"preflight" | "live" | "ended">("preflight");
+   972→   const [status, setStatus] = useState<LiveStatus>("connecting");
+   973→   const ediaError, setMediaError] = useState("");
+   974→+  const ediaDenied, setMediaDenied] = useState(false);
+   975→+  const ediaBusy, setMediaBusy] = useState(false);
+   976→+  const asLiveMedia, setHasLiveMedia] = useState(false);
+   977→   const icLevel, setMicLevel] = useState(0);
+   978→   const icOn, setMicOn] = useState(true);
+   979→   const [camOn, setCamOn] = useState(true);
+   980→@@ -100,8 +93,13 @@ export function LiveRoom({
+   981→   const remoteVideoRef = useRef<HTMLVideoElement | null>(null);
+   982→   const liveStreamRef = useRef<MediaStream | null>(null);
+   983→   const previewStreamRef = useRef<MediaStream | null>(null);
+   984→+  const mediaBusyRef = useRef(false);
+   985→+  const previewRunIdRef = useRef(0);
+   986→+  const stopPreviewRunRef = useRef<() => void>(() => {});
+   987→   const chatBodyRef = useRef<HTMLDivElement | null>(null);
+   988→   const peerOnlineRef = useRef(false);
+   989→+  const joinAnnouncedRef = useRef(false);
+   990→+  const peerSignaledRef = useRef(false);
+   991→   const engineRoleRef = useRef<EngineRole>(role);
+   992→   const wakeLockRef = useRef<{ release: () => Promise<void>; released: boolean } | null>(null);
+   993→   const [needsTapToPlay, setNeedsTapToPlay] = useState(false);
+   994→@@ -110,19 +108,45 @@ export function LiveRoom({
+   995→   const isTeacherSide = role !== "learner";
+   996→ 
+   997→   /* ---------- پیش‌آزمون: پیش‌نمایش دوربین و سطح میکروفون ---------- */
+   998→-  useEffect(() => {
+   999→-    if (phase !== "preflight") return;
+  1000→-    let stream: MediaStream | null = null;
+  1001→+  // گرفتن رسانه با helper مشترک و نردبان پلکانی (قید مطلوب ← ساده ← فقط صدا)؛
+  1002→+  // دیالوگ مجوز مرورگر همین‌جا باز می‌شود و هر شکست با پیام راهنما و کلید «تلاش دوباره» قابل جبران است.
+  1003→+  const startPreview = useCallback(() => {
+  1004→+    stopPreviewRunRef.current();
+  1005→+    const runId = ++previewRunIdRef.current;
+  1006→+    mediaBusyRef.current = true;
+  1007→+    setMediaBusy(true);
+  1008→     let ctx: AudioContext | null = null;
+  1009→     let raf = 0;
+  1010→-    (async () => {
+  1011→-      stream = await acquireMedia();
+  1012→-      if (!stream) {
+  1013→-        setMediaError(L("دسترسی به دوربین/میکروفون ممکن نشد؛ می‌توانید بدون آن‌ها وارد کلاس شوید."));
+  1014→+    let cancelled = false;
+  1015→+    const cancelRun = () => {
+  1016→+      cancelled = true;
+  1017→+      cancelAnimationFrame(raf);
+  1018→+      void ctx?.close();
+  1019→+    };
+  1020→+    stopPreviewRunRef.current = cancelRun;
+  1021→+    void (async () => {
+  1022→+      previewStreamRef.current?.getTracks().forEach((track) => track.stop());
+  1023→+      previewStreamRef.current = null;
+  1024→+      const result = await acquireMediaStream("both");
+  1025→+      if (cancelled) {
+  1026→+        if (result.ok) result.stream.getTracks().forEach((track) => track.stop());
+  1027→+        if (runId === previewRunIdRef.current) {
+  1028→+          mediaBusyRef.current = false;
+  1029→+          setMediaBusy(false);
+  1030→+        }
+  1031→+        return;
+  1032→+      }
+  1033→+      mediaBusyRef.current = false;
+  1034→+      setMediaBusy(false);
+  1035→+      if (!result.ok) {
+  1036→+        setMediaError(L(result.message));
+  1037→+        setMediaDenied(result.denied);
+  1038→         return;
+  1039→       }
+  1040→+      const stream = result.stream;
+  1041→       previewStreamRef.current = stream;
+  1042→       setMediaError("");
+  1043→+      setMediaDenied(false);
+  1044→       if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+  1045→       const [audioTrack] = stream.getAudioTracks();
+  1046→       if (audioTrack) {
+  1047→@@ -141,11 +165,23 @@ export function LiveRoom({
+  1048→         tick();
+  1049→       }
+  1050→     })();
+  1051→+  }, [L]);
+  1052→+
+  1053→+  const retryMedia = useCallback(() => {
+  1054→+    if (mediaBusy) return;
+  1055→+    startPreview();
+  1056→+  }, ediaBusy, startPreview]);
+  1057→+
+  1058→+  useEffect(() => {
+  1059→+    if (phase !== "preflight") return;
+  1060→+    startPreview();
+  1061→     return () => {
+  1062→-      cancelAnimationFrame(raf);
+  1063→-      void ctx?.close();
+  1064→-      stream?.getTracks().forEach((track) => track.stop());
+  1065→+      stopPreviewRunRef.current();
+  1066→+      const preview = previewStreamRef.current;
+  1067→+      preview?.getTracks().forEach((track) => track.stop());
+  1068→+      previewStreamRef.current = null;
+  1069→     };
+  1070→+    // startPreview عمداً در وابستگی‌ها نمی‌آید؛ اجرای دوبارهٔ افکت جریان تازهٔ پیش‌نمایش را قطع می‌کرد.
+  1071→   }, [phase]);
+  1072→ 
+  1073→   /* ---------- شمارش معکوس جلسه ---------- */
+  1074→@@ -196,6 +232,7 @@ export function LiveRoom({
+  1075→         case "offer":
+  1076→         case "answer":
+  1077→         case "ice":
+  1078→+          peerSignaledRef.current = true;
+  1079→           void engineRef.current?.handleSignal(event.type, event.payload);
+  1080→           break;
+  1081→         case "system": {
+  1082→@@ -203,7 +240,12 @@ export function LiveRoom({
+  1083→           if (payload?.action === "join") {
+  1084→             peerOnlineRef.current = true;
+  1085→             setChat((items) => [...items, { id: uid(), from: 0, text: L("طرف مقابل وارد کلاس شد."), at: event.at, mine: false }]);
+  1086→-            if (isTeacherSide) void engineRef.current?.initiate();
+  1087→+            // هر ورود به کلاس فقط یک‌بار خودکار پیشنهاد می‌فرستد؛ join بازپخش‌شده/اکو‌شده
+  1088→+            // (replay کانال WS یا کانال زنده) نباید دوباره offer بفرستد.
+  1089→+            if (isTeacherSide && !joinAnnouncedRef.current) {
+  1090→+              joinAnnouncedRef.current = true;
+  1091→+              void engineRef.current?.initiate();
+  1092→+            }
+  1093→           }
+  1094→           if (payload?.action === "leave") {
+  1095→             peerOnlineRef.current = false;
+  1096→@@ -274,6 +316,15 @@ export function LiveRoom({
+  1097→     };
+  1098→   }, [phase]);
+  1099→ 
+  1100→+  /* ---------- معلم: اگر ۹ ثانیه پس از ورود هیچ قاب سیگنالینگ از طرف مقابل نرسید، یک‌بار initiate می‌فرستد ---------- */
+  1101→+  useEffect(() => {
+  1102→+    if (phase !== "live" || !isTeacherSide) return;
+  1103→+    const timer = window.setTimeout(() => {
+  1104→+      if (!peerSignaledRef.current) void engineRef.current?.initiate();
+  1105→+    }, 9_000);
+  1106→+    return () => window.clearTimeout(timer);
+  1107→+  }, [phase, isTeacherSide]);
+  1108→+
+  1109→   /* ---------- پخش خودکار ویدیوی طرف مقابل (سیاست autoplay موبایل) ---------- */
+  1110→   useEffect(() => {
+  1111→     if (!remoteActive) return;
+  1112→@@ -283,18 +334,33 @@ export function LiveRoom({
+  1113→   }, [remoteActive]);
+  1114→ 
+  1115→   /* ---------- ورود به کلاس ---------- */
+  1116→+  // جریان پیش‌نمایش اگر آماده باشد مستقیم برای جلسه به‌کار می‌رود تا دیالوگ مجوز دوباره باز نشود؛
+  1117→+  // اگر نباشد، «ورود با رسانه» همان‌جا درخواست می‌دهد — و شکست هیچ‌وقت ورود به کلاس را блок نمی‌کند.
+  1118→   async function join(withMedia: boolean) {
+  1119→-    previewStreamRef.current?.getTracks().forEach((track) => track.stop());
+  1120→-    previewStreamRef.current = null;
+  1121→+    joinAnnouncedRef.current = false;
+  1122→+    stopPreviewRunRef.current();
+  1123→ 
+  1124→-    let stream: MediaStream | null = null;
+  1125→-    if (withMedia) {
+  1126→-      stream = await acquireMedia();
+  1127→-      if (!stream) {
+  1128→-        setMediaError(L("ورود با دوربین/میکروفون ناموفق بود؛ بدون رسانه وارد می‌شوید."));
+  1129→+    let stream: MediaStream | null = previewStreamRef.current;
+  1130→+    previewStreamRef.current = null;
+  1131→+    if (!withMedia) {
+  1132→+      stream?.getTracks().forEach((track) => track.stop());
+  1133→+      stream = null;
+  1134→+    } else if (!stream) {
+  1135→+      setMediaBusy(true);
+  1136→+      const result = await acquireMediaStream("both");
+  1137→+      setMediaBusy(false);
+  1138→+      if (!result.ok) {
+  1139→+        setMediaError(L(result.message));
+  1140→+        setMediaDenied(result.denied);
+  1141→+        // بدون رسانه هم وارد کلاس می‌شویم — هیچ‌چیز نباید برگزاری کلاس را متوقف کند.
+  1142→+      } else {
+  1143→+        stream = result.stream;
+  1144→+        setMediaError("");
+  1145→+        setMediaDenied(false);
+  1146→       }
+  1147→     }
+  1148→     liveStreamRef.current = stream;
+  1149→+    setHasLiveMedia(Boolean(stream));
+  1150→     setPhase("live");
+  1151→ 
+  1152→     const client = new LiveClient({
+  1153→@@ -343,6 +409,33 @@ export function LiveRoom({
+  1154→     liveStreamRef.current?.getVideoTracks().forEach((track) => (track.enabled = next));
+  1155→   }
+  1156→ 
+  1157→+  /* ---------- وصل دوبارهٔ دوربین و میکروفون در میانهٔ کلاس ---------- */
+  1158→+  // وقتی کاربر بدون رسانه وارد شده، این مسیر از نوار کنترل دیالوگ مجوز را باز می‌کند
+  1159→+  // و تراک‌ها را به موتور P2P می‌دهد — خروج از کلاس لازم نیست.
+  1160→+  async function enableLiveMedia() {
+  1161→+    if (mediaBusyRef.current) return;
+  1162→+    mediaBusyRef.current = true;
+  1163→+    setMediaBusy(true);
+  1164→+    const result = await acquireMediaStream("both");
+  1165→+    mediaBusyRef.current = false;
+  1166→+    setMediaBusy(false);
+  1167→+    if (!result.ok) {
+  1168→+      setNotice(L(result.message));
+  1169→+      window.setTimeout(() => setNotice(""), 4000);
+  1170→+      return;
+  1171→+    }
+  1172→+    const stream = result.stream;
+  1173→+    liveStreamRef.current = stream;
+  1174→+    setHasLiveMedia(true);
+  1175→+    setMediaError("");
+  1176→+    setMediaDenied(false);
+  1177→+    await engineRef.current?.setLocalMedia(stream);
+  1178→+    engineRef.current?.setCameraTrack(stream.getVideoTracks()[0] ?? null);
+  1179→+    if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+  1180→+    setMicOn(true);
+  1181→+    setCamOn(result.hasVideo);
+  1182→+  }
+  1183→+
+  1184→   function leave(complete: boolean) {
+  1185→     clientRef.current?.send("control", { action: complete ? "end" : "bye" });
+  1186→     clientRef.current?.close();
+  1187→@@ -485,10 +578,24 @@ export function LiveRoom({
+  1188→             />
+  1189→           )}
+  1190→ 
+  1191→-          {mediaError && phase === "preflight" ? (
+  1192→-            <p style={{ position: "absolute", insetInline: 16, bottom: 14, margin: 0, zIndex: 2, fontSize: 11.5, lineHeight: 1.8, color: "#ffd9d0", background: "rgba(179,64,58,.24)", borderRadius: 12, padding: "8px 12px" }}>
+  1193→-              {mediaError}
+  1194→-            </p>
+  1195→+          {mediaDenied && mediaError && phase === "preflight" ? (
+  1196→+            <div style={{ position: "absolute", insetInline: 16, top: 14, zIndex: 2, background: "rgba(179,64,58,.18)", border: "1px solid rgba(179,64,58,.55)", borderRadius: 14, padding: 12, display: "grid", gap: 6 }}>
+  1197→+              <strong style={{ fontSize: 13, fontWeight: 800, color: "#ffd9d0" }}>{L("مجوز دوربین و میکروفون لازم است")}</strong>
+  1198→+              <span style={{ fontSize: 11.5, lineHeight: 1.9, color: "rgba(255,255,255,.85)" }}>{mediaError}</span>
+  1199→+              <button type="button" onClick={retryMedia} aria-busy={mediaBusy} style={retryButtonStyle}>
+  1200→+                {L("تلاش دوباره")}
+  1201→+              </button>
+  1202→+            </div>
+  1203→+          ) : null}
+  1204→+          {mediaError && phase === "preflight" && !mediaDenied ? (
+  1205→+            <div style={{ position: "absolute", insetInline: 16, bottom: 14, zIndex: 2, display: "flex", alignItems: "center", gap: 8 }}>
+  1206→+              <p style={{ flex: 1, margin: 0, fontSize: 11.5, lineHeight: 1.8, color: "#ffd9d0", background: "rgba(179,64,58,.24)", borderRadius: 12, padding: "8px 12px" }}>
+  1207→+                {mediaError}
+  1208→+              </p>
+  1209→+              <button type="button" onClick={retryMedia} aria-busy={mediaBusy} style={retryButtonStyle}>
+  1210→+                {L("تلاش دوباره")}
+  1211→+              </button>
+  1212→+            </div>
+  1213→           ) : null}
+  1214→ 
+  1215→           {/* چت درون‌کلاس */}
+  1216→@@ -589,6 +696,17 @@ export function LiveRoom({
+  1217→               <button type="button" onClick={toggleCam} style={controlButton(!camOn)} aria-label={camOn ? L("قطع دوربین") : L("وصل دوربین")}>
+  1218→                 {camOn ? "🎥" : "🚫"}
+  1219→               </button>
+  1220→+              {phase === "live" && !hasLiveMedia ? (
+  1221→+                <button
+  1222→+                  type="button"
+  1223→+                  onClick={() => void enableLiveMedia()}
+  1224→+                  aria-busy={mediaBusy}
+  1225→+                  aria-label={L("وصل دوربین و میکروفون")}
+  1226→+                  style={{ ...controlButton(false), width: "auto", padding: "0 18px", borderRadius: 999, background: "rgba(255,255,255,.12)", fontFamily: "inherit", fontSize: 13, fontWeight: 800 }}
+  1227→+                >
+  1228→+                  {L("وصل دوربین و میکروفون")}
+  1229→+                </button>
+  1230→+              ) : null}
+  1231→               <button
+  1232→                 type="button"
+  1233→                 onClick={() => leave(false)}
+  1234→diff --git a/frontend/src/universal-app/features/support/SupportChat.tsx b/frontend/src/universal-app/features/support/SupportChat.tsx
+  1235→index bafe145..e6aae65 100644
+  1236→--- a/frontend/src/universal-app/features/support/SupportChat.tsx
+  1237→+++ b/frontend/src/universal-app/features/support/SupportChat.tsx
+  1238→@@ -6,6 +6,7 @@ import { colors, gradients, radii, shadows, typography } from "../../ui/theme";
+  1239→ import { useAppearance } from "../../ui/appearance";
+  1240→ import { localizedDigits } from "../../ui/persian";
+  1241→ import { usePlatform } from "../../platform/context";
+  1242→+import { acquireMediaStream } from "../../platform/media-permissions";
+  1243→ import {
+  1244→   closeTicket,
+  1245→   createTicket,
+  1246→@@ -229,6 +230,7 @@ export function SupportChat({ routeName }: { routeName: string }) {
+  1247→   const [lightbox, setLightbox] = useState<string | null>(null);
+  1248→ 
+  1249→   const [recording, setRecording] = useState(false);
+  1250→+  const [deniedHint, setDeniedHint] = useState(false);
+  1251→   const [recordSeconds, setRecordSeconds] = useState(0);
+  1252→   const [voicePreview, setVoicePreview] = useState<{ blob: Blob; url: string; ms: number; mime: string } | null>(null);
+  1253→   const [imagePreview, setImagePreview] = useState<{ file: File; url: string } | null>(null);
+  1254→@@ -394,8 +396,16 @@ export function SupportChat({ routeName }: { routeName: string }) {
+  1255→ 
+  1256→   async function startRecording() {
+  1257→     setError("");
+  1258→+    const acquired = await acquireMediaStream("audio");
+  1259→+    if (!acquired.ok) {
+  1260→+      // پیام خطا همراه راهنمای رفع انسداد است؛ دکمهٔ «تلاش دوباره» هم ظاهر می‌شود.
+  1261→+      setError(L(acquired.message));
+  1262→+      setDeniedHint(acquired.denied);
+  1263→+      return;
+  1264→+    }
+  1265→+    setDeniedHint(false);
+  1266→+    const stream = acquired.stream;
+  1267→     try {
+  1268→-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  1269→       const mime = pickRecorderMime();
+  1270→       recordMimeRef.current = mime;
+  1271→       const recorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+  1272→@@ -434,7 +444,9 @@ export function SupportChat({ routeName }: { routeName: string }) {
+  1273→         }
+  1274→       }, 1000);
+  1275→     } catch {
+  1276→-      setError(L("دسترسی به میکروفون ممکن نشد؛ اجازهٔ مرورگر را بررسی کنید."));
+  1277→+      // میکروفون گرفته شده ولی ساخت MediaRecorder شکسته است؛ جریان را رها نکنیم.
+  1278→+      stream.getTracks().forEach((track) => track.stop());
+  1279→+      setError(L("ضبط صدا در این مرورگر ممکن نشد؛ کروم را به‌روزرسانی کنید."));
+  1280→     }
+  1281→   }
+  1282→ 
+  1283→@@ -716,8 +728,43 @@ export function SupportChat({ routeName }: { routeName: string }) {
+  1284→           </header>
+  1285→ 
+  1286→           {error ? (
+  1287→-            <p role="alert" style={{ margin: 0, padding: "8px 14px", fontSize: 11.5, fontWeight: 700, color: colors.danger, background: colors.dangerBackground }}>
+  1288→-              {error}
+  1289→+            <p
+  1290→+              role="alert"
+  1291→+              style={{
+  1292→+                margin: 0,
+  1293→+                padding: "8px 14px",
+  1294→+                fontSize: 11.5,
+  1295→+                fontWeight: 700,
+  1296→+                color: colors.danger,
+  1297→+                background: colors.dangerBackground,
+  1298→+                display: "flex",
+  1299→+                alignItems: "center",
+  1300→+                gap: 10,
+  1301→+                flexWrap: "wrap",
+  1302→+              }}
+  1303→+            >
+  1304→+              <span style={{ flex: "1 1 auto", minWidth: 0 }}>{error}</span>
+  1305→+              {deniedHint ? (
+  1306→+                <button
+  1307→+                  type="button"
+  1308→+                  onClick={() => void startRecording()}
+  1309→+                  className="vodda-tappable"
+  1310→+                  style={{
+  1311→+                    flex: "0 0 auto",
+  1312→+                    padding: "4px 12px",
+  1313→+                    border: `1px solid ${colors.danger}`,
+  1314→+                    borderRadius: 999,
+  1315→+                    background: "none",
+  1316→+                    color: colors.danger,
+  1317→+                    fontWeight: 800,
+  1318→+                    fontSize: 11,
+  1319→+                    cursor: "pointer",
+  1320→+                    fontFamily: typography.fontFamily,
+  1321→+                  }}
+  1322→+                >
+  1323→+                  {L("تلاش دوباره")}
+  1324→+                </button>
+  1325→+              ) : null}
+  1326→             </p>
+  1327→           ) : null}
+  1328→ 
+  1329→ M internal/delivery/http/live.go
+  1330→ M ../docker-compose.deploy.yml
+  1331→ M ../docs/native-capabilities.md
+  1332→ M ../frontend/src/app/panel/admin/support/page.tsx
+  1333→ M ../frontend/src/app/panel/live/[id]/page.tsx
+  1334→ M ../frontend/src/lib/live/client.ts
+  1335→ M ../frontend/src/universal-app/features/session-detail/LiveRoom.tsx
+  1336→ M ../frontend/src/universal-app/features/support/SupportChat.tsx
+  1337→?? ../frontend/native/android/
+  1338→?? ../frontend/src/universal-app/platform/media-permissions.ts
