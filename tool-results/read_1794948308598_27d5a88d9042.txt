@@ -1,0 +1,252 @@
+     1→/home/z/my-project/src/universal-app/features/home/LearnerHomeScreen.tsx:492:              <Avatar name={teacher.name} src={teacher.avatarUrl || undefined} size={54} ring />
+     2→/home/z/my-project/src/universal-app/features/home/LearnerHomeScreen.tsx-493-              <strong
+     3→/home/z/my-project/src/universal-app/features/home/LearnerHomeScreen.tsx-494-                style={{
+     4→/home/z/my-project/src/universal-app/features/home/LearnerHomeScreen.tsx-495-                  maxWidth: "100%",
+     5→/home/z/my-project/src/universal-app/features/home/LearnerHomeScreen.tsx-496-                  overflow: "hidden",
+     6→/home/z/my-project/src/universal-app/features/home/LearnerHomeScreen.tsx-497-                  textOverflow: "ellipsis",
+     7→/home/z/my-project/src/universal-app/features/home/LearnerHomeScreen.tsx-498-                  whiteSpace: "nowrap",
+     8→--
+     9→/home/z/my-project/src/universal-app/features/home/LearnerHomeScreen.tsx:1101:            <Avatar
+    10→/home/z/my-project/src/universal-app/features/home/LearnerHomeScreen.tsx-1102-              name={user?.name}
+    11→/home/z/my-project/src/universal-app/features/home/LearnerHomeScreen.tsx-1103-              src={avatarSrc(user?.avatar_url, user?.updated_at, uploadsOriginOf(runtime.apiBaseUrl))}
+    12→/home/z/my-project/src/universal-app/features/home/LearnerHomeScreen.tsx-1104-              size={48}
+    13→/home/z/my-project/src/universal-app/features/home/LearnerHomeScreen.tsx-1105-              ring
+    14→/home/z/my-project/src/universal-app/features/home/LearnerHomeScreen.tsx-1106-            />
+    15→/home/z/my-project/src/universal-app/features/home/LearnerHomeScreen.tsx-1107-            {user ? (
+    16→--
+    17→/home/z/my-project/src/universal-app/features/auth/ProfileCompletionScreen.tsx:232:              <Avatar
+    18→/home/z/my-project/src/universal-app/features/auth/ProfileCompletionScreen.tsx-233-                name={name || user?.name}
+    19→/home/z/my-project/src/universal-app/features/auth/ProfileCompletionScreen.tsx-234-                src={avatarSrc(avatarPreview ?? user?.avatar_url, avatarPreview ? undefined : user?.updated_at, uploadsOriginOf(platform.apiBaseUrl))}
+    20→/home/z/my-project/src/universal-app/features/auth/ProfileCompletionScreen.tsx-235-                size={88}
+    21→/home/z/my-project/src/universal-app/features/auth/ProfileCompletionScreen.tsx-236-                ring
+    22→/home/z/my-project/src/universal-app/features/auth/ProfileCompletionScreen.tsx-237-              />
+    23→/home/z/my-project/src/universal-app/features/auth/ProfileCompletionScreen.tsx-238-              <span
+    24→--
+    25→/home/z/my-project/src/universal-app/features/auth/RoleModeSheet.tsx:62:          <Avatar name={user.name} src={user.avatar_url} size={44} ring />
+    26→/home/z/my-project/src/universal-app/features/auth/RoleModeSheet.tsx-63-          <span style={{ minWidth: 0, flex: 1 }}>
+    27→/home/z/my-project/src/universal-app/features/auth/RoleModeSheet.tsx-64-            <strong
+    28→/home/z/my-project/src/universal-app/features/auth/RoleModeSheet.tsx-65-              style={{
+    29→/home/z/my-project/src/universal-app/features/auth/RoleModeSheet.tsx-66-                display: "block",
+    30→/home/z/my-project/src/universal-app/features/auth/RoleModeSheet.tsx-67-                fontSize: 14.5,
+    31→/home/z/my-project/src/universal-app/features/auth/RoleModeSheet.tsx-68-                fontWeight: 800,
+    32→--
+    33→/home/z/my-project/src/universal-app/features/booking/LearnerBookingScreen.tsx:277:        <Avatar name={teacher.name} src={teacher.avatarUrl || undefined} size={56} ring={false} />
+    34→/home/z/my-project/src/universal-app/features/booking/LearnerBookingScreen.tsx-278-        <div style={{ minWidth: 0, flex: 1 }}>
+    35→/home/z/my-project/src/universal-app/features/booking/LearnerBookingScreen.tsx-279-          <strong style={{ fontSize: 16, fontWeight: 800, display: "block", color: colors.ink }}>{teacher.name}</strong>
+    36→/home/z/my-project/src/universal-app/features/booking/LearnerBookingScreen.tsx-280-          <span style={{ fontSize: 12.5, color: colors.olive700 }}>{teacher.tag || teacher.field}</span>
+    37→/home/z/my-project/src/universal-app/features/booking/LearnerBookingScreen.tsx-281-        </div>
+    38→/home/z/my-project/src/universal-app/features/booking/LearnerBookingScreen.tsx-282-      </Card>
+    39→/home/z/my-project/src/universal-app/features/booking/LearnerBookingScreen.tsx-283-
+    40→--
+    41→/home/z/my-project/src/universal-app/features/dispatch/LearnerDispatchScreen.tsx:117:        <Avatar name={candidate.name} src={candidate.avatar_url || undefined} size={52} ring={false} />
+    42→/home/z/my-project/src/universal-app/features/dispatch/LearnerDispatchScreen.tsx-118-        <div style={{ minWidth: 0, flex: 1 }}>
+    43→/home/z/my-project/src/universal-app/features/dispatch/LearnerDispatchScreen.tsx-119-          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+    44→/home/z/my-project/src/universal-app/features/dispatch/LearnerDispatchScreen.tsx-120-            <strong style={{ fontSize: 15, fontWeight: 800, color: colors.ink }}>{candidate.name}</strong>
+    45→/home/z/my-project/src/universal-app/features/dispatch/LearnerDispatchScreen.tsx-121-            {badge ? (
+    46→/home/z/my-project/src/universal-app/features/dispatch/LearnerDispatchScreen.tsx-122-              <span style={{ fontSize: 10, fontWeight: 700, color: badge.color, background: badge.bg, borderRadius: 999, padding: "2px 8px" }}>
+    47→/home/z/my-project/src/universal-app/features/dispatch/LearnerDispatchScreen.tsx-123-                {badge.label}
+    48→--
+    49→/home/z/my-project/src/universal-app/features/dispatch/LearnerDispatchScreen.tsx:409:              <Avatar name={candidate.name} src={candidate.avatar_url || undefined} size={48} ring={false} />
+    50→/home/z/my-project/src/universal-app/features/dispatch/LearnerDispatchScreen.tsx-410-              <div style={{ minWidth: 0, flex: 1 }}>
+    51→/home/z/my-project/src/universal-app/features/dispatch/LearnerDispatchScreen.tsx-411-                <strong style={{ display: "block", fontSize: 14.5, color: colors.ink }}>{candidate.name}</strong>
+    52→/home/z/my-project/src/universal-app/features/dispatch/LearnerDispatchScreen.tsx-412-                <span style={{ fontSize: 12, color: colors.inkMuted }}>
+    53→/home/z/my-project/src/universal-app/features/dispatch/LearnerDispatchScreen.tsx-413-                  {priceLabel(candidate.price)} · {timeLabelOf(call)}
+    54→/home/z/my-project/src/universal-app/features/dispatch/LearnerDispatchScreen.tsx-414-                </span>
+    55→/home/z/my-project/src/universal-app/features/dispatch/LearnerDispatchScreen.tsx-415-              </div>
+    56→--
+    57→/home/z/my-project/src/universal-app/features/teacher/TeacherProfileScreen.tsx:275:            <Avatar
+    58→/home/z/my-project/src/universal-app/features/teacher/TeacherProfileScreen.tsx-276-              name={user.name}
+    59→/home/z/my-project/src/universal-app/features/teacher/TeacherProfileScreen.tsx-277-              src={avatarSrc(user.avatarUrl, user.updated_at, uploadsOriginOf(runtime.apiBaseUrl))}
+    60→/home/z/my-project/src/universal-app/features/teacher/TeacherProfileScreen.tsx-278-              size={62}
+    61→/home/z/my-project/src/universal-app/features/teacher/TeacherProfileScreen.tsx-279-              ring
+    62→/home/z/my-project/src/universal-app/features/teacher/TeacherProfileScreen.tsx-280-            />
+    63→/home/z/my-project/src/universal-app/features/teacher/TeacherProfileScreen.tsx-281-            {teacher.tier ? (
+    64→--
+    65→/home/z/my-project/src/universal-app/features/teacher/TeacherSessionsScreen.tsx:137:          <Avatar name={session.learnerName} src={session.learnerAvatar || undefined} size={46} ring={false} />
+    66→/home/z/my-project/src/universal-app/features/teacher/TeacherSessionsScreen.tsx-138-          <div style={{ minWidth: 0, flex: 1 }}>
+    67→/home/z/my-project/src/universal-app/features/teacher/TeacherSessionsScreen.tsx-139-            <strong style={{ display: "block", fontSize: 14.5, fontWeight: 800, color: colors.ink }}>{session.learnerName}</strong>
+    68→/home/z/my-project/src/universal-app/features/teacher/TeacherSessionsScreen.tsx-140-            <span style={{ display: "block", marginTop: 3, fontSize: 12.5, color: colors.inkSecondary }}>{session.service}</span>
+    69→/home/z/my-project/src/universal-app/features/teacher/TeacherSessionsScreen.tsx-141-          </div>
+    70→/home/z/my-project/src/universal-app/features/teacher/TeacherSessionsScreen.tsx-142-          <span style={{ padding: "4px 10px", borderRadius: radii.pill, color: colors.clay, background: colors.clayBackground, fontSize: 11, fontWeight: 800 }}>
+    71→/home/z/my-project/src/universal-app/features/teacher/TeacherSessionsScreen.tsx-143-            جدید
+    72→--
+    73→/home/z/my-project/src/universal-app/features/teacher/TeacherSessionsScreen.tsx:177:        <Avatar name={session.learnerName} src={session.learnerAvatar || undefined} size={46} ring={false} />
+    74→/home/z/my-project/src/universal-app/features/teacher/TeacherSessionsScreen.tsx-178-        <div style={{ minWidth: 0 }}>
+    75→/home/z/my-project/src/universal-app/features/teacher/TeacherSessionsScreen.tsx-179-          <strong style={{ display: "block", fontSize: 14.5, fontWeight: 800, color: colors.ink }}>{session.learnerName}</strong>
+    76→/home/z/my-project/src/universal-app/features/teacher/TeacherSessionsScreen.tsx-180-          <span style={{ display: "block", marginTop: 3, fontSize: 12.5, color: colors.inkSecondary }}>{session.service}</span>
+    77→/home/z/my-project/src/universal-app/features/teacher/TeacherSessionsScreen.tsx-181-        </div>
+    78→/home/z/my-project/src/universal-app/features/teacher/TeacherSessionsScreen.tsx-182-      </div>
+    79→/home/z/my-project/src/universal-app/features/teacher/TeacherSessionsScreen.tsx-183-
+    80→--
+    81→/home/z/my-project/src/universal-app/features/teacher/TeacherDashboardScreen.tsx:210:        <Avatar name={teacher?.name} src={teacher?.avatarUrl} size={46} ring />
+    82→/home/z/my-project/src/universal-app/features/teacher/TeacherDashboardScreen.tsx-211-        <span style={{ minWidth: 0, flex: 1 }}>
+    83→/home/z/my-project/src/universal-app/features/teacher/TeacherDashboardScreen.tsx-212-          <span style={{ ...typography.caption, display: "block", color: colors.inkMuted }}>پنل استاد · {firstName}</span>
+    84→/home/z/my-project/src/universal-app/features/teacher/TeacherDashboardScreen.tsx-213-          <strong style={{ ...typography.body, display: "inline-flex", alignItems: "center", gap: 5, color: colors.olive700 }}>
+    85→/home/z/my-project/src/universal-app/features/teacher/TeacherDashboardScreen.tsx-214-            تغییر حساب
+    86→/home/z/my-project/src/universal-app/features/teacher/TeacherDashboardScreen.tsx-215-            <Icon name="refresh" size={15} stroke={1.9} />
+    87→/home/z/my-project/src/universal-app/features/teacher/TeacherDashboardScreen.tsx-216-          </strong>
+    88→--
+    89→/home/z/my-project/src/universal-app/features/teacher/TeacherDashboardScreen.tsx:353:              <Avatar name={nextSession.learnerName} size={46} ring={false} />
+    90→/home/z/my-project/src/universal-app/features/teacher/TeacherDashboardScreen.tsx-354-              <div style={{ minWidth: 0, flex: 1 }}>
+    91→/home/z/my-project/src/universal-app/features/teacher/TeacherDashboardScreen.tsx-355-                <strong style={{ display: "block", fontSize: 14.5, fontWeight: 800, color: colors.ink }}>{nextSession.learnerName}</strong>
+    92→/home/z/my-project/src/universal-app/features/teacher/TeacherDashboardScreen.tsx-356-                <span style={{ display: "block", marginTop: 3, fontSize: 12.5, color: colors.inkSecondary }}>{nextSession.service}</span>
+    93→/home/z/my-project/src/universal-app/features/teacher/TeacherDashboardScreen.tsx-357-              </div>
+    94→/home/z/my-project/src/universal-app/features/teacher/TeacherDashboardScreen.tsx-358-              <span style={{ padding: "5px 9px", borderRadius: radii.pill, color: colors.surface, background: colors.olive600, ...typography.caption, fontWeight: 700 }}>
+    95→/home/z/my-project/src/universal-app/features/teacher/TeacherDashboardScreen.tsx-359-                تأییدشده
+    96→--
+    97→/home/z/my-project/src/universal-app/features/teacher/TeacherReviewsScreen.tsx:117:              <Avatar name={review.learnerName} src={review.learnerAvatar} size={46} ring />
+    98→/home/z/my-project/src/universal-app/features/teacher/TeacherReviewsScreen.tsx-118-              <div style={{ minWidth: 0, flex: 1 }}>
+    99→/home/z/my-project/src/universal-app/features/teacher/TeacherReviewsScreen.tsx-119-                <strong style={{ ...typography.body, display: "block" }}>{review.learnerName}</strong>
+   100→/home/z/my-project/src/universal-app/features/teacher/TeacherReviewsScreen.tsx-120-                {review.createdAt ? (
+   101→/home/z/my-project/src/universal-app/features/teacher/TeacherReviewsScreen.tsx-121-                  <span style={{ ...typography.caption, color: colors.inkMuted }}>{formatDate(review.createdAt)}</span>
+   102→/home/z/my-project/src/universal-app/features/teacher/TeacherReviewsScreen.tsx-122-                ) : null}
+   103→/home/z/my-project/src/universal-app/features/teacher/TeacherReviewsScreen.tsx-123-              </div>
+   104→--
+   105→/home/z/my-project/src/universal-app/features/profile/LearnerProfileScreen.tsx:118:          <Avatar
+   106→/home/z/my-project/src/universal-app/features/profile/LearnerProfileScreen.tsx-119-            name={user.name}
+   107→/home/z/my-project/src/universal-app/features/profile/LearnerProfileScreen.tsx-120-            src={avatarSrc(user.avatar_url, user.updated_at, uploadsOriginOf(platform.apiBaseUrl))}
+   108→/home/z/my-project/src/universal-app/features/profile/LearnerProfileScreen.tsx-121-            size={62}
+   109→/home/z/my-project/src/universal-app/features/profile/LearnerProfileScreen.tsx-122-            ring
+   110→/home/z/my-project/src/universal-app/features/profile/LearnerProfileScreen.tsx-123-          />
+   111→/home/z/my-project/src/universal-app/features/profile/LearnerProfileScreen.tsx-124-          <div style={{ minWidth: 0, flex: 1 }}>
+   112→--
+   113→/home/z/my-project/src/universal-app/features/sessions/LearnerSessionsScreen.tsx:80:        <Avatar name={session.teacherName} src={session.teacherAvatar || undefined} size={46} ring />
+   114→/home/z/my-project/src/universal-app/features/sessions/LearnerSessionsScreen.tsx-81-        <div style={{ minWidth: 0 }}>
+   115→/home/z/my-project/src/universal-app/features/sessions/LearnerSessionsScreen.tsx-82-          <strong style={{ ...typography.body, display: "block" }}>{session.teacherName}</strong>
+   116→/home/z/my-project/src/universal-app/features/sessions/LearnerSessionsScreen.tsx-83-          <span style={{ ...typography.bodySmall, color: colors.inkSecondary }}>{session.service}</span>
+   117→/home/z/my-project/src/universal-app/features/sessions/LearnerSessionsScreen.tsx-84-        </div>
+   118→/home/z/my-project/src/universal-app/features/sessions/LearnerSessionsScreen.tsx-85-      </div>
+   119→/home/z/my-project/src/universal-app/features/sessions/LearnerSessionsScreen.tsx-86-
+   120→--
+   121→/home/z/my-project/src/universal-app/features/teachers/LearnerTeacherProfileScreen.tsx:143:        <Avatar name={review.learnerName} size={42} ring={false} />
+   122→/home/z/my-project/src/universal-app/features/teachers/LearnerTeacherProfileScreen.tsx-144-        <div style={{ minWidth: 0, flex: 1 }}>
+   123→/home/z/my-project/src/universal-app/features/teachers/LearnerTeacherProfileScreen.tsx-145-          <strong style={{ ...typography.bodySmall, display: "block", color: colors.ink }}>{review.learnerName}</strong>
+   124→/home/z/my-project/src/universal-app/features/teachers/LearnerTeacherProfileScreen.tsx-146-          {review.createdAt ? (
+   125→/home/z/my-project/src/universal-app/features/teachers/LearnerTeacherProfileScreen.tsx-147-            <span style={{ ...typography.caption, display: "block", marginTop: 1, color: colors.inkFaint }}>
+   126→/home/z/my-project/src/universal-app/features/teachers/LearnerTeacherProfileScreen.tsx-148-              {reviewDate(review.createdAt)}
+   127→/home/z/my-project/src/universal-app/features/teachers/LearnerTeacherProfileScreen.tsx-149-            </span>
+   128→--
+   129→/home/z/my-project/src/universal-app/features/teachers/LearnerTeacherProfileScreen.tsx:225:          <Avatar
+   130→/home/z/my-project/src/universal-app/features/teachers/LearnerTeacherProfileScreen.tsx-226-            name={teacher.name}
+   131→/home/z/my-project/src/universal-app/features/teachers/LearnerTeacherProfileScreen.tsx-227-            src={avatarSrc(teacher.avatarUrl || undefined, undefined, uploadsOriginOf(runtime.apiBaseUrl))}
+   132→/home/z/my-project/src/universal-app/features/teachers/LearnerTeacherProfileScreen.tsx-228-            size={88}
+   133→/home/z/my-project/src/universal-app/features/teachers/LearnerTeacherProfileScreen.tsx-229-            ring
+   134→/home/z/my-project/src/universal-app/features/teachers/LearnerTeacherProfileScreen.tsx-230-          />
+   135→/home/z/my-project/src/universal-app/features/teachers/LearnerTeacherProfileScreen.tsx-231-          {teacher.tier ? (
+   136→--
+   137→/home/z/my-project/src/app/panel/user/settings/page.tsx:187:                <Avatar size={76} imageUrl={avatarUrl} ring />
+   138→/home/z/my-project/src/app/panel/user/settings/page.tsx-188-                <button
+   139→/home/z/my-project/src/app/panel/user/settings/page.tsx-189-                  type="button"
+   140→/home/z/my-project/src/app/panel/user/settings/page.tsx-190-                  aria-label="تغییر تصویر پروفایل"
+   141→/home/z/my-project/src/app/panel/user/settings/page.tsx-191-                  disabled={uploading}
+   142→/home/z/my-project/src/app/panel/user/settings/page.tsx-192-                  onClick={() => fileRef.current?.click()}
+   143→/home/z/my-project/src/app/panel/user/settings/page.tsx-193-                  style={{
+   144→--
+   145→/home/z/my-project/src/app/panel/user/book/page.tsx:177:    <section style={{ background: '#fff', borderRadius: 20, padding: 16, display: 'flex', gap: 14, alignItems: 'center', marginBottom: 16, boxShadow: 'var(--sh-sm)' }}><Avatar size={56} ring tier={teacher.tier} imageUrl={fullUrl(teacher.user?.avatar_url)} /><div><div style={{ fontSize: 16, fontWeight: 800 }}>{teacher.user?.name || 'استاد وُدّا'}</div><div style={{ fontSize: 13, color: 'var(--olive-600)', fontWeight: 600 }}>{teacher.tag}</div></div></section>
+   146→/home/z/my-project/src/app/panel/user/book/page.tsx-178-    {isSelfTeacher && <div role="alert" style={{ fontSize: 13, lineHeight: 1.9, color: '#8d6d1f', background: 'var(--gold-bg)', padding: 12, borderRadius: 12, marginBottom: 16 }}>این پروفایل متعلق به حساب شماست؛ رزرو جلسه با خودتان ممکن نیست. برای آزمایش فرآیند، با حساب قرآن‌آموز وارد شوید و استاد دیگری را رزرو کنید.</div>}
+   147→/home/z/my-project/src/app/panel/user/book/page.tsx-179-    {error && <div role="alert" style={{ fontSize: 13, color: 'var(--rose)', background: 'var(--clay-bg)', padding: 12, borderRadius: 12, marginBottom: 16 }}>{error}</div>}
+   148→/home/z/my-project/src/app/panel/user/book/page.tsx-180-    <Card title="۱. انتخاب خدمت">{services.length === 0 ? <EmptyText>این استاد فعلاً خدمت تأییدشده‌ای برای رزرو ندارد.</EmptyText> : <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>{services.map((service) => <button key={service.id} type="button" onClick={() => chooseService(service)} style={serviceButton(service.id === serviceId)}><div style={{ width: 44, height: 44, borderRadius: 12, background: 'var(--olive-100)', color: 'var(--olive-600)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="book" size={22} /></div><div style={{ flex: 1, textAlign: 'right' }}><div style={{ fontSize: 14.5, fontWeight: 700 }}>{service.title}</div><div style={{ fontSize: 12, color: 'var(--ink-3)' }}>{fa(service.duration)} دقیقه</div></div><div style={{ fontSize: 15, fontWeight: 800, color: 'var(--olive-700)' }}>{toman(service.price)} تومان</div></button>)}</div>}</Card>
+   149→/home/z/my-project/src/app/panel/user/book/page.tsx-181-    <Card title="۲. انتخاب تاریخ و ساعت" disabled={!selectedService}>{!selectedService ? <EmptyText>ابتدا یک خدمت را انتخاب کنید.</EmptyText> : loadingAvailability ? <EmptyText>در حال دریافت زمان‌های قابل رزرو…</EmptyText> : availabilityError ? <div role="alert" style={{ color: 'var(--rose)', lineHeight: 1.9 }}>{availabilityError}<button type="button" onClick={refreshAvailability} style={{ display: 'block', marginTop: 10, border: 0, borderRadius: 10, padding: '8px 12px', background: 'var(--rose)', color: '#fff', cursor: 'pointer' }}>تلاش دوباره</button></div> : dateGroups.length === 0 ? <EmptyText>در ۱۴ روز آینده زمان آزاد و قابل رزروی برای این خدمت وجود ندارد.</EmptyText> : <><div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8 }}>{dateGroups.map((group) => <button key={group.localDate} type="button" onClick={() => chooseDate(group.localDate)} style={dateButton(selectedDateKey === group.localDate)}><span>{formatLocalDate(group.localDate)}</span><small style={{ opacity: .72 }}>{fa(group.slots.length)} زمان</small></button>)}</div>{selectedDate && <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 16 }}>{selectedDate.slots.map((slot) => <button key={slot.start_at} type="button" onClick={() => setSelectedStart(slot.start_at)} style={slotButton(selectedStart === slot.start_at)}>{fa(slot.local_start)} تا {fa(slot.local_end)}</button>)}</div>}</>}</Card>
+   150→/home/z/my-project/src/app/panel/user/book/page.tsx-182-    <Card title="۳. تأیید و ثبت" disabled={!selectedSlot}>{!selectedSlot || !selectedService ? <EmptyText>پس از انتخاب خدمت و زمان، خلاصهٔ رزرو اینجا نمایش داده می‌شود.</EmptyText> : <><div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}><SummaryRow label="خدمت" value={selectedService.title} /><SummaryRow label="تاریخ" value={formatLocalDate(selectedSlot.local_date)} /><SummaryRow label="ساعت" value={`${fa(selectedSlot.local_start)} تا ${fa(selectedSlot.local_end)}`} /><SummaryRow label="مدت" value={`${fa(selectedService.duration)} دقیقه`} /><SummaryRow label="مبلغ" value={`${toman(selectedService.price)} تومان`} /></div>
+   151→/home/z/my-project/src/app/panel/user/book/page.tsx-183-      <div role="radiogroup" aria-label="روش پرداخت" style={{ display: 'grid', gap: 10, marginBottom: 16 }}>
+   152→--
+   153→/home/z/my-project/src/app/panel/user/layout.tsx:343:              <Avatar size={35} imageUrl={user.avatarUrl} />
+   154→/home/z/my-project/src/app/panel/user/layout.tsx-344-              <span style={{ minWidth: 0, flex: 1 }}>
+   155→/home/z/my-project/src/app/panel/user/layout.tsx-345-                <strong style={{ display: 'block', overflow: 'hidden', fontSize: 11.5, textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.name}</strong>
+   156→/home/z/my-project/src/app/panel/user/layout.tsx-346-                <small style={{ display: 'block', marginTop: 1, color: 'rgba(255,255,255,.42)', fontSize: 9 }}>قرآن‌آموز</small>
+   157→/home/z/my-project/src/app/panel/user/layout.tsx-347-              </span>
+   158→/home/z/my-project/src/app/panel/user/layout.tsx-348-              <Icon name="chevronUp" size={14} style={{ opacity: .45, transform: userOpen ? 'rotate(180deg)' : undefined }} />
+   159→/home/z/my-project/src/app/panel/user/layout.tsx-349-            </button>
+   160→--
+   161→/home/z/my-project/src/app/panel/user/page.tsx:310:                  <Avatar size={38} imageUrl={fullUrl(session.teacher?.user?.avatar_url)} />
+   162→/home/z/my-project/src/app/panel/user/page.tsx-311-                  <div className="adm-feed-main">
+   163→/home/z/my-project/src/app/panel/user/page.tsx-312-                    <strong>{session.teacher?.user?.name || 'استاد'}</strong>
+   164→/home/z/my-project/src/app/panel/user/page.tsx-313-                    <small>{session.service} · {session.local_date} · ساعت {toFaDigits(session.local_start)}</small>
+   165→/home/z/my-project/src/app/panel/user/page.tsx-314-                  </div>
+   166→/home/z/my-project/src/app/panel/user/page.tsx-315-                  <span className="adm-badge" data-tone={session.status === 'confirmed' ? 'green' : 'gold'}>
+   167→/home/z/my-project/src/app/panel/user/page.tsx-316-                    {SESSION_STATUS_META[session.status]?.label ?? session.status}
+   168→--
+   169→/home/z/my-project/src/app/panel/user/page.tsx:342:                  <Avatar size={40} imageUrl={fullUrl(teacher.avatar_url)} />
+   170→/home/z/my-project/src/app/panel/user/page.tsx-343-                  <div className="adm-leader-main">
+   171→/home/z/my-project/src/app/panel/user/page.tsx-344-                    <strong>{teacher.name || 'استاد'}</strong>
+   172→/home/z/my-project/src/app/panel/user/page.tsx-345-                    <small>{teacher.field || 'حوزه آموزشی'}</small>
+   173→/home/z/my-project/src/app/panel/user/page.tsx-346-                  </div>
+   174→/home/z/my-project/src/app/panel/user/page.tsx-347-                  <div className="adm-leader-num">
+   175→/home/z/my-project/src/app/panel/user/page.tsx-348-                    <strong>{toFaDigits(teacher.sessions)} جلسه</strong>
+   176→--
+   177→/home/z/my-project/src/app/panel/user/sessions/page.tsx:219:                <Avatar size={46} ring tier={session.teacher?.tier} imageUrl={fullUrl(session.teacher?.user?.avatar_url)} />
+   178→/home/z/my-project/src/app/panel/user/sessions/page.tsx-220-                <div className="ops-row-main">
+   179→/home/z/my-project/src/app/panel/user/sessions/page.tsx-221-                  <div className="ops-row-title">
+   180→/home/z/my-project/src/app/panel/user/sessions/page.tsx-222-                    <strong>{session.teacher?.user?.name || 'استاد'}</strong>
+   181→/home/z/my-project/src/app/panel/user/sessions/page.tsx-223-                    <PanelStatus status={STATUS_META[session.status]?.status ?? 'pending'}>
+   182→/home/z/my-project/src/app/panel/user/sessions/page.tsx-224-                      {STATUS_META[session.status]?.label ?? session.status}
+   183→/home/z/my-project/src/app/panel/user/sessions/page.tsx-225-                    </PanelStatus>
+   184→--
+   185→/home/z/my-project/src/app/panel/user/teachers/page.tsx:88:                  <Avatar size={48} ring tier={teacher.tier} imageUrl={fullUrl(teacher.user?.avatar_url)} />
+   186→/home/z/my-project/src/app/panel/user/teachers/page.tsx-89-                  <div style={{ minWidth: 0, flex: 1 }}>
+   187→/home/z/my-project/src/app/panel/user/teachers/page.tsx-90-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+   188→/home/z/my-project/src/app/panel/user/teachers/page.tsx-91-                      <strong style={{ fontSize: 13.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+   189→/home/z/my-project/src/app/panel/user/teachers/page.tsx-92-                        {teacher.user?.name || 'استاد وُدّا'}
+   190→/home/z/my-project/src/app/panel/user/teachers/page.tsx-93-                      </strong>
+   191→/home/z/my-project/src/app/panel/user/teachers/page.tsx-94-                      <TierChip tier={teacher.tier} size={10} />
+   192→--
+   193→/home/z/my-project/src/app/panel/teacher/layout.tsx:221:              <Avatar size={35} imageUrl={user.avatarUrl} />
+   194→/home/z/my-project/src/app/panel/teacher/layout.tsx-222-              <span style={{ minWidth: 0, flex: 1 }}>
+   195→/home/z/my-project/src/app/panel/teacher/layout.tsx-223-                <strong style={{ display: 'block', overflow: 'hidden', fontSize: 11.5, textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.name}</strong>
+   196→/home/z/my-project/src/app/panel/teacher/layout.tsx-224-                <small style={{ display: 'block', marginTop: 1, color: 'rgba(255,255,255,.42)', fontSize: 9 }}>حساب استاد</small>
+   197→/home/z/my-project/src/app/panel/teacher/layout.tsx-225-              </span>
+   198→/home/z/my-project/src/app/panel/teacher/layout.tsx-226-              <Icon name="chevronUp" size={14} style={{ opacity: .45, transform: userOpen ? 'rotate(180deg)' : undefined }} />
+   199→/home/z/my-project/src/app/panel/teacher/layout.tsx-227-            </button>
+   200→--
+   201→/home/z/my-project/src/app/panel/teacher/page.tsx:106:          <Avatar size={58} ring tier={teacher?.tier} imageUrl={fullUrl(teacher?.user?.avatar_url)} />
+   202→/home/z/my-project/src/app/panel/teacher/page.tsx-107-          <div style={{ minWidth: 0 }}>
+   203→/home/z/my-project/src/app/panel/teacher/page.tsx-108-            <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap' }}>
+   204→/home/z/my-project/src/app/panel/teacher/page.tsx-109-              <strong style={{ fontSize: 16 }}>{teacher?.user?.name || 'استاد وُدّا'}</strong>
+   205→/home/z/my-project/src/app/panel/teacher/page.tsx-110-              <PanelStatus status={profileTone(profileStatus)}>{profileLabel(profileStatus)}</PanelStatus>
+   206→/home/z/my-project/src/app/panel/teacher/page.tsx-111-            </div>
+   207→/home/z/my-project/src/app/panel/teacher/page.tsx-112-            <div style={{ marginTop: 4, color: 'var(--olive-700)', fontSize: 11.5, fontWeight: 700 }}>
+   208→--
+   209→/home/z/my-project/src/app/panel/teacher/page.tsx:151:                  <Avatar size={42} imageUrl={fullUrl(session.learner?.avatar_url)} />
+   210→/home/z/my-project/src/app/panel/teacher/page.tsx-152-                  <div className="ops-row-main">
+   211→/home/z/my-project/src/app/panel/teacher/page.tsx-153-                    <div className="ops-row-title">
+   212→/home/z/my-project/src/app/panel/teacher/page.tsx-154-                      <strong>{session.learner?.name || 'قرآن‌آموز'}</strong>
+   213→/home/z/my-project/src/app/panel/teacher/page.tsx-155-                      <PanelStatus status="pending">در انتظار</PanelStatus>
+   214→/home/z/my-project/src/app/panel/teacher/page.tsx-156-                    </div>
+   215→/home/z/my-project/src/app/panel/teacher/page.tsx-157-                    <div className="ops-row-sub">
+   216→--
+   217→/home/z/my-project/src/app/panel/teacher/reviews/page.tsx:79:              <Avatar size={43} imageUrl={fullUrl(review.learner?.avatar_url)} />
+   218→/home/z/my-project/src/app/panel/teacher/reviews/page.tsx-80-              <div className="ops-row-main">
+   219→/home/z/my-project/src/app/panel/teacher/reviews/page.tsx-81-                <div className="ops-row-title">
+   220→/home/z/my-project/src/app/panel/teacher/reviews/page.tsx-82-                  <strong>{review.learner?.name || 'قرآن‌آموز'}</strong>
+   221→/home/z/my-project/src/app/panel/teacher/reviews/page.tsx-83-                  <span aria-label={`${review.rating} از ۵`} style={{ display: 'inline-flex', gap: 2 }}>
+   222→/home/z/my-project/src/app/panel/teacher/reviews/page.tsx-84-                    {Array.from({ length: 5 }, (_, index) => (
+   223→/home/z/my-project/src/app/panel/teacher/reviews/page.tsx-85-                      <Icon key={index} name="star" size={13} fill={index < review.rating} style={{ color: index < review.rating ? 'var(--gold)' : 'var(--sand-200)' }} />
+   224→--
+   225→/home/z/my-project/src/app/panel/teacher/sessions/page.tsx:90:                <Avatar size={46} imageUrl={fullUrl(session.learner?.avatar_url)} />
+   226→/home/z/my-project/src/app/panel/teacher/sessions/page.tsx-91-                <div className="ops-row-main">
+   227→/home/z/my-project/src/app/panel/teacher/sessions/page.tsx-92-                  <div className="ops-row-title">
+   228→/home/z/my-project/src/app/panel/teacher/sessions/page.tsx-93-                    <strong>{session.learner?.name || 'قرآن‌آموز'}</strong>
+   229→/home/z/my-project/src/app/panel/teacher/sessions/page.tsx-94-                    <PanelStatus status={statusTone(session.status)}>{statusLabel(session.status)}</PanelStatus>
+   230→/home/z/my-project/src/app/panel/teacher/sessions/page.tsx-95-                  </div>
+   231→/home/z/my-project/src/app/panel/teacher/sessions/page.tsx-96-                  <div className="ops-row-sub">
+   232→--
+   233→/home/z/my-project/src/app/panel/teacher/requests/page.tsx:91:                <Avatar size={46} imageUrl={fullUrl(session.learner?.avatar_url)} />
+   234→/home/z/my-project/src/app/panel/teacher/requests/page.tsx-92-                <div className="ops-row-main">
+   235→/home/z/my-project/src/app/panel/teacher/requests/page.tsx-93-                  <div className="ops-row-title">
+   236→/home/z/my-project/src/app/panel/teacher/requests/page.tsx-94-                    <strong>{session.learner?.name || 'قرآن‌آموز'}</strong>
+   237→/home/z/my-project/src/app/panel/teacher/requests/page.tsx-95-                    <PanelStatus status="pending">در انتظار پاسخ</PanelStatus>
+   238→/home/z/my-project/src/app/panel/teacher/requests/page.tsx-96-                  </div>
+   239→/home/z/my-project/src/app/panel/teacher/requests/page.tsx-97-                  <div className="ops-row-sub">
+   240→--
+   241→/home/z/my-project/src/app/panel/admin/layout.tsx:336:              <Avatar size={35} imageUrl={user.avatarUrl} />
+   242→/home/z/my-project/src/app/panel/admin/layout.tsx-337-              <span style={{ minWidth: 0, flex: 1 }}>
+   243→/home/z/my-project/src/app/panel/admin/layout.tsx-338-                <strong style={{ display: 'block', overflow: 'hidden', fontSize: 11.5, textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.name}</strong>
+   244→/home/z/my-project/src/app/panel/admin/layout.tsx-339-                <small style={{ display: 'block', marginTop: 1, color: 'rgba(255,255,255,.42)', fontSize: 9 }}>مدیر سامانه</small>
+   245→/home/z/my-project/src/app/panel/admin/layout.tsx-340-              </span>
+   246→/home/z/my-project/src/app/panel/admin/layout.tsx-341-              <Icon name="chevronUp" size={14} style={{ opacity: .45, transform: userOpen ? 'rotate(180deg)' : undefined }} />
+   247→/home/z/my-project/src/app/panel/admin/layout.tsx-342-            </button>
+   248→--
+   249→/home/z/my-project/src/app/panel/admin/page.tsx:391:                    <Avatar size={38} imageUrl={fullUrl(item.avatarUrl)} />
+   250→/home/z/my-project/src/app/panel/admin/page.tsx-392-                  ) : (
+   251→
+   252→[Showing results with pagination = limit: 250]
