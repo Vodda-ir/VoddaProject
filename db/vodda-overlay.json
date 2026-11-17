@@ -1,0 +1,340 @@
+{
+  "version": 1,
+  "teacher_flags": {},
+  "teacher_score": {
+    "1": {
+      "points": 2130,
+      "highestLevel": 3,
+      "streakDays": 0,
+      "updatedAt": "2026-11-17T22:42:51.945Z",
+      "seededFrom": "teacher_stats"
+    },
+    "2": {
+      "points": 435,
+      "highestLevel": 2,
+      "streakDays": 0,
+      "updatedAt": "2026-11-17T22:42:51.945Z",
+      "seededFrom": "teacher_stats"
+    },
+    "3": {
+      "points": 310,
+      "highestLevel": 2,
+      "streakDays": 0,
+      "updatedAt": "2026-11-17T22:45:20.974Z",
+      "seededFrom": "teacher_stats"
+    },
+    "4": {
+      "points": 1330,
+      "highestLevel": 3,
+      "streakDays": 0,
+      "updatedAt": "2026-11-17T22:43:02.775Z",
+      "seededFrom": "teacher_stats"
+    },
+    "5": {
+      "points": 260,
+      "highestLevel": 2,
+      "streakDays": 0,
+      "updatedAt": "2026-11-17T22:45:20.974Z",
+      "seededFrom": "teacher_stats"
+    },
+    "6": {
+      "points": 260,
+      "highestLevel": 2,
+      "streakDays": 0,
+      "updatedAt": "2026-11-17T22:45:20.974Z",
+      "seededFrom": "teacher_stats"
+    },
+    "7": {
+      "points": 285,
+      "highestLevel": 2,
+      "streakDays": 0,
+      "updatedAt": "2026-11-17T22:45:20.974Z",
+      "seededFrom": "teacher_stats"
+    },
+    "8": {
+      "points": 120,
+      "highestLevel": 1,
+      "streakDays": 0,
+      "updatedAt": "2026-11-17T22:45:20.975Z",
+      "seededFrom": "teacher_stats"
+    },
+    "9": {
+      "points": 910,
+      "highestLevel": 3,
+      "streakDays": 0,
+      "lastEventAt": "2026-11-17T22:49:22.800Z",
+      "updatedAt": "2026-11-17T22:49:22.800Z",
+      "seededFrom": "teacher_stats"
+    },
+    "10": {
+      "points": 100,
+      "highestLevel": 1,
+      "streakDays": 0,
+      "updatedAt": "2026-11-17T22:45:20.974Z",
+      "seededFrom": "teacher_stats"
+    },
+    "11": {
+      "points": 165,
+      "highestLevel": 1,
+      "streakDays": 0,
+      "updatedAt": "2026-11-17T22:45:20.974Z",
+      "seededFrom": "teacher_stats"
+    },
+    "12": {
+      "points": 375,
+      "highestLevel": 2,
+      "streakDays": 0,
+      "updatedAt": "2026-11-17T22:45:20.974Z",
+      "seededFrom": "teacher_stats"
+    },
+    "13": {
+      "points": 260,
+      "highestLevel": 2,
+      "streakDays": 0,
+      "updatedAt": "2026-11-17T22:45:20.974Z",
+      "seededFrom": "teacher_stats"
+    },
+    "14": {
+      "points": 270,
+      "highestLevel": 2,
+      "streakDays": 0,
+      "updatedAt": "2026-11-17T22:45:20.973Z",
+      "seededFrom": "teacher_stats"
+    },
+    "15": {
+      "points": 170,
+      "highestLevel": 1,
+      "streakDays": 0,
+      "updatedAt": "2026-11-17T22:45:20.974Z",
+      "seededFrom": "teacher_stats"
+    },
+    "16": {
+      "points": 130,
+      "highestLevel": 1,
+      "streakDays": 0,
+      "updatedAt": "2026-11-17T22:45:20.974Z",
+      "seededFrom": "teacher_stats"
+    },
+    "17": {
+      "points": 225,
+      "highestLevel": 2,
+      "streakDays": 0,
+      "updatedAt": "2026-11-17T22:45:20.975Z",
+      "seededFrom": "teacher_stats"
+    },
+    "18": {
+      "points": 1115,
+      "highestLevel": 3,
+      "streakDays": 0,
+      "updatedAt": "2026-11-17T22:42:51.945Z",
+      "seededFrom": "teacher_stats"
+    },
+    "19": {
+      "points": 205,
+      "highestLevel": 2,
+      "streakDays": 0,
+      "updatedAt": "2026-11-17T22:45:20.974Z",
+      "seededFrom": "teacher_stats"
+    },
+    "20": {
+      "points": 140,
+      "highestLevel": 1,
+      "streakDays": 0,
+      "updatedAt": "2026-11-17T22:45:20.974Z",
+      "seededFrom": "teacher_stats"
+    },
+    "21": {
+      "points": 570,
+      "highestLevel": 3,
+      "streakDays": 0,
+      "updatedAt": "2026-11-17T22:45:20.974Z",
+      "seededFrom": "teacher_stats"
+    },
+    "22": {
+      "points": 100,
+      "highestLevel": 1,
+      "streakDays": 0,
+      "updatedAt": "2026-11-17T22:45:20.975Z",
+      "seededFrom": "teacher_stats"
+    },
+    "23": {
+      "points": 205,
+      "highestLevel": 2,
+      "streakDays": 0,
+      "updatedAt": "2026-11-17T22:45:20.974Z",
+      "seededFrom": "teacher_stats"
+    },
+    "24": {
+      "points": 285,
+      "highestLevel": 2,
+      "streakDays": 0,
+      "updatedAt": "2026-11-17T22:45:20.973Z",
+      "seededFrom": "teacher_stats"
+    },
+    "25": {
+      "points": 120,
+      "highestLevel": 1,
+      "streakDays": 0,
+      "updatedAt": "2026-11-17T22:45:20.974Z",
+      "seededFrom": "teacher_stats"
+    },
+    "26": {
+      "points": 300,
+      "highestLevel": 2,
+      "streakDays": 0,
+      "updatedAt": "2026-11-17T22:45:20.973Z",
+      "seededFrom": "teacher_stats"
+    },
+    "27": {
+      "points": 245,
+      "highestLevel": 2,
+      "streakDays": 0,
+      "updatedAt": "2026-11-17T22:45:20.974Z",
+      "seededFrom": "teacher_stats"
+    },
+    "28": {
+      "points": 195,
+      "highestLevel": 1,
+      "streakDays": 0,
+      "updatedAt": "2026-11-17T22:45:20.974Z",
+      "seededFrom": "teacher_stats"
+    },
+    "29": {
+      "points": 400,
+      "highestLevel": 2,
+      "streakDays": 0,
+      "updatedAt": "2026-11-17T22:45:20.973Z",
+      "seededFrom": "teacher_stats"
+    },
+    "30": {
+      "points": 225,
+      "highestLevel": 2,
+      "streakDays": 0,
+      "updatedAt": "2026-11-17T22:45:20.973Z",
+      "seededFrom": "teacher_stats"
+    },
+    "31": {
+      "points": 200,
+      "highestLevel": 2,
+      "streakDays": 0,
+      "updatedAt": "2026-11-17T22:45:20.974Z",
+      "seededFrom": "teacher_stats"
+    },
+    "32": {
+      "points": 180,
+      "highestLevel": 1,
+      "streakDays": 0,
+      "updatedAt": "2026-11-17T22:45:20.975Z",
+      "seededFrom": "teacher_stats"
+    },
+    "33": {
+      "points": 115,
+      "highestLevel": 1,
+      "streakDays": 0,
+      "updatedAt": "2026-11-17T22:45:20.974Z",
+      "seededFrom": "teacher_stats"
+    },
+    "34": {
+      "points": 310,
+      "highestLevel": 2,
+      "streakDays": 0,
+      "updatedAt": "2026-11-17T22:45:20.974Z",
+      "seededFrom": "teacher_stats"
+    },
+    "35": {
+      "points": 115,
+      "highestLevel": 1,
+      "streakDays": 0,
+      "updatedAt": "2026-11-17T22:45:20.974Z",
+      "seededFrom": "teacher_stats"
+    },
+    "36": {
+      "points": 225,
+      "highestLevel": 2,
+      "streakDays": 0,
+      "updatedAt": "2026-11-17T22:45:20.974Z",
+      "seededFrom": "teacher_stats"
+    },
+    "37": {
+      "points": 160,
+      "highestLevel": 1,
+      "streakDays": 0,
+      "updatedAt": "2026-11-17T22:45:20.975Z",
+      "seededFrom": "teacher_stats"
+    },
+    "38": {
+      "points": 890,
+      "highestLevel": 3,
+      "streakDays": 0,
+      "updatedAt": "2026-11-17T22:43:02.775Z",
+      "seededFrom": "teacher_stats"
+    },
+    "39": {
+      "points": 170,
+      "highestLevel": 1,
+      "streakDays": 0,
+      "updatedAt": "2026-11-17T22:45:20.974Z",
+      "seededFrom": "teacher_stats"
+    },
+    "40": {
+      "points": 190,
+      "highestLevel": 1,
+      "streakDays": 0,
+      "updatedAt": "2026-11-17T22:45:20.974Z",
+      "seededFrom": "teacher_stats"
+    },
+    "41": {
+      "points": 205,
+      "highestLevel": 2,
+      "streakDays": 0,
+      "updatedAt": "2026-11-17T22:45:20.974Z",
+      "seededFrom": "teacher_stats"
+    },
+    "42": {
+      "points": 315,
+      "highestLevel": 2,
+      "streakDays": 0,
+      "updatedAt": "2026-11-17T22:45:20.973Z",
+      "seededFrom": "teacher_stats"
+    },
+    "43": {
+      "points": 375,
+      "highestLevel": 2,
+      "streakDays": 0,
+      "updatedAt": "2026-11-17T22:45:20.974Z",
+      "seededFrom": "teacher_stats"
+    },
+    "44": {
+      "points": 260,
+      "highestLevel": 2,
+      "streakDays": 0,
+      "updatedAt": "2026-11-17T22:45:20.974Z",
+      "seededFrom": "teacher_stats"
+    },
+    "45": {
+      "points": 245,
+      "highestLevel": 2,
+      "streakDays": 0,
+      "updatedAt": "2026-11-17T22:45:20.973Z",
+      "seededFrom": "teacher_stats"
+    }
+  },
+  "teacher_score_events": [
+    {
+      "id": "9-streak_7-2026-11-17T22:49:22.775Z",
+      "teacherId": 9,
+      "type": "streak_7",
+      "points": 10,
+      "label": "استریک ۷روزه",
+      "createdAt": "2026-11-17T22:49:22.775Z"
+    },
+    {
+      "id": "9-teacher_cancel-2026-11-17T22:49:22.800Z",
+      "teacherId": 9,
+      "type": "teacher_cancel",
+      "points": -15,
+      "label": "لغو جلسه توسط استاد",
+      "createdAt": "2026-11-17T22:49:22.800Z"
+    }
+  ]
+}

@@ -1,4 +1,5 @@
 import { api, type Teacher } from '@/lib/api';
+import { enrichTeacherPayload, sortTeacherRowsTier1First } from '@/lib/server/tier1';
 import type { CatalogCategory } from '@/lib/category';
 import {
   Nav, Hero, DispatchCallout, Categories, HowItWorks, FeaturedTeachers,
@@ -8,7 +9,9 @@ import {
 async function getTeachers(): Promise<{ teachers: Teacher[]; unavailable: boolean }> {
   try {
     const response = await api.teachers('', { limit: '6' });
-    return { teachers: response.data || [], unavailable: false };
+    /* ۱.الف.۵ — درخواست سرور مستقیم به بک‌اند می‌رود؛ غنی‌سازی درجه ۱ این‌جا اعمال می‌شود. */
+    const enriched = (await enrichTeacherPayload(response.data || [])) as Teacher[];
+    return { teachers: sortTeacherRowsTier1First(enriched), unavailable: false };
   } catch {
     return { teachers: [], unavailable: true };
   }

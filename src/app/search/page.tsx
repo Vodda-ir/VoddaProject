@@ -314,11 +314,22 @@ export default function SearchPage() {
 function SearchTeacherCard({ teacher }: { teacher: Teacher }) {
   const name = teacher.user?.name || 'استاد وُدّا';
   const price = Math.max(0, teacher.price30 || teacher.services?.[0]?.price || 0);
+  /* ۱.الف.۴ — چراغ حضور روی نتایج جست‌وجو */
+  /* last_seen فقط از فیلد فعالیت بک‌اند؛ updated_at به‌روزرسانی پروفایل است نه حضور (۱.الف.۴) */
+  const lastSeen = teacher.last_seen ?? null;
 
   return (
     <Link href={`/teachers/${teacher.id}`} className="web-search-teacher-card">
       <div className="web-search-teacher-top">
-        <Avatar size={58} ring tier={teacher.tier} imageUrl={avatarUrl(teacher.user?.avatar_url, teacher.user?.updated_at)} />
+        <Avatar
+          size={58}
+          ring
+          tier={teacher.tier}
+          imageUrl={avatarUrl(teacher.user?.avatar_url, teacher.user?.updated_at)}
+          name={name}
+          online={teacher.available !== false}
+          lastSeen={lastSeen}
+        />
         <div style={{ minWidth: 0, flex: 1 }}>
           <strong>{name}</strong>
           <span>{teacher.tag || teacher.field}</span>

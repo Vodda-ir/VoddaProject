@@ -56,13 +56,49 @@ type DashboardSnapshot = {
   upcoming: TeacherSession[];
 };
 
+/* ۱.الف.۶ — وضعیت امتیاز/سطح استاد (از مسیر محلی BFF؛ در بیلد نیتیو در دسترس نبود، کارت پنهان می‌شود) */
+type TeacherScoreSnapshot = {
+  points: number;
+  levelLabel: string;
+  levelIcon: string;
+  progress: { current: number; next: number; pct: number; nextLabel: string | null };
+  events: Array<{ label: string; points: number; createdAt: string }>;
+};
+
+function parseScoreSnapshot(value: unknown): TeacherScoreSnapshot | null {
+  const data = asRecord(value);
+  if (!data) return null;
+  const progress = asRecord(data.progress);
+  if (!progress) return null;
+  const events = Array.isArray(data.events) ? data.events : [];
+  return {
+    points: asNumber(data.points),
+    levelLabel: asString(data.levelLabel, "مبتدی"),
+    levelIcon: asString(data.levelIcon, "🌱"),
+    progress: {
+      current: asNumber(progress.current),
+      next: asNumber(progress.next),
+      pct: asNumber(progress.pct),
+      nextLabel: asString(progress.nextLabel) || null,
+    },
+    events: events
+      .map((event) => {
+        const record = asRecord(event);
+        if (!record) return null;
+        return { label: asString(record.label), points: asNumber(record.points), createdAt: asString(record.createdAt) };
+      })
+      .filter((event): event is { label: string; points: number; createdAt: string } => event !== null),
+  };
+}
+
 function parseTeacherSummary(value: unknown): TeacherSummary | null {
   const user = asRecord(value);
   if (!user) return null;
   const teacher = asRecord(user.teacher);
 
   return {
-    id: asNumber(user.id),
+    // ۱.الف.۶ — امتیاز به ردیف استاد گره خورده: شناسهٔ پروفایل استادی مقدم بر شناسهٔ کاربر است.
+    id: asNumber(teacher?.id) || asNumber(user.id),
     name: asString(user.name, "استاد"),
     avatarUrl: asString(user.avatar_url) || undefined,
     wallet: asNumber(user.wallet),
@@ -124,6 +160,8 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
   const [roleSheetOpen, setRoleSheetOpen] = useState(false);
   const [dispatchBadge, setDispatchBadge] = useState(0);
   const [user, setUser] = useState<AuthUser | null>(null);
+  /* ۱.الف.۶ — امتیاز/سطح استاد؛ best-effort و خارج از مسیر خطای داشبورد */
+  const [score, setScore] = useState<TeacherScoreSnapshot | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -197,6 +235,27 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
   const rating = teacher && teacher.reviews > 0 ? teacher.rating.toFixed(1) : "—";
   const firstName = teacher?.name.trim().split(/\s+/)[0] || "";
 
+  /* ۱.الف.۶ — امتیاز استاد پس از شناسه‌شدن داشبورد بارگذاری می‌شود؛ خطا بی‌صدا نادیده گرفته می‌شود. */
+  const scoreGeneration = useRef(0);
+  const teacherId = teacher?.id ?? 0;
+  useEffect(() => {
+    if (!teacherId || teacherId <= 0) return;
+    const generation = ++scoreGeneration.current;
+    let cancelled = false;
+    runtime
+      .request<ApiEnvelope<unknown>>(`/score/teacher/${teacherId}`)
+      .then((response) => {
+        if (cancelled || scoreGeneration.current !== generation) return;
+        setScore(parseScoreSnapshot(response.data));
+      })
+      .catch(() => {
+        if (!cancelled) setScore(null); // بیلد نیتیو/بک‌اند بدون این مسیر → کارت پنهان می‌ماند
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [runtime, teacherId]);
+
   return (
     <section className="vodda-screen" style={{ display: "grid", gap: spacing.xl }}>
       <button
@@ -261,6 +320,98 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
           آمار دوره‌ای درآمد تا زمان وجود گزارش واقعی نمایش داده نمی‌شود.
         </p>
       </div>
+
+      {/* ۱.الف.۶ — کارت «سطح استاد» با نوار پیشرفت تا سطح بعدی */}
+      {score ? (
+        <Card
+          className="vodda-enter"
+          style={{
+            display: "grid",
+            gap: 12,
+            padding: 16,
+            borderRadius: 20,
+            boxShadow: "0 0 6px rgba(46,54,34,.04)",
+            background: "linear-gradient(140deg, #ffffff 0%, #f7efd9 130%)",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
+            <span
+              aria-hidden="true"
+              style={{
+                width: 42,
+                height: 42,
+                display: "grid",
+                placeItems: "center",
+                flex: "0 0 42px",
+                borderRadius: 14,
+                fontSize: 20,
+                background: colors.goldBackground,
+                border: "1px solid rgba(191,149,64,.35)",
+              }}
+            >
+              {score.levelIcon}
+            </span>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <strong style={{ display: "block", fontSize: 14, fontWeight: 800, color: colors.ink }}>
+                سطح استاد: {score.levelLabel}
+              </strong>
+              <span style={{ display: "block", marginTop: 2, fontSize: 11.5, color: colors.inkMuted }}>
+                {toFaDigits(String(score.points))} امتیاز
+                {score.progress.nextLabel
+                  ? ` · ${toFaDigits(String(Math.max(0, score.progress.next - score.points)))} امتیاز تا سطح «${score.progress.nextLabel}»`
+                  : " · بالاترین سطح کسب‌شده"}
+              </span>
+            </div>
+          </div>
+          <div
+            role="progressbar"
+            aria-label="پیشرفت امتیاز تا سطح بعدی"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={score.progress.pct}
+            style={{ height: 9, borderRadius: 999, background: colors.sand100, overflow: "hidden" }}
+          >
+            <div
+              style={{
+                width: `${Math.min(100, Math.max(4, score.progress.pct))}%`,
+                height: "100%",
+                borderRadius: 999,
+                background: "linear-gradient(90deg, #bf9540 0%, #e7d5a8 100%)",
+                transition: "width 420ms ease",
+              }}
+            />
+          </div>
+          {score.events.length > 0 ? (
+            <div style={{ display: "grid", gap: 5, marginTop: 2 }}>
+              {score.events.slice(0, 3).map((event) => (
+                <div
+                  key={`${event.label}-${event.createdAt}`}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 8,
+                    fontSize: 11,
+                    color: colors.inkSecondary,
+                  }}
+                >
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{event.label}</span>
+                  <span
+                    style={{
+                      flex: "0 0 auto",
+                      fontWeight: 800,
+                      color: event.points >= 0 ? colors.success : colors.danger,
+                    }}
+                  >
+                    {event.points >= 0 ? "+" : "−"}
+                    {toFaDigits(String(Math.abs(event.points)))}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </Card>
+      ) : null}
 
       <button
         type="button"

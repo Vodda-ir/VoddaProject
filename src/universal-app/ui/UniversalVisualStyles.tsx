@@ -255,6 +255,52 @@ export function UniversalVisualStyles() {
       .vodda-dispatch-radar {
         animation: vodda-radar 2.1s ease-out infinite;
       }
+      /* ─── ۱.الف.۳ — حاشیهٔ نئونی کارت استاد (فقط TeacherCard) ───
+       * ضخامت 1.5px؛ سایهٔ بیرونی 12px با آلفا ۲۵٪ روشن / ۶۰٪ دارک‌مود؛
+       * inset 8px؛ hover تا ۱۶px؛ بدون درجه → متغیر خاکستری ملایم (پیش‌فرض). */
+      .vodda-card-neon {
+        --neon-rgb: 140 134 117;
+        --neon-a: .25;
+        --neon-inset-a: .125;
+        border: 1.5px solid rgb(var(--neon-rgb) / .55) !important;
+        box-shadow:
+          0 0 12px rgb(var(--neon-rgb) / var(--neon-a)),
+          inset 0 0 8px rgb(var(--neon-rgb) / var(--neon-inset-a)) !important;
+        transition: box-shadow 180ms ease, border-color 160ms ease;
+      }
+      .vodda-card-neon:hover,
+      .vodda-card-neon:focus-visible {
+        box-shadow:
+          0 0 16px rgb(var(--neon-rgb) / var(--neon-a)),
+          inset 0 0 8px rgb(var(--neon-rgb) / var(--neon-inset-a)) !important;
+      }
+      @media (prefers-color-scheme: dark) {
+        .vodda-card-neon {
+          --neon-a: .6;
+          --neon-inset-a: .3;
+        }
+      }
+      /* ─── ۱.الف.۵ — کارت درجه ۱: نئون ۲px طلایی، گرادیان زیتونی-طلایی، fade-in ─── */
+      .vodda-card-tier1 {
+        --neon-rgb: 191 149 64;
+        --neon-a: .4;
+        --neon-inset-a: .18;
+        border: 2px solid rgb(var(--neon-rgb) / .78) !important;
+        background: linear-gradient(140deg, #f2f5ea 0%, #f7efd9 55%, #f3e6c8 100%) !important;
+        animation: vodda-t1-in 320ms ease-out both;
+      }
+      @keyframes vodda-t1-in {
+        from { opacity: 0; transform: translateY(6px); }
+        to { opacity: 1; transform: none; }
+      }
+      /* ─── ۱.الف.۴ — چراغ آفلاین قرمز چشمک‌زن (pulse-red، ۲s) ─── */
+      .vodda-presence-red {
+        animation: vodda-presence-red 2s ease-in-out infinite;
+      }
+      @keyframes vodda-presence-red {
+        0%, 100% { opacity: 1; }
+        50% { opacity: .35; }
+      }
       @keyframes vodda-radar {
         0% { box-shadow: 0 0 0 0 rgba(94, 110, 67, 0.32); }
         70% { box-shadow: 0 0 0 18px rgba(94, 110, 67, 0); }
@@ -295,7 +341,9 @@ export function UniversalVisualStyles() {
         .vodda-dispatch-pulse::after,
         .vodda-dispatch-radar,
         .vodda-neon,
-        .vodda-neon-gold {
+        .vodda-neon-gold,
+        .vodda-card-tier1,
+        .vodda-presence-red {
           animation: none !important;
           transition: none !important;
         }

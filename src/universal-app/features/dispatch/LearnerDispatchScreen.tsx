@@ -70,10 +70,11 @@ function countdownLabel(total: number): string {
   return `${toFaDigits(String(m).padStart(2, "0"))}:${toFaDigits(String(s).padStart(2, "0"))}`;
 }
 
+/* رنگ/برچسب درجه از منبع واحد tierMeta — ۱.الف.۲: آبی بین‌المللی، سبز کشوری، قرمز استانی */
 const tierBadge: Record<string, { label: string; bg: string; color: string }> = {
-  international: { label: "درجه یک بین‌المللی", bg: colors.goldBackground, color: colors.goldDark },
-  grade2: { label: "درجه دو", bg: colors.successBackground, color: colors.olive700 },
-  grade3: { label: "درجه سه", bg: colors.infoBackground, color: colors.info },
+  international: { label: "استاد بین‌المللی", bg: "rgba(29,161,242,.12)", color: "#0095F6" },
+  grade2: { label: "برگزیدهٔ کشوری", bg: "rgba(34,197,94,.12)", color: "#3AA76D" },
+  grade3: { label: "برگزیدهٔ استانی", bg: "rgba(239,68,68,.12)", color: "#E1306C" },
 };
 
 function TopicIcon({ icon, size = 22 }: { icon: string; size?: number }) {

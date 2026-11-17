@@ -23,10 +23,11 @@ type Phase = 'idle' | 'searching' | 'matched';
 // باگ dispatch-stuck-pending — پیام دقیق وقتی فراخوان فعال قبلی مانع ثبت فراخوان جدید است.
 const PENDING_CALL_MESSAGE = 'فراخوان قبلی شما در انتظار پاسخ است — ابتدا آن را لغو کنید.';
 
+/* رنگ/برچسب درجه از منبع واحد tierMeta — ۱.الف.۲: آبی بین‌المللی، سبز کشوری، قرمز استانی */
 const TIER_BADGE: Record<string, { label: string; bg: string; color: string }> = {
-  international: { label: 'درجه یک بین‌المللی', bg: 'var(--gold-bg, #f7efd9)', color: '#8b681f' },
-  grade2: { label: 'درجه دو', bg: 'var(--olive-50, #f2f5ea)', color: '#4c5a36' },
-  grade3: { label: 'درجه سه', bg: 'var(--info-bg, #edf3f5)', color: '#5e7e8c' },
+  international: { label: 'استاد بین‌المللی', bg: 'rgba(29,161,242,.12)', color: '#0095F6' },
+  grade2: { label: 'برگزیدهٔ کشوری', bg: 'rgba(34,197,94,.12)', color: '#3AA76D' },
+  grade3: { label: 'برگزیدهٔ استانی', bg: 'rgba(239,68,68,.12)', color: '#E1306C' },
 };
 
 function countdown(total: number) {

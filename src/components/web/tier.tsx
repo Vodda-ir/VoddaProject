@@ -1,37 +1,24 @@
 /*
- * نشان درجه استاد — همان سیستم اپلیکیشن (سبک مهر اینستاگرام).
- * رنگ مهر نشان‌دهندهٔ درجه استاد است و هماهنگ با پالت برند وُدّاست:
- * بین‌المللی (درجه ۱) → طلایی، درجه ۲ → زیتونی، درجه ۳ → فیروزه‌ای خاکستری.
- * استادان بدون درجه هیچ نشانِ تیک‌مانندی ندارند.
+ * نشان درجه استاد (وب) — همان سیستم اپلیکیشن؛ رنگ‌ها از منبع واحد src/lib/tierMeta.ts:
+ * بین‌المللی → تیک آبی اینستاگرامی، کشوری → سبز، استانی → قرمز (۱.الف.۲).
+ * استادان بدون درجه هیچ نشانِ تیکی ندارند.
  */
-export type TeacherTier = 'international' | 'grade2' | 'grade3';
+import { TIER_META, tierKeyOf } from '@/lib/tierMeta';
 
-export const TIER_BADGES: Record<TeacherTier, { color: string; label: string; short: string }> = {
-  international: { color: '#8b681f', label: 'استاد بین‌المللی (درجه ۱)', short: 'بین‌المللی' },
-  grade2: { color: '#4c5a36', label: 'استاد درجه ۲', short: 'درجه ۲' },
-  grade3: { color: '#5e7e8c', label: 'استاد درجه ۳', short: 'درجه ۳' },
-};
-
-export function tierOf(tier?: string | null): TeacherTier | null {
-  if (tier === 'international' || tier === 'grade2' || tier === 'grade3') return tier;
-  return null;
-}
-
-/** مهر درجه استاد — نشانِ گوشهٔ آواتار (سبک اپلیکیشن). */
 export function TierSeal({ tier, size = 15 }: { tier?: string | null; size?: number }) {
-  const key = tierOf(tier);
-  const badge = key ? TIER_BADGES[key] : undefined;
+  const key = tierKeyOf(tier);
+  const badge = key ? TIER_META[key] : undefined;
   if (!badge) return null;
   return (
     <span
       role="img"
-      aria-label={badge.label}
-      title={badge.label}
+      aria-label={badge.sealLabel}
+      title={badge.sealLabel}
       style={{ display: 'inline-flex', flex: '0 0 auto' }}
     >
       <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden="true">
         <path
-          fill={badge.color}
+          fill={badge.main}
           d="M10.067.87a2.89 2.89 0 0 0-4.134 0l-.622.638-.89-.113a2.89 2.89 0 0 0-3.494 3.482l.114.89-.637.622a2.89 2.89 0 0 0 0 4.134l.637.622-.114.89a2.89 2.89 0 0 0 3.494 3.494l.89-.114.622.637a2.89 2.89 0 0 0 4.134 0l.622-.638.89.114a2.89 2.89 0 0 0 3.494-3.494l-.114-.891.637-.622a2.89 2.89 0 0 0 0-4.134l-.637-.622.114-.89a2.89 2.89 0 0 0-3.494-3.494l-.89.114-.622-.637z"
         />
         <path
@@ -49,9 +36,9 @@ export function TierSeal({ tier, size = 15 }: { tier?: string | null; size?: num
 
 /** برچسب متنی درجه استاد — کنار نام یا در ردیف‌های جدول. */
 export function TierChip({ tier, size = 13 }: { tier?: string | null; size?: number }) {
-  const key = tierOf(tier);
+  const key = tierKeyOf(tier);
   if (!key) return null;
-  const badge = TIER_BADGES[key];
+  const badge = TIER_META[key];
   return (
     <span
       title={badge.label}
@@ -64,15 +51,15 @@ export function TierChip({ tier, size = 13 }: { tier?: string | null; size?: num
         fontSize: size,
         fontWeight: 800,
         lineHeight: 1.6,
-        color: badge.color,
-        background: `${badge.color}14`,
-        border: `1px solid ${badge.color}3d`,
+        color: badge.deep,
+        background: `${badge.main}14`,
+        border: `1px solid ${badge.main}3d`,
         whiteSpace: 'nowrap',
       }}
     >
       <svg width={size + 1} height={size + 1} viewBox="0 0 16 16" aria-hidden="true" style={{ flex: '0 0 auto' }}>
         <path
-          fill={badge.color}
+          fill={badge.main}
           d="M10.067.87a2.89 2.89 0 0 0-4.134 0l-.622.638-.89-.113a2.89 2.89 0 0 0-3.494 3.482l.114.89-.637.622a2.89 2.89 0 0 0 0 4.134l.637.622-.114.89a2.89 2.89 0 0 0 3.494 3.494l.89-.114.622.637a2.89 2.89 0 0 0 4.134 0l.622-.638.89.114a2.89 2.89 0 0 0 3.494-3.494l-.114-.891.637-.622a2.89 2.89 0 0 0 0-4.134l-.637-.622.114-.89a2.89 2.89 0 0 0-3.494-3.494l-.89.114-.622-.637z"
         />
         <path

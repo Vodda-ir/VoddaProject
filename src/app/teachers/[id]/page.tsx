@@ -1,4 +1,5 @@
 import { api } from '@/lib/api';
+import { enrichTeacherObject } from '@/lib/server/tier1';
 import { Icon } from '@/components/Icon';
 import { Avatar, PublicSurface, Stars, TeacherBio, WebBtn } from '@/components/web/ui';
 import { TierChip } from '@/components/web/tier';
@@ -16,7 +17,8 @@ export default async function TeacherDetailPage({ params }: { params: Promise<{ 
   let teacher, reviews;
   try {
     const response = await api.teacher(numId);
-    teacher = response.data.teacher;
+    /* ۱.الف.۵ — غنی‌سازی درجه ۱ سمت سرور (درخواست مستقیم به بک‌اند). */
+    teacher = await enrichTeacherObject(response.data.teacher) as typeof response.data.teacher;
     reviews = response.data.reviews || [];
   } catch {
     notFound();
@@ -40,7 +42,15 @@ export default async function TeacherDetailPage({ params }: { params: Promise<{ 
 
         <section className="teacher-public-hero">
           <div className="teacher-public-profile">
-            <Avatar size={92} ring tier={teacher.tier} imageUrl={avatarUrl(teacher.user?.avatar_url, teacher.user?.updated_at)} />
+            <Avatar
+              size={92}
+              ring
+              tier={teacher.tier}
+              imageUrl={avatarUrl(teacher.user?.avatar_url, teacher.user?.updated_at)}
+              name={name}
+              online={teacher.available !== false}
+              lastSeen={teacher.last_seen ?? null}
+            />
             <div style={{ minWidth: 0, flex: 1 }}>
               <div className="teacher-public-name-row">
                 <h1>{name}</h1>

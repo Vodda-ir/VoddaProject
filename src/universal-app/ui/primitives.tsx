@@ -192,12 +192,14 @@ export type AvatarProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "children"> 
   tier?: string | null;
   /** چراغ آنلاین/آفلاین گوشهٔ آواتار. */
   online?: boolean;
+  /** آخرین فعالیت — آنلاین واقعی (داخل ۲ دقیقه) و tooltip (۱.الف.۴). */
+  lastSeen?: string | number | null;
 };
 
 /* آواتار مربعی واحد — پیاده‌سازی واقعی در src/components/Avatar.tsx است تا
  * اپ و وب از یک منبع رندر بگیرند (پارتی کامل، شکل مربعی با گوشهٔ نرم ۱۴٪).
  * امضای قبلی اپ (name/size/ring/src/alt) دقیقاً حفظ شده است. */
-export function Avatar({ name, size = 48, ring = true, src, alt, style, tier, online, ...props }: AvatarProps) {
+export function Avatar({ name, size = 48, ring = true, src, alt, style, tier, online, lastSeen, ...props }: AvatarProps) {
   return (
     <UnifiedAvatar
       name={name}
@@ -208,6 +210,7 @@ export function Avatar({ name, size = 48, ring = true, src, alt, style, tier, on
       style={style}
       tier={tier ?? undefined}
       online={online}
+      lastSeen={lastSeen}
       {...props}
     />
   );

@@ -50,6 +50,8 @@ function buildTeacherQuery(params: TeacherSearchParams): string {
 function parseTeacherRows(response: ApiEnvelope & { total?: unknown }): TeacherSearchResult {
   const rows = asArray(response.data);
   const items = rows.map(parseTeacher).filter((teacher) => teacher.id > 0);
+  /* ۱.الف.۵ — مرتب‌سازی پایدار: کارت‌های درجه ۱ نخست (is_tier1 desc؛ ترتیب rank بک‌اند حفظ می‌شود). */
+  items.sort((left, right) => Number(right.isTier1 === true) - Number(left.isTier1 === true));
   return { items, total: Math.max(asInteger(response.total, items.length), items.length) };
 }
 

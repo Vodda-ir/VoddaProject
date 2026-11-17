@@ -158,7 +158,15 @@ export default function UserTeachersPage() {
             {filteredTeachers.map((teacher) => (
               <article className="usr-teacher-card" key={teacher.id}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
-                  <Avatar size={48} ring tier={teacher.tier} imageUrl={avatarUrl(teacher.user?.avatar_url, teacher.user?.updated_at)} />
+                  <Avatar
+                    size={48}
+                    ring
+                    tier={teacher.tier}
+                    imageUrl={avatarUrl(teacher.user?.avatar_url, teacher.user?.updated_at)}
+                    name={teacher.user?.name || 'استاد وُدّا'}
+                    online={teacher.available !== false}
+                    lastSeen={teacher.last_seen ?? null}
+                  />
                   <div style={{ minWidth: 0, flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       <strong style={{ fontSize: 13.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

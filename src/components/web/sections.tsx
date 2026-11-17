@@ -10,6 +10,8 @@ import type { CatalogCategory } from '@/lib/category';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
 import { Icon } from '../Icon';
 import { Avatar, GeoPattern, SectionTitle, WebBtn } from './ui';
+import { hexToRgbTriplet, tierNeonColor } from '@/lib/tierMeta';
+import { resolveOnline } from '@/lib/presence';
 
 function PanelLink({ href, icon, label }: { href: string; icon: 'shield' | 'award' | 'user'; label: string }) {
   return (
@@ -488,14 +490,41 @@ export function bioIntro(bio?: string | null): string {
   return firstBlock.replace(/^[\p{Extended_Pictographic}\u{1F000}-\u{1FAFF}\u2600-\u27BF]+\s*/u, '').trim();
 }
 
+/* ردیف نشان‌های کارت درجه ۱ (۱.الف.۵) — 🟦 تیک بین‌المللی، 🆓 خدمات رایگان، ⚡ جلسات فوری */
+const TIER1_BADGE_ITEMS: Record<string, { emoji: string; label: string }> = {
+  international: { emoji: '🟦', label: 'تیک بین‌المللی' },
+  free: { emoji: '🆓', label: 'خدمات رایگان' },
+  instant: { emoji: '⚡', label: 'جلسات فوری' },
+};
+
 function WebTeacherCard({ teacher }: { teacher: Teacher }) {
   const name = teacher.user?.name || 'استاد وُدّا';
   const price = Math.max(0, teacher.price30 || teacher.services?.[0]?.price || 0);
+  /* ۱.الف.۳ — نئون کارت استاد + ۱.الف.۴ — چراغ حضور */
+  const neonColor = tierNeonColor(teacher.tier);
+  const tier1 = teacher.is_tier1 === true;
+  const tier1Badges = (teacher.tier1_badges ?? [])
+    .map((key) => TIER1_BADGE_ITEMS[key])
+    .filter((item): item is { emoji: string; label: string } => Boolean(item));
+  /* last_seen فقط از فیلد فعالیت بک‌اند؛ updated_at به‌روزرسانی پروفایل است نه حضور (۱.الف.۴) */
+  const lastSeen = teacher.last_seen ?? null;
+  const online = resolveOnline(teacher.available !== false, lastSeen);
 
   return (
-    <article className="landing-teacher-card">
+    <article
+      className={`landing-teacher-card vodda-card-neon${tier1 ? ' vodda-card-tier1' : ''}`}
+      style={{ borderRadius: 16, ['--neon-rgb' as string]: hexToRgbTriplet(neonColor) } as CSSProperties}
+    >
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <Avatar size={54} ring tier={teacher.tier} imageUrl={avatarUrl(teacher.user?.avatar_url, teacher.user?.updated_at)} />
+        <Avatar
+          size={54}
+          ring
+          tier={teacher.tier}
+          imageUrl={avatarUrl(teacher.user?.avatar_url, teacher.user?.updated_at)}
+          name={name}
+          online={teacher.available !== false}
+          lastSeen={lastSeen}
+        />
         <div style={{ minWidth: 0, flex: 1 }}>
           <strong className="landing-teacher-name">{name}</strong>
           <span className="landing-teacher-tag">{teacher.tag || teacher.field}</span>
@@ -504,6 +533,51 @@ function WebTeacherCard({ teacher }: { teacher: Teacher }) {
           <span className="landing-teacher-rating"><Icon name="star" size={14} fill />{toFaDigits(teacher.rating.toFixed(1))}</span>
         )}
       </div>
+
+      {tier1 ? (
+        /* ۱.الف.۵ — نشان «🏆 استاد درجه ۱» + ردیف نشان‌های 🟦🆓⚡ */
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
+          <span
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+              padding: '3px 9px',
+              borderRadius: 999,
+              fontSize: 11,
+              fontWeight: 800,
+              color: '#7a5e1e',
+              background: 'linear-gradient(135deg, rgba(191,149,64,.16), rgba(191,149,64,.30))',
+              border: '1px solid rgba(191,149,64,.45)',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            🏆 استاد درجه ۱
+          </span>
+          {tier1Badges.map((badge) => (
+            <span
+              key={badge.label}
+              title={badge.label}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 3,
+                padding: '3px 8px',
+                borderRadius: 999,
+                fontSize: 11,
+                fontWeight: 700,
+                color: 'var(--ink-2s)',
+                background: 'rgba(255,255,255,.8)',
+                border: '1px solid var(--sand-200)',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <span aria-hidden="true">{badge.emoji}</span>
+              {badge.label}
+            </span>
+          ))}
+        </div>
+      ) : null}
 
       <div className="landing-teacher-meta">
         {teacher.city && <span><Icon name="pin" size={14} />{teacher.city}</span>}

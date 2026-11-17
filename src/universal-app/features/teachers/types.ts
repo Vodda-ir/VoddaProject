@@ -38,6 +38,12 @@ export type Teacher = {
   verified: boolean;
   available: boolean;
   tier: string;
+  /** آخرین فعالیت (۱.الف.۴) — ISO؛ نامشخص = چراغ حضور نشان داده نمی‌شود. */
+  lastSeen?: string;
+  /** کارت درجه ۱ (۱.الف.۵) — از BFF/بک‌اند؛ true یعنی نمایش ویژه. */
+  isTier1?: boolean;
+  /** ردیف نشان‌های درجه ۱: "international" | "free" | "instant" */
+  tier1Badges?: string[];
   rating: number;
   reviews: number;
   sessions: number;
@@ -126,6 +132,11 @@ export function parseTeacher(value: unknown): Teacher {
     verified: booleanValue(data.verified),
     available: booleanValue(data.available, true),
     tier: stringValue(data.tier),
+    lastSeen: stringValue(data.last_seen ?? data.lastSeen ?? user.last_seen) || undefined,
+    isTier1: booleanValue(data.is_tier1 ?? data.isTier1) || undefined,
+    tier1Badges: Array.isArray(data.tier1_badges)
+      ? data.tier1_badges.filter((item): item is string => typeof item === "string")
+      : undefined,
     rating: numberValue(data.rating),
     reviews: numberValue(data.reviews),
     sessions: numberValue(data.sessions),

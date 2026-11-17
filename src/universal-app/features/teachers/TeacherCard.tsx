@@ -1,14 +1,22 @@
 "use client";
 
-import type { KeyboardEvent } from "react";
+import type { CSSProperties, KeyboardEvent } from "react";
 import type { UniversalAppConfig } from "../../config";
 import { usePlatform } from "../../platform/context";
 import { navigateApp } from "../../router";
 import { Avatar, Button, Icon, colors, typography } from "../../ui";
 import { avatarSrc, uploadsOriginOf } from "@/lib/avatarImage";
 import { formatNumber } from "@/lib/datetime";
+import { hexToRgbTriplet, tierNeonColor } from "../../../lib/tierMeta";
 import { TierBadge } from "./TierBadge";
 import type { Teacher } from "./types";
+
+/* ردیف نشان‌های کارت درجه ۱ (۱.الف.۵) — 🟦 تیک بین‌المللی، 🆓 خدمات رایگان، ⚡ جلسات فوری */
+const TIER1_BADGE_ITEMS: Record<string, { emoji: string; label: string }> = {
+  international: { emoji: "🟦", label: "تیک بین‌المللی" },
+  free: { emoji: "🆓", label: "خدمات رایگان" },
+  instant: { emoji: "⚡", label: "جلسات فوری" },
+};
 
 export function TeacherCard({
   teacher,
@@ -28,6 +36,14 @@ export function TeacherCard({
     { maximumFractionDigits: 0 },
   );
 
+  /* ۱.الف.۳ — نئون کارت استاد: رنگ از درجه (آبی/سبز/قرمز)، بدون درجه خاکستری ملایم. */
+  const neonColor = tierNeonColor(teacher.tier);
+  /* ۱.الف.۵ — کارت درجه ۱ */
+  const tier1 = teacher.isTier1 === true;
+  const tier1Badges = (teacher.tier1Badges ?? [])
+    .map((key) => TIER1_BADGE_ITEMS[key])
+    .filter((item): item is { emoji: string; label: string } => Boolean(item));
+
   function handleKey(event: KeyboardEvent<HTMLDivElement>) {
     if (event.key !== "Enter" && event.key !== " ") return;
     event.preventDefault();
@@ -38,7 +54,7 @@ export function TeacherCard({
     <div
       role="button"
       tabIndex={0}
-      className="vodda-card vodda-card--interactive vodda-tappable"
+      className={`vodda-card vodda-card--interactive vodda-tappable vodda-card-neon${tier1 ? " vodda-card-tier1" : ""}`}
       onClick={goToTeacher}
       onKeyDown={handleKey}
       style={{
@@ -52,11 +68,13 @@ export function TeacherCard({
         color: colors.ink,
         background: colors.surface,
         border: 0,
-        borderRadius: 24,
+        /* ۱.الف.۳ — radius ۱۶px طبق مشخصات نئون */
+        borderRadius: 16,
         boxShadow: "0 6px 22px rgba(46,54,34,.07)",
         cursor: "pointer",
         fontFamily: typography.fontFamily,
-      }}
+        ["--neon-rgb" as string]: hexToRgbTriplet(neonColor),
+      } as CSSProperties}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         {/* آواتار مربعی واحد — مهر درجه پایین-راست، چراغ وضعیت بالا-راست */}
@@ -67,6 +85,7 @@ export function TeacherCard({
           ring={false}
           tier={teacher.tier || undefined}
           online={teacher.available}
+          lastSeen={teacher.lastSeen}
         />
 
         <div style={{ minWidth: 0, flex: 1 }}>
@@ -100,6 +119,54 @@ export function TeacherCard({
           </span>
         </div>
       </div>
+
+      {tier1 ? (
+        /* ۱.الف.۵ — نشان «🏆 استاد درجه ۱» + ردیف نشان‌های 🟦🆓⚡ */
+        <div
+          className="vodda-enter"
+          style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}
+        >
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 4,
+              padding: "3px 9px",
+              borderRadius: 999,
+              fontSize: 10.5,
+              fontWeight: 800,
+              color: "#7a5e1e",
+              background: "linear-gradient(135deg, rgba(191,149,64,.16), rgba(191,149,64,.30))",
+              border: "1px solid rgba(191,149,64,.45)",
+              whiteSpace: "nowrap",
+            }}
+          >
+            🏆 استاد درجه ۱
+          </span>
+          {tier1Badges.map((badge) => (
+            <span
+              key={badge.label}
+              title={badge.label}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 3,
+                padding: "3px 8px",
+                borderRadius: 999,
+                fontSize: 10.5,
+                fontWeight: 700,
+                color: colors.inkSecondary,
+                background: "rgba(255,255,255,.72)",
+                border: `1px solid ${colors.sand200}`,
+                whiteSpace: "nowrap",
+              }}
+            >
+              <span aria-hidden="true">{badge.emoji}</span>
+              {badge.label}
+            </span>
+          ))}
+        </div>
+      ) : null}
 
       <div
         style={{

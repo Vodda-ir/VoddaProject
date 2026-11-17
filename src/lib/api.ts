@@ -46,8 +46,14 @@ export type Teacher = {
   female: boolean;
   verified: boolean;
   available?: boolean;
-  /** درجه استاد: "" | "international" (درجه ۱) | "grade2" | "grade3" */
+  /** درجه استاد: "" | "international" (تیک بین‌المللی آبی) | "grade2" (کشوری سبز) | "grade3" (استانی قرمز) */
   tier?: '' | 'international' | 'grade2' | 'grade3';
+  /** آخرین فعالیت (۱.الف.۴) — ISO؛ در BFF درصدموجود بودن تزریق می‌شود. */
+  last_seen?: string;
+  /** کارت درجه ۱ (۱.الف.۵) — BFF با overlay محلی غنی‌سازی می‌کند. */
+  is_tier1?: boolean;
+  /** ردیف نشان‌های درجه ۱: "international" | "free" | "instant" */
+  tier1_badges?: string[];
   status?: 'pending' | 'approved' | 'rejected';
   rating: number;
   reviews: number;

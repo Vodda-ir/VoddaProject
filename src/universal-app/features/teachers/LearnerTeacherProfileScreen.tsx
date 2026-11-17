@@ -222,13 +222,15 @@ export function LearnerTeacherProfileScreen({
     <section className="vodda-screen" style={{ display: "grid", gap: spacing.xl }}>
       <div className="vodda-enter" style={{ display: "grid", justifyItems: "center", textAlign: "center", gap: 4 }}>
         <div style={{ position: "relative" }}>
-          {/* آواتار مربعی واحد — مهر درجه داخل خود کامپوننت رندر می‌شود */}
+          {/* آواتار مربعی واحد — مهر درجه و چراغ حضور داخل خود کامپوننت رندر می‌شود */}
           <Avatar
             name={teacher.name}
             src={avatarSrc(teacher.avatarUrl || undefined, undefined, uploadsOriginOf(runtime.apiBaseUrl))}
             size={88}
             ring
             tier={teacher.tier || undefined}
+            online={teacher.available}
+            lastSeen={teacher.lastSeen}
           />
         </div>
         <h2 style={{ fontSize: 20, fontWeight: 800, margin: "8px 0 0", color: colors.ink, display: "inline-flex", alignItems: "center", gap: 6 }}>

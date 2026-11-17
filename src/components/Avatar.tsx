@@ -12,28 +12,31 @@
  * هم در بیلد Vite/Capacitor (اپ نیتیو) با مسیر نسبی به کار برود — پارتی کامل.
  */
 import type { CSSProperties, ImgHTMLAttributes } from "react";
+import { TIER_META, tierKeyOf } from "../lib/tierMeta";
+import { presenceTooltip, resolveOnline } from "../lib/presence";
 
 /** توکن‌های رنگ مشترک هویت — هم‌ارز پالت برند وُدّا (اپ و وب). */
 const OLIVE_100 = "#e8ecdb";
 const OLIVE_200 = "#d6dcc4";
 const OLIVE_600 = "#5e6e43";
-const OLIVE_700 = "#4c5a36";
 const GOLD_BACKGROUND = "#f7efd9";
 const GOLD_DARK = "#8b681f";
-const TEAL_GRAY = "#5e7e8c";
 const SURFACE = "#ffffff";
-const DANGER = "#a65151";
+/* رنگ‌های چراغ حضور (۱.الف.۴): سبز ثابت با هالهٔ نرم، قرمز چشمک‌زن. */
+const PRESENCE_GREEN = "#22C55E";
+const PRESENCE_RED = "#EF4444";
 
 /** اندازه‌های استاندارد آواتار. */
 export const AVATAR_SIZES = { sm: 32, md: 48, lg: 72, xl: 120 } as const;
 export type AvatarSizeKey = keyof typeof AVATAR_SIZES;
 
-/** مهر درجه — رنگ‌ها تا مورد ۱.الف.۲ (تیک آبی/سبز/قرمز) بدون تغییر می‌مانند. */
-const TIER_SEALS: Record<string, { color: string; label: string }> = {
-  international: { color: GOLD_DARK, label: "استاد بین‌المللی (درجه ۱)" },
-  grade2: { color: OLIVE_700, label: "استاد درجه ۲" },
-  grade3: { color: TEAL_GRAY, label: "استاد درجه ۳" },
-};
+/** مهر درجه از منبع واحد tierMeta — ۱.الف.۲: آبی بین‌المللی / سبز کشوری / قرمز استانی. */
+function tierSealOf(tier?: string | null): { color: string; label: string } | undefined {
+  const key = tierKeyOf(tier);
+  if (!key) return undefined;
+  const meta = TIER_META[key];
+  return { color: meta.main, label: meta.sealLabel };
+}
 
 /** شعاع گوشهٔ آواتار مربعی: ۱۴٪ عرض با کف ۶px (مثال مشخصات: ۵۶px → ۸px). */
 export function avatarCornerRadius(size: number): number {
@@ -57,8 +60,10 @@ export type AvatarProps = {
   name?: string;
   /** درجه استاد برای مهر گوشهٔ آواتار. */
   tier?: string | null;
-  /** چراغ آنلاین/آفلاین (استایل پایه در این مورد؛ چشمک‌زن در مورد ۱.الف.۴). */
+  /** نشانهٔ دسترس‌پذیری (available) — همراه lastSeen معنای آنلاین واقعی می‌گیرد. */
   online?: boolean;
+  /** آخرین فعالیت (ISO یا epoch) — در ۲ دقیقهٔ اخیر = آنلاین؛ tooltip «آخرین فعالیت …». */
+  lastSeen?: string | number | null;
   /** قاب حلقه‌ای ملایم (سازگاری با امضای فعلی اپ و وب). */
   ring?: boolean;
   /** fallback اموجی (سازگاری با امضای قدیمی وب). */
@@ -93,6 +98,7 @@ export function Avatar({
   name,
   tier,
   online,
+  lastSeen,
   ring = false,
   emoji,
   alt,
@@ -102,9 +108,16 @@ export function Avatar({
   const resolvedSize = typeof size === "number" ? size : AVATAR_SIZES[size];
   const radius = avatarCornerRadius(resolvedSize);
   const image = src ?? imageUrl;
-  const seal = tier ? TIER_SEALS[tier] : undefined;
-  const sealSize = Math.max(14, Math.round(resolvedSize * 0.3));
+  const seal = tier ? tierSealOf(tier) : undefined;
+  /* ۱.الف.۲ — مهر ≤۳۰٪ عرض آواتار؛ کف ۱۰px فقط برای خوانایی در ابعاد خیلی کوچک. */
+  const sealSize = Math.max(10, Math.round(resolvedSize * 0.3));
   const letter = avatarInitialLetter(name);
+
+  /* ۱.الف.۴ — آنلاین واقعی: available فعال + فعالیت در ~۲ دقیقهٔ اخیر؛
+   * بدون lastSeen همان معنای قبلی (available) حفظ می‌شود. */
+  const presenceOnline = typeof online === "boolean" ? resolveOnline(online, lastSeen) : undefined;
+  const presenceLabel =
+    typeof presenceOnline === "boolean" ? presenceTooltip(presenceOnline, lastSeen) : undefined;
 
   const frameStyle: CSSProperties = {
     width: resolvedSize,
@@ -167,10 +180,15 @@ export function Avatar({
         )}
       </span>
 
-      {/* چراغ آنلاین — بالا-راست در RTL، بالا-چپ در LTR (استایل نهایی در مورد ۱.الف.۴) */}
-      {typeof online === "boolean" ? (
+      {/* چراغ آنلاین — ۸px، بالا-راست در RTL / بالا-چپ در LTR (۱.الف.۴):
+        * آنلاین → سبز ثابت با هالهٔ نرم؛ آفلاین → قرمز چشمک‌زن pulse-red؛
+        * tooltip «آنلاین» یا «آخرین فعالیت …». */}
+      {typeof presenceOnline === "boolean" ? (
         <span
-          aria-hidden="true"
+          role="img"
+          aria-label={presenceLabel}
+          title={presenceLabel}
+          className={presenceOnline ? undefined : "vodda-presence-red"}
           style={{
             position: "absolute",
             top: -2,
@@ -179,7 +197,8 @@ export function Avatar({
             height: 8,
             borderRadius: "50%",
             border: `2px solid ${SURFACE}`,
-            background: online ? OLIVE_600 : DANGER,
+            background: presenceOnline ? PRESENCE_GREEN : PRESENCE_RED,
+            boxShadow: presenceOnline ? "0 0 6px 1px rgba(34,197,94,.45)" : "0 0 5px 1px rgba(239,68,68,.35)",
           }}
         />
       ) : null}

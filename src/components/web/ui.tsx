@@ -10,6 +10,10 @@ export function Avatar({
   emoji,
   imageUrl,
   name,
+  online,
+  lastSeen,
+  style,
+  alt,
 }: {
   size?: number;
   ring?: boolean;
@@ -19,10 +23,29 @@ export function Avatar({
   imageUrl?: string;
   /** نام برای fallback حرف اول. */
   name?: string;
+  /** چراغ آنلاین/آفلاین (۱.الف.۴). */
+  online?: boolean;
+  /** آخرین فعالیت برای آنلاینِ واقعی و tooltip. */
+  lastSeen?: string | number | null;
+  style?: CSSProperties;
+  alt?: string;
 }) {
   /* آواتار مربعی واحد — پیاده‌سازی واقعی در src/components/Avatar.tsx است تا
    * اپ و وب از یک منبع رندر بگیرند (پارتی کامل). امضای قبلی وب حفظ شده است. */
-  return <UnifiedAvatar size={size} ring={ring} tier={tier ?? undefined} emoji={emoji} src={imageUrl} name={name} />;
+  return (
+    <UnifiedAvatar
+      size={size}
+      ring={ring}
+      tier={tier ?? undefined}
+      emoji={emoji}
+      src={imageUrl}
+      name={name}
+      online={online}
+      lastSeen={lastSeen}
+      style={style}
+      alt={alt}
+    />
+  );
 }
 
 export function GeoPattern({ color = '#fff', opacity = 0.08 }: { color?: string; opacity?: number }) {
