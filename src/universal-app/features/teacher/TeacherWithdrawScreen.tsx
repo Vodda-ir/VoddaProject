@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { UniversalAppConfig } from "../../config";
 import { asArray, asNumber, asRecord, asString, type ApiEnvelope } from "../../platform/api";
 import { usePlatform } from "../../platform/context";
@@ -99,19 +99,26 @@ export function TeacherWithdrawScreen({ config }: { config: UniversalAppConfig }
   const [formError, setFormError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
+  // باگ refresh-loop: اجرای دوم StrictMode یا فراخوانی دیرهنگام نباید state را با دادهٔ کهنه بازنویسی کند.
+  const loadGeneration = useRef(0);
+
   const load = useCallback(async () => {
+    const generation = ++loadGeneration.current;
+    const isStale = () => loadGeneration.current !== generation;
     setLoading(true);
     setError(null);
     try {
       const [wallet, history] = await Promise.all([getWalletSnapshot(runtime), getWithdrawals(runtime)]);
+      if (isStale()) return;
       setBalance(wallet.user.wallet);
       setWithdrawals(history);
     } catch (loadError) {
+      if (isStale()) return;
       setBalance(null);
       setWithdrawals([]);
       setError(messageOf(loadError));
     } finally {
-      setLoading(false);
+      if (!isStale()) setLoading(false);
     }
   }, [runtime]);
 

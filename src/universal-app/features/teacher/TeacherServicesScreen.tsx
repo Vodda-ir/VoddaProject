@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { asArray, asInteger, asRecord, asString, type ApiEnvelope } from "../../platform/api";
 import { usePlatform } from "../../platform/context";
 import type { PlatformRuntime } from "../../platform/types";
@@ -136,16 +136,24 @@ export function TeacherServicesScreen() {
   const [deactivateTarget, setDeactivateTarget] = useState<TeacherService | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<TeacherService | null>(null);
 
+  // باگ refresh-loop: اجرای دوم StrictMode یا فراخوانی دیرهنگام نباید state را با دادهٔ کهنه بازنویسی کند.
+  const loadGeneration = useRef(0);
+
   const load = useCallback(async () => {
+    const generation = ++loadGeneration.current;
+    const isStale = () => loadGeneration.current !== generation;
     setLoading(true);
     setError(null);
     try {
-      setServices(await getServices(runtime));
+      const rows = await getServices(runtime);
+      if (isStale()) return;
+      setServices(rows);
     } catch (loadError) {
+      if (isStale()) return;
       setServices([]);
       setError(messageOf(loadError));
     } finally {
-      setLoading(false);
+      if (!isStale()) setLoading(false);
     }
   }, [runtime]);
 

@@ -114,10 +114,15 @@ function SessionRestoreError({ message, onRetry }: { message: string; onRetry: (
 
 export function SessionBootstrap({ routeName, config, children }: SessionBootstrapProps) {
   const platform = usePlatform();
+  const [sessionUser, setSessionUser] = useState<AuthUser | null>(null);
   const [status, setStatus] = useState<BootstrapStatus>("loading");
   const [error, setError] = useState<string | null>(null);
   const [retryKey, setRetryKey] = useState(0);
+  // باگ refresh-loop: اجرای دیرهنگامِ یک اعتبارسنجی قدیمی نباید روی session تازه بنشیند.
+  const validateGeneration = useRef(0);
 
+  // بازیابی کامل نشست فقط روی mount اول و retry دستی انجام می‌شود؛
+  // تغییر مسیر/تب یک refresh سبک است، نه restore کامل (باگ refresh-loop).
   useEffect(() => {
     let cancelled = false;
 
@@ -132,30 +137,7 @@ export function SessionBootstrap({ routeName, config, children }: SessionBootstr
         ]);
         if (cancelled) return;
 
-        if (!user) {
-          if (routeName !== "login") {
-            navigateApp("/login", config, { replace: true });
-            return;
-          }
-          setStatus("ready");
-          return;
-        }
-
-        if (user.needProfile && routeName !== "profile-edit") {
-          navigateApp("/profile/edit", config, { replace: true });
-          return;
-        }
-
-        if (routeName === "login") {
-          navigateApp(defaultRouteForUser(user), config, { replace: true });
-          return;
-        }
-
-        if (!canAccessAppRoute(user, routeName)) {
-          navigateApp(defaultRouteForUser(user), config, { replace: true });
-          return;
-        }
-
+        setSessionUser(user);
         setStatus("ready");
       } catch (restoreError) {
         if (cancelled) return;
@@ -168,7 +150,57 @@ export function SessionBootstrap({ routeName, config, children }: SessionBootstr
     return () => {
       cancelled = true;
     };
-  }, [config, platform, retryKey, routeName]);
+  }, [platform, retryKey]);
+
+  // refresh سبک هنگام تغییر مسیر: اعتبارسنجی پس‌زمینه بدون remount و بدون
+  // فلش صفحهٔ لودینگ. خطای گذرا (شبکه/تب) نشست قبلی را نگه می‌دارد و کاربر
+  // به‌اشتباه به ورود پرتاب نمی‌شود (باگ refresh-loop).
+  useEffect(() => {
+    if (status !== "ready") return;
+    const generation = ++validateGeneration.current;
+    let cancelled = false;
+
+    platform
+      .restoreSession()
+      .then((user) => {
+        if (cancelled || validateGeneration.current !== generation) return;
+        setSessionUser(user);
+      })
+      .catch(() => {
+        // خطای گذرا — نشست شناخته‌شده قبلی حفظ می‌شود.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [platform, routeName, status]);
+
+  // گارد مسیر: هرگز حین status === "loading" ریدایرکت نمی‌زند و همیشه replace
+  // می‌کند تا تاریخچه شلوغ نشود (باگ refresh-loop).
+  useEffect(() => {
+    if (status !== "ready") return;
+
+    if (!sessionUser) {
+      if (routeName !== "login") {
+        navigateApp("/login", config, { replace: true });
+      }
+      return;
+    }
+
+    if (sessionUser.needProfile && routeName !== "profile-edit") {
+      navigateApp("/profile/edit", config, { replace: true });
+      return;
+    }
+
+    if (routeName === "login") {
+      navigateApp(defaultRouteForUser(sessionUser), config, { replace: true });
+      return;
+    }
+
+    if (!canAccessAppRoute(sessionUser, routeName)) {
+      navigateApp(defaultRouteForUser(sessionUser), config, { replace: true });
+    }
+  }, [config, routeName, sessionUser, status]);
 
   if (status === "loading") return <LaunchScreen />;
   if (status === "error") {
@@ -179,6 +211,16 @@ export function SessionBootstrap({ routeName, config, children }: SessionBootstr
       />
     );
   }
+
+  // تا وقتی ریدایرکت گارد در جراه است، محتوای محافظت‌شده رندر نمی‌شود.
+  const redirectPending =
+    (!sessionUser && routeName !== "login") ||
+    (sessionUser?.needProfile === true && routeName !== "profile-edit") ||
+    (sessionUser !== null && routeName === "login") ||
+    (sessionUser !== null && !canAccessAppRoute(sessionUser, routeName));
+
+  if (redirectPending) return <LaunchScreen />;
+
   return <>{children}</>;
 }
 

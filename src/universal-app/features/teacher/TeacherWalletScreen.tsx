@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { UniversalAppConfig } from "../../config";
 import { usePlatform } from "../../platform/context";
 import { navigateApp } from "../../router";
@@ -28,19 +28,26 @@ export function TeacherWalletScreen({ config }: { config: UniversalAppConfig }) 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // باگ refresh-loop: اجرای دوم StrictMode یا فراخوانی دیرهنگام نباید state را با دادهٔ کهنه بازنویسی کند.
+  const loadGeneration = useRef(0);
+
   const load = useCallback(async () => {
+    const generation = ++loadGeneration.current;
+    const isStale = () => loadGeneration.current !== generation;
     setLoading(true);
     setError(null);
     try {
       const snapshot = await getWalletSnapshot(runtime);
+      if (isStale()) return;
       setBalance(snapshot.user.wallet);
       setTransactions(snapshot.transactions);
     } catch (loadError) {
+      if (isStale()) return;
       setBalance(null);
       setTransactions([]);
       setError(messageOf(loadError));
     } finally {
-      setLoading(false);
+      if (!isStale()) setLoading(false);
     }
   }, [runtime]);
 

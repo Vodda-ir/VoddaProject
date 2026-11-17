@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { UniversalAppConfig } from "../../config";
 import { asArray, asNumber, asRecord, asString, type ApiEnvelope } from "../../platform/api";
 import { usePlatform } from "../../platform/context";
@@ -149,7 +149,12 @@ export function TeacherProfileScreen({ config }: { config: UniversalAppConfig })
   const [notice, setNotice] = useState<string | null>(null);
   const [editorOpen, setEditorOpen] = useState(false);
 
+  // باگ refresh-loop: اجرای دوم StrictMode یا فراخوانی دیرهنگام نباید state را با دادهٔ کهنه بازنویسی کند.
+  const loadGeneration = useRef(0);
+
   const load = useCallback(async () => {
+    const generation = ++loadGeneration.current;
+    const isStale = () => loadGeneration.current !== generation;
     setLoading(true);
     setError(null);
     try {
@@ -160,16 +165,18 @@ export function TeacherProfileScreen({ config }: { config: UniversalAppConfig })
       const nextUser = parseUser(meResponse.data);
       const nextTeacher = parseTeacher(teacherResponse.data);
       if (!nextUser || !nextTeacher) throw new Error("اطلاعات پروفایل استاد دریافت نشد.");
+      if (isStale()) return;
       setUser(nextUser);
       setTeacher(nextTeacher);
       setForm(toForm(nextTeacher));
     } catch (loadError) {
+      if (isStale()) return;
       setUser(null);
       setTeacher(null);
       setForm(null);
       setError(messageOf(loadError));
     } finally {
-      setLoading(false);
+      if (!isStale()) setLoading(false);
     }
   }, [runtime]);
 

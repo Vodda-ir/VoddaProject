@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { asArray, asInteger, asRecord, asString, type ApiEnvelope } from "../../platform/api";
 import { usePlatform } from "../../platform/context";
 import type { PlatformRuntime } from "../../platform/types";
@@ -114,16 +114,24 @@ export function TeacherWorkTimesScreen() {
     return value;
   }, [items]);
 
+  // باگ refresh-loop: اجرای دوم StrictMode یا فراخوانی دیرهنگام نباید state را با دادهٔ کهنه بازنویسی کند.
+  const loadGeneration = useRef(0);
+
   const load = useCallback(async () => {
+    const generation = ++loadGeneration.current;
+    const isStale = () => loadGeneration.current !== generation;
     setLoading(true);
     setError(null);
     try {
-      setItems(await getWorkTimes(runtime));
+      const rows = await getWorkTimes(runtime);
+      if (isStale()) return;
+      setItems(rows);
     } catch (loadError) {
+      if (isStale()) return;
       setItems([]);
       setError(messageOf(loadError));
     } finally {
-      setLoading(false);
+      if (!isStale()) setLoading(false);
     }
   }, [runtime]);
 

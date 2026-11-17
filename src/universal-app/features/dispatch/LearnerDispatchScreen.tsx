@@ -211,26 +211,38 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
   const call = view?.call ?? null;
   const mode: ScreenMode = call ? (call.status === "searching" ? "searching" : "matched") : "idle";
 
+  // باگ refresh-loop: اجرای دوم StrictMode یا فراخوانی دیرهنگام نباید state را با دادهٔ کهنه بازنویسی کند.
+  const catalogGeneration = useRef(0);
+  const viewGeneration = useRef(0);
+
   const loadCatalog = useCallback(async () => {
+    const generation = ++catalogGeneration.current;
+    const isStale = () => catalogGeneration.current !== generation;
     setCatalogLoading(true);
     setCatalogError("");
     try {
-      setCatalog(await getCatalog(runtime));
+      const rows = await getCatalog(runtime);
+      if (isStale()) return;
+      setCatalog(rows);
     } catch (error) {
+      if (isStale()) return;
       setCatalogError(messageOf(error, "دریافت فهرست موضوعات ناموفق بود."));
     } finally {
-      setCatalogLoading(false);
+      if (!isStale()) setCatalogLoading(false);
     }
   }, [runtime]);
 
   const refresh = useCallback(async () => {
+    const generation = ++viewGeneration.current;
+    const isStale = () => viewGeneration.current !== generation;
     try {
       const current = await getCurrentDispatchCall(runtime);
+      if (isStale()) return;
       setView(current);
     } catch {
       // polling errors are non-fatal
     } finally {
-      setResuming(false);
+      if (!isStale()) setResuming(false);
     }
   }, [runtime]);
 

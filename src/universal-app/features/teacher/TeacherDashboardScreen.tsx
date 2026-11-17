@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { UniversalAppConfig } from "../../config";
 import { asNumber, asRecord, asString, type ApiEnvelope } from "../../platform/api";
 import { usePlatform } from "../../platform/context";
@@ -141,16 +141,24 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
     }
   }, [runtime]);
 
+  // باگ refresh-loop: اجرای دوم StrictMode یا فراخوانی دیرهنگام نباید state را با دادهٔ کهنه بازنویسی کند.
+  const loadGeneration = useRef(0);
+
   const load = useCallback(async () => {
+    const generation = ++loadGeneration.current;
+    const isStale = () => loadGeneration.current !== generation;
     setLoading(true);
     setError(null);
     try {
-      setSnapshot(await getTeacherDashboardSnapshot(runtime));
+      const nextSnapshot = await getTeacherDashboardSnapshot(runtime);
+      if (isStale()) return;
+      setSnapshot(nextSnapshot);
     } catch (loadError) {
+      if (isStale()) return;
       setSnapshot(null);
       setError(messageOf(loadError));
     } finally {
-      setLoading(false);
+      if (!isStale()) setLoading(false);
     }
   }, [runtime]);
 

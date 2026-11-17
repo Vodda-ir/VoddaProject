@@ -84,7 +84,12 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
   const [paymentMethod, setPaymentMethod] = useState<BookingPaymentMethod>("wallet");
   const availabilityRequest = useRef(0);
 
+  // باگ refresh-loop: اجرای دوم StrictMode یا فراخوانی دیرهنگام نباید state را با دادهٔ کهنه بازنویسی کند.
+  const teacherGeneration = useRef(0);
+
   const loadTeacher = useCallback(async () => {
+    const generation = ++teacherGeneration.current;
+    const isStale = () => teacherGeneration.current !== generation;
     if (!Number.isInteger(numericTeacherId) || numericTeacherId <= 0) {
       setTeacherError("شناسه استاد نامعتبر است.");
       setTeacherLoading(false);
@@ -94,12 +99,14 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
     setTeacherError("");
     try {
       const detail = await getTeacherDetail(runtime, numericTeacherId);
+      if (isStale()) return;
       setTeacher(detail.teacher);
     } catch (error) {
+      if (isStale()) return;
       setTeacher(null);
       setTeacherError(messageOf(error, "اطلاعات استاد دریافت نشد."));
     } finally {
-      setTeacherLoading(false);
+      if (!isStale()) setTeacherLoading(false);
     }
   }, [numericTeacherId, runtime]);
 

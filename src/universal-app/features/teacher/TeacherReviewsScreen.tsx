@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { asArray, asNumber, asRecord, asString, type ApiEnvelope } from "../../platform/api";
 import { usePlatform } from "../../platform/context";
 import { messageOf } from "../../ui/errorMessage";
@@ -57,17 +57,25 @@ export function TeacherReviewsScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // باگ refresh-loop: اجرای دوم StrictMode یا فراخوانی دیرهنگام نباید state را با دادهٔ کهنه بازنویسی کند.
+  const loadGeneration = useRef(0);
+
   const load = useCallback(async () => {
+    const generation = ++loadGeneration.current;
+    const isStale = () => loadGeneration.current !== generation;
     setLoading(true);
     setError(null);
     try {
       const response = await runtime.request<ApiEnvelope<unknown>>("/teacher/reviews");
-      setReviews(asArray(response.data).map(parseReview).filter((item): item is Review => item !== null));
+      const rows = asArray(response.data).map(parseReview).filter((item): item is Review => item !== null);
+      if (isStale()) return;
+      setReviews(rows);
     } catch (loadError) {
+      if (isStale()) return;
       setReviews([]);
       setError(messageOf(loadError));
     } finally {
-      setLoading(false);
+      if (!isStale()) setLoading(false);
     }
   }, [runtime]);
 

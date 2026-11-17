@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { Icon } from '@/components/Icon';
@@ -53,14 +53,23 @@ function LearnerBell() {
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // باگ refresh-loop: پاسخ دیرهنگامِ درخواست قبلی نباید لیست را بازنویسی کند.
+  const loadGeneration = useRef(0);
+
   const load = useCallback(() => {
     const token = getToken();
     if (!token) return;
+    const generation = ++loadGeneration.current;
     setLoading(true);
     api.notifications(token, 15)
-      .then((response) => setItems(response.data || []))
+      .then((response) => {
+        if (loadGeneration.current !== generation) return;
+        setItems(response.data || []);
+      })
       .catch(() => {})
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (loadGeneration.current === generation) setLoading(false);
+      });
   }, []);
 
   useEffect(() => { load(); }, [load]);

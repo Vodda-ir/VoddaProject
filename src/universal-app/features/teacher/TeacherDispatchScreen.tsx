@@ -220,9 +220,15 @@ export function TeacherDispatchScreen({ config }: { config: UniversalAppConfig }
   const knownCallIds = useRef<Set<number>>(new Set());
   const [flashNew, setFlashNew] = useState(false);
 
+  // باگ refresh-loop: اجرای دوم StrictMode یا فراخوانی دیرهنگام نباید state را با دادهٔ کهنه بازنویسی کند.
+  const refreshGeneration = useRef(0);
+
   const refresh = useCallback(async () => {
+    const generation = ++refreshGeneration.current;
+    const isStale = () => refreshGeneration.current !== generation;
     try {
       const data = await getTeacherDispatchInbox(runtime);
+      if (isStale()) return;
       setInbox(data);
       setError("");
       const incoming = data.calls.map((item) => item.call.id);
@@ -233,9 +239,10 @@ export function TeacherDispatchScreen({ config }: { config: UniversalAppConfig }
       }
       knownCallIds.current = new Set(incoming);
     } catch (caught) {
+      if (isStale()) return;
       setError(messageOf(caught, "دریافت فراخوان‌ها ناموفق بود."));
     } finally {
-      setLoading(false);
+      if (!isStale()) setLoading(false);
     }
   }, [runtime]);
 
