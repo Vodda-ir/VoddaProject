@@ -52,7 +52,7 @@ export const appRoutePaths = {
   "teacher-dispatch": "/t/dispatch",
 } as const;
 
-type StaticAppRouteName = keyof typeof appRoutePaths;
+export type StaticAppRouteName = keyof typeof appRoutePaths;
 type DynamicAppRouteName = "teacher" | "book";
 
 const listeners = new Set<() => void>();

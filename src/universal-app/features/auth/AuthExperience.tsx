@@ -6,6 +6,7 @@ import type { UniversalAppConfig } from "../../config";
 import { usePlatform } from "../../platform/context";
 import type { AuthUser } from "../../platform/types";
 import { navigateApp, type AppRouteName } from "../../router";
+import { AppNotificationBanner } from "../notifications/AppNotificationBanner";
 import { Button, Card, Icon, colors, digitsOnly, shadows, spacing, toFaDigits, typography } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
 
@@ -221,7 +222,18 @@ export function SessionBootstrap({ routeName, config, children }: SessionBootstr
 
   if (redirectPending) return <LaunchScreen />;
 
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      {/* باگ notification-banner — بنر اعلان روی همهٔ صفحه‌های اپ با نشست معتبر */}
+      <AppNotificationBanner
+        runtime={platform}
+        active={sessionUser !== null}
+        role={sessionUser?.role ?? ""}
+        config={config}
+      />
+    </>
+  );
 }
 
 type LoginScreenProps = {
