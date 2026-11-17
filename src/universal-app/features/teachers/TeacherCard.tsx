@@ -28,8 +28,11 @@ export function TeacherCard({
 }) {
   const runtime = usePlatform();
   const goToTeacher = () => navigateApp(`/teacher/${teacher.id}`, config);
-  const priceFrom = new Intl.NumberFormat("fa-IR", { maximumFractionDigits: 0 }).format(
+  // باگ persian-dates — عدد از util مرکزی
+  const priceFrom = formatNumber(
     Math.max(0, teacher.price30 / 1000),
+    "fa",
+    { maximumFractionDigits: 0 },
   );
 
   function handleKey(event: KeyboardEvent<HTMLDivElement>) {

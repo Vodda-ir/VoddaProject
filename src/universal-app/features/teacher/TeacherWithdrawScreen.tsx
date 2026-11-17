@@ -7,6 +7,7 @@ import { usePlatform } from "../../platform/context";
 import type { PlatformRuntime } from "../../platform/types";
 import { navigateApp } from "../../router";
 import { Button, Card, EmptyState, ErrorState, Icon, LoadingState, SectionHeader, StatusPill, colors, digitsOnly, radii, spacing, toFaDigits, toLatinDigits, typography } from "../../ui";
+import { formatDate } from "@/lib/datetime";
 import { messageOf } from "../../ui/errorMessage";
 import { getWalletSnapshot } from "../wallet/api";
 import { formatWalletAmount } from "../wallet/WalletTransactionCard";
@@ -63,9 +64,8 @@ function cardDisplay(value: string): string {
 }
 
 function dateLabel(value: string): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  return toFaDigits(`${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`);
+  // باگ persian-dates — تاریخ شمسی از util مرکزی، نه getFullYear میلادی
+  return formatDate(new Date(value), "fa", "medium");
 }
 
 function statusLabel(status: string): string {

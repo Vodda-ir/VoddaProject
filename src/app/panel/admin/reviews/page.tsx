@@ -19,7 +19,7 @@ import {
 } from '@/components/admin/AdminUI';
 import { fullUrl, getToken } from '@/lib/auth';
 import { toFaDigits } from '@/lib/persian';
-import { formatDate } from '@/lib/datetime';
+import { formatDate, formatNumber } from '@/lib/datetime';
 
 type AdminReviewRow = {
   id: number;
@@ -167,7 +167,7 @@ export default function AdminReviews() {
           icon="checkCircle"
           tone="olive"
           label="میانگین امتیاز صفحه"
-          value={loading ? '—' : new Intl.NumberFormat('fa-IR', { maximumFractionDigits: 1 }).format(pageAvg)}
+          value={loading ? '—' : formatNumber(pageAvg, 'fa', { maximumFractionDigits: 1 })}
           hint="از ۵ در این صفحه"
         />
       </div>

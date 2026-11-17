@@ -7,7 +7,7 @@ import { usePlatform } from "../../platform/context";
 import { avatarSrc, uploadsOriginOf } from "@/lib/avatarImage";
 import { navigateApp } from "../../router";
 import { toFaDigits } from "../../ui/persian";
-import { formatDateTime } from "@/lib/datetime";
+import { formatDateTime, formatNumber } from "@/lib/datetime";
 import {
   Avatar,
   Button,
@@ -35,7 +35,8 @@ import {
 } from "./api";
 import type { DispatchCandidate, DispatchCallView, OfficialService } from "./types";
 
-const numberFormatter = new Intl.NumberFormat("fa-IR");
+// باگ persian-dates — عدد از util مرکزی
+const numberFormatter = { format: (n: number) => formatNumber(n, "fa") };
 
 function fa(n: number): string {
   return numberFormatter.format(n);

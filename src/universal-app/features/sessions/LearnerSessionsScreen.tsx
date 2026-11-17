@@ -23,6 +23,7 @@ import {
 } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
 import { toFaDigits } from "../wallet/WalletTransactionCard";
+import { formatLocalDate } from "@/lib/datetime";
 import { payBooking } from "../booking/api";
 import {
   cancelLearnerSession,
@@ -46,7 +47,8 @@ const statusLabels: Record<string, string> = {
 
 function officialTime(session: LearnerSession): string {
   if (!hasOfficialSessionTime(session)) return "زمان رسمی جلسه دریافت نشد";
-  return `${toFaDigits(session.localDate.replaceAll("-", "/"))} · ${toFaDigits(session.localStart)} تا ${toFaDigits(session.localEnd)}`;
+  // باگ persian-dates — تاریخ شمسی از util مرکزی، نه میلادی خام
+  return `${formatLocalDate(session.localDate, "fa", "dayMonth")} · ${toFaDigits(session.localStart)} تا ${toFaDigits(session.localEnd)}`;
 }
 
 function canCancel(session: LearnerSession): boolean {

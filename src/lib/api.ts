@@ -7,6 +7,8 @@ const BASE =
     ? process.env.SERVER_API_URL || 'http://backend:3420/api/v1'
     : '/api/backend';
 
+import { formatPrice } from '@/lib/datetime';
+
 export type TeacherService = {
   id: number;
   teacher_id?: number;
@@ -530,6 +532,7 @@ export const api = {
     request<ListResponse<Teacher>>('/admin/teachers?status=pending', { headers: auth(token) }),
 };
 
+// باگ persian-dates — همهٔ مبالغ از util مرکزی می‌آیند (عدد + واحد هم‌زبان).
 export function toman(n: number): string {
-  return new Intl.NumberFormat('fa-IR').format(n);
+  return formatPrice(n, 'fa');
 }

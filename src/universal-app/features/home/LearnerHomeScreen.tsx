@@ -25,7 +25,7 @@ import {
 import { messageOf } from "../../ui/errorMessage";
 import { RoleModeSheet } from "../auth/RoleModeSheet";
 import { avatarSrc, uploadsOriginOf } from "@/lib/avatarImage";
-import { formatDate } from "@/lib/datetime";
+import { formatDate, formatLocalDate, formatNumber, tehranDayKey, tehranHour } from "@/lib/datetime";
 import {
   getNotifications,
   markNotificationRead,
@@ -52,18 +52,16 @@ function teachersCacheFresh() {
 
 /* ─────────────────────────  سلام ساعت‌محور و تاریخ شمسی  ───────────────────────── */
 
-function tehranHour() {
+function tehranHourLocal(): number {
   try {
-    return Number(
-      new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Tehran", hour: "numeric", hour12: false }).format(new Date()),
-    );
+    return tehranHour(new Date());
   } catch {
     return new Date().getHours();
   }
 }
 
 function greetingLabel() {
-  const hour = tehranHour();
+  const hour = tehranHourLocal();
   if (hour < 12) return "صبح بخیر";
   if (hour < 15) return "ظهر بخیر";
   if (hour < 20) return "عصر بخیر";
@@ -80,22 +78,17 @@ function dayOfYearIndex() {
   return Math.floor((now.getTime() - start.getTime()) / 86_400_000);
 }
 
-function tehranDayKey(dateIso: string) {
+function tehranDayKeyOf(dateIso: string) {
   if (!dateIso) return "";
   try {
-    return new Intl.DateTimeFormat("en-US", {
-      timeZone: "Asia/Tehran",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    }).format(new Date(dateIso));
+    return tehranDayKey(new Date(dateIso));
   } catch {
     return "";
   }
 }
 
 function isTodayInTehran(dateIso: string) {
-  return dateIso !== "" && tehranDayKey(dateIso) === tehranDayKey(new Date().toISOString());
+  return dateIso !== "" && tehranDayKeyOf(dateIso) === tehranDayKeyOf(new Date().toISOString());
 }
 
 /* آیه و حدیث روز — فقط متون معروف و معتبر درباره علم و آموزش؛ چرخش روزانه */
@@ -114,8 +107,9 @@ const DAILY_QUOTES: Array<{ text: string; source: string }> = [
   { text: "طَلَبُ الْعِلْمِ فَرِيضَةٌ عَلَى كُلِّ مُسْلِمٍ", source: "حدیث نبوی" },
 ];
 
+// باگ persian-dates — عدد از util مرکزی
 function faNumber(value: number, maximumFractionDigits = 1) {
-  return new Intl.NumberFormat("fa-IR", { maximumFractionDigits }).format(value);
+  return formatNumber(value, "fa", { maximumFractionDigits });
 }
 
 function walletShort(wallet: number) {
@@ -518,7 +512,7 @@ function NextSessionCard({ session, config }: { session: LearnerSession; config:
   const today = isTodayInTehran(session.scheduledAt);
   const time = today && session.localStart
     ? `امروز · ${session.localStart}`
-    : [session.localDate, session.localStart].filter(Boolean).join(" · ");
+    : [formatLocalDate(session.localDate, "fa", "short"), session.localStart].filter(Boolean).join(" · ");
   return (
     <button
       type="button"

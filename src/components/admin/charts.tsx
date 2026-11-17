@@ -6,7 +6,7 @@
 
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
-import { formatDate } from '@/lib/datetime';
+import { formatDate, formatNumber } from '@/lib/datetime';
 
 export type Tone = 'olive' | 'gold' | 'clay' | 'info' | 'rose';
 
@@ -29,7 +29,7 @@ export function faDayLabel(iso: string): string {
 export function faCompact(value: number): string {
   if (value === 0) return toFaDigits(0);
   try {
-    return new Intl.NumberFormat('fa-IR', { notation: 'compact', maximumFractionDigits: 1 }).format(value);
+    return formatNumber(value, 'fa', { notation: 'compact', maximumFractionDigits: 1 });
   } catch {
     return formatFaNumber(value);
   }

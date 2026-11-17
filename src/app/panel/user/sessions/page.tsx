@@ -16,6 +16,7 @@ import { SearchInput, exportCsv } from '@/components/admin/AdminUI';
 import { api, type SessionListItem } from '@/lib/api';
 import { avatarUrl, fullUrl, getToken } from '@/lib/auth';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
+import { formatLocalDate } from '@/lib/datetime';
 
 type TabKey = 'all' | 'upcoming' | 'past';
 
@@ -226,7 +227,7 @@ export default function UserSessionsPage() {
                   </div>
                   <div className="ops-row-sub">
                     <span>{session.service}</span>
-                    <span>· {session.local_date}</span>
+                    <span>· {formatLocalDate(session.local_date, 'fa', 'dayMonth') || session.local_date}</span>
                     <span>· ساعت {toFaDigits(session.local_start)} تا {toFaDigits(session.local_end)}</span>
                   </div>
                   <div className="ops-row-meta">
@@ -327,7 +328,7 @@ function ReviewDialog({
           <span style={{ width: 40, height: 40, display: 'grid', placeItems: 'center', borderRadius: 12, color: 'var(--gold)', background: 'var(--gold-bg)' }}><Icon name="star" size={19} /></span>
           <div>
             <h2 id="review-dialog-title" style={{ margin: 0, fontSize: 16 }}>ثبت نظر درباره جلسه</h2>
-            <p style={{ margin: '2px 0 0', color: 'var(--ink-3)', fontSize: 10.5 }}>{session.service} · {session.teacher?.user?.name || 'استاد'} · {session.local_date}</p>
+            <p style={{ margin: '2px 0 0', color: 'var(--ink-3)', fontSize: 10.5 }}>{session.service} · {session.teacher?.user?.name || 'استاد'} · {formatLocalDate(session.local_date, 'fa', 'dayMonth') || session.local_date}</p>
           </div>
         </div>
 

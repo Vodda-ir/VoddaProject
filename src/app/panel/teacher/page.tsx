@@ -15,6 +15,7 @@ import {
 import { api, type SessionListItem, type Teacher } from '@/lib/api';
 import { avatarUrl, fullUrl, getToken } from '@/lib/auth';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
+import { formatLocalDate } from '@/lib/datetime';
 
 export default function TeacherDashboard() {
   const [teacher, setTeacher] = useState<Teacher | null>(null);
@@ -156,7 +157,7 @@ export default function TeacherDashboard() {
                     </div>
                     <div className="ops-row-sub">
                       <span>{session.service}</span>
-                      <span>· {session.local_date}</span>
+                      <span>· {formatLocalDate(session.local_date, 'fa', 'dayMonth') || session.local_date}</span>
                       <span>· {toFaDigits(session.local_start)}</span>
                     </div>
                     <div className="ops-row-meta">

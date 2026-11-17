@@ -21,6 +21,7 @@ import {
 } from '@/components/admin/AdminUI';
 import { avatarUrl, fullUrl, getToken } from '@/lib/auth';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
+import { formatNumber } from '@/lib/datetime';
 
 type TeacherStatus = '' | 'pending' | 'approved' | 'rejected';
 type TeacherTier = '' | 'international' | 'grade2' | 'grade3';
@@ -79,7 +80,7 @@ const STATUS_BADGE: Record<string, { label: string; tone: string }> = {
 const PAGE_SIZE = 30;
 
 function faRating(value?: number): string {
-  return new Intl.NumberFormat('fa-IR', { maximumFractionDigits: 1 }).format(Number(value || 0));
+  return formatNumber(Number(value || 0), 'fa', { maximumFractionDigits: 1 });
 }
 
 export default function AdminTeachers() {

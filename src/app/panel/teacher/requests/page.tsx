@@ -12,6 +12,7 @@ import {
 import { api, type SessionListItem } from '@/lib/api';
 import { avatarUrl, fullUrl, getToken } from '@/lib/auth';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
+import { formatLocalDate } from '@/lib/datetime';
 
 export default function TeacherRequests() {
   const [requests, setRequests] = useState<SessionListItem[]>([]);
@@ -99,7 +100,7 @@ export default function TeacherRequests() {
                     <span>· {toFaDigits(session.duration)} دقیقه</span>
                   </div>
                   <div className="ops-row-meta">
-                    <span><Icon name="calendar" size={13} />{session.local_date}</span>
+                    <span><Icon name="calendar" size={13} />{formatLocalDate(session.local_date, 'fa', 'dayMonth') || session.local_date}</span>
                     <span><Icon name="clock" size={13} />{toFaDigits(session.local_start)} تا {toFaDigits(session.local_end)}</span>
                     <span>{formatFaNumber(session.price)} تومان</span>
                   </div>

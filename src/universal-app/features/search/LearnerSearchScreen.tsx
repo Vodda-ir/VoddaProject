@@ -16,6 +16,7 @@ import {
   typography,
 } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
+import { formatNumber } from "@/lib/datetime";
 import { navigateApp } from "../../router";
 import { getCatalog } from "../dispatch/api";
 import { searchTeachersPage } from "../teachers/api";
@@ -88,8 +89,9 @@ function sortTeachers(rows: Teacher[], sort: SortKey): Teacher[] {
   }
 }
 
+// باگ persian-dates — عدد از util مرکزی
 function faNumber(value: number, maximumFractionDigits = 0) {
-  return new Intl.NumberFormat("fa-IR", { maximumFractionDigits }).format(value);
+  return formatNumber(value, "fa", { maximumFractionDigits });
 }
 
 function readInitialFilters(): SearchFilters {

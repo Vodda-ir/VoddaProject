@@ -25,6 +25,7 @@ import {
 } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
 import { formatWalletAmount, toFaDigits } from "../wallet/WalletTransactionCard";
+import { formatLocalDate } from "@/lib/datetime";
 
 type TeacherSessionsMode = "requests" | "sessions";
 type TeacherSessionsWhen = "pending" | "upcoming" | "past";
@@ -99,7 +100,8 @@ async function completeTeacherSession(runtime: PlatformRuntime, sessionId: numbe
 
 function officialTime(session: TeacherSession): string {
   if (!session.localDate || !session.localStart || !session.localEnd) return "زمان رسمی جلسه دریافت نشد";
-  return `${toFaDigits(session.localDate.replaceAll("-", "/"))} · ${toFaDigits(session.localStart)} تا ${toFaDigits(session.localEnd)}`;
+  // باگ persian-dates — تاریخ شمسی از util مرکزی، نه میلادی خام
+  return `${formatLocalDate(session.localDate, "fa", "dayMonth")} · ${toFaDigits(session.localStart)} تا ${toFaDigits(session.localEnd)}`;
 }
 
 function canCompleteSession(session: TeacherSession): boolean {

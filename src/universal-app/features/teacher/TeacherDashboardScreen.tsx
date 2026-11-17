@@ -26,6 +26,7 @@ import {
   typography,
 } from "../../ui";
 import { formatWalletAmount, toFaDigits } from "../wallet/WalletTransactionCard";
+import { formatLocalDate } from "@/lib/datetime";
 
 type TeacherSummary = {
   id: number;
@@ -108,7 +109,8 @@ function officialTime(session: TeacherSession): string {
   if (!session.localDate || !session.localStart || !session.localEnd) {
     return "زمان رسمی جلسه دریافت نشد";
   }
-  return `${toFaDigits(session.localDate.replaceAll("-", "/"))} · ${toFaDigits(session.localStart)} تا ${toFaDigits(session.localEnd)}`;
+  // باگ persian-dates — تاریخ شمسی از util مرکزی، نه میلادی خام
+  return `${formatLocalDate(session.localDate, "fa", "dayMonth")} · ${toFaDigits(session.localStart)} تا ${toFaDigits(session.localEnd)}`;
 }
 
 export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig }) {

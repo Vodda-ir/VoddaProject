@@ -94,12 +94,67 @@ export function formatDateTime(input: DateInput, lang: Lang = "fa", style: DateS
   return `${datePart}${PART_JOIN[lang]}${timePart}`;
 }
 
-/** عدد خوانا — fa با ارقام فارسی (۲٫۵)، en با ارقام لاتین (2.5). */
+/** تاریخ «YYYY-MM-DD» بدون ساعت (ستون local_date سرور) — با T00:00:00Z قطعی می‌شود تا
+ *  در timezone تهران همان روز بماند و شمسی درست برگردد. ورودی نامعتبر → رشتهٔ خالی. */
+export function formatLocalDate(localDate: string, lang: Lang = "fa", style: DateStyle = "medium"): string {
+  const trimmed = localDate?.trim() ?? "";
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return "";
+  return formatDate(new Date(`${trimmed}T00:00:00Z`), lang, style);
+}
+
+/** عدد خوانا — fa با ارقام فارسی (۲٫۵)، en با ارقام لاتین (2.5). فرمترها کش می‌شوند. */
+const numberFormatterCache = new Map<string, Intl.NumberFormat>();
+
+function cachedNumberFormatter(locale: string, options?: Intl.NumberFormatOptions): Intl.NumberFormat {
+  const key = `${locale}|${JSON.stringify(options ?? null)}`;
+  let formatter = numberFormatterCache.get(key);
+  if (!formatter) {
+    formatter = new Intl.NumberFormat(locale, options);
+    numberFormatterCache.set(key, formatter);
+  }
+  return formatter;
+}
+
 export function formatNumber(
   value: number,
   lang: Lang = "fa",
   options?: Intl.NumberFormatOptions,
 ): string {
   if (!Number.isFinite(value)) return "";
-  return new Intl.NumberFormat(lang === "fa" ? "fa-IR" : "en-US", options).format(value);
+  return cachedNumberFormatter(lang === "fa" ? "fa-IR" : "en-US", options).format(value);
+}
+
+/** مبلغ + واحد هم‌زبان — باگ persian-dates: عدد و پسوند واحد باید یک‌زبان باشند.
+ *  fa: «۱۰۵٬۰۰۰ تومان» / en: «105,000 Toman». */
+export function formatPrice(
+  value: number,
+  lang: Lang = "fa",
+  options?: Intl.NumberFormatOptions,
+): string {
+  const amount = formatNumber(value, lang, options);
+  const unit = lang === "fa" ? "تومان" : "Toman";
+  if (!amount) return "";
+  return `${amount} ${unit}`;
+}
+
+/* ── محاسبهٔ timezone تهران (نه نمایش) — باگ persian-dates: حتی این‌ها هم از util مرکزی استفاده می‌کنند ── */
+
+/** ساعت جاری در تهران (۰–۲۳) برای منطق‌هایی مثل سلام ساعت‌محور. */
+export function tehranHour(date: DateInput = new Date()): number {
+  const d = toDate(date);
+  if (!d) return 0;
+  const hour = cachedFormatter("en-US", { timeZone: IRAN_TZ, hour: "numeric", hour12: false }).format(d);
+  return Number(hour);
+}
+
+/** کلید «MM/DD/YYYY» روز در تهران برای مقایسهٔ هم‌روزی. */
+export function tehranDayKey(date: DateInput = new Date()): string {
+  const d = toDate(date);
+  if (!d) return "";
+  return cachedFormatter("en-US", {
+    timeZone: IRAN_TZ,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(d);
 }

@@ -12,25 +12,19 @@ import { Avatar, Button, Card, EmptyState, ErrorState, Icon, LoadingState, color
 import { messageOf } from "../../ui/errorMessage";
 import { formatWalletAmount } from "../wallet/WalletTransactionCard";
 import { createBooking, getBookingAvailability, getBookingMe, type BookingPaymentMethod } from "./api";
+import { formatDate, formatLocalDate, formatNumber } from "@/lib/datetime";
 import type { BookingSlot } from "./types";
 
+// باگ persian-dates — برچسب روزها از util مرکزی شمسی (weekday از خود تاریخ، نه عدد دستی)
 const weekdays = ["شنبه", "یکشنبه", "دوشنبه", "سه‌شنبه", "چهارشنبه", "پنجشنبه", "جمعه"];
-const numberFormatter = new Intl.NumberFormat("fa-IR");
 
-function dateLabel(localDate: string, weekday: number) {
-  const parts = localDate.split("-");
-  const day = parts[2] ?? localDate;
-  const month = parts[1] ?? "";
-  const prefix = weekdays[weekday] ?? "";
-  return `${prefix}${prefix ? " · " : ""}${numberFormatter.format(Number(day) || 0)}/${numberFormatter.format(Number(month) || 0)}`;
+function dateLabel(localDate: string) {
+  const formatted = formatLocalDate(localDate, "fa", "dayMonth");
+  return formatted || formatDate(new Date(localDate), "fa", "dayMonth");
 }
 
-function fullDateLabel(localDate: string, weekday: number) {
-  const parts = localDate.split("-");
-  if (parts.length !== 3) return dateLabel(localDate, weekday);
-  const [year, month, day] = parts;
-  const prefix = weekdays[weekday] ?? "";
-  return `${prefix}${prefix ? " " : ""}${numberFormatter.format(Number(day) || 0)}/${numberFormatter.format(Number(month) || 0)}/${numberFormatter.format(Number(year) || 0)}`;
+function fullDateLabel(localDate: string) {
+  return formatLocalDate(localDate, "fa", "medium");
 }
 
 function BookingStepHeader({ number, title }: { number: number; title: string }) {
@@ -51,7 +45,7 @@ function BookingStepHeader({ number, title }: { number: number; title: string })
           fontWeight: 800,
         }}
       >
-        {numberFormatter.format(number)}
+        {formatNumber(number, "fa")}
       </span>
       <strong style={{ fontSize: 16, fontWeight: 800, color: colors.ink }}>{title}</strong>
     </div>
@@ -313,7 +307,7 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
                 >
                   <span>
                     <strong style={{ display: "block", ...typography.body }}>{item.title}</strong>
-                    <span style={{ ...typography.caption, color: colors.inkMuted }}>{numberFormatter.format(item.duration)} دقیقه</span>
+                    <span style={{ ...typography.caption, color: colors.inkMuted }}>{formatNumber(item.duration, "fa")} دقیقه</span>
                   </span>
                   <strong style={{ ...typography.bodySmall, color: colors.olive700 }}>{formatWalletAmount(Math.max(0, item.price))} تومان</strong>
                 </button>
@@ -371,7 +365,7 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
                       {weekdays[group.weekday] ?? "روز"}
                     </strong>
                     <span style={{ display: "block", marginTop: 4, opacity: 0.82, fontSize: 10.5 }}>
-                      {dateLabel(group.localDate, -1)} · {numberFormatter.format(group.slots.length)} زمان
+                      {dateLabel(group.localDate)} · {formatNumber(group.slots.length, "fa")} زمان
                     </span>
                   </button>
                 );
@@ -421,9 +415,9 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
             {[
               ["استاد", teacher.name],
               ["خدمت", service.title],
-              ["تاریخ", fullDateLabel(slot.localDate, slot.weekday)],
+              ["تاریخ", fullDateLabel(slot.localDate)],
               ["ساعت", `${slot.localStart} تا ${slot.localEnd}`],
-              ["مدت", `${numberFormatter.format(service.duration)} دقیقه`],
+              ["مدت", `${formatNumber(service.duration, "fa")} دقیقه`],
               ["مبلغ", `${formatWalletAmount(Math.max(0, service.price))} تومان`],
             ].map(([label, value]) => (
               <div key={label} style={{ display: "flex", justifyContent: "space-between", gap: spacing.md, paddingBlock: 8 }}>
