@@ -53,11 +53,40 @@ func NewRouter(cfg *config.Config, h *Handler, tm *token.Manager, readiness func
         corsCfg.MaxAge = 12 * time.Hour
         r.Use(cors.New(corsCfg))
 
-        live := func(c *gin.Context) {
+        // 🚀 لایونس سبک — همیشه 200 وقتی پروسس زنده است (برای container healthcheck)
+        liveness := func(c *gin.Context) {
                 c.JSON(http.StatusOK, gin.H{"status": "ok", "service": "vodda-backend"})
         }
-        r.GET("/health", live)
-        r.GET("/live", live)
+        // 🚀 /health غنی‌شده برای دیپلوی سریع: {status, db, redis, signaling, uptime}
+        // redis در استک فعلی پیکربندی نشده و صادقانه گزارش می‌شود (نه «ok» جعلی).
+        // سیگنالینگ کلاس زنده درون همین پروسس است (live_hub.go).
+        startedAt := time.Now()
+        health := func(c *gin.Context) {
+                ctx, cancel := context.WithTimeout(c.Request.Context(), 2*time.Second)
+                defer cancel()
+                dbStatus := "unknown"
+                if readiness != nil {
+                        if err := readiness(ctx); err != nil {
+                                dbStatus = "unavailable"
+                        } else {
+                                dbStatus = "ok"
+                        }
+                }
+                status, code := "ok", http.StatusOK
+                if dbStatus == "unavailable" {
+                        status, code = "degraded", http.StatusServiceUnavailable
+                }
+                c.JSON(code, gin.H{
+                        "status":    status,
+                        "service":   "vodda-backend",
+                        "db":        dbStatus,
+                        "redis":     "not-configured",
+                        "signaling": "ok",
+                        "uptime":    int(time.Since(startedAt).Seconds()),
+                })
+        }
+        r.GET("/health", health)
+        r.GET("/live", liveness)
         r.GET("/ready", func(c *gin.Context) {
                 if readiness == nil {
                         c.JSON(http.StatusOK, gin.H{"status": "ready"})

@@ -1,0 +1,93 @@
+# 🚀 Deploy — قاعدهٔ ۹ بستهٔ ۰.۷.۰
+# روی هر push به main: تست سریع → build روی خود سرور → health → rollback خودکار
+# اجرای دستی هم ممکن است: تب Actions → Deploy → Run workflow
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      services:
+        description: "all | frontend | backend"
+        required: false
+        default: all
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Quick tests → server build → health → rollback-guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install sshpass (password-based SSH)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq sshpass
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Backend quick tests (vet + test -short)
+        working-directory: backend
+        run: go vet ./... && go test ./... -short -count=1
+
+      - name: Frontend quick tests (lint + tsc)
+        working-directory: frontend
+        run: |
+          npm ci --no-audit --no-fund
+          npm run lint
+          npx tsc --noEmit
+
+      - name: Write deploy.json from secrets
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
+        run: |
+          python3 - <<'PY'
+          import json, os
+          cfg = {
+              "ip": os.environ["SSH_HOST"],
+              "username": os.environ["SSH_USER"],
+              "path": "/www/wwwroot/vodda",
+              "password": os.environ["SSH_PASSWORD"],
+              "domains": {
+                  "site": "vodda.ir",
+                  "app": "app.vodda.ir",
+                  "api": "api.vodda.ir",
+                  "monafaseh": "monafeseh.ir",
+              },
+          }
+          with open("deploy.json", "w", encoding="utf-8") as f:
+              json.dump(cfg, f, indent=2)
+          print("deploy.json written (secrets redacted)")
+          PY
+
+      - name: Deploy to production (server-side build + health + auto-rollback)
+        run: |
+          ./deploy.sh prod \
+            --ref=${{ github.sha }} \
+            --services=${{ github.event.inputs.services || 'all' }} \
+            --skip-tests
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "### Deploy result" >> "$GITHUB_STEP_SUMMARY"
+          echo "- ref: ${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- health: https://vodda.ir/health · https://api.vodda.ir/health" >> "$GITHUB_STEP_SUMMARY"

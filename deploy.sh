@@ -462,6 +462,87 @@ deploy_proxy_only() {
     print_domain_endpoints
 }
 
+# ══════════════════════════════════════════════════════════════
+# 🚀 دیپلوی سریع (۰.۷.۰) — تست سریع → build روی سرور → health → rollback خودکار
+# ══════════════════════════════════════════════════════════════
+
+run_quick_tests() {
+    # تست سریع: lint + tsc فرانت‌اند، vet + go test -short بک‌اند
+    if [[ "${SKIP_TESTS:-0}" = "1" ]]; then
+        print_warning "Skipping quick tests (--skip-tests)"
+        return 0
+    fi
+    print_header "Phase 0: Quick tests (tsc + lint + go test -short)"
+    if [ -d "$PROJECT_DIR/frontend" ] && command -v node &> /dev/null; then
+        [ -d "$PROJECT_DIR/frontend/node_modules" ] || \
+            (cd "$PROJECT_DIR/frontend" && npm ci --no-audit --no-fund) || { print_error "npm ci failed"; exit 1; }
+        (cd "$PROJECT_DIR/frontend" && npm run lint) || { print_error "frontend lint failed"; exit 1; }
+        if [ -f "$PROJECT_DIR/frontend/tsconfig.json" ]; then
+            (cd "$PROJECT_DIR/frontend" && npx --no-install tsc --noEmit) || { print_error "frontend tsc failed"; exit 1; }
+        fi
+        print_step "  ✓ frontend: lint + tsc"
+    else
+        print_warning "  node/frontend missing — frontend tests skipped"
+    fi
+    if [ -d "$PROJECT_DIR/backend" ] && command -v go &> /dev/null; then
+        (cd "$PROJECT_DIR/backend" && go vet ./...) || { print_error "backend go vet failed"; exit 1; }
+        (cd "$PROJECT_DIR/backend" && go test ./... -short -count=1) || { print_error "backend tests failed"; exit 1; }
+        print_step "  ✓ backend: vet + test -short"
+    else
+        print_warning "  go/backend missing — backend tests skipped"
+    fi
+}
+
+verify_public_health() {
+    print_header "Phase 2: Public health verification (rule 9.f)"
+    command -v curl &> /dev/null || { print_error "curl is required for health checks."; exit 1; }
+    local attempt ok=0
+    for attempt in 1 2 3 4 5; do
+        if curl -fsS -m 20 "https://$DOMAIN_API/health" 2>/dev/null | grep -q '"status":"ok"' \
+           && curl -fsS -m 20 -o /dev/null "https://$DOMAIN_SITE/health"; then
+            ok=1; break
+        fi
+        sleep 5
+    done
+    [ "$ok" = "1" ] || { print_error "Public health check failed (https://$DOMAIN_SITE/health or https://$DOMAIN_API/health)."; exit 1; }
+    print_step "  ✓ https://$DOMAIN_SITE/health"
+    print_step "  ✓ https://$DOMAIN_API/health"
+}
+
+# استفاده: ./deploy.sh prod [--ref=<sha>] [--services=all|frontend|backend] [--skip-tests]
+# یا معادل دستی:      ./deploy.sh --target=production
+deploy_prod() {
+    print_header "Quick production deploy — server-side build"
+    local ref="" services="all" a
+    for a in "$@"; do
+        case "$a" in
+            --ref=*)      ref="${a#--ref=}" ;;
+            --services=*) services="${a#--services=}" ;;
+            --skip-tests) SKIP_TESTS=1 ;;
+            *) print_warning "ignored arg: $a" ;;
+        esac
+    done
+    [ -n "$ref" ] || ref="$(git -C "$PROJECT_DIR" rev-parse HEAD 2>/dev/null || echo main)"
+    load_deploy_config
+    check_sshpass
+    REPO_GIT_URL="$(json_get "repo.gitUrl" 2>/dev/null)" || REPO_GIT_URL="${REPO_GIT_URL:-}"
+
+    run_quick_tests
+
+    print_header "Phase 1: Server-side build & deploy (ref=$ref)"
+    [ -f "$PROJECT_DIR/ops/deploy/server-build-deploy.sh" ] || { print_error "ops/deploy/server-build-deploy.sh not found — run git pull."; exit 1; }
+    SSHPASS="$SSH_PASSWORD" sshpass -e scp -o StrictHostKeyChecking=accept-new \
+        "$PROJECT_DIR/ops/deploy/server-build-deploy.sh" \
+        "$SERVER_USER@$SERVER_IP:$SERVER_PATH/server-build-deploy.sh"
+    ssh_cmd "$SERVER_USER@$SERVER_IP" \
+        "cd '$SERVER_PATH' && REPO_GIT_URL='$REPO_GIT_URL' bash server-build-deploy.sh --ref='$ref' --services='$services'"
+
+    verify_public_health
+    echo ""
+    echo -e "${GREEN}✓ Quick deploy finished — production is on $ref${NC}"
+    print_domain_endpoints
+}
+
 case "${1:-deploy}" in
     build)  build_images ;;
     deploy) setup_server; build_images; deploy_to_server ;;
@@ -471,5 +552,6 @@ case "${1:-deploy}" in
     domains) deploy_domains_only ;;
     proxy) deploy_proxy_only ;;
     bashar) deploy_bashar_only ;;
-    *) echo "Usage: $0 [deploy|build|server|setup|web|domains|proxy|bashar]"; exit 1 ;;
+    prod|--target=production) shift || true; deploy_prod "$@" ;;
+    *) echo "Usage: $0 [deploy|build|server|setup|web|domains|proxy|bashar|prod]  (prod = quick deploy; also: --target=production)"; exit 1 ;;
 esac
