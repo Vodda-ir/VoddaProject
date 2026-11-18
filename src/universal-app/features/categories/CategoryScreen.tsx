@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { UniversalAppConfig } from "../../config";
 import { usePlatform } from "../../platform/context";
 import { navigateApp } from "../../router";
@@ -12,11 +12,11 @@ import {
   IconBadge,
   LoadingState,
   colors,
-  radii,
-  shadows,
   spacing,
   typography,
 } from "../../ui";
+import { localizedDigits } from "../../ui/persian";
+import { neonCellActiveBackground, neonDivider } from "../../ui/neon";
 import { messageOf } from "../../ui/errorMessage";
 import { useMinWidth } from "../../ui/useMediaQuery";
 import { getCatalog } from "../dispatch/api";
@@ -34,26 +34,6 @@ import {
 export type CategoryScreenProps = {
   config: UniversalAppConfig;
 };
-
-function chipStyle(active: boolean): CSSProperties {
-  return {
-    minHeight: 38,
-    padding: "7px 14px",
-    border: `1px solid ${active ? colors.olive600 : colors.sand200}`,
-    borderRadius: radii.pill,
-    color: active ? colors.surface : colors.inkSecondary,
-    background: active ? colors.olive600 : colors.surface,
-    boxShadow: active ? "0 5px 14px rgba(94,110,67,.16)" : shadows.xs,
-    fontFamily: typography.fontFamily,
-    fontSize: 12.5,
-    fontWeight: 800,
-    cursor: "pointer",
-    display: "inline-flex",
-    alignItems: "center",
-    gap: 6,
-    whiteSpace: "nowrap" as const,
-  };
-}
 
 /**
  * باگ category-routing — صفحهٔ دسته‌بندی موضوعات.
@@ -114,6 +94,19 @@ export function CategoryScreen({ config }: CategoryScreenProps) {
     return categoryTeachers;
   }, [activeTopicId, category, categoryTeachers, teachers]);
 
+  /* ۰.۸.۰ — سلول‌های شبکهٔ نئونی زیردسته‌ها: «همه» + تک‌تک زیردسته‌ها با شمار استادِ همان زیردسته */
+  const topicCells = useMemo(() => {
+    if (!category) return [];
+    return [
+      { id: 0, title: "همهٔ زیردسته‌ها", count: categoryTeachers.length },
+      ...category.topics.map((topic) => ({
+        id: topic.id,
+        title: topic.title,
+        count: teachersForTopics(teachers, [topic]).length,
+      })),
+    ];
+  }, [category, categoryTeachers, teachers]);
+
   if (loading && categories.length === 0) {
     return (
       <section style={{ display: "grid", gap: 14 }} aria-label="در حال دریافت دسته‌بندی">
@@ -144,7 +137,18 @@ export function CategoryScreen({ config }: CategoryScreenProps) {
 
   return (
     <section className="vodda-screen" style={{ display: "grid", gap: spacing.lg }}>
-      <header className="vodda-enter" style={{ display: "grid", gap: 6, paddingTop: 2 }}>
+      {/* ۰.۸.۰ — هدر نئونی دسته — هم‌خانوادهٔ کادر موضوعات صفحهٔ نخست */}
+      <header
+        className="vodda-neon-gold vodda-enter"
+        style={{
+          borderRadius: 22,
+          background: colors.surface,
+          padding: "14px 16px",
+          display: "grid",
+          gap: 10,
+          minWidth: 0,
+        }}
+      >
         <button
           type="button"
           onClick={() => navigateApp("/", config)}
@@ -171,41 +175,122 @@ export function CategoryScreen({ config }: CategoryScreenProps) {
           صفحهٔ نخست
         </button>
         <div style={{ display: "flex", alignItems: "center", gap: 11, minWidth: 0 }}>
-          <IconBadge icon="quran" tone="olive" size={46} />
+          <IconBadge icon="quran" tone="gold" size={46} />
           <div style={{ minWidth: 0, flex: 1 }}>
             <h1 style={{ fontSize: 21, fontWeight: 800, margin: 0, color: colors.ink }}>{category.category}</h1>
             <span style={{ fontSize: 12.5, color: colors.inkMuted }}>
-              {category.topics.length} زیردسته · {categoryTeachers.length} استاد در این دسته
+              {localizedDigits(category.topics.length, "fa")} زیردسته · {localizedDigits(categoryTeachers.length, "fa")} استاد در این دسته
             </span>
           </div>
         </div>
       </header>
 
-      {/* زیردسته‌های همین دسته — نه کل دسته‌بندی‌ها */}
+      {/* ۰.۸.۰ — شبکهٔ نئونی زیردسته‌ها — همان زبان کادر نخست؛ خطوط افقی/عمودی نئونی میان سلول‌ها.
+       * کلیک روی هر زیردسته، فهرست اساتید را به همان زیردسته محدود می‌کند. */}
       <div
-        className="vodda-scroll-rail vodda-enter"
+        className="vodda-neon-gold vodda-enter"
         aria-label="زیردسته‌های این دسته"
-        style={{ display: "flex", gap: 8, overflowX: "auto", marginInline: -spacing.xl, paddingInline: spacing.xl, minHeight: 42 }}
+        style={{
+          display: "grid",
+          gridTemplateColumns: threeCol ? "repeat(3, minmax(0,1fr))" : "repeat(2, minmax(0,1fr))",
+          borderRadius: 22,
+          background: colors.surface,
+          overflow: "hidden",
+          minWidth: 0,
+        }}
       >
-        <button
-          type="button"
-          className="vodda-tappable"
-          onClick={() => setActiveTopicId(0)}
-          style={chipStyle(activeTopicId === 0)}
-        >
-          همهٔ زیردسته‌ها
-        </button>
-        {category.topics.map((topic) => (
-          <button
-            key={topic.id}
-            type="button"
-            className="vodda-tappable"
-            onClick={() => setActiveTopicId(topic.id === activeTopicId ? 0 : topic.id)}
-            style={chipStyle(topic.id === activeTopicId)}
-          >
-            {topic.title}
-          </button>
-        ))}
+        {topicCells.map((cell, index) => {
+          const columns = threeCol ? 3 : 2;
+          const column = index % columns;
+          const row = Math.floor(index / columns);
+          const rowCount = Math.ceil(topicCells.length / columns);
+          /* خط نئونی عمودی میان ستون‌ها + افقی میان ردیف‌ها — فقط میان سلول‌های همسایه */
+          const showVertical = column < columns - 1 && index + 1 < topicCells.length;
+          const showHorizontal = row < rowCount - 1;
+          const active = activeTopicId === cell.id;
+          return (
+            <button
+              key={cell.id}
+              type="button"
+              className="vodda-tappable"
+              onClick={() => setActiveTopicId(cell.id === 0 || cell.id === activeTopicId ? 0 : cell.id)}
+              aria-pressed={active}
+              aria-label={`${cell.title} — ${localizedDigits(cell.count, "fa")} استاد`}
+              style={{
+                position: "relative",
+                display: "grid",
+                alignContent: "center",
+                justifyItems: "center",
+                gap: 8,
+                minHeight: 96,
+                padding: "14px 12px",
+                textAlign: "center",
+                border: 0,
+                background: active ? neonCellActiveBackground : "transparent",
+                cursor: "pointer",
+                fontFamily: typography.fontFamily,
+                minWidth: 0,
+                animation: "vodda-enter .32s ease-out both",
+                animationDelay: `${index * 35}ms`,
+              }}
+            >
+              {showVertical ? <span aria-hidden="true" style={neonDivider(true)} /> : null}
+              {showHorizontal ? <span aria-hidden="true" style={neonDivider(false)} /> : null}
+
+              <span
+                aria-hidden="true"
+                style={{
+                  position: "relative",
+                  width: 40,
+                  height: 40,
+                  display: "grid",
+                  placeItems: "center",
+                  borderRadius: 12,
+                  background: "linear-gradient(140deg, #f2f5ea, #f7f0dc)",
+                  border: `1px solid ${colors.goldSoft}`,
+                  boxShadow: "0 0 8px rgba(191,149,64,.18)",
+                }}
+              >
+                <Icon name="quran" size={20} style={{ color: colors.olive600 }} />
+              </span>
+
+              <strong
+                style={{
+                  fontSize: 12.5,
+                  fontWeight: 800,
+                  color: active ? colors.olive600 : colors.ink,
+                  lineHeight: 1.5,
+                  display: "-webkit-box",
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: "vertical",
+                  overflow: "hidden",
+                  overflowWrap: "anywhere",
+                }}
+              >
+                {cell.title}
+              </strong>
+
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 4,
+                  padding: "2.5px 10px",
+                  borderRadius: 999,
+                  background: colors.olive50,
+                  border: `1px solid ${colors.olive100}`,
+                  color: colors.olive600,
+                  fontSize: 10.5,
+                  fontWeight: 800,
+                  whiteSpace: "nowrap" as const,
+                }}
+              >
+                <Icon name="users" size={11} stroke={2.2} />
+                {localizedDigits(cell.count, "fa")} استاد
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       <div style={{ ...typography.bodySmall, color: colors.inkMuted }}>
@@ -224,14 +309,14 @@ export function CategoryScreen({ config }: CategoryScreenProps) {
           action={activeTopicId > 0 ? <Button variant="secondary" onClick={() => setActiveTopicId(0)}>نمایش همهٔ زیردسته‌ها</Button> : undefined}
         />
       ) : (
-        /* ۰.۷.۵ — کادر کم‌رنگ و جذاب دور شبکهٔ اساتید همین دسته */
+        /* ۰.۸.۰ — قاب هم‌خانوادهٔ نئونی دور شبکهٔ اساتید همین دسته */
         <div
           style={{
             borderRadius: 22,
-            border: `1.2px solid ${colors.sand150}`,
+            border: `1.2px solid ${colors.goldSoft}`,
             background: `linear-gradient(180deg, ${colors.surface}, ${colors.surfaceWarm})`,
             padding: 12,
-            boxShadow: "0 6px 20px rgba(46,54,34,.06)",
+            boxShadow: "0 6px 20px rgba(46,54,34,.06), 0 0 12px rgba(191,149,64,.10)",
           }}
         >
           <div

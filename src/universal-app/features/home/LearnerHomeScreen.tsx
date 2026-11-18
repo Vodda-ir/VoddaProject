@@ -26,6 +26,7 @@ import { useMinWidth } from "../../ui/useMediaQuery";
 import { messageOf } from "../../ui/errorMessage";
 import { useAppearance } from "../../ui/appearance";
 import { localizedDigits } from "../../ui/persian";
+import { neonDivider } from "../../ui/neon";
 import { todayAppDateLabel } from "../../ui/jalali";
 import { resolveAssetUrl } from "../../platform/asset";
 import { RoleModeSheet } from "../auth/RoleModeSheet";
@@ -185,32 +186,6 @@ function VerseStrip() {
       </p>
     </div>
   );
-}
-
-/* ۰.۷.۷ — خط نئونی جداکنندهٔ سلول‌های کادر موضوعات — افقی/عمودی، محو در دو سر + هالهٔ طلایی */
-function neonDivider(vertical: boolean): CSSProperties {
-  return {
-    position: "absolute",
-    pointerEvents: "none",
-    ...(vertical
-      ? {
-          insetInlineEnd: 0,
-          top: "16%",
-          bottom: "16%",
-          width: 1.5,
-          background:
-            "linear-gradient(180deg, transparent, rgba(191,149,64,.85) 18%, rgba(216,184,105,1) 50%, rgba(191,149,64,.85) 82%, transparent)",
-        }
-      : {
-          bottom: 0,
-          insetInlineStart: "12%",
-          insetInlineEnd: "12%",
-          height: 1.5,
-          background:
-            "linear-gradient(90deg, transparent, rgba(191,149,64,.85) 18%, rgba(216,184,105,1) 50%, rgba(191,149,64,.85) 82%, transparent)",
-        }),
-    boxShadow: "0 0 5px rgba(191,149,64,.45), 0 0 12px rgba(216,184,105,.28)",
-  };
 }
 
 /* ۰.۷.۷ — کادر دسته‌بندی موضوعات: حاشیهٔ نئونی طلایی + خط‌های نئونی افقی/عمودی میان سلول‌ها؛
