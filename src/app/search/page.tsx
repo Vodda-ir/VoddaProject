@@ -269,7 +269,7 @@ export default function SearchPage() {
         </div>
 
         {loading ? (
-          <div className="vodda-teacher-grid web-search-loading">
+          <div className="web-results-list web-search-loading">
             {[0, 1, 2, 3].map((item) => <div key={item} />)}
           </div>
         ) : error ? (
@@ -287,7 +287,8 @@ export default function SearchPage() {
           </div>
         ) : (
           <>
-            <div className="vodda-teacher-grid">
+            {/* ۰.۷.۲ — هر ردیف یک کارت پهن و بزرگ */}
+            <div className="web-results-list">
               {results.map((teacher) => <WebTeacherCard key={teacher.id} teacher={teacher} href={`/teachers/${teacher.id}`} />)}
             </div>
 
