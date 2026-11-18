@@ -40,6 +40,7 @@ func (r *authStateUserRepo) List(context.Context, domain.UserListFilter) ([]doma
 }
 func (r *authStateUserRepo) AddWallet(context.Context, uint, int64) error      { return nil }
 func (r *authStateUserRepo) Count(context.Context, domain.Role) (int64, error) { return 0, nil }
+func (r *authStateUserRepo) AdminIDs(context.Context) ([]uint, error)          { return nil, nil }
 
 func TestAuthRequiredUsesCurrentDatabaseRole(t *testing.T) {
         gin.SetMode(gin.TestMode)
