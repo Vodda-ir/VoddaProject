@@ -64,13 +64,17 @@ info "commit $SHORT_SHA — $(git -C "$REPO_DIR" log -1 --format='%s' | head -c 
 
 # ── ۲) تگ‌گذاری ایمیج فعلی برای rollback ────────────────────
 step "[2/6] Tagging current images for rollback"
-for svc in frontend backend; do
-  if docker image inspect "vodda-$svc:prod" >/dev/null 2>&1; then
-    docker tag "vodda-$svc:prod" "vodda-$svc:rollback-last" && info "vodda-$svc:prod → vodda-$svc:rollback-last"
-  else
-    warn "vodda-$svc:prod not found yet (first deploy?)"
-  fi
-done
+if [ "$INJECT_FAILURE" = "1" ]; then
+  info "(--inject-failure) rollback-last از آخرین دیپلوی واقعی حفظ می‌شود"
+else
+  for svc in frontend backend; do
+    if docker image inspect "vodda-$svc:prod" >/dev/null 2>&1; then
+      docker tag "vodda-$svc:prod" "vodda-$svc:rollback-last" && info "vodda-$svc:prod → vodda-$svc:rollback-last"
+    else
+      warn "vodda-$svc:prod not found yet (first deploy?)"
+    fi
+  done
+fi
 
 # ── گارد دیسک: build روی ۱۷GB فضا نمرهد ─────────────────────
 free_mb=$(df -Pm / | awk 'NR==2{print $4}')
@@ -135,14 +139,14 @@ wait_health() {  # wait_health <attempts>
 }
 do_rollback() {
   fail "health check failed → AUTO-ROLLBACK to previous image"
-  local ok=1 svc
+  local failed=0 svc
   for svc in frontend backend; do
     if docker image inspect "vodda-$svc:rollback-last" >/dev/null 2>&1; then
-      docker tag "vodda-$svc:rollback-last" "vodda-$svc:prod" && info "vodda-$svc:rollback-last → vodda-$svc:prod" || ok=0
+      docker tag "vodda-$svc:rollback-last" "vodda-$svc:prod" && info "vodda-$svc:rollback-last → vodda-$svc:prod" || failed=1
     fi
   done
-  compose_up || ok=0
-  return "$ok"
+  compose_up || failed=1
+  return "$failed"
 }
 
 # ── ۵) health check با rollback خودکار ──────────────────────
