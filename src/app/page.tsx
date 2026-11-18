@@ -1,4 +1,5 @@
 import { api, type Teacher } from '@/lib/api';
+import { redirect } from 'next/navigation';
 import { enrichTeacherPayload, sortTeacherRowsTier1First } from '@/lib/server/tier1';
 import { freeServiceCards, popularServiceCards } from '@/lib/home/discover';
 import type { CatalogCategory } from '@/lib/category';
@@ -31,6 +32,9 @@ async function getCatalogCategories(): Promise<CatalogCategory[]> {
 }
 
 export default async function Home() {
+  /* پیش‌نمایش محلی (فقط dev، با VODDA_PREVIEW_MOCK=1) — ریشه مستقیم به اپ می‌رود */
+  if (process.env.VODDA_PREVIEW_MOCK === '1') redirect('/app');
+
   const [{ teachers, unavailable }, categories] = await Promise.all([getTeachers(), getCatalogCategories()]);
 
   /* موتور کشف مشترک (src/lib/home/discover.ts) — همان منطق اپ؛ پارتی کامل. */
