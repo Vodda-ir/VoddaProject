@@ -72,6 +72,20 @@ for svc in frontend backend; do
   fi
 done
 
+# ── گارد دیسک: build روی ۱۷GB فضا نمرهد ─────────────────────
+free_mb=$(df -Pm / | awk 'NR==2{print $4}')
+if [ "$free_mb" -lt 2048 ]; then
+  warn "disk low (${free_mb}MB) — pruning inactive build cache and dangling images"
+  docker builder prune -f >/dev/null 2>&1 || true
+  docker image prune -f >/dev/null 2>&1 || true
+  free_mb=$(df -Pm / | awk 'NR==2{print $4}')
+fi
+if [ "$free_mb" -lt 1536 ]; then
+  fail "not enough disk for build (${free_mb}MB < 1536MB). Free space manually first."
+  echo "DEPLOY_FAILED"; exit 1
+fi
+info "disk free: ${free_mb}MB"
+
 # ── ۳) build ────────────────────────────────────────────────
 build_one() {
   local name="$1" dir="$2" t0 t1
