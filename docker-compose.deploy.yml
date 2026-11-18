@@ -1,0 +1,196 @@
+services:
+  mysql:
+    platform: ${DOCKER_PLATFORM:-linux/amd64}
+    image: mysql:8.0
+    pull_policy: never
+    command:
+      - --max_allowed_packet=512M
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --sql-mode=STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-${DB_PASSWORD:?DB_PASSWORD is required}}
+      MYSQL_DATABASE: ${DB_NAME:-vodda}
+      MYSQL_USER: ${DB_USER:-vodda}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+    ports:
+      - "127.0.0.1:${MYSQL_PORT:-3422}:3306"
+    volumes:
+      - ./data/mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    networks:
+      - vodda-network
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+
+  backend:
+    platform: ${DOCKER_PLATFORM:-linux/amd64}
+    image: vodda-backend:prod
+    pull_policy: never
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: ${BACKEND_INTERNAL_PORT:-3420}
+      APP_ENV: production
+      APP_TIMEZONE: ${APP_TIMEZONE:-Asia/Tehran}
+      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-https://vodda.ir}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://vodda.ir,https://app.vodda.ir,https://localhost,capacitor://localhost}
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-127.0.0.1,::1,172.16.0.0/12}
+      DB_HOST: ${DB_HOST:-mysql}
+      DB_PORT: ${DB_PORT:-3306}
+      DB_USER: ${DB_USER:-vodda}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      DB_NAME: ${DB_NAME:-vodda}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      TOKEN_EXPIRATION: ${TOKEN_EXPIRATION:-720h}
+      OTP_EXPIRATION: ${OTP_EXPIRATION:-2m}
+      OTP_RESEND_COOLDOWN: ${OTP_RESEND_COOLDOWN:-2m}
+      SMS_PROVIDER: ${SMS_PROVIDER:-sms.ir}
+      SMS_API_URL: ${SMS_API_URL:-https://api.sms.ir/v1/send/verify}
+      SMS_API_KEY: ${SMS_API_KEY:-}
+      SMS_BODY_ID: ${SMS_BODY_ID:-0}
+      SMS_FARAZ_API_URL: ${SMS_FARAZ_API_URL:-https://ippanel.com/patterns/pattern}
+      SMS_FARAZ_USERNAME: ${SMS_FARAZ_USERNAME:-}
+      SMS_FARAZ_PASSWORD: ${SMS_FARAZ_PASSWORD:-}
+      SMS_FARAZ_FROM: ${SMS_FARAZ_FROM:-3000505}
+      SMS_FARAZ_PATTERN_CODE: ${SMS_FARAZ_PATTERN_CODE:-j4skcu7fjd1jjjz}
+      SMS_REQUEST_TIMEOUT: ${SMS_REQUEST_TIMEOUT:-20s}
+      OTP_TEST_BYPASS_ENABLED: "false"
+      AUTO_SEED: "false"
+      DEV_WALLET_CHARGE_ENABLED: "false"
+      ZARINPAL_MERCHANT_ID: ${ZARINPAL_MERCHANT_ID:-}
+      ZARINPAL_SANDBOX: ${ZARINPAL_SANDBOX:-false}
+      PLATFORM_COMMISSION_PERCENT: ${PLATFORM_COMMISSION_PERCENT:-15}
+    ports:
+      - "127.0.0.1:${BACKEND_PORT:-3420}:${BACKEND_INTERNAL_PORT:-3420}"
+    volumes:
+      - ./data/uploads:/app/uploads
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:$${SERVER_PORT}/ready"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - vodda-network
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+
+  frontend:
+    platform: ${DOCKER_PLATFORM:-linux/amd64}
+    image: vodda-frontend:prod
+    pull_policy: never
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      PORT: ${FRONTEND_INTERNAL_PORT:-3421}
+      HOSTNAME: 0.0.0.0
+      NODE_ENV: production
+      SERVER_API_URL: ${SERVER_API_URL:-http://backend:3420/api/v1}
+      UNIVERSAL_APP_ROOT_HOST: ${UNIVERSAL_APP_ROOT_HOST:-app.vodda.ir}
+    ports:
+      - "127.0.0.1:${FRONTEND_PORT:-3421}:${FRONTEND_INTERNAL_PORT:-3421}"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - "node -e \"fetch('http://127.0.0.1:' + process.env.PORT).then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))\""
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - vodda-network
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+
+  monafaseh:
+    platform: ${DOCKER_PLATFORM:-linux/amd64}
+    image: vodda-monafaseh:prod
+    pull_policy: never
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+      DATABASE_URL: file:/app/db/custom.db
+      NEXTAUTH_SECRET: ${MONAFASEH_NEXTAUTH_SECRET:-${JWT_SECRET:?JWT_SECRET is required}}
+      NEXTAUTH_URL: ${MONAFASEH_NEXTAUTH_URL:-https://monafeseh.ir}
+      SITE_URL: ${MONAFASEH_SITE_URL:-https://monafeseh.ir}
+      BOT_TOKEN: ${MONAFASEH_BOT_TOKEN:-}
+      SAMAN_TERMINAL_ID: ${SAMAN_TERMINAL_ID:-}
+      SAMAN_MERCHANT_ID: ${SAMAN_MERCHANT_ID:-}
+    ports:
+      - "127.0.0.1:${MONAFASEH_PORT:-3423}:3000"
+    volumes:
+      - monafaseh_db:/app/db
+      - monafaseh_uploads:/app/public/uploads
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
+    networks:
+      - vodda-network
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+
+  bashar:
+    platform: ${DOCKER_PLATFORM:-linux/amd64}
+    image: vodda-bashar:prod
+    pull_policy: never
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+      DATABASE_URL: file:/app/db/custom.db
+      BASHAR_EITAA_TOKEN: ${BASHAR_EITAA_TOKEN:-}
+      BASHAR_EITAA_CHANNEL: ${BASHAR_EITAA_CHANNEL:-}
+    ports:
+      - "127.0.0.1:${BASHAR_PORT:-3424}:3000"
+    volumes:
+      - bashar_db:/app/db
+      - bashar_uploads:/app/public/uploads
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - "node -e \"fetch('http://127.0.0.1:3000/api/bootstrap').then(r=>{process.exit(r.ok?0:1)}).catch(()=>process.exit(1))\""
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
+    networks:
+      - vodda-network
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  monafaseh_db:
+    name: monafaseh_monafaseh-db
+    driver: local
+  monafaseh_uploads:
+    name: monafaseh_monafaseh-uploads
+    driver: local
+  bashar_db:
+    name: bashar_bashar-db
+    driver: local
+  bashar_uploads:
+    name: bashar_bashar-uploads
+    driver: local
+
+networks:
+  vodda-network:
+    name: vodda_vodda-network
+    external: true

@@ -1,0 +1,495 @@
+/** فرگمنت ترجمهٔ فارسی→انگلیسی برای حوزهٔ home-sessions — کلید = متن فارسی داخل کد. */
+const f: Record<string, string> = {
+  // ── خانه (LearnerHomeScreen) ──
+  "در حال بارگذاری": "Loading…",
+  "پروفایل خود را کامل کنید تا اساتید شما را بهتر بشناسند": "Complete your profile so teachers can get to know you better",
+  "قرآن — طه: ۱۱۴": "Quran — Taha 20:114",
+  "حدیث نبوی": "Prophetic hadith",
+  "قرآن — الزمر: ۹": "Quran — Az-Zumar 39:9",
+  "قرآن — المجادلة: ۱۱": "Quran — Al-Mujadila 58:11",
+  "قرآن — العلق: ۱": "Quran — Al-Alaq 96:1",
+  "قرآن — فاطر: ۲۸": "Quran — Fatir 35:28",
+  "قرآن — النحل: ۴۳": "Quran — An-Nahl 16:43",
+  "قرآن — فصلت: ۵۳": "Quran — Fussilat 41:53",
+  "قرآن — البقرة: ۲۶۹": "Quran — Al-Baqarah 2:269",
+  "قرآن — الرعد: ۲۸": "Quran — Ar-Ra'd 13:28",
+  "استادهای جلسه‌های قبلی تو": "Teachers from your past sessions",
+  "رزرو دوباره": "Book again",
+  "مشاهدهٔ همه": "View all",
+  "اساتید منتخب وُدّا": "Vodda featured teachers",
+  "هر بار منتخبی متفاوت از توانمندترین استادان — بر پایهٔ عملکرد، رتبه و فعالیت":
+    "A different pick of our most capable teachers every time — based on performance, rating and activity",
+  "چیدمان تازه": "Shuffle",
+  "توقف نمونه‌صوت": "Stop audio sample",
+  "پخش نمونه‌صوت: {title}": "Play audio sample: {title}",
+  "استاد ویژهٔ امروز": "Featured teacher of the day",
+  "مشاهده خدمات و زمان‌های قابل رزرو": "See services and bookable times",
+  "({n} نظر)": "({n} reviews)",
+  "مشاهده و رزرو": "View & book",
+  "اعلان‌ها": "Notifications",
+  "در حال دریافت اعلان‌ها…": "Loading notifications…",
+  "اعلانی نداری": "No notifications yet",
+  "وقتی خبر تازه‌ای داشته باشیم اینجا می‌بینی.": "Any new updates will appear here.",
+  "در حال ثبت…": "Saving…",
+  "علامت‌گذاری همه به‌عنوان خوانده‌شده": "Mark all as read",
+  "{greeting}، امروز {date}": "{greeting}, {date}",
+  "{n} جان": "Dear {n}",
+  "کاربر عزیز": "Dear user",
+  "دوست": "friend",
+  "برای تغییر پنل، به پروفایل بروید": "To switch panels, go to your profile",
+  "کیف پول": "Wallet",
+  "به وُدّا خوش آمدید": "Welcome to Vodda",
+  "استاد قرآن خود را بیابید\nو زمان آزاد ایشان را رزرو کنید":
+    "Find your Quran teacher\nand book their free time",
+  "پروفایل استادان تأییدشده و خدمات قابل رزرو را ببینید.":
+    "Browse verified teacher profiles and bookable services.",
+  "جستجوی استاد": "Find a teacher",
+  "دریافت استادان ناموفق بود": "Couldn't load teachers",
+  "دریافت استادان ناموفق بود.": "Couldn't load teachers.",
+  "تلاش دوباره": "Try again",
+  "هنوز استادی منتشر نشده": "No teachers published yet",
+  "پس از تأیید اولین استاد، پروفایل او در این بخش نمایش داده می‌شود.":
+    "Once the first teacher is approved, their profile will appear here.",
+
+  // ── بخش‌های خانه (homeSections) ──
+  "دسته‌بندی موضوعات": "Topic categories",
+  "موضوع دلخواه را انتخاب کنید تا وارد زیردسته‌های تخصصی آن شوید.":
+    "Pick a topic to explore its specialized subcategories.",
+  "ورود به زیردسته‌های {title} — {n} خدمت": "Open {title} subcategories — {n} services",
+  "ورود به زیردسته‌های {title}": "Open {title} subcategories",
+  "{n} خدمت": "{n} services",
+  "خدمات فعال": "Active services",
+  "قرآن‌آموزی پایه": "Quran basics",
+  "تجوید و علوم قرائت": "Tajweed & recitation sciences",
+  "حفظ قرآن": "Quran memorization",
+  "صوت و لحن و هنر قرآنی": "Voice, maqam & Quranic arts",
+  "مفاهیم، تفسیر و علوم قرآن": "Meanings, tafsir & Quranic sciences",
+  "آموزش‌های ویژه": "Special programs",
+  "آمادگی و مشاوره قرآنی": "Preparation & Quranic counseling",
+  "خدمات برتر": "Top services",
+  "خدمات برتر و پراستفاده": "Top & most-used services",
+  "انتخاب قرآن‌آموزان وُدّا برای شروع مسیر": "What Vodda learners choose to begin their journey",
+  "اساتید خدمت {title}": "Teachers for {title}",
+  "پرطرفدار": "Popular",
+  "اساتید": "Teachers",
+  "جلسهٔ رایگان {title} با {name}": "Free session {title} with {name}",
+  "رایگان": "Free",
+  "{n} دقیقه": "{n} minutes",
+  "استاد وُدّا": "Vodda teacher",
+  "رزرو جلسهٔ رایگان": "Book the free session",
+  "خدمات رایگان": "Free sessions",
+  "خدمات رایگان اساتید": "Teachers' free sessions",
+  "جلسات رایگانی که اساتید برای شما برگزار می‌کنند — بدون هزینه شروع کنید.":
+    "Free sessions hosted by teachers — start at no cost.",
+  "مشاهدهٔ جلسات رایگان اساتید": "See teachers' free sessions",
+  "هدیهٔ اساتید وُدّا": "A gift from Vodda teachers",
+  "جلسات رایگان یادگیری قرآن": "Free Quran learning sessions",
+  "اساتیدی که خدمتشان را رایگان ارائه می‌کنند را ببینید":
+    "Meet teachers offering their services for free",
+
+  // ── کاتالوگ رسمی خدمات (عنوان‌های بک‌اند) ──
+  "آموزش الفبا و قرآن‌آموزی از پایه": "Alphabet & Quran reading from scratch",
+  "روخوانی و درست‌خوانی قرآن کریم": "Quran reading & accurate recitation",
+  "روان‌خوانی و فصالت در تلاوت": "Fluent & eloquent recitation",
+  "تلاوت و روخوانی قرآن کریم": "Quran recitation & reading practice",
+  "آموزش قرآن برای مبتدیان بزرگسال": "Quran for adult beginners",
+  "آموزش تجوید و احکام عملی": "Practical tajweed rules",
+  "تجوید نظری و پیشرفته": "Theoretical & advanced tajweed",
+  "تصحیح تلاوت و اصلاح لهجه": "Recitation correction & accent refinement",
+  "ترتیل قرآن کریم": "Tarteel recitation of the Quran",
+  "روایت حفص از عاصم (تحفه‌الاطفال)": "Hafs 'an 'Asim narration (Tuhfat al-Atfal)",
+  "متون تجویدی و عقود (الجزریه، طیبه، شاطبیه)": "Tajweed texts & poems (Al-Jazariyyah, Tayyibah, Shatibiyyah)",
+  "اجازه و سند قرائت (اقراء)": "Ijazah & recitation certificate (Iqra')",
+  "حفظ قرآن کریم با برنامه‌ریزی شخصی": "Quran memorization with a personal plan",
+  "حفظ جزء به جزء با مرور منظم": "Juz-by-juz memorization with regular review",
+  "مرور و تثبیت محفوظات (مراجعه)": "Review & consolidation of memorized portions",
+  "حفظ موضوعی آیات قرآن": "Thematic memorization of Quranic verses",
+  "حفظ قرآن ویژه کودکان و نوجوانان": "Quran memorization for kids & teens",
+  "آمادگی آزمون و مسابقات حفظ": "Memorization exams & competitions prep",
+  "آموزش صوت و لحن (مبانی و تمهید)": "Voice & maqam foundations (mabadi & tamhid)",
+  "مقامات قرآنی و زیباخوانی": "Quranic maqamat & melodious recitation",
+  "تمرینات تنفسی و نفس‌گیری تلاوت": "Breathing exercises & breath control for recitation",
+  "تقویت صدا و آواسازی قرآنی": "Voice strengthening & Quranic vocal training",
+  "آموزش اذان و اقامه": "Adhan & iqamah training",
+  "مداحی و نوحه‌خوانی اهل‌بیت (ع)": "Eulogy & lamentation for Ahl al-Bayt (AS)",
+  "آمادگی محافل انس و مسابقات صوت و لحن": "Preparation for devotional gatherings & voice/maqam contests",
+  "ترجمه و مفاهیم قرآن کریم": "Quran translation & meanings",
+  "تفسیر قرآن (سوره‌به‌سوره)": "Quran tafsir (surah by surah)",
+  "تفسیر موضوعی قرآن کریم": "Thematic tafsir of the Quran",
+  "علوم و تاریخ قرآن کریم": "Quranic sciences & history",
+  "آموزش واژگان کلیدی قرآن": "Key Quranic vocabulary",
+  "ادعیه و زیارات قرآنی": "Quranic supplications & ziyarah",
+  "قرآن‌آموزی ویژه کودکان": "Quran learning for children",
+  "قرآن‌آموزی ویژه نوجوانان": "Quran learning for teenagers",
+  "قرآن‌آموزی ویژه بانوان": "Quran learning for women",
+  "آموزش قرآن به زبان‌های دیگر": "Quran in other languages",
+  "تربیت مدرس و معلم قرآن": "Training Quran instructors & teachers",
+  "آمادگی مسابقات تلاوت و قرائت": "Recitation competition preparation",
+  "آمادگی مسابقات اذان و صوت و لحن": "Adhan & voice/maqam competition preparation",
+  "مشاوره و برنامه‌ریزی مسیر قرآنی": "Quranic path counseling & planning",
+  "ارزیابی و رتبه‌بندی سطح قرآنی": "Quranic level assessment & grading",
+
+  // ── جلسات من (LearnerSessionsScreen) ──
+  "زمان رسمی جلسه دریافت نشد": "Official session time unavailable",
+  "{a} تا {b}": "{a} – {b}",
+  "جلسهٔ فوری": "Instant session",
+  "فوری": "Instant",
+  "دلیل لغو: {n}": "Cancellation reason: {n}",
+  "پرداخت آنلاین تکمیل نشده؛ با تکمیل پرداخت، درخواست برای استاد ارسال می‌شود.":
+    "Online payment wasn't completed; once you complete it, the request is sent to the teacher.",
+  "تکمیل پرداخت": "Complete payment",
+  "جلسه تأیید شده است. برای هماهنگی و ورود به کلاس، جزئیات جلسه را باز کنید.":
+    "The session is confirmed. Open the session details to coordinate and join the class.",
+  "در انتظار تأیید استاد": "Waiting for the teacher's approval",
+  "لغو جلسه": "Cancel session",
+  "ثبت امتیاز و نظر": "Rate & review",
+  "جلسات پیش‌رو": "Upcoming sessions",
+  "جلسات گذشته": "Past sessions",
+  "جلسات من": "My sessions",
+  "زمان‌ها بر اساس ساعت رسمی سامانه نمایش داده می‌شوند": "Times are shown in the platform's official time",
+  "پیش‌رو": "Upcoming",
+  "گذشته": "Past",
+  "در حال دریافت {n}…": "Loading {n}…",
+  "دریافت جلسات ناموفق بود": "Couldn't load sessions",
+  "جلسه‌ای نیست": "No sessions",
+  "هنوز جلسه‌ای در این بخش ندارید.": "You have no sessions in this section yet.",
+  "رزرو اولین جلسه": "Book your first session",
+  "لغو فقط پیش از زمان شروع مجاز است. در صورت موفقیت، مبلغ به کیف پول بازمی‌گردد.":
+    "Cancellation is allowed only before the start time. If it succeeds, the amount is refunded to your wallet.",
+  "انصراف": "Cancel",
+  "امتیاز جلسه با {name}": "Rate the session with {name}",
+  "ثبت امتیاز": "Submit rating",
+  "{n} ستاره": "{n} stars",
+  "نظر شما (اختیاری)": "Your review (optional)",
+  "نظر خود را درباره جلسه بنویسید…": "Write your thoughts about the session…",
+  "امتیاز باید بین ۱ تا ۵ باشد.": "Rating must be between 1 and 5.",
+  "خطایی رخ داد. دوباره تلاش کنید.": "Something went wrong. Please try again.",
+
+  // ── جزئیات جلسه (SessionDetailScreen) ──
+  "شناسه جلسه نامعتبر است.": "Invalid session ID.",
+  "جزئیات جلسه دریافت نشد.": "Couldn't load session details.",
+  "در حال دریافت جزئیات جلسه…": "Loading session details…",
+  "جزئیات جلسه دریافت نشد": "Couldn't load session details",
+  "این جلسه در دسترس شما نیست.": "This session isn't available to you.",
+  "بازگشت به جلسات": "Back to sessions",
+  "وضعیت جلسه: {n}": "Session status: {n}",
+  "شروع کلاس تا {n} دقیقه دیگر": "Class starts in {n} minutes",
+  "شروع کلاس {date} ساعت {time}": "Class starts on {date} at {time}",
+  "چت هماهنگی جلسه": "Session coordination chat",
+  "چت هماهنگی": "Coordination chat",
+  "برای هماهنگی شروع جلسه، پیام‌های شما اینجا رد و بدل می‌شود.":
+    "Messages you exchange to coordinate the session start appear here.",
+  "هنوز پیامی رد و بدل نشده؛ اولین پیام را بفرستید.": "No messages yet; send the first one.",
+  "شما": "You",
+  "متن پیام هماهنگی": "Coordination message",
+  "پیام خود را بنویسید…": "Type your message…",
+  "ارسال پیام": "Send message",
+  "قرآن‌آموز": "Learner",
+  "استاد": "Teacher",
+  "· جلسهٔ {n}": "· Session: {n}",
+  "قرآن": "Quran",
+  "مبلغ جلسه": "Session fee",
+  "{n} تومان": "{n} Toman",
+  "شناسه جلسه": "Session ID",
+  "یادداشت: {n}": "Note: {n}",
+  "دلیل رد: {n}": "Rejection reason: {n}",
+  "درخواست جلسه در انتظار پاسخ شماست": "A session request is waiting for your reply",
+  "با تأیید، جلسه قطعی می‌شود و قرآن‌آموز می‌تواند کلاس تصویری را آغاز کند.":
+    "Once you approve, the session is confirmed and the learner can start the video class.",
+  "رد درخواست": "Decline request",
+  "تأیید جلسه": "Accept session",
+  "کلاس تصویری وُدّا": "Vodda video class",
+  "کلاس باز است — همین حالا وارد شوید.": "The class is open — join now.",
+  "پنجرهٔ ورود از ۱۰ دقیقه قبل از شروع باز می‌شود.": "The join window opens 10 minutes before the start.",
+  "پایان جلسه و ثبت برگزاری": "End session & mark as held",
+  "دکمهٔ «پایان جلسه» پس از آغاز رسمی جلسه فعال می‌شود.":
+    "The “End session” button becomes active once the session officially starts.",
+  "درخواست شما برای استاد ارسال شده و در انتظار تأیید اوست. می‌توانید از چت زیر هماهنگ کنید یا جلسه را لغو کنید.":
+    "Your request has been sent to the teacher and awaits their approval. Coordinate in the chat below or cancel the session.",
+  "جلسه تأیید شد. برای هماهنگی از چت زیر استفاده کنید و سر موعد وارد کلاس تصویری شوید.":
+    "The session is confirmed. Use the chat below to coordinate and join the video class on time.",
+  "جلسه برگزار شد": "Session completed",
+  "نظر شما به بهترشدن کلاس‌های استاد کمک می‌کند.": "Your feedback helps improve the teacher's classes.",
+  "شرکت در نظرسنجی و ثبت امتیاز": "Take the survey & rate",
+  "امتیاز شما برای این جلسه ثبت شده است.": "Your rating for this session has been recorded.",
+  "رد درخواست جلسه": "Decline session request",
+  "دلیل رد": "Rejection reason",
+  "دلیل رد را برای قرآن‌آموز بنویسید…": "Write the rejection reason for the learner…",
+  "دلیل رد درخواست را وارد کنید.": "Please write a rejection reason.",
+  "نظرسنجی جلسه با {name}": "Session survey with {name}",
+  "تجربهٔ خود از این جلسه را بنویسید…": "Share your experience of this session…",
+  "پیش از تأیید، هماهنگ کنید": "Coordinate before approving",
+  "اگر دربارهٔ زمان یا محتوای جلسه سؤالی دارید، از چت هماهنگی بپرسید.":
+    "If you have questions about the time or content, ask in the coordination chat.",
+
+  // ── کلاس زندهٔ تصویری (LiveRoom) ──
+  "دسترسی به دوربین/میکروفون ممکن نشد؛ می‌توانید بدون آن‌ها وارد کلاس شوید.":
+    "Couldn't access the camera/microphone; you can still join the class without them.",
+  "زمان جلسه به پایان رسیده است": "Session time is over",
+  "{time} باقی‌مانده": "{time} remaining",
+  "طرف مقابل کلاس را ترک کرد.": "Your peer left the class.",
+  "طرف مقابل وارد کلاس شد.": "Your peer joined the class.",
+  "طرف مقابل خارج شد.": "Your peer disconnected.",
+  "ورود با دوربین/میکروفون ناموفق بود؛ بدون رسانه وارد می‌شوید.":
+    "Joining with camera/microphone failed; you'll join without media.",
+  "اتصال زنده": "Live connection",
+  "اتصال پایدار (کانال پشتیبان)": "Stable connection (backup channel)",
+  "در حال اتصال…": "Connecting…",
+  "خطای دسترسی": "Connection error",
+  "پایان": "Ended",
+  "کلاس زندهٔ تصویری": "Live video class",
+  "متصل": "Connected",
+  "چت کلاس": "Class chat",
+  "چت": "Chat",
+  "تصویر طرف مقابل": "Peer video",
+  "برای پخش تصویر و صدای طرف مقابل لمس کنید": "Tap to play your peer's video and audio",
+  "در انتظار ورود طرف مقابل… همین صفحه را باز نگه دارید.":
+    "Waiting for your peer to join… keep this page open.",
+  "پیش‌نمایش دوربین شما": "Your camera preview",
+  "تصویر شما": "Your video",
+  "متن پیام کلاس": "Class chat message",
+  "پیام…": "Message…",
+  "ارسال پیام کلاس": "Send class message",
+  "ارسال": "Send",
+  "ورود بدون رسانه": "Join without media",
+  "ورود به کلاس با دوربین و میکروفون": "Join with camera & microphone",
+  "قطع میکروفون": "Mute microphone",
+  "وصل میکروفون": "Unmute microphone",
+  "قطع دوربین": "Turn camera off",
+  "وصل دوربین": "Turn camera on",
+  "خروج از کلاس": "Leave class",
+  "پایان جلسه": "End session",
+
+  // ── فراخوان اساتید (LearnerDispatchScreen) ──
+  "جلسهٔ فوری — همین حالا": "Instant session — right now",
+  "در اسرع وقت": "As soon as possible",
+  "حدود {n} دقیقهٔ دیگر": "In about {n} minutes",
+  "استاد بین‌المللی": "International teacher",
+  "استاد کشوری": "National teacher",
+  "استاد استانی": "Provincial teacher",
+  "استاد قرآن": "Quran teacher",
+  " · {n} جلسه": " · {n} sessions",
+  "رد": "Decline",
+  "انتخاب و رزرو این استاد": "Choose & book this teacher",
+  "دریافت فهرست موضوعات ناموفق بود.": "Couldn't load the topic list.",
+  "زمان انتخاب‌شده باید حداقل ۱۵ دقیقه در آینده باشد.":
+    "The selected time must be at least 15 minutes ahead.",
+  "فراخوان شما برای اساتید این موضوع ارسال شد": "Your call has been sent to teachers of this topic",
+  "ثبت فراخوان انجام نشد.": "Couldn't submit the call.",
+  "لغو فراخوان انجام نشد.": "Couldn't cancel the call.",
+  "کیف پول شما کافی نیست. ابتدا کیف پول را شارژ کنید یا پرداخت آنلاین را برگزینید.":
+    "Your wallet balance isn't enough. Top up your wallet first or choose online payment.",
+  "ثبت رزرو انجام نشد.": "Couldn't complete the booking.",
+  "رد پاسخ انجام نشد.": "Couldn't decline the offer.",
+  "جلسه شما رزرو شد 🎉": "Your session is booked 🎉",
+  "موضوع «{topic}» با استاد {name} ثبت شد و در انتظار تأیید نهایی استاد است.":
+    "Topic “{topic}” with {name} is booked and awaits the teacher's final approval.",
+  "انتخاب‌شده": "your chosen teacher",
+  "پیگیری در جلسات من": "Track it in My sessions",
+  "فراخوان جدید": "New call",
+  "مهلت فراخوان": "Call deadline",
+  "درخواست شما بین همه اساتید این موضوع پخش شد. استادانی که زودتر اعلام آمادگی کنند، همین‌جا زنده نمایش داده می‌شوند.":
+    "Your request was broadcast to all teachers of this topic. Teachers who respond first appear here live.",
+  "استادهای آماده": "Available teachers",
+  "زنده": "Live",
+  "همهٔ پاسخ‌های این فراخوان": "All offers for this call are ",
+  "هستند؛ با انتخاب استاد، جلسه بدون پرداخت ثبت می‌شود.":
+    "— choosing a teacher books the session without payment.",
+  "روش پرداخت": "Payment method",
+  "پرداخت آنلاین (سامان)": "Online payment (Saman)",
+  "پرداخت از کیف پول": "Pay from wallet",
+  "در انتظار نخستین پاسخ…": "Waiting for the first response…",
+  "فراخوان شما برای اساتید «{topic}» ارسال شد. معمولاً نخستین پاسخ‌ها در چند دقیقه می‌رسند.":
+    "Your call was sent to teachers of “{topic}”. First responses usually arrive within minutes.",
+  "لغو فراخوان": "Cancel call",
+  "فراخوان اساتید": "Call for teachers",
+  "به‌سرعت و بدون تماس تلفنی؛ اساتید اعلام آمادگی می‌کنند و شما انتخاب می‌کنید":
+    "Fast and call-free: teachers declare readiness and you choose",
+  "موضوع را انتخاب کنید": "Pick a topic",
+  "فراخوان را ثبت کنید": "Send the call",
+  "از پاسخ‌ها انتخاب کنید": "Choose from offers",
+  "تغییر موضوع": "Change topic",
+  "چه زمانی؟": "When?",
+  "زمان مشخص": "Specific time",
+  "فراخوان فوری فقط به اساتید آمادهٔ همین لحظه می‌رسد":
+    "An instant call only reaches teachers ready right now",
+  "این فراخوان فقط برای اساتیدی ارسال می‌شود که «جلسهٔ فوری» را فعال کرده‌اند و معمولاً در چند دقیقه پاسخ می‌گیرید؛ ساعت دقیق با توافق استاد مشخص می‌شود.":
+    "This call goes only to teachers who have enabled “Instant session”; you usually hear back within minutes. The exact time is agreed with the teacher.",
+  "روز جلسه": "Session day",
+  "ساعت جلسه": "Session hour",
+  "امروز": "Today",
+  "فردا": "Tomorrow",
+  "ساعت‌ها به وقت تهران است؛ زمان نهایی با تأیید استاد قطعی می‌شود.":
+    "Times are Tehran time; the final time is confirmed with the teacher's approval.",
+  "بعد از ثبت، اساتید آماده اعلام حضور می‌کنند و شما یکی را انتخاب می‌کنید.":
+    "After submitting, available teachers respond and you pick one.",
+  "یادداشت برای اساتید (اختیاری)": "Note for teachers (optional)",
+  "مثلاً: مبتدی هستم، برای شروع کمکم کنید…": "e.g. I'm a beginner, please help me get started…",
+  "یادداشت فراخوان": "Call note",
+  "ثبت فراخوان برای اساتید": "Send call to teachers",
+  "یا مشاهدهٔ اساتید همین موضوع": "Or browse teachers of this topic",
+  "۱. موضوع آموزش را انتخاب کنید": "1. Choose a learning topic",
+  "از فهرست رسمی خدمات وُدّا — {n} موضوع تأییدشده": "From Vodda's official services catalog — {n} approved topics",
+  "جستجو در موضوعات؛ مثلاً تجوید، حفظ، صوت و لحن…": "Search topics; e.g. tajweed, memorization, voice & maqam…",
+  "جستجوی موضوع": "Search topics",
+  "در حال دریافت موضوعات…": "Loading topics…",
+  "دریافت موضوعات ناموفق بود": "Couldn't load topics",
+  "موضوعی پیدا نشد": "No topic found",
+  "عبارت دیگری را جستجو کنید.": "Try a different search term.",
+
+  // ── کارت‌های فراخوان (DispatchPairCards) ──
+  "پاسخ زنده": "Live response",
+  "ودیعهٔ امن": "Secure deposit",
+  "فراخوان آنلاین": "Online call",
+  "استاد آنلاین برای یادگیری": "An online teacher for your learning",
+  "موضوع درسی‌تان را اعلام کنید؛ اساتید آمادگی خود را ثبت می‌کنند و شما بهترین را انتخاب می‌کنید.":
+    "Announce your topic; teachers register their readiness and you pick the best one.",
+  "شروع فراخوان": "Start a call",
+  "فراخوان اساتید آنلاین — درخواست زنده استاد": "Call online teachers — live teacher request",
+  "قاری مراسم قرآنی": "Quran ceremony reciter",
+  "تلاوت، ختم و جشن قرآنی؛ فراخوان بگذارید یا از قاریان تأییدشده رزرو مستقیم دریافت کنید.":
+    "Recitation, khatm and Quranic celebrations; post a call or book directly from verified reciters.",
+  "ثبت فراخوان مراسم": "Post a ceremony call",
+  "فراخوان مراسم حضوری قرآنی و رزرو قاری": "In-person Quran ceremony call & reciter booking",
+
+  // ── اعلان‌ها (NotificationsBell + CallAlertBar + متن‌های ثابت بک‌اند) ──
+  "اعلان": "Notification",
+  " ({n} خوانده‌نشده)": " ({n} unread)",
+  "فراخوان مراسم": "Ceremony call",
+  "درخواست جلسهٔ آنلاین": "Online session request",
+  "درخواست جلسهٔ جدید": "New session request",
+  "مشاهده": "View",
+  "بستن اعلان فراخوان": "Dismiss call alert",
+  "مراسم حضوری": "In-person ceremony",
+  "درخواست جلسه": "Session request",
+  "جلسه تأیید شد": "Session confirmed",
+  "استاد درخواست جلسه‌ی شما را تأیید کرد.": "The teacher approved your session request.",
+  "جلسه لغو شد": "Session canceled",
+  "استاد درخواست جلسه را رد کرد و مبلغ بازگشت داده شد.":
+    "The teacher declined the request and the amount was refunded.",
+  "قرآن‌آموز جلسه را پیش از زمان شروع لغو کرد.": "The learner canceled the session before the start time.",
+  "قرآن‌آموز جلسه را لغو کرد.": "The learner canceled the session.",
+  "جلسه‌ی شما به پایان رسید. لطفاً امتیاز دهید.": "Your session has ended. Please rate it.",
+  "پیام جدید در جلسه": "New message in session",
+  "پیام جدید از استاد": "New message from the teacher",
+  "جلسهٔ فوری آماده است": "Instant session is ready",
+  "جلسهٔ فوری قطعی شد": "Instant session confirmed",
+  "درخواست جلسه‌ی جدید": "New session request",
+  "جلسهٔ فوری تأیید نشد": "Instant session wasn't confirmed",
+  "استاد در بازهٔ جلسهٔ فوری پاسخ نداد و مبلغ به کیف پول شما بازگشت.":
+    "The teacher didn't respond within the instant-session window and the amount returned to your wallet.",
+  "جلسهٔ فوری منقضی شد": "Instant session expired",
+  "به درخواست جلسهٔ فوری پاسخ ندادید؛ مبلغ به قرآن‌آموز بازگشت.":
+    "You didn't respond to the instant session request; the amount was returned to the learner.",
+  "🎉 استاد آماده شد": "🎉 A teacher is ready",
+  "انصراف استاد": "Teacher withdrew",
+  "پروفایل تأیید شد": "Profile approved",
+  "پروفایل استادی شما تأیید و منتشر شد.": "Your teacher profile was approved and published.",
+  "پروفایل رد شد": "Profile declined",
+  "پروفایل استادی شما تأیید نشد.": "Your teacher profile was not approved.",
+  "نظر شما حذف شد": "Your review was removed",
+  "نظر ثبت‌شده شما توسط تیم مدیریت حذف شد.": "Your review was removed by the moderation team.",
+  "نقش حساب به‌روزرسانی شد": "Account role updated",
+  "نقش حساب شما توسط تیم مدیریت تغییر کرد.": "Your account role was changed by the moderation team.",
+  "برداشت وجه انجام شد": "Withdrawal completed",
+  "درخواست برداشت شما پرداخت شد.": "Your withdrawal request has been paid.",
+  "برداشت وجه رد شد": "Withdrawal declined",
+  "درخواست برداشت شما رد و مبلغ بازگردانده شد.":
+    "Your withdrawal request was declined and the amount was returned.",
+  "اعلان زندهٔ پنل مدیریت": "Live admin panel alert",
+  "رویداد پنل مدیریت": "Admin panel event",
+  "مدیریت: ثبت‌نام کاربر جدید": "Admin: New user registration",
+  "کاربر تازه‌ای با شماره {m} وارد وُدّا شد.": "A new user joined Vodda with number {m}.",
+  "کاربر تازه‌ای با نام {n} از طریق گوگل وارد وُدّا شد.": "A new user named {n} joined Vodda via Google.",
+  "مدیریت: رزرو جلسه جدید": "Admin: New session booking",
+  "جلسهٔ «{t}» رزرو شد؛ مبلغ {p} تومان.": "Session “{t}” was booked; amount {p} Toman.",
+  "مدیریت: جلسهٔ فوری رزرو شد": "Admin: Instant session booked",
+  "مدیریت: تراکنش موفق": "Admin: Successful transaction",
+  "شارژ کیف پول به مبلغ {p} تومان با موفقیت انجام شد.": "A wallet top-up of {p} Toman completed successfully.",
+  "مدیریت: پرداخت جلسه انجام شد": "Admin: Session payment settled",
+  "پرداخت جلسه به مبلغ {p} تومان با موفقیت تسویه شد.": "A session payment of {p} Toman was settled successfully.",
+  "مدیریت: خدمت جدید ثبت شد": "Admin: New service submitted",
+  "استاد خدمت «{t}» را ثبت کرد.": "A teacher submitted the service “{t}”.",
+  "مدیریت: درخواست برداشت جدید": "Admin: New withdrawal request",
+  "استاد «{n}» درخواست برداشت {p} تومانی ثبت کرد.": "Teacher “{n}” requested a withdrawal of {p} Toman.",
+  "مدیریت: پیام پشتیبانی جدید": "Admin: New support message",
+  "پیام تازه‌ای از «{n}» در صف پشتیبانی ثبت شد.": "A new message from “{n}” is waiting in the support queue.",
+
+  "مربی و مدرس قرآن کریم": "Quran instructor & teacher",
+  "مدرس و مربی قرآن کریم": "Quran teacher & instructor",
+  "حافظ و مدرس قرآن کریم": "Quran memorizer (hafiz) & teacher",
+  "مدرس قرآن کریم": "Quran teacher",
+  "مدرس کشوری قرآن کریم": "National Quran teacher",
+  "حافظ بین المللی قرآن کریم": "International Quran memorizer",
+  "مرتل و حافظ ۵ قرآن کریم": "Master reciter & five-part hafiz",
+  "قاری ممتاز کشوری": "Distinguished national reciter",
+  "مربی حفظ، ترجمه و مفاهیم ، تجوید ، داور و مدرس قرآن کریم": "Memorization, translation & concepts coach, tajweed teacher & judge",
+  "مدرس ممتاز قرآن کریم": "Distinguished Quran teacher",
+  "مربی و مدرس قرآن کریم به زبان انگلیسی": "Quran teacher & instructor in English",
+  "حافظ ممتاز قرآن کریم": "Distinguished Quran memorizer",
+  "آموزش قرآن کریم": "Quran education",
+  "قاری قرآن کریم": "Quran reciter",
+  "استاد قرآن کریم": "Quran instructor",
+  "انصراف قاری": "Reciter canceled",
+  "بازگشت وجه برداشت": "Withdrawal refund",
+  "بازگشت وجه جلسه: ": "Session refund: ",
+  "تسویه مراسم انجام شد": "Ceremony settled",
+  "خدمت تأیید شد": "Service approved",
+  "خدمت رد شد": "Service declined",
+  "درآمد ناخالص جلسه: ": "Session gross income: ",
+  "درخواست برداشت وجه": "Withdrawal request",
+  "درخواست مراسم جدید": "New ceremony request",
+  "رزرو جلسه: ": "Session booking: ",
+  "شارژ آزمایشی کیف پول": "Test wallet top-up",
+  "فراخوان بسته شد": "Call was closed",
+  "فراخوان لغو شد": "Call was canceled",
+  "فراخوان مراسم بسته شد": "Ceremony call was closed",
+  "فراخوان مراسم لغو شد": "Ceremony call was canceled",
+  "قرارداد مراسم لغو شد": "Ceremony contract canceled",
+  "مراسم تکمیل شد": "Ceremony completed",
+  "مراسم قطعی شد": "Ceremony confirmed",
+  "پاسخ شما نمایش داده نشد": "Your offer wasn't selected",
+  "پذیرش جدید برای مراسم": "New ceremony offer",
+  "پذیرش شما انتخاب شد": "Your offer was chosen",
+  "کارمزد پلتفرم": "Platform fee",};
+
+export default f;
+
+/* ───────────  پشتیبان‌های باقی‌مانده (audit کامل انگلیسی‌سازی)  ─────────── */
+f[" ({n} خوانده‌نشده)"] = " ({n} unread)";
+f[" است؛ بدون پرداخت هزینه و بدون کسر از کیف پول، درخواست شما مستقیم برای استاد ارسال می‌شود."] = " This session is free — no payment, no wallet deduction; your request goes straight to the teacher.";
+f[" — موجودی کافی نیست"] = " — insufficient balance";
+f["اطلاعات حساب دریافت نشد."] = "Could not load your account info.";
+f[" · {n} جلسه"] = " · {n} sessions";
+f["استاد قرآن خود را بیابید\nو زمان آزاد ایشان را رزرو کنید"] = "Find your Quran teacher\nand book their available times";
+f["شهر شما"] = "Your city";
+f["موقعیت شما"] = "Your location";
+
+/* ───────────  قالب‌های اعلان‌های بک‌اند  ─────────── */
+f["جلسهٔ فوری آماده است"] = "Instant session is ready";
+f["استاد فراخوان شما را پذیرفت و جلسه قطعی شد؛ همین حالا می‌توانید وارد کلاس تصویری شوید."] = "The teacher accepted your call and the session is confirmed; you can join the video class right now.";
+f["مدیریت: "] = "Admin: ";
+f["مدیریت: جلسهٔ فوری رزرو شد"] = "Admin: Instant session booked";
+f["جلسهٔ فوری جدید: "] = "New instant session: ";
+f["یک قرآن‌آموز همین حالا درخواست جلسهٔ فوری ثبت کرد؛ سریع تأیید کنید تا کلاس آغاز شود."] = "A learner just requested an instant session; approve it quickly so the class can start.";
+f["🎉 استاد آماده شد"] = "🎉 A teacher responded";
+f["📢 فراخوان جدید: "] = "📢 New call: ";
+f["مدیریت: ثبت‌نام کاربر جدید"] = "Admin: New user registered";
+f["کاربر تازه‌ای با شماره "] = "A new user joined Vodda with number ";
+f["مدیریت: پیام پشتیبانی جدید"] = "Admin: New support message";
+f["پیام تازه‌ای از «اعلان زنده» در صف پشتیبانی ثبت شد."] = "A new message from “Live call” was added to the support queue.";
+f["خدمت تأیید شد"] = "Service approved";
+f["خدمت «"] = "The service “";
+f["» توسط ادمین تأیید شد."] = "” was approved by the admin.";
+f["جلسه تأیید شد"] = "Session approved";
+f["استاد درخواست جلسه‌ی شما را تأیید کرد."] = "The teacher approved your session request.";
+f["درخواست جلسهٔ رایگان: "] = "Free session request: ";
+f["یک قرآن‌آموز جلسهٔ رایگان شما را رزرو کرد؛ از بخش درخواست‌های جلسه تأیید کنید."] = "A learner booked your free session; approve it from the session requests section.";
+f["پیام جدید در جلسه"] = "New message in a session";
+f["فراخوان لغو شد"] = "Call canceled";
+f["جلسه لغو شد"] = "Session canceled";
+f["انصراف قاری"] = "Reciter withdrew";
+f["پذیرش جدید برای مراسم"] = "New ceremony offer";
+f["پذیرش "] = "Offer ";
+f["کاربر پیشنهاد شما را انتخاب کرد و جلسه فوری قطعی شد؛ همین حالا وارد کلاس شوید"] = "A user chose your offer and the instant session is confirmed; join the class right now.";
+f["کاربر پیشنهاد شما را انتخاب کرد و جلسه فوری قطعی شد؛ همین حالا وارد کلاس شوید."] = "A user chose your offer and the instant session is confirmed; join the class right now.";

@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>پنل مدیریت — وُدّا</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="assets/vodda-ui.css?v=202611021500">
+<style>
+.demo-badge{display:inline-flex;align-items:center;gap:6px;background:var(--brand-50);color:var(--brand-700);border:1.5px dashed var(--brand);border-radius:999px;padding:4px 12px;font-size:11.5px;font-weight:700}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+@media (max-width:820px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px 16px}
+.kpi b{display:block;font-size:22px;font-weight:800;color:var(--brand-700)}
+.kpi span{font-size:12px;color:var(--ink3)}
+.kpi .ic{font-size:22px;margin-bottom:8px;display:block}
+.grid-2{display:grid;grid-template-columns:1.3fr 1fr;gap:16px;margin-top:16px}
+@media (max-width:900px){.grid-2{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px}
+.card h3{font-size:14.5px;font-weight:800;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{text-align:right;color:var(--ink3);font-weight:600;font-size:11.5px;padding:8px 6px;border-bottom:1.5px solid var(--line)}
+td{padding:10px 6px;border-bottom:1px solid var(--line)}
+tr:last-child td{border-bottom:0}
+.t-av{width:30px;height:30px;border-radius:50%;overflow:hidden;display:inline-block;vertical-align:middle;margin-inline-end:8px;background:var(--brand-100)}
+.t-av img{width:100%;height:100%;object-fit:cover}
+.badge-s{font-size:10.5px;font-weight:700;border-radius:999px;padding:3px 10px;white-space:nowrap}
+.b-confirm{background:#e7f8ef;color:#0e9f5d}
+.b-pending2{background:#fff5e6;color:#c77c0a}
+.b-done2{background:var(--bg);color:var(--ink3)}
+.approve{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}
+.approve:last-child{border-bottom:0}
+.approve .av{width:40px;height:40px;border-radius:50%;overflow:hidden;background:var(--brand-100);flex-shrink:0}
+.approve .av img{width:100%;height:100%;object-fit:cover}
+.approve .info{flex:1;min-width:0}
+.approve .info b{font-size:13px;font-weight:800;display:block}
+.approve .info span{font-size:11px;color:var(--ink3)}
+.btn-ok{background:var(--brand);color:#fff;border:0;border-radius:10px;padding:6px 13px;font:inherit;font-size:11.5px;font-weight:700;cursor:pointer}
+.btn-no{background:transparent;color:var(--ink3);border:1.5px solid var(--line2);border-radius:10px;padding:6px 11px;font:inherit;font-size:11.5px;cursor:pointer}
+.chart{display:flex;align-items:flex-end;gap:10px;height:140px;padding-top:10px}
+.chart .bar{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:6px;height:100%}
+.chart .bar i{display:block;width:100%;max-width:38px;background:linear-gradient(180deg,var(--brand),var(--brand-600));border-radius:8px 8px 3px 3px}
+.chart .bar span{font-size:10.5px;color:var(--ink3)}
+.chart .bar b{font-size:10px;color:var(--brand-700);font-weight:700}
+</style>
+</head>
+<body>
+<header class="vhdr"><div class="vhdr-in">
+  <a class="vlogo" href="/"><span class="mark">و</span>وُدّا</a>
+  <nav class="vnav" aria-label="ناوبری اصلی">
+    <a href="/search.html">جستجوی استاد</a>
+    <a href="/book.html">رزرو جلسه</a>
+    <a href="/session.html">جلسات من</a>
+  </nav>
+  <div class="vauth" id="v-authbox"></div>
+</div></header>
+
+<main class="container-narrow">
+  <div class="phead" style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
+    <div>
+      <h1>پنل مدیریت</h1>
+      <p>نمای کلی پلتفرم — کاربران، استادان، جلسات و مالی.</p>
+    </div>
+    <span class="demo-badge">🧪 داده نمایشی</span>
+  </div>
+
+  <div class="kpis mt16">
+    <div class="kpi"><span class="ic">👥</span><b>۲٬۸۴۰</b><span>کاربر فعال</span></div>
+    <div class="kpi"><span class="ic">🎓</span><b>۱۲۰</b><span>استاد تأییدشده</span></div>
+    <div class="kpi"><span class="ic">📅</span><b>۴٬۵۶۰</b><span>جلسه برگزارشده</span></div>
+    <div class="kpi"><span class="ic">💰</span><b>۳۸۵ میلیون</b><span>گردش مالی ماه (تومان)</span></div>
+  </div>
+
+  <div class="grid-2">
+    <div style="display:grid;gap:16px">
+      <div class="card" style="overflow-x:auto">
+        <h3>📋 آخرین جلسات</h3>
+        <table>
+          <thead><tr><th>دانش‌آموز</th><th>استاد</th><th>زمان</th><th>مبلغ</th><th>وضعیت</th></tr></thead>
+          <tbody>
+            <tr><td><span class="t-av"><img src="/img/avatars/f3.jpg" alt=""></span>زهرا احمدی</td><td>ا. ربانی نژاد</td><td>جمعه ۱۶:۰۰</td><td>۳۵۰٬۰۰۰</td><td><span class="badge-s b-confirm">قطعی</span></td></tr>
+            <tr><td><span class="t-av"><img src="/img/avatars/m2.jpg" alt=""></span>مهدی توکلی</td><td>ف. کریمی</td><td>شنبه ۱۰:۰۰</td><td>۳۸۰٬۰۰۰</td><td><span class="badge-s b-pending2">در انتظار</span></td></tr>
+            <tr><td><span class="t-av"><img src="/img/avatars/f5.jpg" alt=""></span>نرگس رضایی</td><td>س. موسوی</td><td>پنجشنبه ۱۷:۳۰</td><td>۴۲۰٬۰۰۰</td><td><span class="badge-s b-confirm">قطعی</span></td></tr>
+            <tr><td><span class="t-av"><img src="/img/avatars/m4.jpg" alt=""></span>سینا مرادی</td><td>ع. حیدری</td><td>چهارشنبه ۱۹:۰۰</td><td>۶۵۰٬۰۰۰</td><td><span class="badge-s b-done2">برگزار شد</span></td></tr>
+            <tr><td><span class="t-av"><img src="/img/avatars/f1.jpg" alt=""></span>مریم صادقی</td><td>ی. رحمانی</td><td>سه‌شنبه ۱۴:۰۰</td><td>۳۵۰٬۰۰۰</td><td><span class="badge-s b-done2">لغو شد</span></td></tr>
+            <tr><td><span class="t-av"><img src="/img/avatars/m6.jpg" alt=""></span>علی حسینی</td><td>ا. ربانی نژاد</td><td>یکشنبه ۰۹:۰۰</td><td>۳۵۰٬۰۰۰</td><td><span class="badge-s b-confirm">قطعی</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card">
+        <h3>📈 رشد جلسات — ۶ ماه اخیر</h3>
+        <div class="chart">
+          <div class="bar"><b>۵۲۰</b><i style="height:45%"></i><span>آبان</span></div>
+          <div class="bar"><b>۶۱۰</b><i style="height:53%"></i><span>آذر</span></div>
+          <div class="bar"><b>۵۸۰</b><i style="height:50%"></i><span>دی</span></div>
+          <div class="bar"><b>۷۲۰</b><i style="height:62%"></i><span>بهمن</span></div>
+          <div class="bar"><b>۸۵۰</b><i style="height:73%"></i><span>اسفند</span></div>
+          <div class="bar"><b>۹۸۰</b><i style="height:84%"></i><span>فروردین</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid;gap:16px">
+      <div class="card">
+        <h3>✅ درخواست تأیید استاد <span class="badge-s b-pending2">۴ مورد</span></h3>
+        <div class="approve"><div class="av"><img src="/img/avatars/m5.jpg" alt=""></div>
+          <div class="info"><b>محمود فاضل</b><span>حفظ قرآن · قم · مدرک دانشگاه قرآنی</span></div>
+          <div><button class="btn-ok" onclick="this.closest('.approve').style.opacity=.4;this.textContent='✓';this.disabled=true">تأیید</button> <button class="btn-no" onclick="this.closest('.approve').remove()">رد</button></div></div>
+        <div class="approve"><div class="av"><img src="/img/avatars/f2.jpg" alt=""></div>
+          <div class="info"><b>لیلا موحد</b><span>تجوید و صوت · تهران · مربی رسمی</span></div>
+          <div><button class="btn-ok" onclick="this.closest('.approve').style.opacity=.4;this.textContent='✓';this.disabled=true">تأیید</button> <button class="btn-no" onclick="this.closest('.approve').remove()">رد</button></div></div>
+        <div class="approve"><div class="av"><img src="/img/avatars/m4.jpg" alt=""></div>
+          <div class="info"><b>رضا کمالی</b><span>مداحی · اصفهان · مداح حرم</span></div>
+          <div><button class="btn-ok" onclick="this.closest('.approve').style.opacity=.4;this.textContent='✓';this.disabled=true">تأیید</button> <button class="btn-no" onclick="this.closest('.approve').remove()">رد</button></div></div>
+        <div class="approve"><div class="av"><img src="/img/avatars/f6.jpg" alt=""></div>
+          <div class="info"><b>سمیرا نوری</b><span>روخوانی کودکان · شیراز</span></div>
+          <div><button class="btn-ok" onclick="this.closest('.approve').style.opacity=.4;this.textContent='✓';this.disabled=true">تأیید</button> <button class="btn-no" onclick="this.closest('.approve').remove()">رد</button></div></div>
+      </div>
+      <div class="card">
+        <h3>🧭 مدیریت سریع</h3>
+        <div style="display:grid;gap:8px">
+          <a href="/search.html" style="display:flex;justify-content:space-between;padding:12px 14px;background:var(--bg);border:1px solid var(--line);border-radius:12px;font-size:13px;font-weight:600;text-decoration:none;color:var(--ink)">استادان <span>←</span></a>
+          <a href="/orders.html" style="display:flex;justify-content:space-between;padding:12px 14px;background:var(--bg);border:1px solid var(--line);border-radius:12px;font-size:13px;font-weight:600;text-decoration:none;color:var(--ink)">مالی و تراکنش‌ها <span>←</span></a>
+          <a href="/curriculum.html" style="display:flex;justify-content:space-between;padding:12px 14px;background:var(--bg);border:1px solid var(--line);border-radius:12px;font-size:13px;font-weight:600;text-decoration:none;color:var(--ink)">سرفصل مصوب قرآنی <span>←</span></a>
+          <a href="/assessment.html" style="display:flex;justify-content:space-between;padding:12px 14px;background:var(--bg);border:1px solid var(--line);border-radius:12px;font-size:13px;font-weight:600;text-decoration:none;color:var(--ink)">سنجش و آزمون <span>←</span></a>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="foot"><div class="wrap">
+  <div class="foot-grid">
+    <div class="about">
+      <a class="logo" href="/"><span class="logo-mark">و</span>وُدّا</a>
+      <p>وُدّا؛ همراهِ یادگیری قرآن و مداحی — جلسه خصوصی آنلاین و حضوری با استادان تأییدشده.</p>
+    </div>
+    <div><h4>خدمات</h4><a href="/book.html">رزرو جلسه</a><a href="/session.html">جلسات من</a><a href="/assessment.html">سنجش و آزمون</a></div>
+    <div><h4>تخصص‌ها</h4><a href="/search.html">روخوانی قرآن</a><a href="/search.html">تجوید و صوت و لحن</a><a href="/search.html">حفظ قرآن</a><a href="/search.html">مداحی</a></div>
+    <div><h4>لینک‌های سریع</h4><a href="/credit.html">شارژ کیف پول</a><a href="/profile.html">پروفایل</a><a href="legal.html">قوانین و مقررات</a></div>
+  </div>
+  <div class="foot-bottom"><span>© ۱۴۰۵ وُدّا — تمامی حقوق محفوظ است.</span><span>جلسه آنلاین قرآن و مداحی</span></div>
+</div></footer>
+
+<script src="assets/vodda-api.js?v=202611021500"></script>
+<script src="assets/vodda-demo.js?v=202611021800"></script>
+</body>
+</html>

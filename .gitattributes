@@ -1,0 +1,2 @@
+# Shell scripts must stay LF — CRLF breaks them inside Docker (see server guide, pitfall #1)
+*.sh text eol=lf

@@ -1,0 +1,131 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend · Go + MySQL
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: test_root_password
+          MYSQL_DATABASE: vodda_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -u root -ptest_root_password --silent"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      TEST_MYSQL_DSN: 'root:test_root_password@tcp(127.0.0.1:3306)/vodda_test?charset=utf8mb4&parseTime=True&loc=UTC'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+      - name: Download dependencies
+        run: go mod download
+      - name: Format check
+        run: |
+          files="$(gofmt -l .)"
+          if [ -n "$files" ]; then
+            echo "The following Go files require gofmt:"
+            echo "$files"
+            exit 1
+          fi
+      - name: Vet
+        run: go vet ./...
+      - name: Test
+        run: go test -race ./...
+      - name: Build
+        run: go build ./...
+
+  frontend:
+    name: Frontend · Next.js
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Regression tests
+        run: npm test
+      - name: Lint
+        run: npm run lint
+      - name: Type-check and build
+        run: |
+          set -o pipefail
+          npm run build 2>&1 | tee next-build.log
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
+          SERVER_API_URL: http://127.0.0.1:3420/api/v1
+      - name: Upload build diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: next-build-log
+          path: frontend/next-build.log
+          if-no-files-found: ignore
+          retention-days: 3
+
+  flutter:
+    name: App · Flutter
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Install dependencies
+        run: flutter pub get --enforce-lockfile
+      - name: Analyze
+        run: flutter analyze
+      - name: Test
+        run: flutter test
+
+  deployment:
+    name: Deployment configuration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate shell scripts
+        run: sh -n ops/mysql-backup.sh ops/mysql-restore.sh deploy.sh debug.sh
+      - name: Validate production compose
+        env:
+          MYSQL_ROOT_PASSWORD: test-root-password
+          DB_USER: vodda
+          DB_PASSWORD: test-database-password
+          DB_NAME: vodda
+          JWT_SECRET: test-jwt-secret-that-is-longer-than-thirty-two-characters
+          SMS_API_KEY: test-sms-api-key
+          SMS_BODY_ID: '12345'
+        run: docker compose -f docker-compose.deploy.yml config --quiet

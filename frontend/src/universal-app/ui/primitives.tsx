@@ -1,0 +1,569 @@
+import type {
+  ButtonHTMLAttributes,
+  CSSProperties,
+  HTMLAttributes,
+  ImgHTMLAttributes,
+  InputHTMLAttributes,
+  ReactNode,
+  RefObject,
+} from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { resolveAssetUrl } from "../platform/asset";
+import { useAppearance } from "./appearance";
+import { colors, gradients, radii, shadows, spacing, typography } from "./theme";
+import { Avatar as UnifiedAvatar } from "../../components/Avatar";
+
+function mergeStyle(base: CSSProperties, style?: CSSProperties): CSSProperties {
+  return style ? { ...base, ...style } : base;
+}
+
+export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
+
+export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
+  variant?: ButtonVariant;
+  fullWidth?: boolean;
+  loading?: boolean;
+};
+
+export function Button({
+  variant = "primary",
+  fullWidth = false,
+  loading = false,
+  disabled,
+  children,
+  style,
+  className,
+  ...props
+}: ButtonProps) {
+  const { L } = useAppearance();
+  const variants: Record<ButtonVariant, CSSProperties> = {
+    primary: {
+      /* روی سبز زیتونیِ ثابت، متن باید روشن بماند — در حالت تاریک surface تیره می‌شود */
+      color: colors.onOlive,
+      background: colors.olive600,
+      borderColor: colors.olive600,
+      /* درخشش نرم زیتونی — دکمهٔ اصلی حس «فشرده شدن» و عمق می‌گیرد (فاز نور) */
+      boxShadow: "0 8px 20px rgba(76, 90, 54, 0.22), 0 2px 6px rgba(46, 54, 34, 0.10)",
+    },
+    secondary: {
+      color: colors.olive700,
+      background: colors.surface,
+      borderColor: colors.olive200,
+      boxShadow: shadows.xs,
+    },
+    ghost: {
+      color: colors.olive700,
+      background: "transparent",
+      borderColor: "transparent",
+    },
+    danger: {
+      color: colors.danger,
+      background: colors.dangerBackground,
+      borderColor: "rgba(166,81,81,.16)",
+    },
+  };
+
+  const isDisabled = disabled || loading;
+
+  return (
+    <button
+      type="button"
+      className={["vodda-button", `vodda-button--${variant}`, className].filter(Boolean).join(" ")}
+      disabled={isDisabled}
+      aria-busy={loading || undefined}
+      style={mergeStyle(
+        {
+          ...typography.label,
+          fontSize: 15,
+          minHeight: 52,
+          width: fullWidth ? "100%" : undefined,
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: spacing.sm,
+          padding: `14px ${spacing.xl}px`,
+          border: "1px solid",
+          borderRadius: radii.pill,
+          fontFamily: typography.fontFamily,
+          cursor: isDisabled ? "not-allowed" : "pointer",
+          opacity: isDisabled ? 0.56 : 1,
+          transition: "transform 150ms ease, box-shadow 150ms ease, background 150ms ease, opacity 150ms ease",
+          WebkitTapHighlightColor: "transparent",
+          ...variants[variant],
+        },
+        style,
+      )}
+      {...props}
+    >
+      {loading ? (
+        <>
+          <span className="vodda-spinner" aria-hidden="true" />
+          <span>{L("در حال انجام…")}</span>
+        </>
+      ) : children}
+    </button>
+  );
+}
+
+export type InputProps = InputHTMLAttributes<HTMLInputElement> & {
+  label?: ReactNode;
+  hint?: ReactNode;
+  error?: ReactNode;
+  containerStyle?: CSSProperties;
+};
+
+export function Input({ label, hint, error, containerStyle, style, id, className, ...props }: InputProps) {
+  const inputId = id ?? props.name;
+  return (
+    <label
+      htmlFor={inputId}
+      style={mergeStyle(
+        {
+          display: "grid",
+          gap: 7,
+          color: colors.ink,
+          fontFamily: typography.fontFamily,
+          ...typography.bodySmall,
+        },
+        containerStyle,
+      )}
+    >
+      {label ? <span style={{ fontWeight: 800, color: colors.inkSecondary }}>{label}</span> : null}
+      <input
+        id={inputId}
+        className={["vodda-input", className].filter(Boolean).join(" ")}
+        aria-invalid={Boolean(error) || undefined}
+        style={mergeStyle(
+          {
+            minHeight: 50,
+            width: "100%",
+            boxSizing: "border-box",
+            padding: `11px ${spacing.lg}px`,
+            color: colors.ink,
+            background: colors.surface,
+            border: `1px solid ${error ? "rgba(166, 81, 81, 0.55)" : colors.sand200}`,
+            borderRadius: radii.md,
+            outline: "none",
+            boxShadow: "none",
+            fontFamily: typography.fontFamily,
+            ...typography.body,
+            transition: "border-color 150ms ease, box-shadow 150ms ease, background 150ms ease",
+          },
+          style,
+        )}
+        {...props}
+      />
+      {error ? (
+        <span role="alert" style={{ color: colors.danger, ...typography.caption }}>
+          {error}
+        </span>
+      ) : hint ? (
+        <span style={{ color: colors.inkMuted, ...typography.caption }}>{hint}</span>
+      ) : null}
+    </label>
+  );
+}
+
+export type CardProps = HTMLAttributes<HTMLDivElement> & {
+  elevated?: boolean;
+};
+
+export function Card({ elevated = false, children, style, className, ...props }: CardProps) {
+  return (
+    <div
+      className={["vodda-card", elevated ? "vodda-card--elevated" : "", className].filter(Boolean).join(" ")}
+      style={mergeStyle(
+        {
+          padding: spacing.xl,
+          color: colors.ink,
+          /* سفیدِ گرم با گرادیان ملایم + سایهٔ پیش‌فرض نرم: کارت‌ها از سطح پس‌زمینه «بلند» حس می‌شوند (فاز نور) */
+          background: "linear-gradient(180deg, var(--v-surface, #ffffff) 0%, var(--v-surfaceWarm, #fffdf8) 100%)",
+          border: `1px solid ${colors.border}`,
+          borderRadius: radii.lg,
+          boxShadow: elevated ? shadows.md : "0 1px 2px rgba(46,54,34,.04), 0 8px 22px rgba(46,54,34,.055)",
+          fontFamily: typography.fontFamily,
+        },
+        style,
+      )}
+      {...props}
+    >
+      {children}
+    </div>
+  );
+}
+
+export type AvatarProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "children"> & {
+  name?: string;
+  size?: number;
+  ring?: boolean;
+  /** درجه استاد برای مهر گوشهٔ آواتار. */
+  tier?: string | null;
+  /** سازگاری با نسخهٔ سرور — پذیرفته ولی نادیده گرفته می‌شود (شکل واحد مربعی). */
+  tone?: "olive" | "gold";
+  /** چراغ آنلاین/آفلاین گوشهٔ آواتار. */
+  online?: boolean;
+  /** آخرین فعالیت — آنلاین واقعی (داخل ۲ دقیقه) و tooltip (۱.الف.۴). */
+  lastSeen?: string | number | null;
+};
+
+/* آواتار مربعی واحد — پیاده‌سازی واقعی در src/components/Avatar.tsx است تا
+ * اپ و وب از یک منبع رندر بگیرند (پارتی کامل، شکل مربعی با گوشهٔ نرم ۱۴٪).
+ * امضای قبلی اپ (name/size/ring/src/alt) دقیقاً حفظ شده است. */
+export function Avatar({ name, size = 48, ring = true, src, alt, style, tier, online, lastSeen, tone: _tone, ...props }: AvatarProps) {
+  return (
+    <UnifiedAvatar
+      name={name}
+      size={size}
+      ring={ring}
+      src={src}
+      alt={alt}
+      style={style}
+      tier={tier ?? undefined}
+      online={online}
+      lastSeen={lastSeen}
+      {...props}
+    />
+  );
+}
+
+export type StateProps = {
+  title: ReactNode;
+  description?: ReactNode;
+  action?: ReactNode;
+  icon?: ReactNode;
+  /** تصویرسازی خطی اختصاصی (فاز ۲) — جای دایرهٔ آیکون می‌نشیند و صحنهٔ معنادار می‌سازد */
+  illustration?: ReactNode;
+  style?: CSSProperties;
+};
+
+function StateView({ title, description, action, icon, illustration, style }: StateProps) {
+  const { lang } = useAppearance();
+  return (
+    <div
+      style={mergeStyle(
+        {
+          display: "grid",
+          justifyItems: "center",
+          gap: spacing.sm,
+          padding: `${spacing.huge}px ${spacing.xl}px`,
+          color: colors.ink,
+          textAlign: "center",
+          fontFamily: typography.fontFamily,
+        },
+        style,
+      )}
+    >
+      {illustration ? (
+        <div aria-hidden="true" style={{ marginBottom: spacing.xs }}>
+          {illustration}
+        </div>
+      ) : (
+        <div
+          aria-hidden={!icon}
+          style={{
+            width: 72,
+            height: 72,
+            display: "grid",
+            placeItems: "center",
+            marginBottom: spacing.xs,
+            borderRadius: "50%",
+            color: colors.olive500,
+            background: colors.olive50,
+            boxShadow: `inset 0 0 0 1px ${colors.olive100}`,
+            fontSize: 26,
+            fontWeight: 900,
+          }}
+        >
+          {icon ?? (lang === "en" ? "V" : "و")}
+        </div>
+      )}
+      <strong style={typography.title}>{title}</strong>
+      {description ? <span style={{ maxWidth: 380, color: colors.inkMuted, ...typography.body }}>{description}</span> : null}
+      {action ? <div style={{ marginTop: spacing.md }}>{action}</div> : null}
+    </div>
+  );
+}
+
+export function EmptyState(props: StateProps) {
+  return <StateView {...props} />;
+}
+
+export function ErrorState(props: StateProps) {
+  return (
+    <StateView
+      {...props}
+      style={{
+        ...props.style,
+      }}
+      icon={
+        <span style={{ color: colors.danger, fontSize: 24, fontWeight: 900 }}>!</span>
+      }
+    />
+  );
+}
+
+export function LoadingState({ label = "در حال بارگذاری…", style }: { label?: ReactNode; style?: CSSProperties }) {
+  const { L } = useAppearance();
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      style={mergeStyle(
+        {
+          display: "grid",
+          placeItems: "center",
+          alignContent: "center",
+          gap: spacing.md,
+          minHeight: 170,
+          padding: spacing.xl,
+          color: colors.inkMuted,
+          textAlign: "center",
+          fontFamily: typography.fontFamily,
+          ...typography.body,
+        },
+        style,
+      )}
+    >
+      <span className="vodda-loader-orbit" aria-hidden="true" />
+      <span>{typeof label === "string" ? L(label) : label}</span>
+    </div>
+  );
+}
+
+export type OverlayProps = {
+  open: boolean;
+  title?: ReactNode;
+  children: ReactNode;
+  onClose: () => void;
+  closeLabel?: string;
+};
+
+/**
+ * رفتار استاندارد مودال (A5): قفل اسکرول پس‌زمینه، بستن با Escape،
+ * محبوس‌کردن فوکوس درون پنجره و بازگرداندن فوکوس به محل پیشین.
+ *
+ * نکتهٔ حیاتی: «onClose» در کامپوننت‌های میزبان معمولاً تابعی بی‌ثبات است
+ * (هر رندر یک شناسهٔ تازه). اگر مثل قبل در وابستگی‌های useEffect بماند، با هر
+ * فشردن یک حرف در فیلدهای فرم، افکت دوباره اجرا و فوکوس به‌زور به ظرف مودال
+ * برمی‌گشت — یعنی کاربر فقط یک حرف می‌توانست بنویسد. حالا onClose از طریق ref
+ * خوانده می‌شود و افکت فقط با تغییر «open» اجرا می‌شود.
+ */
+function useOverlayBehavior(open: boolean, onClose: () => void, containerRef: RefObject<HTMLDivElement | null>) {
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  useEffect(() => {
+    if (!open) return;
+    const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const focusablesIn = (root: HTMLElement) =>
+      Array.from(
+        root.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      );
+
+    window.setTimeout(() => containerRef.current?.focus({ preventScroll: true }), 0);
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.stopPropagation();
+        onCloseRef.current();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const container = containerRef.current;
+      if (!container) return;
+      const items = focusablesIn(container);
+      if (items.length === 0) {
+        event.preventDefault();
+        return;
+      }
+      const first = items[0] as HTMLElement;
+      const last = items.at(-1) as HTMLElement;
+      const active = document.activeElement;
+      if (event.shiftKey && (active === first || active === container)) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", onKeyDown);
+      previouslyFocused?.focus?.({ preventScroll: true });
+    };
+  }, [open, containerRef]);
+}
+
+export function Dialog({ open, title, children, onClose, closeLabel = "بستن" }: OverlayProps) {
+  const { L } = useAppearance();
+  const closeText = L(closeLabel);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  useOverlayBehavior(open, onClose, containerRef);
+  if (!open || typeof document === "undefined") return null;
+  // پورتال به body — اگر مودال داخل جدی با transform/filters رندر شود
+  // (مثل هدرهای متحرک vodda-enter)، position:fixed شکسته و پنجره له می‌شود؛
+  // پورتال تضمین می‌کند لایهٔ مودال همیشه نسبت به کل صفحه سوار شود.
+  return createPortal(
+    <div
+      role="presentation"
+      className="vodda-overlay"
+      onMouseDown={(event) => {
+        if (event.currentTarget === event.target) onClose();
+      }}
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 100,
+        display: "grid",
+        placeItems: "center",
+        padding: spacing.lg,
+        background: "rgba(32, 35, 27, 0.56)",
+        backdropFilter: "blur(8px)",
+      }}
+    >
+      <div
+        ref={containerRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={typeof title === "string" ? title : undefined}
+        tabIndex={-1}
+        className="vodda-dialog"
+        style={{
+          width: "min(100%, 460px)",
+          // قاعدهٔ ۰.۶ ریسپانسیو — همیشه ۱۶px فاصله از هر دو لبهٔ دید
+          maxWidth: "calc(100vw - 32px)",
+          maxHeight: "min(82dvh, 720px)",
+          overflowY: "auto",
+          padding: spacing.xl,
+          color: colors.ink,
+          background: colors.surface,
+          border: `1px solid ${colors.sand150}`,
+          borderRadius: radii.xl,
+          boxShadow: shadows.lg,
+          fontFamily: typography.fontFamily,
+          outline: "none",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: spacing.md }}>
+          {title ? <strong style={typography.title}>{title}</strong> : <span />}
+          <Button variant="ghost" onClick={onClose} aria-label={closeText} style={{ width: 44, minHeight: 44, padding: 0 }}>
+            ×
+          </Button>
+        </div>
+        <div style={{ marginTop: title ? spacing.md : 0 }}>{children}</div>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
+export function Sheet({ open, title, children, onClose, closeLabel = "بستن" }: OverlayProps) {
+  const { L } = useAppearance();
+  const closeText = L(closeLabel);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const dragStartY = useRef<number | null>(null);
+  const [dragOffset, setDragOffset] = useState(0);
+  useOverlayBehavior(open, onClose, containerRef);
+  if (!open || typeof document === "undefined") return null;
+  // پورتال به body — همان دلیل Dialog؛ جدّ متحرک position:fixed را می‌شکند
+  return createPortal(
+    <div
+      role="presentation"
+      className="vodda-overlay"
+      onMouseDown={(event) => {
+        if (event.currentTarget === event.target) onClose();
+      }}
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 100,
+        display: "flex",
+        alignItems: "flex-end",
+        background: "rgba(32, 35, 27, 0.5)",
+        backdropFilter: "blur(7px)",
+      }}
+    >
+      <div
+        ref={containerRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={typeof title === "string" ? title : undefined}
+        tabIndex={-1}
+        className="vodda-sheet"
+        style={{
+          width: "min(100%, 640px)",
+          // باگ responsive-overflow — شیت هیچ‌وقت کل عرض ویوپورت را نمی‌گیرد؛ ۱۶px حاشیه در هر سمت.
+          maxWidth: "calc(100vw - 32px)",
+          maxHeight: "88dvh",
+          marginInline: "auto",
+          overflowY: "auto",
+          padding: `${spacing.md}px ${spacing.xl}px calc(${spacing.xxl}px + env(safe-area-inset-bottom))`,
+          color: colors.ink,
+          background: colors.surface,
+          borderRadius: `${radii.xl}px ${radii.xl}px 0 0`,
+          boxShadow: shadows.lg,
+          fontFamily: typography.fontFamily,
+          outline: "none",
+          transform: dragOffset > 0 ? `translateY(${dragOffset}px)` : undefined,
+          transition: dragOffset > 0 ? "none" : undefined,
+        }}
+      >
+        <div
+          role="button"
+          aria-label={closeText}
+          className="vodda-hit"
+          onClick={() => onClose()}
+          onPointerDown={(event) => {
+            dragStartY.current = event.clientY;
+          }}
+          onPointerMove={(event) => {
+            if (dragStartY.current === null) return;
+            const delta = event.clientY - dragStartY.current;
+            if (delta > 0) setDragOffset(delta);
+          }}
+          onPointerUp={() => {
+            if (dragOffset > 72) onClose();
+            dragStartY.current = null;
+            setDragOffset(0);
+          }}
+          onPointerCancel={() => {
+            dragStartY.current = null;
+            setDragOffset(0);
+          }}
+          style={{
+            width: 64,
+            height: 24,
+            margin: "0 auto 10px",
+            display: "grid",
+            placeItems: "center",
+            borderRadius: radii.pill,
+            cursor: "grab",
+            touchAction: "none" as const,
+          }}
+        >
+          <span style={{ width: 42, height: 5, borderRadius: radii.pill, background: colors.sand200 }} />
+        </div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: spacing.md }}>
+          {title ? <strong style={typography.title}>{title}</strong> : <span />}
+          <Button variant="ghost" onClick={onClose} aria-label={closeText} style={{ width: 44, minHeight: 44, padding: 0 }}>
+            ×
+          </Button>
+        </div>
+        <div style={{ marginTop: title ? spacing.md : 0 }}>{children}</div>
+      </div>
+    </div>,
+    document.body,
+  );
+}

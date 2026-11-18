@@ -1,0 +1,162 @@
+services:
+  mysql:
+    platform: ${DOCKER_PLATFORM:-linux/amd64}
+    image: mysql:8.0
+    command: ["--max_allowed_packet=512M", "--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD:-vodda_secret}
+      - MYSQL_DATABASE=${DB_NAME:-vodda}
+    ports:
+      - "${MYSQL_PORT:-3422}:3306"
+    volumes:
+      - ./data/mysql:/var/lib/mysql
+    networks:
+      - vodda-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p\"$${MYSQL_ROOT_PASSWORD}\" --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  backend:
+    platform: ${DOCKER_PLATFORM:-linux/amd64}
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    image: vodda-backend:dev
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=3420
+      - APP_ENV=${APP_ENV:-development}
+      - FRONTEND_BASE_URL=${FRONTEND_BASE_URL:-http://localhost:3421}
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USER=${DB_USER:-root}
+      - DB_PASSWORD=${DB_PASSWORD:-vodda_secret}
+      - DB_NAME=${DB_NAME:-vodda}
+      - JWT_SECRET=${JWT_SECRET:-dev-insecure-secret}
+      - OTP_TEST_BYPASS_ENABLED=${OTP_TEST_BYPASS_ENABLED:-true}
+      - OTP_TEST_CODE=${OTP_TEST_CODE:-33365}
+      - OTP_TEST_MOBILE=${OTP_TEST_MOBILE:-}
+      - AUTO_SEED=${AUTO_SEED:-true}
+      - ZARINPAL_SANDBOX=${ZARINPAL_SANDBOX:-true}
+      - PLATFORM_COMMISSION_PERCENT=${PLATFORM_COMMISSION_PERCENT:-15}
+    volumes:
+      - ./backend:/app
+      - ./data/uploads:/app/uploads
+    ports:
+      - "${BACKEND_PORT:-3420}:3420"
+    networks:
+      - vodda-network
+
+  frontend:
+    platform: ${DOCKER_PLATFORM:-linux/amd64}
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    image: vodda-frontend:dev
+    depends_on:
+      - backend
+    environment:
+      - PORT=3421
+      - HOSTNAME=0.0.0.0
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_BASE_URL=/api/v1
+      - SERVER_API_URL=${SERVER_API_URL:-http://backend:3420/api/v1}
+      - WATCHPACK_POLLING=true
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+    ports:
+      - "${FRONTEND_PORT:-3421}:3421"
+    networks:
+      - vodda-network
+
+  monafaseh:
+    platform: ${DOCKER_PLATFORM:-linux/amd64}
+    build:
+      context: ./monafaseh
+      dockerfile: Dockerfile
+      # بدون این، آخرین مرحله‌ی Dockerfile (migrator یک‌باره) به‌عنوان ایمیج ساخته می‌شود
+      target: runner
+    image: vodda-monafaseh:dev
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+      - DATABASE_URL=file:/app/db/custom.db
+      - NEXTAUTH_SECRET=${MONAFASEH_NEXTAUTH_SECRET:-dev-insecure-secret}
+      - NEXTAUTH_URL=${MONAFASEH_NEXTAUTH_URL:-http://localhost:3423}
+      - SITE_URL=${MONAFASEH_SITE_URL:-http://localhost:3423}
+      - BOT_TOKEN=${MONAFASEH_BOT_TOKEN:-}
+      - SAMAN_TERMINAL_ID=${SAMAN_TERMINAL_ID:-}
+      - SAMAN_MERCHANT_ID=${SAMAN_MERCHANT_ID:-}
+    ports:
+      - "${MONAFASEH_PORT:-3423}:3000"
+    volumes:
+      - monafaseh_db:/app/db
+      - monafaseh_uploads:/app/public/uploads
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
+    networks:
+      - vodda-network
+
+  bashar:
+    platform: ${DOCKER_PLATFORM:-linux/amd64}
+    build:
+      context: ./bashar
+      dockerfile: Dockerfile
+      # بدون این، آخرین مرحله‌ی Dockerfile (migrator یک‌باره) به‌عنوان ایمیج ساخته می‌شود
+      target: runner
+    image: vodda-bashar:dev
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+      - DATABASE_URL=file:/app/db/custom.db
+      - BASHAR_EITAA_TOKEN=${BASHAR_EITAA_TOKEN:-}
+      - BASHAR_EITAA_CHANNEL=${BASHAR_EITAA_CHANNEL:-}
+    ports:
+      - "${BASHAR_PORT:-3424}:3000"
+    volumes:
+      - bashar_db:/app/db
+      - bashar_uploads:/app/public/uploads
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - "node -e \"fetch('http://127.0.0.1:3000/api/bootstrap').then(r=>{process.exit(r.ok?0:1)}).catch(()=>process.exit(1))\""
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
+    networks:
+      - vodda-network
+
+volumes:
+  frontend_node_modules:
+    driver: local
+  monafaseh_db:
+    name: monafaseh_monafaseh-db
+    driver: local
+  monafaseh_uploads:
+    name: monafaseh_monafaseh-uploads
+    driver: local
+  bashar_db:
+    name: bashar_bashar-db
+    driver: local
+  bashar_uploads:
+    name: bashar_bashar-uploads
+    driver: local
+
+networks:
+  vodda-network:
+    driver: bridge
