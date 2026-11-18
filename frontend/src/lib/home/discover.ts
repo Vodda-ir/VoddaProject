@@ -198,6 +198,8 @@ export type FreeServiceCard = {
   isTier1: boolean;
   avatarUrl: string;
   available: boolean;
+  /** ۰.۷.۵ — کلید تصویر موضوعی برای بنر کارت رایگان (هویت بصری دوم). */
+  imageKey: string;
 };
 
 function serviceNameOf(service: DiscoverServiceLike, officialTitleById: Map<number, string>): string {
@@ -253,6 +255,7 @@ export function freeServiceCards(
         isTier1: isTier1Teacher(teacher),
         avatarUrl: teacherAvatarOf(teacher),
         available: teacher.available !== false,
+        imageKey: serviceImageKey(title),
       });
     }
   }

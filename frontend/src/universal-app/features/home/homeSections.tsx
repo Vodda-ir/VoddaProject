@@ -23,6 +23,7 @@ import {
 import { asArray, asRecord } from "../../platform/api";
 import { useAppearance } from "../../ui/appearance";
 import { localizeCityName } from "../../i18n/transliterate";
+import { serviceImageKey, serviceImageSrc } from "@/lib/home/discover";
 
 /* ── نقشهٔ تصویر دسته‌ها ─────────────────────────────────────────────────── */
 
@@ -186,7 +187,7 @@ export function TopicCategoryGrid({ config }: { config: UniversalAppConfig }) {
           <button
             key={category.category}
             type="button"
-            onClick={() => navigateApp(`/search?mode=services&cat=${encodeURIComponent(category.category)}`, config)}
+            onClick={() => navigateApp(`/category?name=${encodeURIComponent(category.category)}`, config)}
             className="vodda-tappable vodda-enter"
             aria-label={category.count > 0
               ? L("ورود به زیردسته‌های {title} — {n} خدمت").replace("{title}", L(category.category)).replace("{n}", faNumber(category.count, lang))
@@ -328,7 +329,7 @@ export function TopServicesRail({ config }: { config: UniversalAppConfig }) {
       <section aria-label={L("خدمات برتر")} style={{ display: "grid", gap: 12 }}>
         <div style={{ display: "flex", gap: 10, overflow: "hidden" }}>
           {[0, 1, 2, 3].map((index) => (
-            <span key={index} aria-hidden="true" className="vodda-skeleton" style={{ display: "block", flex: "0 0 150px", height: 142, borderRadius: 19 }} />
+            <span key={index} aria-hidden="true" className="vodda-skeleton" style={{ display: "block", flex: "0 0 170px", height: 176, borderRadius: 20 }} />
           ))}
         </div>
       </section>
@@ -365,17 +366,17 @@ export function TopServicesRail({ config }: { config: UniversalAppConfig }) {
               className="vodda-tappable vodda-enter"
               aria-label={L("اساتید خدمت {title}").replace("{title}", L(service.title))}
               style={{
-                flex: "0 0 150px",
-                width: 150,
+                flex: "0 0 170px",
+                width: 170,
                 scrollSnapAlign: "start",
                 display: "grid",
                 alignContent: "start",
                 justifyItems: "center",
-                gap: 6,
-                padding: "8px 8px 9px",
+                gap: 7,
+                padding: "9px 9px 11px",
                 textAlign: "center",
                 border: `1.5px solid ${colors.goldSoft}`,
-                borderRadius: 19,
+                borderRadius: 20,
                 background: `linear-gradient(180deg, ${colors.surface}, ${colors.surfaceWarm})`,
                 color: colors.ink,
                 cursor: "pointer",
@@ -383,13 +384,13 @@ export function TopServicesRail({ config }: { config: UniversalAppConfig }) {
                 boxShadow: "0 0 0 3px rgba(231,213,168,.16), 0 6px 14px rgba(139,104,31,.10)",
               }}
             >
-              {/* تصویر کوچک با حلقهٔ طلایی + نشان فانتزی ورود به اساتید */}
+              {/* ۰.۷.۵ — هویت طلایی: تصویر بزرگ‌تر با حلقهٔ طلایی + نشان ورود */}
               <span style={{ position: "relative", width: "100%" }}>
                 <span
                   style={{
                     display: "block",
-                    height: 56,
-                    borderRadius: 13,
+                    height: 76,
+                    borderRadius: 14,
                     overflow: "hidden",
                     border: `2px solid ${colors.goldSoft}`,
                     boxShadow: `0 0 0 2.5px ${colors.surface}, 0 0 0 4px rgba(212,171,82,.30), 0 3px 8px rgba(46,54,34,.10)`,
@@ -525,6 +526,8 @@ function FreeServiceTile({ item, config }: { item: FreeServiceCardData; config: 
   const { L, lang, N } = useAppearance();
   const tagLabel = L(item.tag || item.field);
   const subtitle = [tagLabel, localizeCityName(item.city, lang)].filter(Boolean).join(" · ");
+  /* ۰.۷.۵ — هویت دوم (زیتونی/نعنایی): بنر تصویر موضوعی + برچسب «رایگان» + دکمهٔ پر رزرو */
+  const bannerImage = serviceImageSrc(serviceImageKey(item.title));
   return (
     <button
       type="button"
@@ -533,81 +536,115 @@ function FreeServiceTile({ item, config }: { item: FreeServiceCardData; config: 
       className="vodda-tappable vodda-enter"
       aria-label={L("جلسهٔ رایگان {title} با {name}").replace("{title}", L(item.title)).replace("{name}", N(item.teacher_name))}
       style={{
-        flex: "0 0 236px",
-        width: 236,
+        flex: "0 0 244px",
+        width: 244,
         scrollSnapAlign: "start",
         display: "grid",
-        gap: 10,
-        padding: "14px 14px 15px",
+        gap: 0,
+        padding: 0,
+        overflow: "hidden",
         textAlign: "right",
-        border: `1.4px solid ${colors.gold}`,
-        borderRadius: 22,
-        background: `linear-gradient(170deg, ${colors.surfaceWarm}, ${colors.goldBackground})`,
-        boxShadow: "0 8px 22px rgba(139,104,31,.14)",
+        border: `1.4px solid rgba(66,138,84,.5)`,
+        borderRadius: 20,
+        background: `linear-gradient(170deg, ${colors.olive50}, ${colors.surface} 74%)`,
+        boxShadow: "0 8px 20px rgba(46,84,54,.14)",
         cursor: "pointer",
         fontFamily: typography.fontFamily,
       }}
     >
-      <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+      {/* بنر تصویر موضوعی با ته‌رنگ سبز + برچسب رایگان + مدت جلسه */}
+      <span style={{ position: "relative", display: "block", height: 88, overflow: "hidden", background: colors.olive100 }}>
+        <img
+          src={bannerImage}
+          alt=""
+          aria-hidden="true"
+          loading="lazy"
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+        />
+        <span
+          aria-hidden="true"
+          style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(28,50,36,.02) 40%, rgba(28,50,36,.34) 100%)" }}
+        />
         <span
           style={{
+            position: "absolute",
+            top: 8,
+            insetInlineStart: 8,
             display: "inline-flex",
             alignItems: "center",
             gap: 4,
-            padding: "3px 10px",
+            padding: "3.5px 10px",
             borderRadius: 999,
-            background: gradients.goldRich,
-            color: "#fffaf0",
-            fontSize: 11,
+            background: colors.olive600,
+            color: "#fff",
+            fontSize: 10.5,
             fontWeight: 900,
-            boxShadow: "0 3px 8px rgba(139,104,31,.28)",
+            boxShadow: "0 2px 8px rgba(46,84,54,.3)",
           }}
         >
-          <Icon name="gift" size={12} stroke={2.4} />
+          <Icon name="gift" size={11} stroke={2.4} />
           {L("رایگان")}
         </span>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 11, fontWeight: 700, color: colors.inkMuted }}>
-          <Icon name="clock" size={12} stroke={2} />
+        <span
+          style={{
+            position: "absolute",
+            bottom: 8,
+            insetInlineEnd: 8,
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 3,
+            padding: "3px 9px",
+            borderRadius: 999,
+            background: "rgba(255,255,255,.92)",
+            border: `1px solid ${colors.olive100}`,
+            color: colors.olive700,
+            fontSize: 10,
+            fontWeight: 800,
+          }}
+        >
+          <Icon name="clock" size={11} stroke={2.2} />
           {L("{n} دقیقه").replace("{n}", faNumber(item.duration, lang))}
         </span>
       </span>
-      <strong style={{ fontSize: 13.5, fontWeight: 900, lineHeight: 1.6, color: colors.ink, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", minHeight: 43 }}>
-        {L(item.title)}
-      </strong>
-      <span style={{ display: "flex", alignItems: "center", gap: 9, minWidth: 0 }}>
-        <Avatar name={item.teacher_name} src={item.avatar_url || undefined} size={38} ring tone="gold" />
-        <span style={{ minWidth: 0, display: "grid", gap: 1 }}>
-          <strong style={{ fontSize: 12.5, fontWeight: 800, color: colors.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {item.teacher_name}
-          </strong>
-          <span style={{ fontSize: 10.5, color: colors.inkMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {subtitle || L("استاد وُدّا")}
+      <span style={{ display: "grid", gap: 9, padding: "12px 13px 13px" }}>
+        <strong style={{ fontSize: 13.5, fontWeight: 900, lineHeight: 1.55, color: colors.ink, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", minHeight: 42 }}>
+          {L(item.title)}
+        </strong>
+        <span style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+          <Avatar name={item.teacher_name} src={item.avatar_url || undefined} size={34} ring />
+          <span style={{ minWidth: 0, display: "grid", gap: 1 }}>
+            <strong style={{ fontSize: 12.5, fontWeight: 800, color: colors.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {item.teacher_name}
+            </strong>
+            <span style={{ fontSize: 10.5, color: colors.inkMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {subtitle || L("استاد وُدّا")}
+            </span>
           </span>
+          {item.reviews > 0 ? (
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 3, marginInlineStart: "auto", fontSize: 11, fontWeight: 800, color: colors.goldDark, flex: "0 0 auto" }}>
+              <Icon name="star" size={12} fill />
+              {faNumber(item.rating, lang, 1)}
+            </span>
+          ) : null}
         </span>
-        {item.reviews > 0 ? (
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 3, marginInlineStart: "auto", fontSize: 11, fontWeight: 800, color: colors.goldDark, flex: "0 0 auto" }}>
-            <Icon name="star" size={12} fill />
-            {faNumber(item.rating, lang, 1)}
-          </span>
-        ) : null}
-      </span>
-      <span
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 8,
-          padding: "8px 12px",
-          borderRadius: 13,
-          background: "var(--v-veil-strong, rgba(255,255,255,.75))",
-          border: `1px solid ${colors.goldSoft}`,
-          fontSize: 12,
-          fontWeight: 900,
-          color: colors.olive700,
-        }}
-      >
-        {L("رزرو جلسهٔ رایگان")}
-        <Icon name="chevronL" size={14} stroke={2.4} />
+        <span
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 6,
+            padding: "8.5px 12px",
+            borderRadius: 11,
+            background: colors.olive600,
+            color: "#fff",
+            fontSize: 12,
+            fontWeight: 900,
+            boxShadow: "0 4px 10px rgba(46,84,54,.22)",
+          }}
+        >
+          {L("رزرو جلسهٔ رایگان")}
+          <Icon name="chevronL" size={14} stroke={2.4} />
+        </span>
       </span>
     </button>
   );
@@ -637,7 +674,7 @@ export function FreeServicesBoard({ config }: { config: UniversalAppConfig }) {
       <section aria-label={L("خدمات رایگان")} style={{ display: "grid", gap: 12 }}>
         <div style={{ display: "flex", gap: 12, overflow: "hidden" }}>
           {[0, 1].map((index) => (
-            <span key={index} aria-hidden="true" className="vodda-skeleton" style={{ display: "block", flex: "0 0 236px", height: 188, borderRadius: 22 }} />
+            <span key={index} aria-hidden="true" className="vodda-skeleton" style={{ display: "block", flex: "0 0 244px", height: 236, borderRadius: 20 }} />
           ))}
         </div>
       </section>
