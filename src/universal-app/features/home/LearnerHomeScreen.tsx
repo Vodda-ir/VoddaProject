@@ -153,7 +153,7 @@ function HomeSkeleton({ wide }: { wide: boolean }) {
         <Skeleton style={{ width: 130, height: 18 }} />
         <div style={{ display: "grid", gridTemplateColumns: wide ? "repeat(3, minmax(0,1fr))" : "repeat(2, minmax(0, 1fr))", gap: 10 }}>
           {Array.from({ length: 4 }).map((_, index) => (
-            <Skeleton key={index} style={{ height: 176, borderRadius: 24 }} />
+            <Skeleton key={index} style={{ aspectRatio: '4 / 5', borderRadius: 16 }} />
           ))}
         </div>
       </div>
@@ -332,7 +332,7 @@ function TopTeachersSection({
         <Skeleton style={{ width: 130, height: 18 }} />
         <div style={{ display: "grid", gridTemplateColumns: wide ? "repeat(3, minmax(0,1fr))" : "repeat(2, minmax(0, 1fr))", gap: 10 }}>
           {Array.from({ length: 4 }).map((_, index) => (
-            <Skeleton key={index} style={{ height: 176, borderRadius: 24 }} />
+            <Skeleton key={index} style={{ aspectRatio: '4 / 5', borderRadius: 16 }} />
           ))}
         </div>
       </section>
@@ -353,7 +353,7 @@ function TopTeachersSection({
       >
         {teachers.slice(0, 6).map((teacher, index) => (
           <div key={teacher.id} className="vodda-enter" style={{ minWidth: 0, animationDelay: `${index * 40}ms` }}>
-            <TeacherCard teacher={teacher} config={config} wide />
+            <TeacherCard teacher={teacher} config={config} />
           </div>
         ))}
       </div>
@@ -622,9 +622,9 @@ function RecommendedGrid({
     return (
       <section aria-label="در حال بارگذاری پیشنهادها" style={{ display: "grid", gap: 12 }}>
         <Skeleton style={{ width: 160, height: 18 }} />
-        <div style={{ display: "grid", gridTemplateColumns: wide ? "repeat(4, minmax(0,1fr))" : "repeat(2, minmax(0, 1fr))", gap: 10 }}>
+        <div style={{ display: "grid", gridTemplateColumns: wide ? "repeat(3, minmax(0,1fr))" : "repeat(2, minmax(0, 1fr))", gap: 10 }}>
           {Array.from({ length: 4 }).map((_, index) => (
-            <Skeleton key={index} style={{ height: 176, borderRadius: 24 }} />
+            <Skeleton key={index} style={{ aspectRatio: '4 / 5', borderRadius: 16 }} />
           ))}
         </div>
       </section>
@@ -638,14 +638,15 @@ function RecommendedGrid({
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: wide ? "repeat(4, minmax(0,1fr))" : "repeat(2, minmax(0, 1fr))",
+          /* ۰.۷.۱ — همهٔ بخش‌های خانه از یک ستون‌بندی استفاده می‌کنند تا همهٔ کاشی‌ها هم‌اندازه بمانند */
+          gridTemplateColumns: wide ? "repeat(3, minmax(0,1fr))" : "repeat(2, minmax(0, 1fr))",
           gap: 10,
           minWidth: 0,
         }}
       >
         {teachers.map((teacher, index) => (
           <div key={teacher.id} className="vodda-enter" style={{ minWidth: 0, animationDelay: `${index * 40}ms` }}>
-            <TeacherCard teacher={teacher} config={config} wide />
+            <TeacherCard teacher={teacher} config={config} />
           </div>
         ))}
       </div>

@@ -4,11 +4,10 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import type { Teacher } from '@/lib/api';
 import { Icon } from '@/components/Icon';
-import { Nav, Footer, bioIntro } from '@/components/web/sections';
-import { Avatar, PublicPageHero } from '@/components/web/ui';
-import { avatarUrl, fullUrl } from '@/lib/auth';
+import { Nav, Footer, WebTeacherCard } from '@/components/web/sections';
+import { PublicPageHero } from '@/components/web/ui';
 import { categoryOf, groupCatalog, teachersForTopics, type CatalogCategory } from '@/lib/category';
-import { formatFaNumber, toFaDigits } from '@/lib/persian';
+import { toFaDigits } from '@/lib/persian';
 
 const LIMIT = 20;
 
@@ -270,7 +269,7 @@ export default function SearchPage() {
         </div>
 
         {loading ? (
-          <div className="web-search-loading">
+          <div className="vodda-teacher-grid web-search-loading">
             {[0, 1, 2, 3].map((item) => <div key={item} />)}
           </div>
         ) : error ? (
@@ -288,8 +287,8 @@ export default function SearchPage() {
           </div>
         ) : (
           <>
-            <div className="web-teacher-results">
-              {results.map((teacher) => <SearchTeacherCard key={teacher.id} teacher={teacher} />)}
+            <div className="vodda-teacher-grid">
+              {results.map((teacher) => <WebTeacherCard key={teacher.id} teacher={teacher} href={`/teachers/${teacher.id}`} />)}
             </div>
 
             {totalPages > 1 && (
@@ -308,52 +307,5 @@ export default function SearchPage() {
       </main>
       <Footer />
     </div>
-  );
-}
-
-function SearchTeacherCard({ teacher }: { teacher: Teacher }) {
-  const name = teacher.user?.name || 'استاد وُدّا';
-  const price = Math.max(0, teacher.price30 || teacher.services?.[0]?.price || 0);
-  /* ۱.الف.۴ — چراغ حضور روی نتایج جست‌وجو */
-  /* last_seen فقط از فیلد فعالیت بک‌اند؛ updated_at به‌روزرسانی پروفایل است نه حضور (۱.الف.۴) */
-  const lastSeen = teacher.last_seen ?? null;
-
-  return (
-    <Link href={`/teachers/${teacher.id}`} className="web-search-teacher-card">
-      <div className="web-search-teacher-top">
-        <Avatar
-          size={58}
-          ring
-          tier={teacher.tier}
-          imageUrl={avatarUrl(teacher.user?.avatar_url, teacher.user?.updated_at)}
-          name={name}
-          online={teacher.available !== false}
-          lastSeen={lastSeen}
-        />
-        <div style={{ minWidth: 0, flex: 1 }}>
-          <strong>{name}</strong>
-          <span>{teacher.tag || teacher.field}</span>
-        </div>
-        {teacher.rating > 0 && (
-          <span className="web-search-rating"><Icon name="star" size={14} fill />{toFaDigits(teacher.rating.toFixed(1))}</span>
-        )}
-      </div>
-
-      <div className="web-search-teacher-meta">
-        {teacher.city && <span><Icon name="pin" size={14} />{teacher.city}</span>}
-        <span><Icon name="calendar" size={14} />{toFaDigits(teacher.sessions || 0)} جلسه</span>
-        <span><Icon name="message" size={14} />{toFaDigits(teacher.reviews || 0)} نظر</span>
-      </div>
-
-      {teacher.bio && <p>{bioIntro(teacher.bio)}</p>}
-
-      <div className="web-search-teacher-footer">
-        <span>
-          <small>شروع جلسه از</small>
-          <strong>{price > 0 ? `${formatFaNumber(price)} تومان` : 'مشاهده خدمات'}</strong>
-        </span>
-        <span className="web-search-card-cta">پروفایل و رزرو <Icon name="arrowL" size={15} /></span>
-      </div>
-    </Link>
   );
 }

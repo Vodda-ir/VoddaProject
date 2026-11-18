@@ -14,7 +14,7 @@ import { hexToRgbTriplet, tierNeonColor } from '@/lib/tierMeta';
 import { resolveOnline } from '@/lib/presence';
 import { CityChip, sortByCityPriority } from './CityChip';
 import { CITY_CHANGE_EVENT, readStoredCity, storedCityUsable } from '@/lib/userCity';
-import { TierSeal } from './tier';
+import { TierSeal, TierChip } from './tier';
 import {
   buildCategoryTiles,
   type CategoryTile,
@@ -566,14 +566,16 @@ export function bioIntro(bio?: string | null): string {
 }
 
 /* ردیف نشان‌های کارت درجه ۱ (۱.الف.۵) — 🟦 تیک بین‌المللی، 🆓 خدمات رایگان، ⚡ جلسات فوری */
-const TIER1_BADGE_ITEMS: Record<string, { emoji: string; label: string }> = {
+export const TIER1_BADGE_ITEMS: Record<string, { emoji: string; label: string }> = {
   international: { emoji: '🟦', label: 'تیک بین‌المللی' },
   free: { emoji: '🆓', label: 'خدمات رایگان' },
   instant: { emoji: '⚡', label: 'جلسات فوری' },
 };
 
-/* کارت استاد وب — برای استفاده در بخش‌های صفحهٔ نخست و صفحات خدمت/رایگان صادر شده است. */
-export function WebTeacherCard({ teacher }: { teacher: Teacher }) {
+/* کارت استاد وب — ۰.۷.۱ مربع استاندارد واحد؛ همهٔ کارت‌ها هم‌اندازه، درجه ۱ فقط ظاهر طلایی.
+   ساختار اسلات‌ثابت: آواتار → نام (۲ خط) → تخصص (۱ خط) → ردیف نشان‌ها → متا → قیمت + CTA.
+   با href کل کارت لینک می‌شود (نتایج جستجو)؛ بدون href فقط دکمهٔ پروفایل لینک است (صفحهٔ نخست). */
+export function WebTeacherCard({ teacher, href }: { teacher: Teacher; href?: string }) {
   const name = teacher.user?.name || 'استاد وُدّا';
   const price = Math.max(0, teacher.price30 || teacher.services?.[0]?.price || 0);
   /* ۱.الف.۳ — نئون کارت استاد + ۱.الف.۴ — چراغ حضور */
@@ -585,15 +587,22 @@ export function WebTeacherCard({ teacher }: { teacher: Teacher }) {
   /* last_seen فقط از فیلد فعالیت بک‌اند؛ updated_at به‌روزرسانی پروفایل است نه حضور (۱.الف.۴) */
   const lastSeen = teacher.last_seen ?? null;
   const online = resolveOnline(teacher.available !== false, lastSeen);
+  const profileHref = href ?? `/teachers/${teacher.id}`;
+  const rating = teacher.rating > 0 ? toFaDigits(teacher.rating.toFixed(1)) : '';
+  const metaText = [
+    rating,
+    teacher.city || '',
+    `${toFaDigits(teacher.sessions || 0)} جلسه`,
+  ].filter(Boolean).join(' · ');
 
-  return (
+  const card = (
     <article
-      className={`landing-teacher-card vodda-card-neon${tier1 ? ' vodda-card-tier1' : ''}`}
+      className={`vodda-teacher-card vodda-card-neon${tier1 ? ' vodda-card-tier1' : ''}`}
       style={{ borderRadius: 16, ['--neon-rgb' as string]: hexToRgbTriplet(neonColor) } as CSSProperties}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      <span className="vtc-avatar">
         <Avatar
-          size={54}
+          size={58}
           ring
           tier={teacher.tier}
           imageUrl={avatarUrl(teacher.user?.avatar_url, teacher.user?.updated_at)}
@@ -601,76 +610,51 @@ export function WebTeacherCard({ teacher }: { teacher: Teacher }) {
           online={teacher.available !== false}
           lastSeen={lastSeen}
         />
-        <div style={{ minWidth: 0, flex: 1 }}>
-          <strong className="landing-teacher-name">{name}</strong>
-          <span className="landing-teacher-tag">{teacher.tag || teacher.field}</span>
-        </div>
-        {teacher.rating > 0 && (
-          <span className="landing-teacher-rating"><Icon name="star" size={14} fill />{toFaDigits(teacher.rating.toFixed(1))}</span>
+      </span>
+      <strong className="vtc-name">{name}</strong>
+      <span className="vtc-tag">{teacher.tag || teacher.field || 'آموزش قرآن'}</span>
+      <span className="vtc-badges">
+        {tier1 ? (
+          /* ۱.الف.۵ — نشان «🏆 استاد درجه ۱» + حداکثر دو نشان 🟦🆓⚡ — همان اندازه، ظاهر ویژه */
+          <>
+            <span className="vtc-t1">🏆 استاد درجه ۱</span>
+            {tier1Badges.slice(0, 2).map((badge) => (
+              <span key={badge.label} className="vtc-mini" title={badge.label}>
+                <span aria-hidden="true">{badge.emoji}</span>{badge.label}
+              </span>
+            ))}
+          </>
+        ) : (
+          <TierChip tier={teacher.tier} size={10} />
         )}
-      </div>
-
-      {tier1 ? (
-        /* ۱.الف.۵ — نشان «🏆 استاد درجه ۱» + ردیف نشان‌های 🟦🆓⚡ */
-        <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
-          <span
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 4,
-              padding: '3px 9px',
-              borderRadius: 999,
-              fontSize: 11,
-              fontWeight: 800,
-              color: '#7a5e1e',
-              background: 'linear-gradient(135deg, rgba(191,149,64,.16), rgba(191,149,64,.30))',
-              border: '1px solid rgba(191,149,64,.45)',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            🏆 استاد درجه ۱
-          </span>
-          {tier1Badges.map((badge) => (
-            <span
-              key={badge.label}
-              title={badge.label}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 3,
-                padding: '3px 8px',
-                borderRadius: 999,
-                fontSize: 11,
-                fontWeight: 700,
-                color: 'var(--ink-2s)',
-                background: 'rgba(255,255,255,.8)',
-                border: '1px solid var(--sand-200)',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              <span aria-hidden="true">{badge.emoji}</span>
-              {badge.label}
-            </span>
-          ))}
-        </div>
+      </span>
+      {metaText ? (
+        <span className="vtc-meta">
+          {rating ? <Icon name="star" size={11} fill style={{ color: 'var(--gold)' }} /> : null}
+          {metaText}
+        </span>
       ) : null}
-
-      <div className="landing-teacher-meta">
-        {teacher.city && <span><Icon name="pin" size={14} />{teacher.city}</span>}
-        <span><Icon name="calendar" size={14} />{toFaDigits(teacher.sessions || 0)} جلسه</span>
-        <span><Icon name="message" size={14} />{toFaDigits(teacher.reviews || 0)} نظر</span>
-      </div>
-
-      {teacher.bio && <p className="landing-teacher-bio">{bioIntro(teacher.bio)}</p>}
-
-      <div className="landing-teacher-footer">
-        <span>
-          <small>شروع جلسه از</small>
+      <span className="vtc-foot">
+        <span className="vtc-price">
+          <small>از</small>
           <strong>{price > 0 ? `${formatFaNumber(price)} تومان` : 'مشاهده خدمات'}</strong>
         </span>
-        <WebBtn size="sm" href={`/teachers/${teacher.id}`}>پروفایل و رزرو</WebBtn>
-      </div>
+        {href ? (
+          <span className="vtc-cta">پروفایل و رزرو<Icon name="arrowL" size={13} /></span>
+        ) : (
+          <WebBtn size="sm" href={profileHref} style={{ width: '100%', minHeight: 34, fontSize: 12.5, borderRadius: 10, padding: '7px 10px' }}>
+            پروفایل و رزرو
+          </WebBtn>
+        )}
+      </span>
     </article>
+  );
+
+  if (!href) return card;
+  return (
+    <Link href={href} className="vodda-teacher-link" aria-label={`${name} — پروفایل و رزرو`}>
+      {card}
+    </Link>
   );
 }
 
@@ -699,7 +683,7 @@ export function FeaturedTeachers({ teachers, unavailable = false }: { teachers: 
         </div>
 
         {visible.length ? (
-          <div className="landing-teacher-grid">
+          <div className="vodda-teacher-grid">
             {visible.slice(0, 8).map((teacher) => <WebTeacherCard key={teacher.id} teacher={teacher} />)}
           </div>
         ) : (
@@ -860,7 +844,7 @@ export function RecommendedTeachers({ limit = 7 }: { limit?: number }) {
             <p>پس از تکمیل پروفایل استادان، چیدمان پیشنهادی این‌جا نمایش داده می‌شود.</p>
           </div>
         ) : (
-          <div className="landing-recommended-grid">
+          <div className="vodda-teacher-grid">
             {teachers.map((teacher) => <WebTeacherCard key={teacher.id} teacher={teacher} />)}
           </div>
         )}

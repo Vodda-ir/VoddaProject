@@ -81,7 +81,7 @@ export default async function ServiceTeachersPage({ params }: PageProps) {
             <p>به‌زودی اساتید این خدمت در همین صفحه دیده می‌شوند.</p>
           </div>
         ) : (
-          <div className="landing-teacher-grid service-teachers-grid">
+          <div className="vodda-teacher-grid service-teachers-grid">
             {teachers.map((teacher) => <WebTeacherCard key={teacher.id} teacher={teacher} />)}
           </div>
         )}

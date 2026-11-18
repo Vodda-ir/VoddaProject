@@ -15,7 +15,8 @@ import { SearchInput } from '@/components/admin/AdminUI';
 import { api, type Teacher } from '@/lib/api';
 import { avatarUrl } from '@/lib/auth';
 import { categoryOf, groupCatalog, teachersForTopics, type CatalogCategory } from '@/lib/category';
-import { formatFaNumber, toFaDigits } from '@/lib/persian';
+import { formatFaNumber } from '@/lib/persian';
+import { TIER1_BADGE_ITEMS } from '@/components/web/sections';
 
 export default function UserTeachersPage() {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
@@ -142,9 +143,9 @@ export default function UserTeachersPage() {
         )}
 
         {loading ? (
-          <div className="usr-teacher-grid" style={{ padding: 16 }} aria-busy="true">
+          <div className="vodda-teacher-grid" style={{ padding: 16 }} aria-busy="true">
             {Array.from({ length: 6 }).map((_, index) => (
-              <div key={index} className="adm-skeleton" style={{ height: 170, borderRadius: 18 }} />
+              <div key={index} className="adm-skeleton" style={{ aspectRatio: '5 / 6', borderRadius: 16 }} />
             ))}
           </div>
         ) : filteredTeachers.length === 0 ? (
@@ -154,60 +155,67 @@ export default function UserTeachersPage() {
             description={query ? 'عبارت دیگری را جستجو کنید یا فیلتر را بردارید.' : 'به‌زودی اساتید تأییدشده در این فهرست قرار می‌گیرند.'}
           />
         ) : (
-          <div className="usr-teacher-grid" style={{ padding: 16 }}>
-            {filteredTeachers.map((teacher) => (
-              <article className="usr-teacher-card" key={teacher.id}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
-                  <Avatar
-                    size={48}
-                    ring
-                    tier={teacher.tier}
-                    imageUrl={avatarUrl(teacher.user?.avatar_url, teacher.user?.updated_at)}
-                    name={teacher.user?.name || 'استاد وُدّا'}
-                    online={teacher.available !== false}
-                    lastSeen={teacher.last_seen ?? null}
-                  />
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <strong style={{ fontSize: 13.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {teacher.user?.name || 'استاد وُدّا'}
-                      </strong>
-                      <TierChip tier={teacher.tier} size={10} />
-                    </div>
-                    <div style={{ fontSize: 11, color: 'var(--olive-700)', fontWeight: 600, marginTop: 2 }}>
-                      {teacher.tag || teacher.field || 'آموزش قرآن'}
-                    </div>
-                    {teacher.city && (
-                      <div style={{ fontSize: 10.5, color: 'var(--ink-4)', marginTop: 2 }}>
-                        <Icon name="pin" size={11} /> {teacher.city}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', gap: 14, fontSize: 11.5, color: 'var(--ink-2s)' }}>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                    <Icon name="star" size={13} fill style={{ color: 'var(--gold)' }} />
-                    {Number(teacher.rating) > 0 ? faDigits(Number(teacher.rating).toFixed(1)) : '—'}
-                    <em style={{ fontStyle: 'normal', color: 'var(--ink-4)' }}>({toFaDigits(teacher.reviews)})</em>
+          <div className="vodda-teacher-grid" style={{ padding: 16 }}>
+            {filteredTeachers.map((teacher) => {
+              /* ۰.۷.۱ — کارت مربعی استاندارد واحد (هم‌پاری با صفحهٔ نخست/جستجو/اپ) */
+              const name = teacher.user?.name || 'استاد وُدّا';
+              const tier1 = teacher.is_tier1 === true;
+              const tier1Badges = (teacher.tier1_badges ?? [])
+                .map((key) => TIER1_BADGE_ITEMS[key])
+                .filter((item): item is { emoji: string; label: string } => Boolean(item));
+              return (
+                <article
+                  key={teacher.id}
+                  className={`vodda-teacher-card vodda-card-neon${tier1 ? ' vodda-card-tier1' : ''}`}
+                >
+                  <span className="vtc-avatar">
+                    <Avatar
+                      size={58}
+                      ring
+                      tier={teacher.tier}
+                      imageUrl={avatarUrl(teacher.user?.avatar_url, teacher.user?.updated_at)}
+                      name={name}
+                      online={teacher.available !== false}
+                      lastSeen={teacher.last_seen ?? null}
+                    />
                   </span>
-                  <span>{toFaDigits(teacher.sessions)} جلسه موفق</span>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 9, borderTop: '1px solid var(--sand-100)', paddingTop: 11, marginTop: 'auto' }}>
-                  <div>
-                    <div style={{ fontSize: 9.5, color: 'var(--ink-4)' }}>شروع قیمت از</div>
-                    <strong style={{ fontSize: 14, color: 'var(--olive-700)' }}>{formatFaNumber(teacher.price30)} <small style={{ fontWeight: 500 }}>تومان</small></strong>
-                  </div>
-                  <div style={{ display: 'flex', gap: 7 }}>
-                    <Link href={`/teachers/${teacher.id}`} className="ops-button">پروفایل</Link>
-                    <Link href={`/panel/user/book?teacher=${teacher.id}`} className="ops-button" data-tone="primary">
-                      <Icon name="plus" size={14} /> رزرو
-                    </Link>
-                  </div>
-                </div>
-              </article>
-            ))}
+                  <strong className="vtc-name">{name}</strong>
+                  <span className="vtc-tag">{teacher.tag || teacher.field || 'آموزش قرآن'}</span>
+                  <span className="vtc-badges">
+                    {tier1 ? (
+                      <>
+                        <span className="vtc-t1">🏆 استاد درجه ۱</span>
+                        {tier1Badges.slice(0, 2).map((badge) => (
+                          <span key={badge.label} className="vtc-mini" title={badge.label}>
+                            <span aria-hidden="true">{badge.emoji}</span>{badge.label}
+                          </span>
+                        ))}
+                      </>
+                    ) : (
+                      <TierChip tier={teacher.tier} size={10} />
+                    )}
+                  </span>
+                  <span className="vtc-meta">
+                    {Number(teacher.rating) > 0 && <Icon name="star" size={11} fill style={{ color: 'var(--gold)' }} />}
+                    {[Number(teacher.rating) > 0 ? faDigits(Number(teacher.rating).toFixed(1)) : '', teacher.city || '']
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </span>
+                  <span className="vtc-foot">
+                    <span className="vtc-price">
+                      <small>از</small>
+                      <strong>{formatFaNumber(teacher.price30)} تومان</strong>
+                    </span>
+                    <span className="vtc-actions">
+                      <Link href={`/teachers/${teacher.id}`} className="vtc-cta vtc-cta--ghost">پروفایل</Link>
+                      <Link href={`/panel/user/book?teacher=${teacher.id}`} className="vtc-cta">
+                        <Icon name="plus" size={13} /> رزرو
+                      </Link>
+                    </span>
+                  </span>
+                </article>
+              );
+            })}
           </div>
         )}
       </section>
