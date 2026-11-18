@@ -36,6 +36,8 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN addgroup -g 1001 nodejs && adduser -D -u 1001 -G nodejs nextjs
 
 COPY --from=build /app/public ./public
+# overlay محلی BFF (پرچم درجه ۱ و امتیاز گیمیفیکیشن) — فایل JSON از منبع
+COPY --from=build --chown=nextjs:nodejs /app/db ./db
 COPY --from=build --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=build --chown=nextjs:nodejs /app/.next/static ./.next/static
 
