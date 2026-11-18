@@ -18,6 +18,7 @@ import {
   typography,
 } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
+import { useMinWidth } from "../../ui/useMediaQuery";
 import { getCatalog } from "../dispatch/api";
 import { TeacherCard } from "../teachers/TeacherCard";
 import { getAllTeachersCached } from "../teachers/cached";
@@ -75,6 +76,8 @@ export function CategoryScreen({ config }: CategoryScreenProps) {
   const [error, setError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
   const [activeTopicId, setActiveTopicId] = useState(0);
+  /* ۰.۷.۱ — گرید مربعی کارت استاد: ۲ ستون موبایل / ۳ ستون ≥768px */
+  const threeCol = useMinWidth(768);
 
   useEffect(() => {
     let active = true;
@@ -221,9 +224,16 @@ export function CategoryScreen({ config }: CategoryScreenProps) {
           action={activeTopicId > 0 ? <Button variant="secondary" onClick={() => setActiveTopicId(0)}>نمایش همهٔ زیردسته‌ها</Button> : undefined}
         />
       ) : (
-        <div style={{ display: "grid", gap: 14 }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: threeCol ? "repeat(3, minmax(0,1fr))" : "repeat(2, minmax(0,1fr))",
+            gap: 10,
+            minWidth: 0,
+          }}
+        >
           {visibleTeachers.map((teacher) => (
-            <TeacherCard key={teacher.id} teacher={teacher} config={config} wide />
+            <TeacherCard key={teacher.id} teacher={teacher} config={config} />
           ))}
         </div>
       )}

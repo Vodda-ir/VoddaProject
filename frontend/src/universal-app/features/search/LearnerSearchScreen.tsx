@@ -18,6 +18,7 @@ import {
   typography,
 } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
+import { useMinWidth } from "../../ui/useMediaQuery";
 import { useAppearance } from "../../ui/appearance";
 import { localizeCityName } from "../../i18n/transliterate";
 import { navigateApp } from "../../router";
@@ -431,6 +432,8 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [advancedDraft, setAdvancedDraft] = useState<AdvancedDraft>({ city: initial.city, female: initial.female });
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  /* ۰.۷.۱ — گرید مربعی کارت استاد: ۲ ستون موبایل / ۳ ستون ≥768px */
+  const threeCol = useMinWidth(768);
   const [cities, setCities] = useState<string[]>([]);
   const [cityQuery, setCityQuery] = useState("");
   const [recent, setRecent] = useState<string[]>(() => readRecentSearches());
@@ -1711,17 +1714,33 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
               {fallback.length > 0 ? (
                 <div style={{ display: "grid", gap: 12 }}>
                   <strong style={{ ...typography.bodySmall, color: colors.ink }}>{L("شاید این گزینه‌ها برای شما مناسب باشند")}</strong>
-                  {fallback.map((teacher) => (
-                    <TeacherCard key={teacher.id} teacher={teacher} config={config} wide />
-                  ))}
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: threeCol ? "repeat(3, minmax(0,1fr))" : "repeat(2, minmax(0,1fr))",
+                      gap: 10,
+                      minWidth: 0,
+                    }}
+                  >
+                    {fallback.map((teacher) => (
+                      <TeacherCard key={teacher.id} teacher={teacher} config={config} />
+                    ))}
+                  </div>
                 </div>
               ) : null}
             </>
           ) : (
             <>
-              <div style={{ display: "grid", gap: 14 }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: threeCol ? "repeat(3, minmax(0,1fr))" : "repeat(2, minmax(0,1fr))",
+                  gap: 10,
+                  minWidth: 0,
+                }}
+              >
                 {visible.map((teacher) => (
-                  <TeacherCard key={teacher.id} teacher={teacher} config={config} wide />
+                  <TeacherCard key={teacher.id} teacher={teacher} config={config} />
                 ))}
               </div>
               {hasMore ? (

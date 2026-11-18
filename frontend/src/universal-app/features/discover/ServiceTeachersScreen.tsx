@@ -17,6 +17,7 @@ import {
   typography,
 } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
+import { useMinWidth } from "../../ui/useMediaQuery";
 import { readStoredCity, storedCityUsable } from "@/lib/userCity";
 import { getCatalog } from "../dispatch/api";
 import { TeacherCard } from "../teachers/TeacherCard";
@@ -45,6 +46,8 @@ export function ServiceTeachersScreen({ serviceId, config }: ServiceTeachersScre
   const [serviceTitle, setServiceTitle] = useState("");
   const [serviceCategory, setServiceCategory] = useState("");
   const [teachers, setTeachers] = useState<Teacher[]>([]);
+  /* ۰.۷.۱ — گرید مربعی کارت استاد: ۲ ستون موبایل / ۳ ستون ≥768px */
+  const threeCol = useMinWidth(768);
 
   /* ۱.ب.۱ — شهر فعلی برای اولویت هم‌شهری */
   useEffect(() => {
@@ -175,9 +178,16 @@ export function ServiceTeachersScreen({ serviceId, config }: ServiceTeachersScre
           description="به‌زودی اساتید این خدمت در همین صفحه دیده می‌شوند."
         />
       ) : (
-        <div style={{ display: "grid", gap: 14 }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: threeCol ? "repeat(3, minmax(0,1fr))" : "repeat(2, minmax(0,1fr))",
+            gap: 10,
+            minWidth: 0,
+          }}
+        >
           {visible.map((teacher) => (
-            <TeacherCard key={teacher.id} teacher={teacher} config={config} wide />
+            <TeacherCard key={teacher.id} teacher={teacher} config={config} />
           ))}
         </div>
       )}
