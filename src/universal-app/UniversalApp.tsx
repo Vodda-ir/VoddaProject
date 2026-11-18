@@ -7,6 +7,7 @@ import { ProfileCompletionScreen } from "./features/auth/ProfileCompletionScreen
 import { LearnerBookingScreen } from "./features/booking/LearnerBookingScreen";
 import { LearnerDispatchScreen } from "./features/dispatch/LearnerDispatchScreen";
 import { LearnerHomeScreen } from "./features/home/LearnerHomeScreen";
+import { ServiceTeachersScreen } from "./features/discover/ServiceTeachersScreen";
 import { LearnerProfileScreen } from "./features/profile/LearnerProfileScreen";
 import { LearnerSearchScreen } from "./features/search/LearnerSearchScreen";
 import { CategoryScreen } from "./features/categories/CategoryScreen";
@@ -37,6 +38,7 @@ const routeTitles: Record<AppRouteName, string> = {
   home: "وُدّا",
   login: "ورود",
   category: "دسته‌بندی موضوعات",
+  service: "اساتید خدمت",
   search: "جستجوی استاد",
   teacher: "پروفایل استاد",
   book: "رزرو جلسه",
@@ -129,6 +131,8 @@ function UniversalAppContent({ config, runtime }: { config: UniversalAppConfig; 
     <LearnerSearchScreen config={config} />
   ) : route.name === "category" ? (
     <CategoryScreen config={config} />
+  ) : route.name === "service" ? (
+    <ServiceTeachersScreen serviceId={route.params.id ?? ""} config={config} />
   ) : route.name === "teacher" ? (
     <LearnerTeacherProfileScreen teacherId={route.params.id ?? ""} config={config} />
   ) : route.name === "book" ? (

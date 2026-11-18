@@ -69,6 +69,27 @@ export async function searchTeachers(runtime: PlatformRuntime, params: TeacherSe
   return (await searchTeachersPage(runtime, params)).items;
 }
 
+/**
+ * ۱.ب.۵ — چیدمان «اساتید پیشنهادی» از endpoint محلی BFF (تکرار ≤ ۲ بین دو درخواست).
+ * در اپ نیتیو (تماس مستقیم با بک‌اند) این مسیر وجود ندارد → [] و caller با
+ * موتور محلی src/lib/home/discover.ts جایگزین می‌کند.
+ */
+export async function fetchRecommendedTeachers(
+  runtime: PlatformRuntime,
+  limit = 7,
+): Promise<Teacher[]> {
+  try {
+    const response = await runtime.request<ApiEnvelope & { total?: unknown }>(
+      `/teachers/recommended?limit=${limit}`,
+    );
+    return asArray(response.data)
+      .map(parseTeacher)
+      .filter((teacher) => teacher.id > 0);
+  } catch {
+    return [];
+  }
+}
+
 export async function getTeacherDetail(runtime: PlatformRuntime, id: number): Promise<TeacherDetail> {
   if (!Number.isInteger(id) || id <= 0) throw new Error("شناسه استاد نامعتبر است.");
 

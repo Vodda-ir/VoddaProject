@@ -177,6 +177,15 @@ export function LearnerTeacherProfileScreen({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
+  /* ۱.ب.۴ — فیلتر خدمت از لینک کارت رایگان (?service=<id>) — فقط همان خدمت با امکان برداشتن فیلتر */
+  const [serviceFilterId, setServiceFilterId] = useState(0);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const raw = new URLSearchParams(window.location.search).get("service") ?? "";
+    const parsed = Number.parseInt(raw, 10);
+    setServiceFilterId(Number.isInteger(parsed) && parsed > 0 ? parsed : 0);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -213,7 +222,10 @@ export function LearnerTeacherProfileScreen({
   }
 
   const { teacher, reviews } = detail;
-  const services = teacher.services.filter((service) => service.active);
+  const activeServices = teacher.services.filter((service) => service.active);
+  const services = serviceFilterId > 0
+    ? activeServices.filter((service) => service.id === serviceFilterId)
+    : activeServices;
   const ratingLabel = teacher.reviews > 0
     ? formatNumber(teacher.rating, "fa", { maximumFractionDigits: 1 })
     : "—";
@@ -263,10 +275,43 @@ export function LearnerTeacherProfileScreen({
 
       <section>
         <h3 style={{ fontSize: 16, fontWeight: 800, margin: 0, color: colors.ink }}>خدمات تأییدشده</h3>
+        {serviceFilterId > 0 ? (
+          <button
+            type="button"
+            onClick={() => setServiceFilterId(0)}
+            className="vodda-tappable"
+            aria-label="نمایش همهٔ خدمات"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              marginTop: spacing.sm,
+              padding: "6px 12px",
+              border: `1px solid ${colors.olive200 ?? colors.olive100}`,
+              borderRadius: 999,
+              background: colors.olive50,
+              color: colors.olive700,
+              fontFamily: typography.fontFamily,
+              fontSize: 12,
+              fontWeight: 800,
+              cursor: "pointer",
+            }}
+          >
+            <Icon name="filter" size={13} stroke={2} />
+            فقط خدمت انتخاب‌شده از بخش خدمات رایگان — نمایش همهٔ خدمات
+            <Icon name="x" size={12} stroke={2.2} />
+          </button>
+        ) : null}
         {services.length ? (
           <div style={{ display: "grid", gap: spacing.sm, marginTop: spacing.md }}>
             {services.map((service) => <ServiceCard key={service.id} service={service} />)}
           </div>
+        ) : serviceFilterId > 0 ? (
+          <EmptyState
+            icon={<Icon name="filter" size={30} />}
+            title="این خدمت فعال نیست"
+            description="خدمت انتخاب‌شده از بخش خدمات رایگان در حال حاضر فعال نیست؛ فیلتر را بردارید."
+          />
         ) : (
           <EmptyState
             icon={<Icon name="book" size={30} />}

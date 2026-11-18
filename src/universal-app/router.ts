@@ -7,6 +7,7 @@ export type AppRouteName =
   | "login"
   | "search"
   | "category"
+  | "service"
   | "teacher"
   | "book"
   | "sessions"
@@ -55,7 +56,7 @@ export const appRoutePaths = {
 } as const;
 
 export type StaticAppRouteName = keyof typeof appRoutePaths;
-type DynamicAppRouteName = "teacher" | "book";
+type DynamicAppRouteName = "teacher" | "book" | "service";
 
 const listeners = new Set<() => void>();
 let listening = false;
@@ -110,6 +111,7 @@ export function resolveAppRoute(
   if (staticName) return { name: staticName, pathname: path, params: {} };
   return (
     segmentMatch(path, /^\/teacher\/(?<id>[^/]+)$/, "teacher") ??
+    segmentMatch(path, /^\/service\/(?<id>[^/]+)$/, "service") ??
     segmentMatch(path, /^\/book\/(?<id>[^/]+)$/, "book") ??
     { name: "not-found", pathname: path, params: {} }
   );
@@ -118,7 +120,7 @@ export function resolveAppRoute(
 export function appPath(name: StaticAppRouteName): string;
 export function appPath(name: DynamicAppRouteName, params: { id: string }): string;
 export function appPath(name: StaticAppRouteName | DynamicAppRouteName, params?: { id: string }) {
-  if (name === "teacher" || name === "book") {
+  if (name === "teacher" || name === "book" || name === "service") {
     const id = params?.id?.trim();
     if (!id) throw new Error(`Missing route parameter \"id\" for ${name}`);
     return `/${name}/${encodeURIComponent(id)}`;
@@ -148,7 +150,7 @@ export function appRouteUrl(
   paramsOrConfig?: { id: string } | UniversalAppConfig,
   maybeConfig: UniversalAppConfig = defaultUniversalAppConfig,
 ) {
-  if (name === "teacher" || name === "book") {
+  if (name === "teacher" || name === "book" || name === "service") {
     return appUrl(appPath(name, paramsOrConfig as { id: string }), maybeConfig);
   }
   return appUrl(appPath(name), (paramsOrConfig as UniversalAppConfig | undefined) ?? defaultUniversalAppConfig);
@@ -183,7 +185,7 @@ export function navigateAppRoute(
   configOrOptions?: UniversalAppConfig | { replace?: boolean },
   maybeOptions: { replace?: boolean } = {},
 ) {
-  if (name === "teacher" || name === "book") {
+  if (name === "teacher" || name === "book" || name === "service") {
     navigateApp(
       appPath(name, paramsOrConfig as { id: string }),
       (configOrOptions as UniversalAppConfig | undefined) ?? defaultUniversalAppConfig,

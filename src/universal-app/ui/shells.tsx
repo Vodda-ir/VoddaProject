@@ -8,7 +8,7 @@ type IconName = Parameters<typeof Icon>[0]["name"];
 
 type NavigationItem = {
   label: string;
-  target: Exclude<AppRouteName, "teacher" | "book" | "not-found">;
+  target: Exclude<AppRouteName, "teacher" | "book" | "service" | "not-found">;
   icon: IconName;
   routes: AppRouteName[];
 };
@@ -22,7 +22,7 @@ type AppShellProps = {
 
 const learnerNavigation: NavigationItem[] = [
   { label: "خانه", target: "home", icon: "home", routes: ["home"] },
-  { label: "جستجو", target: "search", icon: "search", routes: ["search", "teacher", "book"] },
+  { label: "جستجو", target: "search", icon: "search", routes: ["search", "teacher", "book", "category", "service"] },
   { label: "جلسات", target: "sessions", icon: "calendar", routes: ["sessions"] },
   { label: "کیف پول", target: "wallet", icon: "wallet", routes: ["wallet"] },
   { label: "پروفایل", target: "profile", icon: "user", routes: ["profile", "profile-edit"] },

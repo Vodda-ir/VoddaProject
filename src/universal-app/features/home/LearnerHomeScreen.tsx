@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import type { UniversalAppConfig } from "../../config";
 import { usePlatform } from "../../platform/context";
 import type { AuthUser } from "../../platform/types";
@@ -9,34 +9,47 @@ import {
   Avatar,
   Button,
   Card,
-  HeroPanel,
   Icon,
   IconBadge,
   LoadingState,
   SectionHeader,
   Sheet,
-  StatusPill,
   colors,
   radii,
   shadows,
   spacing,
   typography,
 } from "../../ui";
+import { useMinWidth } from "../../ui/useMediaQuery";
 import { messageOf } from "../../ui/errorMessage";
 import { RoleModeSheet } from "../auth/RoleModeSheet";
 import { avatarSrc, uploadsOriginOf } from "@/lib/avatarImage";
-import { formatDate, formatLocalDate, formatNumber, tehranDayKey, tehranHour } from "@/lib/datetime";
-import { groupCatalog, teachersForCategory, type CatalogCategory, type CatalogRow } from "@/lib/category";
+import { formatDate, formatNumber, tehranHour } from "@/lib/datetime";
+import {
+  groupCatalog,
+  type CatalogCategory,
+  type CatalogRow,
+} from "@/lib/category";
+import { verseOfDay } from "@/lib/verses";
+import {
+  buildCategoryTiles,
+  byDiscoveryRank,
+  freeServiceCards,
+  popularServiceCards,
+  serviceImageSrc,
+  type CategoryTile,
+  type FreeServiceCard,
+  type PopularServiceCard,
+} from "@/lib/home/discover";
 import { getCatalog } from "../dispatch/api";
 import {
   getNotifications,
   markNotificationRead,
   type AppNotification,
 } from "../notifications/api";
-import { getLearnerSessions } from "../sessions/api";
-import { isUpcomingSession, type LearnerSession } from "../sessions/types";
-import { searchTeachers } from "../teachers/api";
+import { searchTeachers, fetchRecommendedTeachers } from "../teachers/api";
 import { TeacherCard } from "../teachers/TeacherCard";
+import { TierBadge } from "../teachers/TierBadge";
 import type { Teacher } from "../teachers/types";
 import { nearestCity } from "@/lib/cities";
 import {
@@ -48,6 +61,7 @@ import {
   type UserCitySource,
 } from "@/lib/userCity";
 import { CityChipButton, CityPickerSheet } from "./CityPickerSheet";
+import { localRecommendedPicks } from "../discover/recommended";
 
 export type LearnerHomeScreenProps = {
   config: UniversalAppConfig;
@@ -64,16 +78,13 @@ function teachersCacheFresh() {
 
 /* ─────────────────────────  سلام ساعت‌محور و تاریخ شمسی  ───────────────────────── */
 
-function tehranHourLocal(): number {
-  try {
-    return tehranHour(new Date());
-  } catch {
-    return new Date().getHours();
-  }
-}
-
 function greetingLabel() {
-  const hour = tehranHourLocal();
+  let hour: number;
+  try {
+    hour = tehranHour(new Date());
+  } catch {
+    hour = new Date().getHours();
+  }
   if (hour < 12) return "صبح بخیر";
   if (hour < 15) return "ظهر بخیر";
   if (hour < 20) return "عصر بخیر";
@@ -83,41 +94,6 @@ function greetingLabel() {
 function todayLabel() {
   return formatDate(new Date(), "fa", "weekdayDayMonth");
 }
-
-function dayOfYearIndex() {
-  const now = new Date();
-  const start = new Date(now.getFullYear(), 0, 0);
-  return Math.floor((now.getTime() - start.getTime()) / 86_400_000);
-}
-
-function tehranDayKeyOf(dateIso: string) {
-  if (!dateIso) return "";
-  try {
-    return tehranDayKey(new Date(dateIso));
-  } catch {
-    return "";
-  }
-}
-
-function isTodayInTehran(dateIso: string) {
-  return dateIso !== "" && tehranDayKeyOf(dateIso) === tehranDayKeyOf(new Date().toISOString());
-}
-
-/* آیه و حدیث روز — فقط متون معروف و معتبر درباره علم و آموزش؛ چرخش روزانه */
-const DAILY_QUOTES: Array<{ text: string; source: string }> = [
-  { text: "وَقُل رَّبِّ زِدْنِي عِلْمًا", source: "قرآن — طه: ۱۱۴" },
-  { text: "خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ", source: "حدیث نبوی" },
-  { text: "هَلْ يَسْتَوِي الَّذِينَ يَعْلَمُونَ وَالَّذِينَ لَا يَعْلَمُونَ", source: "قرآن — الزمر: ۹" },
-  { text: "مَنْ سَلَكَ طَرِيقًا يَطْلُبُ فِيهِ عِلْمًا سَهَّلَ اللَّهُ لَهُ طَرِيقًا إِلَى الْجَنَّةِ", source: "حدیث نبوی" },
-  { text: "يَرْفَعِ اللَّهُ الَّذِينَ آمَنُوا مِنكُمْ وَالَّذِينَ أُوتُوا الْعِلْمَ دَرَجَاتٍ", source: "قرآن — المجادلة: ۱۱" },
-  { text: "اقْرَأْ بِاسْمِ رَبِّكَ الَّذِي خَلَقَ", source: "قرآن — العلق: ۱" },
-  { text: "إِنَّمَا يَخْشَى اللَّهَ مِنْ عِبَادِهِ الْعُلَمَاءُ", source: "قرآن — فاطر: ۲۸" },
-  { text: "فَاسْأَلُوا أَهْلَ الذِّكْرِ إِن كُنتُمْ لَا تَعْلَمُونَ", source: "قرآن — النحل: ۴۳" },
-  { text: "سَنُرِيهِمْ آيَاتِنَا فِي الْآفَاقِ وَفِي أَنفُسِهِمْ حَتَّىٰ يَتَبَيَّنَ لَهُمْ أَنَّهُ الْحَقُّ", source: "قرآن — فصلت: ۵۳" },
-  { text: "وَمَن يُؤْتَ الْحِكْمَةَ فَقَدْ أُوتِيَ خَيْرًا كَثِيرًا", source: "قرآن — البقرة: ۲۶۹" },
-  { text: "أَلَا بِذِكْرِ اللَّهِ تَطْمَئِنُّ الْقُلُوبُ", source: "قرآن — الرعد: ۲۸" },
-  { text: "طَلَبُ الْعِلْمِ فَرِيضَةٌ عَلَى كُلِّ مُسْلِمٍ", source: "حدیث نبوی" },
-];
 
 // باگ persian-dates — عدد از util مرکزی
 function faNumber(value: number, maximumFractionDigits = 1) {
@@ -129,66 +105,11 @@ function walletShort(wallet: number) {
   return `${faNumber(Math.round(wallet / 1000), 0)} هزار`;
 }
 
-/* ─────────────────────────  منطق پیشنهاد و استاد ویژه  ───────────────────────── */
-
-function recommendationScore(teacher: Teacher) {
-  return teacher.rating * Math.log10(10 + Math.max(0, teacher.sessions));
-}
-
-/* ─────────────────────────  دسته‌بندی‌های سریع داده‌محور  ───────────────────────── */
-
-type CategoryMeta = { title: string; description: string; icon: "quran" | "mic" | "book" | "doc" | "headphones"; tone: "olive" | "clay" | "gold" | "info" };
-
-// آیکون/رنگ هر دسته بر اساس کلیدواژه‌های نام رشته انتخاب می‌شود؛ عنوان همیشه
-// همان نام واقعی رشته در دیتابیس است تا فیلتر جستجو دقیق کار کند.
-// (پلتفرم فعلاً تخصصاً قرآنی است — رشته مداحی پنهان شده)
-const CATEGORY_KEYWORDS: Array<{ match: RegExp; meta: Omit<CategoryMeta, "title"> }> = [
-  { match: /تلاوت|صوت/, meta: { description: "اصوات و آوای قرآنی", icon: "headphones", tone: "gold" } },
-  { match: /قران|قرآن|تجوید|روخوانی|حفظ/, meta: { description: "روخوانی، تجوید و حفظ", icon: "quran", tone: "olive" } },
-  { match: /احکام|فقه/, meta: { description: "مسائل شرعی روزمره", icon: "doc", tone: "info" } },
-];
-
 // استادهای مداحی فعلاً از تمام سطوح کاربری پنهان می‌شوند (پلتفرم تخصصاً قرآنی).
 const MADDAHI_PATTERN = /مداح|هم‌نوا|همنوا/;
 
 function isMaddahiTeacher(teacher: Teacher) {
   return MADDAHI_PATTERN.test(teacher.field) || MADDAHI_PATTERN.test(teacher.tag);
-}
-
-const CATEGORY_FALLBACK_META: Omit<CategoryMeta, "title"> = {
-  description: "جلسه‌های آموزشی",
-  icon: "book",
-  tone: "olive",
-};
-
-function categoryMetaFor(field: string): CategoryMeta {
-  for (const { match, meta } of CATEGORY_KEYWORDS) {
-    if (match.test(field)) return { title: field, ...meta };
-  }
-  return { title: field, ...CATEGORY_FALLBACK_META };
-}
-
-// باگ category-routing — متادیتای کارت دسته از نام واقعی دستهٔ کاتالوگ
-const CATALOG_CATEGORY_META: Array<{ match: RegExp; meta: Omit<CategoryMeta, "title"> }> = [
-  { match: /صوت|لحن/, meta: { description: "آوای قرآنی", icon: "headphones", tone: "gold" } },
-  { match: /حفظ/, meta: { description: "حفظ و مرور", icon: "book", tone: "info" } },
-  { match: /تجوید|قرائت/, meta: { description: "علوم قرائت", icon: "doc", tone: "olive" } },
-  { match: /تفسیر|مفاهیم|علوم/, meta: { description: "مفاهیم و علوم", icon: "doc", tone: "info" } },
-  { match: /ویژه|کودک|نوجوان|زبان/, meta: { description: "گروه‌های خاص", icon: "mic", tone: "clay" } },
-  { match: /حضوری|مراسم/, meta: { description: "خدمات مراسم", icon: "mic", tone: "clay" } },
-  { match: /آمادگی|مشاوره/, meta: { description: "آمادگی و مسابقات", icon: "headphones", tone: "gold" } },
-  { match: /قرآن|پایه/, meta: { description: "روخوانی و آموزش", icon: "quran", tone: "olive" } },
-];
-
-function catalogCategoryMeta(name: string): CategoryMeta {
-  for (const { match, meta } of CATALOG_CATEGORY_META) {
-    if (match.test(name)) return { title: name, ...meta };
-  }
-  return { title: name, ...CATEGORY_FALLBACK_META };
-}
-
-function teacherSubtitle(teacher: Teacher) {
-  return [teacher.tag || teacher.field, teacher.city].filter(Boolean).join(" · ");
 }
 
 /* ─────────────────────────  زیرکامپوننت‌ها  ───────────────────────── */
@@ -197,27 +118,36 @@ function Skeleton({ style }: { style?: CSSProperties }) {
   return <span aria-hidden="true" className="vodda-skeleton" style={{ display: "block", ...style }} />;
 }
 
-function HomeSkeleton() {
+/* ۱.ب.۲ — skeleton هر بخش، هم‌ساختار با صفحهٔ واقعی */
+function HomeSkeleton({ wide }: { wide: boolean }) {
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 26 }} aria-label="در حال بارگذاری">
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "minmax(0, 1fr)",
+        gap: wide ? 32 : 24,
+      }}
+      aria-label="در حال بارگذاری"
+    >
       <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
-        <Skeleton style={{ width: 48, height: 48, borderRadius: 7 }} />
+        <Skeleton style={{ width: 44, height: 34, borderRadius: 999 }} />
         <div style={{ display: "grid", gap: 7, flex: 1 }}>
           <Skeleton style={{ width: 96, height: 12 }} />
           <Skeleton style={{ width: 150, height: 16 }} />
         </div>
         <Skeleton style={{ width: 44, height: 44, borderRadius: 16 }} />
       </div>
-      <Skeleton style={{ height: 168, borderRadius: radii.xl }} />
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
-        <Skeleton style={{ height: 142, borderRadius: radii.lg }} />
-        <Skeleton style={{ height: 142, borderRadius: radii.lg }} />
+      <Skeleton style={{ height: 58, borderRadius: radii.lg }} />
+      <div style={{ display: "grid", gridTemplateColumns: wide ? "repeat(3, minmax(0,1fr))" : "repeat(2, minmax(0, 1fr))", gap: 10 }}>
+        {Array.from({ length: 6 }).map((_, index) => (
+          <Skeleton key={index} style={{ height: 100, borderRadius: 20 }} />
+        ))}
       </div>
       <div style={{ display: "grid", gap: 12 }}>
         <Skeleton style={{ width: 130, height: 18 }} />
-        <div style={{ display: "flex", gap: spacing.md, overflow: "hidden" }}>
-          {[0, 1, 2].map((index) => (
-            <Skeleton key={index} style={{ flex: "0 0 232px", height: 176, borderRadius: 24 }} />
+        <div style={{ display: "grid", gridTemplateColumns: wide ? "repeat(3, minmax(0,1fr))" : "repeat(2, minmax(0, 1fr))", gap: 10 }}>
+          {Array.from({ length: 4 }).map((_, index) => (
+            <Skeleton key={index} style={{ height: 176, borderRadius: 24 }} />
           ))}
         </div>
       </div>
@@ -225,70 +155,9 @@ function HomeSkeleton() {
   );
 }
 
-function TrustStrip() {
-  const items = [
-    { icon: "checkCircle" as const, label: "استادها تأییدشده‌ان" },
-    { icon: "shield" as const, label: "پرداخت امن با کیف پول" },
-    { icon: "refresh" as const, label: "لغو آزاد تا قبل از جلسه" },
-  ];
-  return (
-    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }} className="vodda-enter vodda-enter-delay-1">
-      {items.map((item) => (
-        <span
-          key={item.label}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 5,
-            padding: "6px 11px",
-            borderRadius: 999,
-            border: `1px solid ${colors.olive100}`,
-            background: colors.olive50,
-            color: colors.olive700,
-            fontSize: 11.5,
-            fontWeight: 700,
-          }}
-        >
-          <Icon name={item.icon} size={13} stroke={2} />
-          {item.label}
-        </span>
-      ))}
-    </div>
-  );
-}
-
-function ProfileNudgeBar({ config }: { config: UniversalAppConfig }) {
-  return (
-    <button
-      type="button"
-      onClick={() => navigateApp("/profile/edit", config)}
-      className="vodda-tappable vodda-enter"
-      style={{
-        width: "100%",
-        display: "flex",
-        alignItems: "center",
-        gap: spacing.sm,
-        padding: "10px 14px",
-        textAlign: "right",
-        border: `1px dashed ${colors.olive100}`,
-        borderRadius: radii.md,
-        background: colors.surface,
-        color: colors.ink,
-        cursor: "pointer",
-        fontFamily: typography.fontFamily,
-      }}
-    >
-      <IconBadge icon="edit" tone="gold" size={34} />
-      <span style={{ flex: 1, minWidth: 0, ...typography.caption, color: colors.inkMuted, fontWeight: 600 }}>
-        پروفایلت رو کامل کن تا استادها بهتر بشناسنت
-      </span>
-      <Icon name="chevronL" size={16} style={{ color: colors.inkMuted }} />
-    </button>
-  );
-}
-
+/* ۱.ب.۲ — بخش ② آیهٔ روز (متن مشترک با وب — src/lib/verses.ts) */
 function VerseStrip() {
-  const quote = DAILY_QUOTES[dayOfYearIndex() % DAILY_QUOTES.length];
+  const quote = verseOfDay();
   const isQuran = quote.source.startsWith("قرآن");
   return (
     <div
@@ -312,340 +181,173 @@ function VerseStrip() {
   );
 }
 
-function SearchPill({ config }: { config: UniversalAppConfig }) {
-  return (
-    <button
-      type="button"
-      onClick={() => navigateApp("/search", config)}
-      className="vodda-card vodda-card--interactive vodda-tappable vodda-enter"
-      style={{
-        width: "100%",
-        display: "flex",
-        alignItems: "center",
-        gap: 10,
-        padding: "13px 16px",
-        borderRadius: 999,
-        border: `1px solid ${colors.sand150}`,
-        background: colors.surface,
-        boxShadow: shadows.sm,
-        color: colors.inkMuted,
-        cursor: "pointer",
-        fontFamily: typography.fontFamily,
-        textAlign: "right",
-      }}
-    >
-      <Icon name="search" size={18} style={{ color: colors.olive700, flex: "0 0 auto" }} />
-      <span style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 600 }}>
-        دنبال کدوم استاد قرآن هستی؟
-      </span>
-      <Icon name="chevronL" size={16} style={{ flex: "0 0 auto" }} />
-    </button>
-  );
-}
-
-function DispatchBanner({ config }: { config: UniversalAppConfig }) {
-  return (
-    <button
-      type="button"
-      onClick={() => navigateApp("/dispatch", config)}
-      className="vodda-card vodda-card--interactive vodda-tappable vodda-enter vodda-neon-gold"
-      aria-label="فراخوان اساتید — درخواست زنده استاد"
-      style={{
-        width: "100%",
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
-        padding: "14px 16px",
-        borderRadius: 20,
-        border: `1px solid ${colors.olive200}`,
-        background: "linear-gradient(135deg, #f2f5ea 0%, #ffffff 62%)",
-        boxShadow: shadows.sm,
-        color: colors.ink,
-        cursor: "pointer",
-        fontFamily: typography.fontFamily,
-        textAlign: "right",
-        position: "relative",
-        overflow: "hidden",
-      }}
-    >
-      <span
-        aria-hidden="true"
+/* ۱.ب.۳ — خانه‌های شش‌گانهٔ دسته‌بندی — گرادیان زیتونی-طلایی، تصویر ≤۴۸px،
+ * حاشیهٔ نئون ۲px، ارتفاع ۱۰۰/۱۲۰px، fade-in پله‌ای ۵۰ms، کلیک = فقط زیردسته‌های همان دسته */
+function CategoryTileGrid({
+  tiles,
+  loading,
+  wide,
+}: {
+  tiles: CategoryTile[];
+  loading: boolean;
+  wide: boolean;
+}) {
+  if (loading) {
+    return (
+      <div
         style={{
-          display: "grid", placeItems: "center", width: 42, height: 42,
-          borderRadius: 14, flex: "0 0 42px",
-          background: colors.olive600, color: colors.surface,
-          boxShadow: "0 8px 18px rgba(94,110,67,.28)",
+          display: "grid",
+          gridTemplateColumns: wide ? "repeat(3, minmax(0,1fr))" : "repeat(2, minmax(0, 1fr))",
+          gap: 10,
+        }}
+        aria-label="در حال بارگذاری دسته‌ها"
+      >
+        {Array.from({ length: 6 }).map((_, index) => (
+          <Skeleton key={index} style={{ height: 100, borderRadius: 20 }} />
+        ))}
+      </div>
+    );
+  }
+  if (tiles.length === 0) return null;
+
+  const tileBackground: CSSProperties = {
+    backgroundImage:
+      "linear-gradient(140deg, #f2f5ea 0%, #f7f3e3 58%, #f3e8cb 100%), linear-gradient(135deg, rgba(147,161,114,.85), rgba(191,149,64,.85))",
+    backgroundOrigin: "padding-box, border-box",
+    backgroundClip: "padding-box, border-box",
+  };
+
+  return (
+    <section aria-label="دسته‌های قرآنی" style={{ display: "grid", gap: spacing.sm }}>
+      <SectionHeader title="دسته‌های قرآنی" />
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: wide ? "repeat(3, minmax(0,1fr))" : "repeat(2, minmax(0, 1fr))",
+          gap: 10,
         }}
       >
-        <Icon name="bell" size={20} stroke={1.9} />
-      </span>
-      <span style={{ flex: 1, minWidth: 0 }}>
-        <strong style={{ display: "block", fontSize: 14, fontWeight: 800 }}>
-          فراخوان اساتید <span style={{ color: colors.goldDark }}>جدید</span>
-        </strong>
-        <span style={{ display: "block", fontSize: 11.5, color: colors.inkMuted, marginTop: 2, lineHeight: 1.7 }}>
-          موضوعت را بگو؛ اساتید اعلام آمادگی کنند، تو انتخاب کن
-        </span>
-      </span>
-      <Icon name="chevronL" size={16} style={{ flex: "0 0 auto", color: colors.olive700 }} />
-    </button>
-  );
-}
-
-function OnboardingChecklist({ user, config }: { user: AuthUser; config: UniversalAppConfig }) {
-  const profileDone = Boolean(user.avatar_url && user.city?.trim() && user.bio?.trim());
-  const steps = [
-    { done: true, label: "ساخت حساب وُدّا", icon: "user" as const, target: "" },
-    { done: profileDone, label: "تکمیل پروفایل", icon: "edit" as const, target: "/profile/edit" },
-    { done: false, label: "اولین رزرو جلسه", icon: "calendar" as const, target: "/search" },
-  ];
-  const remaining = steps.filter((step) => !step.done).length;
-  return (
-    <Card elevated className="vodda-enter" style={{ display: "grid", gap: 10 }}>
-      <strong style={{ ...typography.body, color: colors.ink }}>سه قدم تا جلسهٔ اول</strong>
-      {steps.map((step) => {
-        const content = (
-          <>
-            <Icon
-              name={step.icon}
-              size={20}
-              stroke={step.done ? 2 : 1.7}
-              style={{ color: step.done ? colors.olive600 : colors.inkFaint, flex: "0 0 auto" }}
-            />
-            <span
-              style={{
-                flex: 1,
-                minWidth: 0,
-                ...typography.bodySmall,
-                color: step.done ? colors.inkMuted : colors.ink,
-                fontWeight: step.done ? 600 : 800,
-                textDecoration: step.done ? "line-through" : "none",
-              }}
-            >
-              {step.label}
-            </span>
-            {!step.done && step.target ? <Icon name="chevronL" size={16} style={{ color: colors.inkFaint }} /> : null}
-          </>
-        );
-        if (step.done || !step.target) {
-          return <div key={step.label} style={{ display: "flex", alignItems: "center", gap: 10 }}>{content}</div>;
-        }
-        return (
+        {tiles.map((tile, index) => (
           <button
-            key={step.label}
+            key={tile.name}
             type="button"
-            onClick={() => navigateApp(step.target, config)}
+            onClick={() => navigateApp(`/category?name=${encodeURIComponent(tile.name)}`)}
             className="vodda-tappable"
+            aria-label={`${tile.name} — ${faNumber(tile.count, 0)} استاد فعال`}
             style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              padding: 0,
-              border: 0,
-              background: "transparent",
+              minHeight: wide ? 120 : 100,
+              display: "grid",
+              justifyItems: "center",
+              alignContent: "center",
+              gap: 5,
+              padding: "10px 8px",
+              textAlign: "center",
+              border: "2px solid transparent",
+              borderRadius: 20,
+              boxShadow: "0 3px 14px rgba(46,54,34,.07)",
               cursor: "pointer",
               fontFamily: typography.fontFamily,
-              textAlign: "right",
-              color: colors.ink,
+              transition: "transform .18s ease, box-shadow .18s ease",
+              ...tileBackground,
+              animation: "vodda-enter .36s ease-out both",
+              animationDelay: `${index * 50}ms`,
             }}
           >
-            {content}
-          </button>
-        );
-      })}
-      <span style={{ ...typography.caption, color: colors.inkMuted }}>
-        {remaining > 0
-          ? `${faNumber(remaining, 0)} قدم مانده تا آماده شدن برای اولین جلسه`
-          : "همه‌چیز آماده‌ست — وقت رزرو اولین جلسه!"}
-      </span>
-    </Card>
-  );
-}
-
-type PastTeacher = { id: number; name: string; avatarUrl: string };
-
-function RebookRail({ teachers, config, runtime }: { teachers: PastTeacher[]; config: UniversalAppConfig; runtime: ReturnType<typeof usePlatform> }) {
-  if (teachers.length === 0) return null;
-  return (
-    <section aria-label="استادهای جلسه‌های قبلی تو" className="vodda-enter" style={{ minWidth: 0 }}>
-      <SectionHeader title="استادهای جلسه‌های قبلی تو" />
-      <div
-        className="vodda-scroll-rail"
-        style={{
-          display: "flex",
-          width: "100%",
-          minWidth: 0,
-          gap: spacing.md,
-          overflowX: "auto",
-          marginInline: -spacing.xl,
-          padding: `${spacing.md}px ${spacing.xl}px ${spacing.sm}px`,
-          scrollSnapType: "x proximity",
-        }}
-      >
-        {teachers.map((teacher) => {
-          const open = () => navigateApp(`/teacher/${teacher.id}`, config);
-          return (
-            <div
-              key={teacher.id}
-              role="button"
-              tabIndex={0}
-              className="vodda-card vodda-card--interactive vodda-tappable"
-              onClick={open}
-              onKeyDown={(event) => {
-                if (event.key !== "Enter" && event.key !== " ") return;
-                event.preventDefault();
-                open();
-              }}
+            {/* تصویر خیالی ≤۴۸px — خطای بارگذاری → آیکون قرآن زیر آن پیدا می‌شود */}
+            <span
+              aria-hidden="true"
               style={{
-                flex: "0 0 172px",
-                width: 172,
+                position: "relative",
+                width: 48,
+                height: 48,
                 display: "grid",
-                justifyItems: "center",
-                alignContent: "center",
-                gap: 10,
-                padding: 16,
-                textAlign: "center",
-                color: colors.ink,
-                background: colors.surface,
-                border: 0,
-                borderRadius: 24,
-                boxShadow: "0 6px 22px rgba(46,54,34,.07)",
-                cursor: "pointer",
-                fontFamily: typography.fontFamily,
+                placeItems: "center",
               }}
             >
-              <Avatar name={teacher.name} src={avatarSrc(teacher.avatarUrl, undefined, uploadsOriginOf(runtime.apiBaseUrl))} size={54} ring />
-              <strong
+              <Icon name="quran" size={26} style={{ color: colors.olive600 }} />
+              <img
+                src={serviceImageSrc(tile.imageKey)}
+                alt=""
+                width={48}
+                height={48}
+                loading="lazy"
                 style={{
-                  maxWidth: "100%",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                  fontSize: 13.5,
-                  fontWeight: 800,
+                  position: "absolute",
+                  inset: 0,
+                  width: 48,
+                  height: 48,
+                  maxWidth: 48,
+                  maxHeight: 48,
+                  objectFit: "contain",
                 }}
-              >
-                {teacher.name}
-              </strong>
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 800, color: colors.olive700 }}>
-                رزرو دوباره
-                <Icon name="chevronL" size={13} />
-              </span>
-            </div>
-          );
-        })}
+                onError={(event) => {
+                  event.currentTarget.style.display = "none";
+                }}
+              />
+            </span>
+            <strong
+              style={{
+                maxWidth: "100%",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                fontSize: wide ? 17 : 16,
+                fontWeight: 700,
+                color: colors.ink,
+              }}
+            >
+              {tile.name}
+            </strong>
+            <span style={{ fontSize: 11, fontWeight: 700, color: colors.olive600 }}>
+              {faNumber(tile.count, 0)} استاد فعال
+            </span>
+          </button>
+        ))}
       </div>
     </section>
   );
 }
 
-function NextSessionCard({ session, config }: { session: LearnerSession; config: UniversalAppConfig }) {
-  const today = isTodayInTehran(session.scheduledAt);
-  const time = today && session.localStart
-    ? `امروز · ${session.localStart}`
-    : [formatLocalDate(session.localDate, "fa", "short"), session.localStart].filter(Boolean).join(" · ");
-  return (
-    <button
-      type="button"
-      onClick={() => navigateApp("/sessions", config)}
-      className="vodda-card vodda-card--interactive vodda-tappable vodda-enter"
-      style={{
-        width: "100%",
-        display: "flex",
-        alignItems: "center",
-        gap: spacing.md,
-        padding: spacing.lg,
-        textAlign: "right",
-        color: colors.ink,
-        background: colors.surface,
-        border: `1px solid ${today ? colors.gold : colors.olive100}`,
-        borderRadius: radii.xl,
-        boxShadow: shadows.md,
-        cursor: "pointer",
-        fontFamily: typography.fontFamily,
-      }}
-    >
-      <IconBadge icon="calendar" tone="olive" size={46} />
-      <span style={{ minWidth: 0, flex: 1, display: "grid", gap: 4 }}>
-        <span style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
-          <span style={{ ...typography.caption, color: colors.olive700, fontWeight: 800 }}>جلسه بعدی تو</span>
-          {today ? (
-            <span
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 4,
-                padding: "2px 8px",
-                borderRadius: 999,
-                background: colors.goldBackground,
-                color: colors.goldDark,
-                fontSize: 10.5,
-                fontWeight: 800,
-              }}
-            >
-              امروز!
-            </span>
-          ) : null}
-          <StatusPill status={session.status} />
-        </span>
-        <strong style={{ ...typography.body, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: colors.ink }}>
-          {session.service || "جلسه آموزشی"} با {session.teacherName}
-        </strong>
-        <span style={{ ...typography.caption, display: "inline-flex", alignItems: "center", gap: 4, color: colors.inkMuted }}>
-          <Icon name="clock" size={13} />
-          {time || "زمان از دفتر استاد پیگیری شود"}
-        </span>
-      </span>
-      <Icon name="chevronL" size={18} style={{ color: colors.inkMuted, flex: "0 0 auto" }} />
-    </button>
-  );
-}
-
-function RebookBanner({ config }: { config: UniversalAppConfig }) {
-  return (
-    <Card elevated className="vodda-enter" style={{ display: "flex", alignItems: "center", gap: spacing.md, padding: spacing.lg }}>
-      <IconBadge icon="sparkle" tone="gold" size={46} />
-      <span style={{ minWidth: 0, flex: 1, display: "grid", gap: 3 }}>
-        <strong style={{ ...typography.body, color: colors.ink }}>یه جلسه دیگه رزرو می‌کنی؟</strong>
-        <span style={{ ...typography.caption, color: colors.inkMuted }}>زمان‌های آزاد جدید استادها منتظرته.</span>
-      </span>
-      <Button onClick={() => navigateApp("/search", config)} style={{ minHeight: 40, padding: "8px 16px", fontSize: 13 }}>
-        جستجوی استاد
-      </Button>
-    </Card>
-  );
-}
-
-function TeacherRail({
-  title,
+/* ۱.ب.۲ — بخش ④ اساتید برتر — سطر اول درجهٔ ۱ (هم‌شهری فقط اولویت) */
+function TopTeachersSection({
   teachers,
+  loading,
+  wide,
   config,
 }: {
-  title: string;
   teachers: Teacher[];
+  loading: boolean;
+  wide: boolean;
   config: UniversalAppConfig;
 }) {
+  if (loading) {
+    return (
+      <section aria-label="در حال بارگذاری اساتید برتر" style={{ display: "grid", gap: 12 }}>
+        <Skeleton style={{ width: 130, height: 18 }} />
+        <div style={{ display: "grid", gridTemplateColumns: wide ? "repeat(3, minmax(0,1fr))" : "repeat(2, minmax(0, 1fr))", gap: 10 }}>
+          {Array.from({ length: 4 }).map((_, index) => (
+            <Skeleton key={index} style={{ height: 176, borderRadius: 24 }} />
+          ))}
+        </div>
+      </section>
+    );
+  }
   if (teachers.length === 0) return null;
 
   return (
-    <section aria-label={title} className="vodda-enter" style={{ minWidth: 0 }}>
-      <SectionHeader title={title} action="مشاهدهٔ همه" onAction={() => navigateApp("/search", config)} />
+    <section aria-label="اساتید برتر" style={{ display: "grid", gap: spacing.sm, minWidth: 0 }}>
+      <SectionHeader title="اساتید برتر" action="مشاهدهٔ همه" onAction={() => navigateApp("/search", config)} />
       <div
-        className="vodda-scroll-rail"
         style={{
-          display: "flex",
-          width: "100%",
+          display: "grid",
+          gridTemplateColumns: wide ? "repeat(3, minmax(0,1fr))" : "repeat(2, minmax(0, 1fr))",
+          gap: 10,
           minWidth: 0,
-          gap: spacing.md,
-          overflowX: "auto",
-          marginInline: -spacing.xl,
-          padding: `${spacing.md}px ${spacing.xl}px ${spacing.sm}px`,
-          scrollSnapType: "x proximity",
         }}
       >
-        {teachers.map((teacher) => (
-          <div key={teacher.id} style={{ flex: "0 0 auto", scrollSnapAlign: "start" }}>
-            <TeacherCard teacher={teacher} config={config} />
+        {teachers.slice(0, 6).map((teacher, index) => (
+          <div key={teacher.id} className="vodda-enter" style={{ minWidth: 0, animationDelay: `${index * 40}ms` }}>
+            <TeacherCard teacher={teacher} config={config} wide />
           </div>
         ))}
       </div>
@@ -653,136 +355,295 @@ function TeacherRail({
   );
 }
 
-function FeaturedTeacher({ teacher, config }: { teacher: Teacher; config: UniversalAppConfig }) {
-  const sample = teacher.samples.find((item) => item.url) ?? null;
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [playing, setPlaying] = useState(false);
-
-  useEffect(() => () => {
-    audioRef.current?.pause();
-  }, []);
-
-  const toggleSample = (event: { stopPropagation(): void }) => {
-    event.stopPropagation();
-    if (!sample) return;
-    if (!audioRef.current) {
-      audioRef.current = new Audio(sample.url);
-      audioRef.current.addEventListener("ended", () => setPlaying(false));
-    }
-    if (playing) {
-      audioRef.current.pause();
-      setPlaying(false);
-    } else {
-      void audioRef.current.play().catch(() => setPlaying(false));
-      setPlaying(true);
-    }
-  };
+/* ۱.ب.۶ — خدمات پرکاربرد — کارت کوچک ۸۰/۹۰px، تصویر ≤۳۲px، کلیک = فقط اساتید همان خدمت */
+function PopularServicesGrid({
+  services,
+  loading,
+  wide,
+  config,
+}: {
+  services: PopularServiceCard[];
+  loading: boolean;
+  wide: boolean;
+  config: UniversalAppConfig;
+}) {
+  if (loading) {
+    return (
+      <section aria-label="در حال بارگذاری خدمات پرکاربرد" style={{ display: "grid", gap: 12 }}>
+        <Skeleton style={{ width: 150, height: 18 }} />
+        <div style={{ display: "grid", gridTemplateColumns: wide ? "repeat(4, minmax(0,1fr))" : "repeat(2, minmax(0, 1fr))", gap: 10 }}>
+          {Array.from({ length: 8 }).map((_, index) => (
+            <Skeleton key={index} style={{ height: 80, borderRadius: 18 }} />
+          ))}
+        </div>
+      </section>
+    );
+  }
+  if (services.length === 0) return null;
 
   return (
-    <button
-      type="button"
-      className="vodda-tappable vodda-enter"
-      onClick={() => navigateApp(`/teacher/${teacher.id}`, config)}
-      style={{
-        width: "100%",
-        position: "relative",
-        overflow: "hidden",
-        display: "flex",
-        alignItems: "center",
-        gap: spacing.lg,
-        padding: spacing.lg,
-        textAlign: "right",
-        color: colors.surface,
-        background: `linear-gradient(145deg, ${colors.olive900}, ${colors.olive800})`,
-        border: 0,
-        borderRadius: radii.xl,
-        boxShadow: shadows.md,
-        cursor: "pointer",
-        fontFamily: typography.fontFamily,
-      }}
-    >
-      <span
-        aria-hidden="true"
-        style={{
-          position: "absolute",
-          width: 145,
-          height: 145,
-          insetInlineEnd: -70,
-          top: -82,
-          borderRadius: "50%",
-          background: "rgba(255,255,255,.06)",
-        }}
-      />
+    <section aria-label="خدمات پرکاربرد" style={{ display: "grid", gap: spacing.sm, minWidth: 0 }}>
+      <SectionHeader title="خدمات پرکاربرد" />
       <div
-        aria-hidden="true"
         style={{
-          width: 78,
-          height: 96,
-          flex: "0 0 78px",
           display: "grid",
-          placeItems: "center",
-          borderRadius: radii.md,
-          background: "rgba(255,255,255,0.1)",
-          border: "1px solid rgba(255,255,255,0.16)",
-          fontSize: 34,
+          gridTemplateColumns: wide ? "repeat(4, minmax(0,1fr))" : "repeat(2, minmax(0, 1fr))",
+          gap: 10,
+          minWidth: 0,
         }}
       >
-        {"📖"}
-      </div>
-      <div style={{ minWidth: 0, flex: 1, position: "relative" }}>
-        <p style={{ ...typography.caption, display: "flex", alignItems: "center", gap: 5, margin: 0, color: colors.goldSoft, fontWeight: 800 }}>
-          <Icon name="checkCircle" size={14} stroke={2} />
-          استاد ویژهٔ امروز
-        </p>
-        <h2 style={{ ...typography.title, margin: `${spacing.sm}px 0 0`, color: colors.surface }}>{teacher.name}</h2>
-        <p style={{ ...typography.bodySmall, margin: "3px 0 0", color: "rgba(255,255,255,0.7)" }}>
-          {teacherSubtitle(teacher) || "مشاهده خدمات و زمان‌های قابل رزرو"}
-        </p>
-        <p style={{ ...typography.caption, display: "flex", alignItems: "center", gap: 8, margin: `${spacing.sm}px 0 0`, color: colors.goldSoft, fontWeight: 800 }}>
-          {sample ? (
+        {services.map((service, index) => (
+          <button
+            key={service.id}
+            type="button"
+            onClick={() => navigateApp(`/service/${service.id}`, config)}
+            className="vodda-tappable"
+            aria-label={`${service.title} — ${faNumber(service.teacherCount, 0)} استاد`}
+            style={{
+              height: wide ? 90 : 80,
+              display: "flex",
+              alignItems: "center",
+              gap: 9,
+              padding: "10px 12px",
+              textAlign: "right",
+              border: "1.5px solid rgba(147,161,114,.42)",
+              borderRadius: 18,
+              background: colors.surface,
+              boxShadow: "0 2px 10px rgba(46,54,34,.05)",
+              cursor: "pointer",
+              fontFamily: typography.fontFamily,
+              minWidth: 0,
+              transition: "transform .16s ease, box-shadow .16s ease",
+              animation: "vodda-enter .36s ease-out both",
+              animationDelay: `${index * 50}ms`,
+            }}
+          >
             <span
-              role="button"
-              tabIndex={0}
-              aria-label={playing ? "توقف نمونه‌صوت" : `پخش نمونه‌صوت: ${sample.title}`}
-              className="vodda-tappable"
-              onClick={toggleSample}
-              onKeyDown={(event) => {
-                if (event.key !== "Enter" && event.key !== " ") return;
-                event.preventDefault();
-                toggleSample(event);
-              }}
+              aria-hidden="true"
               style={{
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: 26,
-                height: 26,
-                borderRadius: "50%",
-                background: "rgba(255,255,255,.16)",
-                border: "1px solid rgba(255,255,255,.32)",
-                color: colors.surface,
-                cursor: "pointer",
+                position: "relative",
+                width: 34,
+                height: 34,
+                flex: "0 0 34px",
+                display: "grid",
+                placeItems: "center",
+                borderRadius: 12,
+                background: "linear-gradient(140deg, #f2f5ea, #f7f0dc)",
               }}
             >
-              {playing ? (
-                <span aria-hidden="true" style={{ width: 9, height: 9, background: "currentColor", borderRadius: 2 }} />
-              ) : (
-                <Icon name="play" size={13} />
-              )}
+              <Icon name="book" size={17} style={{ color: colors.olive600 }} />
+              <img
+                src={serviceImageSrc(service.imageKey)}
+                alt=""
+                width={32}
+                height={32}
+                loading="lazy"
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  margin: "auto",
+                  width: 32,
+                  height: 32,
+                  maxWidth: 32,
+                  maxHeight: 32,
+                  objectFit: "contain",
+                }}
+                onError={(event) => {
+                  event.currentTarget.style.display = "none";
+                }}
+              />
             </span>
-          ) : null}
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>
-            <Icon name="star" size={13} fill />
-            {faNumber(teacher.rating)}
-          </span>
-          {teacher.reviews > 0 ? <span>({faNumber(teacher.reviews, 0)} نظر)</span> : null}
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 3, color: colors.surface }}>
-            مشاهده و رزرو
-            <Icon name="chevronL" size={14} />
-          </span>
-        </p>
+            <span style={{ minWidth: 0, flex: 1 }}>
+              <strong
+                style={{
+                  display: "block",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                  fontSize: wide ? 15 : 14,
+                  fontWeight: 700,
+                  color: colors.ink,
+                }}
+              >
+                {service.title}
+              </strong>
+              <span style={{ display: "block", marginTop: 2, fontSize: 12, fontWeight: 600, color: colors.inkMuted }}>
+                {faNumber(service.teacherCount, 0)} استاد
+              </span>
+            </span>
+          </button>
+        ))}
       </div>
-    </button>
+    </section>
+  );
+}
+
+/* ۱.ب.۴ — خدمات رایگان — کارت افقی: عنوان، استاد + آواتار مربعی + تیک، مدت، نشان سبز «رایگان».
+ * بدون خدمت رایگان کل بخش پنهان می‌شود. کلیک → پروفایل استاد با فیلتر همان خدمت. */
+function FreeServicesList({
+  cards,
+  loading,
+  runtime,
+  config,
+}: {
+  cards: FreeServiceCard[];
+  loading: boolean;
+  runtime: ReturnType<typeof usePlatform>;
+  config: UniversalAppConfig;
+}) {
+  if (loading) {
+    return (
+      <section aria-label="در حال بارگذاری خدمات رایگان" style={{ display: "grid", gap: 12 }}>
+        <Skeleton style={{ width: 140, height: 18 }} />
+        {Array.from({ length: 3 }).map((_, index) => (
+          <Skeleton key={index} style={{ height: 64, borderRadius: 18 }} />
+        ))}
+      </section>
+    );
+  }
+  if (cards.length === 0) return null;
+
+  return (
+    <section aria-label="خدمات رایگان" style={{ display: "grid", gap: spacing.sm, minWidth: 0 }}>
+      <SectionHeader title="خدمات رایگان" description="بدون هزینه — برای شروع مسیر قرآن" />
+      <div style={{ display: "grid", gap: 10, minWidth: 0 }}>
+        {cards.slice(0, 6).map((card, index) => (
+          <button
+            key={`${card.teacherId}-${card.id}`}
+            type="button"
+            onClick={() => navigateApp(`/teacher/${card.teacherId}?service=${card.id}`, config)}
+            className="vodda-tappable"
+            aria-label={`${card.title} رایگان با ${card.teacherName}`}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 12,
+              width: "100%",
+              padding: "12px 15px",
+              textAlign: "right",
+              border: `1px solid ${colors.sand150}`,
+              borderRadius: 18,
+              background: colors.surface,
+              boxShadow: shadows.xs,
+              cursor: "pointer",
+              fontFamily: typography.fontFamily,
+              minWidth: 0,
+              animation: "vodda-enter .36s ease-out both",
+              animationDelay: `${index * 50}ms`,
+            }}
+          >
+            <span style={{ minWidth: 0, display: "grid", gap: 6 }}>
+              <strong
+                style={{
+                  display: "block",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                  fontSize: 14.5,
+                  fontWeight: 800,
+                  color: colors.ink,
+                }}
+              >
+                {card.title}
+              </strong>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 7, minWidth: 0 }}>
+                <Avatar
+                  name={card.teacherName}
+                  src={avatarSrc(card.avatarUrl || undefined, undefined, uploadsOriginOf(runtime.apiBaseUrl))}
+                  size={26}
+                />
+                <span
+                  style={{
+                    minWidth: 0,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                    fontSize: 12.5,
+                    fontWeight: 700,
+                    color: colors.inkSecondary,
+                  }}
+                >
+                  {card.teacherName}
+                </span>
+                {card.tier ? <TierBadge tier={card.tier} size={13} /> : null}
+              </span>
+            </span>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 9, flex: "0 0 auto" }}>
+              {card.duration > 0 ? (
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 700, color: colors.inkMuted, whiteSpace: "nowrap" }}>
+                  <Icon name="clock" size={13} />
+                  {faNumber(card.duration, 0)} دقیقه
+                </span>
+              ) : null}
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  padding: "4px 11px",
+                  borderRadius: 999,
+                  background: "rgba(66,138,84,.12)",
+                  border: "1px solid rgba(66,138,84,.4)",
+                  color: "#2e7d43",
+                  fontSize: 11.5,
+                  fontWeight: 800,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                رایگان
+              </span>
+            </span>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* ۱.ب.۵ — اساتید پیشنهادی — ۷ کارت، ۲ ستون موبایل (۲×۳+۱) / ۴ ستون دسکتاپ */
+function RecommendedGrid({
+  teachers,
+  loading,
+  wide,
+  config,
+}: {
+  teachers: Teacher[] | null;
+  loading: boolean;
+  wide: boolean;
+  config: UniversalAppConfig;
+}) {
+  if (loading) {
+    return (
+      <section aria-label="در حال بارگذاری پیشنهادها" style={{ display: "grid", gap: 12 }}>
+        <Skeleton style={{ width: 160, height: 18 }} />
+        <div style={{ display: "grid", gridTemplateColumns: wide ? "repeat(4, minmax(0,1fr))" : "repeat(2, minmax(0, 1fr))", gap: 10 }}>
+          {Array.from({ length: 4 }).map((_, index) => (
+            <Skeleton key={index} style={{ height: 176, borderRadius: 24 }} />
+          ))}
+        </div>
+      </section>
+    );
+  }
+  if (!teachers || teachers.length === 0) return null;
+
+  return (
+    <section aria-label="اساتید پیشنهادی" style={{ display: "grid", gap: spacing.sm, minWidth: 0 }}>
+      <SectionHeader title="اساتید پیشنهادی" description="چیدمان وزنی بر پایهٔ rank استاد — تازه با هر بازدید" />
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: wide ? "repeat(4, minmax(0,1fr))" : "repeat(2, minmax(0, 1fr))",
+          gap: 10,
+          minWidth: 0,
+        }}
+      >
+        {teachers.map((teacher, index) => (
+          <div key={teacher.id} className="vodda-enter" style={{ minWidth: 0, animationDelay: `${index * 40}ms` }}>
+            <TeacherCard teacher={teacher} config={config} wide />
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -945,26 +806,25 @@ function NotificationsBell({
   );
 }
 
-/* ─────────────────────────  صفحه خانه  ───────────────────────── */
-
-type SessionAreaState = "loading" | "next" | "rebook" | "hero";
+/* ─────────────────────────  صفحه خانه (۱.ب.۲ — ترتیب ۸ بخشی)  ───────────────────────── */
 
 export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
   const runtime = usePlatform();
+  const wide = useMinWidth(768);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [teachersLoading, setTeachersLoading] = useState(!teachersCacheFresh());
   const [teachersError, setTeachersError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [roleSheetOpen, setRoleSheetOpen] = useState(false);
-  const [sessionArea, setSessionArea] = useState<SessionAreaState>("loading");
-  const [nextSession, setNextSession] = useState<LearnerSession | null>(null);
-  const [pastTeachers, setPastTeachers] = useState<PastTeacher[]>([]);
   /* ۱.ب.۱ — شهر کاربر برای chip هدر و اولویت هم‌شهری */
   const [city, setCity] = useState("");
   const [citySheetOpen, setCitySheetOpen] = useState(false);
   const [cityDetecting, setCityDetecting] = useState(false);
   const [cityDetectNote, setCityDetectNote] = useState<string | null>(null);
+  /* ۱.ب — دادهٔ کشف */
+  const [catalogGroups, setCatalogGroups] = useState<CatalogCategory[]>([]);
+  const [recommended, setRecommended] = useState<Teacher[] | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -1049,48 +909,39 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
     };
   }, [runtime, reloadKey]);
 
+  /* ۱.ب.۳/۵/۶ — کاتالوگ رسمی خدمات برای خانه‌های دسته، پرکاربرد و رایگان */
   useEffect(() => {
-    if (!user) {
-      setSessionArea("hero");
-      setNextSession(null);
-      setPastTeachers([]);
-      return;
-    }
     let active = true;
-    (async () => {
-      try {
-        const [upcoming, past] = await Promise.all([
-          getLearnerSessions(runtime, "upcoming"),
-          getLearnerSessions(runtime, "past"),
-        ]);
+    getCatalog(runtime)
+      .then((rows) => {
         if (!active) return;
-        const soonest = upcoming
-          .filter(isUpcomingSession)
-          .sort((a, b) => a.scheduledAt.localeCompare(b.scheduledAt))[0] ?? null;
-        setNextSession(soonest);
-        const seen = new Set<number>();
-        const unique: PastTeacher[] = [];
-        for (const session of [...past].sort((a, b) => b.scheduledAt.localeCompare(a.scheduledAt))) {
-          if (session.teacherId > 0 && !seen.has(session.teacherId)) {
-            seen.add(session.teacherId);
-            unique.push({ id: session.teacherId, name: session.teacherName, avatarUrl: session.teacherAvatar });
-          }
-        }
-        setPastTeachers(unique.slice(0, 8));
-        setSessionArea(soonest ? "next" : past.length > 0 ? "rebook" : "hero");
-      } catch {
-        if (active) {
-          setNextSession(null);
-          setSessionArea("hero");
-        }
-      }
-    })();
+        setCatalogGroups(groupCatalog(rows as CatalogRow[]));
+      })
+      .catch(() => {
+        if (active) setCatalogGroups([]);
+      });
     return () => {
       active = false;
     };
-  }, [runtime, user]);
+  }, [runtime]);
 
-  const women = useMemo(() => teachers.filter((teacher) => teacher.female), [teachers]);
+  /* ۱.ب.۵ — چیدمان پیشنهادی: endpoint محلی BFF؛ در دسترس نبود → موتور محلی
+   * (pickRecommendedTeachers + کش ۳۰ دقیقه + تکرار ≤ ۲) */
+  useEffect(() => {
+    if (teachersLoading) return;
+    let active = true;
+    fetchRecommendedTeachers(runtime, 7)
+      .then((rows) => {
+        if (!active) return;
+        setRecommended(rows.length > 0 ? rows : localRecommendedPicks(teachers));
+      })
+      .catch(() => {
+        if (active) setRecommended(localRecommendedPicks(teachers));
+      });
+    return () => {
+      active = false;
+    };
+  }, [runtime, teachersLoading, teachers]);
 
   /* ۱.ب.۱ — شهرهای واقعی سکو (از فهرست استادها) برای «همهٔ شهرها» در شیت */
   const platformCities = useMemo(
@@ -1099,19 +950,21 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
   );
 
   /* ۱.ب.۱ — اولویت هم‌شهری: درجه ۱ نخست (حفظ ۱.الف.۵)، سپس هم‌شهری،
-   * سپس ترتیب قبلی — فقط اولویت نمایش، نه محدودیت. مرتب‌سازی JS پایدار است. */
+   * سپس rank — فقط اولویت نمایش، نه محدودیت. مرتب‌سازی JS پایدار است. */
   const cityKey = city.trim();
-  const withCityPriority = (items: Teacher[]): Teacher[] => {
-    if (!cityKey) return items;
-    return [...items].sort((left, right) => {
-      const tier1 = Number(right.isTier1 === true) - Number(left.isTier1 === true);
-      if (tier1 !== 0) return tier1;
-      return Number(right.city.trim() === cityKey) - Number(left.city.trim() === cityKey);
-    });
-  };
+  const withCityPriority = useMemo(() => {
+    return (items: Teacher[]): Teacher[] => {
+      const ranked = [...items].sort(byDiscoveryRank);
+      if (!cityKey) return ranked;
+      return ranked.sort((left, right) => {
+        const tier1 = Number(right.isTier1 === true) - Number(left.isTier1 === true);
+        if (tier1 !== 0) return tier1;
+        return Number(right.city.trim() === cityKey) - Number(left.city.trim() === cityKey);
+      });
+    };
+  }, [cityKey]);
 
-  /* ۱.ب.۱ — ذخیرهٔ شهر انتخابی: localStorage + پروفایل (PUT /me برای کاربر واردشده)
-   * نکته: این تابع note خطا را پاک نمی‌کند تا پیام «مجوز رد شد» همراه شهر پروفایل بماند. */
+  /* ۱.ب.۱ — ذخیرهٔ شهر انتخابی: localStorage + پروفایل (PUT /me برای کاربر واردشده) */
   const applyCity = (name: string, source: UserCitySource) => {
     const clean = name.trim();
     if (!clean) return;
@@ -1162,66 +1015,23 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
     }
   };
 
-  const recommended = useMemo(
-    () => [...teachers].sort((a, b) => recommendationScore(b) - recommendationScore(a)).slice(0, 12),
-    [teachers],
-  );
-
-  const mostActive = useMemo(
-    () => [...teachers].sort((a, b) => b.sessions - a.sessions).slice(0, 12),
-    [teachers],
-  );
-
-  const featured = useMemo(() => {
-    const strong = teachers
-      .filter((teacher) => teacher.verified && teacher.reviews >= 3)
-      .sort((a, b) => b.rating - a.rating)
-      .slice(0, 3);
-    const pool = strong.length > 0 ? strong : recommended.slice(0, 3);
-    if (pool.length === 0) return null;
-    return pool[dayOfYearIndex() % pool.length];
-  }, [teachers, recommended]);
-
-  // باگ category-routing — دسته‌های صفحهٔ نخست از کاتالوگ رسمی خدمات می‌آیند
-  // (نه از فیلد متنی استاد) و شمارش هر دسته از اجتماع اساتید زیردسته‌هایش.
-  const [catalogCategories, setCatalogCategories] = useState<CatalogCategory[]>([]);
-  const categories = useMemo(
-    () =>
-      catalogCategories.map((group) => ({
-        name: group.category,
-        count: teachersForCategory(teachers, group).length,
-        meta: catalogCategoryMeta(group.category),
-      })),
-    [catalogCategories, teachers],
-  );
-
-  useEffect(() => {
-    let active = true;
-    getCatalog(runtime)
-      .then((rows) => {
-        if (!active) return;
-        const groups = groupCatalog(rows as CatalogRow[]);
-        setCatalogCategories(groups);
-      })
-      .catch(() => {
-        if (active) setCatalogCategories([]);
-      });
-    return () => {
-      active = false;
-    };
-  }, [runtime]);
+  /* ۱.ب — خروجی‌های موتور کشف مشترک (src/lib/home/discover.ts) */
+  const tiles = useMemo(() => buildCategoryTiles(teachers, catalogGroups, 6), [teachers, catalogGroups]);
+  const popular = useMemo(() => popularServiceCards(teachers, catalogGroups, 8), [teachers, catalogGroups]);
+  const freeCards = useMemo(() => freeServiceCards(teachers, new Map(), 6), [teachers]);
+  const topTeachers = useMemo(() => withCityPriority(teachers).slice(0, 6), [teachers, withCityPriority]);
 
   const firstName = user?.name?.trim().split(/\s+/)[0] || "دوست";
-  const needsProfileNudge =
-    user !== null && (!user.avatar_url || !user.city?.trim() || !user.bio?.trim());
   const today = todayLabel();
+  const discoverLoading = teachersLoading || (catalogGroups.length === 0 && teachers.length === 0);
 
   if (teachersLoading && teachers.length === 0 && !teachersError) {
-    return <HomeSkeleton />;
+    return <HomeSkeleton wide={wide} />;
   }
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", minWidth: 0, gap: 26 }}>
+    <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", minWidth: 0, gap: wide ? 32 : 24 }}>
+      {/* ۱.ب.۲ — بخش ① header: chip شهر + اعلان + آواتار */}
       <header
         className="vodda-enter"
         style={{
@@ -1230,7 +1040,6 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
           paddingBlock: spacing.xs,
         }}
       >
-        {/* ۱.ب.۱ — chip شهر: گوشهٔ بالا (RTL راست / LTR چپ) */}
         <div style={{ display: "flex", justifyContent: "flex-start", minWidth: 0 }}>
           <CityChipButton
             city={city}
@@ -1248,185 +1057,110 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
             gap: spacing.md,
           }}
         >
-        <button
-          type="button"
-          onClick={() => { if (user) setRoleSheetOpen(true); }}
-          aria-label="تغییر حساب"
-          className="vodda-tappable"
-          style={{
-            minWidth: 0,
-            display: "flex",
-            alignItems: "center",
-            gap: 11,
-            padding: 0,
-            textAlign: "right",
-            border: 0,
-            color: colors.ink,
-            background: "transparent",
-            fontFamily: typography.fontFamily,
-            cursor: user ? "pointer" : "default",
-          }}
-        >
-          <span style={{ position: "relative", display: "inline-flex" }}>
-            <Avatar
-              name={user?.name}
-              src={avatarSrc(user?.avatar_url, user?.updated_at, uploadsOriginOf(runtime.apiBaseUrl))}
-              size={48}
-              ring
-            />
-            {user ? (
-              <span
-                aria-hidden="true"
-                style={{
-                  position: "absolute",
-                  insetInlineStart: -4,
-                  bottom: -2,
-                  width: 18,
-                  height: 18,
-                  display: "grid",
-                  placeItems: "center",
-                  borderRadius: "50%",
-                  border: `2px solid ${colors.sand50}`,
-                  color: colors.goldDark,
-                  background: colors.goldBackground,
-                }}
-              >
-                <Icon name="refresh" size={9} stroke={2.4} />
-              </span>
-            ) : null}
-          </span>
-          <span style={{ minWidth: 0 }}>
-            <span style={{ ...typography.caption, display: "block", color: colors.inkMuted }}>
-              {greetingLabel()}،{today ? ` امروز ${today}` : ""}
-            </span>
-            <strong
-              style={{
-                ...typography.body,
-                display: "block",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-                color: colors.ink,
-                fontWeight: 900,
-              }}
-            >
-              {firstName} جان 🌿
-            </strong>
-            {user ? (
-              <span style={{ display: "block", marginTop: 1, fontSize: 11.5, color: colors.olive700, fontWeight: 600 }}>
-                برای تغییر حساب روی تصویر بزنید
-              </span>
-            ) : null}
-          </span>
-        </button>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "0 0 auto" }}>
-          <NotificationsBell runtime={runtime} user={user} />
           <button
             type="button"
-            aria-label="کیف پول"
+            onClick={() => { if (user) setRoleSheetOpen(true); }}
+            aria-label="تغییر حساب"
             className="vodda-tappable"
-            onClick={() => navigateApp("/wallet", config)}
             style={{
-              minWidth: 44,
-              height: 44,
-              display: "grid",
-              placeItems: "center",
-              alignContent: "center",
-              gap: 1,
-              padding: "4px 8px",
-              border: `1px solid ${colors.olive100}`,
-              borderRadius: 16,
-              color: colors.olive700,
-              background: colors.olive50,
-              cursor: "pointer",
+              minWidth: 0,
+              display: "flex",
+              alignItems: "center",
+              gap: 11,
+              padding: 0,
+              textAlign: "right",
+              border: 0,
+              color: colors.ink,
+              background: "transparent",
+              fontFamily: typography.fontFamily,
+              cursor: user ? "pointer" : "default",
             }}
           >
-            <Icon name="wallet" size={18} />
-            <span style={{ fontSize: 9.5, fontWeight: 700, lineHeight: 1, whiteSpace: "nowrap" }}>
-              {user && user.wallet > 0 ? walletShort(user.wallet) : "کیف پول"}
+            <span style={{ position: "relative", display: "inline-flex" }}>
+              <Avatar
+                name={user?.name}
+                src={avatarSrc(user?.avatar_url, user?.updated_at, uploadsOriginOf(runtime.apiBaseUrl))}
+                size={48}
+                ring
+              />
+              {user ? (
+                <span
+                  aria-hidden="true"
+                  style={{
+                    position: "absolute",
+                    insetInlineStart: -4,
+                    bottom: -2,
+                    width: 18,
+                    height: 18,
+                    display: "grid",
+                    placeItems: "center",
+                    borderRadius: "50%",
+                    border: `2px solid ${colors.sand50}`,
+                    color: colors.goldDark,
+                    background: colors.goldBackground,
+                  }}
+                >
+                  <Icon name="refresh" size={9} stroke={2.4} />
+                </span>
+              ) : null}
+            </span>
+            <span style={{ minWidth: 0 }}>
+              <span style={{ ...typography.caption, display: "block", color: colors.inkMuted }}>
+                {greetingLabel()}،{today ? ` امروز ${today}` : ""}
+              </span>
+              <strong
+                style={{
+                  ...typography.body,
+                  display: "block",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                  color: colors.ink,
+                  fontWeight: 900,
+                }}
+              >
+                {firstName} جان 🌿
+              </strong>
             </span>
           </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "0 0 auto" }}>
+            <NotificationsBell runtime={runtime} user={user} />
+            <button
+              type="button"
+              aria-label="کیف پول"
+              className="vodda-tappable"
+              onClick={() => navigateApp("/wallet", config)}
+              style={{
+                minWidth: 44,
+                height: 44,
+                display: "grid",
+                placeItems: "center",
+                alignContent: "center",
+                gap: 1,
+                padding: "4px 8px",
+                border: `1px solid ${colors.olive100}`,
+                borderRadius: 16,
+                color: colors.olive700,
+                background: colors.olive50,
+                cursor: "pointer",
+              }}
+            >
+              <Icon name="wallet" size={18} />
+              <span style={{ fontSize: 9.5, fontWeight: 700, lineHeight: 1, whiteSpace: "nowrap" }}>
+                {user && user.wallet > 0 ? walletShort(user.wallet) : "کیف پول"}
+              </span>
+            </button>
           </div>
         </div>
       </header>
 
+      {/* ۱.ب.۲ — بخش ② آیهٔ روز */}
       <VerseStrip />
-      <SearchPill config={config} />
-      <DispatchBanner config={config} />
 
-      {sessionArea === "loading" ? (
-        <Skeleton style={{ height: 120, borderRadius: radii.xl }} />
-      ) : sessionArea === "next" && nextSession ? (
-        <NextSessionCard session={nextSession} config={config} />
-      ) : sessionArea === "rebook" ? (
-        <RebookBanner config={config} />
-      ) : user ? (
-        <OnboardingChecklist user={user} config={config} />
-      ) : (
-        <HeroPanel
-          eyebrow="به وُدّا خوش آمدید"
-          title={"استاد قرآن‌ات را\nپیدا و زمان آزادش را رزرو کن"}
-          description="پروفایل استادان تأییدشده و خدمات قابل رزرو را ببین."
-        >
-          <Button
-            onClick={() => navigateApp("/search", config)}
-            style={{
-              minHeight: 44,
-              color: colors.olive700,
-              background: colors.surface,
-              borderColor: colors.surface,
-              boxShadow: "none",
-            }}
-          >
-            <Icon name="search" size={18} />
-            جستجوی استاد
-          </Button>
-        </HeroPanel>
-      )}
-      <TrustStrip />
+      {/* ۱.ب.۲ — بخش ③ خانه‌های شش‌گانهٔ دسته‌بندی */}
+      <CategoryTileGrid tiles={tiles} loading={discoverLoading} wide={wide} />
 
-      {needsProfileNudge ? <ProfileNudgeBar config={config} /> : null}
-
-      {!teachersLoading && !teachersError && categories.length > 0 ? (
-        <section className="vodda-enter vodda-enter-delay-1">
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 10 }}>
-            {categories.map((category) => (
-              <button
-                key={category.name}
-                type="button"
-                onClick={() => navigateApp(`/category?name=${encodeURIComponent(category.name)}`, config)}
-                className="vodda-card vodda-card--interactive vodda-tappable"
-                style={{
-                  minHeight: 142,
-                  display: "grid",
-                  justifyItems: "center",
-                  alignContent: "center",
-                  gap: spacing.sm,
-                  padding: spacing.lg,
-                  textAlign: "center",
-                  color: colors.ink,
-                  background: colors.surface,
-                  border: `1px solid ${colors.sand150}`,
-                  borderRadius: radii.lg,
-                  boxShadow: shadows.sm,
-                  cursor: "pointer",
-                  fontFamily: typography.fontFamily,
-                }}
-              >
-                <IconBadge icon={category.meta.icon} tone={category.meta.tone} size={50} />
-                <strong style={{ ...typography.body, color: colors.ink, fontWeight: 900 }}>{category.meta.title}</strong>
-                <span style={{ ...typography.caption, color: colors.inkMuted }}>
-                  {faNumber(category.count, 0)} استاد فعال
-                </span>
-              </button>
-            ))}
-          </div>
-        </section>
-      ) : null}
-
-      {teachersLoading && teachers.length === 0 ? (
-        <HomeSkeleton />
-      ) : teachersError ? (
+      {teachersError && teachers.length === 0 ? (
         <Card elevated style={{ display: "grid", gap: spacing.md, textAlign: "center" }}>
           <IconBadge icon="users" tone="olive" size={52} />
           <strong style={{ ...typography.title, color: colors.ink }}>دریافت استادان ناموفق بود</strong>
@@ -1435,23 +1169,21 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
             تلاش دوباره
           </Button>
         </Card>
-      ) : teachers.length === 0 ? (
-        <Card style={{ paddingBlock: spacing.huge, textAlign: "center" }}>
-          <IconBadge icon="users" tone="olive" size={58} />
-          <strong style={{ ...typography.title, display: "block", marginTop: spacing.md }}>هنوز استادی منتشر نشده</strong>
-          <p style={{ ...typography.caption, margin: `${spacing.sm}px 0 0`, color: colors.inkMuted }}>
-            پس از تأیید اولین استاد، پروفایل او در این بخش نمایش داده می‌شود.
-          </p>
-        </Card>
-      ) : (
-        <>
-          <RebookRail teachers={pastTeachers} config={config} runtime={runtime} />
-          <TeacherRail title="اساتید پیشنهادی" teachers={withCityPriority(recommended)} config={config} />
-          {featured ? <FeaturedTeacher teacher={featured} config={config} /> : null}
-          <TeacherRail title="اساتید بانو" teachers={withCityPriority(women)} config={config} />
-          <TeacherRail title="فعال‌ترین استادها" teachers={withCityPriority(mostActive)} config={config} />
-        </>
-      )}
+      ) : null}
+
+      {/* ۱.ب.۲ — بخش ④ اساتید برتر (سطر اول درجهٔ ۱) */}
+      <TopTeachersSection teachers={topTeachers} loading={teachersLoading} wide={wide} config={config} />
+
+      {/* ۱.ب.۲ — بخش ۵ خدمات پرکاربرد */}
+      <PopularServicesGrid services={popular} loading={discoverLoading} wide={wide} config={config} />
+
+      {/* ۱.ب.۲ — بخش ۶ خدمات رایگان */}
+      <FreeServicesList cards={freeCards} loading={teachersLoading} runtime={runtime} config={config} />
+
+      {/* ۱.ب.۲ — بخش ۷ اساتید پیشنهادی (۷ کارت، انتخاب وزنی) */}
+      <RecommendedGrid teachers={recommended} loading={recommended === null} wide={wide} config={config} />
+
+      {/* ۱.ب.۲ — بخش ۸ footer: نوار پایین اپ (MobileAppShell) */}
 
       {/* ۱.ب.۱ — sheet انتخاب شهر (موقعیت من / جستجو / ۱۲ پرتردد / همهٔ شهرها) */}
       <CityPickerSheet

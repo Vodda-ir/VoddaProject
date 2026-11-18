@@ -8,6 +8,7 @@ const BASE =
     : '/api/backend';
 
 import { formatPrice } from '@/lib/datetime';
+import type { FreeServiceCard } from '@/lib/home/discover';
 
 export type TeacherService = {
   id: number;
@@ -320,6 +321,14 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 const auth = (token: string): HeadersInit => ({ Authorization: `Bearer ${token}` });
 
 export const api = {
+  /* ۱.ب.۵ — چیدمان اساتید پیشنهادی (endpoint محلی BFF؛ تکرار ≤ ۲ بین دو درخواست). */
+  recommendedTeachers: (limit = 7) =>
+    request<ListResponse<Teacher>>(`/teachers/recommended?limit=${limit}`),
+  /* ۱.ب.۴ — خدمات رایگان مرتب بر پایهٔ rank استاد (endpoint محلی BFF). */
+  freeServices: (limit = 6) =>
+    request<{ data: FreeServiceCard[]; total: number; sort_by: string; is_free: boolean }>(
+      `/services?is_free=true&limit=${limit}&sort_by=teacher_rank`,
+    ),
   teachers: (q = '', params?: Record<string, string>) => {
     const sp = new URLSearchParams();
     if (q) sp.set('q', q);

@@ -6065,3 +6065,438 @@ a.blog-card:hover .blog-card-action {
     gap: 5px;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   ۱.ب — بخش‌های کشف صفحهٔ نخست (وب): آیه، خانه‌های دسته،
+   خدمات پرکاربرد، خدمات رایگان، اساتید پیشنهادی
+═══════════════════════════════════════════════════════════ */
+
+/* ۱.ب.۲ — بخش ② آیهٔ روز */
+.landing-verse-section { padding: 10px 0 6px; }
+.landing-verse-card {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 15px 19px;
+  border: 1px solid var(--olive-200, #dbe3c8);
+  border-radius: 20px;
+  background: linear-gradient(135deg, #f2f5ea 0%, #ffffff 72%);
+  box-shadow: 0 2px 12px rgba(46, 54, 34, .05);
+}
+.landing-verse-icon {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 40px;
+  border-radius: 13px;
+  color: var(--olive-700);
+  background: var(--olive-100, #eef2e2);
+}
+.landing-verse-text {
+  margin: 0;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 2;
+  color: var(--ink, #2e3622);
+}
+.landing-verse-source {
+  color: var(--olive-600);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+/* ۱.ب.۳ — خانه‌های شش‌گانهٔ دسته‌بندی — گرادیان زیتونی-طلایی + نئون ۲px */
+.landing-tiles { padding: 26px 0 34px; }
+.landing-tile-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.landing-category-tile {
+  position: relative;
+  min-height: 100px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 10px;
+  border: 2px solid transparent;
+  border-radius: 20px;
+  background:
+    linear-gradient(140deg, #f2f5ea 0%, #f7f3e3 58%, #f3e8cb 100%) padding-box,
+    linear-gradient(135deg, rgba(147, 161, 114, .85), rgba(191, 149, 64, .85)) border-box;
+  box-shadow: 0 3px 14px rgba(46, 54, 34, .07);
+  text-align: center;
+  text-decoration: none;
+  overflow: hidden;
+  transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+  animation: landing-tile-in 360ms ease-out both;
+}
+@keyframes landing-tile-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+.landing-category-tile:hover,
+.landing-category-tile:focus-visible {
+  transform: translateY(-2px);
+  box-shadow:
+    0 0 14px rgba(191, 149, 64, .32),
+    0 8px 20px rgba(46, 54, 34, .1);
+  filter: saturate(1.06);
+}
+.landing-tile-art {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 48px;
+  pointer-events: none;
+}
+.landing-tile-art img {
+  width: 48px;
+  height: 48px;
+  max-width: 48px;
+  max-height: 48px;
+  object-fit: contain;
+}
+.landing-tile-title {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink, #2e3622);
+}
+.landing-tile-count {
+  color: var(--olive-600);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* ۱.ب.۶ — خدمات پرکاربرد — کارت کوچک ۸۰/۹۰px با نئون و درخشش hover */
+.landing-popular { padding: 26px 0 34px; }
+.landing-popular-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.landing-popular-card {
+  --neon-rgb: 147 161 114;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1.5px solid rgba(147, 161, 114, .4);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(46, 54, 34, .05);
+  text-decoration: none;
+  min-width: 0;
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+  animation: landing-tile-in 360ms ease-out both;
+}
+.landing-popular-card:hover,
+.landing-popular-card:focus-visible {
+  transform: translateY(-2px);
+  border-color: rgba(147, 161, 114, .75);
+  box-shadow:
+    0 0 14px rgba(147, 161, 114, .35),
+    0 6px 16px rgba(46, 54, 34, .08);
+}
+.landing-popular-art {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 40px;
+  border-radius: 13px;
+  background: linear-gradient(140deg, #f2f5ea, #f7f0dc);
+  pointer-events: none;
+}
+.landing-popular-art img {
+  width: 32px;
+  height: 32px;
+  max-width: 32px;
+  max-height: 32px;
+  object-fit: contain;
+}
+.landing-popular-text { min-width: 0; }
+.landing-popular-text strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink, #2e3622);
+}
+.landing-popular-text small {
+  display: block;
+  margin-top: 2px;
+  color: var(--ink-3, #8a9078);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* ۱.ب.۴ — خدمات رایگان — کارت افقی با نشان سبز «رایگان» */
+.landing-free { padding: 26px 0 34px; }
+.landing-free-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+.landing-free-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 16px;
+  border: 1px solid var(--sand-150, #e4e6d8);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(46, 54, 34, .04);
+  text-decoration: none;
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+}
+.landing-free-card:hover,
+.landing-free-card:focus-visible {
+  transform: translateY(-2px);
+  border-color: rgba(66, 138, 84, .5);
+  box-shadow: 0 6px 18px rgba(46, 54, 34, .08);
+}
+.landing-free-main { min-width: 0; display: grid; gap: 6px; }
+.landing-free-title {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14.5px;
+  font-weight: 800;
+  color: var(--ink, #2e3622);
+}
+.landing-free-teacher {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  color: var(--ink-2, #4c5a36);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.landing-free-teacher > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.landing-free-meta { display: inline-flex; align-items: center; gap: 9px; flex: 0 0 auto; }
+.landing-free-duration {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--ink-3, #8a9078);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.landing-free-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 11px;
+  border-radius: 999px;
+  background: rgba(66, 138, 84, .12);
+  border: 1px solid rgba(66, 138, 84, .4);
+  color: #2e7d43;
+  font-size: 11.5px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+/* ۱.ب.۵ — اساتید پیشنهادی — ۲ ستون موبایل / ۴ ستون دسکتاپ + skeleton */
+.landing-recommended { padding: 26px 0 34px; }
+.landing-recommended-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.landing-recommended-skel {
+  height: 210px;
+  border-radius: 18px;
+  background: linear-gradient(100deg, #eef0e6 40%, #f7f8f2 50%, #eef0e6 60%);
+  background-size: 200% 100%;
+  animation: web-skel 1.3s ease-in-out infinite;
+}
+@keyframes web-skel {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
+/* صفحهٔ /free-services */
+.free-services-page { padding: 34px 0 60px; }
+.free-services-browser { display: grid; gap: 14px; margin-top: 20px; }
+.free-services-search {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 11px 15px;
+  border: 1px solid var(--sand-150, #e4e6d8);
+  border-radius: 16px;
+  background: #fff;
+  color: var(--ink-3, #8a9078);
+}
+.free-services-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  color: var(--ink, #2e3622);
+}
+.free-services-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.free-services-chip {
+  padding: 6px 13px;
+  border: 1px solid var(--sand-200, #dcdfcc);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ink-2, #4c5a36);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+.free-services-chip[data-active="true"] {
+  background: var(--olive-600);
+  border-color: var(--olive-600);
+  color: #fff;
+}
+.free-services-count {
+  margin: 0;
+  color: var(--ink-3, #8a9078);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.free-services-hint {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 4px 0 0;
+  color: var(--ink-3, #8a9078);
+  font-size: 12px;
+  line-height: 1.9;
+}
+.free-services-hint a { color: var(--olive-600); font-weight: 800; }
+
+/* صفحهٔ اساتید یک خدمت (۱.ب.۶) */
+.service-teachers-page { padding: 34px 0 60px; }
+.service-teachers-head {
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+  padding-bottom: 22px;
+}
+.service-teachers-head h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 900;
+  color: var(--ink, #2e3622);
+}
+.service-teachers-head p {
+  margin: 0;
+  color: var(--ink-3, #8a9078);
+  font-size: 13px;
+}
+.service-teachers-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--olive-100, #eef2e2);
+  color: var(--olive-700);
+  font-size: 12px;
+  font-weight: 800;
+}
+.service-teachers-grid { margin-top: 8px; }
+
+/* ریسپانسیو — تبلت ۳×۲ / دسکتاپ ۶×۱ (خانه‌ها) و ۴ ستون (پرکاربرد و پیشنهادی) */
+@media (min-width: 640px) {
+  .landing-tile-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .landing-popular-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .landing-popular-card { height: 90px; }
+}
+@media (min-width: 1024px) {
+  .landing-tile-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .landing-category-tile { min-height: 120px; }
+  .landing-tile-title { font-size: 16.5px; }
+  .landing-recommended-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .landing-free-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* دارک‌مود وب — همان‌جا که دارک‌مود کل لندینگ تعریف می‌شود */
+@media (prefers-color-scheme: dark) {
+  .landing-verse-card {
+    background: linear-gradient(140deg, rgba(147, 161, 114, .08), rgba(191, 149, 64, .08));
+    border-color: rgba(214, 220, 196, .18);
+  }
+  .landing-verse-icon { background: rgba(147, 161, 114, .14); color: #cdd8b4; }
+  .landing-verse-text { color: #e6ebd8; }
+  .landing-category-tile {
+    background:
+      linear-gradient(140deg, rgba(147, 161, 114, .1) 0%, rgba(191, 149, 64, .1) 100%) padding-box,
+      linear-gradient(135deg, rgba(147, 161, 114, .5), rgba(191, 149, 64, .5)) border-box;
+    box-shadow: 0 3px 16px rgba(0, 0, 0, .3);
+  }
+  .landing-tile-title { color: #e6ebd8; }
+  .landing-popular-card { background: rgba(255, 255, 255, .04); border-color: rgba(214, 220, 196, .16); box-shadow: none; }
+  .landing-popular-text strong { color: #e6ebd8; }
+  .landing-free-card { background: rgba(255, 255, 255, .04); border-color: rgba(214, 220, 196, .16); box-shadow: none; }
+  .landing-free-title { color: #e6ebd8; }
+  .landing-free-teacher { color: #c9d1b4; }
+  .landing-free-badge { background: rgba(66, 138, 84, .18); color: #7fd094; }
+  .landing-recommended-skel {
+    background: linear-gradient(100deg, rgba(255, 255, 255, .05) 40%, rgba(255, 255, 255, .1) 50%, rgba(255, 255, 255, .05) 60%);
+    background-size: 200% 100%;
+  }
+  .free-services-search, .free-services-chip { background: rgba(255, 255, 255, .04); border-color: rgba(214, 220, 196, .16); color: #dfe6cf; }
+  .free-services-chip[data-active="true"] { background: var(--olive-600); color: #fff; }
+  .free-services-search input { color: #e6ebd8; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-category-tile, .landing-popular-card { animation: none !important; transition: none !important; }
+  .landing-recommended-skel { animation: none !important; }
+}
+
+/* عرض خیلی باریک — خانه‌ها و کارت‌ها در 320px بدون overflow */
+@media (max-width: 359px) {
+  .landing-tile-title { font-size: 13.5px; }
+  .landing-popular-text strong { font-size: 12.5px; }
+  .landing-free-meta { flex-direction: column; align-items: flex-end; gap: 6px; }
+}
+
+/* ۱.ب.۴ — یادداشت فیلتر خدمت در پروفایل استاد وب */
+.teacher-service-filter-note {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 9px 14px;
+  border: 1px solid rgba(66, 138, 84, .35);
+  border-radius: 13px;
+  background: rgba(66, 138, 84, .07);
+  color: #2e7d43;
+  font-size: 12px;
+  font-weight: 700;
+}
+.teacher-service-filter-note a {
+  color: var(--olive-700);
+  font-weight: 800;
+  text-decoration: none;
+}

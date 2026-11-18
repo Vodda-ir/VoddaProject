@@ -3,6 +3,7 @@ import { isSameOriginMutation } from '@/lib/server/same-origin';
 import { listTier1Flags, setTier1Flag } from '@/lib/server/overlay';
 import { applyScoreEvent, scoreSnapshot, ensureScoreForTeacher } from '@/lib/server/gamification';
 import { enrichTeacherPayload, sortEnvelopeTier1First } from '@/lib/server/tier1';
+import { getFreeServices, getRecommendedTeachers } from '@/lib/server/discover';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -113,6 +114,42 @@ async function handleScore(request: NextRequest, path: string[]): Promise<Respon
   return NextResponse.json({ error: 'not found' }, { status: 404 });
 }
 
+/* ═════════ کشف صفحهٔ نخست (۱.ب.۴ + ۱.ب.۵) — مسیرهای محلی BFF ═════════ */
+
+/** ۱.ب.۵ — GET /teachers/recommended?limit=7 — چیدمان پیشنهادی با تکرار ≤ ۲. */
+async function handleRecommended(request: NextRequest): Promise<Response> {
+  if (request.method !== 'GET') {
+    return NextResponse.json({ error: 'not found' }, { status: 404 });
+  }
+  const limitRaw = Number(request.nextUrl.searchParams.get('limit') ?? '7');
+  const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? Math.min(20, Math.round(limitRaw)) : 7;
+  try {
+    const payload = await getRecommendedTeachers(limit);
+    return NextResponse.json(payload, { headers: { 'cache-control': 'no-store' } });
+  } catch {
+    return NextResponse.json({ error: 'چیدمان پیشنهادی در دسترس نیست' }, { status: 502 });
+  }
+}
+
+/** ۱.ب.۴ — GET /services?is_free=true&limit=6&sort_by=teacher_rank — کارت‌های رایگان. */
+async function handleFreeServices(request: NextRequest): Promise<Response> {
+  if (request.method !== 'GET') {
+    return NextResponse.json({ error: 'not found' }, { status: 404 });
+  }
+  const params = request.nextUrl.searchParams;
+  const limitRaw = Number(params.get('limit') ?? '6');
+  const limit = Number.isFinite(limitRaw) && limitRaw >= 0 ? Math.min(100, Math.round(limitRaw)) : 6;
+  try {
+    const payload = await getFreeServices(limit);
+    return NextResponse.json(
+      { ...payload, sort_by: 'teacher_rank', is_free: true },
+      { headers: { 'cache-control': 'no-store' } },
+    );
+  } catch {
+    return NextResponse.json({ error: 'خدمات رایگان در دسترس نیست' }, { status: 502 });
+  }
+}
+
 /* ── غنی‌سازی پاسخ استادها با overlay محلی (۱.الف.۵) ── */
 
 function shouldEnrich(method: string, path: string[]): boolean {
@@ -135,9 +172,15 @@ async function proxy(request: NextRequest, context: RouteContext): Promise<Respo
     return NextResponse.json({ error: 'درخواست بین‌دامنه‌ای مجاز نیست' }, { status: 403 });
   }
 
-  /* مسیرهای محلی overlay/score — بدون تماس با بک‌اند */
+  /* مسیرهای محلی overlay/score/کشف — بدون تماس با بک‌اند */
   if (path[0] === 'teacher-flags') return handleTeacherFlags(request, path);
   if (path[0] === 'score') return handleScore(request, path);
+  /* ۱.ب.۵ — GET /teachers/recommended در بک‌اند وجود ندارد؛ محلی */
+  if (path[0] === 'teachers' && path[1] === 'recommended') return handleRecommended(request);
+  /* ۱.ب.۴ — GET /services?is_free=true … در بک‌اند وجود ندارد؛ محلی */
+  if (path[0] === 'services' && request.method === 'GET' && request.nextUrl.searchParams.get('is_free') === 'true') {
+    return handleFreeServices(request);
+  }
 
   const token = request.cookies.get('vodda_token')?.value;
   if (!token && !isPublicRequest(request.method, path)) {

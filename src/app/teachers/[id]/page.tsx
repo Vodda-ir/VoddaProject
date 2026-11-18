@@ -9,8 +9,17 @@ import { formatFaNumber, toFaDigits } from '@/lib/persian';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 
-export default async function TeacherDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function TeacherDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ service?: string }>;
+}) {
   const { id } = await params;
+  /* ۱.ب.۴ — فیلتر خدمت از لینک کارت رایگان (?service=<id>) — فقط همان خدمت */
+  const serviceFilterId = Number.parseInt((await searchParams).service ?? '', 10);
+  const hasServiceFilter = Number.isInteger(serviceFilterId) && serviceFilterId > 0;
   const numId = Number.parseInt(id, 10);
   if (!Number.isInteger(numId) || numId <= 0) notFound();
 
@@ -25,7 +34,10 @@ export default async function TeacherDetailPage({ params }: { params: Promise<{ 
   }
 
   const name = teacher.user?.name || 'استاد وُدّا';
-  const services = teacher.services || [];
+  const allServices = teacher.services || [];
+  const services = hasServiceFilter
+    ? allServices.filter((service) => service.id === serviceFilterId)
+    : allServices;
   const startingPrice = services.length
     ? Math.min(...services.map((service) => Math.max(0, service.price)))
     : Math.max(0, teacher.price30 || 0);
@@ -116,6 +128,14 @@ export default async function TeacherDetailPage({ params }: { params: Promise<{ 
                 <span><Icon name="book" size={18} /></span>
                 <h2>خدمات تأییدشده</h2>
               </div>
+
+              {hasServiceFilter ? (
+                <div className="teacher-service-filter-note">
+                  <Icon name="filter" size={14} />
+                  <span>فقط خدمت انتخاب‌شده از بخش «خدمات رایگان»</span>
+                  <Link href={`/teachers/${numId}`}>نمایش همهٔ خدمات</Link>
+                </div>
+              ) : null}
 
               {services.length ? (
                 <div className="teacher-service-list">

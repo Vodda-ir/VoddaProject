@@ -14,6 +14,15 @@ import { hexToRgbTriplet, tierNeonColor } from '@/lib/tierMeta';
 import { resolveOnline } from '@/lib/presence';
 import { CityChip, sortByCityPriority } from './CityChip';
 import { CITY_CHANGE_EVENT, readStoredCity, storedCityUsable } from '@/lib/userCity';
+import { TierSeal } from './tier';
+import {
+  buildCategoryTiles,
+  type CategoryTile,
+  type FreeServiceCard,
+  type PopularServiceCard,
+  serviceImageSrc,
+} from '@/lib/home/discover';
+import { verseOfDay } from '@/lib/verses';
 
 function PanelLink({ href, icon, label }: { href: string; icon: 'shield' | 'award' | 'user'; label: string }) {
   return (
@@ -433,6 +442,70 @@ function categoryIcon(name: string): 'quran' | 'mic' | 'book' | 'doc' | 'headpho
   return 'quran';
 }
 
+/* ═════════ ۱.ب.۲ — بخش ② آیهٔ روز (وب) ═════════ */
+
+export function VerseOfDayCard() {
+  const quote = verseOfDay();
+  const isQuran = quote.source.startsWith('قرآن');
+  return (
+    <section className="landing-verse-section" aria-label="آیه و حدیث روز">
+      <div className="public-container">
+        <div className="landing-verse-card">
+          <span className="landing-verse-icon"><Icon name="quran" size={20} /></span>
+          <p className="landing-verse-text">
+            {isQuran ? "﴿" : "«"} {quote.text} {isQuran ? "﴾" : "»"}
+            <span className="landing-verse-source"> — {quote.source}</span>
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ═════════ ۱.ب.۳ — خانه‌های شش‌گانهٔ دسته‌بندی (وب) ═════════ */
+
+export function CategoryTiles({ categories = [] as CatalogCategory[], teachers = [] as Parameters<typeof buildCategoryTiles>[0] }: { categories?: CatalogCategory[]; teachers?: Parameters<typeof buildCategoryTiles>[0] }) {
+  const tiles: CategoryTile[] = buildCategoryTiles(teachers, categories, 6);
+
+  if (tiles.length === 0) return null;
+
+  return (
+    <section className="landing-section landing-tiles" aria-label="دسته‌های قرآنی">
+      <div className="public-container">
+        <SectionTitle
+          kicker="مسیرهای قرآنی"
+          title="از کجا شروع می‌کنی؟"
+          sub="شش دستهٔ رسمی وُدّا — هر خانه فقط زیردسته‌ها و اساتید همان دسته را نشان می‌دهد."
+        />
+        <div className="landing-tile-grid">
+          {tiles.map((tile, index) => (
+            <Link
+              key={tile.name}
+              href={`/search?category=${encodeURIComponent(tile.name)}`}
+              className="landing-category-tile"
+              style={{ animationDelay: `${index * 50}ms` }}
+            >
+              <span className="landing-tile-art" aria-hidden="true">
+                {/* تصویر خیالی ≤۴۸px — خطا → آیکون quran جایش می‌نشیند */}
+                <img
+                  src={serviceImageSrc(tile.imageKey)}
+                  alt=""
+                  width={48}
+                  height={48}
+                  loading="lazy"
+                  onError={(event) => { event.currentTarget.style.display = 'none'; }}
+                />
+              </span>
+              <strong className="landing-tile-title">{tile.name}</strong>
+              <small className="landing-tile-count">{formatFaNumber(tile.count)} استاد فعال</small>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export function Categories({ categories = [] as CatalogCategory[] }: { categories?: CatalogCategory[] }) {
   const cards = categories.slice(0, 6).map((group) => ({
     icon: categoryIcon(group.category),
@@ -503,7 +576,8 @@ const TIER1_BADGE_ITEMS: Record<string, { emoji: string; label: string }> = {
   instant: { emoji: '⚡', label: 'جلسات فوری' },
 };
 
-function WebTeacherCard({ teacher }: { teacher: Teacher }) {
+/* کارت استاد وب — برای استفاده در بخش‌های صفحهٔ نخست و صفحات خدمت/رایگان صادر شده است. */
+export function WebTeacherCard({ teacher }: { teacher: Teacher }) {
   const name = teacher.user?.name || 'استاد وُدّا';
   const price = Math.max(0, teacher.price30 || teacher.services?.[0]?.price || 0);
   /* ۱.الف.۳ — نئون کارت استاد + ۱.الف.۴ — چراغ حضور */
@@ -623,19 +697,175 @@ export function FeaturedTeachers({ teachers, unavailable = false }: { teachers: 
     <section id="teachers" className="landing-section">
       <div className="public-container">
         <div className="landing-section-head">
-          <SectionTitle kicker="استادان وُدّا" title="پروفایل‌های تأییدشده" sub={city ? `اساتید ${city} در ابتدای فهرست اولویت دارند.` : 'قبل از رزرو، تخصص، سابقه، خدمات، امتیاز و زمان‌های قابل رزرو را ببین.'} center={false} />
+          {/* ۱.ب.۲ — بخش ④ اساتید برتر: سطر اول درجهٔ ۱ */}
+          <SectionTitle kicker="اساتید برتر وُدّا" title="استادان درجه‌دار — نخستِ فهرست" sub={city ? `اساتید ${city} در ابتدای فهرست اولویت دارند.` : 'استادان درجهٔ یک، کشوری و استانی وُدّا؛ پیش از رزرو، پروفایل و خدماتشان را ببینید.'} center={false} />
           <WebBtn variant="ghost" icon="arrowL" href="/search">مشاهده همه استادان</WebBtn>
         </div>
 
         {visible.length ? (
           <div className="landing-teacher-grid">
-            {visible.slice(0, 6).map((teacher) => <WebTeacherCard key={teacher.id} teacher={teacher} />)}
+            {visible.slice(0, 8).map((teacher) => <WebTeacherCard key={teacher.id} teacher={teacher} />)}
           </div>
         ) : (
           <div className="landing-empty-state" role="status">
             <span><Icon name="users" size={27} /></span>
             <strong>{unavailable ? 'ارتباط با فهرست استادان برقرار نیست' : 'هنوز استاد تأییدشده‌ای منتشر نشده'}</strong>
             <p>{unavailable ? 'کمی بعد دوباره تلاش کنید.' : 'پس از تأیید اولین پروفایل‌ها، این بخش به‌صورت خودکار تکمیل می‌شود.'}</p>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+/* ═════════ ۱.ب.۶ — خدمات پرکاربرد (وب) ═════════ */
+
+export function PopularServices({ services }: { services: PopularServiceCard[] }) {
+  if (services.length === 0) return null;
+  return (
+    <section className="landing-section landing-popular" aria-label="خدمات پرکاربرد">
+      <div className="public-container">
+        <SectionTitle
+          kicker="پرکاربردترین‌ها"
+          title="خدمات پرمخاطب وُدّا"
+          sub="۸ خدمتی که بیشترین استاد در وُدّا ارائه می‌دهند — کلیک = فقط اساتید همان خدمت."
+        />
+        <div className="landing-popular-grid">
+          {services.map((service, index) => (
+            <Link
+              key={service.id}
+              href={`/services/${service.id}/teachers`}
+              className="landing-popular-card"
+              style={{ animationDelay: `${index * 50}ms` }}
+              aria-label={`${service.title} — ${formatFaNumber(service.teacherCount)} استاد`}
+            >
+              <span className="landing-popular-art" aria-hidden="true">
+                <img
+                  src={serviceImageSrc(service.imageKey)}
+                  alt=""
+                  width={32}
+                  height={32}
+                  loading="lazy"
+                  onError={(event) => { event.currentTarget.style.display = 'none'; }}
+                />
+              </span>
+              <span className="landing-popular-text">
+                <strong>{service.title}</strong>
+                <small>{formatFaNumber(service.teacherCount)} استاد</small>
+              </span>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ═════════ ۱.ب.۴ — خدمات رایگان (وب) ═════════ */
+
+export function FreeServiceCardRow({ card }: { card: FreeServiceCard }) {
+  return (
+    <Link
+      href={`/teachers/${card.teacherId}?service=${card.id}`}
+      className="landing-free-card"
+      aria-label={`${card.title} رایگان با ${card.teacherName}`}
+    >
+      <span className="landing-free-main">
+        <strong className="landing-free-title">{card.title}</strong>
+        <span className="landing-free-teacher">
+          <Avatar
+            size={26}
+            imageUrl={avatarUrl(card.avatarUrl || undefined)}
+            name={card.teacherName}
+            alt={card.teacherName}
+          />
+          <span>{card.teacherName}</span>
+          {card.tier ? <TierSeal tier={card.tier} size={13} /> : null}
+        </span>
+      </span>
+      <span className="landing-free-meta">
+        {card.duration > 0 ? <span className="landing-free-duration"><Icon name="clock" size={13} />{formatFaNumber(card.duration)} دقیقه</span> : null}
+        <span className="landing-free-badge">رایگان</span>
+      </span>
+    </Link>
+  );
+}
+
+export function FreeServicesSection({ services }: { services: FreeServiceCard[] }) {
+  /* ۱.ب.۴ — بدون خدمت رایگان، کل بخش پنهان می‌شود؛ حداکثر ۶ کارت. */
+  if (services.length === 0) return null;
+  return (
+    <section className="landing-section landing-free" aria-label="خدمات رایگان">
+      <div className="public-container">
+        <div className="landing-section-head">
+          <SectionTitle
+            kicker="بدون هزینه"
+            title="خدمات رایگان وُدّا"
+            sub="جلسه‌های رایگان استادان وُدّا — برای شروع مسیر قرآن."
+          />
+          <WebBtn variant="ghost" icon="arrowL" href="/free-services">مشاهدهٔ همه</WebBtn>
+        </div>
+        <div className="landing-free-list">
+          {services.slice(0, 6).map((card) => <FreeServiceCardRow key={`${card.teacherId}-${card.id}`} card={card} />)}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ═════════ ۱.ب.۵ — اساتید پیشنهادی (وب — واکشی کلاینت با skeleton) ═════════ */
+
+function RecommendedSkeleton() {
+  return (
+    <div className="landing-recommended-grid" aria-label="در حال بارگذاری پیشنهادها">
+      {Array.from({ length: 4 }).map((_, index) => (
+        <div key={index} className="landing-recommended-skel" />
+      ))}
+    </div>
+  );
+}
+
+export function RecommendedTeachers({ limit = 7 }: { limit?: number }) {
+  const [teachers, setTeachers] = useState<Teacher[] | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    fetch(`/api/backend/teachers/recommended?limit=${limit}`, { cache: 'no-store' })
+      .then((response) => {
+        if (!response.ok) throw new Error(String(response.status));
+        return response.json();
+      })
+      .then((body) => {
+        if (!active) return;
+        setTeachers(Array.isArray(body?.data) ? (body.data as Teacher[]) : []);
+      })
+      .catch(() => {
+        if (active) setTeachers([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, [limit]);
+
+  return (
+    <section className="landing-section landing-recommended" aria-label="اساتید پیشنهادی">
+      <div className="public-container">
+        <SectionTitle
+          kicker="هر بار تازه"
+          title="اساتید پیشنهادی وُدّا"
+          sub="چیدمان وزنی بر پایهٔ rank استاد — با هر بازدید چیدمان تازه‌ای می‌بینی."
+        />
+        {teachers === null ? (
+          <RecommendedSkeleton />
+        ) : teachers.length === 0 ? (
+          <div className="landing-empty-state" role="status">
+            <span><Icon name="sparkle" size={27} /></span>
+            <strong>پیشنهادها هنوز آماده نیست</strong>
+            <p>پس از تکمیل پروفایل استادان، چیدمان پیشنهادی این‌جا نمایش داده می‌شود.</p>
+          </div>
+        ) : (
+          <div className="landing-recommended-grid">
+            {teachers.map((teacher) => <WebTeacherCard key={teacher.id} teacher={teacher} />)}
           </div>
         )}
       </div>
