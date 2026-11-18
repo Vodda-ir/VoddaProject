@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api, type AvailabilitySlot, type BookingResult, type PaymentMethod, type Teacher, type TeacherService } from '@/lib/api';
 import { payViaSamanGate } from '@/lib/saman-gate';
-import { authApi, avatarUrl, fullUrl, getToken, type AuthUser } from '@/lib/auth';
 import { formatDate, formatNumber } from '@/lib/datetime';
+import { authApi, fullUrl, getToken, type AuthUser } from '@/lib/auth';
 import { Icon } from '@/components/Icon';
 import { Avatar } from '@/components/web/ui';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -137,6 +137,10 @@ export default function BookingPage() {
       setError('نمی‌توانید استاد خودتان را رزرو کنید؛ برای رزرو با حساب قرآن‌آموز وارد شوید.');
       return;
     }
+    if (isSelfTeacher) {
+      setError('نمی‌توانید استاد خودتان را رزرو کنید؛ برای رزرو با حساب قرآن‌آموز وارد شوید.');
+      return;
+    }
     if (!selectedService || !selectedSlot) {
       setError('خدمت، تاریخ و ساعت معتبر را انتخاب کنید.');
       return;
@@ -177,7 +181,7 @@ export default function BookingPage() {
 
   return <main style={{ background: 'var(--sand-50)', minHeight: '100vh' }}><div style={{ maxWidth: 680, margin: '0 auto', padding: '24px 20px 60px' }}>
     <Link href={`/teachers/${teacherId}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 14, fontWeight: 600, color: 'var(--ink-3)', marginBottom: 20 }}><Icon name="arrowL" size={18} /> بازگشت به پروفایل استاد</Link>
-    <section style={{ background: '#fff', borderRadius: 20, padding: 16, display: 'flex', gap: 14, alignItems: 'center', marginBottom: 16, boxShadow: 'var(--sh-sm)' }}><Avatar size={56} ring tier={teacher.tier} imageUrl={avatarUrl(teacher.user?.avatar_url, teacher.user?.updated_at)} /><div><div style={{ fontSize: 16, fontWeight: 800 }}>{teacher.user?.name || 'استاد وُدّا'}</div><div style={{ fontSize: 13, color: 'var(--olive-600)', fontWeight: 600 }}>{teacher.tag}</div></div></section>
+    <section style={{ background: '#fff', borderRadius: 20, padding: 16, display: 'flex', gap: 14, alignItems: 'center', marginBottom: 16, boxShadow: 'var(--sh-sm)' }}><Avatar size={56} ring tier={teacher.tier} imageUrl={fullUrl(teacher.user?.avatar_url)} /><div><div style={{ fontSize: 16, fontWeight: 800 }}>{teacher.user?.name || 'استاد وُدّا'}</div><div style={{ fontSize: 13, color: 'var(--olive-600)', fontWeight: 600 }}>{teacher.tag}</div></div></section>
     {isSelfTeacher && <div role="alert" style={{ fontSize: 13, lineHeight: 1.9, color: '#8d6d1f', background: 'var(--gold-bg)', padding: 12, borderRadius: 12, marginBottom: 16 }}>این پروفایل متعلق به حساب شماست؛ رزرو جلسه با خودتان ممکن نیست. برای آزمایش فرآیند، با حساب قرآن‌آموز وارد شوید و استاد دیگری را رزرو کنید.</div>}
     {error && <div role="alert" style={{ fontSize: 13, color: 'var(--rose)', background: 'var(--clay-bg)', padding: 12, borderRadius: 12, marginBottom: 16 }}>{error}</div>}
     <Card title="۱. انتخاب خدمت">{services.length === 0 ? <EmptyText>این استاد فعلاً خدمت تأییدشده‌ای برای رزرو ندارد.</EmptyText> : <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>{services.map((service) => <button key={service.id} type="button" onClick={() => chooseService(service)} style={serviceButton(service.id === serviceId)}><div style={{ width: 44, height: 44, borderRadius: 12, background: 'var(--olive-100)', color: 'var(--olive-600)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="book" size={22} /></div><div style={{ flex: 1, textAlign: 'right' }}><div style={{ fontSize: 14.5, fontWeight: 700 }}>{service.title}</div><div style={{ fontSize: 12, color: 'var(--ink-3)' }}>{fa(service.duration)} دقیقه</div></div><div style={{ fontSize: 15, fontWeight: 800, color: 'var(--olive-700)' }}>{toman(service.price)} تومان</div></button>)}</div>}</Card>
@@ -201,7 +205,7 @@ export default function BookingPage() {
           <Icon name="shield" size={20} style={{ color: paymentMethod === 'gateway' ? 'var(--olive-600)' : 'var(--ink-4)' }} />
         </button>
       </div>
-      <textarea className="input-base" aria-label="یادداشت برای استاد" value={note} maxLength={500} onChange={(event) => setNote(event.target.value)} placeholder="یادداشت برای استاد (اختیاری)…" style={{ width: '100%', minHeight: 90, padding: 14, borderRadius: 14, border: '1px solid var(--sand-200)', resize: 'vertical', marginBottom: 14 }} />
+      <textarea aria-label="یادداشت برای استاد" value={note} maxLength={500} onChange={(event) => setNote(event.target.value)} placeholder="یادداشت برای استاد (اختیاری)…" style={{ width: '100%', minHeight: 90, padding: 14, borderRadius: 14, border: '1px solid var(--sand-200)', resize: 'vertical', marginBottom: 14 }} />
       <p style={{ fontSize: 12.5, color: 'var(--ink-3)', lineHeight: 1.9, marginBottom: 16 }}>{paymentMethod === 'gateway' ? 'با ثبت رزرو به درگاه امن سامان‌سپ منتقل می‌شوید و پس از پرداخت موفق، درخواست برای استاد ارسال می‌شود. در صورت لغو یا انقضای پرداخت، زمان آزاد می‌شود.' : 'مبلغ هنگام ثبت رزرو از کیف پول کسر می‌شود.'} زمان‌ها در timezone رسمی سامانه محاسبه شده‌اند و ممکن است تا لحظهٔ ثبت توسط کاربر دیگری رزرو شوند.</p>
       <button type="button" onClick={submitBooking} disabled={submitting || isSelfTeacher} style={{ ...primaryButton, width: '100%', border: 0, cursor: submitting ? 'wait' : 'pointer', opacity: submitting ? .65 : 1 }}>{submitting ? 'در حال ثبت…' : paymentMethod === 'gateway' ? 'پرداخت و ثبت رزرو' : 'ثبت درخواست رزرو'}</button></>}</Card>
   </div></main>;

@@ -63,7 +63,7 @@ export default function TeacherWalletPage() {
         }
       />
 
-      <div className="ops-metric-grid" style={{ gridTemplateColumns: 'repeat(3,minmax(0,1fr))' }}>
+      <div className="ops-metric-grid">
         <PanelMetric icon="wallet" label="موجودی قابل برداشت" value={loading ? '—' : `${formatFaNumber(wallet)} ت`} hint="موجودی فعلی" />
         <PanelMetric icon="trending" label="جمع ورودی این فهرست" value={loading ? '—' : `${formatFaNumber(ledger.credit)} ت`} hint="بر اساس تراکنش‌های دریافت‌شده" tone="info" />
         <PanelMetric icon="download" label="جمع خروجی این فهرست" value={loading ? '—' : `${formatFaNumber(ledger.debit)} ت`} hint="برداشت/کسورات ثبت‌شده" tone="clay" />

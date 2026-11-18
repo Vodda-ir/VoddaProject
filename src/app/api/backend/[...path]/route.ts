@@ -27,9 +27,13 @@ type RouteContext = { params: Promise<{ path: string[] }> };
 function isPublicRequest(method: string, path: string[]): boolean {
   if (method === 'GET' && path[0] === 'teachers') return true;
   if (method === 'GET' && path[0] === 'blog') return true;
+  // ورود با گوگل — وضعیت فعال بودن دکمهٔ گوگل پیش از لاگین خوانده می‌شود.
+  if (method === 'GET' && path[0] === 'auth' && path[1] === 'google' && path[2] === 'status') return true;
   if (method === 'GET' && path[0] === 'settings' && path.length === 1) return true;
   // فهرست رسمی خدمات (کاتالوگ موضوعات) عمومی است — صفحه فراخوان و جستجو بدون ورود هم آن را می‌بینند.
   if (method === 'GET' && path[0] === 'catalog' && path[1] === 'services' && path.length === 2) return true;
+  // «خدمات رایگان» — تابلوی عمومی جلسات رایگان اساتید در صفحهٔ نخست.
+  if (method === 'GET' && path[0] === 'catalog' && path[1] === 'free' && path.length === 2) return true;
   return method === 'POST' && path[0] === 'support' && path[1] === 'messages' && path.length === 2;
 }
 

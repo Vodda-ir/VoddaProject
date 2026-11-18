@@ -13,9 +13,10 @@ import {
   PanelStatus,
 } from '@/components/panel/PanelUI';
 import { api, type SessionListItem, type Teacher } from '@/lib/api';
-import { avatarUrl, fullUrl, getToken } from '@/lib/auth';
+import { avatarUrl, getToken } from '@/lib/auth';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
 import { formatLocalDate } from '@/lib/datetime';
+import { confirmDialog } from '@/lib/confirm';
 
 type TeacherScoreSnapshot = {
   points: number;
@@ -112,7 +113,7 @@ export default function TeacherDashboard() {
   async function respond(session: SessionListItem, approve: boolean) {
     if (!token || busyId !== null) return;
     const action = approve ? 'تأیید' : 'رد';
-    if (!window.confirm(`درخواست این جلسه ${action} شود؟`)) return;
+    if (!(await confirmDialog(`درخواست این جلسه ${action} شود؟`))) return;
     setBusyId(session.id);
     setError('');
     try {

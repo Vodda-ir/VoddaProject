@@ -11,8 +11,9 @@ import {
   PanelStatus,
 } from '@/components/panel/PanelUI';
 import { api, type SessionListItem } from '@/lib/api';
-import { avatarUrl, fullUrl, getToken } from '@/lib/auth';
+import { avatarUrl, getToken } from '@/lib/auth';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
+import { confirmDialog } from '@/lib/confirm';
 import { formatLocalDate } from '@/lib/datetime';
 
 export default function TeacherSessionsPage() {
@@ -42,7 +43,7 @@ export default function TeacherSessionsPage() {
 
   async function complete(session: SessionListItem) {
     if (!token || busyId !== null) return;
-    if (!window.confirm('جلسه برگزار شده و تسویهٔ درآمد انجام شود؟ این عملیات فقط پس از پایان زمان جلسه مجاز است.')) return;
+    if (!(await confirmDialog('جلسه برگزار شده و تسویهٔ درآمد انجام شود؟ این عملیات فقط پس از پایان زمان جلسه مجاز است.'))) return;
     setBusyId(session.id);
     setError('');
     try {

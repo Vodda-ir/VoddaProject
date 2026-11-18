@@ -12,6 +12,7 @@ import {
 import { api, type Withdrawal } from '@/lib/api';
 import { getToken } from '@/lib/auth';
 import { digitsOnly, formatFaNumber, toFaDigits, toLatinDigits } from '@/lib/persian';
+import { confirmDialog } from '@/lib/confirm';
 import { formatDateTime } from '@/lib/datetime';
 
 export default function TeacherWithdrawalsPage() {
@@ -53,7 +54,7 @@ export default function TeacherWithdrawalsPage() {
     if (!normalizedCard && !normalizedSheba) return setError('حداقل شماره کارت یا شبا را وارد کنید.');
     if (normalizedCard && normalizedCard.length !== 16) return setError('شماره کارت باید ۱۶ رقم باشد.');
     if (normalizedSheba && !/^IR\d{24}$/.test(normalizedSheba)) return setError('شماره شبا باید با IR شروع شود و ۲۴ رقم داشته باشد.');
-    if (!window.confirm(`${formatFaNumber(numericAmount)} تومان برای برداشت رزرو شود؟`)) return;
+    if (!(await confirmDialog(`${formatFaNumber(numericAmount)} تومان برای برداشت رزرو شود؟`))) return;
 
     setSaving(true);
     setError('');
@@ -88,7 +89,7 @@ export default function TeacherWithdrawalsPage() {
         actions={<PanelButton icon="refresh" onClick={() => void load()}>به‌روزرسانی</PanelButton>}
       />
 
-      <div className="ops-metric-grid" style={{ gridTemplateColumns: 'repeat(2,minmax(0,1fr))' }}>
+      <div className="ops-metric-grid">
         <PanelMetric icon="wallet" label="موجودی قابل برداشت" value={loading ? '—' : `${formatFaNumber(wallet)} ت`} hint="موجودی فعلی" />
         <PanelMetric icon="clock" label="درخواست در انتظار" value={toFaDigits(pendingCount)} hint="هنوز تعیین تکلیف نشده" tone={pendingCount ? 'gold' : 'olive'} />
       </div>

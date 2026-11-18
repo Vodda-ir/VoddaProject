@@ -1,24 +1,31 @@
 import { Card, Icon, colors, spacing, typography } from "../../ui";
-import { formatDate, formatNumber, formatTime } from "@/lib/datetime";
+import { useAppearance } from "../../ui/appearance";
+import { formatAppDateTime } from "../../ui/jalali";
+import { translateLoose } from "../../i18n/phrases";
 import type { WalletTransaction } from "./types";
 
 export { toFaDigits } from "../../ui";
 
-export function formatWalletAmount(value: number): string {
-  return formatNumber(value, "fa", { maximumFractionDigits: 0 });
+/** زبان فعال سند — پیش از اولین رندر تنظیم می‌شود؛ برای فراخوانی‌های بدون lang. */
+function activeDocLang(): "fa" | "en" {
+  if (typeof document === "undefined") return "fa";
+  return document.documentElement.lang === "en" ? "en" : "fa";
 }
 
-function transactionDate(value: string): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  return `${formatDate(date, "fa", "short")} · ${formatTime(date)}`;
+/** مبلغ با ارقامِ متناسب با زبان اپ: فارسی «۱۲۳٬۴۵۶»، انگلیسی «123,456». */
+export function formatWalletAmount(value: number, lang: "fa" | "en" = activeDocLang()): string {
+  return new Intl.NumberFormat(lang === "en" ? "en-US" : "fa-IR", { maximumFractionDigits: 0 }).format(value);
+}
+
+function transactionDate(value: string, lang: "fa" | "en"): string {
+  return formatAppDateTime(value, lang, { withYear: false });
 }
 
 type TxVisual = { icon: "coins" | "video" | "trending" | "download" | "x" | "info"; label: string; ink: string; background: string };
 
 const TX_VISUAL: Record<string, TxVisual> = {
   charge: { icon: "coins", label: "شارژ کیف پول", ink: colors.olive700, background: colors.olive100 },
-  session: { icon: "video", label: "پرداخت جلسه", ink: "#8d6d1f", background: colors.goldBackground },
+  session: { icon: "video", label: "پرداخت جلسه", ink: colors.goldInk, background: colors.goldBackground },
   earning: { icon: "trending", label: "درآمد جلسه", ink: colors.olive700, background: colors.olive100 },
   withdrawal: { icon: "download", label: "برداشت", ink: colors.clay, background: colors.clayBackground },
   commission: { icon: "x", label: "کارمزد سامانه", ink: colors.clay, background: colors.clayBackground },
@@ -27,13 +34,15 @@ const TX_VISUAL: Record<string, TxVisual> = {
 
 export function WalletTransactionCard({
   transaction,
-  formatAmount = formatWalletAmount,
+  formatAmount,
 }: {
   transaction: WalletTransaction;
   formatAmount?: (value: number) => string;
 }) {
+  const { L, lang } = useAppearance();
   const credit = transaction.amount > 0;
   const visual = TX_VISUAL[transaction.type] ?? TX_VISUAL.adjust;
+  const format = formatAmount ?? ((value: number) => formatWalletAmount(value, lang));
 
   return (
     <Card
@@ -75,11 +84,11 @@ export function WalletTransactionCard({
             fontWeight: 800,
           }}
         >
-          {transaction.title || visual.label}
+          {transaction.title ? translateLoose(transaction.title, lang) : L(visual.label)}
         </strong>
         <span style={{ ...typography.caption, display: "block", marginTop: 3, color: colors.inkMuted }}>
-          {visual.label}
-          {transaction.createdAt ? ` · ${transactionDate(transaction.createdAt)}` : ""}
+          {L(visual.label)}
+          {transaction.createdAt ? ` · ${transactionDate(transaction.createdAt, lang)}` : ""}
         </span>
       </div>
       <div style={{ flex: "0 0 auto", textAlign: "left" }}>
@@ -93,7 +102,7 @@ export function WalletTransactionCard({
             fontWeight: 800,
           }}
         >
-          {credit ? "+" : "−"}{formatAmount(Math.abs(transaction.amount))}
+          {credit ? "+" : "−"}{format(Math.abs(transaction.amount))}
         </strong>
       </div>
     </Card>

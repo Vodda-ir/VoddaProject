@@ -6,6 +6,7 @@ import { usePlatform } from "../../platform/context";
 import type { AuthUser } from "../../platform/types";
 import { avatarSrc, uploadsOriginOf } from "@/lib/avatarImage";
 import { Avatar, Icon, Sheet, colors, gradients, radii, shadows, typography } from "../../ui";
+import { useAppearance } from "../../ui/appearance";
 
 export function RoleModeSheet({
   open,
@@ -30,25 +31,26 @@ export function RoleModeSheet({
     return "قرآن‌آموز";
   }
 
+  const { L } = useAppearance();
   const options = [
     {
       mode: "learner" as const,
       icon: "user" as const,
-      title: "حساب قرآن‌آموز",
-      description: "یافتن استاد و رزرو جلسه",
+      title: L("حساب قرآن آموز"),
+      description: L("یافتن استاد و رزرو جلسه"),
       path: "/",
     },
     {
       mode: "teacher" as const,
       icon: "award" as const,
-      title: "حساب استاد",
-      description: "مدیریت جلسات و درآمد",
+      title: L("حساب استاد"),
+      description: L("مدیریت جلسات و درآمد"),
       path: "/t",
     },
   ];
 
   return (
-    <Sheet open={open} title="تغییر حساب" onClose={onClose}>
+    <Sheet open={open} title={L("تغییر حساب")} onClose={onClose}>
       {user ? (
         <div
           style={{
@@ -76,11 +78,11 @@ export function RoleModeSheet({
                 whiteSpace: "nowrap",
               }}
             >
-              {user.name.trim() || "کاربر وُدّا"}
+              {user.name.trim() || L("کاربر وُدّا")}
             </strong>
             <span style={{ ...typography.caption, display: "flex", alignItems: "center", gap: 4, marginTop: 2, color: colors.inkMuted }}>
               <Icon name="checkCircle" size={13} style={{ color: colors.olive600 }} />
-              حساب فعلی: {roleLabel(user.role)}
+              {L("حساب فعلی:")} {L(roleLabel(user.role))}
             </span>
           </span>
         </div>
@@ -123,7 +125,7 @@ export function RoleModeSheet({
                   placeItems: "center",
                   flex: "0 0 48px",
                   borderRadius: 14,
-                  color: active ? colors.surface : colors.olive700,
+                  color: active ? colors.onOlive : colors.olive700,
                   background: active ? colors.olive600 : colors.olive100,
                 }}
               >
@@ -192,10 +194,10 @@ export function RoleModeSheet({
           </span>
           <span style={{ minWidth: 0, flex: 1 }}>
             <strong style={{ fontSize: 15, fontWeight: 800, display: "block", color: colors.goldDark }}>
-              پنل مدیریت
+              {L("پنل مدیریت")}
             </strong>
             <span style={{ ...typography.bodySmall, display: "block", marginTop: 3, color: colors.inkMuted }}>
-              مدیریت کاربران، اساتید و مالی
+              {L("مدیریت کاربران، اساتید و مالی")}
             </span>
           </span>
           <Icon name="arrowUpRight" size={20} style={{ color: colors.goldDark }} />

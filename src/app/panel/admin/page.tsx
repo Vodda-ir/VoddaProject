@@ -14,7 +14,7 @@ import { AreaChart, BarsChart, DonutChart, HBarList, faCompact } from '@/compone
 import { StatCard, deltaOf, exportCsv, FilterTabs } from '@/components/admin/AdminUI';
 import { avatarUrl, fullUrl, getToken } from '@/lib/auth';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
-import { formatDateTime, formatNumber } from '@/lib/datetime';
+import { confirmDialog } from '@/lib/confirm';
 
 // ─────────────────────────── types ───────────────────────────
 
@@ -37,7 +37,7 @@ type Analytics = {
   rating: { avg: number; count: number };
   status_breakdown: Array<{ status: string; count: number }> | null;
   fields: Array<{ name: string; count: number }> | null;
-  top_teachers: Array<{ id: number; name: string; avatar_url: string; field: string; city: string; tier: string; rating: number; reviews: number; done_sessions: number; earned: number; updated_at?: string }> | null;
+  top_teachers: Array<{ id: number; name: string; avatar_url: string; field: string; city: string; tier: string; rating: number; reviews: number; done_sessions: number; earned: number }> | null;
   recent_users: Array<{ id: number; name: string; avatar_url: string; role: string; created_at: string }> | null;
   recent_sessions: Array<{ id: number; title: string; status: string; price: number; scheduled_at: string; learner_name: string; learner_avatar: string; teacher_name: string }> | null;
 };
@@ -73,11 +73,15 @@ const ROLE_BADGE: Record<string, { label: string; tone: string }> = {
 };
 
 function faDateTime(iso: string): string {
-  return formatDateTime(iso, 'fa', 'short');
+  try {
+    return new Intl.DateTimeFormat('fa-IR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
+  } catch {
+    return '';
+  }
 }
 
 function faRating(value: number): string {
-  return formatNumber(value, 'fa', { maximumFractionDigits: 1 });
+  return new Intl.NumberFormat('fa-IR', { maximumFractionDigits: 1 }).format(value);
 }
 
 export default function AdminDashboard() {
@@ -119,7 +123,7 @@ export default function AdminDashboard() {
   async function reviewTeacher(id: number, approve: boolean) {
     if (!token || busyId !== null) return;
     const action = approve ? 'تأیید' : 'رد';
-    if (!window.confirm(`پروفایل این استاد ${action} شود؟`)) return;
+    if (!(await confirmDialog(`پروفایل این استاد ${action} شود؟`))) return;
 
     setBusyId(id);
     setError('');
@@ -421,12 +425,13 @@ export default function AdminDashboard() {
               {(analytics?.top_teachers ?? []).slice(0, 7).map((teacher, index) => (
                 <div className="adm-leader-row" key={teacher.id}>
                   <span className="adm-leader-rank">{toFaDigits(index + 1)}</span>
-                  <Avatar size={40} imageUrl={avatarUrl(teacher.avatar_url, teacher.updated_at)} />
+                  <Avatar size={40} imageUrl={fullUrl(teacher.avatar_url)} />
                   <div className="adm-leader-main">
                     <strong>
                       {teacher.name || 'استاد'}
                       {teacher.tier === 'international' && <span className="adm-badge" data-tone="info">بین‌المللی</span>}
-                      {teacher.tier === 'grade2' && <span className="adm-badge" data-tone="green">درجه ۲</span>}
+                      {teacher.tier === 'grade2' && <span className="adm-badge" data-tone="green">کشوری</span>}
+                      {teacher.tier === 'grade3' && <span className="adm-badge" data-tone="rose">استانی</span>}
                     </strong>
                     <small>{teacher.field || '—'}{teacher.city ? ` · ${teacher.city}` : ''}</small>
                   </div>

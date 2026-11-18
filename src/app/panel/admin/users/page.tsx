@@ -18,9 +18,9 @@ import {
   StatCard,
   TablePagination,
 } from '@/components/admin/AdminUI';
-import { avatarUrl, fullUrl, getToken } from '@/lib/auth';
+import { fullUrl, getToken } from '@/lib/auth';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
-import { formatDate, formatTime } from '@/lib/datetime';
+import { confirmDialog } from '@/lib/confirm';
 
 const LIMIT = 30;
 type RoleFilter = '' | 'learner' | 'teacher' | 'admin';
@@ -131,14 +131,22 @@ function roleLabel(role?: string) {
 
 function faDate(iso?: string): string {
   if (!iso) return '—';
-  return formatDate(iso) || '—';
+  try {
+    return new Intl.DateTimeFormat('fa-IR', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(iso));
+  } catch {
+    return '—';
+  }
 }
 
 function faDateTime(iso?: string): string {
   if (!iso) return '—';
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return '—';
-  return `${formatDate(date, 'fa', 'short')} · ${formatTime(date)}` || '—';
+  try {
+    const day = new Intl.DateTimeFormat('fa-IR', { day: 'numeric', month: 'short' }).format(new Date(iso));
+    const time = new Intl.DateTimeFormat('fa-IR', { hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
+    return `${day} · ${time}`;
+  } catch {
+    return '—';
+  }
 }
 
 function teacherStatusLabel(status?: string): string {
@@ -294,7 +302,7 @@ export default function AdminUsers() {
     if (!token || busyId !== null) return;
     const next = !user.active;
     const verb = next ? 'فعال' : 'غیرفعال';
-    if (!window.confirm(`حساب «${user.name || (user.mobile ? toFaDigits(user.mobile) : 'کاربر')}» ${verb} شود؟`)) return;
+    if (!(await confirmDialog(`حساب «${user.name || (user.mobile ? toFaDigits(user.mobile) : 'کاربر')}» ${verb} شود؟`))) return;
 
     setBusyId(user.id);
     setError('');
@@ -317,7 +325,7 @@ export default function AdminUsers() {
   async function changeRole(user: AdminUser, role: RoleFilter) {
     if (!token || busyId !== null || role === user.role) return;
     const label = ROLES.find((item) => item.value === role)?.label || role;
-    if (!window.confirm(`نقش «${user.name || 'کاربر'}» به ${label} تغییر کند؟`)) return;
+    if (!(await confirmDialog(`نقش «${user.name || 'کاربر'}» به ${label} تغییر کند؟`))) return;
 
     setBusyId(user.id);
     setError('');
@@ -345,7 +353,7 @@ export default function AdminUsers() {
       setError('مبلغ تعدیل را وارد کنید؛ عدد مثبت افزودن و عدد منفی کسر است.');
       return;
     }
-    if (!window.confirm(`${parsed > 0 ? 'افزودن' : 'کسر'} ${formatFaNumber(Math.abs(parsed))} تومان ${parsed > 0 ? 'به' : 'از'} کیف پول «${selected.name || 'کاربر'}» ثبت شود؟`)) return;
+    if (!(await confirmDialog(`${parsed > 0 ? 'افزودن' : 'کسر'} ${formatFaNumber(Math.abs(parsed))} تومان ${parsed > 0 ? 'به' : 'از'} کیف پول «${selected.name || 'کاربر'}» ثبت شود؟`))) return;
 
     setAdjustBusy(true);
     setError('');
@@ -482,7 +490,7 @@ export default function AdminUsers() {
               header: 'کاربر',
               render: (user) => (
                 <div className="adm-cell-main">
-                  <Avatar size={38} imageUrl={avatarUrl(user.avatar_url, user.updated_at)} />
+                  <Avatar size={38} imageUrl={fullUrl(user.avatar_url)} />
                   <div style={{ minWidth: 0 }}>
                     <strong>{user.name || 'کاربر بدون نام'}</strong>
                     <small dir="ltr">{toFaDigits(user.mobile || '—')}</small>
@@ -571,7 +579,7 @@ export default function AdminUsers() {
         {!loading && sortedUsers.map((user) => (
           <article key={user.id} className="adm-user-card" onClick={() => openUser(user)}>
             <div className="adm-user-card-head">
-              <Avatar size={44} imageUrl={avatarUrl(user.avatar_url, user.updated_at)} />
+              <Avatar size={44} imageUrl={fullUrl(user.avatar_url)} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <strong>{user.name || 'کاربر بدون نام'}</strong>
                 <small dir="ltr">{toFaDigits(user.mobile || '—')}</small>
@@ -614,7 +622,7 @@ export default function AdminUsers() {
         {selected && (
           <>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '6px 2px 14px' }}>
-              <Avatar size={56} imageUrl={avatarUrl(selected.avatar_url, selected.updated_at)} />
+              <Avatar size={56} imageUrl={fullUrl(selected.avatar_url)} />
               <div style={{ minWidth: 0 }}>
                 <strong style={{ display: 'block', fontSize: 14 }}>{selected.name || 'کاربر بدون نام'}</strong>
                 <div style={{ display: 'flex', gap: 5, marginTop: 5, flexWrap: 'wrap' }}>
@@ -789,7 +797,7 @@ export default function AdminUsers() {
                 مبلغ مثبت شارژ و مبلغ منفی کسر می‌کند. تراکنش در دفتر مالی کاربر با عنوان «تعدیل دستی» ثبت و در گزارش عملیات لاگ می‌شود.
               </p>
               <div style={{ display: 'grid', gap: 8 }}>
-                <input className="input-base"
+                <input
                   dir="ltr"
                   inputMode="numeric"
                   value={adjustAmount}
@@ -801,7 +809,7 @@ export default function AdminUsers() {
                     borderRadius: 12, background: '#fff', fontFamily: 'inherit', fontSize: 12.5, textAlign: 'left',
                   }}
                 />
-                <input className="input-base"
+                <input
                   value={adjustReason}
                   onChange={(event) => setAdjustReason(event.target.value)}
                   maxLength={120}
@@ -832,7 +840,7 @@ export default function AdminUsers() {
                 پیام شما بلافاصله در اعلان‌های پنل و اپ کاربر نمایش داده می‌شود.
               </p>
               <div style={{ display: 'grid', gap: 8 }}>
-                <input className="input-base"
+                <input
                   value={notifyTitle}
                   onChange={(event) => { setNotifyTitle(event.target.value); setNotifyDone(false); }}
                   maxLength={160}
@@ -843,7 +851,7 @@ export default function AdminUsers() {
                     borderRadius: 12, background: '#fff', fontFamily: 'inherit', fontSize: 12.5,
                   }}
                 />
-                <textarea className="input-base"
+                <textarea
                   value={notifyBody}
                   onChange={(event) => { setNotifyBody(event.target.value); setNotifyDone(false); }}
                   maxLength={500}

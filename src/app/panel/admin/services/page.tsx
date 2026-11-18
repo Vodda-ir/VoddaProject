@@ -9,8 +9,9 @@ import {
   PanelPageHeader,
 } from '@/components/panel/PanelUI';
 import { StatCard } from '@/components/admin/AdminUI';
-import { avatarUrl, fullUrl, getToken } from '@/lib/auth';
+import { avatarUrl, getToken } from '@/lib/auth';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
+import { confirmDialog } from '@/lib/confirm';
 
 type PendingService = {
   id: number;
@@ -54,7 +55,7 @@ export default function AdminServices() {
   async function moderate(service: PendingService, approve: boolean) {
     if (!token || busyId !== null) return;
     const action = approve ? 'تأیید و انتشار' : 'رد و حذف';
-    if (!window.confirm(`خدمت «${service.title || 'بدون عنوان'}» ${action} شود؟`)) return;
+    if (!(await confirmDialog(`خدمت «${service.title || 'بدون عنوان'}» ${action} شود؟`))) return;
 
     setBusyId(service.id);
     setError('');

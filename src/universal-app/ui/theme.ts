@@ -2,52 +2,98 @@
  * Vodda universal design tokens.
  * Kept framework-neutral so the exact same visual language is shared by
  * the Next host and the Vite/Capacitor wrapper.
+ *
+ * Dark mode: every color/gradient is a CSS variable (--v-*) so a single
+ * `[data-vodda-theme="dark"]` override block (in UniversalVisualStyles)
+ * re-themes the whole app instantly — inline styles resolve variables at
+ * paint time, so no component re-render is needed. Light values double as
+ * fallbacks in case the variable sheet has not loaded yet.
  */
 export const colors = {
-  sand50: "#faf8f2",
-  sand100: "#f4f0e7",
-  sand150: "#ede8db",
-  sand200: "#e4ddcc",
-  line: "#e4ddcc",
-  border: "#e4ddcc",
-  surface: "#ffffff",
-  surfaceWarm: "#fcfaf4",
-  surfaceSoft: "#f8f6ef",
-  surfaceElevated: "#ffffff",
-  olive950: "#252c1c",
-  olive900: "#2e3622",
-  olive800: "#3c472b",
-  olive700: "#4c5a36",
-  olive600: "#5e6e43",
-  olive500: "#728350",
-  olive400: "#93a172",
-  olive300: "#b6c09b",
-  olive200: "#d6dcc4",
-  olive100: "#e8ecdb",
-  olive50: "#f2f5ea",
-  ink: "#2a2820",
-  inkSecondary: "#565247",
-  inkMuted: "#8c8675",
-  inkFaint: "#aba593",
-  gold: "#bf9540",
-  goldDark: "#8b681f",
-  goldSoft: "#e7d5a8",
-  goldBackground: "#f7efd9",
-  clay: "#b0745a",
-  clayBackground: "#f6e7df",
-  danger: "#a65151",
-  dangerBackground: "#faeeee",
-  success: "#5e6e43",
-  successBackground: "#edf2e5",
-  info: "#5e7e8c",
-  infoBackground: "#edf3f5",
+  sand50: "var(--v-sand50, #faf8f2)",
+  sand100: "var(--v-sand100, #f4f0e7)",
+  sand150: "var(--v-sand150, #ede8db)",
+  sand200: "var(--v-sand200, #e4ddcc)",
+  line: "var(--v-line, #e4ddcc)",
+  border: "var(--v-border, #e4ddcc)",
+  surface: "var(--v-surface, #ffffff)",
+  surfaceWarm: "var(--v-surfaceWarm, #fcfaf4)",
+  surfaceSoft: "var(--v-surfaceSoft, #f8f6ef)",
+  surfaceElevated: "var(--v-surfaceElevated, #ffffff)",
+  olive950: "var(--v-olive950, #252c1c)",
+  olive900: "var(--v-olive900, #2e3622)",
+  olive800: "var(--v-olive800, #3c472b)",
+  olive700: "var(--v-olive700, #4c5a36)",
+  olive600: "var(--v-olive600, #5e6e43)",
+  olive500: "var(--v-olive500, #728350)",
+  olive400: "var(--v-olive400, #93a172)",
+  olive300: "var(--v-olive300, #b6c09b)",
+  olive200: "var(--v-olive200, #d6dcc4)",
+  olive100: "var(--v-olive100, #e8ecdb)",
+  olive50: "var(--v-olive50, #f2f5ea)",
+  ink: "var(--v-ink, #2a2820)",
+  inkSecondary: "var(--v-inkSecondary, #565247)",
+  /* توکن‌های متن ثانویه برای عبور از حد WCAG AA (۴٫۵:۱) روی سطح سفید/کرم تیره شده‌اند */
+  inkMuted: "var(--v-inkMuted, #6f6a5b)",
+  inkFaint: "var(--v-inkFaint, #7a7463)",
+  gold: "var(--v-gold, #bf9540)",
+  goldDark: "var(--v-goldDark, #8b681f)",
+  goldSoft: "var(--v-goldSoft, #e7d5a8)",
+  goldBackground: "var(--v-goldBackground, #f7efd9)",
+  clay: "var(--v-clay, #b0745a)",
+  clayBackground: "var(--v-clayBackground, #f6e7df)",
+  danger: "var(--v-danger, #a65151)",
+  dangerBackground: "var(--v-dangerBackground, #faeeee)",
+  success: "var(--v-success, #5e6e43)",
+  successBackground: "var(--v-successBackground, #edf2e5)",
+  info: "var(--v-info, #5e7e8c)",
+  infoBackground: "var(--v-infoBackground, #edf3f5)",
+  /* متن روی سطوح سبز ثابت (گرادیان‌های برند، دکمهٔ اصلی، کارت‌های زیتونی) —
+     در هر دو حالت روشن می‌ماند؛ برعکسِ surface که در حالت تاریک تیره می‌شود.
+     بدون این توکن، متن روی کارت‌های سبز در حالت تاریک سیاه‌نما و ناخوانا می‌شد. */
+  onOlive: "var(--v-onOlive, #fffaf0)",
+  /* متن روی سطوح طلایی ثابت (دکمه‌های طلایی) — در هر دو حالت تیره می‌ماند */
+  onGold: "var(--v-onGold, #221a08)",
+  /* متن طلاییِ روی پنل‌های کِرِم/طلایی — در حالت تاریک به طلایی روشن تبدیل می‌شود
+     تا «متن تیره روی زمینه تیره» هرگز رخ ندهد */
+  goldInk: "var(--v-goldInk, #7a5e1e)",
+  goldInkSoft: "var(--v-goldInkSoft, #9a7426)",
+  /* خط و پس‌زمینهٔ پنل‌های طلایی — تطبیقی */
+  goldAccent: "var(--v-goldAccent, #d8b869)",
+  goldSurface: "var(--v-goldSurface, #fdf6e3)",
+  goldPanelEnd: "var(--v-goldPanelEnd, #fffdf8)",
+  /* پالت سبزِ فرم خدمات اساتید — تطبیقی با حالت تاریک */
+  greenInk: "var(--v-greenInk, #2c5e3a)",
+  greenDeep: "var(--v-greenDeep, #24512f)",
+  greenBorder: "var(--v-greenBorder, #a9cfb4)",
+  greenChip: "var(--v-greenChip, #d9edde)",
+  greenBackground: "var(--v-greenBackground, #eef8f1)",
 } as const;
 
 export const gradients = {
-  hero: "linear-gradient(145deg, #4c5a36 0%, #5e6e43 52%, #728350 100%)",
-  deep: "linear-gradient(145deg, #2e3622 0%, #3c472b 58%, #4c5a36 100%)",
-  soft: "linear-gradient(145deg, #f2f5ea 0%, #ffffff 72%)",
-  gold: "linear-gradient(145deg, #f7efd9 0%, #fffaf0 100%)",
+  hero: "var(--v-grad-hero, linear-gradient(145deg, #4c5a36 0%, #5e6e43 52%, #728350 100%))",
+  deep: "var(--v-grad-deep, linear-gradient(145deg, #2e3622 0%, #3c472b 58%, #4c5a36 100%))",
+  /* کارت‌های روحانی تیره (کیف پول و…) — شروع روشن‌تر از deep تا گوشه سیاه‌نما نشود */
+  oliveCard:
+    "var(--v-grad-oliveCard, linear-gradient(150deg, #4c5a36 0%, #5e6e43 55%, #6e7f4d 100%))",
+  soft: "var(--v-grad-soft, linear-gradient(145deg, #f2f5ea 0%, #ffffff 72%))",
+  gold: "var(--v-grad-gold, linear-gradient(145deg, #f7efd9 0%, #fffaf0 100%))",
+  goldRich:
+    "var(--v-grad-goldRich, linear-gradient(145deg, #d4ab52 0%, #bf9540 52%, #8b681f 100%))",
+  /* پنل‌های کِرِم/طلایی — در حالت تاریک به پنل‌های طلاییِ تیره تبدیل می‌شوند تا
+     کادرها نه خیره‌کننده شوند نه ناخوانا */
+  goldPanel:
+    "var(--v-grad-goldPanel, linear-gradient(150deg, #f7efd9 0%, #fffdf8 70%))",
+  goldRow:
+    "var(--v-grad-goldRow, linear-gradient(145deg, #f7ecd0 0%, #fffaf0 100%))",
+  cream:
+    "var(--v-grad-cream, linear-gradient(150deg, #fdf6e3 0%, #fffdf8 75%))",
+  /* دکمه/سوئیچ سبز فعال — در حالت تاریک عمیق‌تر تا با زمینهٔ ذغالی هماهنگ بماند */
+  oliveBtn:
+    "var(--v-grad-oliveBtn, linear-gradient(145deg, #8fa873 0%, #5f7a48 100%))",
+  /* لبهٔ روشن کارت‌ها — تطبیقی */
+  cardSheen:
+    "var(--v-grad-cardSheen, linear-gradient(180deg, #ffffff 0%, #fffdf8 100%))",
 } as const;
 
 export const radii = {
@@ -82,8 +128,10 @@ export const spacing = {
 } as const;
 
 export const typography = {
-  fontFamily: "'IRANYekanXFaNum', 'Yekan Bakh', 'Vazirmatn', system-ui, sans-serif",
-  caption: { fontSize: 11.5, lineHeight: 1.7 },
+  // فونت از متغیر CSS خوانده می‌شود تا در حالت انگلیسی بتوان فونت بدون
+  // رقوم‌فارسی (FaNum) را جایگزین کرد — appearance.tsx مقدار را ست می‌کند.
+  fontFamily: "var(--vodda-font, 'IRANYekanXFaNum', 'Yekan Bakh', 'Vazirmatn', system-ui, sans-serif)",
+  caption: { fontSize: 12.5, lineHeight: 1.7 },
   bodySmall: { fontSize: 13, lineHeight: 1.8 },
   body: { fontSize: 14, lineHeight: 1.9 },
   label: { fontSize: 13, lineHeight: 1.6, fontWeight: 700 },

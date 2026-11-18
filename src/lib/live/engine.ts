@@ -1,9 +1,16 @@
 'use client';
 
-// WebRTC engine for the 1:1 Vodda live classroom.
-// The teacher side is the deterministic offerer; the learner answers. ICE
-// candidates trickle through the LiveClient signaling channel, so media is
-// peer-to-peer and never transits the server.
+// ─────────────────────────────────────────────────────────────────────────────
+// موتور WebRTC اختصاصی وُدّا — نسخهٔ بازنویسی‌شدهٔ کامل
+//
+// طراحی قطعی و بدون گلوگاه:
+//   • معلم (یا admin) همیشه offer می‌سازد؛ دانش‌آموز همیشه answer می‌دهد —
+//     پس برخورد offer هرگز رخ نمی‌دهد و منطق polite/impolite حذف شد.
+//   • وقتی رسانهٔ هر طرف بعداً اضافه/تغییر کرد، طرفِ غیرِ initiate یک قاب
+//     «media-ready» می‌فرستد و معلم یک offer تازه می‌سازد (renegotiation).
+//   • ICE روی قطع/شکست خودش restart می‌شود (موبایل: تعویض شبکه، قفل صفحه).
+// رسانه هرگز از سرور عبور نمی‌کند؛ فقط سیگنالینگ از کانال LiveClient.
+// ─────────────────────────────────────────────────────────────────────────────
 
 export type EngineRole = 'teacher' | 'learner' | 'admin';
 
@@ -42,9 +49,14 @@ export class LiveEngine {
   private localStream: MediaStream | null = null;
   private remoteStream: MediaStream | null = null;
   private cameraTrack: MediaStreamTrack | null = null;
-  private makingOffer = false;
-  private ignoreOffer = false;
   private closed = false;
+  private recoveryTimer = 0;
+  /** آخرین SDP local که ارسال شده — از offer تکراری جلوگیری می‌کند. */
+  private lastOfferedSdp = '';
+  /** آیا در حال ساخت offer هستیم (برای جلوگیری از ترتیب مجاز). */
+  private negotiating = false;
+  /** آیا طرف مقابل در اتاق است (سیگنالینگ دیده شده). */
+  private peerReady = false;
 
   constructor(options: EngineOptions) {
     this.role = options.role;
@@ -54,8 +66,14 @@ export class LiveEngine {
   }
 
   get isInitiator(): boolean {
-    // Teacher (or admin observing as initiator fallback) drives the offer.
     return this.role !== 'learner';
+  }
+
+  /** صدا زدن وقتی قاب system/join یا سیگنالِ طرف مقابل دیده شد. */
+  markPeerReady(): void {
+    if (this.peerReady) return;
+    this.peerReady = true;
+    if (this.isInitiator) void this.initiate();
   }
 
   async ensureConnection(): Promise<RTCPeerConnection> {
@@ -80,15 +98,25 @@ export class LiveEngine {
     };
     pc.onconnectionstatechange = () => {
       this.onState({ connection: pc.connectionState, ice: pc.iceConnectionState });
-      if (pc.connectionState === 'failed' && !this.closed) {
+      if (this.closed) return;
+      if (pc.connectionState === 'failed') {
         void pc.restartIce?.();
+      } else if (pc.connectionState === 'disconnected') {
+        if (this.recoveryTimer) window.clearTimeout(this.recoveryTimer);
+        this.recoveryTimer = window.setTimeout(() => {
+          this.recoveryTimer = 0;
+          if (!this.closed && this.pc?.connectionState === 'disconnected') {
+            void this.pc.restartIce?.();
+          }
+        }, 2500);
       }
     };
 
     if (this.localStream) {
       for (const track of this.localStream.getTracks()) pc.addTrack(track, this.localStream);
     } else {
-      // keep the SDP valid even when joining without media
+      // تا وقتی رسانه نیامده، ترنسسیور recvonly تا SDP معتبر بماند؛
+      // با ورود رسانه، direction به sendrecv می‌چرخد و renegotiate می‌شود.
       pc.addTransceiver('audio', { direction: 'recvonly' });
       pc.addTransceiver('video', { direction: 'recvonly' });
     }
@@ -99,50 +127,54 @@ export class LiveEngine {
   async setLocalMedia(stream: MediaStream | null): Promise<void> {
     this.localStream = stream;
     if (!this.pc) return;
+    let changed = false;
     if (stream) {
       for (const track of stream.getTracks()) {
         let sender = this.pc.getSenders().find((candidate) => candidate.track?.kind === track.kind);
         if (!sender) {
-          // ensureConnection may have run before media was ready and added
-          // recvonly transceivers; flip a free one to sendrecv so upstream
-          // media is negotiated even when this runs after the connection.
           const transceiver = this.pc.getTransceivers().find((item) =>
             item.receiver.track?.kind === track.kind && !item.sender.track && item.direction !== 'stopped');
           if (transceiver) {
             transceiver.direction = 'sendrecv';
             sender = transceiver.sender;
+            changed = true;
           }
         }
-        if (sender) await sender.replaceTrack(track);
-        else this.pc.addTrack(track, stream);
-      }
-      // If media arrived only after a recvonly negotiation (remote offered
-      // before our stream was ready), trigger a renegotiation so upstream
-      // media is negotiated. Either side may offer; this side is polite.
-      if (this.pc.signalingState === 'stable' && /a=recvonly/.test(this.pc.currentLocalDescription?.sdp || '')) {
-        void this.initiate();
+        if (sender && sender.track !== track) {
+          await sender.replaceTrack(track);
+          changed = true;
+        }
       }
     } else {
       for (const sender of this.pc.getSenders()) {
-        if (sender.track) await sender.replaceTrack(null);
+        if (sender.track) {
+          await sender.replaceTrack(null);
+          changed = true;
+        }
+      }
+    }
+
+    // رسانه بعد از mذاکرهٔ recvonly رسید؟ دو مسیر:
+    //  • ما initiate هستیم → خودمان offer تازه می‌سازیم.
+    //  • ما learner هستیم → از معلم offer می‌خواهیم (media-ready).
+    if (changed && this.pc.signalingState === 'stable') {
+      if (this.isInitiator) {
+        void this.initiate();
+      } else {
+        this.send('media-ready', {});
       }
     }
   }
 
-  /** Called for every signaling event coming from the remote peer. */
+  /** پردازش هر قاب سیگنالینگِ طرف مقابل. */
   async handleSignal(type: string, payload: unknown): Promise<void> {
     if (this.closed) return;
-    const pc = await this.ensureConnection();
+    this.peerReady = true;
 
     if (type === 'offer' && payload) {
-      const offerCollision = this.makingOffer || pc.signalingState !== 'stable';
-      this.ignoreOffer = !this.isInitiator ? false : offerCollision;
-      if (this.ignoreOffer) return;
-      if (offerCollision) {
-        // polite rollback (learner is always polite)
-        await pc.setRemoteDescription(payload as RTCSessionDescriptionInit);
-        return;
-      }
+      // فقط learner offer می‌پذیرد؛ معلم هرگز (جلوگیری از برخورد کامل).
+      if (this.isInitiator) return;
+      const pc = await this.ensureConnection();
       await pc.setRemoteDescription(payload as RTCSessionDescriptionInit);
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
@@ -151,32 +183,49 @@ export class LiveEngine {
     }
 
     if (type === 'answer' && payload) {
-      if (pc.signalingState === 'have-local-offer') {
+      if (!this.isInitiator) return;
+      const pc = this.pc;
+      if (pc && pc.signalingState === 'have-local-offer') {
         await pc.setRemoteDescription(payload as RTCSessionDescriptionInit);
       }
       return;
     }
 
     if (type === 'ice' && payload) {
+      const pc = await this.ensureConnection();
       try {
         await pc.addIceCandidate(payload as RTCIceCandidateInit);
-      } catch (error) {
-        if (!this.ignoreOffer) throw error;
+      } catch {
+        /* ICE قبل از مذاکره رسید؟ دور بعدی restartIce جبران می‌کند */
       }
+      return;
+    }
+
+    if (type === 'media-ready') {
+      // معلم با رسیدن «رسانهٔ دانش‌آموز آماده شد» یک offer تازه می‌سازد.
+      if (this.isInitiator) void this.initiate();
     }
   }
 
-  /** Teacher/initiator path: create and ship the offer once both sides are in. */
+  /** معلم/initiator: ساخت و ارسال offer (بدون تکرار SDP یکسان). */
   async initiate(): Promise<void> {
-    if (this.closed || !this.isInitiator) return;
+    if (this.closed || !this.isInitiator || this.negotiating) return;
     const pc = await this.ensureConnection();
-    this.makingOffer = true;
+    if (pc.signalingState !== 'stable') return; // مذاکرهٔ قبلی در جریان است
+    const nextSdp = (pc.currentLocalDescription?.sdp || pc.localDescription?.sdp || '') as string;
+    if (nextSdp && this.lastOfferedSdp && nextSdp === this.lastOfferedSdp && pc.connectionState === 'connected') {
+      return; // همان SDP قبلی — offer بیهوده‌ای نیست لازم
+    }
+    this.negotiating = true;
     try {
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
+      this.lastOfferedSdp = pc.localDescription?.sdp || '';
       this.send('offer', pc.localDescription?.toJSON());
+    } catch {
+      /* سیگنالینگ بعد از اتصال کاربر جبران می‌کند */
     } finally {
-      this.makingOffer = false;
+      this.negotiating = false;
     }
   }
 
@@ -200,6 +249,7 @@ export class LiveEngine {
     else if (this.localStream) {
       this.localStream.addTrack(screenTrack);
       pc.addTrack(screenTrack, this.localStream);
+      await this.initiate();
     }
     screenTrack.onended = () => { void this.stopScreenShare(); };
     return screen;
@@ -213,12 +263,29 @@ export class LiveEngine {
     }
   }
 
+  /**
+   * بازیابی اتصال روی موبایل — بعد از قفل صفحه، تعویض Wi-Fi/داده یا
+   * برگشت از پس‌زمینه صدا زده می‌شود؛ ICE وادار به مذاکرهٔ دوباره می‌شود.
+   */
+  async reconnect(): Promise<void> {
+    if (this.closed || !this.pc) return;
+    try {
+      await this.pc.restartIce?.();
+    } catch {
+      /* best-effort */
+    }
+  }
+
   setCameraTrack(track: MediaStreamTrack | null): void {
     this.cameraTrack = track;
   }
 
   close(): void {
     this.closed = true;
+    if (this.recoveryTimer) {
+      window.clearTimeout(this.recoveryTimer);
+      this.recoveryTimer = 0;
+    }
     this.localStream?.getTracks().forEach((track) => track.stop());
     this.remoteStream?.getTracks().forEach((track) => track.stop());
     this.pc?.getSenders().forEach((sender) => { try { sender.track?.stop(); } catch { /* ignore */ } });

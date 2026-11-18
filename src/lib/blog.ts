@@ -2,8 +2,6 @@
 // a tiny content-block parser shared by the list/detail pages, and
 // Persian date formatting for blog metadata.
 
-import { formatDate } from './datetime';
-
 export type BlogPost = {
   id: number;
   slug: string;
@@ -88,10 +86,14 @@ export function parseContent(content: string): ContentBlock[] {
   return blocks;
 }
 
-/** Persian (Jalali) date via central datetime util — falls back to the raw ISO date. */
+/** Persian (Jalali) date via Intl — falls back to the raw ISO date. */
 export function faBlogDate(iso?: string | null): string {
   if (!iso) return '';
-  return formatDate(iso) || iso.slice(0, 10);
+  try {
+    return new Intl.DateTimeFormat('fa-IR', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(iso));
+  } catch {
+    return iso.slice(0, 10);
+  }
 }
 
 export function readTimeLabel(minutes: number): string {

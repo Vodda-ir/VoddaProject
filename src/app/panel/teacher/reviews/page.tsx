@@ -53,7 +53,7 @@ export default function TeacherReviewsPage() {
         actions={<PanelButton icon="refresh" onClick={() => void load()}>به‌روزرسانی</PanelButton>}
       />
 
-      <div className="ops-metric-grid" style={{ gridTemplateColumns: 'repeat(3,minmax(0,1fr))' }}>
+      <div className="ops-metric-grid">
         <PanelMetric icon="star" label="میانگین امتیاز" value={reviews.length ? toFaDigits(average.toFixed(1)) : '—'} hint="از ۵" tone="gold" />
         <PanelMetric icon="message" label="کل نظرها" value={toFaDigits(reviews.length)} hint="بازخورد ثبت‌شده" tone="info" />
         <PanelMetric icon="checkCircle" label="امتیاز پنج‌ستاره" value={reviews.length ? `${toFaDigits(fiveStarPercent)}٪` : '—'} hint={`${toFaDigits(fiveStarCount)} نظر`} />

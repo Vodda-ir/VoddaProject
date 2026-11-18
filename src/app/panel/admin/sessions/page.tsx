@@ -17,10 +17,9 @@ import {
   StatCard,
   TablePagination,
 } from '@/components/admin/AdminUI';
-import { avatarUrl, fullUrl, getToken } from '@/lib/auth';
+import { fullUrl, getToken } from '@/lib/auth';
 import type { SessionListItem } from '@/lib/api';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
-import { formatDateTime } from '@/lib/datetime';
 
 type SessionStatusFilter = '' | 'pending' | 'confirmed' | 'done' | 'canceled';
 const PAGE_SIZE = 30;
@@ -41,7 +40,11 @@ const STATUS_BADGE: Record<string, { label: string; tone: string }> = {
 
 function faDateTime(iso?: string): string {
   if (!iso) return '—';
-  return formatDateTime(iso, 'fa', 'short') || '—';
+  try {
+    return new Intl.DateTimeFormat('fa-IR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
+  } catch {
+    return '—';
+  }
 }
 
 export default function AdminSessions() {
@@ -162,10 +165,10 @@ export default function AdminSessions() {
             width: 240,
             render: (session) => (
               <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 11, whiteSpace: 'nowrap' }}>
-                <Avatar size={26} imageUrl={avatarUrl(session.learner?.avatar_url, session.learner?.updated_at)} />
+                <Avatar size={26} imageUrl={fullUrl(session.learner?.avatar_url)} />
                 <span>{session.learner?.name || 'قرآن‌آموز'}</span>
                 <Icon name="arrowL" size={12} style={{ color: 'var(--ink-4)' }} />
-                <Avatar size={26} imageUrl={avatarUrl(session.teacher?.user?.avatar_url, session.teacher?.user?.updated_at)} />
+                <Avatar size={26} imageUrl={fullUrl(session.teacher?.user?.avatar_url)} />
                 <span>{session.teacher?.user?.name || 'استاد'}</span>
               </div>
             ),

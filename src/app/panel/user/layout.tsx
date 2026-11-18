@@ -8,7 +8,6 @@ import { Avatar } from '@/components/web/ui';
 import { api, type NotificationItem } from '@/lib/api';
 import { clearToken, avatarUrl as withVersion, getToken } from '@/lib/auth';
 import { onAvatarUpdated } from '@/lib/avatarImage';
-import { formatDateTime } from '@/lib/datetime';
 import { toFaDigits } from '@/lib/persian';
 
 type NavigationItem = {
@@ -175,7 +174,11 @@ function LearnerBell() {
 }
 
 function faNotificationTime(iso: string): string {
-  return formatDateTime(iso, 'fa', 'short');
+  try {
+    return new Intl.DateTimeFormat('fa-IR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
+  } catch {
+    return '';
+  }
 }
 
 export default function UserLayout({ children }: { children: React.ReactNode }) {

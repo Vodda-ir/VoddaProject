@@ -6,16 +6,13 @@ import type { UniversalAppConfig } from "../../config";
 import { usePlatform } from "../../platform/context";
 import type { AuthUser } from "../../platform/types";
 import { navigateApp } from "../../router";
-import { Avatar, Icon, LoadingState, colors, radii, toFaDigits, typography } from "../../ui";
+import { Avatar, Icon, LoadingState, colors, radii, typography } from "../../ui";
+import { useAppearance } from "../../ui/appearance";
 import { messageOf } from "../../ui/errorMessage";
+import { localizedDigits } from "../../ui/persian";
+import { showToast } from "../../ui/toast";
+import { AvatarPrepareError, announceAvatarUpdated, avatarSrc, prepareAvatarUpload, uploadsOriginOf } from "@/lib/avatarImage";
 import { defaultRouteForUser } from "./AuthExperience";
-import {
-  announceAvatarUpdated,
-  avatarSrc,
-  compressAvatarFile,
-  uploadsOriginOf,
-  validateAvatarFile,
-} from "@/lib/avatarImage";
 
 function normalizeUser(payload: unknown): AuthUser | null {
   if (!payload || typeof payload !== "object") return null;
@@ -34,6 +31,7 @@ type ProfileCompletionScreenProps = {
 
 export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps) {
   const platform = usePlatform();
+  const { L, dir, lang } = useAppearance();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [name, setName] = useState("");
   const [city, setCity] = useState("");
@@ -91,27 +89,35 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
   const nameValid = useMemo(() => name.trim().length >= 2, [name]);
   const canSubmit = nameValid && !saving && !loading;
 
-  function selectAvatar(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0] ?? null;
+  async function selectAvatar(event: ChangeEvent<HTMLInputElement>) {
+    const picked = event.target.files?.[0] ?? null;
     event.target.value = "";
-    if (!file) return;
-    const validationError = validateAvatarFile(file);
-    if (validationError) {
-      setError(validationError);
+    if (!picked) return;
+    if (!picked.type.startsWith("image/") && !/\.(heic|heif)$/i.test(picked.name)) {
+      setError(L("فایل انتخاب‌شده باید تصویر باشد."));
       return;
     }
     setError(null);
     setPreparingAvatar(true);
-    void compressAvatarFile(file)
-      .then((prepared) => setAvatar(prepared))
-      .catch(() => setAvatar(file))
-      .finally(() => setPreparingAvatar(false));
+    try {
+      // HEIC و فرمت‌های غیرمتعارف خودکار به JPEG تبدیل و تصاویر خالی رد می‌شوند
+      const file = await prepareAvatarUpload(picked);
+      setAvatar(file);
+    } catch (convertError) {
+      setError(
+        convertError instanceof AvatarPrepareError
+          ? convertError.message
+          : messageOf(convertError, "تصویر انتخاب‌شده قابل استفاده نیست."),
+      );
+    } finally {
+      setPreparingAvatar(false);
+    }
   }
 
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (!nameValid) {
-      setError("نام و نام خانوادگی را کامل وارد کنید.");
+      setError(L("نام و نام خانوادگی را کامل وارد کنید."));
       return;
     }
 
@@ -157,6 +163,7 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
       setUser(updated);
       // باگ avatar-upload — همگام‌سازی بلافاصلهٔ avatar_url در کش کاربر و همهٔ منوها.
       announceAvatarUpdated(updated.avatar_url, updated.updated_at);
+      showToast(L(avatar ? "پروفایل و تصویر شما ذخیره شد" : "پروفایل ذخیره شد"));
       navigateApp(onboarding ? defaultRouteForUser(updated) : "/profile", config, { replace: true });
     } catch (saveError) {
       setError(messageOf(saveError, "ذخیره پروفایل انجام نشد. دوباره تلاش کنید."));
@@ -168,15 +175,15 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
 
   if (loading) {
     return (
-      <main dir="rtl" data-universal-app="vodda" style={{ minHeight: "100dvh", display: "grid", placeItems: "center", background: colors.sand50 }}>
-        <LoadingState label="در حال دریافت اطلاعات حساب…" />
+      <main dir={dir} data-universal-app="vodda" style={{ minHeight: "100dvh", display: "grid", placeItems: "center", background: colors.sand50 }}>
+        <LoadingState label={L("در حال دریافت اطلاعات حساب…")} />
       </main>
     );
   }
 
   return (
     <main
-      dir="rtl"
+      dir={dir}
       data-universal-app="vodda"
       data-platform={platform.kind}
       style={{ minHeight: "100dvh", background: colors.sand50, color: colors.ink, fontFamily: typography.fontFamily }}
@@ -195,7 +202,7 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
             {!onboarding ? (
               <button
                 type="button"
-                aria-label="بازگشت"
+                aria-label={L("بازگشت")}
                 onClick={() => navigateApp("/profile", config)}
                 style={{ width: 44, height: 44, display: "grid", placeItems: "center", border: 0, borderRadius: "50%", color: colors.inkSecondary, background: "transparent", cursor: "pointer" }}
               >
@@ -204,7 +211,7 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
             ) : null}
           </div>
           <h1 style={{ fontSize: 18, fontWeight: 700, margin: 0, textAlign: "center", color: colors.ink }}>
-            {onboarding ? "تکمیل پروفایل" : "ویرایش پروفایل"}
+            {onboarding ? L("تکمیل پروفایل") : L("ویرایش پروفایل")}
           </h1>
           <button
             type="submit"
@@ -222,7 +229,7 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
               cursor: canSubmit ? "pointer" : "not-allowed",
             }}
           >
-            {saving ? (uploadProgress !== null ? `ذخیره ${toFaDigits(Math.round(uploadProgress * 100))}٪` : "…") : "ذخیره"}
+            {saving ? (uploadProgress !== null ? `${L("ذخیره")} ${localizedDigits(Math.round(uploadProgress * 100), lang)}٪` : "…") : L("ذخیره")}
           </button>
         </header>
 
@@ -245,29 +252,25 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
                   height: 32,
                   display: "grid",
                   placeItems: "center",
-                  border: `2px solid ${colors.surface}`,
+                  border: `2px solid var(--v-sand50, #faf8f2)`,
                   borderRadius: "50%",
-                  color: colors.surface,
+                  color: colors.onOlive,
                   background: colors.olive600,
                 }}
               >
                 <Icon name="camera" size={16} />
               </span>
-              <input className="vodda-input" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" disabled={saving || preparingAvatar} onChange={selectAvatar} style={{ display: "none" }} />
+              <input className="vodda-input" type="file" accept="image/*" disabled={saving || preparingAvatar} onChange={selectAvatar} style={{ display: "none" }} />
             </label>
             <label style={{ color: colors.olive600, fontSize: 13, fontWeight: 600, cursor: saving ? "not-allowed" : "pointer" }}>
-              {preparingAvatar
-                ? "در حال آماده‌سازی تصویر…"
-                : avatar || user?.avatar_url
-                  ? "تغییر تصویر"
-                  : "افزودن تصویر"}
-              <input className="vodda-input" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" disabled={saving || preparingAvatar} onChange={selectAvatar} style={{ display: "none" }} />
+              {avatar || user?.avatar_url ? L("تغییر تصویر") : L("افزودن تصویر")}
+              <input type="file" accept="image/*" disabled={saving || preparingAvatar} onChange={selectAvatar} style={{ display: "none" }} />
             </label>
             <span aria-hidden="true" style={{ width: 48, height: 3, marginTop: 2, borderRadius: 3, background: colors.olive200 }} />
           </div>
 
           <label style={{ display: "grid", gap: 6 }}>
-            <span style={{ fontSize: 13.5, fontWeight: 700, color: colors.inkSecondary }}>نام و نام خانوادگی</span>
+            <span style={{ fontSize: 13.5, fontWeight: 700, color: colors.inkSecondary }}>{L("نام و نام خانوادگی")}</span>
             <div style={{ position: "relative" }}>
               <Icon name="user" size={19} style={{ position: "absolute", insetInlineStart: 16, top: "50%", transform: "translateY(-50%)", color: colors.inkFaint }} />
               <input className="vodda-input"
@@ -275,27 +278,27 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
                 autoComplete="name"
                 value={name}
                 disabled={saving}
-                placeholder="نام خود را وارد کنید"
+                placeholder={L("نام خود را وارد کنید")}
                 onChange={(event) => setName(event.target.value)}
                 style={{ width: "100%", minHeight: 54, padding: "12px 46px 12px 16px", border: `1px solid ${name.length > 0 && !nameValid ? colors.danger : colors.sand200}`, borderRadius: 16, outline: "none", color: colors.ink, background: colors.surface, fontFamily: typography.fontFamily, fontSize: 15, fontWeight: 500 }}
               />
             </div>
-            {name.length > 0 && !nameValid ? <span style={{ fontSize: 11.5, color: colors.danger }}>حداقل دو حرف وارد کنید.</span> : null}
+            {name.length > 0 && !nameValid ? <span style={{ fontSize: 11.5, color: colors.danger }}>{L("حداقل دو حرف وارد کنید.")}</span> : null}
           </label>
 
           {user?.mobile ? (
             <div style={{ display: "grid", gap: 6 }}>
-              <span style={{ fontSize: 13.5, fontWeight: 700, color: colors.inkSecondary }}>شماره موبایل</span>
+              <span style={{ fontSize: 13.5, fontWeight: 700, color: colors.inkSecondary }}>{L("شماره موبایل")}</span>
               <div style={{ minHeight: 54, display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderRadius: 16, background: colors.sand100 }}>
                 <Icon name="phone" size={19} style={{ color: colors.inkFaint }} />
-                <span dir="ltr" style={{ flex: 1, color: colors.inkMuted, fontSize: 15, fontWeight: 600 }}>{toFaDigits(user.mobile)}</span>
-                <span style={{ padding: "4px 10px", borderRadius: radii.pill, color: colors.inkFaint, background: colors.sand200, fontSize: 11, fontWeight: 600 }}>قابل تغییر نیست</span>
+                <span dir="ltr" style={{ flex: 1, color: colors.inkMuted, fontSize: 15, fontWeight: 600 }}>{localizedDigits(user.mobile, lang)}</span>
+                <span style={{ padding: "4px 10px", borderRadius: radii.pill, color: colors.inkFaint, background: colors.sand200, fontSize: 11, fontWeight: 600 }}>{L("قابل تغییر نیست")}</span>
               </div>
             </div>
           ) : null}
 
           <label style={{ display: "grid", gap: 6 }}>
-            <span style={{ fontSize: 13.5, fontWeight: 700, color: colors.inkSecondary }}>شهر</span>
+            <span style={{ fontSize: 13.5, fontWeight: 700, color: colors.inkSecondary }}>{L("شهر")}</span>
             <div style={{ position: "relative" }}>
               <Icon name="pin" size={19} style={{ position: "absolute", insetInlineStart: 16, top: "50%", transform: "translateY(-50%)", color: colors.inkFaint }} />
               <input className="vodda-input"
@@ -303,7 +306,7 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
                 autoComplete="address-level2"
                 value={city}
                 disabled={saving}
-                placeholder="شهر خود را وارد کنید"
+                placeholder={L("شهر خود را وارد کنید")}
                 onChange={(event) => setCity(event.target.value)}
                 style={{ width: "100%", minHeight: 54, padding: "12px 46px 12px 16px", border: `1px solid ${colors.sand200}`, borderRadius: 16, outline: "none", color: colors.ink, background: colors.surface, fontFamily: typography.fontFamily, fontSize: 15, fontWeight: 500 }}
               />
@@ -311,31 +314,31 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
           </label>
 
           <label style={{ display: "grid", gap: 6 }}>
-            <span style={{ fontSize: 13.5, fontWeight: 700, color: colors.inkSecondary }}>دربارهٔ شما</span>
-            <textarea className="vodda-textarea"
+            <span style={{ fontSize: 13.5, fontWeight: 700, color: colors.inkSecondary }}>{L("دربارهٔ شما")}</span>
+            <textarea
               name="bio"
               rows={4}
               value={bio}
               disabled={saving}
-              maxLength={200}
-              placeholder="چند خط دربارهٔ خودتان بنویسید…"
+              maxLength={400}
+              placeholder={L("چند خط دربارهٔ خودتان بنویسید…")}
               onChange={(event) => setBio(event.target.value)}
              
               style={{ width: "100%", resize: "vertical", padding: 14, border: `1px solid ${colors.sand200}`, borderRadius: 16, outline: "none", color: colors.ink, background: colors.surface, fontFamily: typography.fontFamily, fontSize: 15, fontWeight: 500, lineHeight: 1.8 }}
             />
-            <span style={{ fontSize: 11, color: colors.inkFaint, textAlign: "left" }}>{bio.length}/200</span>
+            <span style={{ fontSize: 12, color: colors.inkFaint, textAlign: "left" }}>{bio.length}/400</span>
           </label>
 
           {onboarding ? (
             <p style={{ ...typography.caption, margin: "-4px 0 0", color: colors.inkMuted }}>
-              برای ورود به وُدّا حداقل نام و نام خانوادگی لازم است؛ بقیه اطلاعات را می‌توانید بعداً هم ویرایش کنید.
+              {L("برای ورود به وُدّا حداقل نام و نام خانوادگی لازم است؛ بقیه اطلاعات را می‌توانید بعداً هم ویرایش کنید.")}
             </p>
           ) : null}
 
           {error ? (
             <div role="alert" style={{ display: "flex", alignItems: "center", gap: 10, padding: 14, borderRadius: 14, background: colors.clayBackground, color: colors.danger, ...typography.bodySmall }}>
               <Icon name="info" size={18} />
-              <span>{error}</span>
+              <span>{L(error)}</span>
             </div>
           ) : null}
         </form>

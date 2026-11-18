@@ -44,6 +44,10 @@ export type Teacher = {
   isTier1?: boolean;
   /** ردیف نشان‌های درجه ۱: "international" | "free" | "instant" */
   tier1Badges?: string[];
+  /** کلید جلسهٔ فوری — استاد پذیرای رزرو همین‌لحظه است. */
+  instantEnabled: boolean;
+  /** کلید جلسات رایگان — خدمات صفر تومانی استاد فعال‌اند. */
+  freeEnabled: boolean;
   rating: number;
   reviews: number;
   sessions: number;
@@ -137,6 +141,8 @@ export function parseTeacher(value: unknown): Teacher {
     tier1Badges: Array.isArray(data.tier1_badges)
       ? data.tier1_badges.filter((item): item is string => typeof item === "string")
       : undefined,
+    instantEnabled: booleanValue(data.instant_enabled),
+    freeEnabled: booleanValue(data.free_enabled, true),
     rating: numberValue(data.rating),
     reviews: numberValue(data.reviews),
     sessions: numberValue(data.sessions),

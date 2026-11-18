@@ -19,9 +19,9 @@ import {
   SearchInput,
   TablePagination,
 } from '@/components/admin/AdminUI';
-import { avatarUrl, fullUrl, getToken } from '@/lib/auth';
+import { fullUrl, getToken } from '@/lib/auth';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
-import { formatNumber } from '@/lib/datetime';
+import { confirmDialog } from '@/lib/confirm';
 
 type TeacherStatus = '' | 'pending' | 'approved' | 'rejected';
 type TeacherTier = '' | 'international' | 'grade2' | 'grade3';
@@ -40,8 +40,6 @@ type TeacherRow = {
   tier?: TeacherTier;
   /** کارت درجه ۱ — از overlay محلی BFF (۱.الف.۵) */
   is_tier1?: boolean;
-  /** آخرین فعالیت — ۱.الف.۴ */
-  last_seen?: string;
   status?: Exclude<TeacherStatus, ''>;
   verified?: boolean;
   available?: boolean;
@@ -63,16 +61,16 @@ const FILTERS: Array<{ value: TeacherStatus; label: string }> = [
 ];
 
 const TIER_BADGE: Record<string, { label: string; tone: string }> = {
-  international: { label: 'استاد بین‌المللی', tone: 'info' },
-  grade2: { label: 'برگزیدهٔ کشوری', tone: 'green' },
-  grade3: { label: 'برگزیدهٔ استانی', tone: 'clay' },
+  international: { label: 'بین‌المللی (تیک آبی)', tone: 'info' },
+  grade2: { label: 'کشوری (تیک سبز)', tone: 'green' },
+  grade3: { label: 'استانی (تیک قرمز)', tone: 'rose' },
 };
 
 const TIER_OPTIONS: Array<{ value: TeacherTier; label: string }> = [
   { value: '', label: 'بدون نشان' },
-  { value: 'international', label: 'استاد بین‌المللی (تیک آبی)' },
-  { value: 'grade2', label: 'برگزیدهٔ کشوری (تیک سبز)' },
-  { value: 'grade3', label: 'برگزیدهٔ استانی (تیک قرمز)' },
+  { value: 'international', label: 'بین‌المللی — تیک آبی (درجه ۱)' },
+  { value: 'grade2', label: 'کشوری — تیک سبز (درجه ۲)' },
+  { value: 'grade3', label: 'استانی — تیک قرمز (درجه ۳)' },
 ];
 
 const STATUS_BADGE: Record<string, { label: string; tone: string }> = {
@@ -84,7 +82,7 @@ const STATUS_BADGE: Record<string, { label: string; tone: string }> = {
 const PAGE_SIZE = 30;
 
 function faRating(value?: number): string {
-  return formatNumber(Number(value || 0), 'fa', { maximumFractionDigits: 1 });
+  return new Intl.NumberFormat('fa-IR', { maximumFractionDigits: 1 }).format(Number(value || 0));
 }
 
 export default function AdminTeachers() {
@@ -165,7 +163,7 @@ export default function AdminTeachers() {
   async function review(teacher: TeacherRow, approve: boolean) {
     if (!token || busyId !== null || teacher.status !== 'pending') return;
     const action = approve ? 'تأیید' : 'رد';
-    if (!window.confirm(`پروفایل «${teacher.user?.name || 'استاد'}» ${action} شود؟`)) return;
+    if (!(await confirmDialog(`پروفایل «${teacher.user?.name || 'استاد'}» ${action} شود؟`))) return;
 
     setBusyId(teacher.id);
     setError('');
@@ -281,11 +279,11 @@ export default function AdminTeachers() {
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <label className="adm-search" style={{ maxWidth: 150 }}>
             <Icon name="pin" size={15} />
-            <input className="input-base" value={city} onChange={(event) => { setCity(event.target.value); setPage(0); }} placeholder="شهر" aria-label="فیلتر شهر" />
+            <input value={city} onChange={(event) => { setCity(event.target.value); setPage(0); }} placeholder="شهر" aria-label="فیلتر شهر" />
           </label>
           <label className="adm-search" style={{ maxWidth: 150 }}>
             <Icon name="book" size={15} />
-            <input className="input-base" value={field} onChange={(event) => { setField(event.target.value); setPage(0); }} placeholder="حوزه" aria-label="فیلتر حوزه" />
+            <input value={field} onChange={(event) => { setField(event.target.value); setPage(0); }} placeholder="حوزه" aria-label="فیلتر حوزه" />
           </label>
           <SearchInput value={query} onChange={(value) => { setQuery(value); setPage(0); }} placeholder="جست‌وجوی استاد…" />
           {hasFilters && <PanelButton icon="x" onClick={() => { setQuery(''); setCity(''); setField(''); setStatus(''); setPage(0); }}>پاک‌کردن</PanelButton>}
@@ -306,7 +304,7 @@ export default function AdminTeachers() {
             header: 'استاد',
             render: (teacher) => (
               <div className="adm-cell-main">
-                <Avatar size={40} imageUrl={avatarUrl(teacher.user?.avatar_url, teacher.user?.updated_at)} />
+                <Avatar size={40} imageUrl={fullUrl(teacher.user?.avatar_url)} />
                 <div style={{ minWidth: 0 }}>
                   <strong style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                     {teacher.user?.name || 'استاد بدون نام'}
@@ -401,12 +399,12 @@ export default function AdminTeachers() {
         {selected && (
           <>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '6px 2px 14px' }}>
-              <Avatar size={56} imageUrl={avatarUrl(selected.user?.avatar_url, selected.user?.updated_at)} />
+              <Avatar size={56} imageUrl={fullUrl(selected.user?.avatar_url)} />
               <div>
                 <strong style={{ display: 'block', fontSize: 14 }}>{selected.user?.name || 'استاد بدون نام'}</strong>
                 <div style={{ display: 'flex', gap: 5, marginTop: 5, flexWrap: 'wrap' }}>
                   <span className="adm-badge" data-tone={STATUS_BADGE[selected.status || 'pending']?.tone}>{STATUS_BADGE[selected.status || 'pending']?.label}</span>
-                  {selected.tier && <span className="adm-badge" data-tone={TIER_BADGE[selected.tier]?.tone}>{TIER_BADGE[selected.tier]?.tone === 'info' ? 'استاد بین‌المللی' : TIER_BADGE[selected.tier]?.label}</span>}
+                  {selected.tier && <span className="adm-badge" data-tone={TIER_BADGE[selected.tier]?.tone}>{TIER_BADGE[selected.tier]?.label}</span>}
                   {selected.is_tier1 && <span className="adm-badge" data-tone="gold">🏆 کارت درجه ۱</span>}
                   {!selected.user?.active && <PanelStatus status="inactive">حساب غیرفعال</PanelStatus>}
                 </div>

@@ -1,14 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { AppNotificationBanner } from "../notifications/AppNotificationBanner";
 import type { FormEvent, ReactNode } from "react";
 import type { UniversalAppConfig } from "../../config";
 import { usePlatform } from "../../platform/context";
 import type { AuthUser } from "../../platform/types";
 import { navigateApp, type AppRouteName } from "../../router";
-import { AppNotificationBanner } from "../notifications/AppNotificationBanner";
-import { Button, Card, Icon, colors, digitsOnly, shadows, spacing, toFaDigits, typography } from "../../ui";
+import { Button, Card, Icon, colors, digitsOnly, shadows, spacing, typography } from "../../ui";
+import { useAppearance } from "../../ui/appearance";
 import { messageOf } from "../../ui/errorMessage";
+import { localizedDigits } from "../../ui/persian";
 
 function normalizedMobile(value: string) {
   return digitsOnly(value, 11);
@@ -45,9 +47,10 @@ export function canAccessAppRoute(user: AuthUser, routeName: AppRouteName) {
 }
 
 export function LaunchScreen() {
+  const { t, L, dir } = useAppearance();
   return (
     <main
-      dir="rtl"
+      dir={dir}
       data-universal-app="vodda"
       style={{
         minHeight: "100dvh",
@@ -62,13 +65,16 @@ export function LaunchScreen() {
       <div style={{ display: "grid", justifyItems: "center", gap: 12, textAlign: "center" }}>
         <img
           src="/vodda-logo.svg"
-          alt="وُدّا"
+          alt={L("وُدّا")}
           width={150}
           height={173}
           style={{ width: 150, height: "auto", display: "block" }}
         />
-        <strong style={{ fontSize: 14, fontWeight: 900, color: colors.ink }}>
-          نرم افزار تخصصی آموزش قرآن کریم
+        <strong
+          className="vodda-display"
+          style={{ fontSize: 18, color: colors.ink, lineHeight: 1.7 }}
+        >
+          {t("login_subtitle")}
         </strong>
       </div>
     </main>
@@ -84,9 +90,10 @@ type SessionBootstrapProps = {
 type BootstrapStatus = "loading" | "ready" | "error";
 
 function SessionRestoreError({ message, onRetry }: { message: string; onRetry: () => void }) {
+  const { L, dir } = useAppearance();
   return (
     <main
-      dir="rtl"
+      dir={dir}
       data-universal-app="vodda"
       style={{
         minHeight: "100dvh",
@@ -100,12 +107,12 @@ function SessionRestoreError({ message, onRetry }: { message: string; onRetry: (
     >
       <Card elevated style={{ width: "min(100%, 460px)", textAlign: "center" }}>
         <div style={{ display: "grid", gap: spacing.md, justifyItems: "center" }}>
-          <strong style={{ ...typography.title, color: colors.danger }}>اتصال به حساب برقرار نشد</strong>
+          <strong style={{ ...typography.title, color: colors.danger }}>{L("اتصال به حساب برقرار نشد")}</strong>
           <p style={{ ...typography.bodySmall, margin: 0, color: colors.inkMuted }}>
-            {message}
+            {L(message)}
           </p>
           <Button type="button" onClick={onRetry}>
-            تلاش دوباره
+            {L("تلاش دوباره")}
           </Button>
         </div>
       </Card>
@@ -242,15 +249,50 @@ type LoginScreenProps = {
 
 export function LoginScreen({ config }: LoginScreenProps) {
   const platform = usePlatform();
+  const { t, L, lang, setLang } = useAppearance();
   const otpRef = useRef<HTMLInputElement>(null);
   const [mobile, setMobile] = useState("");
   const [code, setCode] = useState("");
   const [codeSent, setCodeSent] = useState(false);
   const [loading, setLoading] = useState<"otp" | "verify" | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [googleEnabled, setGoogleEnabled] = useState(false);
+  const [googleNotice, setGoogleNotice] = useState<string | null>(null);
 
   const mobileValid = useMemo(() => /^09\d{9}$/.test(mobile), [mobile]);
   const codeValid = code.length === 5;
+
+  // ورود با گوگل — فقط در وب (در WebView بومی نیازمند مرورگر سیستم و دیپ‌لینک است).
+  useEffect(() => {
+    if (platform.kind !== "web") return;
+    let alive = true;
+    platform
+      .request<{ data?: { enabled?: boolean } }>("/auth/google/status")
+      .then((res) => {
+        if (alive) setGoogleEnabled(res?.data?.enabled === true);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [platform]);
+
+  // پیام نتیجهٔ بازگشت از گوگل (?google=failed|state|missing)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const result = new URLSearchParams(window.location.search).get("google");
+    if (!result) return;
+    setGoogleNotice(
+      result === "state"
+        ? t("login_google_state")
+        : t("login_google_failed"),
+    );
+    // پارامتر را پاک می‌کنیم تا رفرش بعدی پیام را تکرار نکند.
+    const url = new URL(window.location.href);
+    url.searchParams.delete("google");
+    window.history.replaceState(null, "", url.toString());
+  }, []);
 
   useEffect(() => {
     if (!codeSent) return;
@@ -258,10 +300,19 @@ export function LoginScreen({ config }: LoginScreenProps) {
     return () => window.clearTimeout(timer);
   }, [codeSent]);
 
+  // شمارش معکوس ۹۰ ثانیه‌ای ارسال مجدد کد (B2)
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = window.setInterval(() => {
+      setResendCooldown((value) => (value > 0 ? value - 1 : 0));
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [resendCooldown]);
+
   async function requestOtp(event?: FormEvent) {
     event?.preventDefault();
     if (!mobileValid) {
-      setError("شماره موبایل ۱۱ رقمی وارد کنید.");
+      setError(t("login_mobile_invalid"));
       return;
     }
 
@@ -271,8 +322,9 @@ export function LoginScreen({ config }: LoginScreenProps) {
       await platform.requestOtp(mobile);
       setCodeSent(true);
       setCode("");
+      setResendCooldown(90);
     } catch (requestError) {
-      setError(messageOf(requestError, "ارتباط با سرور برقرار نشد. دوباره تلاش کنید."));
+      setError(messageOf(requestError, t("error_generic")));
     } finally {
       setLoading(null);
     }
@@ -281,7 +333,7 @@ export function LoginScreen({ config }: LoginScreenProps) {
   async function verifyOtp(event?: FormEvent) {
     event?.preventDefault();
     if (!codeValid) {
-      setError("کد تأیید را کامل وارد کنید.");
+      setError(t("login_code_invalid"));
       return;
     }
 
@@ -293,7 +345,7 @@ export function LoginScreen({ config }: LoginScreenProps) {
         replace: true,
       });
     } catch (verifyError) {
-      setError(messageOf(verifyError, "ارتباط با سرور برقرار نشد. دوباره تلاش کنید."));
+      setError(messageOf(verifyError, t("error_generic")));
     } finally {
       setLoading(null);
     }
@@ -303,11 +355,11 @@ export function LoginScreen({ config }: LoginScreenProps) {
     setCodeSent(false);
     setCode("");
     setError(null);
+    setResendCooldown(0);
   }
 
   return (
     <main
-      dir="rtl"
       data-universal-app="vodda"
       data-platform={platform.kind}
       style={{
@@ -324,30 +376,74 @@ export function LoginScreen({ config }: LoginScreenProps) {
         style={{
           width: "100%",
           maxWidth: 440,
-          padding: "max(28px, env(safe-area-inset-top)) 28px max(28px, env(safe-area-inset-bottom))",
+          minHeight: "100dvh",
+          display: "flex",
+          flexDirection: "column",
+          padding: "max(28px, env(safe-area-inset-top)) 28px max(20px, env(safe-area-inset-bottom))",
         }}
       >
-        <div className="vodda-enter" style={{ display: "grid", justifyItems: "center", paddingTop: 8 }}>
+        <div className="vodda-enter" style={{ display: "grid", justifyItems: "center", marginTop: "8dvh" }}>
           <img
             src="/vodda-logo.svg"
-            alt="وُدّا"
+            alt={L("وُدّا")}
             width={96}
             height={111}
             style={{ width: 96, height: "auto", display: "block" }}
           />
-          <p style={{ margin: "12px 0 0", color: colors.ink, fontSize: 14, fontWeight: 900, textAlign: "center" }}>
-            نرم افزار تخصصی آموزش قرآن کریم
+          <p
+            className="vodda-display"
+            style={{ margin: "10px 0 0", color: colors.ink, fontSize: 17.5, textAlign: "center", lineHeight: 1.7 }}
+          >
+            {t("login_subtitle")}
           </p>
+        </div>
+
+        {/* انتخاب زبان — کاربر خارجی پیش از ورود هم می‌تواند زبان را عوض کند */}
+        <div
+          role="group"
+          aria-label={t("profile_language")}
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            gap: 6,
+            marginTop: 16,
+            padding: 4,
+            borderRadius: 999,
+            border: `1px solid ${colors.sand200}`,
+            background: colors.surface,
+          }}
+        >
+          {(["fa", "en"] as const).map((option) => (
+            <button
+              key={option}
+              type="button"
+              onClick={() => setLang(option)}
+              aria-pressed={lang === option}
+              style={{
+                padding: "6px 18px",
+                borderRadius: 999,
+                border: 0,
+                cursor: "pointer",
+                fontFamily: typography.fontFamily,
+                fontSize: 12.5,
+                fontWeight: lang === option ? 800 : 600,
+                color: lang === option ? colors.onOlive : colors.inkMuted,
+                background: lang === option ? colors.olive600 : "transparent",
+              }}
+            >
+              {option === "fa" ? t("lang_fa") : t("lang_en")}
+            </button>
+          ))}
         </div>
 
         <form
           onSubmit={codeSent ? verifyOtp : requestOtp}
           className="vodda-enter vodda-enter-delay-1"
-          style={{ display: "grid", gap: 16, marginTop: 32 }}
+          style={{ display: "grid", gap: 16, marginTop: 28 }}
         >
           <label style={{ display: "grid", gap: 8 }}>
             <span style={{ fontSize: 13, fontWeight: 600, color: codeSent ? colors.inkFaint : colors.inkSecondary }}>
-              شماره موبایل
+              {t("login_mobile_label")}
             </span>
             <div style={{ position: "relative" }}>
               <Icon
@@ -366,9 +462,9 @@ export function LoginScreen({ config }: LoginScreenProps) {
                 inputMode="numeric"
                 autoComplete="tel"
                 dir="ltr"
-                value={toFaDigits(mobile)}
+                value={localizedDigits(mobile, lang)}
                 disabled={codeSent || loading !== null}
-                placeholder="۰۹××× ××× ×××"
+                placeholder={L("۰۹××× ××× ×××")}
                 onChange={(event) => {
                   setMobile(normalizedMobile(event.target.value));
                   setError(null);
@@ -395,18 +491,18 @@ export function LoginScreen({ config }: LoginScreenProps) {
 
           {!codeSent ? (
             <Button type="submit" fullWidth loading={loading === "otp"} disabled={!mobileValid} style={{ minHeight: 52 }}>
-              دریافت کد تأیید
+              {t("login_send_code")}
             </Button>
           ) : (
             <div style={{ display: "grid", gap: 20 }}>
               <p style={{ ...typography.bodySmall, margin: "0 0 -2px", color: colors.inkMuted, textAlign: "center" }}>
-                کد پیامک‌شده به <span dir="ltr">{toFaDigits(mobile)}</span> را وارد کنید
+                {t("login_code_prompt", { mobile: localizedDigits(mobile, lang) })}
               </p>
 
               <div
                 dir="ltr"
                 role="group"
-                aria-label="کد تأیید پنج رقمی"
+                aria-label={L("کد تأیید پنج رقمی")}
                 onClick={() => otpRef.current?.focus()}
                 style={{
                   position: "relative",
@@ -437,13 +533,13 @@ export function LoginScreen({ config }: LoginScreenProps) {
                         fontWeight: 800,
                       }}
                     >
-                      {toFaDigits(digit)}
+                      {localizedDigits(digit, lang)}
                     </span>
                   );
                 })}
                 <input className="vodda-input"
                   ref={otpRef}
-                  value={toFaDigits(code)}
+                  value={localizedDigits(code, lang)}
                   inputMode="numeric"
                   autoComplete="one-time-code"
                   disabled={loading !== null}
@@ -461,30 +557,37 @@ export function LoginScreen({ config }: LoginScreenProps) {
                     border: 0,
                     cursor: "text",
                   }}
-                  aria-label="کد تأیید"
+                  aria-label={L("کد تأیید")}
                 />
               </div>
 
               <Button type="submit" fullWidth loading={loading === "verify"} disabled={!codeValid} style={{ minHeight: 52 }}>
-                ورود
+                {t("login_submit")}
               </Button>
 
               <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 12 }}>
                 <button
                   type="button"
-                  disabled={loading !== null}
+                  disabled={loading !== null || resendCooldown > 0}
                   onClick={() => void requestOtp()}
                   style={{
-                    padding: "8px 2px",
+                    padding: "12px 2px",
                     border: 0,
-                    color: colors.olive600,
+                    color: resendCooldown > 0 ? colors.inkFaint : colors.olive600,
                     background: "transparent",
                     fontFamily: typography.fontFamily,
                     fontWeight: 600,
-                    cursor: loading ? "not-allowed" : "pointer",
+                    cursor: loading !== null || resendCooldown > 0 ? "not-allowed" : "pointer",
                   }}
                 >
-                  ارسال مجدد کد
+                  {resendCooldown > 0
+                    ? t("login_resend_in", {
+                        time: localizedDigits(
+                          `${String(Math.floor(resendCooldown / 60)).padStart(2, "0")}:${String(resendCooldown % 60).padStart(2, "0")}`,
+                          lang,
+                        ),
+                      })
+                    : t("login_resend")}
                 </button>
                 <span aria-hidden="true" style={{ width: 3, height: 3, borderRadius: "50%", background: colors.sand200 }} />
                 <button
@@ -492,7 +595,7 @@ export function LoginScreen({ config }: LoginScreenProps) {
                   disabled={loading !== null}
                   onClick={resetMobile}
                   style={{
-                    padding: "8px 2px",
+                    padding: "12px 2px",
                     border: 0,
                     color: colors.inkMuted,
                     background: "transparent",
@@ -501,7 +604,7 @@ export function LoginScreen({ config }: LoginScreenProps) {
                     cursor: loading ? "not-allowed" : "pointer",
                   }}
                 >
-                  تغییر شماره
+                  {t("login_change_number")}
                 </button>
               </div>
             </div>
@@ -522,10 +625,104 @@ export function LoginScreen({ config }: LoginScreenProps) {
               }}
             >
               <Icon name="shield" size={18} />
-              <span>{error}</span>
+              <span>{L(error)}</span>
+            </div>
+          ) : null}
+
+          {googleNotice ? (
+            <div
+              role="status"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                padding: "12px 16px",
+                borderRadius: 14,
+                background: colors.goldBackground,
+                color: colors.goldDark,
+                ...typography.bodySmall,
+              }}
+            >
+              <Icon name="shield" size={18} />
+              <span>{L(googleNotice)}</span>
+            </div>
+          ) : null}
+
+          {/* ورود با گوگل — وقتی بک‌اند کلید OAuth داشته باشد نمایش داده می‌شود */}
+          {platform.kind === "web" && googleEnabled ? (
+            <div style={{ display: "grid", gap: 14, marginTop: 2 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }} aria-hidden="true">
+                <span style={{ flex: 1, height: 1, background: colors.sand200 }} />
+                <span style={{ fontSize: 12, fontWeight: 600, color: colors.inkFaint }}>{t("login_or")}</span>
+                <span style={{ flex: 1, height: 1, background: colors.sand200 }} />
+              </div>
+              <a
+                href={`/api/auth/google/start?next=${encodeURIComponent("/app/")}`}
+                style={{
+                  minHeight: 52,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 12,
+                  borderRadius: 18,
+                  border: `1px solid ${colors.sand200}`,
+                  background: colors.surface,
+                  color: colors.ink,
+                  ...typography.label,
+                  fontSize: 15,
+                  boxShadow: shadows.xs,
+                  textDecoration: "none",
+                }}
+              >
+                <svg aria-hidden="true" width="20" height="20" viewBox="0 0 48 48">
+                  <path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3l5.7-5.7C34.3 6.1 29.4 4 24 4 13 4 4 13 4 24s9 20 20 20 20-9 20-20c0-1.3-.1-2.7-.4-3.9z" />
+                  <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.9 1.2 8 3l5.7-5.7C34.3 6.1 29.4 4 24 4 16.3 4 9.7 8.3 6.3 14.7z" />
+                  <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.3 0-9.7-3.4-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z" />
+                  <path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C36.9 39.2 44 34 44 24c0-1.3-.1-2.7-.4-3.9z" />
+                </svg>
+                <span>{t("login_google")}</span>
+              </a>
             </div>
           ) : null}
         </form>
+
+        {/* نوار اعتماد پایین صفحهٔ ورود (C7) */}
+        <div
+          className="vodda-enter vodda-enter-delay-2"
+          style={{
+            marginTop: "auto",
+            paddingTop: 26,
+            paddingBottom: 10,
+            display: "grid",
+            gridTemplateColumns: "repeat(3, 1fr)",
+            gap: 8,
+            borderTop: `1px solid ${colors.sand150}`,
+          }}
+        >
+          {[
+            { icon: "shield" as const, labelKey: "trust_secure_pay" as const },
+            { icon: "award" as const, labelKey: "trust_teachers" as const },
+            { icon: "headphones" as const, labelKey: "trust_support" as const },
+          ].map((item) => (
+            <div key={item.labelKey} style={{ display: "grid", justifyItems: "center", gap: 5, textAlign: "center" }}>
+              <span
+                aria-hidden="true"
+                style={{
+                  width: 34,
+                  height: 34,
+                  display: "grid",
+                  placeItems: "center",
+                  borderRadius: 12,
+                  background: colors.olive50,
+                  color: colors.olive600,
+                }}
+              >
+                <Icon name={item.icon} size={17} />
+              </span>
+              <span style={{ fontSize: 11.5, fontWeight: 600, color: colors.inkMuted }}>{t(item.labelKey)}</span>
+            </div>
+          ))}
+        </div>
       </section>
     </main>
   );

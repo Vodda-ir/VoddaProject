@@ -19,7 +19,7 @@ import {
 } from '@/components/admin/AdminUI';
 import { fullUrl, getToken } from '@/lib/auth';
 import { toFaDigits } from '@/lib/persian';
-import { formatDate, formatNumber } from '@/lib/datetime';
+import { confirmDialog } from '@/lib/confirm';
 
 type AdminReviewRow = {
   id: number;
@@ -47,7 +47,11 @@ type RatingFilter = (typeof RATING_FILTERS)[number]['value'];
 
 function faDate(iso?: string): string {
   if (!iso) return '—';
-  return formatDate(iso) || '—';
+  try {
+    return new Intl.DateTimeFormat('fa-IR', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(iso));
+  } catch {
+    return '—';
+  }
 }
 
 function Stars({ rating }: { rating: number }) {
@@ -93,7 +97,7 @@ export default function AdminReviews() {
 
   async function removeReview(review: AdminReviewRow) {
     if (!token || busyId !== null) return;
-    if (!window.confirm('حذف نظر بازگشت‌پذیر نیست؛ امتیاز استاد بازمحاسبه و جلسه برای ثبت نظر تازه باز می‌شود. ادامه می‌دهید؟')) return;
+    if (!(await confirmDialog('حذف نظر بازگشت‌پذیر نیست؛ امتیاز استاد بازمحاسبه و جلسه برای ثبت نظر تازه باز می‌شود. ادامه می‌دهید؟'))) return;
 
     setBusyId(review.id);
     setError('');
@@ -167,7 +171,7 @@ export default function AdminReviews() {
           icon="checkCircle"
           tone="olive"
           label="میانگین امتیاز صفحه"
-          value={loading ? '—' : formatNumber(pageAvg, 'fa', { maximumFractionDigits: 1 })}
+          value={loading ? '—' : new Intl.NumberFormat('fa-IR', { maximumFractionDigits: 1 }).format(pageAvg)}
           hint="از ۵ در این صفحه"
         />
       </div>

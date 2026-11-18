@@ -220,7 +220,7 @@ export function Nav() {
             <Link href="/dispatch" onClick={() => setMobileOpen(false)} className="mobile-menu-dispatch">
               <Icon name="bell" size={18} />
               <span style={{ flex: 1 }}>فراخوان اساتید</span>
-              <span style={{ fontSize: 10, fontWeight: 800, color: '#8b681f', background: 'var(--gold-bg)', borderRadius: 999, padding: '3px 8px' }}>جدید ✨</span>
+              <span style={{ fontSize: 10, fontWeight: 800, color: '#8b681f', background: 'var(--gold-bg)', borderRadius: 999, padding: '3px 8px' }}>جدید</span>
             </Link>
             <Link href={user?.hasTeacherProfile ? "/panel/teacher" : "/panel/teacher/register"} onClick={() => setMobileOpen(false)} className="mobile-menu-teacher">
               <Icon name="award" size={18} />
@@ -253,8 +253,8 @@ function AppPreview() {
         </div>
 
         <div className="landing-phone-hero">
-          <span style={{ color: 'rgba(255,255,255,.67)', fontSize: 10.5 }}>استاد مناسب خودت را پیدا کن</span>
-          <strong style={{ display: 'block', marginTop: 4, color: '#fff', fontSize: 17, lineHeight: 1.65 }}>آموزش قرآن کریم،<br />در زمان مناسب تو</strong>
+          <span style={{ color: 'rgba(255,255,255,.67)', fontSize: 10.5 }}>استاد مناسب خود را بیابید</span>
+          <strong style={{ display: 'block', marginTop: 4, color: '#fff', fontSize: 17, lineHeight: 1.65 }}>آموزش قرآن کریم،<br />در زمان دلخواه شما</strong>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 12, padding: '8px 11px', borderRadius: 11, color: 'var(--olive-800)', background: '#fff', fontSize: 10.5, fontWeight: 700 }}>
             <Icon name="search" size={14} />
             جستجوی استاد
@@ -331,9 +331,9 @@ export function Hero() {
       <div className="public-container landing-hero-grid">
         <div className="landing-hero-copy">
           <div className="landing-eyebrow"><Icon name="sparkle" size={16} />سکوی تخصصی آموزش قرآن کریم</div>
-          <h1>استاد مناسب را پیدا کن،<br /><span>زمان خودت را رزرو کن.</span></h1>
+          <h1>استاد مناسب را بیابید،<br /><span>زمان دلخواه خود را رزرو کنید.</span></h1>
           <p>
-            استادان تأییدشده را بر اساس تخصص و شهر پیدا کن، خدمات و زمان‌های آزاد را ببین و جریان رزرو و پرداخت را شفاف از داخل وُدّا پیگیری کن.
+            استادان تأییدشده را بر اساس تخصص و شهر بیابید، خدمات و زمان‌های آزاد را ببینید و جریان رزرو و پرداخت را به‌شفافیت از داخل وُدّا پیگیری کنید.
           </p>
 
           <form onSubmit={submit} className="landing-search-box">
@@ -369,9 +369,9 @@ export function Hero() {
 
 export function DispatchCallout() {
   const steps = [
-    ['search' as const, '۱ · موضوع را انتخاب کن', 'روخوانی، تجوید، صوت و لحن، حفظ قرآن و… از فهرست رسمی وُدّا.'],
-    ['bell' as const, '۲ · دو شیوه را برگزین', 'یا «فراخوان زنده» برای همهٔ اساتیدِ موضوع، یا «فهرست اساتید» برای انتخاب مستقیم.'],
-    ['checkCircle' as const, '۳ · استادت را برگزین', 'در فراخوان، نخستین اساتیدِ آماده همان‌جا دیده می‌شوند؛ در فهرست هم مستقیم رزرو می‌کنید.'],
+    ['search' as const, '۱ · موضوع را انتخاب کنید', 'روخوانی، تجوید، صوت و لحن، حفظ و… از فهرست رسمی وُدّا.'],
+    ['bell' as const, '۲ · فراخوان را ثبت کنید', 'درخواست شما برای همهٔ اساتید همان موضوع به‌صورت زنده پخش می‌شود.'],
+    ['checkCircle' as const, '۳ · استاد خود را برگزینید', 'نخستین اساتیدِ آماده همان‌جا نمایش داده می‌شوند؛ یکی را تأیید کنید تا جلسه رزرو شود.'],
   ] as const;
 
   return (
@@ -381,20 +381,16 @@ export function DispatchCallout() {
           <div className="landing-dispatch-top">
             <div className="landing-dispatch-copy">
               <span className="landing-dispatch-badge"><Icon name="bell" size={14} /> فراخوان اساتید — ویژهٔ وُدّا</span>
-              <h2>موضوع را بگو؛ یا فراخوان بزن،<br /><span>یا مستقیم استادت را برگزین.</span></h2>
+              <h2>موضوع خود را اعلام کنید؛ اساتید آمادگی می‌دهند،<br /><span>و شما انتخاب می‌کنید.</span></h2>
               <p>
-                مثل اسنپ، اما برای کلاس قرآن: در شیوهٔ «فراخوان زنده» درخواست شما بین همهٔ اساتیدِ موضوعِ دلخواه پخش می‌شود،
-                اساتید به‌ترتیب اعلام آمادگی می‌کنند و شما هرکدام را خواستید تأیید می‌کنید. اگر عجله ندارید، از شیوهٔ «فهرست اساتید» هم می‌توانید مستقیم استاد و زمان دلخواه را رزرو کنید.
+                به‌سرعت و بدون تماس تلفنی: درخواست شما بین همهٔ اساتیدِ موضوعِ دلخواه به‌صورت زنده پخش می‌شود و
+                اساتید به‌ترتیب اعلام آمادگی می‌کنند؛ کافی است یکی را تأیید کنید تا جلسه با همان استاد رزرو شود.
               </p>
-              <div className="landing-dispatch-modes" aria-label="دو شیوهٔ فراخوان">
-                <span className="landing-dispatch-mode-chip active"><Icon name="bell" size={14} /> فراخوان زنده — ویژهٔ وُدّا</span>
-                <span className="landing-dispatch-mode-chip"><Icon name="users" size={14} /> فهرست اساتید — انتخاب مستقیم</span>
-              </div>
             </div>
             <div className="landing-dispatch-art" aria-hidden="true">
-              <div className="dispatch-chip-float one">🔔 فراخوان زنده</div>
-              <div className="dispatch-chip-float two">⚡ پاسخ در چند دقیقه</div>
-              <div className="dispatch-chip-float three">✅ انتخاب با شما</div>
+              <div className="dispatch-chip-float one">فراخوان زنده</div>
+              <div className="dispatch-chip-float two">پاسخ در چند دقیقه</div>
+              <div className="dispatch-chip-float three">انتخاب با شما</div>
               <div className="dispatch-radar">
                 <span className="dispatch-radar-core"><Icon name="quran" size={30} /></span>
               </div>
@@ -416,10 +412,10 @@ export function DispatchCallout() {
               <span className="dispatch-btn-icon"><Icon name="bell" size={18} /></span>
               فراخوان اساتید
             </Link>
-            <WebBtn href="/search" size="lg" variant="ghost" icon="search">فهرست اساتید هر موضوع</WebBtn>
+            <WebBtn href="/search" size="lg" variant="ghost" icon="search">مشاهده اساتید هر موضوع</WebBtn>
             <span className="dispatch-special-note">
               <Icon name="shield" size={14} />
-              فقط اساتید تأییدشدهٔ وُدّا در فراخوان و فهرست دیده می‌شوند.
+              فقط اساتید تأییدشدهٔ وُدّا در فراخوان دیده می‌شوند.
             </span>
           </div>
         </div>
@@ -538,9 +534,9 @@ export function Categories({ categories = [] as CatalogCategory[] }: { categorie
 
 export function HowItWorks() {
   const steps = [
-    ['search' as const, 'استاد را پیدا کن', 'نام، تخصص، شهر یا جنسیت استاد را جستجو و پروفایل منتشرشده را بررسی کن.'],
-    ['calendar' as const, 'خدمت و زمان را انتخاب کن', 'سرویس تأییدشده و بازهٔ آزاد واقعی از برنامهٔ کاری استاد را انتخاب کن.'],
-    ['checkCircle' as const, 'درخواست را پیگیری کن', 'وضعیت رزرو، جلسه و گردش مالی را از فضای کاربری وُدّا دنبال کن.'],
+    ['search' as const, 'استاد را بیابید', 'نام، تخصص، شهر یا جنسیت استاد را جستجو و پروفایل منتشرشده را بررسی کنید.'],
+    ['calendar' as const, 'خدمت و زمان را انتخاب کنید', 'سرویس تأییدشده و بازهٔ آزاد واقعی از برنامهٔ کاری استاد را انتخاب کنید.'],
+    ['checkCircle' as const, 'درخواست را پیگیری کنید', 'وضعیت رزرو، جلسه و گردش مالی را از فضای کاربری وُدّا دنبال کنید.'],
   ] as const;
 
   return (
@@ -710,7 +706,7 @@ export function FeaturedTeachers({ teachers, unavailable = false }: { teachers: 
           <div className="landing-empty-state" role="status">
             <span><Icon name="users" size={27} /></span>
             <strong>{unavailable ? 'ارتباط با فهرست استادان برقرار نیست' : 'هنوز استاد تأییدشده‌ای منتشر نشده'}</strong>
-            <p>{unavailable ? 'کمی بعد دوباره تلاش کنید.' : 'پس از تأیید اولین پروفایل‌ها، این بخش به‌صورت خودکار تکمیل می‌شود.'}</p>
+            <p>{unavailable ? 'چند لحظه بعد دوباره تلاش کنید.' : 'پس از تأیید نخستین پروفایل‌ها، این بخش به‌صورت خودکار تکمیل می‌شود.'}</p>
           </div>
         )}
       </div>
@@ -905,10 +901,6 @@ export function WhyVodda() {
   );
 }
 
-export function Testimonials() {
-  return null;
-}
-
 function TeacherDashboardPreview() {
   return (
     <div className="teacher-preview-card" aria-hidden="true">
@@ -948,9 +940,9 @@ export function BecomeTeacher() {
         <div className="landing-teacher-cta">
           <div className="landing-teacher-cta-copy">
             <div className="landing-eyebrow"><Icon name="award" size={16} />برای استادان</div>
-            <h2>فضای حرفه‌ای خودت را در وُدّا بساز.</h2>
+            <h2>فضای حرفه‌ای خود را در وُدّا بسازید.</h2>
             <p>
-              خدمات، تعرفه و زمان‌های کاری را مدیریت کن، درخواست‌های جلسه را ببین و درآمد و برداشت‌ها را از یک فضای یکپارچه پیگیری کن.
+              خدمات، تعرفه و زمان‌های کاری را مدیریت کنید، درخواست‌های جلسه را ببینید و درآمد و برداشت‌ها را در یک فضای یکپارچه پیگیری کنید.
             </p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 9 }}>
               <WebBtn size="lg" href="/panel/teacher/register" icon="arrowL">ثبت درخواست استادی</WebBtn>
@@ -971,10 +963,10 @@ export function DownloadApp() {
         <div className="landing-app-cta-inner">
           <span className="landing-app-cta-icon"><Icon name="grid" size={25} /></span>
           <div style={{ minWidth: 0, flex: 1 }}>
-            <strong>تجربه کامل وُدّا داخل اپ</strong>
-            <p>همین رابط یکپارچه روی وب و نسخه‌های native در دسترس خواهد بود.</p>
+            <strong>تجربهٔ کامل وُدّا در اپ</strong>
+            <p>همین رابط یکپارچه در وب و نسخهٔ موبایل در دسترس است.</p>
           </div>
-          <WebBtn href="/app" variant="dark" icon="arrowL">باز کردن اپ وب</WebBtn>
+          <WebBtn href="/app" variant="dark" icon="arrowL">ورود به اپ وُدّا</WebBtn>
         </div>
       </div>
     </section>
@@ -1019,7 +1011,7 @@ export function Footer() {
 
         <div className="public-footer-bottom">
           <span>© {toFaDigits(new Date().getFullYear())} وُدّا</span>
-          <span>طراحی‌شده با تمرکز بر تجربه فارسی و RTL</span>
+          <span>همراه فارسی آموزش و خدمات قرآن کریم</span>
         </div>
       </div>
     </footer>

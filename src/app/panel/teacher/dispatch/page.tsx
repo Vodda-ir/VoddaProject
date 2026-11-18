@@ -6,7 +6,6 @@ import { PanelButton, PanelEmpty, PanelPageHeader, PanelStatus } from '@/compone
 import { api, toman } from '@/lib/api';
 import type { TeacherInboxData } from '@/lib/api';
 import { getToken } from '@/lib/auth';
-import { formatDateTime } from '@/lib/datetime';
 import { toFaDigits } from '@/lib/persian';
 
 function countdown(total: number) {
@@ -25,7 +24,7 @@ function whenLabel(call: { flexible: boolean; scheduled_at?: string | null }) {
   if (call.flexible || !call.scheduled_at) return '⚡ در اسرع وقت';
   const at = new Date(call.scheduled_at);
   if (Number.isNaN(at.getTime())) return '⚡ در اسرع وقت';
-  return `📅 ${formatDateTime(at, 'fa', 'weekdayDayMonth')}`;
+  return `📅 ${at.toLocaleString('fa-IR', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}`;
 }
 
 export default function TeacherDispatchPanel() {
@@ -131,7 +130,7 @@ export default function TeacherDispatchPanel() {
 
       {error ? <div className="ops-error" role="alert"><span>{error}</span><PanelButton onClick={() => void load()}>تلاش دوباره</PanelButton></div> : null}
 
-      <section className={`ops-data-surface${openCalls.length ? ' neon-frame' : ''}`}>
+      <section className="ops-data-surface">
         <div className="ops-data-head">
           <div>
             <strong>در انتظار پاسخ</strong>

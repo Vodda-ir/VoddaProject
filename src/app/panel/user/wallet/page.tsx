@@ -15,7 +15,6 @@ import { api, type LearnerAnalytics, type Transaction } from '@/lib/api';
 import { payViaSamanGate } from '@/lib/saman-gate';
 import { getToken } from '@/lib/auth';
 import { formatFaNumber } from '@/lib/persian';
-import { formatDate, formatTime } from '@/lib/datetime';
 
 type TabKey = 'all' | 'in' | 'out';
 type RangeKey = '7' | '14' | '30';
@@ -46,9 +45,14 @@ const RANGE_LABELS: Array<{ value: RangeKey; label: string }> = [
 ];
 
 function txTime(iso: string): string {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return '';
-  return `${formatDate(date, 'fa', 'short')} · ${formatTime(date)}`;
+  try {
+    const date = new Date(iso);
+    const day = new Intl.DateTimeFormat('fa-IR', { day: 'numeric', month: 'short' }).format(date);
+    const time = new Intl.DateTimeFormat('fa-IR', { hour: '2-digit', minute: '2-digit' }).format(date);
+    return `${day} · ${time}`;
+  } catch {
+    return '';
+  }
 }
 
 export default function UserWalletPage() {
@@ -168,9 +172,8 @@ export default function UserWalletPage() {
           position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center',
           justifyContent: 'space-between', gap: 18, flexWrap: 'wrap', marginBottom: 18,
           padding: '24px 26px', borderRadius: 22, color: '#fff',
-          border: '1.5px solid rgba(191,149,64,.55)',
           background: 'radial-gradient(120% 170% at 88% -18%, rgba(191,149,64,.4) 0%, rgba(191,149,64,0) 52%), linear-gradient(135deg, var(--olive-800) 0%, var(--olive-600) 74%, var(--olive-500) 100%)',
-          boxShadow: '0 0 0 1px rgba(191,149,64,.16), 0 0 24px rgba(191,149,64,.30), 0 0 52px rgba(191,149,64,.14), 0 14px 34px rgba(46,54,34,.22), inset 0 0 26px rgba(191,149,64,.10)',
+          boxShadow: '0 14px 34px rgba(46,54,34,.22)',
         }}
       >
         <div style={{ position: 'relative', zIndex: 1, minWidth: 0 }}>
@@ -254,7 +257,7 @@ export default function UserWalletPage() {
           <div style={{ display: 'flex', gap: 10, alignItems: 'stretch', flexWrap: 'wrap' }}>
             <label style={{ position: 'relative', flex: '1 1 220px', minWidth: 0 }}>
               <span className="sr-only">مبلغ شارژ (تومان)</span>
-              <input className="input-base"
+              <input
                 inputMode="numeric"
                 value={topupAmount ? faDigits(formatFaNumber(parsedTopup)) : ''}
                 onChange={(event) => {
@@ -265,7 +268,7 @@ export default function UserWalletPage() {
                 placeholder="مثلاً ۱۵۰٬۰۰۰"
                 aria-label="مبلغ شارژ (تومان)"
                 style={{
-                  width: '100%', paddingInline: '14px 46px', paddingBlock: 12, borderRadius: 13,
+                  width: '100%', padding: '12px 14px', borderRadius: 13,
                   border: '1px solid var(--line, #e4e0d5)', background: '#fff',
                   fontSize: 15, fontWeight: 700, color: 'var(--ink, #3c4433)',
                   outline: 'none', textAlign: 'left',
@@ -323,7 +326,7 @@ export default function UserWalletPage() {
               { value: 'out', label: 'خروجی' },
             ]}
             value={tab}
-            onChange={(v) => setTab(v as TabKey)}
+            onChange={setTab}
             counts={counts}
           />
           <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>

@@ -12,9 +12,11 @@ import {
   Icon,
   IconBadge,
   LoadingState,
+  OrnamentDivider,
   SectionHeader,
   Sheet,
   colors,
+  gradients,
   radii,
   shadows,
   spacing,
@@ -22,6 +24,10 @@ import {
 } from "../../ui";
 import { useMinWidth } from "../../ui/useMediaQuery";
 import { messageOf } from "../../ui/errorMessage";
+import { useAppearance } from "../../ui/appearance";
+import { localizedDigits } from "../../ui/persian";
+import { todayAppDateLabel } from "../../ui/jalali";
+import { resolveAssetUrl } from "../../platform/asset";
 import { RoleModeSheet } from "../auth/RoleModeSheet";
 import { avatarSrc, uploadsOriginOf } from "@/lib/avatarImage";
 import { formatDate, formatNumber, tehranHour } from "@/lib/datetime";
@@ -810,6 +816,7 @@ function NotificationsBell({
 
 export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
   const runtime = usePlatform();
+  const { L } = useAppearance();
   const wide = useMinWidth(768);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
@@ -1163,10 +1170,10 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
       {teachersError && teachers.length === 0 ? (
         <Card elevated style={{ display: "grid", gap: spacing.md, textAlign: "center" }}>
           <IconBadge icon="users" tone="olive" size={52} />
-          <strong style={{ ...typography.title, color: colors.ink }}>دریافت استادان ناموفق بود</strong>
-          <span style={{ ...typography.caption, color: colors.inkMuted }}>{teachersError}</span>
+          <strong style={{ ...typography.title, color: colors.ink }}>{L("دریافت استادان ناموفق بود")}</strong>
+          <span style={{ ...typography.caption, color: colors.inkMuted }}>{L(teachersError)}</span>
           <Button variant="secondary" onClick={() => setReloadKey((value) => value + 1)}>
-            تلاش دوباره
+            {L("تلاش دوباره")}
           </Button>
         </Card>
       ) : null}

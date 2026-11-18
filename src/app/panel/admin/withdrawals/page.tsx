@@ -17,9 +17,9 @@ import {
   StatCard,
   TablePagination,
 } from '@/components/admin/AdminUI';
-import { avatarUrl, fullUrl, getToken } from '@/lib/auth';
+import { fullUrl, getToken } from '@/lib/auth';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
-import { formatDateTime } from '@/lib/datetime';
+import { confirmDialog } from '@/lib/confirm';
 
 type WithdrawalStatus = '' | 'pending' | 'paid' | 'rejected';
 
@@ -50,7 +50,9 @@ const STATUS_BADGE: Record<string, { label: string; tone: string }> = {
 function formatDate(value?: string) {
   if (!value) return '—';
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? '—' : formatDateTime(date);
+  return Number.isNaN(date.getTime())
+    ? '—'
+    : new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium', timeStyle: 'short' }).format(date);
 }
 
 function bankAccount(withdrawal: Withdrawal): string {
@@ -99,7 +101,7 @@ export default function AdminWithdrawals() {
     const warning = paid
       ? 'فقط پس از انجام واقعی انتقال بانکی، وضعیت را پرداخت‌شده کنید. ادامه می‌دهید؟'
       : 'با رد درخواست، مبلغ رزروشده به کیف پول استاد بازمی‌گردد. ادامه می‌دهید؟';
-    if (!window.confirm(warning)) return;
+    if (!(await confirmDialog(warning))) return;
 
     setBusyId(withdrawal.id);
     setError('');
@@ -190,7 +192,7 @@ export default function AdminWithdrawals() {
             header: 'استاد',
             render: (withdrawal) => (
               <div className="adm-cell-main">
-                <Avatar size={40} imageUrl={avatarUrl(withdrawal.user?.avatar_url, withdrawal.user?.updated_at)} />
+                <Avatar size={40} imageUrl={fullUrl(withdrawal.user?.avatar_url)} />
                 <div style={{ minWidth: 0 }}>
                   <strong>{withdrawal.user?.name || 'استاد'}</strong>
                   <small>#{toFaDigits(withdrawal.id)}</small>
@@ -268,7 +270,7 @@ export default function AdminWithdrawals() {
         {selected && (
           <>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '6px 2px 14px' }}>
-              <Avatar size={54} imageUrl={avatarUrl(selected.user?.avatar_url, selected.user?.updated_at)} />
+              <Avatar size={54} imageUrl={fullUrl(selected.user?.avatar_url)} />
               <div>
                 <strong style={{ display: 'block', fontSize: 14, color: 'var(--olive-700)' }}>{formatFaNumber(Number(selected.amount || 0))} تومان</strong>
                 <span className="adm-badge" data-tone={STATUS_BADGE[selected.status || 'pending']?.tone} style={{ marginTop: 5 }}>

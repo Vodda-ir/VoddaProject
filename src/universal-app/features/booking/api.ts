@@ -1,5 +1,6 @@
 import { asArray, type ApiEnvelope } from "../../platform/api";
 import type { PlatformRuntime } from "../../platform/types";
+import { APP_LANDING_SESSIONS } from "../payments/landing";
 import { parseBookingSlot, type BookingSlot } from "./types";
 
 export async function getBookingAvailability(
@@ -31,7 +32,7 @@ export async function getBookingAvailability(
     );
 }
 
-export type BookingPaymentMethod = "wallet" | "gateway";
+export type BookingPaymentMethod = "wallet" | "gateway" | ""; // "" = جلسهٔ رایگان
 
 export type BookingGatewayResult = {
   session: unknown;
@@ -43,7 +44,7 @@ export type BookingGatewayResult = {
 
 export async function createBooking(
   runtime: PlatformRuntime,
-  input: { teacherId: number; serviceId: number; scheduledAt: string; note?: string; paymentMethod?: BookingPaymentMethod },
+  input: { teacherId: number; serviceId: number; scheduledAt: string; note?: string; paymentMethod?: BookingPaymentMethod; instant?: boolean },
 ) {
   return runtime.request<ApiEnvelope<BookingGatewayResult>>("/sessions", {
     method: "POST",
@@ -53,6 +54,11 @@ export async function createBooking(
       scheduled_at: input.scheduledAt,
       note: input.note?.trim() ?? "",
       payment_method: input.paymentMethod ?? "wallet",
+      // جلسهٔ فوری — رزرو همین‌لحظه (نیازمند فعال‌بودن کلید استاد)
+      instant: input.instant === true,
+      // بعد از راند‌تریپ درگاه، کاربر به فهرست جلسات اپ یونیورسال برمی‌گردد
+      // (نه پنل قدیمی) — قرارداد در backend: sanitizeReturnPath.
+      return_to: APP_LANDING_SESSIONS,
     }),
   });
 }
@@ -64,7 +70,7 @@ export async function payBooking(
 ): Promise<{ token: string; res_num: string; amount: number }> {
   const response = await runtime.request<ApiEnvelope<{ token?: string; res_num?: string; amount?: number }>>(
     `/sessions/${sessionId}/pay`,
-    { method: "POST" },
+    { method: "POST", body: JSON.stringify({ return_to: APP_LANDING_SESSIONS }) },
   );
   if (!response.data?.token) throw new Error("توکن درگاه پرداخت دریافت نشد.");
   return { token: response.data.token, res_num: response.data.res_num ?? "", amount: response.data.amount ?? 0 };

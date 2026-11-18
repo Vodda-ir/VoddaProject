@@ -16,6 +16,8 @@ export type LearnerSession = {
   rated: boolean;
   note: string;
   rejectNote: string;
+  /** جلسهٔ فوری — رزروِ همین‌لحظه. */
+  instant: boolean;
 };
 
 type UnknownRecord = Record<string, unknown>;
@@ -65,6 +67,7 @@ export function parseLearnerSession(value: unknown): LearnerSession | null {
     rated: row.rated === true,
     note: text(row.note),
     rejectNote: text(row.reject_note),
+    instant: row.instant === true,
   };
 }
 

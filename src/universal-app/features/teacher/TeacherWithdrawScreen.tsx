@@ -6,8 +6,10 @@ import { asArray, asNumber, asRecord, asString, type ApiEnvelope } from "../../p
 import { usePlatform } from "../../platform/context";
 import type { PlatformRuntime } from "../../platform/types";
 import { navigateApp } from "../../router";
-import { Button, Card, EmptyState, ErrorState, Icon, LoadingState, SectionHeader, StatusPill, colors, digitsOnly, radii, spacing, toFaDigits, toLatinDigits, typography } from "../../ui";
-import { formatDate } from "@/lib/datetime";
+import { Button, Card, EmptyState, ErrorState, Icon, LoadingState, SectionHeader, StatusPill, colors, digitsOnly, radii, spacing, toLatinDigits, typography } from "../../ui";
+import { useAppearance } from "../../ui/appearance";
+import { formatAppDateTime } from "../../ui/jalali";
+import { localizedDigits } from "../../ui/persian";
 import { messageOf } from "../../ui/errorMessage";
 import { getWalletSnapshot } from "../wallet/api";
 import { formatWalletAmount } from "../wallet/WalletTransactionCard";
@@ -59,19 +61,26 @@ function cleanSheba(value: string): string {
   return toLatinDigits(value).replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 26);
 }
 
-function cardDisplay(value: string): string {
-  return toFaDigits(value.replace(/(\d{4})(?=\d)/g, "$1 "));
+function cardDisplay(value: string, lang: "fa" | "en"): string {
+  return localizedDigits(value.replace(/(\d{4})(?=\d)/g, "$1 "), lang);
 }
 
-function dateLabel(value: string): string {
-  // باگ persian-dates — تاریخ شمسی از util مرکزی، نه getFullYear میلادی
-  return formatDate(new Date(value), "fa", "medium");
+type Translate = (text: string) => string;
+
+function amountLabel(value: number, lang: "fa" | "en"): string {
+  return lang === "en"
+    ? new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(Math.max(0, value))
+    : formatWalletAmount(value, lang);
 }
 
-function statusLabel(status: string): string {
-  if (status === "paid") return "پرداخت‌شده";
-  if (status === "rejected") return "ردشده";
-  return "در انتظار بررسی";
+function dateLabel(value: string, lang: "fa" | "en"): string {
+  return formatAppDateTime(value, lang, { withTime: false });
+}
+
+function statusLabel(status: string, L: Translate): string {
+  if (status === "paid") return L("پرداخت‌شده");
+  if (status === "rejected") return L("ردشده");
+  return L("در انتظار بررسی");
 }
 
 const inputStyle = {
@@ -88,6 +97,7 @@ const inputStyle = {
 
 export function TeacherWithdrawScreen({ config }: { config: UniversalAppConfig }) {
   const runtime = usePlatform();
+  const { L, lang } = useAppearance();
   const [balance, setBalance] = useState<number | null>(null);
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
   const [amount, setAmount] = useState("");
@@ -164,7 +174,7 @@ export function TeacherWithdrawScreen({ config }: { config: UniversalAppConfig }
       setAmount("");
       setCard("");
       setSheba("");
-      setSuccess(`درخواست برداشت ${formatWalletAmount(normalizedAmount)} تومان ثبت شد و تا تعیین وضعیت از موجودی رزرو می‌شود.`);
+      setSuccess(L("درخواست برداشت {n} تومان ثبت شد و تا تعیین وضعیت از موجودی رزرو می‌شود.").replace("{n}", amountLabel(normalizedAmount, lang)));
       await load();
     } catch (submitError) {
       setFormError(messageOf(submitError));
@@ -181,10 +191,10 @@ export function TeacherWithdrawScreen({ config }: { config: UniversalAppConfig }
             <Icon name="checkCircle" size={52} stroke={1.8} />
           </span>
           <div>
-            <h2 style={{ fontSize: 22, fontWeight: 800, margin: 0, color: colors.ink }}>درخواست برداشت ثبت شد</h2>
+            <h2 style={{ fontSize: 22, fontWeight: 800, margin: 0, color: colors.ink }}>{L("درخواست برداشت ثبت شد")}</h2>
             <p style={{ ...typography.body, maxWidth: 420, margin: "10px 0 0", color: colors.inkSecondary, lineHeight: 2 }}>{success}</p>
           </div>
-          <Button fullWidth onClick={() => navigateApp("/t/wallet", config)} style={{ minHeight: 52 }}>بازگشت به کیف پول</Button>
+          <Button fullWidth onClick={() => navigateApp("/t/wallet", config)} style={{ minHeight: 52 }}>{L("بازگشت به کیف پول")}</Button>
         </div>
       </section>
     );
@@ -192,69 +202,69 @@ export function TeacherWithdrawScreen({ config }: { config: UniversalAppConfig }
 
   return (
     <section className="vodda-screen" style={{ display: "grid", gap: spacing.xl }}>
-      {loading ? <LoadingState label="در حال دریافت وضعیت برداشت‌ها…" /> : null}
+      {loading ? <LoadingState label={L("در حال دریافت وضعیت برداشت‌ها…")} /> : null}
       {!loading && error ? (
-        <ErrorState title="دریافت برداشت‌ها ناموفق بود" description={error} action={<Button onClick={() => void load()}>تلاش دوباره</Button>} />
+        <ErrorState title={L("دریافت برداشت‌ها ناموفق بود")} description={L(error)} action={<Button onClick={() => void load()}>{L("تلاش دوباره")}</Button>} />
       ) : null}
 
       {!loading && !error ? (
         <>
           <div style={{ display: "grid", gap: 22 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: spacing.md, padding: 16, borderRadius: 18, background: colors.olive50 }}>
-              <span style={{ fontSize: 13, color: colors.inkSecondary }}>موجودی قابل برداشت</span>
+              <span style={{ fontSize: 13, color: colors.inkSecondary }}>{L("موجودی قابل برداشت")}</span>
               <strong style={{ fontSize: 16, fontWeight: 800, color: colors.olive700 }}>
-                {balance === null ? "—" : `${formatWalletAmount(balance)} تومان`}
+                {balance === null ? "—" : L("{n} تومان").replace("{n}", amountLabel(balance, lang))}
               </strong>
             </div>
 
             <div style={{ display: "grid", gap: spacing.md }}>
             <label style={{ display: "grid", gap: spacing.xs }}>
-              <span style={{ ...typography.bodySmall, fontWeight: 700 }}>مبلغ برداشت</span>
-              <input className="vodda-input" value={toFaDigits(amount)} onChange={(event) => setAmount(digitsOnly(event.target.value))} inputMode="numeric" placeholder="مثلاً ۵۰۰۰۰۰" style={inputStyle} />
+              <span style={{ ...typography.bodySmall, fontWeight: 700 }}>{L("مبلغ برداشت")}</span>
+              <input value={localizedDigits(amount, lang)} onChange={(event) => setAmount(digitsOnly(event.target.value))} inputMode="numeric" placeholder={L("مثلاً ۵۰۰۰۰۰")} style={inputStyle} />
             </label>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: spacing.xs }}>
               {[500000, 1000000, 2000000].map((quickAmount) => (
-                <Button key={quickAmount} variant="secondary" onClick={() => setAmount(String(quickAmount))}>{quickAmount >= 1000000 ? `${formatWalletAmount(quickAmount / 1000000)} میلیون` : `${formatWalletAmount(quickAmount / 1000)} هزار`}</Button>
+                <Button key={quickAmount} variant="secondary" onClick={() => setAmount(String(quickAmount))}>{quickAmount >= 1000000 ? L("{n} میلیون").replace("{n}", amountLabel(quickAmount / 1000000, lang)) : L("{n} هزار").replace("{n}", amountLabel(quickAmount / 1000, lang))}</Button>
               ))}
             </div>
 
             <div>
-              <strong style={{ ...typography.body, display: "block" }}>حساب مقصد</strong>
-              <span style={{ ...typography.caption, color: colors.inkMuted }}>حداقل یکی از شماره کارت یا شبا الزامی است.</span>
+              <strong style={{ ...typography.body, display: "block" }}>{L("حساب مقصد")}</strong>
+              <span style={{ ...typography.caption, color: colors.inkMuted }}>{L("حداقل یکی از شماره کارت یا شبا الزامی است.")}</span>
             </div>
             <label style={{ display: "grid", gap: spacing.xs }}>
-              <span style={{ ...typography.bodySmall, fontWeight: 700 }}>شماره کارت (اختیاری)</span>
-              <input className="vodda-input" value={cardDisplay(card)} onChange={(event) => setCard(cleanCard(event.target.value))} inputMode="numeric" dir="ltr" maxLength={19} placeholder="۶۰۳۷ ۹۹۷۵ ۱۲۳۴ ۵۶۷۸" style={inputStyle} />
+              <span style={{ ...typography.bodySmall, fontWeight: 700 }}>{L("شماره کارت (اختیاری)")}</span>
+              <input value={cardDisplay(card, lang)} onChange={(event) => setCard(cleanCard(event.target.value))} inputMode="numeric" dir="ltr" maxLength={19} placeholder={L("۶۰۳۷ ۹۹۷۵ ۱۲۳۴ ۵۶۷۸")} style={inputStyle} />
             </label>
             <label style={{ display: "grid", gap: spacing.xs }}>
-              <span style={{ ...typography.bodySmall, fontWeight: 700 }}>شماره شبا (اختیاری)</span>
-              <input className="vodda-input" value={toFaDigits(sheba)} onChange={(event) => setSheba(cleanSheba(event.target.value))} dir="ltr" maxLength={26} placeholder="IR۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰" style={inputStyle} />
+              <span style={{ ...typography.bodySmall, fontWeight: 700 }}>{L("شماره شبا (اختیاری)")}</span>
+              <input value={localizedDigits(sheba, lang)} onChange={(event) => setSheba(cleanSheba(event.target.value))} dir="ltr" maxLength={26} placeholder={L("IR۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰")} style={inputStyle} />
             </label>
 
             <Card style={{ background: colors.goldBackground, border: `1px solid ${colors.goldSoft}` }}>
               <p style={{ ...typography.bodySmall, margin: 0, color: colors.inkSecondary }}>
-                ثبت درخواست به معنی انتقال بانکی نیست. مبلغ تا پرداخت یا رد درخواست از موجودی شما رزرو می‌شود.
+                {L("ثبت درخواست به معنی انتقال بانکی نیست. مبلغ تا پرداخت یا رد درخواست از موجودی شما رزرو می‌شود.")}
               </p>
             </Card>
-            {formError ? <p role="alert" style={{ ...typography.bodySmall, margin: 0, color: colors.clay }}>{formError}</p> : null}
-            <Button fullWidth loading={busy} disabled={busy} onClick={() => void submit()}><Icon name="download" size={18} />ثبت درخواست برداشت</Button>
+            {formError ? <p role="alert" style={{ ...typography.bodySmall, margin: 0, color: colors.clay }}>{L(formError)}</p> : null}
+            <Button fullWidth loading={busy} disabled={busy} onClick={() => void submit()}><Icon name="download" size={18} />{L("ثبت درخواست برداشت")}</Button>
             </div>
           </div>
 
-          <SectionHeader title="تاریخچه برداشت" action="به‌روزرسانی" onAction={() => void load()} />
+          <SectionHeader title={L("تاریخچه برداشت")} action={L("به‌روزرسانی")} onAction={() => void load()} />
           {withdrawals.length === 0 ? (
-            <EmptyState icon={<Icon name="download" size={30} />} title="درخواستی ثبت نشده" description="پس از ثبت برداشت، وضعیت آن در این بخش قابل پیگیری است." />
+            <EmptyState icon={<Icon name="download" size={30} />} title={L("درخواستی ثبت نشده")} description={L("پس از ثبت برداشت، وضعیت آن در این بخش قابل پیگیری است.")} />
           ) : (
             <div style={{ display: "grid", gap: spacing.sm }}>
               {withdrawals.map((withdrawal) => (
                 <Card key={withdrawal.id} style={{ display: "grid", gap: spacing.sm }}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: spacing.md }}>
-                    <strong style={typography.body}>{formatWalletAmount(withdrawal.amount)} تومان</strong>
-                    <StatusPill status={withdrawal.status} label={statusLabel(withdrawal.status)} />
+                    <strong style={typography.body}>{L("{n} تومان").replace("{n}", amountLabel(withdrawal.amount, lang))}</strong>
+                    <StatusPill status={withdrawal.status} label={statusLabel(withdrawal.status, L)} />
                   </div>
                   <div style={{ ...typography.caption, color: colors.inkMuted }}>
-                    {withdrawal.card ? `کارت: ${toFaDigits(withdrawal.card)}` : withdrawal.sheba ? `شبا: ${toFaDigits(withdrawal.sheba)}` : "حساب مقصد"}
-                    {withdrawal.createdAt ? ` · ${dateLabel(withdrawal.createdAt)}` : ""}
+                    {withdrawal.card ? L("کارت: {n}").replace("{n}", localizedDigits(withdrawal.card, lang)) : withdrawal.sheba ? L("شبا: {n}").replace("{n}", localizedDigits(withdrawal.sheba, lang)) : L("حساب مقصد")}
+                    {withdrawal.createdAt ? ` · ${dateLabel(withdrawal.createdAt, lang)}` : ""}
                   </div>
                 </Card>
               ))}

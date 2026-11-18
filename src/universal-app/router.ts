@@ -11,10 +11,18 @@ export type AppRouteName =
   | "teacher"
   | "book"
   | "sessions"
+  | "session"
   | "wallet"
   | "profile"
   | "profile-edit"
   | "dispatch"
+  | "call-hub"
+  | "ceremony-new"
+  | "ceremony-calls"
+  | "ceremony-call"
+  | "ceremony-booking"
+  | "presence"
+  | "presence-provider"
   | "teacher-home"
   | "teacher-requests"
   | "teacher-sessions"
@@ -25,6 +33,8 @@ export type AppRouteName =
   | "teacher-profile"
   | "teacher-reviews"
   | "teacher-dispatch"
+  | "teacher-ceremony"
+  | "teacher-presence"
   | "not-found";
 
 export type AppRoute = {
@@ -43,6 +53,10 @@ export const appRoutePaths = {
   profile: "/profile",
   "profile-edit": "/profile/edit",
   dispatch: "/dispatch",
+  "call-hub": "/call",
+  "ceremony-new": "/ceremony/new",
+  "ceremony-calls": "/ceremony/calls",
+  presence: "/presence",
   "teacher-home": "/t",
   "teacher-requests": "/t/requests",
   "teacher-sessions": "/t/sessions",
@@ -53,10 +67,34 @@ export const appRoutePaths = {
   "teacher-profile": "/t/profile",
   "teacher-reviews": "/t/reviews",
   "teacher-dispatch": "/t/dispatch",
+  "teacher-ceremony": "/t/ceremony",
+  "teacher-presence": "/t/presence",
 } as const;
 
 export type StaticAppRouteName = keyof typeof appRoutePaths;
-type DynamicAppRouteName = "teacher" | "book" | "service";
+export type DynamicAppRouteName =
+  | "teacher"
+  | "book"
+  | "service"
+  | "session"
+  | "ceremony-call"
+  | "ceremony-booking"
+  | "presence-provider";
+
+/** مسیرهای داینامیک: الگوی matching + پیشوند ساخت URL از نام مسیر. */
+const dynamicRoutes: Record<DynamicAppRouteName, { pattern: RegExp; prefix: string }> = {
+  teacher: { pattern: /^\/teacher\/(?<id>[^/]+)$/, prefix: "/teacher" },
+  book: { pattern: /^\/book\/(?<id>[^/]+)$/, prefix: "/book" },
+  service: { pattern: /^\/service\/(?<id>[^/]+)$/, prefix: "/service" },
+  session: { pattern: /^\/session\/(?<id>[^/]+)$/, prefix: "/session" },
+  "ceremony-call": { pattern: /^\/ceremony\/calls\/(?<id>[^/]+)$/, prefix: "/ceremony/calls" },
+  "ceremony-booking": { pattern: /^\/ceremony\/bookings\/(?<id>[^/]+)$/, prefix: "/ceremony/bookings" },
+  "presence-provider": { pattern: /^\/presence\/(?<id>[^/]+)$/, prefix: "/presence" },
+};
+
+function isDynamicAppRouteName(name: AppRouteName): name is DynamicAppRouteName {
+  return Object.prototype.hasOwnProperty.call(dynamicRoutes, name);
+}
 
 const listeners = new Set<() => void>();
 let listening = false;
@@ -109,21 +147,20 @@ export function resolveAppRoute(
   );
   const staticName = staticRoutes[path];
   if (staticName) return { name: staticName, pathname: path, params: {} };
-  return (
-    segmentMatch(path, /^\/teacher\/(?<id>[^/]+)$/, "teacher") ??
-    segmentMatch(path, /^\/service\/(?<id>[^/]+)$/, "service") ??
-    segmentMatch(path, /^\/book\/(?<id>[^/]+)$/, "book") ??
-    { name: "not-found", pathname: path, params: {} }
-  );
+  for (const name of Object.keys(dynamicRoutes) as DynamicAppRouteName[]) {
+    const matched = segmentMatch(path, dynamicRoutes[name].pattern, name);
+    if (matched) return matched;
+  }
+  return { name: "not-found", pathname: path, params: {} };
 }
 
 export function appPath(name: StaticAppRouteName): string;
 export function appPath(name: DynamicAppRouteName, params: { id: string }): string;
 export function appPath(name: StaticAppRouteName | DynamicAppRouteName, params?: { id: string }) {
-  if (name === "teacher" || name === "book" || name === "service") {
+  if (isDynamicAppRouteName(name)) {
     const id = params?.id?.trim();
     if (!id) throw new Error(`Missing route parameter \"id\" for ${name}`);
-    return `/${name}/${encodeURIComponent(id)}`;
+    return `${dynamicRoutes[name].prefix}/${encodeURIComponent(id)}`;
   }
   return appRoutePaths[name];
 }
@@ -150,7 +187,7 @@ export function appRouteUrl(
   paramsOrConfig?: { id: string } | UniversalAppConfig,
   maybeConfig: UniversalAppConfig = defaultUniversalAppConfig,
 ) {
-  if (name === "teacher" || name === "book" || name === "service") {
+  if (isDynamicAppRouteName(name)) {
     return appUrl(appPath(name, paramsOrConfig as { id: string }), maybeConfig);
   }
   return appUrl(appPath(name), (paramsOrConfig as UniversalAppConfig | undefined) ?? defaultUniversalAppConfig);
@@ -185,7 +222,7 @@ export function navigateAppRoute(
   configOrOptions?: UniversalAppConfig | { replace?: boolean },
   maybeOptions: { replace?: boolean } = {},
 ) {
-  if (name === "teacher" || name === "book" || name === "service") {
+  if (isDynamicAppRouteName(name)) {
     navigateApp(
       appPath(name, paramsOrConfig as { id: string }),
       (configOrOptions as UniversalAppConfig | undefined) ?? defaultUniversalAppConfig,

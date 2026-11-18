@@ -13,7 +13,7 @@ import {
 } from '@/components/panel/PanelUI';
 import { SearchInput } from '@/components/admin/AdminUI';
 import { api, type Teacher } from '@/lib/api';
-import { avatarUrl, fullUrl } from '@/lib/auth';
+import { avatarUrl } from '@/lib/auth';
 import { categoryOf, groupCatalog, teachersForTopics, type CatalogCategory } from '@/lib/category';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
 

@@ -147,10 +147,17 @@ export default async function TeacherDetailPage({
                           <strong>{service.title}</strong>
                           <span>{toFaDigits(service.duration)} دقیقه</span>
                         </div>
-                        <div className="teacher-service-price">
-                          <strong>{formatFaNumber(service.price)}</strong>
-                          <span>تومان</span>
-                        </div>
+                        {service.price === 0 ? (
+                          <div className="teacher-service-price" style={{ color: '#8b681f' }}>
+                            <strong>رایگان</strong>
+                            <span>بدون هزینه</span>
+                          </div>
+                        ) : (
+                          <div className="teacher-service-price">
+                            <strong>{formatFaNumber(service.price)}</strong>
+                            <span>تومان</span>
+                          </div>
+                        )}
                       </div>
                     </PublicSurface>
                   ))}

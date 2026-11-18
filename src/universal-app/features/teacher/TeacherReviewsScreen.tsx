@@ -2,9 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { asArray, asNumber, asRecord, asString, type ApiEnvelope } from "../../platform/api";
-import { formatDate } from "@/lib/datetime";
 import { usePlatform } from "../../platform/context";
 import { avatarSrc, uploadsOriginOf } from "@/lib/avatarImage";
+import { useAppearance } from "../../ui/appearance";
+import { formatAppDateTime } from "../../ui/jalali";
+import { localizedDigits } from "../../ui/persian";
 import { messageOf } from "../../ui/errorMessage";
 import {
   Avatar,
@@ -19,7 +21,6 @@ import {
   spacing,
   typography,
 } from "../../ui";
-import { toFaDigits } from "../wallet/WalletTransactionCard";
 
 type Review = {
   id: number;
@@ -46,8 +47,14 @@ function parseReview(value: unknown): Review | null {
   };
 }
 
+function formatDate(value: string, lang: "fa" | "en"): string {
+  if (!value) return "";
+  return formatAppDateTime(value, lang, { withTime: false });
+}
+
 export function TeacherReviewsScreen() {
   const runtime = usePlatform();
+  const { L, lang, N } = useAppearance();
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -83,13 +90,13 @@ export function TeacherReviewsScreen() {
     return reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length;
   }, [reviews]);
 
-  if (loading) return <LoadingState label="در حال دریافت نظرها…" />;
+  if (loading) return <LoadingState label={L("در حال دریافت نظرها…")} />;
   if (error) {
     return (
       <ErrorState
-        title="دریافت نظرها ناموفق بود"
-        description={error}
-        action={<Button onClick={() => void load()}>تلاش دوباره</Button>}
+        title={L("دریافت نظرها ناموفق بود")}
+        description={L(error)}
+        action={<Button onClick={() => void load()}>{L("تلاش دوباره")}</Button>}
       />
     );
   }
@@ -98,8 +105,8 @@ export function TeacherReviewsScreen() {
     return (
       <EmptyState
         icon={<Icon name="message" size={30} />}
-        title="هنوز نظری ثبت نشده"
-        description="پس از تکمیل جلسه، نظرهای ثبت‌شده قرآن‌آموزان در این صفحه نمایش داده می‌شود."
+        title={L("هنوز نظری ثبت نشده")}
+        description={L("پس از تکمیل جلسه، نظرهای ثبت‌شده قرآن‌آموزان در این صفحه نمایش داده می‌شود.")}
       />
     );
   }
@@ -107,8 +114,8 @@ export function TeacherReviewsScreen() {
   return (
     <section className="vodda-screen" style={{ display: "grid", gap: spacing.xl }}>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: spacing.sm }}>
-        <MetricTile icon="star" tone="gold" label="میانگین امتیاز" value={toFaDigits(average.toFixed(1)) + " ★"} />
-        <MetricTile icon="message" tone="info" label="تعداد نظرها" value={toFaDigits(reviews.length)} />
+        <MetricTile icon="star" tone="gold" label={L("میانگین امتیاز")} value={localizedDigits(average.toFixed(1), lang) + " ★"} />
+        <MetricTile icon="message" tone="info" label={L("تعداد نظرها")} value={localizedDigits(reviews.length, lang)} />
       </div>
 
       <div style={{ display: "grid", gap: spacing.sm }}>
@@ -117,17 +124,17 @@ export function TeacherReviewsScreen() {
             <div style={{ display: "flex", alignItems: "center", gap: spacing.sm }}>
               <Avatar name={review.learnerName} src={avatarSrc(review.learnerAvatar, undefined, uploadsOriginOf(runtime.apiBaseUrl))} size={46} ring />
               <div style={{ minWidth: 0, flex: 1 }}>
-                <strong style={{ ...typography.body, display: "block" }}>{review.learnerName}</strong>
+                <strong style={{ ...typography.body, display: "block" }}>{N(review.learnerName)}</strong>
                 {review.createdAt ? (
-                  <span style={{ ...typography.caption, color: colors.inkMuted }}>{formatDate(review.createdAt)}</span>
+                  <span style={{ ...typography.caption, color: colors.inkMuted }}>{formatDate(review.createdAt, lang)}</span>
                 ) : null}
               </div>
-              <span aria-label={`امتیاز ${review.rating} از ۵`} style={{ display: "inline-flex", alignItems: "center", gap: 3, ...typography.body, color: colors.goldDark, fontWeight: 900 }}><Icon name="star" size={15} fill style={{ color: colors.gold }} />{toFaDigits(review.rating)}</span>
+              <span aria-label={L("امتیاز {n} از ۵").replace("{n}", localizedDigits(review.rating, lang))} style={{ display: "inline-flex", alignItems: "center", gap: 3, ...typography.body, color: colors.goldDark, fontWeight: 900 }}><Icon name="star" size={15} fill style={{ color: colors.gold }} />{localizedDigits(review.rating, lang)}</span>
             </div>
             {review.text.trim() ? (
-              <p style={{ ...typography.body, margin: 0, color: colors.inkSecondary, whiteSpace: "pre-wrap" }}>{review.text}</p>
+              <p style={{ ...typography.body, margin: 0, color: colors.inkSecondary, whiteSpace: "pre-wrap" }}>{L(review.text)}</p>
             ) : (
-              <p style={{ ...typography.caption, margin: 0, color: colors.inkMuted }}>بدون متن</p>
+              <p style={{ ...typography.caption, margin: 0, color: colors.inkMuted }}>{L("بدون متن")}</p>
             )}
           </Card>
         ))}

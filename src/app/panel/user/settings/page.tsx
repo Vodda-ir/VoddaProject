@@ -13,12 +13,11 @@ import {
 import { KeyValueRow } from '@/components/admin/AdminUI';
 import { avatarUrl as withVersion, getToken } from '@/lib/auth';
 import { toFaDigits } from '@/lib/persian';
-import { formatDate } from '@/lib/datetime';
 import {
   announceAvatarUpdated,
-  compressAvatarFile,
+  AvatarPrepareError,
+  prepareAvatarUpload,
   uploadWithProgress,
-  validateAvatarFile,
 } from '@/lib/avatarImage';
 
 type MeState = {
@@ -113,27 +112,20 @@ export default function UserSettingsPage() {
     }
   }
 
-  async function uploadAvatar(file: File) {
-    if (!token || !file) return;
+  async function uploadAvatar(rawFile: File) {
+    if (!token || !rawFile) return;
     setUploading(true);
     setUploadPercent(0);
     setMsg('');
     setError('');
-    // باگ avatar-upload — اعتبارسنجی شفاف حجم/فرمت قبل از ارسال (بدون خطای بی‌صدا).
-    const validationError = validateAvatarFile(file);
-    if (validationError) {
-      setError(validationError);
-      setUploading(false);
-      if (fileRef.current) fileRef.current.value = '';
-      return;
-    }
     try {
-      const prepared = await compressAvatarFile(file);
+      // HEIC/عکس‌های بزرگ به JPEG استاندارد تبدیل و تصاویر خالی رد می‌شوند (مشاهدهٔ lib).
+      const file = await prepareAvatarUpload(rawFile);
       const form = new FormData();
       form.append('name', name);
       form.append('city', city);
       form.append('bio', bio);
-      form.append('avatar', prepared, prepared.name || 'avatar.jpg');
+      form.append('avatar', file, file.name || 'avatar.jpg');
       // باگ avatar-upload — آپلود با progress واقعی و پیام خطای دقیق سرور.
       const result = await uploadWithProgress('/api/backend/me', form, (fraction) => {
         setUploadPercent(Math.round(fraction * 100));
@@ -148,7 +140,11 @@ export default function UserSettingsPage() {
       }
       setMsg('تصویر پروفایل با موفقیت به‌روزرسانی شد.');
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'بارگذاری تصویر انجام نشد.');
+      if (cause instanceof AvatarPrepareError) {
+        setError(cause.message);
+      } else {
+        setError(cause instanceof Error ? cause.message : 'بارگذاری تصویر انجام نشد.');
+      }
     } finally {
       setUploading(false);
       setUploadPercent(0);
@@ -198,10 +194,10 @@ export default function UserSettingsPage() {
                 >
                   <Icon name="camera" size={14} />
                 </button>
-                <input className="input-base"
+                <input
                   ref={fileRef}
                   type="file"
-                  accept="image/png,image/jpeg,image/webp,.jpg,.jpeg,.png,.webp"
+                  accept="image/png,image/jpeg,image/webp,image/heic,image/heif,.heic,.heif"
                   style={{ display: 'none' }}
                   onChange={(event) => {
                     const file = event.target.files?.[0];
@@ -219,22 +215,22 @@ export default function UserSettingsPage() {
                     ? uploadPercent > 0
                       ? `در حال بارگذاری تصویر… ${toFaDigits(uploadPercent)}٪`
                       : 'در حال بارگذاری تصویر…'
-                    : 'برای تغییر تصویر روی دوربین بزنید (حداکثر ۵ مگابایت)'}
+                    : 'برای تغییر تصویر روی دوربین بزنید (حداکثر ۵ مگابایت — JPG، PNG و HEIC)'}
                 </div>
               </div>
             </div>
 
             <label style={{ display: 'grid', gap: 6, fontSize: 11.5, fontWeight: 700, color: 'var(--ink-2s)' }}>
               نام و نام خانوادگی
-              <input className="input-base" value={name} onChange={(event) => setName(event.target.value)} style={inputStyle} maxLength={120} />
+              <input value={name} onChange={(event) => setName(event.target.value)} style={inputStyle} maxLength={120} />
             </label>
             <label style={{ display: 'grid', gap: 6, fontSize: 11.5, fontWeight: 700, color: 'var(--ink-2s)' }}>
               شهر
-              <input className="input-base" value={city} onChange={(event) => setCity(event.target.value)} style={inputStyle} maxLength={80} />
+              <input value={city} onChange={(event) => setCity(event.target.value)} style={inputStyle} maxLength={80} />
             </label>
             <label style={{ display: 'grid', gap: 6, fontSize: 11.5, fontWeight: 700, color: 'var(--ink-2s)' }}>
               درباره من
-              <textarea className="input-base" value={bio} onChange={(event) => setBio(event.target.value)} rows={4} style={{ ...inputStyle, resize: 'vertical' }} maxLength={500} />
+              <textarea value={bio} onChange={(event) => setBio(event.target.value)} rows={4} style={{ ...inputStyle, resize: 'vertical' }} maxLength={500} />
               <span style={{ fontSize: 9.5, fontWeight: 500, color: 'var(--ink-4)', textAlign: 'left' }}>{faDigits(bio.length)} / {faDigits(500)}</span>
             </label>
 
@@ -296,5 +292,9 @@ export default function UserSettingsPage() {
 }
 
 function faDate(iso: string): string {
-  return formatDate(iso);
+  try {
+    return new Intl.DateTimeFormat('fa-IR', { year: 'numeric', month: 'long', day: 'numeric' }).format(new Date(iso));
+  } catch {
+    return '';
+  }
 }

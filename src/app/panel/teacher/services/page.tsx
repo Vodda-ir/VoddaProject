@@ -11,6 +11,7 @@ import {
 import { api, type OfficialService, type OfficialServiceCategory, type TeacherService } from '@/lib/api';
 import { getToken } from '@/lib/auth';
 import { digitsOnly, formatFaNumber, toFaDigits } from '@/lib/persian';
+import { confirmDialog } from '@/lib/confirm';
 
 export default function TeacherServicesPage() {
   const [services, setServices] = useState<TeacherService[]>([]);
@@ -39,7 +40,7 @@ export default function TeacherServicesPage() {
 
   async function deactivate(service: TeacherService) {
     if (!token || busyId !== null || !service.active) return;
-    if (!window.confirm(`خدمت «${service.title}» غیرفعال شود؟`)) return;
+    if (!(await confirmDialog(`خدمت «${service.title}» غیرفعال شود؟`))) return;
     setBusyId(service.id);
     setError('');
     try {
@@ -54,7 +55,7 @@ export default function TeacherServicesPage() {
 
   async function remove(service: TeacherService) {
     if (!token || busyId !== null) return;
-    if (!window.confirm(`خدمت «${service.title}» حذف شود؟`)) return;
+    if (!(await confirmDialog(`خدمت «${service.title}» حذف شود؟`))) return;
     setBusyId(service.id);
     setError('');
     try {
@@ -88,7 +89,7 @@ export default function TeacherServicesPage() {
         actions={<PanelButton tone="primary" icon="book" onClick={() => setDialog({ mode: 'add' })}>خدمت جدید</PanelButton>}
       />
 
-      <div className="ops-metric-grid" style={{ gridTemplateColumns: 'repeat(2,minmax(0,1fr))' }}>
+      <div className="ops-metric-grid">
         <article className="ops-metric-card">
           <span className="ops-metric-icon"><Icon name="checkCircle" size={20} /></span>
           <div><small>قابل رزرو</small><strong>{toFaDigits(activeCount)}</strong><span>خدمت تأییدشده و فعال</span></div>
@@ -248,7 +249,7 @@ function ServiceDialog({
           <div style={{ padding: 30, textAlign: 'center', color: 'var(--ink-3)', fontSize: 12 }}>در حال دریافت خدمات رسمی…</div>
         ) : (
           <div style={{ marginBottom: 12 }}>
-            <input className="input-base"
+            <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="جستجو میان خدمات رسمی…"
@@ -288,9 +289,9 @@ function ServiceDialog({
           </div>
         )}
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 10 }}>
-          <label style={labelStyle}>مدت (دقیقه)<input className="input-base" type="text" inputMode="numeric" value={toFaDigits(duration)} onChange={(event) => setDuration(digitsOnly(event.target.value))} style={inputStyle} /></label>
-          <label style={labelStyle}>قیمت (تومان)<input className="input-base" type="text" inputMode="numeric" value={toFaDigits(price)} onChange={(event) => setPrice(digitsOnly(event.target.value))} style={inputStyle} /></label>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          <label style={labelStyle}>مدت (دقیقه)<input type="text" inputMode="numeric" value={toFaDigits(duration)} onChange={(event) => setDuration(digitsOnly(event.target.value))} style={inputStyle} /></label>
+          <label style={labelStyle}>قیمت (تومان)<input type="text" inputMode="numeric" value={toFaDigits(price)} onChange={(event) => setPrice(digitsOnly(event.target.value))} style={inputStyle} /></label>
         </div>
         {error && <div role="alert" style={{ marginTop: 4, color: 'var(--rose)', background: 'var(--clay-bg)', padding: 10, borderRadius: 10, fontSize: 12 }}>{error}</div>}
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 18 }}>

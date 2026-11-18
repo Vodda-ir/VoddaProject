@@ -14,7 +14,7 @@ import {
 } from '@/components/admin/AdminUI';
 import { fullUrl, getToken } from '@/lib/auth';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
-import { formatDate } from '@/lib/datetime';
+import { confirmDialog } from '@/lib/confirm';
 
 type AdminPostRow = {
   id: number;
@@ -71,7 +71,11 @@ const STATUS_TABS = [
 
 function faDate(iso?: string | null): string {
   if (!iso) return '—';
-  return formatDate(iso) || '—';
+  try {
+    return new Intl.DateTimeFormat('fa-IR', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(iso));
+  } catch {
+    return '—';
+  }
 }
 
 export default function AdminBlogPage() {
@@ -227,7 +231,7 @@ export default function AdminBlogPage() {
 
   async function remove(row: AdminPostRow) {
     if (busyId !== null) return;
-    if (!window.confirm(`حذف «${row.title}» بازگشت‌پذیر نیست. ادامه می‌دهید؟`)) return;
+    if (!(await confirmDialog(`حذف «${row.title}» بازگشت‌پذیر نیست. ادامه می‌دهید؟`))) return;
     setBusyId(row.id);
     setError('');
     try {
@@ -481,7 +485,7 @@ export default function AdminBlogPage() {
                 <PanelButton type="button" disabled={uploading} onClick={() => fileRef.current?.click()}>
                   {uploading ? '…' : 'بارگذاری'}
                 </PanelButton>
-                <input className="input-base"
+                <input
                   ref={fileRef}
                   type="file"
                   accept="image/jpeg,image/png,image/webp"

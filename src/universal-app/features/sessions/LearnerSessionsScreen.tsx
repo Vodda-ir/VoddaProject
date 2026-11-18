@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
+import type { UniversalAppConfig } from "../../config";
 import { usePlatform } from "../../platform/context";
-import { avatarSrc, uploadsOriginOf } from "@/lib/avatarImage";
+import { navigateApp } from "../../router";
 import {
   Avatar,
   Button,
@@ -10,6 +11,7 @@ import {
   Dialog,
   EmptyState,
   ErrorState,
+  IllustrationSessions,
   Icon,
   LoadingState,
   SectionHeader,
@@ -22,10 +24,11 @@ import {
   typography,
 } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
-import { toFaDigits } from "../wallet/WalletTransactionCard";
-import { payViaSamanGate } from "../../../lib/saman-gate";
-import { formatLocalDate } from "@/lib/datetime";
+import { localizedDigits } from "../../ui/persian";
+import { formatAppDate } from "../../ui/jalali";
 import { payBooking } from "../booking/api";
+import { payViaSamanGate } from "../../../lib/saman-gate";
+import { PaymentResultBanner } from "../payments/PaymentResultBanner";
 import {
   cancelLearnerSession,
   createSessionReview,
@@ -37,19 +40,25 @@ import {
   isUpcomingSession,
   type LearnerSession,
 } from "./types";
+import { useAppearance } from "../../ui/appearance";
+import type { TranslationKey } from "../../i18n";
 
-const statusLabels: Record<string, string> = {
-  pending: "در انتظار تأیید",
-  confirmed: "تأیید شده",
-  done: "انجام شده",
-  canceled: "لغو شده",
-  awaiting_payment: "در انتظار پرداخت",
-};
+function statusLabel(status: string, t: (key: TranslationKey) => string): string {
+  switch (status) {
+    case "pending": return t("status_pending");
+    case "confirmed": return t("status_confirmed");
+    case "done": return t("status_done");
+    case "canceled": return t("status_canceled");
+    case "awaiting_payment": return t("status_awaiting_payment");
+    default: return status;
+  }
+}
 
-function officialTime(session: LearnerSession): string {
-  if (!hasOfficialSessionTime(session)) return "زمان رسمی جلسه دریافت نشد";
-  // باگ persian-dates — تاریخ شمسی از util مرکزی، نه میلادی خام
-  return `${formatLocalDate(session.localDate, "fa", "dayMonth")} · ${toFaDigits(session.localStart)} تا ${toFaDigits(session.localEnd)}`;
+function officialTime(session: LearnerSession, lang: "fa" | "en", L: (text: string) => string): string {
+  if (!hasOfficialSessionTime(session)) return L("زمان رسمی جلسه دریافت نشد");
+  return `${formatAppDate(session.localDate, lang)} · ${L("{a} تا {b}")
+    .replace("{a}", localizedDigits(session.localStart, lang))
+    .replace("{b}", localizedDigits(session.localEnd, lang))}`;
 }
 
 function canCancel(session: LearnerSession): boolean {
@@ -61,31 +70,44 @@ function canCancel(session: LearnerSession): boolean {
 function SessionCard({
   session,
   busy,
+  onOpen,
   onCancel,
   onRate,
   onPay,
 }: {
   session: LearnerSession;
   busy: boolean;
+  onOpen: () => void;
   onCancel: () => void;
   onRate: () => void;
   onPay: () => void;
 }) {
-  const runtime = usePlatform();
+  const { t, L, lang, N } = useAppearance();
   return (
-    <Card className="vodda-card--interactive" style={{ display: "grid", gap: 13, borderRadius: 24, padding: 15, boxShadow: "0 0 6px rgba(46,54,34,.04)" }}>
+    <Card
+      className="vodda-card--interactive"
+      style={{ display: "grid", gap: 13, borderRadius: 24, padding: 15, boxShadow: "0 0 6px rgba(46,54,34,.04)", cursor: "pointer" }}
+      onClick={onOpen}
+    >
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: spacing.md }}>
-        <StatusPill status={session.status} label={statusLabels[session.status] ?? session.status} />
+        <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+          <StatusPill status={session.status} label={statusLabel(session.status, t)} />
+          {session.instant ? (
+            <span aria-label={L("جلسهٔ فوری")} style={{ padding: "3px 9px", borderRadius: radii.pill, color: "#fffaf0", background: "linear-gradient(145deg,#d8b869,#b8923c)", fontSize: 10, fontWeight: 800 }}>
+              {L("فوری")}
+            </span>
+          ) : null}
+        </div>
         <span style={{ ...typography.caption, color: colors.inkMuted }}>
-          {toFaDigits(session.duration)} دقیقه
+          {L("{n} دقیقه").replace("{n}", localizedDigits(session.duration, lang))}
         </span>
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: spacing.md }}>
-        <Avatar name={session.teacherName} src={avatarSrc(session.teacherAvatar, undefined, uploadsOriginOf(runtime.apiBaseUrl))} size={46} ring />
+        <Avatar name={session.teacherName} src={session.teacherAvatar || undefined} size={46} ring />
         <div style={{ minWidth: 0 }}>
-          <strong style={{ ...typography.body, display: "block" }}>{session.teacherName}</strong>
-          <span style={{ ...typography.bodySmall, color: colors.inkSecondary }}>{session.service}</span>
+          <strong style={{ ...typography.body, display: "block" }}>{N(session.teacherName)}</strong>
+          <span style={{ ...typography.bodySmall, color: colors.inkSecondary }}>{L(session.service)}</span>
         </div>
       </div>
 
@@ -102,55 +124,58 @@ function SessionCard({
         }}
       >
         <Icon name="calendar" size={16} style={{ flex: "0 0 auto", color: colors.olive500 }} />
-        {officialTime(session)}
+        {officialTime(session, lang, L)}
       </div>
 
       {session.rejectNote ? (
         <p style={{ ...typography.caption, margin: 0, color: colors.danger }}>
-          دلیل لغو: {session.rejectNote}
+          {L("دلیل لغو: {n}").replace("{n}", session.rejectNote)}
         </p>
       ) : null}
 
       {session.status === "awaiting_payment" ? (
-        <div style={{ display: "grid", gap: spacing.sm }}>
+        <div style={{ display: "grid", gap: spacing.sm }} onClick={(event) => event.stopPropagation()}>
           <span style={{ ...typography.caption, color: colors.goldDark }}>
-            پرداخت آنلاین تکمیل نشده؛ با تکمیل پرداخت، درخواست برای استاد ارسال می‌شود.
+            {L("پرداخت آنلاین تکمیل نشده؛ با تکمیل پرداخت، درخواست برای استاد ارسال می‌شود.")}
           </span>
           <Button fullWidth loading={busy} onClick={onPay}>
             <Icon name="wallet" size={17} />
-            تکمیل پرداخت
+            {L("تکمیل پرداخت")}
           </Button>
         </div>
       ) : null}
 
       {session.status === "pending" || session.status === "confirmed" ? (
-        <div style={{ display: "grid", gap: spacing.sm }}>
+        <div style={{ display: "grid", gap: spacing.sm }} onClick={(event) => event.stopPropagation()}>
           <span style={{ ...typography.caption, color: colors.inkMuted }}>
             {session.status === "confirmed"
-              ? "جلسه تأیید شده است. جزئیات برگزاری را با استاد هماهنگ کنید."
-              : "در انتظار تأیید استاد"}
+              ? L("جلسه تأیید شده است. برای هماهنگی و ورود به کلاس، جزئیات جلسه را باز کنید.")
+              : L("در انتظار تأیید استاد")}
           </span>
           {canCancel(session) ? (
             <Button variant="secondary" fullWidth loading={busy} onClick={onCancel}>
               <Icon name="x" size={17} />
-              لغو جلسه
+              {L("لغو جلسه")}
             </Button>
           ) : null}
         </div>
       ) : null}
 
       {session.status === "done" && !session.rated ? (
-        <Button fullWidth onClick={onRate} style={{ background: colors.gold, borderColor: colors.gold }}>
-          ثبت امتیاز و نظر
-        </Button>
+        <div onClick={(event) => event.stopPropagation()}>
+          <Button fullWidth onClick={onRate} style={{ background: colors.gold, borderColor: colors.gold }}>
+            {L("ثبت امتیاز و نظر")}
+          </Button>
+        </div>
       ) : null}
 
     </Card>
   );
 }
 
-export function LearnerSessionsScreen() {
+export function LearnerSessionsScreen({ config }: { config?: UniversalAppConfig }) {
   const runtime = usePlatform();
+  const { t, L, lang, N } = useAppearance();
   const [when, setWhen] = useState<LearnerSessionsWhen>("upcoming");
   const [sessions, setSessions] = useState<LearnerSession[]>([]);
   const [loading, setLoading] = useState(true);
@@ -191,7 +216,7 @@ export function LearnerSessionsScreen() {
     void load(when);
   }, [load, when]);
 
-  const title = useMemo(() => (when === "upcoming" ? "جلسات پیش‌رو" : "جلسات گذشته"), [when]);
+  const title = useMemo(() => (when === "upcoming" ? L("جلسات پیش‌رو") : L("جلسات گذشته")), [when, L]);
 
   async function confirmCancel() {
     if (!cancelTarget || busyId !== null) return;
@@ -252,7 +277,8 @@ export function LearnerSessionsScreen() {
 
   return (
     <section className="vodda-screen" style={{ display: "grid", gap: spacing.xl }}>
-      <SectionHeader title="جلسات من" description="زمان‌ها بر اساس ساعت رسمی سامانه نمایش داده می‌شوند" />
+      <PaymentResultBanner />
+      <SectionHeader title={L("جلسات من")} description={L("زمان‌ها بر اساس ساعت رسمی سامانه نمایش داده می‌شوند")} />
 
       <div className="vodda-enter" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
         {(["upcoming", "past"] as const).map((tab) => {
@@ -268,7 +294,7 @@ export function LearnerSessionsScreen() {
                 minHeight: 44,
                 border: 0,
                 borderRadius: 14,
-                color: selected ? colors.surface : colors.inkMuted,
+                color: selected ? colors.onOlive : colors.inkMuted,
                 background: selected ? colors.olive600 : colors.surface,
                 boxShadow: shadows.xs,
                 fontFamily: typography.fontFamily,
@@ -277,22 +303,31 @@ export function LearnerSessionsScreen() {
                 cursor: "pointer",
               }}
             >
-              {tab === "upcoming" ? "پیش‌رو" : "گذشته"}
+              {tab === "upcoming" ? L("پیش‌رو") : L("گذشته")}
             </button>
           );
         })}
       </div>
 
-      {loading ? <LoadingState label={`در حال دریافت ${title}…`} /> : null}
+      {loading ? <LoadingState label={L("در حال دریافت {n}…").replace("{n}", title)} /> : null}
       {!loading && error ? (
         <ErrorState
-          title="دریافت جلسات ناموفق بود"
-          description={error}
-          action={<Button onClick={() => void load(when)}>تلاش دوباره</Button>}
+          title={L("دریافت جلسات ناموفق بود")}
+          description={L(error)}
+          action={<Button onClick={() => void load(when)}>{L("تلاش دوباره")}</Button>}
         />
       ) : null}
       {!loading && !error && sessions.length === 0 ? (
-        <EmptyState icon={<Icon name="calendar" size={30} />} title="جلسه‌ای نیست" description="هنوز جلسه‌ای در این بخش ندارید." />
+        <EmptyState
+          illustration={<IllustrationSessions />}
+          title={L("جلسه‌ای نیست")}
+          description={L("هنوز جلسه‌ای در این بخش ندارید.")}
+          action={
+            <Button onClick={() => navigateApp("/search")} style={{ minWidth: 220 }}>
+              {L("رزرو اولین جلسه")}
+            </Button>
+          }
+        />
       ) : null}
       {!loading && !error && sessions.length > 0 ? (
         <div style={{ display: "grid", gap: spacing.md }}>
@@ -301,6 +336,7 @@ export function LearnerSessionsScreen() {
               key={session.id}
               session={session}
               busy={busyId === session.id}
+              onOpen={() => navigateApp(`/session/${session.id}`, config)}
               onCancel={() => setCancelTarget(session)}
               onRate={() => openRating(session)}
               onPay={() => void paySession(session)}
@@ -311,27 +347,27 @@ export function LearnerSessionsScreen() {
 
       <Dialog
         open={cancelTarget !== null}
-        title="لغو جلسه"
+        title={L("لغو جلسه")}
         onClose={() => {
           if (busyId === null) setCancelTarget(null);
         }}
       >
         <p style={{ ...typography.body, marginTop: 0, color: colors.inkSecondary }}>
-          لغو فقط پیش از زمان شروع مجاز است. در صورت موفقیت، مبلغ به کیف پول بازمی‌گردد.
+          {L("لغو فقط پیش از زمان شروع مجاز است. در صورت موفقیت، مبلغ به کیف پول بازمی‌گردد.")}
         </p>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: spacing.sm }}>
           <Button variant="secondary" onClick={() => setCancelTarget(null)} disabled={busyId !== null}>
-            انصراف
+            {L("انصراف")}
           </Button>
           <Button variant="danger" onClick={() => void confirmCancel()} loading={busyId !== null}>
-            لغو جلسه
+            {L("لغو جلسه")}
           </Button>
         </div>
       </Dialog>
 
       <Sheet
         open={ratingTarget !== null}
-        title={ratingTarget ? `امتیاز جلسه با ${ratingTarget.teacherName}` : "ثبت امتیاز"}
+        title={ratingTarget ? L("امتیاز جلسه با {name}").replace("{name}", N(ratingTarget.teacherName)) : L("ثبت امتیاز")}
         onClose={() => {
           if (!reviewSaving) setRatingTarget(null);
         }}
@@ -342,7 +378,7 @@ export function LearnerSessionsScreen() {
               <button
                 key={value}
                 type="button"
-                aria-label={`${toFaDigits(value)} ستاره`}
+                aria-label={L("{n} ستاره").replace("{n}", localizedDigits(value, lang))}
                 aria-pressed={value <= rating}
                 onClick={() => setRating(value)}
                 disabled={reviewSaving}
@@ -361,14 +397,14 @@ export function LearnerSessionsScreen() {
           </div>
 
           <label style={{ display: "grid", gap: spacing.sm, ...typography.bodySmall, color: colors.ink }}>
-            <span style={{ fontWeight: 700 }}>نظر شما (اختیاری)</span>
-            <textarea className="vodda-textarea"
+            <span style={{ fontWeight: 700 }}>{L("نظر شما (اختیاری)")}</span>
+            <textarea
               value={reviewText}
               onChange={(event) => setReviewText(event.target.value)}
               maxLength={1000}
               rows={4}
               disabled={reviewSaving}
-              placeholder="نظر خود را درباره جلسه بنویسید…"
+              placeholder={L("نظر خود را درباره جلسه بنویسید…")}
               style={{
                 width: "100%",
                 resize: "vertical",
@@ -384,9 +420,9 @@ export function LearnerSessionsScreen() {
             />
           </label>
 
-          {reviewError ? <span role="alert" style={{ ...typography.caption, color: colors.danger }}>{reviewError}</span> : null}
+          {reviewError ? <span role="alert" style={{ ...typography.caption, color: colors.danger }}>{L(reviewError)}</span> : null}
           <Button fullWidth loading={reviewSaving} onClick={() => void submitRating()}>
-            ثبت امتیاز
+            {L("ثبت امتیاز")}
           </Button>
         </div>
       </Sheet>

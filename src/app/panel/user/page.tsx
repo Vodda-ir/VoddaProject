@@ -12,9 +12,8 @@ import {
 import { AreaChart, BarsChart, DonutChart, HBarList, faCompact } from '@/components/admin/charts';
 import { StatCard, deltaOf, exportCsv, FilterTabs } from '@/components/admin/AdminUI';
 import { api, type LearnerAnalytics, type SessionListItem } from '@/lib/api';
-import { avatarUrl, fullUrl, getToken } from '@/lib/auth';
+import { fullUrl, getToken } from '@/lib/auth';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
-import { formatDateTime } from '@/lib/datetime';
 
 type RangeKey = '7' | '14' | '30';
 type ChartTab = 'sessions' | 'minutes' | 'money';
@@ -31,6 +30,10 @@ const SESSION_STATUS_META: Record<string, { label: string; color: string }> = {
   done: { label: 'برگزارشده', color: 'var(--olive-500)' },
   canceled: { label: 'لغوشده', color: 'var(--rose)' },
 };
+
+const tehranFullDate = new Intl.DateTimeFormat('fa-IR', {
+  weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tehran',
+});
 
 export default function LearnerDashboard() {
   const [analytics, setAnalytics] = useState<LearnerAnalytics | null>(null);
@@ -147,7 +150,7 @@ export default function LearnerDashboard() {
           <span className="usr-next-icon"><Icon name="video" size={21} /></span>
           <div style={{ minWidth: 0, flex: 1 }}>
             <strong>جلسه بعدی شما</strong>
-            <small>{formatDateTime(nextSession, 'fa', 'weekdayDayMonth')} · به‌وقت رسمی ایران</small>
+            <small>{tehranFullDate.format(nextSession)} · به‌وقت رسمی ایران</small>
           </div>
           <Link href="/panel/user/sessions" className="ops-button" data-tone="primary">جزئیات و ورود به کلاس</Link>
         </section>
@@ -307,7 +310,7 @@ export default function LearnerDashboard() {
             <div className="adm-feed">
               {upcoming.slice(0, 6).map((session) => (
                 <div className="adm-feed-row" key={session.id}>
-                  <Avatar size={38} imageUrl={avatarUrl(session.teacher?.user?.avatar_url, session.teacher?.user?.updated_at)} />
+                  <Avatar size={38} imageUrl={fullUrl(session.teacher?.user?.avatar_url)} />
                   <div className="adm-feed-main">
                     <strong>{session.teacher?.user?.name || 'استاد'}</strong>
                     <small>{session.service} · {session.local_date} · ساعت {toFaDigits(session.local_start)}</small>
@@ -339,7 +342,7 @@ export default function LearnerDashboard() {
               {(analytics?.teachers ?? []).slice(0, 6).map((teacher, index) => (
                 <Link href={`/teachers/${teacher.id}`} key={teacher.id} className="adm-leader-row" style={{ textDecoration: 'none', color: 'inherit' }}>
                   <span className="adm-leader-rank">{toFaDigits(index + 1)}</span>
-                  <Avatar size={40} imageUrl={avatarUrl(teacher.avatar_url, teacher.updated_at)} />
+                  <Avatar size={40} imageUrl={fullUrl(teacher.avatar_url)} />
                   <div className="adm-leader-main">
                     <strong>{teacher.name || 'استاد'}</strong>
                     <small>{teacher.field || 'حوزه آموزشی'}</small>

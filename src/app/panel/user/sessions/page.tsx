@@ -15,9 +15,9 @@ import {
 import { SearchInput, exportCsv } from '@/components/admin/AdminUI';
 import { api, type SessionListItem } from '@/lib/api';
 import { payViaSamanGate } from '@/lib/saman-gate';
-import { avatarUrl, fullUrl, getToken } from '@/lib/auth';
+import { fullUrl, getToken } from '@/lib/auth';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
-import { formatLocalDate } from '@/lib/datetime';
+import { confirmDialog } from '@/lib/confirm';
 
 type TabKey = 'all' | 'upcoming' | 'past';
 
@@ -77,7 +77,7 @@ export default function UserSessionsPage() {
 
   async function cancelSession(session: SessionListItem) {
     if (!token || busyId !== null) return;
-    if (!window.confirm('جلسه لغو شود؟ لغو فقط پیش از زمان شروع مجاز است و مبلغ به کیف پول بازمی‌گردد.')) return;
+    if (!(await confirmDialog('جلسه لغو شود؟ لغو فقط پیش از زمان شروع مجاز است و مبلغ به کیف پول بازمی‌گردد.'))) return;
     setBusyId(session.id);
     setError('');
     try {
@@ -268,7 +268,7 @@ export default function UserSessionsPage() {
           <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
             {rows.map((session) => (
               <article className="ops-row" key={`${session.when}-${session.id}`} style={{ opacity: busyId === session.id ? .55 : 1, flexWrap: 'wrap' }}>
-                <Avatar size={46} ring tier={session.teacher?.tier} imageUrl={avatarUrl(session.teacher?.user?.avatar_url, session.teacher?.user?.updated_at)} />
+                <Avatar size={46} ring tier={session.teacher?.tier} imageUrl={fullUrl(session.teacher?.user?.avatar_url)} />
                 <div className="ops-row-main">
                   <div className="ops-row-title">
                     <strong>{session.teacher?.user?.name || 'استاد'}</strong>
@@ -278,7 +278,7 @@ export default function UserSessionsPage() {
                   </div>
                   <div className="ops-row-sub">
                     <span>{session.service}</span>
-                    <span>· {formatLocalDate(session.local_date, 'fa', 'dayMonth') || session.local_date}</span>
+                    <span>· {session.local_date}</span>
                     <span>· ساعت {toFaDigits(session.local_start)} تا {toFaDigits(session.local_end)}</span>
                   </div>
                   <div className="ops-row-meta">
@@ -379,7 +379,7 @@ function ReviewDialog({
           <span style={{ width: 40, height: 40, display: 'grid', placeItems: 'center', borderRadius: 12, color: 'var(--gold)', background: 'var(--gold-bg)' }}><Icon name="star" size={19} /></span>
           <div>
             <h2 id="review-dialog-title" style={{ margin: 0, fontSize: 16 }}>ثبت نظر درباره جلسه</h2>
-            <p style={{ margin: '2px 0 0', color: 'var(--ink-3)', fontSize: 10.5 }}>{session.service} · {session.teacher?.user?.name || 'استاد'} · {formatLocalDate(session.local_date, 'fa', 'dayMonth') || session.local_date}</p>
+            <p style={{ margin: '2px 0 0', color: 'var(--ink-3)', fontSize: 10.5 }}>{session.service} · {session.teacher?.user?.name || 'استاد'} · {session.local_date}</p>
           </div>
         </div>
 
@@ -407,7 +407,7 @@ function ReviewDialog({
 
         <label style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 12, fontSize: 11.5, fontWeight: 700, color: 'var(--ink-3)' }}>
           متن نظر (اختیاری)
-          <textarea className="input-base"
+          <textarea
             value={text}
             maxLength={1000}
             rows={4}

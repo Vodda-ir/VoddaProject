@@ -6,7 +6,6 @@
 
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
-import { formatDate, formatNumber } from '@/lib/datetime';
 
 export type Tone = 'olive' | 'gold' | 'clay' | 'info' | 'rose';
 
@@ -22,14 +21,18 @@ export type Point = { label: string; value: number };
 
 /** Gregorian ISO date → short Jalali label like «۱۵ آبان» with graceful fallback. */
 export function faDayLabel(iso: string): string {
-  return formatDate(new Date(`${iso}T00:00:00Z`), 'fa', 'short') || toFaDigits(iso.slice(5));
+  try {
+    return new Intl.DateTimeFormat('fa-IR', { day: 'numeric', month: 'short' }).format(new Date(`${iso}T00:00:00Z`));
+  } catch {
+    return toFaDigits(iso.slice(5));
+  }
 }
 
 /** Compact Persian number for tight axis labels: ۱۲٬۵۰۰ → ۱۲٫۵ هزار */
 export function faCompact(value: number): string {
   if (value === 0) return toFaDigits(0);
   try {
-    return formatNumber(value, 'fa', { notation: 'compact', maximumFractionDigits: 1 });
+    return new Intl.NumberFormat('fa-IR', { notation: 'compact', maximumFractionDigits: 1 }).format(value);
   } catch {
     return formatFaNumber(value);
   }

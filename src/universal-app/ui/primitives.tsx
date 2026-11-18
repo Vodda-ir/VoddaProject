@@ -5,7 +5,12 @@ import type {
   ImgHTMLAttributes,
   InputHTMLAttributes,
   ReactNode,
+  RefObject,
 } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { resolveAssetUrl } from "../platform/asset";
+import { useAppearance } from "./appearance";
 import { colors, gradients, radii, shadows, spacing, typography } from "./theme";
 import { Avatar as UnifiedAvatar } from "../../components/Avatar";
 
@@ -31,15 +36,18 @@ export function Button({
   className,
   ...props
 }: ButtonProps) {
+  const { L } = useAppearance();
   const variants: Record<ButtonVariant, CSSProperties> = {
     primary: {
-      color: colors.surface,
+      /* روی سبز زیتونیِ ثابت، متن باید روشن بماند — در حالت تاریک surface تیره می‌شود */
+      color: colors.onOlive,
       background: colors.olive600,
       borderColor: colors.olive600,
-      boxShadow: "none",
+      /* درخشش نرم زیتونی — دکمهٔ اصلی حس «فشرده شدن» و عمق می‌گیرد (فاز نور) */
+      boxShadow: "0 8px 20px rgba(76, 90, 54, 0.22), 0 2px 6px rgba(46, 54, 34, 0.10)",
     },
     secondary: {
-      color: colors.olive800,
+      color: colors.olive700,
       background: colors.surface,
       borderColor: colors.olive200,
       boxShadow: shadows.xs,
@@ -91,7 +99,7 @@ export function Button({
       {loading ? (
         <>
           <span className="vodda-spinner" aria-hidden="true" />
-          <span>در حال انجام…</span>
+          <span>{L("در حال انجام…")}</span>
         </>
       ) : children}
     </button>
@@ -169,10 +177,11 @@ export function Card({ elevated = false, children, style, className, ...props }:
         {
           padding: spacing.xl,
           color: colors.ink,
-          background: colors.surface,
+          /* سفیدِ گرم با گرادیان ملایم + سایهٔ پیش‌فرض نرم: کارت‌ها از سطح پس‌زمینه «بلند» حس می‌شوند (فاز نور) */
+          background: "linear-gradient(180deg, var(--v-surface, #ffffff) 0%, var(--v-surfaceWarm, #fffdf8) 100%)",
           border: `1px solid ${colors.border}`,
           borderRadius: radii.lg,
-          boxShadow: elevated ? shadows.md : "none",
+          boxShadow: elevated ? shadows.md : "0 1px 2px rgba(46,54,34,.04), 0 8px 22px rgba(46,54,34,.055)",
           fontFamily: typography.fontFamily,
         },
         style,
@@ -190,6 +199,8 @@ export type AvatarProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "children"> 
   ring?: boolean;
   /** درجه استاد برای مهر گوشهٔ آواتار. */
   tier?: string | null;
+  /** سازگاری با نسخهٔ سرور — پذیرفته ولی نادیده گرفته می‌شود (شکل واحد مربعی). */
+  tone?: "olive" | "gold";
   /** چراغ آنلاین/آفلاین گوشهٔ آواتار. */
   online?: boolean;
   /** آخرین فعالیت — آنلاین واقعی (داخل ۲ دقیقه) و tooltip (۱.الف.۴). */
@@ -199,7 +210,7 @@ export type AvatarProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "children"> 
 /* آواتار مربعی واحد — پیاده‌سازی واقعی در src/components/Avatar.tsx است تا
  * اپ و وب از یک منبع رندر بگیرند (پارتی کامل، شکل مربعی با گوشهٔ نرم ۱۴٪).
  * امضای قبلی اپ (name/size/ring/src/alt) دقیقاً حفظ شده است. */
-export function Avatar({ name, size = 48, ring = true, src, alt, style, tier, online, lastSeen, ...props }: AvatarProps) {
+export function Avatar({ name, size = 48, ring = true, src, alt, style, tier, online, lastSeen, tone: _tone, ...props }: AvatarProps) {
   return (
     <UnifiedAvatar
       name={name}
@@ -221,10 +232,13 @@ export type StateProps = {
   description?: ReactNode;
   action?: ReactNode;
   icon?: ReactNode;
+  /** تصویرسازی خطی اختصاصی (فاز ۲) — جای دایرهٔ آیکون می‌نشیند و صحنهٔ معنادار می‌سازد */
+  illustration?: ReactNode;
   style?: CSSProperties;
 };
 
-function StateView({ title, description, action, icon, style }: StateProps) {
+function StateView({ title, description, action, icon, illustration, style }: StateProps) {
+  const { lang } = useAppearance();
   return (
     <div
       style={mergeStyle(
@@ -240,24 +254,30 @@ function StateView({ title, description, action, icon, style }: StateProps) {
         style,
       )}
     >
-      <div
-        aria-hidden={!icon}
-        style={{
-          width: 72,
-          height: 72,
-          display: "grid",
-          placeItems: "center",
-          marginBottom: spacing.xs,
-          borderRadius: "50%",
-          color: colors.olive500,
-          background: colors.olive50,
-          boxShadow: `inset 0 0 0 1px ${colors.olive100}`,
-          fontSize: 26,
-          fontWeight: 900,
-        }}
-      >
-        {icon ?? "و"}
-      </div>
+      {illustration ? (
+        <div aria-hidden="true" style={{ marginBottom: spacing.xs }}>
+          {illustration}
+        </div>
+      ) : (
+        <div
+          aria-hidden={!icon}
+          style={{
+            width: 72,
+            height: 72,
+            display: "grid",
+            placeItems: "center",
+            marginBottom: spacing.xs,
+            borderRadius: "50%",
+            color: colors.olive500,
+            background: colors.olive50,
+            boxShadow: `inset 0 0 0 1px ${colors.olive100}`,
+            fontSize: 26,
+            fontWeight: 900,
+          }}
+        >
+          {icon ?? (lang === "en" ? "V" : "و")}
+        </div>
+      )}
       <strong style={typography.title}>{title}</strong>
       {description ? <span style={{ maxWidth: 380, color: colors.inkMuted, ...typography.body }}>{description}</span> : null}
       {action ? <div style={{ marginTop: spacing.md }}>{action}</div> : null}
@@ -284,6 +304,7 @@ export function ErrorState(props: StateProps) {
 }
 
 export function LoadingState({ label = "در حال بارگذاری…", style }: { label?: ReactNode; style?: CSSProperties }) {
+  const { L } = useAppearance();
   return (
     <div
       role="status"
@@ -305,7 +326,7 @@ export function LoadingState({ label = "در حال بارگذاری…", style 
       )}
     >
       <span className="vodda-loader-orbit" aria-hidden="true" />
-      <span>{label}</span>
+      <span>{typeof label === "string" ? L(label) : label}</span>
     </div>
   );
 }
@@ -318,9 +339,83 @@ export type OverlayProps = {
   closeLabel?: string;
 };
 
+/**
+ * رفتار استاندارد مودال (A5): قفل اسکرول پس‌زمینه، بستن با Escape،
+ * محبوس‌کردن فوکوس درون پنجره و بازگرداندن فوکوس به محل پیشین.
+ *
+ * نکتهٔ حیاتی: «onClose» در کامپوننت‌های میزبان معمولاً تابعی بی‌ثبات است
+ * (هر رندر یک شناسهٔ تازه). اگر مثل قبل در وابستگی‌های useEffect بماند، با هر
+ * فشردن یک حرف در فیلدهای فرم، افکت دوباره اجرا و فوکوس به‌زور به ظرف مودال
+ * برمی‌گشت — یعنی کاربر فقط یک حرف می‌توانست بنویسد. حالا onClose از طریق ref
+ * خوانده می‌شود و افکت فقط با تغییر «open» اجرا می‌شود.
+ */
+function useOverlayBehavior(open: boolean, onClose: () => void, containerRef: RefObject<HTMLDivElement | null>) {
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  useEffect(() => {
+    if (!open) return;
+    const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const focusablesIn = (root: HTMLElement) =>
+      Array.from(
+        root.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      );
+
+    window.setTimeout(() => containerRef.current?.focus({ preventScroll: true }), 0);
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.stopPropagation();
+        onCloseRef.current();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const container = containerRef.current;
+      if (!container) return;
+      const items = focusablesIn(container);
+      if (items.length === 0) {
+        event.preventDefault();
+        return;
+      }
+      const first = items[0] as HTMLElement;
+      const last = items.at(-1) as HTMLElement;
+      const active = document.activeElement;
+      if (event.shiftKey && (active === first || active === container)) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", onKeyDown);
+      previouslyFocused?.focus?.({ preventScroll: true });
+    };
+  }, [open, containerRef]);
+}
+
 export function Dialog({ open, title, children, onClose, closeLabel = "بستن" }: OverlayProps) {
-  if (!open) return null;
-  return (
+  const { L } = useAppearance();
+  const closeText = L(closeLabel);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  useOverlayBehavior(open, onClose, containerRef);
+  if (!open || typeof document === "undefined") return null;
+  // پورتال به body — اگر مودال داخل جدی با transform/filters رندر شود
+  // (مثل هدرهای متحرک vodda-enter)، position:fixed شکسته و پنجره له می‌شود؛
+  // پورتال تضمین می‌کند لایهٔ مودال همیشه نسبت به کل صفحه سوار شود.
+  return createPortal(
     <div
       role="presentation"
       className="vodda-overlay"
@@ -339,9 +434,11 @@ export function Dialog({ open, title, children, onClose, closeLabel = "بستن"
       }}
     >
       <div
+        ref={containerRef}
         role="dialog"
         aria-modal="true"
         aria-label={typeof title === "string" ? title : undefined}
+        tabIndex={-1}
         className="vodda-dialog"
         style={{
           width: "min(100%, 460px)",
@@ -356,23 +453,32 @@ export function Dialog({ open, title, children, onClose, closeLabel = "بستن"
           borderRadius: radii.xl,
           boxShadow: shadows.lg,
           fontFamily: typography.fontFamily,
+          outline: "none",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: spacing.md }}>
           {title ? <strong style={typography.title}>{title}</strong> : <span />}
-          <Button variant="ghost" onClick={onClose} aria-label={closeLabel} style={{ width: 40, minHeight: 40, padding: 0 }}>
+          <Button variant="ghost" onClick={onClose} aria-label={closeText} style={{ width: 44, minHeight: 44, padding: 0 }}>
             ×
           </Button>
         </div>
         <div style={{ marginTop: title ? spacing.md : 0 }}>{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
 export function Sheet({ open, title, children, onClose, closeLabel = "بستن" }: OverlayProps) {
-  if (!open) return null;
-  return (
+  const { L } = useAppearance();
+  const closeText = L(closeLabel);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const dragStartY = useRef<number | null>(null);
+  const [dragOffset, setDragOffset] = useState(0);
+  useOverlayBehavior(open, onClose, containerRef);
+  if (!open || typeof document === "undefined") return null;
+  // پورتال به body — همان دلیل Dialog؛ جدّ متحرک position:fixed را می‌شکند
+  return createPortal(
     <div
       role="presentation"
       className="vodda-overlay"
@@ -390,9 +496,11 @@ export function Sheet({ open, title, children, onClose, closeLabel = "بستن" 
       }}
     >
       <div
+        ref={containerRef}
         role="dialog"
         aria-modal="true"
         aria-label={typeof title === "string" ? title : undefined}
+        tabIndex={-1}
         className="vodda-sheet"
         style={{
           width: "min(100%, 640px)",
@@ -407,17 +515,55 @@ export function Sheet({ open, title, children, onClose, closeLabel = "بستن" 
           borderRadius: `${radii.xl}px ${radii.xl}px 0 0`,
           boxShadow: shadows.lg,
           fontFamily: typography.fontFamily,
+          outline: "none",
+          transform: dragOffset > 0 ? `translateY(${dragOffset}px)` : undefined,
+          transition: dragOffset > 0 ? "none" : undefined,
         }}
       >
-        <div style={{ width: 42, height: 5, margin: "2px auto 14px", borderRadius: radii.pill, background: colors.sand200 }} />
+        <div
+          role="button"
+          aria-label={closeText}
+          className="vodda-hit"
+          onClick={() => onClose()}
+          onPointerDown={(event) => {
+            dragStartY.current = event.clientY;
+          }}
+          onPointerMove={(event) => {
+            if (dragStartY.current === null) return;
+            const delta = event.clientY - dragStartY.current;
+            if (delta > 0) setDragOffset(delta);
+          }}
+          onPointerUp={() => {
+            if (dragOffset > 72) onClose();
+            dragStartY.current = null;
+            setDragOffset(0);
+          }}
+          onPointerCancel={() => {
+            dragStartY.current = null;
+            setDragOffset(0);
+          }}
+          style={{
+            width: 64,
+            height: 24,
+            margin: "0 auto 10px",
+            display: "grid",
+            placeItems: "center",
+            borderRadius: radii.pill,
+            cursor: "grab",
+            touchAction: "none" as const,
+          }}
+        >
+          <span style={{ width: 42, height: 5, borderRadius: radii.pill, background: colors.sand200 }} />
+        </div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: spacing.md }}>
           {title ? <strong style={typography.title}>{title}</strong> : <span />}
-          <Button variant="ghost" onClick={onClose} aria-label={closeLabel} style={{ width: 40, minHeight: 40, padding: 0 }}>
+          <Button variant="ghost" onClick={onClose} aria-label={closeText} style={{ width: 44, minHeight: 44, padding: 0 }}>
             ×
           </Button>
         </div>
         <div style={{ marginTop: title ? spacing.md : 0 }}>{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

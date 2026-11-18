@@ -1,6 +1,7 @@
 // API helpers for the فراخوان اساتید feature.
 import { asArray, asRecord, type ApiEnvelope } from "../../platform/api";
 import type { PlatformRuntime } from "../../platform/types";
+import { APP_LANDING_SESSIONS } from "../payments/landing";
 import type {
   ChooseOfferResult,
   DispatchCallView,
@@ -13,7 +14,15 @@ function asObject(value: unknown): Record<string, unknown> & { id?: number; titl
 }
 
 /** Public official service catalog (topic list) — grouped by category. */
+// کش کوتاه‌مدت کاتالوگ — چند سازوکار (خانه، جستجو، فراخوان) در یک نما آن را
+// صدا می‌زنند؛ بدون کش، هر جابجایی تب چند درخواست تکراری می‌سازد.
+let catalogCache: { at: number; rows: OfficialService[] } | null = null;
+const CATALOG_CACHE_TTL = 5 * 60 * 1000;
+
 export async function getCatalog(runtime: PlatformRuntime): Promise<OfficialService[]> {
+  if (catalogCache && Date.now() - catalogCache.at < CATALOG_CACHE_TTL) {
+    return catalogCache.rows;
+  }
   const response = await runtime.request<ApiEnvelope>("/catalog/services");
   const payload = asObject(response.data ?? {});
   const categories = asArray(payload.categories ?? []);
@@ -21,6 +30,10 @@ export async function getCatalog(runtime: PlatformRuntime): Promise<OfficialServ
   for (const group of categories) {
     const row = asObject(group);
     const category = String(row.category ?? "");
+    // خدمات حضوری قرآنی از فراخوان آنلاین حذف می‌شود — این موضوعات از مسیر
+    // «مراسم» پیگیری می‌شوند و هیچ استادی برای فراخوان آنلاین آن‌ها آماده نیست؛
+    // نمایش‌شان همیشه به خطای «هنوز استادی…» می‌رسید (باگ فراخوان).
+    if (!category || category === "خدمات حضوری قرآنی") continue;
     for (const item of asArray(row.services)) {
       const entry = asObject(item);
       if (Number(entry.id) > 0 && entry.title) {
@@ -34,6 +47,7 @@ export async function getCatalog(runtime: PlatformRuntime): Promise<OfficialServ
       }
     }
   }
+  catalogCache = { at: Date.now(), rows: flat };
   return flat;
 }
 
@@ -76,11 +90,16 @@ export async function chooseDispatchOffer(
   runtime: PlatformRuntime,
   callId: number,
   offerId: number,
-  paymentMethod: "wallet" | "gateway",
+  paymentMethod: "wallet" | "gateway" | "", // "" = پاسخ رایگان
 ): Promise<ChooseOfferResult> {
   const response = await runtime.request<ApiEnvelope>(`/dispatch/calls/${callId}/choose`, {
     method: "POST",
-    body: JSON.stringify({ offer_id: offerId, payment_method: paymentMethod }),
+    body: JSON.stringify({
+      offer_id: offerId,
+      payment_method: paymentMethod,
+      // لندینگ برگشت از درگاه: فهرست جلسات اپ یونیورسال (قرارداد backend).
+      return_to: APP_LANDING_SESSIONS,
+    }),
   });
   return asObject(response.data ?? {}) as unknown as ChooseOfferResult;
 }

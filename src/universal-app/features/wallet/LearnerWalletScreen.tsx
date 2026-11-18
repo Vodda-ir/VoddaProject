@@ -7,24 +7,51 @@ import {
   EmptyState,
   ErrorState,
   Icon,
+  IllustrationWallet,
+  Input,
   LoadingState,
   SectionHeader,
   WalletHero,
   colors,
+  digitsOnly,
+  radii,
   spacing,
   typography,
 } from "../../ui";
+import { useAppearance } from "../../ui/appearance";
 import { messageOf } from "../../ui/errorMessage";
-import { getWalletSnapshot } from "./api";
+import { localizedDigits } from "../../ui/persian";
+import { payViaSamanGate } from "../../../lib/saman-gate";
+import { getWalletSnapshot, createWalletTopup, type WalletTopup } from "./api";
 import type { WalletTransaction } from "./types";
 import { formatWalletAmount, WalletTransactionCard } from "./WalletTransactionCard";
+import { PaymentResultBanner } from "../payments/PaymentResultBanner";
+
+// همان سقف‌های رسمی بک‌اند (usecase.TopupMinAmount / TopupMaxAmount) و همان
+// مبلغ‌های پیشنهادی پنل وب — هر دو platform همیشه یک تجربهٔ مشترک دارند.
+const TOPUP_PRESETS = [
+  { value: 100_000, label: "۱۰۰ هزار" },
+  { value: 250_000, label: "۲۵۰ هزار" },
+  { value: 500_000, label: "۵۰۰ هزار" },
+  { value: 1_000_000, label: "۱ میلیون" },
+];
+const TOPUP_MIN = 10_000;
+const TOPUP_MAX = 100_000_000;
 
 export function LearnerWalletScreen() {
   const runtime = usePlatform();
+  const { L, lang } = useAppearance();
   const [balance, setBalance] = useState<number | null>(null);
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // شارژ کیف پول
+  const [selectedPreset, setSelectedPreset] = useState<number | null>(TOPUP_PRESETS[0].value);
+  const [customAmount, setCustomAmount] = useState("");
+  const [topupBusy, setTopupBusy] = useState(false);
+  const [topupError, setTopupError] = useState("");
+  const [redirecting, setRedirecting] = useState(false);
 
   // باگ refresh-loop: اجرای دوم StrictMode یا فراخوانی دیرهنگام نباید state را با دادهٔ کهنه بازنویسی کند.
   const loadGeneration = useRef(0);
@@ -53,43 +80,127 @@ export function LearnerWalletScreen() {
     void load();
   }, [load]);
 
+  const parsedCustom = customAmount ? Number(digitsOnly(customAmount)) : 0;
+  const topupAmount = parsedCustom > 0 ? parsedCustom : selectedPreset ?? 0;
+
+  const startTopup = useCallback(async () => {
+    if (topupBusy || redirecting) return;
+    setTopupError("");
+    if (!topupAmount || topupAmount < TOPUP_MIN || topupAmount > TOPUP_MAX) {
+      setTopupError(
+        L("مبلغ شارژ باید بین {min} و {max} تومان باشد.")
+          .replace("{min}", localizedDigits(TOPUP_MIN, lang))
+          .replace("{max}", localizedDigits(TOPUP_MAX, lang)),
+      );
+      return;
+    }
+    setTopupBusy(true);
+    try {
+      const topup: WalletTopup = await createWalletTopup(runtime, topupAmount);
+      // پست فرم توکن به OnlinePG از مرورگرِ خود کاربر — دقیقاً مثل منافسه، در
+      // همان تب؛ بعد از تسویه، کال‌بک به ‎/app/wallet?payment=…‎ برمی‌گردد.
+      setRedirecting(true);
+      payViaSamanGate(topup.token);
+    } catch (topupFailure) {
+      setTopupError(messageOf(topupFailure, L("شروع پرداخت انجام نشد؛ چند لحظه دیگر تلاش کنید.")));
+      setTopupBusy(false);
+    }
+  }, [redirecting, runtime, topupAmount, topupBusy, L, lang]);
+
   return (
     <section className="vodda-screen" style={{ display: "grid", gap: spacing.xl }}>
-      <h1 style={{ ...typography.heading, fontSize: 24, margin: 0, color: colors.ink }}>کیف پول</h1>
-      <WalletHero amount={balance === null ? "—" : formatWalletAmount(balance)} />
+      <h1 className="vodda-display" style={{ fontSize: 26, margin: "2px 0 0", color: colors.ink, lineHeight: 1.7 }}>{L("کیف پول")}</h1>
+      <PaymentResultBanner />
+      <WalletHero amount={balance === null ? "—" : formatWalletAmount(balance, lang)} />
 
-      <div
-        style={{
-          display: "flex",
-          alignItems: "flex-start",
-          gap: 10,
-          padding: 14,
-          border: "1px solid rgba(191,149,64,.25)",
-          borderRadius: 16,
-          background: colors.goldBackground,
-        }}
-      >
-        <Icon name="info" size={19} style={{ flex: "0 0 auto", marginTop: 1, color: colors.gold }} />
-        <p style={{ ...typography.bodySmall, margin: 0, color: colors.inkSecondary }}>
-          شارژ اینترنتی کیف پول پس از اتصال و تأیید درگاه پرداخت فعال می‌شود. دکمهٔ شارژ آزمایشی در نسخهٔ production نمایش داده نمی‌شود.
+      <div style={{ display: "grid", gap: spacing.md }}>
+        <SectionHeader title={L("شارژ کیف پول")} />
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: spacing.sm }}>
+          {TOPUP_PRESETS.map((preset) => {
+            const active = topupAmount === preset.value && !parsedCustom;
+            return (
+              <button
+                key={preset.value}
+                type="button"
+                aria-pressed={active}
+                onClick={() => {
+                  setSelectedPreset(preset.value);
+                  setCustomAmount("");
+                  setTopupError("");
+                }}
+                style={{
+                  padding: "13px 10px",
+                  borderRadius: radii.sm,
+                  border: `1.5px solid ${active ? colors.olive600 : colors.border}`,
+                  background: active ? colors.olive600 : colors.surface,
+                  color: active ? colors.onOlive : colors.ink,
+                  cursor: "pointer",
+                  fontWeight: 800,
+                  fontSize: 14,
+                  transition: "border-color 140ms ease, background 140ms ease",
+                }}
+              >
+                {L(preset.label)}
+                <span style={{ display: "block", fontSize: 11, fontWeight: 600, opacity: 0.8, marginTop: 2 }}>
+                  {L("تومان")}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        <Input
+          label={L("مبلغ دلخواه (تومان)")}
+          inputMode="numeric"
+          value={customAmount}
+          onChange={(event) => {
+            setCustomAmount(digitsOnly(event.target.value, 9));
+            setTopupError("");
+          }}
+          placeholder={L("مثلاً ۳۰۰۰۰۰")}
+        />
+
+        {topupError ? (
+          <p role="alert" style={{ ...typography.caption, margin: 0, color: colors.danger, fontWeight: 700 }}>
+            {L(topupError)}
+          </p>
+        ) : null}
+
+        <Button
+          onClick={() => void startTopup()}
+          loading={topupBusy}
+          disabled={redirecting || !topupAmount}
+        >
+          {redirecting ? (
+            L("در حال انتقال به درگاه…")
+          ) : (
+            <>
+              <Icon name="wallet" size={17} />
+              {L("پرداخت با درگاه بانکی")}
+            </>
+          )}
+        </Button>
+
+        <p style={{ ...typography.caption, margin: 0, color: colors.inkMuted }}>
+          {L("پرداخت از طریق درگاه امن سامان‌سپ انجام می‌شود؛ رسید بانک را برای پیگیری نگه دارید.")}
         </p>
       </div>
 
-      <SectionHeader title="تراکنش‌ها" />
+      <SectionHeader title={L("تراکنش‌ها")} />
 
-      {loading ? <LoadingState label="در حال دریافت کیف پول…" /> : null}
+      {loading ? <LoadingState label={L("در حال دریافت کیف پول…")} /> : null}
       {!loading && error ? (
         <ErrorState
-          title="دریافت کیف پول ناموفق بود"
-          description={error}
-          action={<Button onClick={() => void load()}>تلاش دوباره</Button>}
+          title={L("دریافت کیف پول ناموفق بود")}
+          description={L(error)}
+          action={<Button onClick={() => void load()}>{L("تلاش دوباره")}</Button>}
         />
       ) : null}
       {!loading && !error && transactions.length === 0 ? (
         <EmptyState
-          icon={<Icon name="wallet" size={30} />}
-          title="تراکنشی ثبت نشده"
-          description="هنوز تراکنشی در کیف پول شما وجود ندارد."
+          illustration={<IllustrationWallet />}
+          title={L("تراکنشی ثبت نشده")}
+          description={L("هنوز تراکنشی در کیف پول شما وجود ندارد.")}
         />
       ) : null}
       {!loading && !error && transactions.length > 0 ? (
