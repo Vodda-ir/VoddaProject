@@ -187,18 +187,41 @@ function VerseStrip() {
   );
 }
 
-/* ۱.ب.۳ — خانه‌های شش‌گانهٔ دسته‌بندی — گرادیان زیتونی-طلایی، تصویر ≤۴۸px،
- * حاشیهٔ نئون ۲px، ارتفاع ۱۰۰/۱۲۰px، fade-in پله‌ای ۵۰ms، کلیک = فقط زیردسته‌های همان دسته */
-/* ۰.۷.۳ — پنل دسته‌بندی موضوعات: همهٔ دسته‌ها و زیردسته‌ها داخل یک کادر حاشیه‌دار واحد (پارتی کامل با وب).
-   خانه‌های کوچک‌تر، عنوان بدون بریدگی، چیپ‌های زیردسته با نمایش کامل. */
+/* ۰.۷.۷ — خط نئونی جداکنندهٔ سلول‌های کادر موضوعات — افقی/عمودی، محو در دو سر + هالهٔ طلایی */
+function neonDivider(vertical: boolean): CSSProperties {
+  return {
+    position: "absolute",
+    pointerEvents: "none",
+    ...(vertical
+      ? {
+          insetInlineEnd: 0,
+          top: "16%",
+          bottom: "16%",
+          width: 1.5,
+          background:
+            "linear-gradient(180deg, transparent, rgba(191,149,64,.85) 18%, rgba(216,184,105,1) 50%, rgba(191,149,64,.85) 82%, transparent)",
+        }
+      : {
+          bottom: 0,
+          insetInlineStart: "12%",
+          insetInlineEnd: "12%",
+          height: 1.5,
+          background:
+            "linear-gradient(90deg, transparent, rgba(191,149,64,.85) 18%, rgba(216,184,105,1) 50%, rgba(191,149,64,.85) 82%, transparent)",
+        }),
+    boxShadow: "0 0 5px rgba(191,149,64,.45), 0 0 12px rgba(216,184,105,.28)",
+  };
+}
+
+/* ۰.۷.۷ — کادر دسته‌بندی موضوعات: حاشیهٔ نئونی طلایی + خط‌های نئونی افقی/عمودی میان سلول‌ها؛
+ * داخل کادر فقط موضوع‌های اصلی با تعداد استادِ هر موضوع — کلیک روی هر موضوع،
+ * صفحهٔ زیردسته‌های همان موضوع را باز می‌کند. */
 function CategoryTileGrid({
   tiles,
-  groups = [],
   loading,
   wide,
 }: {
   tiles: CategoryTile[];
-  groups?: CatalogCategory[];
   loading: boolean;
   wide: boolean;
 }) {
@@ -222,141 +245,127 @@ function CategoryTileGrid({
 
   return (
     <section aria-label="دسته‌بندی موضوعات قرآنی" style={{ display: "grid", gap: spacing.sm, minWidth: 0 }}>
-      <SectionHeader title="دسته‌بندی موضوعات قرآنی" description="همهٔ دسته‌ها و زیردسته‌های رسمی در یک نگاه" />
-      {/* کادر حاشیه‌دار واحد — همهٔ دسته‌ها و موضوعات داخل آن */}
+      <SectionHeader title="دسته‌بندی موضوعات قرآنی" description="روی هر موضوع بزنید تا صفحهٔ زیردسته‌های تخصصی آن باز شود." />
+      {/* کادر نئونی طلایی — فقط موضوع‌های اصلی + تعداد استاد؛ زیردسته‌ها در صفحهٔ خودِ موضوع */}
       <div
+        className="vodda-neon-gold"
         style={{
           display: "grid",
           gridTemplateColumns: wide ? "repeat(3, minmax(0,1fr))" : "repeat(2, minmax(0, 1fr))",
-          gap: 12,
-          padding: 12,
-          border: `1.5px solid ${colors.sand150}`,
           borderRadius: 22,
           background: colors.surface,
-          boxShadow: shadows.xs,
+          overflow: "hidden",
+          minWidth: 0,
         }}
       >
         {tiles.map((tile, index) => {
-          const topics = groups.find((group) => group.category === tile.name)?.topics ?? [];
+          const columns = wide ? 3 : 2;
+          const column = index % columns;
+          const row = Math.floor(index / columns);
+          const rowCount = Math.ceil(tiles.length / columns);
+          /* خط نئونی عمودی میان ستون‌ها + افقی میان ردیف‌ها — فقط میان سلول‌های همسایه */
+          const showVertical = column < columns - 1 && index + 1 < tiles.length;
+          const showHorizontal = row < rowCount - 1;
           return (
-            <div
+            <button
               key={tile.name}
+              type="button"
+              onClick={() => navigateApp(`/category?name=${encodeURIComponent(tile.name)}`)}
+              className="vodda-tappable"
+              aria-label={`${tile.name} — ${faNumber(tile.count, 0)} استاد فعال`}
               style={{
+                position: "relative",
                 display: "grid",
+                alignContent: "center",
+                justifyItems: "center",
                 gap: 8,
-                alignContent: "start",
-                padding: 10,
-                border: `1px solid ${colors.sand150}`,
-                borderRadius: 16,
+                minHeight: 104,
+                padding: "16px 12px",
+                textAlign: "center",
+                border: 0,
+                background: "transparent",
+                cursor: "pointer",
+                fontFamily: typography.fontFamily,
                 minWidth: 0,
                 animation: "vodda-enter .36s ease-out both",
                 animationDelay: `${index * 40}ms`,
               }}
             >
-              <button
-                type="button"
-                onClick={() => navigateApp(`/category?name=${encodeURIComponent(tile.name)}`)}
-                className="vodda-tappable"
-                aria-label={`${tile.name} — ${faNumber(tile.count, 0)} استاد فعال`}
+              {showVertical ? <span aria-hidden="true" style={neonDivider(true)} /> : null}
+              {showHorizontal ? <span aria-hidden="true" style={neonDivider(false)} /> : null}
+
+              <span
+                aria-hidden="true"
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 9,
-                  padding: 0,
-                  border: 0,
-                  background: "transparent",
-                  cursor: "pointer",
-                  fontFamily: typography.fontFamily,
-                  textAlign: "start",
-                  minWidth: 0,
+                  position: "relative",
+                  width: 42,
+                  height: 42,
+                  display: "grid",
+                  placeItems: "center",
+                  borderRadius: 13,
+                  background: "linear-gradient(140deg, #f2f5ea, #f7f0dc)",
+                  border: `1px solid ${colors.goldSoft}`,
+                  boxShadow: "0 0 8px rgba(191,149,64,.18)",
+                  overflow: "hidden",
                 }}
               >
-                <span
-                  aria-hidden="true"
+                <Icon name="quran" size={22} style={{ color: colors.olive600 }} />
+                <img
+                  src={serviceImageSrc(tile.imageKey)}
+                  alt=""
+                  width={42}
+                  height={42}
+                  loading="lazy"
                   style={{
-                    position: "relative",
-                    flex: "0 0 40px",
-                    width: 40,
-                    height: 40,
-                    display: "grid",
-                    placeItems: "center",
-                    borderRadius: 12,
-                    background: "linear-gradient(140deg, #f2f5ea, #f7f0dc)",
-                    overflow: "hidden",
+                    position: "absolute",
+                    inset: 0,
+                    width: 42,
+                    height: 42,
+                    maxWidth: 42,
+                    maxHeight: 42,
+                    objectFit: "contain",
                   }}
-                >
-                  <Icon name="quran" size={22} style={{ color: colors.olive600 }} />
-                  <img
-                    src={serviceImageSrc(tile.imageKey)}
-                    alt=""
-                    width={40}
-                    height={40}
-                    loading="lazy"
-                    style={{
-                      position: "absolute",
-                      inset: 0,
-                      width: 40,
-                      height: 40,
-                      maxWidth: 40,
-                      maxHeight: 40,
-                      objectFit: "contain",
-                    }}
-                    onError={(event) => {
-                      event.currentTarget.style.display = "none";
-                    }}
-                  />
-                </span>
-                <span style={{ minWidth: 0, flex: 1, display: "grid", gap: 1 }}>
-                  <strong
-                    style={{
-                      fontSize: 13.5,
-                      fontWeight: 800,
-                      color: colors.ink,
-                      lineHeight: 1.4,
-                      overflowWrap: "anywhere",
-                    }}
-                  >
-                    {tile.name}
-                  </strong>
-                  <span style={{ fontSize: 10.5, fontWeight: 700, color: colors.olive600 }}>
-                    {faNumber(tile.count, 0)} استاد فعال
-                  </span>
-                </span>
-                <Icon name="arrowL" size={15} style={{ color: colors.olive600, flex: "0 0 auto" }} />
-              </button>
-              {topics.length > 0 ? (
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 5, minWidth: 0 }}>
-                  {topics.map((topic) => (
-                    <button
-                      key={topic.id}
-                      type="button"
-                      onClick={() => navigateApp(`/category?name=${encodeURIComponent(tile.name)}`)}
-                      className="vodda-tappable"
-                      aria-label={topic.title}
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        maxWidth: "100%",
-                        padding: "3px 9px",
-                        border: `1px solid ${colors.sand200}`,
-                        borderRadius: 999,
-                        background: colors.surface,
-                        color: colors.inkSecondary,
-                        fontSize: 10.5,
-                        fontWeight: 700,
-                        lineHeight: 1.5,
-                        fontFamily: typography.fontFamily,
-                        textAlign: "start",
-                        cursor: "pointer",
-                        overflowWrap: "anywhere",
-                      }}
-                    >
-                      {topic.title}
-                    </button>
-                  ))}
-                </div>
-              ) : null}
-            </div>
+                  onError={(event) => {
+                    event.currentTarget.style.display = "none";
+                  }}
+                />
+              </span>
+
+              <strong
+                style={{
+                  fontSize: 12.5,
+                  fontWeight: 800,
+                  color: colors.ink,
+                  lineHeight: 1.5,
+                  display: "-webkit-box",
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: "vertical",
+                  overflow: "hidden",
+                  overflowWrap: "anywhere",
+                }}
+              >
+                {tile.name}
+              </strong>
+
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 4,
+                  padding: "2.5px 10px",
+                  borderRadius: 999,
+                  background: colors.olive50,
+                  border: `1px solid ${colors.olive100}`,
+                  color: colors.olive600,
+                  fontSize: 10.5,
+                  fontWeight: 800,
+                  whiteSpace: "nowrap" as const,
+                }}
+              >
+                <Icon name="users" size={11} stroke={2.2} />
+                {faNumber(tile.count, 0)} استاد فعال
+              </span>
+            </button>
           );
         })}
       </div>
@@ -1374,7 +1383,7 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
       <VerseStrip />
 
       {/* ۱.ب.۲ — بخش ③ خانه‌های شش‌گانهٔ دسته‌بندی */}
-      <CategoryTileGrid tiles={tiles} groups={catalogGroups} loading={discoverLoading} wide={wide} />
+      <CategoryTileGrid tiles={tiles} loading={discoverLoading} wide={wide} />
 
       {teachersError && teachers.length === 0 ? (
         <Card elevated style={{ display: "grid", gap: spacing.md, textAlign: "center" }}>
