@@ -10,8 +10,6 @@ import type { CatalogCategory } from '@/lib/category';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
 import { Icon } from '../Icon';
 import { Avatar, GeoPattern, SectionTitle, WebBtn } from './ui';
-import { hexToRgbTriplet, tierNeonColor } from '@/lib/tierMeta';
-import { resolveOnline } from '@/lib/presence';
 import { CityChip, sortByCityPriority } from './CityChip';
 import { CITY_CHANGE_EVENT, readStoredCity, storedCityUsable } from '@/lib/userCity';
 import { TierSeal, TierChip } from './tier';
@@ -596,81 +594,72 @@ export const TIER1_BADGE_ITEMS: Record<string, { emoji: string; label: string }>
   instant: { emoji: '⚡', label: 'جلسات فوری' },
 };
 
-/* کارت استاد وب — ۰.۷.۱ مربع استاندارد واحد؛ همهٔ کارت‌ها هم‌اندازه، درجه ۱ فقط ظاهر طلایی.
-   ساختار اسلات‌ثابت: آواتار → نام (۲ خط) → تخصص (۱ خط) → ردیف نشان‌ها → متا → قیمت + CTA.
-   با href کل کارت لینک می‌شود (نتایج جستجو)؛ بدون href فقط دکمهٔ پروفایل لینک است (صفحهٔ نخست). */
+/* کارت استاد وب — ۰.۷.۴ سبک اسنپ‌داکتر (دقیقاً مطابق snapp.doctor):
+   کارت سفید تخت ۱۶۵×۲۰۰ با گوشهٔ ۱۲px و حاشیهٔ روشن؛ ردیف بالا: آواتار ۶۴px در یک سمت +
+   ستون دو بج در سمت دیگر (امتیاز کهربایی با ستاره / قیمت یا تعداد جلسه با زمینهٔ زیتونی روشن)؛
+   نام ۱۴px یک‌خطی با 🏆 برای درجهٔ ۱؛ تخصص ۱۲px دوخطی خاکستری؛ دکمهٔ outline تمام‌عرض پایین.
+   با href کل کارت لینک می‌شود (نتایج جستجو)؛ بدون href فقط دکمهٔ پایین لینک است (صفحهٔ نخست). */
 export function WebTeacherCard({ teacher, href }: { teacher: Teacher; href?: string }) {
   const name = teacher.user?.name || 'استاد وُدّا';
   const price = Math.max(0, teacher.price30 || teacher.services?.[0]?.price || 0);
-  /* ۱.الف.۳ — نئون کارت استاد + ۱.الف.۴ — چراغ حضور */
-  const neonColor = tierNeonColor(teacher.tier);
-  const tier1 = teacher.is_tier1 === true;
-  const tier1Badges = (teacher.tier1_badges ?? [])
-    .map((key) => TIER1_BADGE_ITEMS[key])
-    .filter((item): item is { emoji: string; label: string } => Boolean(item));
-  /* last_seen فقط از فیلد فعالیت بک‌اند؛ updated_at به‌روزرسانی پروفایل است نه حضور (۱.الف.۴) */
+  const sessions = Math.max(0, teacher.sessions || 0);
+  /* ۱.الف.۴ — چراغ حضور روی آواتار (last_seen واقعی از بک‌اند) */
   const lastSeen = teacher.last_seen ?? null;
-  const online = resolveOnline(teacher.available !== false, lastSeen);
+  const tier1 = teacher.is_tier1 === true;
   const profileHref = href ?? `/teachers/${teacher.id}`;
   const rating = teacher.rating > 0 ? toFaDigits(teacher.rating.toFixed(1)) : '';
-  const metaText = [
-    rating,
-    teacher.city || '',
-    `${toFaDigits(teacher.sessions || 0)} جلسه`,
-  ].filter(Boolean).join(' · ');
 
   const card = (
-    <article
-      className={`vodda-teacher-card vodda-card-neon${tier1 ? ' vodda-card-tier1' : ''}`}
-      style={{ borderRadius: 16, ['--neon-rgb' as string]: hexToRgbTriplet(neonColor) } as CSSProperties}
-    >
-      <span className="vtc-avatar">
-        <Avatar
-          size={58}
-          ring
-          tier={teacher.tier}
-          imageUrl={avatarUrl(teacher.user?.avatar_url, teacher.user?.updated_at)}
-          name={name}
-          online={teacher.available !== false}
-          lastSeen={lastSeen}
-        />
-      </span>
-      <strong className="vtc-name">{name}</strong>
-      <span className="vtc-tag">{teacher.tag || teacher.field || 'آموزش قرآن'}</span>
-      <span className="vtc-badges">
-        {tier1 ? (
-          /* ۱.الف.۵ — نشان «🏆 استاد درجه ۱» + حداکثر دو نشان 🟦🆓⚡ — همان اندازه، ظاهر ویژه */
-          <>
-            <span className="vtc-t1">🏆 استاد درجه ۱</span>
-            {tier1Badges.slice(0, 2).map((badge) => (
-              <span key={badge.label} className="vtc-mini" title={badge.label}>
-                <span aria-hidden="true">{badge.emoji}</span>{badge.label}
+    <article className={`vodda-teacher-card${tier1 ? ' vodda-card-tier1' : ''}`}>
+      <span className="vtc-top">
+        <span className="vtc-head">
+          <span className="vtc-avatar">
+            <Avatar
+              size={64}
+              ring
+              tier={teacher.tier}
+              imageUrl={avatarUrl(teacher.user?.avatar_url, teacher.user?.updated_at)}
+              name={name}
+              online={teacher.available !== false}
+              lastSeen={lastSeen}
+            />
+          </span>
+          <span className="vtc-pills">
+            {rating ? (
+              <span className="vtc-pill vtc-pill-rating">
+                <Icon name="star" size={12} fill style={{ color: 'var(--gold, #bf9540)' }} />
+                {rating}
               </span>
-            ))}
-          </>
-        ) : (
-          <TierChip tier={teacher.tier} size={10} />
-        )}
-      </span>
-      {metaText ? (
-        <span className="vtc-meta">
-          {rating ? <Icon name="star" size={11} fill style={{ color: 'var(--gold)' }} /> : null}
-          {metaText}
+            ) : tier1 ? (
+              <span className="vtc-pill vtc-pill-gold">🏆 استاد درجه ۱</span>
+            ) : (
+              <TierChip tier={teacher.tier} size={10.5} />
+            )}
+            {price > 0 ? (
+              <span className="vtc-pill vtc-pill-info">{formatFaNumber(price)} تومان</span>
+            ) : sessions > 0 ? (
+              <span className="vtc-pill vtc-pill-info">
+                <Icon name="clock" size={11} />
+                {toFaDigits(sessions)} جلسه
+              </span>
+            ) : null}
+          </span>
         </span>
-      ) : null}
-      <span className="vtc-foot">
-        <span className="vtc-price">
-          <small>از</small>
-          <strong>{price > 0 ? `${formatFaNumber(price)} تومان` : 'مشاهده خدمات'}</strong>
-        </span>
-        {href ? (
-          <span className="vtc-cta">پروفایل و رزرو<Icon name="arrowL" size={13} /></span>
-        ) : (
-          <WebBtn size="sm" href={profileHref} style={{ width: '100%', minHeight: 34, fontSize: 12.5, borderRadius: 10, padding: '7px 10px' }}>
-            پروفایل و رزرو
-          </WebBtn>
-        )}
+        <strong className="vtc-name">
+          {tier1 ? (
+            <span className="vtc-trophy" title="استاد درجه ۱" aria-label="استاد درجه ۱">🏆</span>
+          ) : null}
+          <span className="vtc-name-text">{name}</span>
+        </strong>
+        <span className="vtc-tag">{teacher.tag || teacher.field || 'آموزش قرآن'}</span>
       </span>
+      {href ? (
+        <span className="vtc-cta">پروفایل و رزرو<Icon name="arrowL" size={14} /></span>
+      ) : (
+        <Link href={profileHref} className="vtc-cta" aria-label={`${name} — پروفایل و رزرو`}>
+          پروفایل و رزرو<Icon name="arrowL" size={14} />
+        </Link>
+      )}
     </article>
   );
 

@@ -16,7 +16,6 @@ import { api, type Teacher } from '@/lib/api';
 import { avatarUrl } from '@/lib/auth';
 import { categoryOf, groupCatalog, teachersForTopics, type CatalogCategory } from '@/lib/category';
 import { formatFaNumber } from '@/lib/persian';
-import { TIER1_BADGE_ITEMS } from '@/components/web/sections';
 
 export default function UserTeachersPage() {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
@@ -145,7 +144,7 @@ export default function UserTeachersPage() {
         {loading ? (
           <div className="vodda-teacher-grid" style={{ padding: 16 }} aria-busy="true">
             {Array.from({ length: 6 }).map((_, index) => (
-              <div key={index} className="adm-skeleton" style={{ aspectRatio: '5 / 6', borderRadius: 16 }} />
+              <div key={index} className="adm-skeleton" style={{ minHeight: 200, borderRadius: 12 }} />
             ))}
           </div>
         ) : filteredTeachers.length === 0 ? (
@@ -157,61 +156,65 @@ export default function UserTeachersPage() {
         ) : (
           <div className="vodda-teacher-grid" style={{ padding: 16 }}>
             {filteredTeachers.map((teacher) => {
-              /* ۰.۷.۱ — کارت مربعی استاندارد واحد (هم‌پاری با صفحهٔ نخست/جستجو/اپ) */
+              /* ۰.۷.۴ — کارت اسنپ‌داکتری واحد (هم‌پاری با صفحهٔ نخست/جستجو/اپ):
+                 آواتار ۶۴px + ستون بج‌ها، نام یک‌خط، تخصص دوخط، دو دکمهٔ عملیاتی پایین */
               const name = teacher.user?.name || 'استاد وُدّا';
               const tier1 = teacher.is_tier1 === true;
-              const tier1Badges = (teacher.tier1_badges ?? [])
-                .map((key) => TIER1_BADGE_ITEMS[key])
-                .filter((item): item is { emoji: string; label: string } => Boolean(item));
+              const rating = Number(teacher.rating) > 0 ? faDigits(Number(teacher.rating).toFixed(1)) : '';
+              const price = Math.max(0, Number(teacher.price30) || 0);
+              const sessions = Math.max(0, Number(teacher.sessions) || 0);
               return (
                 <article
                   key={teacher.id}
-                  className={`vodda-teacher-card vodda-card-neon${tier1 ? ' vodda-card-tier1' : ''}`}
+                  className={`vodda-teacher-card${tier1 ? ' vodda-card-tier1' : ''}`}
                 >
-                  <span className="vtc-avatar">
-                    <Avatar
-                      size={58}
-                      ring
-                      tier={teacher.tier}
-                      imageUrl={avatarUrl(teacher.user?.avatar_url, teacher.user?.updated_at)}
-                      name={name}
-                      online={teacher.available !== false}
-                      lastSeen={teacher.last_seen ?? null}
-                    />
-                  </span>
-                  <strong className="vtc-name">{name}</strong>
-                  <span className="vtc-tag">{teacher.tag || teacher.field || 'آموزش قرآن'}</span>
-                  <span className="vtc-badges">
-                    {tier1 ? (
-                      <>
-                        <span className="vtc-t1">🏆 استاد درجه ۱</span>
-                        {tier1Badges.slice(0, 2).map((badge) => (
-                          <span key={badge.label} className="vtc-mini" title={badge.label}>
-                            <span aria-hidden="true">{badge.emoji}</span>{badge.label}
+                  <span className="vtc-top">
+                    <span className="vtc-head">
+                      <span className="vtc-avatar">
+                        <Avatar
+                          size={64}
+                          ring
+                          tier={teacher.tier}
+                          imageUrl={avatarUrl(teacher.user?.avatar_url, teacher.user?.updated_at)}
+                          name={name}
+                          online={teacher.available !== false}
+                          lastSeen={teacher.last_seen ?? null}
+                        />
+                      </span>
+                      <span className="vtc-pills">
+                        {rating ? (
+                          <span className="vtc-pill vtc-pill-rating">
+                            <Icon name="star" size={12} fill style={{ color: 'var(--gold)' }} />
+                            {rating}
                           </span>
-                        ))}
-                      </>
-                    ) : (
-                      <TierChip tier={teacher.tier} size={10} />
-                    )}
-                  </span>
-                  <span className="vtc-meta">
-                    {Number(teacher.rating) > 0 && <Icon name="star" size={11} fill style={{ color: 'var(--gold)' }} />}
-                    {[Number(teacher.rating) > 0 ? faDigits(Number(teacher.rating).toFixed(1)) : '', teacher.city || '']
-                      .filter(Boolean)
-                      .join(' · ')}
-                  </span>
-                  <span className="vtc-foot">
-                    <span className="vtc-price">
-                      <small>از</small>
-                      <strong>{formatFaNumber(teacher.price30)} تومان</strong>
+                        ) : tier1 ? (
+                          <span className="vtc-pill vtc-pill-gold">🏆 استاد درجه ۱</span>
+                        ) : (
+                          <TierChip tier={teacher.tier} size={10.5} />
+                        )}
+                        {price > 0 ? (
+                          <span className="vtc-pill vtc-pill-info">{formatFaNumber(price)} تومان</span>
+                        ) : sessions > 0 ? (
+                          <span className="vtc-pill vtc-pill-info">
+                            <Icon name="clock" size={11} />
+                            {formatFaNumber(sessions)} جلسه
+                          </span>
+                        ) : null}
+                      </span>
                     </span>
-                    <span className="vtc-actions">
-                      <Link href={`/teachers/${teacher.id}`} className="vtc-cta vtc-cta--ghost">پروفایل</Link>
-                      <Link href={`/panel/user/book?teacher=${teacher.id}`} className="vtc-cta">
-                        <Icon name="plus" size={13} /> رزرو
-                      </Link>
-                    </span>
+                    <strong className="vtc-name">
+                      {tier1 ? (
+                        <span className="vtc-trophy" title="استاد درجه ۱" aria-label="استاد درجه ۱">🏆</span>
+                      ) : null}
+                      <span className="vtc-name-text">{name}</span>
+                    </strong>
+                    <span className="vtc-tag">{teacher.tag || teacher.field || 'آموزش قرآن'}</span>
+                  </span>
+                  <span className="vtc-actions">
+                    <Link href={`/teachers/${teacher.id}`} className="vtc-cta vtc-cta--ghost">پروفایل</Link>
+                    <Link href={`/panel/user/book?teacher=${teacher.id}`} className="vtc-cta">
+                      <Icon name="plus" size={13} /> رزرو
+                    </Link>
                   </span>
                 </article>
               );
