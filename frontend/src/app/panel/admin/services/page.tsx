@@ -9,7 +9,7 @@ import {
   PanelPageHeader,
 } from '@/components/panel/PanelUI';
 import { StatCard } from '@/components/admin/AdminUI';
-import { fullUrl, getToken } from '@/lib/auth';
+import { avatarUrl, getToken } from '@/lib/auth';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
 import { confirmDialog } from '@/lib/confirm';
 
@@ -22,7 +22,7 @@ type PendingService = {
     city?: string;
     field?: string;
     tag?: string;
-    user?: { name?: string; avatar_url?: string };
+    user?: { name?: string; avatar_url?: string; updated_at?: string };
   };
 };
 
@@ -124,7 +124,7 @@ export default function AdminServices() {
                   </div>
                   <div className="ops-row-sub">
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                      <Avatar size={23} imageUrl={fullUrl(user.avatar_url)} />{user.name || 'استاد'}
+                      <Avatar size={23} imageUrl={avatarUrl(user.avatar_url, user.updated_at)} />{user.name || 'استاد'}
                     </span>
                     {teacher.tag && <span>· {teacher.tag}</span>}
                     {teacher.city && <span>· {teacher.city}</span>}

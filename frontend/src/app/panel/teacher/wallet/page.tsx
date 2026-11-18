@@ -12,6 +12,7 @@ import {
 import { api, type Transaction } from '@/lib/api';
 import { getToken } from '@/lib/auth';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
+import { formatDateTime } from '@/lib/datetime';
 
 export default function TeacherWalletPage() {
   const [wallet, setWallet] = useState(0);
@@ -111,5 +112,5 @@ export default function TeacherWalletPage() {
 
 function formatDate(value: string) {
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? '—' : new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium', timeStyle: 'short' }).format(date);
+  return Number.isNaN(date.getTime()) ? '—' : formatDateTime(date);
 }

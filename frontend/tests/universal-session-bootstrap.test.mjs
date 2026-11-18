@@ -11,7 +11,7 @@ test('session bootstrap distinguishes restore failures from logged-out sessions'
   assert.match(source, /catch \(restoreError\)/);
   assert.match(source, /setStatus\("error"\)/);
   assert.match(source, /onRetry=\{\(\) => setRetryKey/);
-  assert.match(source, /if \(!user\) \{/);
+  assert.match(source, /if \(!sessionUser\) \{/);
   assert.doesNotMatch(source, /finally \{[\s\S]*setReady\(true\)/);
 });
 
@@ -23,7 +23,7 @@ test('restored sessions enforce authoritative profile completion before route ac
     read('src/universal-app/platform/auth.ts'),
   ]);
 
-  assert.match(bootstrap, /user\.needProfile && routeName !== "profile-edit"/);
+  assert.match(bootstrap, /sessionUser\.needProfile && routeName !== "profile-edit"/);
   assert.match(bootstrap, /navigateApp\("\/profile\/edit"/);
   assert.match(web, /request<\{ data: AuthUserPayload \}>\("\/me"\)/);
   assert.match(native, /request<\{ data: AuthUserPayload \}>\("\/me"\)/);

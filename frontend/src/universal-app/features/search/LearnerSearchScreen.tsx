@@ -710,21 +710,6 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
     setCatName("");
   }
 
-  function removeRecent(item: string) {
-    setRecent((current) => {
-      const next = current.filter((entry) => entry !== item);
-      try {
-        window.localStorage.setItem(RECENT_KEY, JSON.stringify(next));
-      } catch {
-        // بی‌اهمیت
-      }
-      return next;
-    });
-  }
-
-  const filteredCitiesList = cityQuery.trim()
-    ? cities.filter((city) => city.includes(cityQuery.trim()))
-    : cities;
 
   // فیلتر و گروه‌بندی خدمات (تب خدمات)
   const needle = servicesQuery.trim();
@@ -896,6 +881,22 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
       config,
     );
   }
+
+  function removeRecent(item: string) {
+    setRecent((current) => {
+      const next = current.filter((entry) => entry !== item);
+      try {
+        window.localStorage.setItem(RECENT_KEY, JSON.stringify(next));
+      } catch {
+        // بی‌اهمیت
+      }
+      return next;
+    });
+  }
+
+  const filteredCitiesList = cityQuery.trim()
+    ? cities.filter((city) => city.includes(cityQuery.trim()))
+    : cities;
 
   return (
     <section className="vodda-screen" style={{ display: "grid", gap: 14 }}>
@@ -1320,11 +1321,10 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
             stroke={1.8}
             style={{ position: "absolute", zIndex: 1, insetInlineStart: 14, top: "50%", transform: "translateY(-50%)", color: colors.inkMuted }}
           />
-          <input
+          <input className="vodda-input"
             value={filters.query}
             onChange={(event) => setFilters((current) => ({ ...current, query: event.target.value }))}
             placeholder={L("نام استاد یا تخصص…")}
-            className="vodda-input"
             style={{
               width: "100%",
               minHeight: 50,
@@ -1530,6 +1530,56 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
         ))}
       </div>
 
+      <div
+        className="vodda-scroll-rail"
+        style={{ display: "flex", gap: 8, overflowX: "auto", marginInline: -spacing.xl, paddingInline: spacing.xl, minHeight: 38 }}
+      >
+        {SORT_PRESETS.map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            className="vodda-tappable"
+            onClick={() => setFilters((current) => ({ ...current, sort: value }))}
+            style={{ ...chipStyle(filters.sort === value), fontSize: 11.5, minHeight: 34, padding: "6px 11px" }}
+          >
+            <Icon name={filters.sort === value ? "check" : "trending"} size={13} stroke={2} />
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <div
+        className="vodda-scroll-rail"
+        style={{ display: "flex", gap: 8, overflowX: "auto", marginInline: -spacing.xl, paddingInline: spacing.xl, minHeight: 38 }}
+      >
+        <button
+          type="button"
+          className="vodda-tappable"
+          onClick={() => setFilters((current) => ({ ...current, availableOnly: !current.availableOnly }))}
+          style={{ ...chipStyle(filters.availableOnly), fontSize: 11.5, minHeight: 34, padding: "6px 11px" }}
+        >
+          <Icon name="checkCircle" size={13} stroke={2} />
+          فقط آمادهٔ رزرو
+        </button>
+        {TIER_PRESETS.map(([value, label, color]) => (
+          <button
+            key={value || "all-tiers"}
+            type="button"
+            className="vodda-tappable"
+            onClick={() => setFilters((current) => ({ ...current, tier: value }))}
+            style={{ ...chipStyle(filters.tier === value), fontSize: 11.5, minHeight: 34, padding: "6px 11px" }}
+          >
+            {color ? (
+              <span
+                aria-hidden="true"
+                style={{ width: 9, height: 9, borderRadius: "50%", background: color, flex: "0 0 auto" }}
+              />
+            ) : null}
+            {label}
+          </button>
+        ))}
+      </div>
+
       {hasAdvancedFilter ? (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
           {filters.city ? (
@@ -1584,6 +1634,28 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
               style={{ ...chipStyle(false), background: colors.sand100 }}
             >
               {L("جلسهٔ فوری")}
+              <Icon name="x" size={14} />
+            </button>
+          ) : null}
+          {filters.tier ? (
+            <button
+              type="button"
+              className="vodda-tappable"
+              onClick={() => setFilters((current) => ({ ...current, tier: "" }))}
+              style={{ ...chipStyle(false), background: colors.sand100 }}
+            >
+              درجه: {TIER_LABELS[filters.tier]}
+              <Icon name="x" size={14} />
+            </button>
+          ) : null}
+          {filters.availableOnly ? (
+            <button
+              type="button"
+              className="vodda-tappable"
+              onClick={() => setFilters((current) => ({ ...current, availableOnly: false }))}
+              style={{ ...chipStyle(false), background: colors.sand100 }}
+            >
+              فقط آمادهٔ رزرو
               <Icon name="x" size={14} />
             </button>
           ) : null}

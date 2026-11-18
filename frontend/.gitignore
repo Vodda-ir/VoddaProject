@@ -1,3 +1,6 @@
 .next
 node_modules
 tsconfig.tsbuildinfo
+
+# sandbox-local sqlite (unused in production BFF)
+db/custom.db

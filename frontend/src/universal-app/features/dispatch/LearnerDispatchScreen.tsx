@@ -54,6 +54,9 @@ function priceLabel(n: number, lang: "fa" | "en", L: (text: string) => string): 
   return n === 0 ? L("رایگان") : L("{n} تومان").replace("{n}", localizedDigits(formatWalletAmount(Math.max(0, n)), lang));
 }
 
+/** باگ dispatch-stuck-pending — پیام دقیق وقتی فراخوان فعالِ قبلی هنوز باز است. */
+const PENDING_CALL_MESSAGE = "فراخوان قبلی شما در انتظار پاسخ است — ابتدا آن را لغو کنید.";
+
 function timeLabelOf(
   call: { flexible: boolean; scheduled_at?: string | null },
   lang: "fa" | "en",
@@ -80,10 +83,11 @@ function countdownLabel(total: number, lang: "fa" | "en"): string {
   return `${localizedDigits(String(m).padStart(2, "0"), lang)}:${localizedDigits(String(s).padStart(2, "0"), lang)}`;
 }
 
+/* رنگ/برچسب درجه از منبع واحد tierMeta — ۱.الف.۲: آبی بین‌المللی، سبز کشوری، قرمز استانی */
 const tierBadge: Record<string, { label: string; bg: string; color: string }> = {
-  international: { label: "استاد بین‌المللی", bg: "rgba(0,149,246,.10)", color: "#0095f6" },
-  grade2: { label: "استاد کشوری", bg: "rgba(18,183,106,.12)", color: "#0e9f5e" },
-  grade3: { label: "استاد استانی", bg: "rgba(224,36,94,.10)", color: "#e0245e" },
+  international: { label: "استاد بین‌المللی", bg: "rgba(29,161,242,.12)", color: "#0095F6" },
+  grade2: { label: "برگزیدهٔ کشوری", bg: "rgba(34,197,94,.12)", color: "#3AA76D" },
+  grade3: { label: "برگزیدهٔ استانی", bg: "rgba(239,68,68,.12)", color: "#E1306C" },
 };
 
 function TopicIcon({ icon, size = 22 }: { icon: string; size?: number }) {
@@ -337,6 +341,14 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
     setCreating(true);
     setActionError("");
     try {
+      // باگ dispatch-stuck-pending — پیش از ثبت، فراخوان فعال قبلی بررسی می‌شود تا کاربر
+      // به‌جای خطای مبهم سرور، پیام دقیق بگیرد و همان فراخوان با دکمهٔ لغو نمایش داده شود.
+      const precheck = await getCurrentDispatchCall(runtime);
+      if (precheck.call && (precheck.call.status === "searching" || precheck.call.status === "matched")) {
+        setView(precheck);
+        setActionError(PENDING_CALL_MESSAGE);
+        return;
+      }
       const scheduledAt = whenMode === "later" ? tehranWallToRfc3339(when) || null : null;
       const created = await createDispatchCall(runtime, {
         officialServiceId: selectedTopic.id,
@@ -347,6 +359,18 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
       showToast(L("فراخوان شما برای اساتید این موضوع ارسال شد"));
       setView(created);
     } catch (error) {
+      // رقابت احتمالی (مثلاً ثبت در دستگاه دیگر): وضعیت واقعی را بگیر؛
+      // اگر فراخوان فعال هست، همان با دکمهٔ لغو نشان داده می‌شود نه خطای بی‌مسیر.
+      try {
+        const current = await getCurrentDispatchCall(runtime);
+        if (current.call && (current.call.status === "searching" || current.call.status === "matched")) {
+          setView(current);
+          setActionError(PENDING_CALL_MESSAGE);
+          return;
+        }
+      } catch {
+        // بررسی وضعیت ناموفق بود — پیام اصلی خطا نشان داده می‌شود
+      }
       setActionError(messageOf(error, "ثبت فراخوان انجام نشد."));
     } finally {
       setCreating(false);

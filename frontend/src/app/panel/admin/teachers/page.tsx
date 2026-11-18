@@ -38,6 +38,8 @@ type TeacherRow = {
   price30?: number;
   price60?: number;
   tier?: TeacherTier;
+  /** کارت درجه ۱ — از overlay محلی BFF (۱.الف.۵) */
+  is_tier1?: boolean;
   status?: Exclude<TeacherStatus, ''>;
   verified?: boolean;
   available?: boolean;
@@ -47,6 +49,7 @@ type TeacherRow = {
     mobile?: string;
     avatar_url?: string;
     active?: boolean;
+    updated_at?: string;
   };
 };
 
@@ -198,6 +201,28 @@ export default function AdminTeachers() {
       setSelected((current) => (current && current.id === teacher.id ? { ...current, verified: updated.verified, tier: updated.tier } : current));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'ثبت تغییرات انجام نشد.');
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  /** ۱.الف.۵ — پرچم درجه ۱ روی overlay محلی BFF (تایید ادمین). */
+  async function patchTier1(teacher: TeacherRow, isTier1: boolean | null) {
+    if (!token || busyId !== null) return;
+    setBusyId(teacher.id);
+    setError('');
+    try {
+      const response = await fetch('/api/backend/teacher-flags', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ teacherId: teacher.id, isTier1 }),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(body.error || 'ثبت درجه ۱ انجام نشد.');
+      setTeachers((previous) => previous.map((item) => (item.id === teacher.id ? { ...item, is_tier1: isTier1 === null ? undefined : isTier1 } : item)));
+      setSelected((current) => (current && current.id === teacher.id ? { ...current, is_tier1: isTier1 === null ? undefined : isTier1 } : current));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'ثبت درجه ۱ انجام نشد.');
     } finally {
       setBusyId(null);
     }
@@ -380,6 +405,7 @@ export default function AdminTeachers() {
                 <div style={{ display: 'flex', gap: 5, marginTop: 5, flexWrap: 'wrap' }}>
                   <span className="adm-badge" data-tone={STATUS_BADGE[selected.status || 'pending']?.tone}>{STATUS_BADGE[selected.status || 'pending']?.label}</span>
                   {selected.tier && <span className="adm-badge" data-tone={TIER_BADGE[selected.tier]?.tone}>{TIER_BADGE[selected.tier]?.label}</span>}
+                  {selected.is_tier1 && <span className="adm-badge" data-tone="gold">🏆 کارت درجه ۱</span>}
                   {!selected.user?.active && <PanelStatus status="inactive">حساب غیرفعال</PanelStatus>}
                 </div>
               </div>
@@ -460,6 +486,47 @@ export default function AdminTeachers() {
                   </select>
                 </label>
                 {busyId === selected.id && <small style={{ display: 'block', marginTop: 8, color: 'var(--olive-700)' }}>در حال ثبت تغییر…</small>}
+
+                {/* ۱.الف.۵ — پرچم کارت درجه ۱ (تایید ادمین) */}
+                <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 14, marginBottom: 4, cursor: 'pointer' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 12 }}>
+                    <span aria-hidden="true">🏆</span>
+                    کارت درجه ۱ (برگزیده)
+                  </span>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={Boolean(selected.is_tier1)}
+                    disabled={busyId === selected.id}
+                    onClick={() => void patchTier1(selected, selected.is_tier1 ? null : true)}
+                    style={{
+                      width: 42,
+                      height: 24,
+                      borderRadius: 999,
+                      border: 0,
+                      cursor: 'pointer',
+                      background: selected.is_tier1 ? '#bf9540' : 'var(--sand-200)',
+                      position: 'relative',
+                      transition: 'background .18s ease',
+                    }}
+                  >
+                    <span style={{
+                      position: 'absolute',
+                      top: 3,
+                      insetInlineStart: selected.is_tier1 ? 21 : 3,
+                      width: 18,
+                      height: 18,
+                      borderRadius: '50%',
+                      background: '#fff',
+                      boxShadow: '0 1px 4px rgba(0,0,0,.2)',
+                      transition: 'inset-inline-start .18s ease',
+                    }} />
+                  </button>
+                </label>
+                <p style={{ margin: '0 0 12px', color: 'var(--ink-3)', fontSize: 10.5, lineHeight: 1.9 }}>
+                  درجه ۱ وقتی فعال است که حداقل ۲ شرط برقرار باشد: تیک بین‌المللی، خدمات رایگان فعال، جلسات فوری با امتیاز ≥ ۲۰۰.
+                  روشن‌کردن این سوییچ تأیید صریح ادمین را ثبت می‌کند؛ خاموش‌کردن آن به حالت خودکار برمی‌گردد.
+                </p>
               </section>
             )}
 

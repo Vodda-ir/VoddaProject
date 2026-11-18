@@ -15,8 +15,10 @@ import { PresenceScreen } from "./features/ceremony/PresenceScreen";
 import { TeacherPresenceScreen } from "./features/ceremony/TeacherPresenceScreen";
 import { LearnerDispatchScreen } from "./features/dispatch/LearnerDispatchScreen";
 import { LearnerHomeScreen } from "./features/home/LearnerHomeScreen";
+import { ServiceTeachersScreen } from "./features/discover/ServiceTeachersScreen";
 import { LearnerProfileScreen } from "./features/profile/LearnerProfileScreen";
 import { LearnerSearchScreen } from "./features/search/LearnerSearchScreen";
+import { CategoryScreen } from "./features/categories/CategoryScreen";
 import { LearnerSessionsScreen } from "./features/sessions/LearnerSessionsScreen";
 import { SessionDetailScreen } from "./features/session-detail/SessionDetailScreen";
 import { TeacherDashboardScreen } from "./features/teacher/TeacherDashboardScreen";
@@ -45,6 +47,8 @@ export type UniversalAppProps = {
 
 const routeTitleKeys: Record<AppRouteName, string> = {
   home: "app_title",
+  category: "category_title",
+  service: "service_teachers",
   login: "login_submit",
   search: "search_title",
   teacher: "nav_profile",
@@ -150,6 +154,10 @@ function UniversalAppShellContent({
     <LearnerHomeScreen config={config} />
   ) : route.name === "search" ? (
     <LearnerSearchScreen config={config} />
+  ) : route.name === "category" ? (
+    <CategoryScreen config={config} />
+  ) : route.name === "service" ? (
+    <ServiceTeachersScreen serviceId={route.params.id ?? ""} config={config} />
   ) : route.name === "teacher" ? (
     <LearnerTeacherProfileScreen teacherId={route.params.id ?? ""} config={config} />
   ) : route.name === "book" ? (

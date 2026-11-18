@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import type { UniversalAppConfig } from "../../config";
 import { usePlatform } from "../../platform/context";
 import { navigateApp } from "../../router";
@@ -188,18 +188,25 @@ export function LearnerSessionsScreen({ config }: { config?: UniversalAppConfig 
   const [reviewSaving, setReviewSaving] = useState(false);
   const [reviewError, setReviewError] = useState<string | null>(null);
 
+  // باگ refresh-loop: اجرای دوم StrictMode یا فراخوانی دیرهنگام نباید state را با دادهٔ کهنه بازنویسی کند.
+  const loadGeneration = useRef(0);
+
   const load = useCallback(
     async (target: LearnerSessionsWhen) => {
+      const generation = ++loadGeneration.current;
+      const isStale = () => loadGeneration.current !== generation;
       setLoading(true);
       setError(null);
       try {
         const next = await getLearnerSessions(runtime, target);
+        if (isStale()) return;
         setSessions(next);
       } catch (loadError) {
+        if (isStale()) return;
         setSessions([]);
         setError(messageOf(loadError));
       } finally {
-        setLoading(false);
+        if (!isStale()) setLoading(false);
       }
     },
     [runtime],

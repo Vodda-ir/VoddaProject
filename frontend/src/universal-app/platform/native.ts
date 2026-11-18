@@ -5,6 +5,7 @@ import type {
   PlatformCapabilities,
   PlatformRequestInit,
   PlatformRuntime,
+  PlatformUploadProgress,
   SecureTokenStorage,
   VerifyOtpResult,
 } from "./types";
@@ -50,11 +51,59 @@ export function createNativePlatformRuntime({
     }
   };
 
+  // باگ avatar-upload — آپلود multipart با progress واقعی (XHR) مستقیم به
+  // دامنهٔ سرور (api.vodda.ir) با Bearer token؛ مسیر هرگز نسبی نیست.
+  const requestWithProgress = async <T>(
+    path: string,
+    init: PlatformRequestInit = {},
+    onProgress?: PlatformUploadProgress,
+  ): Promise<T> => {
+    const token = await tokenStorage.getToken();
+    return new Promise<T>((resolve, reject) => {
+      if (typeof XMLHttpRequest === "undefined") {
+        reject(new Error("آپلود در این محیط پشتیبانی نمی‌شود."));
+        return;
+      }
+      const method = (init.method ?? "GET").toUpperCase();
+      const headers = new Headers(init.headers);
+      const isFormData = typeof FormData !== "undefined" && init.body instanceof FormData;
+      const xhr = new XMLHttpRequest();
+      xhr.open(method, joinUrl(apiBaseUrl, path));
+      xhr.responseType = "json";
+      if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+      if (init.body != null && !isFormData && !headers.has("Content-Type")) {
+        xhr.setRequestHeader("Content-Type", "application/json");
+      }
+      if (onProgress) {
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable && event.total > 0) {
+            onProgress(Math.min(1, event.loaded / event.total));
+          }
+        };
+      }
+      xhr.onload = () => {
+        const responseBody = (xhr.response ?? {}) as Record<string, unknown>;
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve(responseBody as T);
+          return;
+        }
+        const message =
+          typeof responseBody.error === "string"
+            ? responseBody.error
+            : `request failed: ${xhr.status}`;
+        reject(new PlatformHttpError(message, xhr.status, responseBody));
+      };
+      xhr.onerror = () => reject(new Error("ارتباط با سرور برقرار نشد."));
+      xhr.send(init.body as XMLHttpRequestBodyInit | null);
+    });
+  };
+
   return {
     kind: "native",
     apiBaseUrl,
     capabilities,
     request,
+    requestWithProgress,
     async requestOtp(mobile) {
       await requestJson(joinUrl(apiBaseUrl, "/auth/request-otp"), {
         method: "POST",

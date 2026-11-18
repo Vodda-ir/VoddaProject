@@ -1,12 +1,13 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { Icon } from '@/components/Icon';
 import { Avatar } from '@/components/web/ui';
 import { api, type NotificationItem } from '@/lib/api';
-import { clearToken, fullUrl, getToken } from '@/lib/auth';
+import { clearToken, avatarUrl as withVersion, getToken } from '@/lib/auth';
+import { onAvatarUpdated } from '@/lib/avatarImage';
 import { toFaDigits } from '@/lib/persian';
 
 type NavigationItem = {
@@ -53,14 +54,23 @@ function LearnerBell() {
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // باگ refresh-loop: پاسخ دیرهنگامِ درخواست قبلی نباید لیست را بازنویسی کند.
+  const loadGeneration = useRef(0);
+
   const load = useCallback(() => {
     const token = getToken();
     if (!token) return;
+    const generation = ++loadGeneration.current;
     setLoading(true);
     api.notifications(token, 15)
-      .then((response) => setItems(response.data || []))
+      .then((response) => {
+        if (loadGeneration.current !== generation) return;
+        setItems(response.data || []);
+      })
       .catch(() => {})
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (loadGeneration.current === generation) setLoading(false);
+      });
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -203,7 +213,7 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
         setUser({
           name: payload.data.name || 'قرآن‌آموز',
           role: payload.data.role || 'learner',
-          avatarUrl: fullUrl(payload.data.avatar_url) || '',
+          avatarUrl: withVersion(payload.data.avatar_url, payload.data.updated_at) || '',
           hasTeacherProfile: Boolean(payload.data.teacher?.id),
           isAdmin: payload.data.role === 'admin',
         });
@@ -215,6 +225,14 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
       });
     return () => controller.abort();
   }, [token]);
+
+  // باگ avatar-upload — پس از آپلود تصویر در تنظیمات، منوی بالا بلافاصله به‌روز می‌شود.
+  useEffect(() => {
+    const offAvatarUpdated = onAvatarUpdated((detail) => {
+      setUser((current) => ({ ...current, avatarUrl: withVersion(detail.url, detail.version) || current.avatarUrl }));
+    });
+    return offAvatarUpdated;
+  }, []);
 
   if (access !== 'allowed') {
     return <UserAccessState access={access} />;

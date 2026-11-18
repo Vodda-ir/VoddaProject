@@ -7,6 +7,7 @@ import { getToken } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { digitsOnly, toFaDigits } from '@/lib/persian';
+import { formatNumber } from '@/lib/datetime';
 
 const fields = [
   { id: 'quran', label: 'آموزش قرآن کریم' },
@@ -28,7 +29,8 @@ export default function TeacherRegisterPage() {
   async function submit() {
     const token = getToken();
     if (!token) {
-      router.push(`/panel/login?redirect=${encodeURIComponent('/panel/teacher/register')}`);
+      // باگ refresh-loop: replace به‌جای push تا تاریخچهٔ مرورگر به صفحهٔ ورود آلوده نشود.
+      router.replace(`/panel/login?redirect=${encodeURIComponent('/panel/teacher/register')}`);
       return;
     }
 
@@ -119,24 +121,24 @@ export default function TeacherRegisterPage() {
               </button>
             ))}
           </div>
-          <input id="teacher-tag" type="text" maxLength={60} value={tag} onChange={(event) => setTag(event.target.value)} placeholder="یا عنوان تخصصی خودتان را وارد کنید…" style={inputStyle} />
+          <input className="input-base" id="teacher-tag" type="text" maxLength={60} value={tag} onChange={(event) => setTag(event.target.value)} placeholder="یا عنوان تخصصی خودتان را وارد کنید…" style={inputStyle} />
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: 14, marginBottom: 18 }}>
           <div>
             <label htmlFor="teacher-city" style={labelStyle}>شهر</label>
-            <input id="teacher-city" type="text" maxLength={80} value={city} onChange={(event) => setCity(event.target.value)} placeholder="مثلاً کرمان" style={inputStyle} />
+            <input className="input-base" id="teacher-city" type="text" maxLength={80} value={city} onChange={(event) => setCity(event.target.value)} placeholder="مثلاً کرمان" style={inputStyle} />
           </div>
           <div>
             <label htmlFor="teacher-price" style={labelStyle}>هزینه ۳۰ دقیقه (تومان)</label>
-            <input id="teacher-price" type="text" inputMode="numeric" value={toFaDigits(price30)} onChange={(event) => setPrice30(digitsOnly(event.target.value))} placeholder="مثلاً ۱۵۰۰۰۰" style={inputStyle} />
+            <input className="input-base" id="teacher-price" type="text" inputMode="numeric" value={toFaDigits(price30)} onChange={(event) => setPrice30(digitsOnly(event.target.value))} placeholder="مثلاً ۱۵۰۰۰۰" style={inputStyle} />
           </div>
         </div>
 
         <div style={{ marginBottom: 24 }}>
           <label htmlFor="teacher-bio" style={labelStyle}>درباره شما</label>
-          <textarea id="teacher-bio" value={bio} maxLength={1000} onChange={(event) => setBio(event.target.value)} placeholder="سوابق، تجربیات و تخصص خود را بنویسید…" style={{ ...inputStyle, minHeight: 120, resize: 'vertical' }} />
-          <div style={{ marginTop: 5, fontSize: 11.5, color: 'var(--ink-4)' }}>{bio.length.toLocaleString('fa-IR')} از ۱۰۰۰ کاراکتر</div>
+          <textarea className="input-base" id="teacher-bio" value={bio} maxLength={1000} onChange={(event) => setBio(event.target.value)} placeholder="سوابق، تجربیات و تخصص خود را بنویسید…" style={{ ...inputStyle, minHeight: 120, resize: 'vertical' }} />
+          <div style={{ marginTop: 5, fontSize: 11.5, color: 'var(--ink-4)' }}>{formatNumber(bio.length)} از ۱۰۰۰ کاراکتر</div>
         </div>
 
         {error && <div role="alert" style={{ fontSize: 13, color: 'var(--rose)', marginBottom: 14 }}>{error}</div>}

@@ -6,6 +6,8 @@ export type AppRouteName =
   | "home"
   | "login"
   | "search"
+  | "category"
+  | "service"
   | "teacher"
   | "book"
   | "sessions"
@@ -45,6 +47,7 @@ export const appRoutePaths = {
   home: "/",
   login: "/login",
   search: "/search",
+  category: "/category",
   sessions: "/sessions",
   wallet: "/wallet",
   profile: "/profile",
@@ -72,6 +75,7 @@ export type StaticAppRouteName = keyof typeof appRoutePaths;
 export type DynamicAppRouteName =
   | "teacher"
   | "book"
+  | "service"
   | "session"
   | "ceremony-call"
   | "ceremony-booking"
@@ -81,6 +85,7 @@ export type DynamicAppRouteName =
 const dynamicRoutes: Record<DynamicAppRouteName, { pattern: RegExp; prefix: string }> = {
   teacher: { pattern: /^\/teacher\/(?<id>[^/]+)$/, prefix: "/teacher" },
   book: { pattern: /^\/book\/(?<id>[^/]+)$/, prefix: "/book" },
+  service: { pattern: /^\/service\/(?<id>[^/]+)$/, prefix: "/service" },
   session: { pattern: /^\/session\/(?<id>[^/]+)$/, prefix: "/session" },
   "ceremony-call": { pattern: /^\/ceremony\/calls\/(?<id>[^/]+)$/, prefix: "/ceremony/calls" },
   "ceremony-booking": { pattern: /^\/ceremony\/bookings\/(?<id>[^/]+)$/, prefix: "/ceremony/bookings" },

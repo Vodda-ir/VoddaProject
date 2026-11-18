@@ -14,15 +14,20 @@ import type {
   OfficialServiceItem,
   Teacher,
 } from '@/lib/api';
-import { fullUrl, getToken } from '@/lib/auth';
+import { avatarUrl, fullUrl, getToken } from '@/lib/auth';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
+import { formatDateTime } from '@/lib/datetime';
 
 type Phase = 'idle' | 'searching' | 'matched';
 
+// باگ dispatch-stuck-pending — پیام دقیق وقتی فراخوان فعال قبلی مانع ثبت فراخوان جدید است.
+const PENDING_CALL_MESSAGE = 'فراخوان قبلی شما در انتظار پاسخ است — ابتدا آن را لغو کنید.';
+
+/* رنگ/برچسب درجه از منبع واحد tierMeta — ۱.الف.۲: آبی بین‌المللی، سبز کشوری، قرمز استانی */
 const TIER_BADGE: Record<string, { label: string; bg: string; color: string }> = {
-  international: { label: 'استاد بین‌المللی', bg: 'rgba(0,149,246,.10)', color: '#0095f6' },
-  grade2: { label: 'استاد کشوری', bg: 'rgba(18,183,106,.12)', color: '#0e9f5e' },
-  grade3: { label: 'استاد استانی', bg: 'rgba(224,36,94,.10)', color: '#e0245e' },
+  international: { label: 'استاد بین‌المللی', bg: 'rgba(29,161,242,.12)', color: '#0095F6' },
+  grade2: { label: 'برگزیدهٔ کشوری', bg: 'rgba(34,197,94,.12)', color: '#3AA76D' },
+  grade3: { label: 'برگزیدهٔ استانی', bg: 'rgba(239,68,68,.12)', color: '#E1306C' },
 };
 
 function countdown(total: number) {
@@ -45,7 +50,7 @@ function whenLabel(call: DispatchCallItem) {
   if (call.flexible || !call.scheduled_at) return '⚡ در اسرع وقت';
   const at = new Date(call.scheduled_at);
   if (Number.isNaN(at.getTime())) return '⚡ در اسرع وقت';
-  return `📅 ${at.toLocaleString('fa-IR', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}`;
+  return `📅 ${formatDateTime(at, 'fa', 'weekdayDayMonth')}`;
 }
 
 export default function DispatchPage() {
@@ -150,6 +155,15 @@ export default function DispatchPage() {
     setCreating(true);
     setError('');
     try {
+      // باگ dispatch-stuck-pending — پیش از ثبت، فراخوان فعال قبلی بررسی می‌شود تا کاربر
+      // به‌جای خطای مبهم سرور، پیام دقیق بگیرد و همان فراخوان با دکمهٔ لغو نمایش داده شود.
+      const precheck = await api.dispatchCurrent(token);
+      const precheckCall = precheck.data?.call;
+      if (precheckCall && (precheckCall.status === 'searching' || precheckCall.status === 'matched')) {
+        setView(precheck.data ?? null);
+        setError(PENDING_CALL_MESSAGE);
+        return;
+      }
       const scheduledAt = whenMode === 'later' && laterAt ? new Date(laterAt).toISOString() : undefined;
       const created = await api.dispatchCreate(token, {
         official_service_id: topic.id,
@@ -159,6 +173,19 @@ export default function DispatchPage() {
       });
       setView(created.data ?? null);
     } catch (cause) {
+      // رقابت احتمالی (مثلاً ثبت در دستگاه دیگر): وضعیت واقعی را بگیر؛
+      // اگر فراخوان فعال هست، همان با دکمهٔ لغو نشان داده می‌شود نه خطای بی‌مسیر.
+      try {
+        const current = await api.dispatchCurrent(token);
+        const active = current.data?.call;
+        if (active && (active.status === 'searching' || active.status === 'matched')) {
+          setView(current.data ?? null);
+          setError(PENDING_CALL_MESSAGE);
+          return;
+        }
+      } catch {
+        // بررسی وضعیت ناموفق بود — پیام اصلی خطا نشان داده می‌شود
+      }
       setError(cause instanceof Error ? cause.message : 'ثبت فراخوان انجام نشد.');
     } finally {
       setCreating(false);
@@ -272,7 +299,13 @@ export default function DispatchPage() {
             </Link>
           </section>
         ) : phase === 'matched' && call ? (
-          <MatchedCard call={call} candidates={candidates} onNew={() => setView({ call: null, candidates: [] })} />
+          <MatchedCard
+            call={call}
+            candidates={candidates}
+            onNew={() => { setView({ call: null, candidates: [] }); void refresh(); }}
+            onCancel={() => void cancel()}
+            canceling={canceling}
+          />
         ) : phase === 'searching' && call ? (
           <div style={{ display: 'grid', gap: 16 }}>
             <section className="ops-data-surface neon-frame" style={{ position: 'relative', overflow: 'hidden' }}>
@@ -404,7 +437,7 @@ export default function DispatchPage() {
                   </button>
                 </div>
                 {whenMode === 'later' ? (
-                  <input
+                  <input className="input-base"
                     type="datetime-local"
                     value={laterAt}
                     min={new Date(Date.now() + 3600000).toISOString().slice(0, 16)}
@@ -419,7 +452,7 @@ export default function DispatchPage() {
                 </p>
 
                 <strong style={{ fontSize: 13.5, display: 'block', marginBottom: 8 }}>یادداشت برای اساتید (اختیاری)</strong>
-                <textarea
+                <textarea className="input-base"
                   value={note}
                   onChange={(event) => setNote(event.target.value.slice(0, 300))}
                   rows={2}
@@ -460,7 +493,7 @@ export default function DispatchPage() {
                 <div className="web-search-fields" style={{ marginBottom: 14 }}>
                   <label>
                     <Icon name="search" size={18} />
-                    <input
+                    <input className="input-base"
                       type="search"
                       value={query}
                       onChange={(event) => setQuery(event.target.value)}
@@ -524,7 +557,7 @@ function CandidateRow({
   return (
     <section className="ops-data-surface" style={{ animationDelay: `${index * 80}ms` }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-        <Avatar size={52} ring imageUrl={fullUrl(candidate.avatar_url)} />
+        <Avatar size={52} ring imageUrl={avatarUrl(candidate.avatar_url, candidate.updated_at)} />
         <div style={{ minWidth: 0, flex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap' }}>
             <strong style={{ fontSize: 15 }}>{candidate.name}</strong>
@@ -561,10 +594,14 @@ function MatchedCard({
   call,
   candidates,
   onNew,
+  onCancel,
+  canceling,
 }: {
   call: DispatchCallItem;
   candidates: DispatchCandidateItem[];
   onNew: () => void;
+  onCancel: () => void;
+  canceling: boolean;
 }) {
   const chosen = candidates.find((item) => item.teacher_id === call.matched_teacher_id);
   return (
@@ -582,6 +619,8 @@ function MatchedCard({
       <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
         <Link href="/panel/user/sessions" className="ops-primary-btn" style={{ display: 'inline-flex' }}>پیگیری در جلسات من</Link>
         <button type="button" className="ops-ghost-btn" onClick={onNew}>فراخوان جدید</button>
+        <button type="button" className="ops-ghost-btn" onClick={onCancel} disabled={canceling} style={{ color: 'var(--rose)' }}>
+          {canceling ? 'در حال لغو…' : 'لغو فراخوان'}</button>
       </div>
     </section>
   );
@@ -747,7 +786,7 @@ function ListTeacherRow({ teacher, index }: { teacher: Teacher; index: number })
         color: 'inherit', textDecoration: 'none', animationDelay: `${index * 60}ms`,
       }}
     >
-      <Avatar size={50} ring tier={teacher.tier} imageUrl={fullUrl(teacher.user?.avatar_url)} />
+      <Avatar size={50} ring tier={teacher.tier} imageUrl={avatarUrl(teacher.user?.avatar_url, teacher.user?.updated_at)} />
       <div style={{ minWidth: 0, flex: 1 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap' }}>
           <strong style={{ fontSize: 14.5 }}>{teacher.user?.name || 'استاد وُدّا'}</strong>

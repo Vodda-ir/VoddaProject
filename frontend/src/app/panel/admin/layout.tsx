@@ -6,7 +6,8 @@ import Link from 'next/link';
 import { Icon } from '@/components/Icon';
 import { Avatar } from '@/components/web/ui';
 import { PanelButton } from '@/components/panel/PanelUI';
-import { clearToken, fullUrl, getToken } from '@/lib/auth';
+import { clearToken, avatarUrl as withVersion, getToken } from '@/lib/auth';
+import { onAvatarUpdated } from '@/lib/avatarImage';
 import { toFaDigits } from '@/lib/persian';
 
 type AdminNavigationItem = {
@@ -211,7 +212,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         setUser({
           name: payload.data.name || 'مدیر',
           role,
-          avatarUrl: fullUrl(payload.data.avatar_url) || '',
+          avatarUrl: withVersion(payload.data.avatar_url, payload.data.updated_at) || '',
           hasTeacherProfile: Boolean(payload.data.teacher?.id),
           isSupportAgent: isAgent,
         });
@@ -224,6 +225,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return () => controller.abort();
   }, [token]);
 
+  // باگ avatar-upload — پس از آپلود تصویر در تنظیمات، منوی پنل مدیریت بلافاصله به‌روز می‌شود.
+  useEffect(() => {
+    const offAvatarUpdated = onAvatarUpdated((detail) => {
+      setUser((current) => ({ ...current, avatarUrl: withVersion(detail.url, detail.version) || current.avatarUrl }));
+    });
+    return offAvatarUpdated;
+  }, []);
   // کارشناس پشتیبانی به داشبورد مدیریتی دسترسی ندارد؛ به صندوق پشتیبانی هدایت می‌شود.
   useEffect(() => {
     if (access === 'allowed' && user.role !== 'admin' && pathname === '/panel/admin') {

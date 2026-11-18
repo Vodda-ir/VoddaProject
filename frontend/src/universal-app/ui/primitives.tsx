@@ -12,6 +12,7 @@ import { createPortal } from "react-dom";
 import { resolveAssetUrl } from "../platform/asset";
 import { useAppearance } from "./appearance";
 import { colors, gradients, radii, shadows, spacing, typography } from "./theme";
+import { Avatar as UnifiedAvatar } from "../../components/Avatar";
 
 function mergeStyle(base: CSSProperties, style?: CSSProperties): CSSProperties {
   return style ? { ...base, ...style } : base;
@@ -196,82 +197,33 @@ export type AvatarProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "children"> 
   name?: string;
   size?: number;
   ring?: boolean;
-  /** حلقهٔ طلایی برای استادها و نقش‌های ویژه (فاز هویت بصری) */
+  /** درجه استاد برای مهر گوشهٔ آواتار. */
+  tier?: string | null;
+  /** سازگاری با نسخهٔ سرور — پذیرفته ولی نادیده گرفته می‌شود (شکل واحد مربعی). */
   tone?: "olive" | "gold";
+  /** چراغ آنلاین/آفلاین گوشهٔ آواتار. */
+  online?: boolean;
+  /** آخرین فعالیت — آنلاین واقعی (داخل ۲ دقیقه) و tooltip (۱.الف.۴). */
+  lastSeen?: string | number | null;
 };
 
-function initials(name: string | null | undefined, lang: "fa" | "en") {
-  const parts = name?.trim().split(/\s+/).filter(Boolean) ?? [];
-  if (parts.length === 0) return lang === "en" ? "V" : "و";
-  return `${parts[0]?.[0] ?? ""}${parts.length > 1 ? parts.at(-1)?.[0] ?? "" : ""}`;
-}
-
-function avatarFrame(size: number, ring: boolean, tone: "olive" | "gold", style?: CSSProperties): CSSProperties {
-  return mergeStyle(
-    {
-      display: "inline-grid",
-      placeItems: "center",
-      flex: `0 0 ${size}px`,
-      width: size,
-      height: size,
-      boxSizing: "border-box",
-      borderRadius: "50%",
-      border: ring
-        ? `3px solid ${tone === "gold" ? colors.goldSoft : colors.surface}`
-        : undefined,
-      outline: ring
-        ? `2px solid ${tone === "gold" ? "rgba(191,149,64,.45)" : colors.olive200}`
-        : undefined,
-      boxShadow: ring
-        ? tone === "gold"
-          ? `0 4px 12px rgba(139,104,31,.18), ${shadows.sm}`
-          : shadows.sm
-        : undefined,
-    },
-    style,
-  );
-}
-
-export function Avatar({ name, size = 48, ring = true, tone = "olive", src, alt, style, ...props }: AvatarProps) {
-  const { L, N, lang } = useAppearance();
-  // نام‌های داینامیک (استاد/قرآن‌آموز) در حالت انگلیسی لاتین می‌شوند تا هیچ
-  // نویسهٔ فارسی — حتی در حرف اول آواتار — دیده نشود.
-  const localName = N(name);
-  // آدرس‌های نسبی آپلودها (مثل /uploads/avatars/…) پیش از رندر حل می‌شوند تا
-  // هم در وب هم‌مبدأ و هم در WebView نیتیو درست نمایش داده شوند.
-  const resolvedSrc = resolveAssetUrl(src);
-  if (resolvedSrc) {
-    return (
-      <img
-        src={resolvedSrc}
-        alt={alt ?? localName ?? L("تصویر کاربر")}
-        width={size}
-        height={size}
-        style={{
-          ...avatarFrame(size, ring, tone, style),
-          objectFit: "cover",
-          background: colors.olive50,
-        }}
-        {...props}
-      />
-    );
-  }
-
+/* آواتار مربعی واحد — پیاده‌سازی واقعی در src/components/Avatar.tsx است تا
+ * اپ و وب از یک منبع رندر بگیرند (پارتی کامل، شکل مربعی با گوشهٔ نرم ۱۴٪).
+ * امضای قبلی اپ (name/size/ring/src/alt) دقیقاً حفظ شده است. */
+export function Avatar({ name, size = 48, ring = true, src, alt, style, tier, online, lastSeen, tone: _tone, ...props }: AvatarProps) {
   return (
-    <span
-      role="img"
-      aria-label={alt ?? localName ?? L("کاربر")}
-      style={{
-        ...avatarFrame(size, ring, tone, style),
-        color: colors.olive700,
-        background: gradients.soft,
-        fontFamily: typography.fontFamily,
-        fontSize: Math.max(12, Math.round(size * 0.29)),
-        fontWeight: 900,
-      }}
-    >
-      {initials(localName, lang)}
-    </span>
+    <UnifiedAvatar
+      name={name}
+      size={size}
+      ring={ring}
+      src={src}
+      alt={alt}
+      style={style}
+      tier={tier ?? undefined}
+      online={online}
+      lastSeen={lastSeen}
+      {...props}
+    />
   );
 }
 
@@ -490,6 +442,8 @@ export function Dialog({ open, title, children, onClose, closeLabel = "بستن"
         className="vodda-dialog"
         style={{
           width: "min(100%, 460px)",
+          // قاعدهٔ ۰.۶ ریسپانسیو — همیشه ۱۶px فاصله از هر دو لبهٔ دید
+          maxWidth: "calc(100vw - 32px)",
           maxHeight: "min(82dvh, 720px)",
           overflowY: "auto",
           padding: spacing.xl,
@@ -550,6 +504,8 @@ export function Sheet({ open, title, children, onClose, closeLabel = "بستن" 
         className="vodda-sheet"
         style={{
           width: "min(100%, 640px)",
+          // باگ responsive-overflow — شیت هیچ‌وقت کل عرض ویوپورت را نمی‌گیرد؛ ۱۶px حاشیه در هر سمت.
+          maxWidth: "calc(100vw - 32px)",
           maxHeight: "88dvh",
           marginInline: "auto",
           overflowY: "auto",

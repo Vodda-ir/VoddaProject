@@ -6,7 +6,8 @@ import type { Teacher } from '@/lib/api';
 import { Icon } from '@/components/Icon';
 import { Nav, Footer, bioIntro } from '@/components/web/sections';
 import { Avatar, PublicPageHero } from '@/components/web/ui';
-import { fullUrl } from '@/lib/auth';
+import { avatarUrl, fullUrl } from '@/lib/auth';
+import { categoryOf, groupCatalog, teachersForTopics, type CatalogCategory } from '@/lib/category';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
 
 const LIMIT = 20;
@@ -28,6 +29,10 @@ export default function SearchPage() {
   const [female, setFemale] = useState(false);
   const [topicId, setTopicId] = useState(0);
   const [topicTitle, setTopicTitle] = useState('');
+  // باگ category-routing — حالت دسته: ?category=<نام دسته> → فقط زیردسته‌های همان دسته و اساتید همان دسته
+  const [categoryName, setCategoryName] = useState('');
+  const [categories, setCategories] = useState<CatalogCategory[]>([]);
+  const [activeTopicId, setActiveTopicId] = useState(0);
   const [page, setPage] = useState(0);
   const [initialized, setInitialized] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -42,12 +47,13 @@ export default function SearchPage() {
     setField(normalizeField(params.get('field') || ''));
     setFemale(params.get('female') === 'true');
     setTopicId(Number.parseInt(params.get('official_service_id') || '0', 10) || 0);
+    setCategoryName(params.get('category') || '');
     setPage(Math.max(0, Number.parseInt(params.get('page') || '1', 10) - 1 || 0));
     setInitialized(true);
   }, []);
 
   useEffect(() => {
-    if (!topicId) {
+    if (!topicId && !categoryName) {
       setTopicTitle('');
       return;
     }
@@ -56,7 +62,7 @@ export default function SearchPage() {
       .then((response) => response.json())
       .then((body) => {
         if (!active) return;
-        const groups: Array<{ services?: Array<{ id: number; title: string }> }> = body?.data?.categories ?? [];
+        const groups: Array<{ category?: string; services?: Array<{ id: number; title: string }> }> = body?.data?.categories ?? [];
         let foundTitle = '';
         for (const group of groups) {
           const hit = group.services?.find((item) => item.id === topicId);
@@ -66,6 +72,7 @@ export default function SearchPage() {
           }
         }
         setTopicTitle(foundTitle);
+        setCategories(groupCatalog(groups.flatMap((group) => (group.services ?? []).map((service) => ({ ...service, category: group.category ?? '' })))));
       })
       .catch(() => {
         if (active) setTopicTitle('');
@@ -73,7 +80,7 @@ export default function SearchPage() {
     return () => {
       active = false;
     };
-  }, [topicId]);
+  }, [topicId, categoryName]);
 
   useEffect(() => {
     if (!initialized) return;
@@ -82,27 +89,44 @@ export default function SearchPage() {
       setLoading(true);
       setError('');
       try {
-        const params = new URLSearchParams({ limit: String(LIMIT), offset: String(page * LIMIT) });
-        if (query.trim()) params.set('q', query.trim());
-        if (city.trim()) params.set('city', city.trim());
-        if (field) params.set('field', field);
-        if (female) params.set('female', 'true');
-        if (topicId) params.set('official_service_id', String(topicId));
+        if (categoryName) {
+          // باگ category-routing — حالت دسته: فهرست کامل دریافت و به‌صورت اجتماع زیردسته‌ها فیلتر می‌شود
+          // (API فیلتر چند-خدمتی ندارد؛ تطبیق عنوان با دادهٔ واقعی با official_service_id برابری شده است)
+          const response = await fetch('/api/backend/teachers?limit=100', { cache: 'no-store', signal: controller.signal });
+          const body = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(body.error || 'جستجوی استاد انجام نشد.');
+          const all: Teacher[] = body.data || [];
+          const group = categoryOf(categories, categoryName);
+          const topics = activeTopicId > 0 && group
+            ? group.topics.filter((topic) => topic.id === activeTopicId)
+            : (group?.topics ?? []);
+          const filtered = teachersForTopics(all, topics);
+          setResults(filtered);
+          setTotal(filtered.length);
+        } else {
+          const params = new URLSearchParams({ limit: String(LIMIT), offset: String(page * LIMIT) });
+          if (query.trim()) params.set('q', query.trim());
+          if (city.trim()) params.set('city', city.trim());
+          if (field) params.set('field', field);
+          if (female) params.set('female', 'true');
+          if (topicId) params.set('official_service_id', String(topicId));
 
-        const response = await fetch(`/api/backend/teachers?${params}`, { cache: 'no-store', signal: controller.signal });
-        const body = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(body.error || 'جستجوی استاد انجام نشد.');
+          const response = await fetch(`/api/backend/teachers?${params}`, { cache: 'no-store', signal: controller.signal });
+          const body = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(body.error || 'جستجوی استاد انجام نشد.');
 
-        setResults(body.data || []);
-        setTotal(body.total || 0);
+          setResults(body.data || []);
+          setTotal(body.total || 0);
+        }
 
         const url = new URL(window.location.href);
-        for (const key of ['q', 'city', 'field', 'female', 'page', 'official_service_id']) url.searchParams.delete(key);
+        for (const key of ['q', 'city', 'field', 'female', 'page', 'official_service_id', 'category']) url.searchParams.delete(key);
         if (query.trim()) url.searchParams.set('q', query.trim());
         if (city.trim()) url.searchParams.set('city', city.trim());
         if (field) url.searchParams.set('field', field);
         if (female) url.searchParams.set('female', 'true');
         if (topicId) url.searchParams.set('official_service_id', String(topicId));
+        if (categoryName) url.searchParams.set('category', categoryName);
         if (page > 0) url.searchParams.set('page', String(page + 1));
         window.history.replaceState(null, '', `${url.pathname}${url.search}`);
       } catch (cause) {
@@ -119,14 +143,15 @@ export default function SearchPage() {
       window.clearTimeout(timeout);
       controller.abort();
     };
-  }, [query, city, field, female, topicId, page, initialized]);
+  }, [query, city, field, female, topicId, page, initialized, categoryName, categories, activeTopicId]);
 
   const totalPages = Math.ceil(total / LIMIT);
   const resetPage = (update: () => void) => {
     setPage(0);
     update();
   };
-  const hasFilter = Boolean(query.trim() || city.trim() || field || female || topicId);
+  const activeCategory = categoryName ? categoryOf(categories, categoryName) : null;
+  const hasFilter = Boolean(query.trim() || city.trim() || field || female || topicId || categoryName);
 
   function clearFilters() {
     setPage(0);
@@ -135,6 +160,8 @@ export default function SearchPage() {
     setField('');
     setFemale(false);
     setTopicId(0);
+    setCategoryName('');
+    setActiveTopicId(0);
   }
 
   return (
@@ -148,6 +175,40 @@ export default function SearchPage() {
       />
 
       <main className="public-container public-content">
+        {categoryName && activeCategory ? (
+          <div className="ops-inline-note" style={{ marginBottom: 14, flexWrap: 'wrap' }}>
+            <Icon name="quran" size={16} />
+            <span style={{ flex: 1, minWidth: 0 }}>
+              دستهٔ <strong>{categoryName}</strong> — {activeCategory.topics.length} زیردسته · فقط اساتیدی که زیردسته‌های این دسته را تدریس می‌کنند.
+            </span>
+            <button type="button" onClick={() => { setCategoryName(''); setActiveTopicId(0); }} aria-label="حذف فیلتر دسته" style={{ background: 'none', border: 0, cursor: 'pointer', color: 'var(--ink-3)', fontFamily: 'inherit' }}>
+              <Icon name="x" size={15} />
+            </button>
+          </div>
+        ) : null}
+        {categoryName && activeCategory ? (
+          <div role="group" aria-label="زیردسته‌های این دسته" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
+            <button
+              type="button"
+              onClick={() => { resetPage(() => setActiveTopicId(0)); }}
+              className="web-topic-chip"
+              data-active={activeTopicId === 0 ? 'true' : undefined}
+            >
+              همهٔ زیردسته‌ها
+            </button>
+            {activeCategory.topics.map((topic) => (
+              <button
+                key={topic.id}
+                type="button"
+                onClick={() => { resetPage(() => setActiveTopicId(topic.id === activeTopicId ? 0 : topic.id)); }}
+                className="web-topic-chip"
+                data-active={topic.id === activeTopicId ? 'true' : undefined}
+              >
+                {topic.title}
+              </button>
+            ))}
+          </div>
+        ) : null}
         {topicId ? (
           <div className="ops-inline-note" style={{ marginBottom: 14 }}>
             <Icon name="quran" size={16} />
@@ -166,7 +227,7 @@ export default function SearchPage() {
           <div className="web-search-fields">
             <label>
               <Icon name="search" size={19} />
-              <input
+              <input className="input-base"
                 type="search"
                 value={query}
                 onChange={(event) => resetPage(() => setQuery(event.target.value))}
@@ -176,7 +237,7 @@ export default function SearchPage() {
             </label>
             <label>
               <Icon name="pin" size={18} />
-              <input
+              <input className="input-base"
                 type="search"
                 value={city}
                 onChange={(event) => resetPage(() => setCity(event.target.value))}
@@ -253,11 +314,22 @@ export default function SearchPage() {
 function SearchTeacherCard({ teacher }: { teacher: Teacher }) {
   const name = teacher.user?.name || 'استاد وُدّا';
   const price = Math.max(0, teacher.price30 || teacher.services?.[0]?.price || 0);
+  /* ۱.الف.۴ — چراغ حضور روی نتایج جست‌وجو */
+  /* last_seen فقط از فیلد فعالیت بک‌اند؛ updated_at به‌روزرسانی پروفایل است نه حضور (۱.الف.۴) */
+  const lastSeen = teacher.last_seen ?? null;
 
   return (
     <Link href={`/teachers/${teacher.id}`} className="web-search-teacher-card">
       <div className="web-search-teacher-top">
-        <Avatar size={58} ring tier={teacher.tier} imageUrl={fullUrl(teacher.user?.avatar_url)} />
+        <Avatar
+          size={58}
+          ring
+          tier={teacher.tier}
+          imageUrl={avatarUrl(teacher.user?.avatar_url, teacher.user?.updated_at)}
+          name={name}
+          online={teacher.available !== false}
+          lastSeen={lastSeen}
+        />
         <div style={{ minWidth: 0, flex: 1 }}>
           <strong>{name}</strong>
           <span>{teacher.tag || teacher.field}</span>

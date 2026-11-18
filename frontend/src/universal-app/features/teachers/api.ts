@@ -50,6 +50,8 @@ function buildTeacherQuery(params: TeacherSearchParams): string {
 function parseTeacherRows(response: ApiEnvelope & { total?: unknown }): TeacherSearchResult {
   const rows = asArray(response.data);
   const items = rows.map(parseTeacher).filter((teacher) => teacher.id > 0);
+  /* ۱.الف.۵ — مرتب‌سازی پایدار: کارت‌های درجه ۱ نخست (is_tier1 desc؛ ترتیب rank بک‌اند حفظ می‌شود). */
+  items.sort((left, right) => Number(right.isTier1 === true) - Number(left.isTier1 === true));
   return { items, total: Math.max(asInteger(response.total, items.length), items.length) };
 }
 
@@ -65,6 +67,27 @@ export async function searchTeachersPage(
 
 export async function searchTeachers(runtime: PlatformRuntime, params: TeacherSearchParams = {}): Promise<Teacher[]> {
   return (await searchTeachersPage(runtime, params)).items;
+}
+
+/**
+ * ۱.ب.۵ — چیدمان «اساتید پیشنهادی» از endpoint محلی BFF (تکرار ≤ ۲ بین دو درخواست).
+ * در اپ نیتیو (تماس مستقیم با بک‌اند) این مسیر وجود ندارد → [] و caller با
+ * موتور محلی src/lib/home/discover.ts جایگزین می‌کند.
+ */
+export async function fetchRecommendedTeachers(
+  runtime: PlatformRuntime,
+  limit = 7,
+): Promise<Teacher[]> {
+  try {
+    const response = await runtime.request<ApiEnvelope & { total?: unknown }>(
+      `/teachers/recommended?limit=${limit}`,
+    );
+    return asArray(response.data)
+      .map(parseTeacher)
+      .filter((teacher) => teacher.id > 0);
+  } catch {
+    return [];
+  }
 }
 
 export async function getTeacherDetail(runtime: PlatformRuntime, id: number): Promise<TeacherDetail> {

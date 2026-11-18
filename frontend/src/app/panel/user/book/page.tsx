@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api, type AvailabilitySlot, type BookingResult, type PaymentMethod, type Teacher, type TeacherService } from '@/lib/api';
 import { payViaSamanGate } from '@/lib/saman-gate';
+import { formatDate, formatNumber } from '@/lib/datetime';
 import { authApi, fullUrl, getToken, type AuthUser } from '@/lib/auth';
 import { Icon } from '@/components/Icon';
 import { Avatar } from '@/components/web/ui';
@@ -10,8 +11,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
 const fa = (value: number | string) => String(value).replace(/[0-9]/g, (digit) => '۰۱۲۳۴۵۶۷۸۹'[+digit]);
-const toman = (value: number) => new Intl.NumberFormat('fa-IR').format(value);
-const localDateFormatter = new Intl.DateTimeFormat('fa-IR', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' });
+const toman = (value: number) => formatNumber(value);
 
 export default function BookingPage() {
   const router = useRouter();
@@ -129,7 +129,12 @@ export default function BookingPage() {
     const token = getToken();
     if (!token) {
       const redirect = encodeURIComponent(`/panel/user/book?teacher=${teacherId}`);
-      router.push(`/panel/login?redirect=${redirect}`);
+      // باگ refresh-loop: replace تا صفحهٔ رزرو در تاریخچه بماند و پس از ورود با بازگشت قابل دسترس باشد.
+      router.replace(`/panel/login?redirect=${redirect}`);
+      return;
+    }
+    if (isSelfTeacher) {
+      setError('نمی‌توانید استاد خودتان را رزرو کنید؛ برای رزرو با حساب قرآن‌آموز وارد شوید.');
       return;
     }
     if (isSelfTeacher) {
@@ -206,7 +211,7 @@ export default function BookingPage() {
   </div></main>;
 }
 
-function formatLocalDate(localDate: string) { return localDateFormatter.format(new Date(`${localDate}T00:00:00Z`)); }
+function formatLocalDate(localDate: string) { return formatDate(new Date(`${localDate}T00:00:00Z`), 'fa', 'dayMonth'); }
 function CenterBox({ children, color = 'var(--ink)' }: { children: React.ReactNode; color?: string }) { return <main style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', padding: 24, background: 'var(--sand-50)', color }}><div style={{ maxWidth: 480, textAlign: 'center' }}>{children}</div></main>; }
 function Card({ title, children, disabled = false }: { title: string; children: React.ReactNode; disabled?: boolean }) { return <section aria-disabled={disabled} style={{ background: '#fff', borderRadius: 20, padding: 20, boxShadow: 'var(--sh-sm)', marginBottom: 16, opacity: disabled ? .68 : 1 }}><h2 style={{ fontSize: 17, fontWeight: 800, marginBottom: 16 }}>{title}</h2>{children}</section>; }
 function EmptyText({ children }: { children: React.ReactNode }) { return <p style={{ fontSize: 14, color: 'var(--ink-4)', lineHeight: 1.9 }}>{children}</p>; }

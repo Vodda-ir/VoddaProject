@@ -1,7 +1,52 @@
 import Link from 'next/link';
 import type { CSSProperties, ReactNode } from 'react';
 import { Icon } from '../Icon';
-import { TierSeal, tierOf } from './tier';
+import { Avatar as UnifiedAvatar } from '../Avatar';
+
+export function Avatar({
+  size = 48,
+  ring = false,
+  tier,
+  emoji,
+  imageUrl,
+  name,
+  online,
+  lastSeen,
+  style,
+  alt,
+}: {
+  size?: number;
+  ring?: boolean;
+  /** درجه استاد — مهر رنگی درجه گوشهٔ آواتار؛ بدون درجه هیچ نشانی نیست. */
+  tier?: string | null;
+  emoji?: string;
+  imageUrl?: string;
+  /** نام برای fallback حرف اول. */
+  name?: string;
+  /** چراغ آنلاین/آفلاین (۱.الف.۴). */
+  online?: boolean;
+  /** آخرین فعالیت برای آنلاینِ واقعی و tooltip. */
+  lastSeen?: string | number | null;
+  style?: CSSProperties;
+  alt?: string;
+}) {
+  /* آواتار مربعی واحد — پیاده‌سازی واقعی در src/components/Avatar.tsx است تا
+   * اپ و وب از یک منبع رندر بگیرند (پارتی کامل). امضای قبلی وب حفظ شده است. */
+  return (
+    <UnifiedAvatar
+      size={size}
+      ring={ring}
+      tier={tier ?? undefined}
+      emoji={emoji}
+      src={imageUrl}
+      name={name}
+      online={online}
+      lastSeen={lastSeen}
+      style={style}
+      alt={alt}
+    />
+  );
+}
 
 export function GeoPattern({ color = '#fff', opacity = 0.08 }: { color?: string; opacity?: number }) {
   const id = 'wgeo' + color.replace(/[^a-z0-9]/gi, '');
@@ -71,69 +116,6 @@ export function WebBtn({
     <Link href={href} style={buttonStyle}>{content}</Link>
   ) : (
     <a href={href} style={buttonStyle} rel="noreferrer">{content}</a>
-  );
-}
-
-export function Avatar({
-  size = 48,
-  ring = false,
-  tier,
-  emoji,
-  imageUrl,
-}: {
-  size?: number;
-  ring?: boolean;
-  /** درجه استاد — مهر رنگی درجه جای تیک سبز ثابت می‌نشیند؛ بدون درجه هیچ نشانی نیست. */
-  tier?: string | null;
-  emoji?: string;
-  imageUrl?: string;
-}) {
-  const seal = tierOf(tier);
-  const sealSize = Math.max(13, Math.round(size * 0.36));
-  return (
-    <div style={{ position: 'relative', flexShrink: 0 }}>
-      <div
-        style={{
-          width: size,
-          height: size,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          overflow: 'hidden',
-          borderRadius: '50%',
-          background: imageUrl ? 'transparent' : 'linear-gradient(135deg,var(--olive-200),var(--olive-100))',
-          boxShadow: ring ? '0 0 0 3px var(--surface), 0 0 0 4.5px var(--olive-200)' : undefined,
-          fontSize: size * 0.42,
-        }}
-      >
-        {imageUrl ? (
-          <img src={imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-        ) : emoji ? (
-          emoji
-        ) : (
-          <Icon name="user" size={size * 0.55} stroke={1.6} style={{ color: 'var(--olive-500)' }} />
-        )}
-      </div>
-      {seal && (
-        <span
-          style={{
-            position: 'absolute',
-            insetInlineEnd: -2,
-            bottom: -2,
-            width: sealSize,
-            height: sealSize,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            border: `2px solid var(--surface)`,
-            borderRadius: '50%',
-            background: 'var(--surface)',
-          }}
-        >
-          <TierSeal tier={seal} size={sealSize - 4} />
-        </span>
-      )}
-    </div>
   );
 }
 
@@ -267,33 +249,112 @@ type BioBlock =
   | { kind: 'chips'; title: string; items: string[] }
   | { kind: 'meta'; items: string[] };
 
+const BIO_META_MARKERS = /^(?:📍|📌|ℹ️|🗂)/;
+const BIO_EMOJI_AT_START = /^(\p{Extended_Pictographic}|\p{Emoji_Presentation})/u;
+
 export function parseTeacherBio(bio?: string | null): BioBlock[] {
   if (!bio) return [];
-  const rawBlocks = bio.trim().split(/\n\s*\n/);
+  const lines = bio
+    .trim()
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+  if (!lines.length) return [];
+
   const blocks: BioBlock[] = [];
-  for (const rawBlock of rawBlocks) {
-    const lines = rawBlock.split('\n').map((line) => line.trim()).filter(Boolean);
-    if (!lines.length) continue;
-    const first = lines[0];
-    if (first.startsWith('🎯')) {
-      const title = first.replace(/^🎯\s*/, '').replace(/:\s*$/, '') || 'زمینه‌های تدریس';
-      const items = lines.slice(1).map((line) => line.replace(/^[•\-*]\s*/, '').trim()).filter(Boolean);
-      blocks.push({ kind: 'chips', title, items: items.length ? items : lines.slice(1) });
+  let para: { emoji: string; text: string[] } | null = null;
+  let chips: { title: string; items: string[] } | null = null;
+  let meta: string[] | null = null;
+
+  const closeAll = () => {
+    if (para) {
+      blocks.push({ kind: 'para', emoji: para.emoji, text: para.text.join(' ') });
+      para = null;
+    }
+    if (chips) {
+      blocks.push({ kind: 'chips', title: chips.title, items: chips.items });
+      chips = null;
+    }
+    if (meta) {
+      blocks.push({ kind: 'meta', items: meta });
+      meta = null;
+    }
+  };
+
+  for (const line of lines) {
+    const bullet = line.replace(/^[•·\-*]+\s*/, '').trim();
+
+    // ── بند 🎯 زمینه‌های تدریس → چیپ ──
+    if (/^🎯/.test(line)) {
+      closeAll();
+      const body = line.replace(/^🎯\s*/, '').replace(/:\s*$/, '').trim();
+      const separator = body.search(/[:：]/);
+      if (separator >= 0) {
+        const title = body.slice(0, separator).trim() || 'زمینه‌های تدریس';
+        const inline = body.slice(separator + 1).trim();
+        const items = inline
+          .split(/[،,؛|•]\s*|\s[•-]\s/)
+          .map((item) => item.replace(/^[•\-*]\s*/, '').trim())
+          .filter(Boolean);
+        chips = { title, items };
+      } else {
+        chips = { title: body || 'زمینه‌های تدریس', items: [] };
+      }
       continue;
     }
-    if (first.startsWith('📍')) {
-      const merged = lines.map((line) => line.replace(/^📍\s*/, '')).join(' ');
-      const items = merged.split('|').map((part) => part.trim()).filter(Boolean);
-      blocks.push({ kind: 'meta', items });
+
+    // ── بند 📍/📌 اطلاعات تکمیلی → نشان طلایی ──
+    if (BIO_META_MARKERS.test(line)) {
+      closeAll();
+      meta = line
+        .replace(BIO_META_MARKERS, '')
+        .replace(/^[•\-*]\s*/, '')
+        .split(/[|،;؛]/)
+        .map((part) => part.trim())
+        .filter(Boolean);
       continue;
     }
-    const emojiMatch = first.match(/^(\p{Extended_Pictographic})/u);
-    const emoji = emojiMatch?.[1] ?? '';
-    const text = emoji ? first.slice(emoji.length).trim() : first;
-    const rest = lines.slice(1).join(' ');
-    blocks.push({ kind: 'para', emoji, text: [text, rest].filter(Boolean).join(' ') });
+
+    // ── خط گلوله‌دار داخل بند چیپی/متا ──
+    if (chips && /^[•·\-*]/.test(line)) {
+      if (bullet) chips.items.push(bullet);
+      continue;
+    }
+    if (meta && /^[•·\-*]/.test(line)) {
+      for (const part of bullet.split(/[|،;؛]/).map((item) => item.trim()).filter(Boolean)) meta.push(part);
+      continue;
+    }
+
+    // ── پاراگراف با ایموجی آغازین ──
+    const emojiMatch = line.match(BIO_EMOJI_AT_START);
+    const emoji = emojiMatch?.[0] ?? '';
+    if (emoji) {
+      closeAll();
+      para = { emoji, text: [line.slice(emoji.length).trim()].filter(Boolean) };
+      continue;
+    }
+
+    // ── ادامهٔ پاراگراف جاری یا پاراگراف تازه ──
+    if (para) {
+      para.text.push(bullet || line);
+      continue;
+    }
+    if (chips) {
+      // متن ساده بعد از سرتیتر چیپ‌ها = نخستین آیتم‌های هم‌خط
+      for (const item of line.split(/[،,؛|]/).map((part) => part.trim()).filter(Boolean)) chips.items.push(item);
+      continue;
+    }
+    if (meta) {
+      meta.push(bullet || line);
+      continue;
+    }
+    para = { emoji: '', text: [line] };
   }
-  return blocks;
+
+  closeAll();
+  return blocks.filter((block) =>
+    block.kind === 'para' ? block.text.trim().length > 0 : block.kind === 'chips' ? Boolean(block.title) : block.items.length > 0,
+  );
 }
 
 export function TeacherBio({ bio, empty = 'اطلاعاتی ثبت نشده است.' }: { bio?: string | null; empty?: string }) {

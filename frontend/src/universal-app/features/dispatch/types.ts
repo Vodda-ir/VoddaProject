@@ -38,6 +38,7 @@ export type DispatchCandidate = {
   teacher_id: number;
   name: string;
   avatar_url: string;
+  updated_at?: string;
   tag: string;
   field: string;
   city: string;

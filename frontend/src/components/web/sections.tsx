@@ -1,14 +1,28 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { CSSProperties, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Teacher } from '@/lib/api';
-import { clearToken, fullUrl } from '@/lib/auth';
+import { clearToken, avatarUrl, fullUrl } from '@/lib/auth';
+import type { CatalogCategory } from '@/lib/category';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
 import { Icon } from '../Icon';
 import { Avatar, GeoPattern, SectionTitle, WebBtn } from './ui';
+import { hexToRgbTriplet, tierNeonColor } from '@/lib/tierMeta';
+import { resolveOnline } from '@/lib/presence';
+import { CityChip, sortByCityPriority } from './CityChip';
+import { CITY_CHANGE_EVENT, readStoredCity, storedCityUsable } from '@/lib/userCity';
+import { TierSeal } from './tier';
+import {
+  buildCategoryTiles,
+  type CategoryTile,
+  type FreeServiceCard,
+  type PopularServiceCard,
+  serviceImageSrc,
+} from '@/lib/home/discover';
+import { verseOfDay } from '@/lib/verses';
 
 function PanelLink({ href, icon, label }: { href: string; icon: 'shield' | 'award' | 'user'; label: string }) {
   return (
@@ -20,7 +34,7 @@ function PanelLink({ href, icon, label }: { href: string; icon: 'shield' | 'awar
   );
 }
 
-function UserMenu({ name, role, avatar, hasTeacherProfile }: { name: string; role: string; avatar?: string; hasTeacherProfile: boolean }) {
+function UserMenu({ name, role, avatar, avatarVersion, hasTeacherProfile }: { name: string; role: string; avatar?: string; avatarVersion?: string | number | null; hasTeacherProfile: boolean }) {
   const [open, setOpen] = useState(false);
   const roleLabel = role === 'admin' ? 'ادمین' : role === 'teacher' ? 'استاد' : 'قرآن‌آموز';
 
@@ -34,7 +48,8 @@ function UserMenu({ name, role, avatar, hasTeacherProfile }: { name: string; rol
           <button aria-label="بستن منوی کاربر" style={menuBackdropStyle} onClick={() => setOpen(false)} />
           <div style={menuStyle}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, paddingBottom: 14, borderBottom: '1px solid var(--sand-100)', marginBottom: 8 }}>
-              {avatar ? <img src={fullUrl(avatar)} alt="" style={{ width: 46, height: 46, borderRadius: '50%', objectFit: 'cover' }} /> : <Avatar size={46} ring />}
+              {/* آواتار مربعی واحد — آواتار خود کاربر با کش‌باستینگ ?v= تا پس از تغییر، نسخهٔ جدید فوراً دیده شود */}
+              <Avatar size={46} name={name} ring={!avatar} imageUrl={avatar ? avatarUrl(avatar, avatarVersion) : undefined} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 14, fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</div>
                 <div style={{ marginTop: 2, color: 'var(--ink-3)', fontSize: 11.5 }}>{roleLabel}</div>
@@ -65,7 +80,7 @@ function UserMenu({ name, role, avatar, hasTeacherProfile }: { name: string; rol
 }
 
 export function Nav() {
-  const [user, setUser] = useState<{ name: string; role: string; avatar_url?: string; hasTeacherProfile: boolean } | null>(null);
+  const [user, setUser] = useState<{ name: string; role: string; avatar_url?: string; avatar_updated_at?: string | null; hasTeacherProfile: boolean } | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [announcement, setAnnouncement] = useState<{ text: string; link: string } | null>(null);
 
@@ -79,6 +94,7 @@ export function Nav() {
             name: body.data.name || 'کاربر',
             role: body.data.role || 'learner',
             avatar_url: body.data.avatar_url,
+            avatar_updated_at: body.data.updated_at ?? null,
             hasTeacherProfile: Boolean(body.data.teacher?.id),
           });
         }
@@ -150,13 +166,17 @@ export function Nav() {
         </div>
       )}
       <div className="public-container public-nav-inner">
-        <Link href="/" style={brandStyle} aria-label="صفحه اصلی وُدّا">
-          <img src="/vodda-logo.svg" alt="" style={{ width: 38, height: 38 }} />
-          <span>
-            <strong style={{ display: 'block', fontSize: 18, lineHeight: 1.2 }}>وُدّا</strong>
-            <span className="brand-subtitle">همراه یادگیری</span>
-          </span>
-        </Link>
+        {/* ۱.ب.۱ — chip شهر: گوشهٔ بالا (RTL راست / LTR چپ) — کنار برند در سمت شروع */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+          <CityChip />
+          <Link href="/" style={brandStyle} aria-label="صفحه اصلی وُدّا">
+            <img src="/vodda-logo.svg" alt="" style={{ width: 38, height: 38 }} />
+            <span>
+              <strong style={{ display: 'block', fontSize: 18, lineHeight: 1.2 }}>وُدّا</strong>
+              <span className="brand-subtitle">همراه یادگیری</span>
+            </span>
+          </Link>
+        </div>
 
         <nav className="desktop-nav" aria-label="ناوبری اصلی">
           {links.map(([label, href]) => (
@@ -174,7 +194,7 @@ export function Nav() {
             <Icon name="grid" size={17} />
             ورود به اپ
           </Link>
-          {user ? <UserMenu name={user.name} role={user.role} avatar={user.avatar_url} hasTeacherProfile={user.hasTeacherProfile} /> : <WebBtn size="sm" href="/panel/login">ورود</WebBtn>}
+          {user ? <UserMenu name={user.name} role={user.role} avatar={user.avatar_url} avatarVersion={user.avatar_updated_at} hasTeacherProfile={user.hasTeacherProfile} /> : <WebBtn size="sm" href="/panel/login">ورود</WebBtn>}
           <button
             type="button"
             className="mobile-nav-toggle"
@@ -281,7 +301,7 @@ function AppPreview() {
 
       <div className="landing-floating-card landing-floating-card-top">
         <span className="landing-floating-icon"><Icon name="checkCircle" size={18} /></span>
-        <span><strong>استاد درجه‌دار</strong><small>تیک بین‌المللی، کشوری و استانی</small></span>
+        <span><strong>استاد درجه‌دار</strong><small>مهر بین‌المللی، درجه ۲ و درجه ۳</small></span>
       </div>
       <div className="landing-floating-card landing-floating-card-bottom">
         <span className="landing-floating-icon gold"><Icon name="calendar" size={18} /></span>
@@ -319,12 +339,12 @@ export function Hero() {
           <form onSubmit={submit} className="landing-search-box">
             <label>
               <Icon name="search" size={19} />
-              <input value={query} onChange={(event) => setQuery(event.target.value)} aria-label="نام یا تخصص استاد" placeholder="نام یا تخصص استاد" />
+              <input className="input-base" value={query} onChange={(event) => setQuery(event.target.value)} aria-label="نام یا تخصص استاد" placeholder="نام یا تخصص استاد" />
             </label>
             <span className="landing-search-divider" />
             <label className="landing-city-field">
               <Icon name="pin" size={18} />
-              <input value={city} onChange={(event) => setCity(event.target.value)} aria-label="شهر" placeholder="شهر" />
+              <input className="input-base" value={city} onChange={(event) => setCity(event.target.value)} aria-label="شهر" placeholder="شهر" />
             </label>
             <button type="submit">جستجوی استاد <Icon name="arrowL" size={17} /></button>
           </form>
@@ -404,58 +424,99 @@ export function DispatchCallout() {
   );
 }
 
-export function Categories() {
-  const categories = [
-    {
-      icon: 'quran' as const,
-      title: 'آموزش قرآن کریم',
-      desc: 'روخوانی، روان‌خوانی و حفظ قرآن با استاد مناسب.',
-      href: '/search?field=%D8%A2%D9%85%D9%88%D8%B2%D8%B4+%D9%82%D8%B1%D8%A2%D9%86+%DA%A9%D8%B1%DB%8C%D9%85',
-      meta: 'قرآن',
-    },
-    {
-      icon: 'headphones' as const,
-      title: 'تجوید و صوت و لحن',
-      desc: 'اصلاح لهجه، رعایت احکام تجوید و زیبایی تلاوت.',
-      href: '/search',
-      meta: 'هنر تلاوت',
-    },
-    {
-      icon: 'book' as const,
-      title: 'حفظ قرآن کریم',
-      desc: 'برنامهٔ حفظ جزء‌به‌جزء با پشتیبانی و مرور منظیم.',
-      href: '/search',
-      meta: 'حفظ',
-    },
-    {
-      icon: 'doc' as const,
-      title: 'علوم و معارف قرآنی',
-      desc: 'تدبر، مفاهیم و احکام با نگاه کاربردی.',
-      href: '/search',
-      meta: 'معارف',
-    },
-    {
-      icon: 'mic' as const,
-      title: 'قاریان مراسم حضوری',
-      desc: 'رزرو مستقیم قاری تأییدشده برای مراسم شما.',
-      href: '/app/presence',
-      meta: 'مراسم',
-    },
-    {
-      icon: 'bell' as const,
-      title: 'فراخوان زنده',
-      desc: 'درخواست خود را ثبت کنید و از پاسخ‌ها انتخاب کنید.',
-      href: '/dispatch',
-      meta: 'مناقصه',
-    },
-  ];
+// باگ category-routing — کارت‌های دسته از کاتالوگ رسمی خدمات می‌آیند و به
+// صفحهٔ دسته می‌روند که فقط زیردسته‌های همان دسته و اساتید همان دسته را می‌بیند.
+const CATEGORY_ICONS: Array<{ match: RegExp; icon: 'quran' | 'mic' | 'book' | 'doc' | 'headphones' | 'users' }> = [
+  { match: /صوت|لحن/, icon: 'headphones' },
+  { match: /حفظ/, icon: 'book' },
+  { match: /تجوید|قرائت|تفسیر|مفاهیم|علوم/, icon: 'doc' },
+  { match: /حضوری|مراسم/, icon: 'mic' },
+];
+
+function categoryIcon(name: string): 'quran' | 'mic' | 'book' | 'doc' | 'headphones' | 'users' {
+  for (const rule of CATEGORY_ICONS) if (rule.match.test(name)) return rule.icon;
+  return 'quran';
+}
+
+/* ═════════ ۱.ب.۲ — بخش ② آیهٔ روز (وب) ═════════ */
+
+export function VerseOfDayCard() {
+  const quote = verseOfDay();
+  const isQuran = quote.source.startsWith('قرآن');
+  return (
+    <section className="landing-verse-section" aria-label="آیه و حدیث روز">
+      <div className="public-container">
+        <div className="landing-verse-card">
+          <span className="landing-verse-icon"><Icon name="quran" size={20} /></span>
+          <p className="landing-verse-text">
+            {isQuran ? "﴿" : "«"} {quote.text} {isQuran ? "﴾" : "»"}
+            <span className="landing-verse-source"> — {quote.source}</span>
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ═════════ ۱.ب.۳ — خانه‌های شش‌گانهٔ دسته‌بندی (وب) ═════════ */
+
+export function CategoryTiles({ categories = [] as CatalogCategory[], teachers = [] as Parameters<typeof buildCategoryTiles>[0] }: { categories?: CatalogCategory[]; teachers?: Parameters<typeof buildCategoryTiles>[0] }) {
+  const tiles: CategoryTile[] = buildCategoryTiles(teachers, categories, 6);
+
+  if (tiles.length === 0) return null;
+
+  return (
+    <section className="landing-section landing-tiles" aria-label="دسته‌های قرآنی">
+      <div className="public-container">
+        <SectionTitle
+          kicker="مسیرهای قرآنی"
+          title="از کجا شروع می‌کنی؟"
+          sub="شش دستهٔ رسمی وُدّا — هر خانه فقط زیردسته‌ها و اساتید همان دسته را نشان می‌دهد."
+        />
+        <div className="landing-tile-grid">
+          {tiles.map((tile, index) => (
+            <Link
+              key={tile.name}
+              href={`/search?category=${encodeURIComponent(tile.name)}`}
+              className="landing-category-tile"
+              style={{ animationDelay: `${index * 50}ms` }}
+            >
+              <span className="landing-tile-art" aria-hidden="true">
+                {/* تصویر خیالی ≤۴۸px — خطا → آیکون quran جایش می‌نشیند */}
+                <img
+                  src={serviceImageSrc(tile.imageKey)}
+                  alt=""
+                  width={48}
+                  height={48}
+                  loading="lazy"
+                  onError={(event) => { event.currentTarget.style.display = 'none'; }}
+                />
+              </span>
+              <strong className="landing-tile-title">{tile.name}</strong>
+              <small className="landing-tile-count">{formatFaNumber(tile.count)} استاد فعال</small>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export function Categories({ categories = [] as CatalogCategory[] }: { categories?: CatalogCategory[] }) {
+  const cards = categories.slice(0, 6).map((group) => ({
+    icon: categoryIcon(group.category),
+    title: group.category,
+    desc: `${group.topics.length} زیردستهٔ رسمی — فقط اساتید همین دسته.`,
+    href: `/search?category=${encodeURIComponent(group.category)}`,
+    meta: 'دستهٔ قرآنی',
+  }));
 
   return (
     <section className="landing-categories">
       <div className="public-container">
         <div className="landing-category-grid">
-          {categories.map((category) => (
-            <Link key={category.title} href={category.href} className="landing-category-card">
+          {cards.map((category) => (
+            <Link key={category.title} href={category.href} className="landing-category-card neon-frame-gold">
               <span className="landing-category-icon"><Icon name={category.icon} size={26} /></span>
               <span style={{ minWidth: 0, flex: 1 }}>
                 <small>{category.meta}</small>
@@ -504,14 +565,42 @@ export function bioIntro(bio?: string | null): string {
   return firstBlock.replace(/^[\p{Extended_Pictographic}\u{1F000}-\u{1FAFF}\u2600-\u27BF]+\s*/u, '').trim();
 }
 
-function WebTeacherCard({ teacher }: { teacher: Teacher }) {
+/* ردیف نشان‌های کارت درجه ۱ (۱.الف.۵) — 🟦 تیک بین‌المللی، 🆓 خدمات رایگان، ⚡ جلسات فوری */
+const TIER1_BADGE_ITEMS: Record<string, { emoji: string; label: string }> = {
+  international: { emoji: '🟦', label: 'تیک بین‌المللی' },
+  free: { emoji: '🆓', label: 'خدمات رایگان' },
+  instant: { emoji: '⚡', label: 'جلسات فوری' },
+};
+
+/* کارت استاد وب — برای استفاده در بخش‌های صفحهٔ نخست و صفحات خدمت/رایگان صادر شده است. */
+export function WebTeacherCard({ teacher }: { teacher: Teacher }) {
   const name = teacher.user?.name || 'استاد وُدّا';
   const price = Math.max(0, teacher.price30 || teacher.services?.[0]?.price || 0);
+  /* ۱.الف.۳ — نئون کارت استاد + ۱.الف.۴ — چراغ حضور */
+  const neonColor = tierNeonColor(teacher.tier);
+  const tier1 = teacher.is_tier1 === true;
+  const tier1Badges = (teacher.tier1_badges ?? [])
+    .map((key) => TIER1_BADGE_ITEMS[key])
+    .filter((item): item is { emoji: string; label: string } => Boolean(item));
+  /* last_seen فقط از فیلد فعالیت بک‌اند؛ updated_at به‌روزرسانی پروفایل است نه حضور (۱.الف.۴) */
+  const lastSeen = teacher.last_seen ?? null;
+  const online = resolveOnline(teacher.available !== false, lastSeen);
 
   return (
-    <article className="landing-teacher-card">
+    <article
+      className={`landing-teacher-card vodda-card-neon${tier1 ? ' vodda-card-tier1' : ''}`}
+      style={{ borderRadius: 16, ['--neon-rgb' as string]: hexToRgbTriplet(neonColor) } as CSSProperties}
+    >
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <Avatar size={54} ring tier={teacher.tier} imageUrl={fullUrl(teacher.user?.avatar_url)} />
+        <Avatar
+          size={54}
+          ring
+          tier={teacher.tier}
+          imageUrl={avatarUrl(teacher.user?.avatar_url, teacher.user?.updated_at)}
+          name={name}
+          online={teacher.available !== false}
+          lastSeen={lastSeen}
+        />
         <div style={{ minWidth: 0, flex: 1 }}>
           <strong className="landing-teacher-name">{name}</strong>
           <span className="landing-teacher-tag">{teacher.tag || teacher.field}</span>
@@ -520,6 +609,51 @@ function WebTeacherCard({ teacher }: { teacher: Teacher }) {
           <span className="landing-teacher-rating"><Icon name="star" size={14} fill />{toFaDigits(teacher.rating.toFixed(1))}</span>
         )}
       </div>
+
+      {tier1 ? (
+        /* ۱.الف.۵ — نشان «🏆 استاد درجه ۱» + ردیف نشان‌های 🟦🆓⚡ */
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
+          <span
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+              padding: '3px 9px',
+              borderRadius: 999,
+              fontSize: 11,
+              fontWeight: 800,
+              color: '#7a5e1e',
+              background: 'linear-gradient(135deg, rgba(191,149,64,.16), rgba(191,149,64,.30))',
+              border: '1px solid rgba(191,149,64,.45)',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            🏆 استاد درجه ۱
+          </span>
+          {tier1Badges.map((badge) => (
+            <span
+              key={badge.label}
+              title={badge.label}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 3,
+                padding: '3px 8px',
+                borderRadius: 999,
+                fontSize: 11,
+                fontWeight: 700,
+                color: 'var(--ink-2s)',
+                background: 'rgba(255,255,255,.8)',
+                border: '1px solid var(--sand-200)',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <span aria-hidden="true">{badge.emoji}</span>
+              {badge.label}
+            </span>
+          ))}
+        </div>
+      ) : null}
 
       <div className="landing-teacher-meta">
         {teacher.city && <span><Icon name="pin" size={14} />{teacher.city}</span>}
@@ -541,23 +675,193 @@ function WebTeacherCard({ teacher }: { teacher: Teacher }) {
 }
 
 export function FeaturedTeachers({ teachers, unavailable = false }: { teachers: Teacher[]; unavailable?: boolean }) {
+  /* ۱.ب.۱ — اولویت هم‌شهری: chip شهر انتخاب شد → اساتید همان شهر در ابتدای فهرست
+   * (فقط اولویت، نه محدودیت). تغییر chip با رویداد vodda-city-changed این‌جا هم اعمال می‌شود. */
+  const [city, setCity] = useState('');
+  useEffect(() => {
+    const sync = () => {
+      const stored = readStoredCity();
+      setCity(stored && storedCityUsable(stored) ? stored.name : '');
+    };
+    sync();
+    window.addEventListener(CITY_CHANGE_EVENT, sync);
+    return () => window.removeEventListener(CITY_CHANGE_EVENT, sync);
+  }, []);
+  const visible = useMemo(() => sortByCityPriority(teachers, city), [teachers, city]);
+
   return (
     <section id="teachers" className="landing-section">
       <div className="public-container">
         <div className="landing-section-head">
-          <SectionTitle kicker="استادان وُدّا" title="پروفایل‌های تأییدشده" sub="قبل از رزرو، تخصص، سابقه، خدمات، امتیاز و زمان‌های قابل رزرو را بررسی کنید." center={false} />
+          {/* ۱.ب.۲ — بخش ④ اساتید برتر: سطر اول درجهٔ ۱ */}
+          <SectionTitle kicker="اساتید برتر وُدّا" title="استادان درجه‌دار — نخستِ فهرست" sub={city ? `اساتید ${city} در ابتدای فهرست اولویت دارند.` : 'استادان درجهٔ یک، کشوری و استانی وُدّا؛ پیش از رزرو، پروفایل و خدماتشان را ببینید.'} center={false} />
           <WebBtn variant="ghost" icon="arrowL" href="/search">مشاهده همه استادان</WebBtn>
         </div>
 
-        {teachers.length ? (
+        {visible.length ? (
           <div className="landing-teacher-grid">
-            {teachers.slice(0, 6).map((teacher) => <WebTeacherCard key={teacher.id} teacher={teacher} />)}
+            {visible.slice(0, 8).map((teacher) => <WebTeacherCard key={teacher.id} teacher={teacher} />)}
           </div>
         ) : (
           <div className="landing-empty-state" role="status">
             <span><Icon name="users" size={27} /></span>
             <strong>{unavailable ? 'ارتباط با فهرست استادان برقرار نیست' : 'هنوز استاد تأییدشده‌ای منتشر نشده'}</strong>
             <p>{unavailable ? 'چند لحظه بعد دوباره تلاش کنید.' : 'پس از تأیید نخستین پروفایل‌ها، این بخش به‌صورت خودکار تکمیل می‌شود.'}</p>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+/* ═════════ ۱.ب.۶ — خدمات پرکاربرد (وب) ═════════ */
+
+export function PopularServices({ services }: { services: PopularServiceCard[] }) {
+  if (services.length === 0) return null;
+  return (
+    <section className="landing-section landing-popular" aria-label="خدمات پرکاربرد">
+      <div className="public-container">
+        <SectionTitle
+          kicker="پرکاربردترین‌ها"
+          title="خدمات پرمخاطب وُدّا"
+          sub="۸ خدمتی که بیشترین استاد در وُدّا ارائه می‌دهند — کلیک = فقط اساتید همان خدمت."
+        />
+        <div className="landing-popular-grid">
+          {services.map((service, index) => (
+            <Link
+              key={service.id}
+              href={`/services/${service.id}/teachers`}
+              className="landing-popular-card"
+              style={{ animationDelay: `${index * 50}ms` }}
+              aria-label={`${service.title} — ${formatFaNumber(service.teacherCount)} استاد`}
+            >
+              <span className="landing-popular-art" aria-hidden="true">
+                <img
+                  src={serviceImageSrc(service.imageKey)}
+                  alt=""
+                  width={32}
+                  height={32}
+                  loading="lazy"
+                  onError={(event) => { event.currentTarget.style.display = 'none'; }}
+                />
+              </span>
+              <span className="landing-popular-text">
+                <strong>{service.title}</strong>
+                <small>{formatFaNumber(service.teacherCount)} استاد</small>
+              </span>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ═════════ ۱.ب.۴ — خدمات رایگان (وب) ═════════ */
+
+export function FreeServiceCardRow({ card }: { card: FreeServiceCard }) {
+  return (
+    <Link
+      href={`/teachers/${card.teacherId}?service=${card.id}`}
+      className="landing-free-card"
+      aria-label={`${card.title} رایگان با ${card.teacherName}`}
+    >
+      <span className="landing-free-main">
+        <strong className="landing-free-title">{card.title}</strong>
+        <span className="landing-free-teacher">
+          <Avatar
+            size={26}
+            imageUrl={avatarUrl(card.avatarUrl || undefined)}
+            name={card.teacherName}
+            alt={card.teacherName}
+          />
+          <span>{card.teacherName}</span>
+          {card.tier ? <TierSeal tier={card.tier} size={13} /> : null}
+        </span>
+      </span>
+      <span className="landing-free-meta">
+        {card.duration > 0 ? <span className="landing-free-duration"><Icon name="clock" size={13} />{formatFaNumber(card.duration)} دقیقه</span> : null}
+        <span className="landing-free-badge">رایگان</span>
+      </span>
+    </Link>
+  );
+}
+
+export function FreeServicesSection({ services }: { services: FreeServiceCard[] }) {
+  /* ۱.ب.۴ — بدون خدمت رایگان، کل بخش پنهان می‌شود؛ حداکثر ۶ کارت. */
+  if (services.length === 0) return null;
+  return (
+    <section className="landing-section landing-free" aria-label="خدمات رایگان">
+      <div className="public-container">
+        <div className="landing-section-head">
+          <SectionTitle
+            kicker="بدون هزینه"
+            title="خدمات رایگان وُدّا"
+            sub="جلسه‌های رایگان استادان وُدّا — برای شروع مسیر قرآن."
+          />
+          <WebBtn variant="ghost" icon="arrowL" href="/free-services">مشاهدهٔ همه</WebBtn>
+        </div>
+        <div className="landing-free-list">
+          {services.slice(0, 6).map((card) => <FreeServiceCardRow key={`${card.teacherId}-${card.id}`} card={card} />)}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ═════════ ۱.ب.۵ — اساتید پیشنهادی (وب — واکشی کلاینت با skeleton) ═════════ */
+
+function RecommendedSkeleton() {
+  return (
+    <div className="landing-recommended-grid" aria-label="در حال بارگذاری پیشنهادها">
+      {Array.from({ length: 4 }).map((_, index) => (
+        <div key={index} className="landing-recommended-skel" />
+      ))}
+    </div>
+  );
+}
+
+export function RecommendedTeachers({ limit = 7 }: { limit?: number }) {
+  const [teachers, setTeachers] = useState<Teacher[] | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    fetch(`/api/backend/teachers/recommended?limit=${limit}`, { cache: 'no-store' })
+      .then((response) => {
+        if (!response.ok) throw new Error(String(response.status));
+        return response.json();
+      })
+      .then((body) => {
+        if (!active) return;
+        setTeachers(Array.isArray(body?.data) ? (body.data as Teacher[]) : []);
+      })
+      .catch(() => {
+        if (active) setTeachers([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, [limit]);
+
+  return (
+    <section className="landing-section landing-recommended" aria-label="اساتید پیشنهادی">
+      <div className="public-container">
+        <SectionTitle
+          kicker="هر بار تازه"
+          title="اساتید پیشنهادی وُدّا"
+          sub="چیدمان وزنی بر پایهٔ rank استاد — با هر بازدید چیدمان تازه‌ای می‌بینی."
+        />
+        {teachers === null ? (
+          <RecommendedSkeleton />
+        ) : teachers.length === 0 ? (
+          <div className="landing-empty-state" role="status">
+            <span><Icon name="sparkle" size={27} /></span>
+            <strong>پیشنهادها هنوز آماده نیست</strong>
+            <p>پس از تکمیل پروفایل استادان، چیدمان پیشنهادی این‌جا نمایش داده می‌شود.</p>
+          </div>
+        ) : (
+          <div className="landing-recommended-grid">
+            {teachers.map((teacher) => <WebTeacherCard key={teacher.id} teacher={teacher} />)}
           </div>
         )}
       </div>

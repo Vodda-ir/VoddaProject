@@ -1,29 +1,43 @@
 import { api } from '@/lib/api';
+import { enrichTeacherObject } from '@/lib/server/tier1';
 import { Icon } from '@/components/Icon';
 import { Avatar, PublicSurface, Stars, TeacherBio, WebBtn } from '@/components/web/ui';
 import { TierChip } from '@/components/web/tier';
 import { Nav, Footer } from '@/components/web/sections';
-import { fullUrl } from '@/lib/auth';
+import { avatarUrl, fullUrl } from '@/lib/auth';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 
-export default async function TeacherDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function TeacherDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ service?: string }>;
+}) {
   const { id } = await params;
+  /* ۱.ب.۴ — فیلتر خدمت از لینک کارت رایگان (?service=<id>) — فقط همان خدمت */
+  const serviceFilterId = Number.parseInt((await searchParams).service ?? '', 10);
+  const hasServiceFilter = Number.isInteger(serviceFilterId) && serviceFilterId > 0;
   const numId = Number.parseInt(id, 10);
   if (!Number.isInteger(numId) || numId <= 0) notFound();
 
   let teacher, reviews;
   try {
     const response = await api.teacher(numId);
-    teacher = response.data.teacher;
+    /* ۱.الف.۵ — غنی‌سازی درجه ۱ سمت سرور (درخواست مستقیم به بک‌اند). */
+    teacher = await enrichTeacherObject(response.data.teacher) as typeof response.data.teacher;
     reviews = response.data.reviews || [];
   } catch {
     notFound();
   }
 
   const name = teacher.user?.name || 'استاد وُدّا';
-  const services = teacher.services || [];
+  const allServices = teacher.services || [];
+  const services = hasServiceFilter
+    ? allServices.filter((service) => service.id === serviceFilterId)
+    : allServices;
   const startingPrice = services.length
     ? Math.min(...services.map((service) => Math.max(0, service.price)))
     : Math.max(0, teacher.price30 || 0);
@@ -40,7 +54,15 @@ export default async function TeacherDetailPage({ params }: { params: Promise<{ 
 
         <section className="teacher-public-hero">
           <div className="teacher-public-profile">
-            <Avatar size={92} ring tier={teacher.tier} imageUrl={fullUrl(teacher.user?.avatar_url)} />
+            <Avatar
+              size={92}
+              ring
+              tier={teacher.tier}
+              imageUrl={avatarUrl(teacher.user?.avatar_url, teacher.user?.updated_at)}
+              name={name}
+              online={teacher.available !== false}
+              lastSeen={teacher.last_seen ?? null}
+            />
             <div style={{ minWidth: 0, flex: 1 }}>
               <div className="teacher-public-name-row">
                 <h1>{name}</h1>
@@ -68,7 +90,37 @@ export default async function TeacherDetailPage({ params }: { params: Promise<{ 
                 <span><Icon name="user" size={18} /></span>
                 <h2>دربارهٔ استاد</h2>
               </div>
-              <TeacherBio bio={teacher.bio} />
+
+              <div className="teacher-about-card">
+                <div className="teacher-about-facts" aria-label="اطلاعات خلاصهٔ استاد">
+                  <span className="teacher-about-fact">
+                    <Icon name="book" size={15} />
+                    {teacher.tag || teacher.field || 'آموزش قرآن کریم'}
+                  </span>
+                  <span className="teacher-about-fact">
+                    <Icon name={teacher.female ? 'users' : 'user'} size={15} />
+                    {teacher.female ? 'استاد بانو' : 'استاد برادر'}
+                  </span>
+                  {teacher.city ? (
+                    <span className="teacher-about-fact">
+                      <Icon name="pin" size={15} />
+                      {teacher.city}
+                    </span>
+                  ) : null}
+                  <span className="teacher-about-fact">
+                    <Icon name="calendar" size={15} />
+                    {toFaDigits(teacher.sessions || 0)} جلسه برگزارشده
+                  </span>
+                  {teacher.reviews > 0 ? (
+                    <span className="teacher-about-fact gold">
+                      <Icon name="star" size={15} />
+                      امتیاز {toFaDigits(teacher.rating.toFixed(1))} از {toFaDigits(teacher.reviews)} نظر
+                    </span>
+                  ) : null}
+                </div>
+
+                <TeacherBio bio={teacher.bio} />
+              </div>
             </section>
 
             <section>
@@ -76,6 +128,14 @@ export default async function TeacherDetailPage({ params }: { params: Promise<{ 
                 <span><Icon name="book" size={18} /></span>
                 <h2>خدمات تأییدشده</h2>
               </div>
+
+              {hasServiceFilter ? (
+                <div className="teacher-service-filter-note">
+                  <Icon name="filter" size={14} />
+                  <span>فقط خدمت انتخاب‌شده از بخش «خدمات رایگان»</span>
+                  <Link href={`/teachers/${numId}`}>نمایش همهٔ خدمات</Link>
+                </div>
+              ) : null}
 
               {services.length ? (
                 <div className="teacher-service-list">

@@ -1,7 +1,8 @@
 "use client";
 
-import type { MouseEvent } from "react";
+import type { CSSProperties, MouseEvent } from "react";
 import type { UniversalAppConfig } from "../../config";
+import { usePlatform } from "../../platform/context";
 import { navigateApp } from "../../router";
 import { resolveAssetUrl } from "../../platform/asset";
 import { Button, Icon, colors, typography } from "../../ui";
@@ -9,6 +10,13 @@ import { useAppearance } from "../../ui/appearance";
 import { localizeCityName } from "../../i18n/transliterate";
 import { TierBadge } from "./TierBadge";
 import type { Teacher } from "./types";
+
+/* ردیف نشان‌های کارت درجه ۱ (۱.الف.۵) — 🟦 تیک بین‌المللی، 🆓 خدمات رایگان، ⚡ جلسات فوری */
+const TIER1_BADGE_ITEMS: Record<string, { emoji: string; label: string }> = {
+  international: { emoji: "🟦", label: "تیک بین‌المللی" },
+  free: { emoji: "🆓", label: "خدمات رایگان" },
+  instant: { emoji: "⚡", label: "جلسات فوری" },
+};
 
 function initialsOf(name: string, lang: "fa" | "en") {
   const parts = name.trim().split(/\s+/);
@@ -28,6 +36,11 @@ export function TeacherCard({
 }) {
   const { L, lang, N } = useAppearance();
   const localName = N(teacher.name);
+  /* ۱.الف.۵ — کارت درجه ۱ و ردیف نشان‌ها (🟦 تیک بین‌المللی / 🆓 خدمات رایگان / ⚡ جلسات فوری) */
+  const tier1 = teacher.isTier1 === true;
+  const tier1Badges = (teacher.tier1Badges ?? [])
+    .map((key) => TIER1_BADGE_ITEMS[key])
+    .filter((item): item is { emoji: string; label: string } => Boolean(item));
   const goToTeacher = () => navigateApp(`/teacher/${teacher.id}`, config);
   const priceFrom = new Intl.NumberFormat(lang === "en" ? "en-US" : "fa-IR", { maximumFractionDigits: 0 }).format(
     Math.max(0, teacher.price30 / 1000),
@@ -43,7 +56,7 @@ export function TeacherCard({
 
   return (
     <div
-      className="vodda-card vodda-card--interactive"
+      className={`vodda-card vodda-card--interactive vodda-card-neon${teacher.isTier1 === true ? " vodda-card-tier1" : ""}`}
       onClick={handleCardClick}
       style={{
         width: wide ? "100%" : 232,
@@ -56,11 +69,12 @@ export function TeacherCard({
         color: colors.ink,
         background: colors.surface,
         border: 0,
-        borderRadius: 24,
+        /* ۱.الف.۳ — radius ۱۶px طبق مشخصات نئون */
+        borderRadius: 16,
         boxShadow: "0 6px 22px rgba(46,54,34,.07)",
         cursor: "pointer",
         fontFamily: typography.fontFamily,
-      }}
+      } as CSSProperties}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <div style={{ position: "relative", flex: "0 0 auto" }}>
@@ -186,6 +200,7 @@ export function TeacherCard({
             />
             {teacher.available ? L("آنلاین — آمادهٔ رزرو") : L("آفلاین")}
           </span>
+
           {teacher.instantEnabled ? (
             <span
               aria-label={L("جلسهٔ فوری فعال")}
@@ -210,13 +225,61 @@ export function TeacherCard({
         </div>
       </div>
 
+      {tier1 ? (
+        /* ۱.الف.۵ — نشان «🏆 استاد درجه ۱» + ردیف نشان‌های 🟦🆓⚡ */
+        <div
+          className="vodda-enter"
+          style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}
+        >
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 4,
+              padding: "3px 9px",
+              borderRadius: 999,
+              fontSize: 10.5,
+              fontWeight: 800,
+              color: "#7a5e1e",
+              background: "linear-gradient(135deg, rgba(191,149,64,.16), rgba(191,149,64,.30))",
+              border: "1px solid rgba(191,149,64,.45)",
+              whiteSpace: "nowrap",
+            }}
+          >
+            🏆 استاد درجه ۱
+          </span>
+          {tier1Badges.map((badge) => (
+            <span
+              key={badge.label}
+              title={badge.label}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 3,
+                padding: "3px 8px",
+                borderRadius: 999,
+                fontSize: 10.5,
+                fontWeight: 700,
+                color: colors.inkSecondary,
+                background: "rgba(255,255,255,.72)",
+                border: `1px solid ${colors.sand200}`,
+                whiteSpace: "nowrap",
+              }}
+            >
+              <span aria-hidden="true">{badge.emoji}</span>
+              {badge.label}
+            </span>
+          ))}
+        </div>
+      ) : null}
+
       <div
         style={{
           display: "flex",
           alignItems: "center",
           gap: 7,
           minWidth: 0,
-          fontSize: 12,
+          fontSize: 11.5,
           color: colors.inkMuted,
         }}
       >

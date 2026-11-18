@@ -134,6 +134,15 @@ export function LearnerTeacherProfileScreen({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
+  /* ۱.ب.۴ — فیلتر خدمت از لینک کارت رایگان (?service=<id>) — فقط همان خدمت با امکان برداشتن فیلتر */
+  const [serviceFilterId, setServiceFilterId] = useState(0);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const raw = new URLSearchParams(window.location.search).get("service") ?? "";
+    const parsed = Number.parseInt(raw, 10);
+    setServiceFilterId(Number.isInteger(parsed) && parsed > 0 ? parsed : 0);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -170,7 +179,10 @@ export function LearnerTeacherProfileScreen({
   }
 
   const { teacher, reviews } = detail;
-  const services = teacher.services.filter((service) => service.active);
+  const activeServices = teacher.services.filter((service) => service.active);
+  const services = serviceFilterId > 0
+    ? activeServices.filter((service) => service.id === serviceFilterId)
+    : activeServices;
   const ratingLabel = teacher.reviews > 0
     ? teacher.rating.toLocaleString(lang === "en" ? "en-US" : "fa-IR", { maximumFractionDigits: 1 })
     : "—";
@@ -278,6 +290,12 @@ export function LearnerTeacherProfileScreen({
           <div style={{ display: "grid", gap: spacing.sm, marginTop: spacing.md }}>
             {services.map((service) => <ServiceCard key={service.id} service={service} />)}
           </div>
+        ) : serviceFilterId > 0 ? (
+          <EmptyState
+            icon={<Icon name="filter" size={30} />}
+            title="این خدمت فعال نیست"
+            description="خدمت انتخاب‌شده از بخش خدمات رایگان در حال حاضر فعال نیست؛ فیلتر را بردارید."
+          />
         ) : (
           <EmptyState
             icon={<Icon name="book" size={30} />}

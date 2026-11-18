@@ -119,6 +119,50 @@ optgroup {
   font-family: var(--font) !important;
 }
 
+/* ── باگ input-overflow — کلاس پایه فیلدهای ورودی ─────────────────────
+   هیچ فیلدی نباید با متن بدون‌فاصله از کادر بیرون بزند؛ در flex/grid هم
+   با min-width:0 اجازهٔ جمع‌شدن دارد. */
+.input-base {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+input,
+textarea {
+  box-sizing: border-box;
+  max-width: 100%;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+textarea {
+  resize: vertical;
+}
+
+textarea.resize-none {
+  resize: none;
+}
+
+/* باگ input-overflow — گریدهای فرمِ بدون ستون صریح نباید با محتوای بلند
+   (مثلاً ۵۰۰ کاراکتر بدون فاصله) باد کنند. بدون !important نوشته شده تا
+   گریدهای دارای ستون صریح (inline یا کلاس) دست‌نخورده بمانند. */
+label:has(> input),
+label:has(> textarea) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+div:has(> label > input),
+div:has(> label > textarea),
+div:has(> input),
+div:has(> textarea) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 a {
   color: inherit;
   text-decoration: none;
@@ -1032,6 +1076,20 @@ textarea::placeholder {
   background: var(--olive-900);
 }
 
+/* فوتر چسبان — صفحهٔ عمومی ستون فلکس می‌شود تا فوتر روی صفحات کوتاه هم
+   به ته دید بچسبد و روی صفحات بلند به‌طور طبیعی پایین رانده شود.
+   ۱.ب.۱ (باگ کشف‌شده هنگام تست): `:not([hidden])` لازم است تا placeholder
+   استریم React (`<div hidden><!--$--><!--/$--></div>`) که فرزند مستقیم body است
+   ستون ۱۰۰vh نگیرد — وگرنه یک فضای خالی تمام‌صفحه بالای محتوا می‌سازد. */
+body:has(.public-footer) > div:not([hidden]):not(.vodda-city-sheet) {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+body:has(.public-footer) > div:not([hidden]):not(.vodda-city-sheet) > .public-footer {
+  margin-top: auto;
+}
+
 .public-footer-grid {
   display: grid;
   grid-template-columns: 1.7fr repeat(3,1fr);
@@ -1783,6 +1841,9 @@ a.blog-card:hover .blog-card-action {
 
 .blog-article-cover {
   width: 100%;
+  /* باگ responsive-overflow — نسبت ثابت + object-fit؛ تصویر بزرگ هرگز صفحه را نمی‌شکند */
+  aspect-ratio: 16 / 9;
+  height: auto;
   max-height: 380px;
   margin: 20px 0 4px;
   border-radius: 20px;
@@ -1885,6 +1946,27 @@ a.blog-card:hover .blog-card-action {
   background: var(--sand-50);
 }
 
+/* باگ category-routing — چیپ‌های زیردسته در جستجو با حالت دسته */
+.web-topic-chip {
+  min-height: 34px;
+  padding: 6px 14px;
+  border: 1px solid var(--sand-200);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ink-2, #5a5648);
+  font-size: 12px;
+  font-weight: 700;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.web-topic-chip:hover { border-color: var(--olive-400); }
+.web-topic-chip[data-active='true'] {
+  background: var(--olive-600);
+  border-color: var(--olive-600);
+  color: #fff;
+}
+
 .web-search-fields input {
   min-width: 0;
   width: 100%;
@@ -1975,6 +2057,8 @@ a.blog-card:hover .blog-card-action {
 
 .web-search-teacher-card {
   display: grid;
+  /* باگ responsive-overflow — ردپای تک‌ستونه که با محتوا هم هرگز از عرض ستون بیرون نمی‌زند */
+  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
   padding: 16px;
   border: 1px solid var(--sand-150);
@@ -1987,6 +2071,14 @@ a.blog-card:hover .blog-card-action {
   display: flex;
   align-items: center;
   gap: 11px;
+}
+
+/* باگ responsive-overflow — بدون min-width:0، نام بلند استاد کل ستون را می‌شکند */
+.web-search-teacher-top > div,
+.web-search-teacher-card,
+.usr-teacher-card {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .web-search-teacher-top > div > strong {
@@ -3093,6 +3185,69 @@ a.blog-card:hover .blog-card-action {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 18px;
+}
+
+/* باگ responsive-overflow — داشبورد استاد ≤۶۴۰px تک‌ستونه */
+@media (max-width: 640px) {
+  .ops-metric-grid {
+    grid-template-columns: 1fr;
+  }
+  .adm-table-wrap {
+    border: none;
+    background: none;
+    box-shadow: none;
+    overflow: visible;
+  }
+  /* جدول‌های مدیریتی در موبایل → کارت */
+  .adm-table thead {
+    display: none;
+  }
+  .adm-table,
+  .adm-table tbody,
+  .adm-table tr,
+  .adm-table td {
+    display: block;
+    width: 100%;
+  }
+  .adm-table {
+    border: none;
+  }
+  .adm-table tr {
+    border: 1px solid var(--sand-150);
+    border-radius: 16px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    background: #fff;
+  }
+  .adm-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 0;
+    border: none;
+    text-align: start;
+    min-width: 0;
+  }
+  .adm-table td[data-label]::before {
+    content: attr(data-label);
+    flex: 0 0 auto;
+    color: var(--ink-3);
+    font-size: 11.5px;
+    font-weight: 700;
+  }
+  .adm-table td[data-label] > * {
+    min-width: 0;
+    text-align: end;
+  }
+  .adm-table td[colspan],
+  .adm-table td:not([data-label]) {
+    justify-content: center;
+  }
+  .adm-table td[colspan]::before,
+  .adm-table td:not([data-label])::before {
+    content: none;
+  }
 }
 
 .ops-metric-card {
@@ -5143,6 +5298,58 @@ a.blog-card:hover .blog-card-action {
   .neon-frame, .neon-frame-gold { animation: none; }
 }
 
+/* ═══════════════════════════════════════════════════════════
+   هویت استاد — کلاس‌های مشترک اپ و وب (۱.الف.۳/۴/۵)
+═══════════════════════════════════════════════════════════ */
+/* ۱.الف.۳ — حاشیهٔ نئونی کارت استاد: 1.5px، بیرونی 12px آلفا ۲۵٪ (روشن) / ۶۰٪ (دارک)،
+   inset 8px، hover تا ۱۶px؛ بدون درجه → خاکستری ملایم (پیش‌فرض متغیر). */
+.vodda-card-neon {
+  --neon-rgb: 140 134 117;
+  --neon-a: .25;
+  --neon-inset-a: .125;
+  border: 1.5px solid rgb(var(--neon-rgb) / .55) !important;
+  box-shadow:
+    0 0 12px rgb(var(--neon-rgb) / var(--neon-a)),
+    inset 0 0 8px rgb(var(--neon-rgb) / var(--neon-inset-a)) !important;
+  transition: box-shadow 180ms ease, border-color 160ms ease;
+}
+.vodda-card-neon:hover,
+.vodda-card-neon:focus-visible {
+  box-shadow:
+    0 0 16px rgb(var(--neon-rgb) / var(--neon-a)),
+    inset 0 0 8px rgb(var(--neon-rgb) / var(--neon-inset-a)) !important;
+}
+@media (prefers-color-scheme: dark) {
+  .vodda-card-neon {
+    --neon-a: .6;
+    --neon-inset-a: .3;
+  }
+}
+/* ۱.الف.۵ — کارت درجه ۱: نئون ۲px طلایی + گرادیان زیتونی-طلایی + fade-in */
+.vodda-card-tier1 {
+  --neon-rgb: 191 149 64;
+  --neon-a: .4;
+  --neon-inset-a: .18;
+  border: 2px solid rgb(var(--neon-rgb) / .78) !important;
+  background: linear-gradient(140deg, #f2f5ea 0%, #f7efd9 55%, #f3e6c8 100%) !important;
+  animation: vodda-t1-in 320ms ease-out both;
+}
+@keyframes vodda-t1-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+/* ۱.الف.۴ — چراغ آفلاین قرمز چشمک‌زن (pulse-red، ۲s) */
+.vodda-presence-red {
+  animation: vodda-presence-red 2s ease-in-out infinite;
+}
+@keyframes vodda-presence-red {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .35; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vodda-card-tier1, .vodda-presence-red { animation: none !important; }
+}
+
 /* کادرهای مهم و اصلی — نئونی تا بیشتر به چشم بیایند */
 .landing-callout-card.neon-frame,
 .landing-category-card.neon-frame-gold,
@@ -5328,6 +5535,46 @@ a.blog-card:hover .blog-card-action {
   gap: 12px;
   flex-wrap: wrap;
 }
+
+/* دو نشانِ شیوه در لندینگ — فراخوان زنده / فهرست اساتید */
+.landing-dispatch-modes {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+.landing-dispatch-mode-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 13px;
+  border: 1px solid var(--sand-200);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 800;
+}
+.landing-dispatch-mode-chip.active {
+  border-color: rgba(191, 149, 64, .55);
+  color: #8b681f;
+  background: var(--gold-bg, #f7efd9);
+  box-shadow: 0 0 14px rgba(191, 149, 64, .22);
+}
+
+/* کارت‌های انتخاب شیوه در صفحهٔ فراخوان */
+.dispatch-mode-card {
+  border-width: 1.5px;
+  transition: transform .18s ease, opacity .2s ease;
+}
+.dispatch-mode-card:hover {
+  transform: translateY(-2px);
+}
+.dispatch-mode-card.neon-frame,
+.dispatch-mode-card.neon-frame-gold {
+  border-radius: 22px;
+}
+
 .dispatch-special-btn {
   position: relative;
   display: inline-flex;
@@ -5470,6 +5717,41 @@ a.blog-card:hover .blog-card-action {
 /* ═══════════════════════════════════════════════════════════
    ۴) «دربارهٔ استاد» — بازچینش ساختاریافته و مرتب
 ═══════════════════════════════════════════════════════════ */
+.teacher-about-card {
+  display: grid;
+  gap: 15px;
+  padding: 19px;
+  border: 1px solid var(--sand-150);
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 0 3px 12px rgba(46,54,34,.04);
+}
+.teacher-about-facts {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-bottom: 14px;
+  border-bottom: 1px dashed var(--sand-150);
+}
+.teacher-about-fact {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--sand-200);
+  border-radius: 999px;
+  background: var(--sand-50);
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 700;
+}
+.teacher-about-fact svg { color: var(--olive-600); }
+.teacher-about-fact.gold {
+  border-color: rgba(191, 149, 64, .45);
+  background: var(--gold-bg, #f7efd9);
+  color: #8b681f;
+}
+.teacher-about-fact.gold svg { color: #b0922f; }
 .teacher-bio {
   display: grid;
   gap: 13px;
@@ -5533,4 +5815,696 @@ a.blog-card:hover .blog-card-action {
   border-color: rgba(191, 149, 64, .35);
   color: #8b681f;
   background: var(--gold-bg);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ۱.ب.۱ — chip شهر + bottom sheet انتخاب شهر (وب)
+═══════════════════════════════════════════════════════════ */
+.vodda-city-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  min-height: 34px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--olive-200);
+  background: var(--surface);
+  color: var(--olive-700);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color .16s ease, box-shadow .16s ease;
+}
+.vodda-city-chip-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.vodda-city-chip:hover,
+.vodda-city-chip:focus-visible {
+  border-color: var(--olive-400);
+  box-shadow: 0 0 9px rgba(147, 161, 114, .28);
+}
+
+/* sheet پایین صفحه */
+.vodda-city-sheet-backdrop {
+  position: fixed;
+  z-index: 120;
+  inset: 0;
+  border: 0;
+  padding: 0;
+  background: rgba(32, 35, 27, .5);
+  backdrop-filter: blur(6px);
+  cursor: pointer;
+}
+.vodda-city-sheet {
+  position: fixed;
+  z-index: 121;
+  inset-inline: 0;
+  bottom: 0;
+  margin-inline: auto;
+  width: min(100%, 560px);
+  max-height: 82dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 16px 18px calc(20px + env(safe-area-inset-bottom));
+  border-radius: 20px 20px 0 0;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 -12px 44px rgba(31, 36, 24, .22);
+  animation: vodda-city-sheet-in 240ms ease-out both;
+}
+@keyframes vodda-city-sheet-in {
+  from { transform: translateY(24px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vodda-city-sheet { animation: none; }
+}
+.vodda-city-sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.vodda-city-sheet-head strong { font-size: 15.5px; font-weight: 800; }
+.vodda-city-sheet-close {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--sand-200);
+  border-radius: 11px;
+  background: var(--surface);
+  color: var(--ink-2s);
+  cursor: pointer;
+}
+.vodda-city-use-location {
+  width: 100%;
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--olive-600);
+  color: #fff;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 8px 22px rgba(94, 110, 67, .16);
+}
+.vodda-city-use-location:disabled { opacity: .65; cursor: default; }
+.vodda-city-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid rgba(191, 149, 64, .35);
+  border-radius: 12px;
+  background: var(--gold-bg);
+  color: #8b681f;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.7;
+}
+.vodda-city-search { display: grid; gap: 6px; }
+.vodda-city-search > span { font-size: 12.5px; font-weight: 700; color: var(--ink-2s); }
+.vodda-city-search input {
+  width: 100%;
+  min-height: 46px;
+  padding: 11px 40px 11px 12px;
+  border: 1px solid var(--sand-200);
+  border-radius: 13px;
+  outline: none;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.vodda-city-search input:focus { border-color: var(--olive-400); }
+.vodda-city-group { display: grid; gap: 8px; margin-top: 4px; }
+.vodda-city-group > strong { font-size: 12.5px; font-weight: 800; color: var(--ink-2s); }
+.vodda-city-group-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.vodda-city-group-head small { font-size: 11px; color: var(--ink-4); font-weight: 700; }
+.vodda-city-popular { display: flex; flex-wrap: wrap; gap: 8px; }
+.vodda-city-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 13px;
+  border: 1px solid var(--sand-200);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.vodda-city-pill[data-active="true"] {
+  border-color: var(--olive-600);
+  background: var(--olive-50);
+  color: var(--olive-700);
+  font-weight: 800;
+}
+.vodda-city-list {
+  display: grid;
+  gap: 3px;
+  max-height: 236px;
+  overflow-y: auto;
+  padding: 4px;
+  border: 1px solid var(--sand-150);
+  border-radius: 13px;
+  overscroll-behavior: contain;
+}
+.vodda-city-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: start;
+}
+.vodda-city-row:hover { background: var(--sand-100); }
+.vodda-city-row[data-active="true"] {
+  background: var(--olive-50);
+  color: var(--olive-700);
+  font-weight: 800;
+}
+.vodda-city-empty { font-size: 12.5px; color: var(--ink-3); padding: 10px 2px; }
+
+/* دارک‌مود — chip با حاشیهٔ نئونی ملایم + sheet تیره (مشخصات ۱.ب.۱) */
+@media (prefers-color-scheme: dark) {
+  .vodda-city-chip {
+    background: rgba(23, 27, 18, .82);
+    border-color: rgba(147, 161, 114, .5);
+    color: #dfe6cf;
+    box-shadow:
+      0 0 10px rgba(147, 161, 114, .22),
+      inset 0 0 6px rgba(147, 161, 114, .14);
+  }
+  .vodda-city-chip:hover,
+  .vodda-city-chip:focus-visible {
+    border-color: rgba(182, 192, 155, .72);
+    box-shadow:
+      0 0 14px rgba(147, 161, 114, .34),
+      inset 0 0 8px rgba(147, 161, 114, .18);
+  }
+  .vodda-city-sheet {
+    background: #191d13;
+    color: #e8ecdb;
+    box-shadow: 0 -12px 44px rgba(0, 0, 0, .5);
+  }
+  .vodda-city-sheet-close {
+    background: rgba(255, 255, 255, .04);
+    border-color: rgba(214, 220, 196, .22);
+    color: #cfd6bd;
+  }
+  .vodda-city-search input {
+    background: rgba(255, 255, 255, .04);
+    border-color: rgba(214, 220, 196, .22);
+    color: #e8ecdb;
+  }
+  .vodda-city-pill,
+  .vodda-city-row { background: transparent; color: #e8ecdb; }
+  .vodda-city-row:hover { background: rgba(255, 255, 255, .05); }
+  .vodda-city-pill[data-active="true"],
+  .vodda-city-row[data-active="true"] {
+    background: rgba(147, 161, 114, .16);
+    border-color: rgba(147, 161, 114, .6);
+    color: #dfe6cf;
+  }
+  .vodda-city-list { border-color: rgba(214, 220, 196, .18); }
+  .vodda-city-note {
+    background: rgba(191, 149, 64, .12);
+    color: #e7d5a8;
+    border-color: rgba(191, 149, 64, .4);
+  }
+}
+
+/* عرض‌های خیلی باریک — chip فشرده تا هیچ overflow در 320px نداشته باشیم */
+@media (max-width: 400px) {
+  .vodda-city-chip {
+    padding: 5px 9px;
+    min-height: 31px;
+    font-size: 11.5px;
+    gap: 5px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ۱.ب — بخش‌های کشف صفحهٔ نخست (وب): آیه، خانه‌های دسته،
+   خدمات پرکاربرد، خدمات رایگان، اساتید پیشنهادی
+═══════════════════════════════════════════════════════════ */
+
+/* ۱.ب.۲ — بخش ② آیهٔ روز */
+.landing-verse-section { padding: 10px 0 6px; }
+.landing-verse-card {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 15px 19px;
+  border: 1px solid var(--olive-200, #dbe3c8);
+  border-radius: 20px;
+  background: linear-gradient(135deg, #f2f5ea 0%, #ffffff 72%);
+  box-shadow: 0 2px 12px rgba(46, 54, 34, .05);
+}
+.landing-verse-icon {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 40px;
+  border-radius: 13px;
+  color: var(--olive-700);
+  background: var(--olive-100, #eef2e2);
+}
+.landing-verse-text {
+  margin: 0;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 2;
+  color: var(--ink, #2e3622);
+}
+.landing-verse-source {
+  color: var(--olive-600);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+/* ۱.ب.۳ — خانه‌های شش‌گانهٔ دسته‌بندی — گرادیان زیتونی-طلایی + نئون ۲px */
+.landing-tiles { padding: 26px 0 34px; }
+.landing-tile-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.landing-category-tile {
+  position: relative;
+  min-height: 100px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 10px;
+  border: 2px solid transparent;
+  border-radius: 20px;
+  background:
+    linear-gradient(140deg, #f2f5ea 0%, #f7f3e3 58%, #f3e8cb 100%) padding-box,
+    linear-gradient(135deg, rgba(147, 161, 114, .85), rgba(191, 149, 64, .85)) border-box;
+  box-shadow: 0 3px 14px rgba(46, 54, 34, .07);
+  text-align: center;
+  text-decoration: none;
+  overflow: hidden;
+  transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+  animation: landing-tile-in 360ms ease-out both;
+}
+@keyframes landing-tile-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+.landing-category-tile:hover,
+.landing-category-tile:focus-visible {
+  transform: translateY(-2px);
+  box-shadow:
+    0 0 14px rgba(191, 149, 64, .32),
+    0 8px 20px rgba(46, 54, 34, .1);
+  filter: saturate(1.06);
+}
+.landing-tile-art {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 48px;
+  pointer-events: none;
+}
+.landing-tile-art img {
+  width: 48px;
+  height: 48px;
+  max-width: 48px;
+  max-height: 48px;
+  object-fit: contain;
+}
+.landing-tile-title {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink, #2e3622);
+}
+.landing-tile-count {
+  color: var(--olive-600);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* ۱.ب.۶ — خدمات پرکاربرد — کارت کوچک ۸۰/۹۰px با نئون و درخشش hover */
+.landing-popular { padding: 26px 0 34px; }
+.landing-popular-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.landing-popular-card {
+  --neon-rgb: 147 161 114;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1.5px solid rgba(147, 161, 114, .4);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(46, 54, 34, .05);
+  text-decoration: none;
+  min-width: 0;
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+  animation: landing-tile-in 360ms ease-out both;
+}
+.landing-popular-card:hover,
+.landing-popular-card:focus-visible {
+  transform: translateY(-2px);
+  border-color: rgba(147, 161, 114, .75);
+  box-shadow:
+    0 0 14px rgba(147, 161, 114, .35),
+    0 6px 16px rgba(46, 54, 34, .08);
+}
+.landing-popular-art {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 40px;
+  border-radius: 13px;
+  background: linear-gradient(140deg, #f2f5ea, #f7f0dc);
+  pointer-events: none;
+}
+.landing-popular-art img {
+  width: 32px;
+  height: 32px;
+  max-width: 32px;
+  max-height: 32px;
+  object-fit: contain;
+}
+.landing-popular-text { min-width: 0; }
+.landing-popular-text strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink, #2e3622);
+}
+.landing-popular-text small {
+  display: block;
+  margin-top: 2px;
+  color: var(--ink-3, #8a9078);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* ۱.ب.۴ — خدمات رایگان — کارت افقی با نشان سبز «رایگان» */
+.landing-free { padding: 26px 0 34px; }
+.landing-free-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+.landing-free-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 16px;
+  border: 1px solid var(--sand-150, #e4e6d8);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(46, 54, 34, .04);
+  text-decoration: none;
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+}
+.landing-free-card:hover,
+.landing-free-card:focus-visible {
+  transform: translateY(-2px);
+  border-color: rgba(66, 138, 84, .5);
+  box-shadow: 0 6px 18px rgba(46, 54, 34, .08);
+}
+.landing-free-main { min-width: 0; display: grid; gap: 6px; }
+.landing-free-title {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14.5px;
+  font-weight: 800;
+  color: var(--ink, #2e3622);
+}
+.landing-free-teacher {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  color: var(--ink-2, #4c5a36);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.landing-free-teacher > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.landing-free-meta { display: inline-flex; align-items: center; gap: 9px; flex: 0 0 auto; }
+.landing-free-duration {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--ink-3, #8a9078);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.landing-free-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 11px;
+  border-radius: 999px;
+  background: rgba(66, 138, 84, .12);
+  border: 1px solid rgba(66, 138, 84, .4);
+  color: #2e7d43;
+  font-size: 11.5px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+/* ۱.ب.۵ — اساتید پیشنهادی — ۲ ستون موبایل / ۴ ستون دسکتاپ + skeleton */
+.landing-recommended { padding: 26px 0 34px; }
+.landing-recommended-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.landing-recommended-skel {
+  height: 210px;
+  border-radius: 18px;
+  background: linear-gradient(100deg, #eef0e6 40%, #f7f8f2 50%, #eef0e6 60%);
+  background-size: 200% 100%;
+  animation: web-skel 1.3s ease-in-out infinite;
+}
+@keyframes web-skel {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
+/* صفحهٔ /free-services */
+.free-services-page { padding: 34px 0 60px; }
+.free-services-browser { display: grid; gap: 14px; margin-top: 20px; }
+.free-services-search {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 11px 15px;
+  border: 1px solid var(--sand-150, #e4e6d8);
+  border-radius: 16px;
+  background: #fff;
+  color: var(--ink-3, #8a9078);
+}
+.free-services-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  color: var(--ink, #2e3622);
+}
+.free-services-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.free-services-chip {
+  padding: 6px 13px;
+  border: 1px solid var(--sand-200, #dcdfcc);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ink-2, #4c5a36);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+.free-services-chip[data-active="true"] {
+  background: var(--olive-600);
+  border-color: var(--olive-600);
+  color: #fff;
+}
+.free-services-count {
+  margin: 0;
+  color: var(--ink-3, #8a9078);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.free-services-hint {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 4px 0 0;
+  color: var(--ink-3, #8a9078);
+  font-size: 12px;
+  line-height: 1.9;
+}
+.free-services-hint a { color: var(--olive-600); font-weight: 800; }
+
+/* صفحهٔ اساتید یک خدمت (۱.ب.۶) */
+.service-teachers-page { padding: 34px 0 60px; }
+.service-teachers-head {
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+  padding-bottom: 22px;
+}
+.service-teachers-head h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 900;
+  color: var(--ink, #2e3622);
+}
+.service-teachers-head p {
+  margin: 0;
+  color: var(--ink-3, #8a9078);
+  font-size: 13px;
+}
+.service-teachers-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--olive-100, #eef2e2);
+  color: var(--olive-700);
+  font-size: 12px;
+  font-weight: 800;
+}
+.service-teachers-grid { margin-top: 8px; }
+
+/* ریسپانسیو — تبلت ۳×۲ / دسکتاپ ۶×۱ (خانه‌ها) و ۴ ستون (پرکاربرد و پیشنهادی) */
+@media (min-width: 640px) {
+  .landing-tile-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .landing-popular-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .landing-popular-card { height: 90px; }
+}
+@media (min-width: 1024px) {
+  .landing-tile-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .landing-category-tile { min-height: 120px; }
+  .landing-tile-title { font-size: 16.5px; }
+  .landing-recommended-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .landing-free-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* دارک‌مود وب — همان‌جا که دارک‌مود کل لندینگ تعریف می‌شود */
+@media (prefers-color-scheme: dark) {
+  .landing-verse-card {
+    background: linear-gradient(140deg, rgba(147, 161, 114, .08), rgba(191, 149, 64, .08));
+    border-color: rgba(214, 220, 196, .18);
+  }
+  .landing-verse-icon { background: rgba(147, 161, 114, .14); color: #cdd8b4; }
+  .landing-verse-text { color: #e6ebd8; }
+  .landing-category-tile {
+    background:
+      linear-gradient(140deg, rgba(147, 161, 114, .1) 0%, rgba(191, 149, 64, .1) 100%) padding-box,
+      linear-gradient(135deg, rgba(147, 161, 114, .5), rgba(191, 149, 64, .5)) border-box;
+    box-shadow: 0 3px 16px rgba(0, 0, 0, .3);
+  }
+  .landing-tile-title { color: #e6ebd8; }
+  .landing-popular-card { background: rgba(255, 255, 255, .04); border-color: rgba(214, 220, 196, .16); box-shadow: none; }
+  .landing-popular-text strong { color: #e6ebd8; }
+  .landing-free-card { background: rgba(255, 255, 255, .04); border-color: rgba(214, 220, 196, .16); box-shadow: none; }
+  .landing-free-title { color: #e6ebd8; }
+  .landing-free-teacher { color: #c9d1b4; }
+  .landing-free-badge { background: rgba(66, 138, 84, .18); color: #7fd094; }
+  .landing-recommended-skel {
+    background: linear-gradient(100deg, rgba(255, 255, 255, .05) 40%, rgba(255, 255, 255, .1) 50%, rgba(255, 255, 255, .05) 60%);
+    background-size: 200% 100%;
+  }
+  .free-services-search, .free-services-chip { background: rgba(255, 255, 255, .04); border-color: rgba(214, 220, 196, .16); color: #dfe6cf; }
+  .free-services-chip[data-active="true"] { background: var(--olive-600); color: #fff; }
+  .free-services-search input { color: #e6ebd8; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-category-tile, .landing-popular-card { animation: none !important; transition: none !important; }
+  .landing-recommended-skel { animation: none !important; }
+}
+
+/* عرض خیلی باریک — خانه‌ها و کارت‌ها در 320px بدون overflow */
+@media (max-width: 359px) {
+  .landing-tile-title { font-size: 13.5px; }
+  .landing-popular-text strong { font-size: 12.5px; }
+  .landing-free-meta { flex-direction: column; align-items: flex-end; gap: 6px; }
+}
+
+/* ۱.ب.۴ — یادداشت فیلتر خدمت در پروفایل استاد وب */
+.teacher-service-filter-note {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 9px 14px;
+  border: 1px solid rgba(66, 138, 84, .35);
+  border-radius: 13px;
+  background: rgba(66, 138, 84, .07);
+  color: #2e7d43;
+  font-size: 12px;
+  font-weight: 700;
+}
+.teacher-service-filter-note a {
+  color: var(--olive-700);
+  font-weight: 800;
+  text-decoration: none;
 }

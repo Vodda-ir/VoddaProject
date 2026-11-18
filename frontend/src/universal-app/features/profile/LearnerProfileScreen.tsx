@@ -20,6 +20,8 @@ import {
 import { useAppearance } from "../../ui/appearance";
 import { localizeCityName } from "../../i18n/transliterate";
 import { messageOf } from "../../ui/errorMessage";
+import { RoleModeSheet } from "../auth/RoleModeSheet";
+import { avatarSrc, onAvatarUpdated, uploadsOriginOf } from "@/lib/avatarImage";
 
 export type LearnerProfileScreenProps = {
   config: UniversalAppConfig;
@@ -34,6 +36,7 @@ export function LearnerProfileScreen({ config }: LearnerProfileScreenProps) {
   const [loading, setLoading] = useState(true);
   const [loggingOut, setLoggingOut] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [roleSheetOpen, setRoleSheetOpen] = useState(false);
 
   const loadProfile = useCallback(
     async (isCancelled: () => boolean = () => false) => {
@@ -59,8 +62,13 @@ export function LearnerProfileScreen({ config }: LearnerProfileScreenProps) {
   useEffect(() => {
     let cancelled = false;
     void loadProfile(() => cancelled);
+    // باگ avatar-upload — پس از آپلود تصویر، پروفایل بلافاصله همگام می‌شود.
+    const offAvatarUpdated = onAvatarUpdated((detail) => {
+      setUser((current) => (current ? { ...current, avatar_url: detail.url ?? current.avatar_url } : current));
+    });
     return () => {
       cancelled = true;
+      offAvatarUpdated();
     };
   }, [loadProfile]);
 
@@ -94,9 +102,28 @@ export function LearnerProfileScreen({ config }: LearnerProfileScreenProps) {
     <div className="vodda-screen" style={{ display: "grid", gap: 18 }}>
       <h1 className="vodda-display" style={{ fontSize: 26, margin: "2px 0 0", color: colors.ink, lineHeight: 1.7 }}>{t("profile_title")}</h1>
 
-      <Card elevated className="vodda-enter" style={{ padding: 16, borderRadius: 24 }}>
+      <Card
+        elevated
+        className="vodda-enter"
+        style={{ padding: 16, borderRadius: 24, cursor: "pointer" }}
+        onClick={() => setRoleSheetOpen(true)}
+        role="button"
+        tabIndex={0}
+        aria-label={L("تغییر حساب")}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            setRoleSheetOpen(true);
+          }
+        }}
+      >
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <Avatar name={user.name} src={user.avatar_url} size={62} ring />
+          <Avatar
+            name={user.name}
+            src={avatarSrc(user.avatar_url, user.updated_at, uploadsOriginOf(platform.apiBaseUrl))}
+            size={62}
+            ring
+          />
           <div style={{ minWidth: 0, flex: 1 }}>
             <strong style={{ fontSize: 17, fontWeight: 800, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: colors.ink }}>
               {(N(user.name) || t("profile_default_name"))}
@@ -105,8 +132,12 @@ export function LearnerProfileScreen({ config }: LearnerProfileScreenProps) {
               <Icon name="pin" size={13} />
               {(localizeCityName(user.city, lang) || "—")}
             </span>
+            <span style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 3, fontSize: 11.5, color: colors.olive700, fontWeight: 600 }}>
+              <Icon name="refresh" size={12} />
+              {L("برای تغییر حساب بزنید")}
+            </span>
           </div>
-          <button type="button" aria-label={L("ویرایش پروفایل")} onClick={() => navigateApp("/profile/edit", config)} className="vodda-tappable"
+          <button type="button" aria-label={L("ویرایش پروفایل")} onClick={(event) => { event.stopPropagation(); navigateApp("/profile/edit", config); }} className="vodda-tappable"
             style={{ width: 44, height: 44, display: "grid", placeItems: "center", flex: "0 0 44px", padding: 0, border: 0, borderRadius: 12, color: colors.olive700, background: colors.olive50, cursor: "pointer" }}>
             <Icon name="edit" size={19} />
           </button>
@@ -191,17 +222,30 @@ export function LearnerProfileScreen({ config }: LearnerProfileScreenProps) {
       </Card>
 
       <Card className="vodda-enter vodda-enter-delay-2" style={{ padding: 0, overflow: "hidden", borderRadius: 24 }}>
-        {[
-          { icon: "user" as const, labelKey: "profile_edit" as const, path: "/profile/edit" },
-          { icon: "wallet" as const, labelKey: "profile_wallet_row" as const, path: "/wallet" },
-        ].map((row, index, rows) => (
-          <button key={row.path} type="button" onClick={() => navigateApp(row.path, config)} className="vodda-tappable"
-            style={{ width: "100%", minHeight: 58, display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", textAlign: "right", border: 0, borderBottom: index < rows.length - 1 ? `1px solid ${colors.sand100}` : 0, color: colors.ink, background: colors.surface, fontFamily: typography.fontFamily, cursor: "pointer" }}>
-            <Icon name={row.icon} size={21} style={{ color: colors.olive600 }} />
-            <span style={{ flex: 1, fontSize: 14.5, fontWeight: 600 }}>{t(row.labelKey)}</span>
-            <Icon name="chevronL" size={18} style={{ color: colors.inkFaint }} />
-          </button>
-        ))}
+        {(() => {
+          const isAdmin = user.role === "admin";
+          const rows: Array<{ icon: "user" | "wallet" | "shield"; label: string; path: string; external?: boolean }> = [
+            { icon: "user" as const, label: t("profile_edit"), path: "/profile/edit" },
+            { icon: "wallet" as const, label: t("profile_wallet_row"), path: "/wallet" },
+            ...(isAdmin ? [{ icon: "shield" as const, label: L("پنل مدیریت"), path: "/panel/admin", external: true }] : []),
+          ];
+          return rows.map((row, index) => (
+            <button
+              key={row.path}
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                if (row.external) window.location.assign(row.path);
+                else navigateApp(row.path, config);
+              }}
+              className="vodda-tappable"
+              style={{ width: "100%", minHeight: 58, display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", textAlign: "right", border: 0, borderBottom: index < rows.length - 1 ? `1px solid ${colors.sand100}` : 0, color: row.external ? colors.goldDark : colors.ink, background: colors.surface, fontFamily: typography.fontFamily, cursor: "pointer" }}>
+              <Icon name={row.icon} size={21} style={{ color: row.external ? colors.goldDark : colors.olive600 }} />
+              <span style={{ flex: 1, fontSize: 14.5, fontWeight: 600 }}>{row.label}</span>
+              <Icon name="chevronL" size={18} style={{ color: colors.inkFaint }} />
+            </button>
+          ));
+        })()}
       </Card>
 
       {/* پشتیبانی و اطلاعات (B3) — صفحات راهنما در وب وُدّا */}
@@ -220,6 +264,14 @@ export function LearnerProfileScreen({ config }: LearnerProfileScreenProps) {
           </a>
         ))}
       </Card>
+
+      <RoleModeSheet
+        open={roleSheetOpen}
+        mode="learner"
+        config={config}
+        user={user}
+        onClose={() => setRoleSheetOpen(false)}
+      />
 
       {error ? (
         <div role="alert" style={{ display: "flex", alignItems: "center", gap: spacing.sm, padding: spacing.md, borderRadius: radii.md, background: colors.dangerBackground, color: colors.danger, ...typography.bodySmall }}>

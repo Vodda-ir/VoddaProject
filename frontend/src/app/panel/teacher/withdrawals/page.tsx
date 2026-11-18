@@ -13,6 +13,7 @@ import { api, type Withdrawal } from '@/lib/api';
 import { getToken } from '@/lib/auth';
 import { digitsOnly, formatFaNumber, toFaDigits, toLatinDigits } from '@/lib/persian';
 import { confirmDialog } from '@/lib/confirm';
+import { formatDateTime } from '@/lib/datetime';
 
 export default function TeacherWithdrawalsPage() {
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
@@ -103,9 +104,9 @@ export default function TeacherWithdrawalsPage() {
           </div>
           <div style={{ padding: 17 }}>
             <div style={{ display: 'grid', gap: 12 }}>
-              <label style={labelStyle}>مبلغ (تومان)<input inputMode="numeric" value={toFaDigits(amount)} onChange={(event) => setAmount(digitsOnly(event.target.value))} placeholder="مثلاً ۵۰۰۰۰۰" style={panelInputStyle} /></label>
-              <label style={labelStyle}>شماره کارت<input inputMode="numeric" value={toFaDigits(card)} maxLength={16} onChange={(event) => setCard(digitsOnly(event.target.value, 16))} placeholder="۱۶ رقم، اختیاری" style={panelInputStyle} /></label>
-              <label style={labelStyle}>شماره شبا<input dir="ltr" value={toFaDigits(sheba)} maxLength={26} onChange={(event) => setSheba(toLatinDigits(event.target.value).replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 26))} placeholder="IR۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰" style={{ ...panelInputStyle, textAlign: 'left' }} /></label>
+              <label style={labelStyle}>مبلغ (تومان)<input className="input-base" inputMode="numeric" value={toFaDigits(amount)} onChange={(event) => setAmount(digitsOnly(event.target.value))} placeholder="مثلاً ۵۰۰۰۰۰" style={panelInputStyle} /></label>
+              <label style={labelStyle}>شماره کارت<input className="input-base" inputMode="numeric" value={toFaDigits(card)} maxLength={16} onChange={(event) => setCard(digitsOnly(event.target.value, 16))} placeholder="۱۶ رقم، اختیاری" style={panelInputStyle} /></label>
+              <label style={labelStyle}>شماره شبا<input className="input-base" dir="ltr" value={toFaDigits(sheba)} maxLength={26} onChange={(event) => setSheba(toLatinDigits(event.target.value).replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 26))} placeholder="IR۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰۰" style={{ ...panelInputStyle, textAlign: 'left' }} /></label>
             </div>
 
             <div className="ops-inline-note" style={{ marginTop: 12 }}>
@@ -174,7 +175,7 @@ function withdrawalTone(status: Withdrawal['status']): 'paid' | 'rejected' | 'pe
 
 function formatDate(value: string) {
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? '—' : new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium', timeStyle: 'short' }).format(date);
+  return Number.isNaN(date.getTime()) ? '—' : formatDateTime(date);
 }
 
 const labelStyle: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: 6, color: 'var(--ink-3)', fontSize: 11.5, fontWeight: 700 };

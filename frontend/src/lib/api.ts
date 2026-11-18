@@ -7,6 +7,9 @@ const BASE =
     ? process.env.SERVER_API_URL || 'http://backend:3420/api/v1'
     : '/api/backend';
 
+import { formatPrice } from '@/lib/datetime';
+import type { FreeServiceCard } from '@/lib/home/discover';
+
 export type TeacherService = {
   id: number;
   teacher_id?: number;
@@ -44,15 +47,21 @@ export type Teacher = {
   female: boolean;
   verified: boolean;
   available?: boolean;
-  /** درجه استاد: "" | "international" (درجه ۱) | "grade2" | "grade3" */
+  /** درجه استاد: "" | "international" (تیک بین‌المللی آبی) | "grade2" (کشوری سبز) | "grade3" (استانی قرمز) */
   tier?: '' | 'international' | 'grade2' | 'grade3';
+  /** آخرین فعالیت (۱.الف.۴) — ISO؛ در BFF درصدموجود بودن تزریق می‌شود. */
+  last_seen?: string;
+  /** کارت درجه ۱ (۱.الف.۵) — BFF با overlay محلی غنی‌سازی می‌کند. */
+  is_tier1?: boolean;
+  /** ردیف نشان‌های درجه ۱: "international" | "free" | "instant" */
+  tier1_badges?: string[];
   status?: 'pending' | 'approved' | 'rejected';
   rating: number;
   reviews: number;
   sessions: number;
   followers: number;
   skills?: string[];
-  user?: { id: number; name: string; avatar_url: string; active?: boolean };
+  user?: { id: number; name: string; avatar_url: string; active?: boolean; updated_at?: string };
   services?: TeacherService[];
 };
 
@@ -63,7 +72,7 @@ export type Review = {
   learner_id?: number;
   rating: number;
   text: string;
-  learner?: { id: number; name: string; avatar_url?: string };
+  learner?: { id: number; name: string; avatar_url?: string; updated_at?: string };
   created_at: string;
 };
 
@@ -102,7 +111,7 @@ export type SessionListItem = {
   note?: string;
   reject_note?: string;
   rated: boolean;
-  learner?: { id: number; name: string; avatar_url?: string };
+  learner?: { id: number; name: string; avatar_url?: string; updated_at?: string };
   teacher?: Teacher;
 };
 
@@ -188,6 +197,7 @@ export type LearnerAnalytics = {
     rating: number;
     sessions: number;
     last_at: string | null;
+    updated_at?: string;
   }> | null;
 };
 
@@ -228,6 +238,7 @@ export type CatalogResponse = {
 
 export type DispatchCandidateItem = {
   offer_id: number;
+  updated_at?: string;
   responded_at: string;
   service_id: number;
   duration: number;
@@ -310,6 +321,14 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 const auth = (token: string): HeadersInit => ({ Authorization: `Bearer ${token}` });
 
 export const api = {
+  /* ۱.ب.۵ — چیدمان اساتید پیشنهادی (endpoint محلی BFF؛ تکرار ≤ ۲ بین دو درخواست). */
+  recommendedTeachers: (limit = 7) =>
+    request<ListResponse<Teacher>>(`/teachers/recommended?limit=${limit}`),
+  /* ۱.ب.۴ — خدمات رایگان مرتب بر پایهٔ rank استاد (endpoint محلی BFF). */
+  freeServices: (limit = 6) =>
+    request<{ data: FreeServiceCard[]; total: number; sort_by: string; is_free: boolean }>(
+      `/services?is_free=true&limit=${limit}&sort_by=teacher_rank`,
+    ),
   teachers: (q = '', params?: Record<string, string>) => {
     const sp = new URLSearchParams();
     if (q) sp.set('q', q);
@@ -529,6 +548,7 @@ export const api = {
     request<ListResponse<Teacher>>('/admin/teachers?status=pending', { headers: auth(token) }),
 };
 
+// باگ persian-dates — همهٔ مبالغ از util مرکزی می‌آیند (عدد + واحد هم‌زبان).
 export function toman(n: number): string {
-  return new Intl.NumberFormat('fa-IR').format(n);
+  return formatPrice(n, 'fa');
 }

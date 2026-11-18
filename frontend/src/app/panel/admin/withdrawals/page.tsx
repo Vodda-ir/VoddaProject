@@ -30,7 +30,7 @@ type Withdrawal = {
   sheba?: string;
   status?: Exclude<WithdrawalStatus, ''>;
   created_at?: string;
-  user?: { name?: string; avatar_url?: string };
+  user?: { name?: string; avatar_url?: string; updated_at?: string };
 };
 
 const PAGE_SIZE = 30;

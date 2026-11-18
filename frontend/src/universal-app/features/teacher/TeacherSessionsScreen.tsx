@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { UniversalAppConfig } from "../../config";
 import { asInteger, asRecord, asString, type ApiEnvelope } from "../../platform/api";
 import { usePlatform } from "../../platform/context";
+import { avatarSrc, uploadsOriginOf } from "@/lib/avatarImage";
 import type { PlatformRuntime } from "../../platform/types";
 import { navigateApp } from "../../router";
 import {
@@ -165,6 +166,7 @@ function SessionCard({
   onComplete: () => void;
 }) {
   const { t, L, lang, N } = useAppearance();
+  const runtime = usePlatform();
   const commonCardStyle = {
     display: "grid",
     gap: 13,
@@ -177,7 +179,7 @@ function SessionCard({
     return (
       <Card className="vodda-card--interactive" style={{ ...commonCardStyle, cursor: "pointer" }} onClick={onOpen}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <Avatar name={session.learnerName} src={session.learnerAvatar || undefined} size={46} ring={false} />
+          <Avatar name={session.learnerName} src={avatarSrc(session.learnerAvatar, undefined, uploadsOriginOf(runtime.apiBaseUrl))} size={46} ring={false} />
           <div style={{ minWidth: 0, flex: 1 }}>
             <strong style={{ display: "block", fontSize: 14.5, fontWeight: 800, color: colors.ink }}>{N(session.learnerName)}</strong>
             <span style={{ display: "block", marginTop: 3, fontSize: 12.5, color: colors.inkSecondary }}>{L(session.service)}</span>
@@ -229,7 +231,7 @@ function SessionCard({
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <Avatar name={session.learnerName} src={session.learnerAvatar || undefined} size={46} ring={false} />
+        <Avatar name={session.learnerName} src={avatarSrc(session.learnerAvatar, undefined, uploadsOriginOf(runtime.apiBaseUrl))} size={46} ring={false} />
         <div style={{ minWidth: 0 }}>
           <strong style={{ display: "block", fontSize: 14.5, fontWeight: 800, color: colors.ink }}>{N(session.learnerName)}</strong>
           <span style={{ display: "block", marginTop: 3, fontSize: 12.5, color: colors.inkSecondary }}>{L(session.service)}</span>
@@ -279,16 +281,24 @@ export function TeacherSessionsScreen({ mode, config }: { mode: TeacherSessionsM
     setWhen(mode === "requests" ? "pending" : "upcoming");
   }, [mode]);
 
+  // باگ refresh-loop: اجرای دوم StrictMode یا فراخوانی دیرهنگام نباید state را با دادهٔ کهنه بازنویسی کند.
+  const loadGeneration = useRef(0);
+
   const load = useCallback(async (target: TeacherSessionsWhen) => {
+    const generation = ++loadGeneration.current;
+    const isStale = () => loadGeneration.current !== generation;
     setLoading(true);
     setError(null);
     try {
-      setSessions(await getTeacherSessions(runtime, target));
+      const rows = await getTeacherSessions(runtime, target);
+      if (isStale()) return;
+      setSessions(rows);
     } catch (loadError) {
+      if (isStale()) return;
       setSessions([]);
       setError(messageOf(loadError));
     } finally {
-      setLoading(false);
+      if (!isStale()) setLoading(false);
     }
   }, [runtime]);
 

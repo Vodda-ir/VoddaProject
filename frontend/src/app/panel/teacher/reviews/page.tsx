@@ -10,8 +10,9 @@ import {
   PanelPageHeader,
 } from '@/components/panel/PanelUI';
 import { api, type Review } from '@/lib/api';
-import { fullUrl, getToken } from '@/lib/auth';
+import { avatarUrl, fullUrl, getToken } from '@/lib/auth';
 import { toFaDigits } from '@/lib/persian';
+import { formatDate as formatDateFa } from '@/lib/datetime';
 
 export default function TeacherReviewsPage() {
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -75,7 +76,7 @@ export default function TeacherReviewsPage() {
         ) : (
           reviews.map((review) => (
             <article className="ops-row" key={review.id} style={{ alignItems: 'flex-start' }}>
-              <Avatar size={43} imageUrl={fullUrl(review.learner?.avatar_url)} />
+              <Avatar size={43} imageUrl={avatarUrl(review.learner?.avatar_url, review.learner?.updated_at)} />
               <div className="ops-row-main">
                 <div className="ops-row-title">
                   <strong>{review.learner?.name || 'قرآن‌آموز'}</strong>
@@ -101,5 +102,5 @@ export default function TeacherReviewsPage() {
 
 function formatDate(value: string) {
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? '—' : new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium' }).format(date);
+  return Number.isNaN(date.getTime()) ? '—' : formatDateFa(date);
 }

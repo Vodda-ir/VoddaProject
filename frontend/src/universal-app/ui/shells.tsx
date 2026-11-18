@@ -14,9 +14,16 @@ import { colors, gradients, radii, shadows, spacing, typography } from "./theme"
 
 type IconName = Parameters<typeof Icon>[0]["name"];
 
+type StaticTabTarget = Exclude<
+  AppRouteName,
+  "teacher" | "book" | "service" | "session" | "ceremony-call" | "ceremony-booking" | "presence-provider" | "not-found"
+>;
+
 type NavigationItem = {
-  labelKey: TranslationKey;
-  target: StaticAppRouteName;
+  /** برچسب فارسی مستقیم یا کلید ترجمه — هر دو سازگار (مرج اپ و وب) */
+  label?: string;
+  labelKey?: TranslationKey;
+  target: StaticTabTarget;
   icon: IconName;
   routes: AppRouteName[];
 };
@@ -49,10 +56,11 @@ type AppShellProps = {
 };
 
 const learnerNavigation: NavigationItem[] = [
-  { labelKey: "nav_home", target: "home", icon: "home", routes: ["home"] },
-  { labelKey: "nav_search", target: "search", icon: "search", routes: ["search", "teacher", "book"] },
-  { labelKey: "nav_sessions", target: "sessions", icon: "calendar", routes: ["sessions"] },
-  { labelKey: "nav_profile", target: "profile", icon: "user", routes: ["profile", "profile-edit"] },
+  { label: "خانه", target: "home", icon: "home", routes: ["home"] },
+  { label: "جستجو", target: "search", icon: "search", routes: ["search", "teacher", "book", "category", "service"] },
+  { label: "جلسات", target: "sessions", icon: "calendar", routes: ["sessions"] },
+  { label: "کیف پول", target: "wallet", icon: "wallet", routes: ["wallet"] },
+  { label: "پروفایل", target: "profile", icon: "user", routes: ["profile", "profile-edit"] },
 ];
 
 const teacherNavigation: NavigationItem[] = [
@@ -221,7 +229,7 @@ function BottomNavigation({
               {localizedDigits(badge > 99 ? "+99" : badge, lang)}
             </span>
           ) : null}
-          {item.labelKey ? t(item.labelKey) : ""}
+          {item.labelKey ? t(item.labelKey) : item.label ?? ""}
         </span>
       </a>
     );

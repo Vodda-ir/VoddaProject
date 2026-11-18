@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { UniversalAppConfig } from "../../config";
 import { asArray, asNumber, asRecord, asString, type ApiEnvelope } from "../../platform/api";
 import { usePlatform } from "../../platform/context";
@@ -27,10 +27,12 @@ import { showToast } from "../../ui/toast";
 import { TierBadge } from "../teachers/TierBadge";
 import { AmountPicker, CityPicker } from "../ceremony/fields";
 import { formatWalletAmount } from "../wallet/WalletTransactionCard";
+import { avatarSrc, uploadsOriginOf } from "@/lib/avatarImage";
 
 type UserProfile = {
   name: string;
   avatarUrl?: string;
+  updated_at?: string;
 };
 
 type TeacherProfile = {
@@ -70,6 +72,7 @@ function parseUser(value: unknown): UserProfile | null {
   return {
     name: asString(record.name).trim() || "استاد",
     avatarUrl: asString(record.avatar_url) || undefined,
+    updated_at: asString(record.updated_at) || undefined,
   };
 }
 
@@ -189,7 +192,12 @@ export function TeacherProfileScreen({ config }: { config: UniversalAppConfig })
     }
   }
 
+  // باگ refresh-loop: اجرای دوم StrictMode یا فراخوانی دیرهنگام نباید state را با دادهٔ کهنه بازنویسی کند.
+  const loadGeneration = useRef(0);
+
   const load = useCallback(async () => {
+    const generation = ++loadGeneration.current;
+    const isStale = () => loadGeneration.current !== generation;
     setLoading(true);
     setError(null);
     try {
@@ -200,16 +208,18 @@ export function TeacherProfileScreen({ config }: { config: UniversalAppConfig })
       const nextUser = parseUser(meResponse.data);
       const nextTeacher = parseTeacher(teacherResponse.data);
       if (!nextUser || !nextTeacher) throw new Error("اطلاعات پروفایل استاد دریافت نشد.");
+      if (isStale()) return;
       setUser(nextUser);
       setTeacher(nextTeacher);
       setForm(toForm(nextTeacher));
     } catch (loadError) {
+      if (isStale()) return;
       setUser(null);
       setTeacher(null);
       setForm(null);
       setError(messageOf(loadError));
     } finally {
-      setLoading(false);
+      if (!isStale()) setLoading(false);
     }
   }, [runtime]);
 
@@ -303,7 +313,7 @@ export function TeacherProfileScreen({ config }: { config: UniversalAppConfig })
       <Card elevated className="vodda-enter" style={{ padding: 16, borderRadius: 24 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <div style={{ position: "relative", flex: "0 0 auto" }}>
-            <Avatar name={user.name} src={user.avatarUrl} size={62} ring />
+            <Avatar name={user.name} src={avatarSrc(user.avatarUrl, user.updated_at, uploadsOriginOf(runtime.apiBaseUrl))} size={62} ring />
             {teacher.tier ? (
               <span
                 aria-label={L("نشان درجه استاد")}

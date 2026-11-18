@@ -13,9 +13,48 @@ import {
   PanelStatus,
 } from '@/components/panel/PanelUI';
 import { api, type SessionListItem, type Teacher } from '@/lib/api';
-import { fullUrl, getToken } from '@/lib/auth';
+import { avatarUrl, getToken } from '@/lib/auth';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
+import { formatLocalDate } from '@/lib/datetime';
 import { confirmDialog } from '@/lib/confirm';
+
+type TeacherScoreSnapshot = {
+  points: number;
+  levelLabel: string;
+  levelIcon: string;
+  progress: { current: number; next: number; pct: number; nextLabel: string | null };
+  events: Array<{ label: string; points: number; createdAt: string }>;
+};
+
+function parseScoreSnapshot(value: unknown): TeacherScoreSnapshot | null {
+  if (!value || typeof value !== 'object') return null;
+  const data = value as Record<string, unknown>;
+  const progress = data.progress as Record<string, unknown> | undefined;
+  if (!progress) return null;
+  const events = Array.isArray(data.events) ? data.events : [];
+  return {
+    points: Number(data.points) || 0,
+    levelLabel: typeof data.levelLabel === 'string' ? data.levelLabel : 'مبتدی',
+    levelIcon: typeof data.levelIcon === 'string' ? data.levelIcon : '🌱',
+    progress: {
+      current: Number(progress.current) || 0,
+      next: Number(progress.next) || 0,
+      pct: Number(progress.pct) || 0,
+      nextLabel: typeof progress.nextLabel === 'string' ? progress.nextLabel : null,
+    },
+    events: events
+      .map((event) => {
+        if (!event || typeof event !== 'object') return null;
+        const record = event as Record<string, unknown>;
+        return {
+          label: typeof record.label === 'string' ? record.label : '',
+          points: Number(record.points) || 0,
+          createdAt: typeof record.createdAt === 'string' ? record.createdAt : '',
+        };
+      })
+      .filter((event): event is { label: string; points: number; createdAt: string } => Boolean(event && event.label)),
+  };
+}
 
 export default function TeacherDashboard() {
   const [teacher, setTeacher] = useState<Teacher | null>(null);
@@ -25,6 +64,8 @@ export default function TeacherDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [busyId, setBusyId] = useState<number | null>(null);
+  /* ۱.الف.۶ — امتیاز/سطح استاد (best-effort) */
+  const [score, setScore] = useState<TeacherScoreSnapshot | null>(null);
   const token = getToken();
 
   const load = useCallback(async () => {
@@ -50,6 +91,24 @@ export default function TeacherDashboard() {
   }, [token]);
 
   useEffect(() => { void load(); }, [load]);
+
+  /* ۱.الف.۶ — امتیاز استاد پس از شناسه‌شدن پروفایل؛ خطا بی‌صدا نادیده گرفته می‌شود. */
+  useEffect(() => {
+    const teacherId = teacher?.id || 0;
+    if (!teacherId) return;
+    let cancelled = false;
+    fetch(`/api/backend/score/teacher/${teacherId}`, { cache: 'no-store' })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((body) => {
+        if (!cancelled) setScore(parseScoreSnapshot(body?.data));
+      })
+      .catch(() => {
+        if (!cancelled) setScore(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [teacher?.id]);
 
   async function respond(session: SessionListItem, approve: boolean) {
     if (!token || busyId !== null) return;
@@ -104,7 +163,7 @@ export default function TeacherDashboard() {
         background: 'linear-gradient(120deg,#fff,var(--olive-50))',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
-          <Avatar size={58} ring tier={teacher?.tier} imageUrl={fullUrl(teacher?.user?.avatar_url)} />
+          <Avatar size={58} ring tier={teacher?.tier} imageUrl={avatarUrl(teacher?.user?.avatar_url, teacher?.user?.updated_at)} />
           <div style={{ minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap' }}>
               <strong style={{ fontSize: 16 }}>{teacher?.user?.name || 'استاد وُدّا'}</strong>
@@ -149,7 +208,7 @@ export default function TeacherDashboard() {
               const busy = busyId === session.id;
               return (
                 <article className="ops-row" key={session.id} style={{ opacity: busy ? .55 : 1 }}>
-                  <Avatar size={42} imageUrl={fullUrl(session.learner?.avatar_url)} />
+                  <Avatar size={42} imageUrl={avatarUrl(session.learner?.avatar_url, session.learner?.updated_at)} />
                   <div className="ops-row-main">
                     <div className="ops-row-title">
                       <strong>{session.learner?.name || 'قرآن‌آموز'}</strong>
@@ -157,7 +216,7 @@ export default function TeacherDashboard() {
                     </div>
                     <div className="ops-row-sub">
                       <span>{session.service}</span>
-                      <span>· {session.local_date}</span>
+                      <span>· {formatLocalDate(session.local_date, 'fa', 'dayMonth') || session.local_date}</span>
                       <span>· {toFaDigits(session.local_start)}</span>
                     </div>
                     <div className="ops-row-meta">
@@ -178,6 +237,84 @@ export default function TeacherDashboard() {
         </PanelSection>
 
         <div style={{ display: 'grid', gap: 16, alignContent: 'start' }}>
+          {/* ۱.الف.۶ — کارت «سطح استاد» با نوار پیشرفت */}
+          {score ? (
+            <PanelSection
+              title="سطح استاد"
+              description="امتیاز از فعالیت واقعی شما ساخته می‌شود؛ سطح هرگز خودکار کاهش نمی‌یابد."
+            >
+              <div style={{ padding: 14, display: 'grid', gap: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      width: 42,
+                      height: 42,
+                      display: 'grid',
+                      placeItems: 'center',
+                      flex: '0 0 42px',
+                      borderRadius: 13,
+                      fontSize: 20,
+                      background: 'var(--gold-bg, #f7efd9)',
+                      border: '1px solid rgba(191,149,64,.35)',
+                    }}
+                  >
+                    {score.levelIcon}
+                  </span>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <strong style={{ display: 'block', fontSize: 13.5 }}>سطح فعلی: {score.levelLabel}</strong>
+                    <span style={{ display: 'block', marginTop: 2, color: 'var(--ink-3)', fontSize: 11 }}>
+                      {toFaDigits(String(score.points))} امتیاز
+                      {score.progress.nextLabel
+                        ? ` · ${toFaDigits(String(Math.max(0, score.progress.next - score.points)))} تا سطح «${score.progress.nextLabel}»`
+                        : ' · بالاترین سطح' }
+                    </span>
+                  </div>
+                </div>
+                <div
+                  role="progressbar"
+                  aria-label="پیشرفت امتیاز تا سطح بعدی"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={score.progress.pct}
+                  style={{ height: 9, borderRadius: 999, background: 'var(--sand-100)', overflow: 'hidden' }}
+                >
+                  <div
+                    style={{
+                      width: `${Math.min(100, Math.max(4, score.progress.pct))}%`,
+                      height: '100%',
+                      borderRadius: 999,
+                      background: 'linear-gradient(90deg,#bf9540,#e7d5a8)',
+                      transition: 'width 420ms ease',
+                    }}
+                  />
+                </div>
+                {score.events.length > 0 ? (
+                  <div style={{ display: 'grid', gap: 5 }}>
+                    {score.events.slice(0, 4).map((event) => (
+                      <div
+                        key={`${event.label}-${event.createdAt}`}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: 8,
+                          fontSize: 10.5,
+                          color: 'var(--ink-2s)',
+                        }}
+                      >
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{event.label}</span>
+                        <span style={{ fontWeight: 800, color: event.points >= 0 ? 'var(--olive-600)' : 'var(--rose)' }}>
+                          {event.points >= 0 ? '+' : '−'}{toFaDigits(String(Math.abs(event.points)))}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            </PanelSection>
+          ) : null}
+
           <PanelSection title="دسترسی سریع" description="کارهای پرتکرار مدیریت آموزش.">
             <div className="ops-quick-actions">
               <TeacherQuickAction href="/panel/teacher/dispatch" icon="bell" label="فراخوان‌های زنده" />
