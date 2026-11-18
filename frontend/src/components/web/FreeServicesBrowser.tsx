@@ -82,7 +82,7 @@ export function FreeServicesBrowser({ cards }: { cards: FreeServiceCard[] }) {
           <p>عبارت دیگری را امتحان کنید یا فیلتر را بردارید.</p>
         </div>
       ) : (
-        <div className="landing-free-list">
+        <div className="vodda-hscroll vodda-service-row">
           {visible.map((card) => (
             <FreeServiceCardRow key={`${card.teacherId}-${card.id}`} card={card} />
           ))}

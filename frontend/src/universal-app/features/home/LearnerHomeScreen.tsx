@@ -189,12 +189,16 @@ function VerseStrip() {
 
 /* ۱.ب.۳ — خانه‌های شش‌گانهٔ دسته‌بندی — گرادیان زیتونی-طلایی، تصویر ≤۴۸px،
  * حاشیهٔ نئون ۲px، ارتفاع ۱۰۰/۱۲۰px، fade-in پله‌ای ۵۰ms، کلیک = فقط زیردسته‌های همان دسته */
+/* ۰.۷.۳ — پنل دسته‌بندی موضوعات: همهٔ دسته‌ها و زیردسته‌ها داخل یک کادر حاشیه‌دار واحد (پارتی کامل با وب).
+   خانه‌های کوچک‌تر، عنوان بدون بریدگی، چیپ‌های زیردسته با نمایش کامل. */
 function CategoryTileGrid({
   tiles,
+  groups = [],
   loading,
   wide,
 }: {
   tiles: CategoryTile[];
+  groups?: CatalogCategory[];
   loading: boolean;
   wide: boolean;
 }) {
@@ -209,106 +213,152 @@ function CategoryTileGrid({
         aria-label="در حال بارگذاری دسته‌ها"
       >
         {Array.from({ length: 6 }).map((_, index) => (
-          <Skeleton key={index} style={{ height: 100, borderRadius: 20 }} />
+          <Skeleton key={index} style={{ height: 100, borderRadius: 16 }} />
         ))}
       </div>
     );
   }
   if (tiles.length === 0) return null;
 
-  const tileBackground: CSSProperties = {
-    backgroundImage:
-      "linear-gradient(140deg, #f2f5ea 0%, #f7f3e3 58%, #f3e8cb 100%), linear-gradient(135deg, rgba(147,161,114,.85), rgba(191,149,64,.85))",
-    backgroundOrigin: "padding-box, border-box",
-    backgroundClip: "padding-box, border-box",
-  };
-
   return (
-    <section aria-label="دسته‌های قرآنی" style={{ display: "grid", gap: spacing.sm }}>
-      <SectionHeader title="دسته‌های قرآنی" />
+    <section aria-label="دسته‌بندی موضوعات قرآنی" style={{ display: "grid", gap: spacing.sm, minWidth: 0 }}>
+      <SectionHeader title="دسته‌بندی موضوعات قرآنی" description="همهٔ دسته‌ها و زیردسته‌های رسمی در یک نگاه" />
+      {/* کادر حاشیه‌دار واحد — همهٔ دسته‌ها و موضوعات داخل آن */}
       <div
         style={{
           display: "grid",
           gridTemplateColumns: wide ? "repeat(3, minmax(0,1fr))" : "repeat(2, minmax(0, 1fr))",
-          gap: 10,
+          gap: 12,
+          padding: 12,
+          border: `1.5px solid ${colors.sand150}`,
+          borderRadius: 22,
+          background: colors.surface,
+          boxShadow: shadows.xs,
         }}
       >
-        {tiles.map((tile, index) => (
-          <button
-            key={tile.name}
-            type="button"
-            onClick={() => navigateApp(`/category?name=${encodeURIComponent(tile.name)}`)}
-            className="vodda-tappable"
-            aria-label={`${tile.name} — ${faNumber(tile.count, 0)} استاد فعال`}
-            style={{
-              minHeight: wide ? 120 : 100,
-              display: "grid",
-              justifyItems: "center",
-              alignContent: "center",
-              gap: 5,
-              padding: "10px 8px",
-              textAlign: "center",
-              border: "2px solid transparent",
-              borderRadius: 20,
-              boxShadow: "0 3px 14px rgba(46,54,34,.07)",
-              cursor: "pointer",
-              fontFamily: typography.fontFamily,
-              transition: "transform .18s ease, box-shadow .18s ease",
-              ...tileBackground,
-              animation: "vodda-enter .36s ease-out both",
-              animationDelay: `${index * 50}ms`,
-            }}
-          >
-            {/* تصویر خیالی ≤۴۸px — خطای بارگذاری → آیکون قرآن زیر آن پیدا می‌شود */}
-            <span
-              aria-hidden="true"
+        {tiles.map((tile, index) => {
+          const topics = groups.find((group) => group.category === tile.name)?.topics ?? [];
+          return (
+            <div
+              key={tile.name}
               style={{
-                position: "relative",
-                width: 48,
-                height: 48,
                 display: "grid",
-                placeItems: "center",
+                gap: 8,
+                alignContent: "start",
+                padding: 10,
+                border: `1px solid ${colors.sand150}`,
+                borderRadius: 16,
+                minWidth: 0,
+                animation: "vodda-enter .36s ease-out both",
+                animationDelay: `${index * 40}ms`,
               }}
             >
-              <Icon name="quran" size={26} style={{ color: colors.olive600 }} />
-              <img
-                src={serviceImageSrc(tile.imageKey)}
-                alt=""
-                width={48}
-                height={48}
-                loading="lazy"
+              <button
+                type="button"
+                onClick={() => navigateApp(`/category?name=${encodeURIComponent(tile.name)}`)}
+                className="vodda-tappable"
+                aria-label={`${tile.name} — ${faNumber(tile.count, 0)} استاد فعال`}
                 style={{
-                  position: "absolute",
-                  inset: 0,
-                  width: 48,
-                  height: 48,
-                  maxWidth: 48,
-                  maxHeight: 48,
-                  objectFit: "contain",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 9,
+                  padding: 0,
+                  border: 0,
+                  background: "transparent",
+                  cursor: "pointer",
+                  fontFamily: typography.fontFamily,
+                  textAlign: "start",
+                  minWidth: 0,
                 }}
-                onError={(event) => {
-                  event.currentTarget.style.display = "none";
-                }}
-              />
-            </span>
-            <strong
-              style={{
-                maxWidth: "100%",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-                fontSize: wide ? 17 : 16,
-                fontWeight: 700,
-                color: colors.ink,
-              }}
-            >
-              {tile.name}
-            </strong>
-            <span style={{ fontSize: 11, fontWeight: 700, color: colors.olive600 }}>
-              {faNumber(tile.count, 0)} استاد فعال
-            </span>
-          </button>
-        ))}
+              >
+                <span
+                  aria-hidden="true"
+                  style={{
+                    position: "relative",
+                    flex: "0 0 40px",
+                    width: 40,
+                    height: 40,
+                    display: "grid",
+                    placeItems: "center",
+                    borderRadius: 12,
+                    background: "linear-gradient(140deg, #f2f5ea, #f7f0dc)",
+                    overflow: "hidden",
+                  }}
+                >
+                  <Icon name="quran" size={22} style={{ color: colors.olive600 }} />
+                  <img
+                    src={serviceImageSrc(tile.imageKey)}
+                    alt=""
+                    width={40}
+                    height={40}
+                    loading="lazy"
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      width: 40,
+                      height: 40,
+                      maxWidth: 40,
+                      maxHeight: 40,
+                      objectFit: "contain",
+                    }}
+                    onError={(event) => {
+                      event.currentTarget.style.display = "none";
+                    }}
+                  />
+                </span>
+                <span style={{ minWidth: 0, flex: 1, display: "grid", gap: 1 }}>
+                  <strong
+                    style={{
+                      fontSize: 13.5,
+                      fontWeight: 800,
+                      color: colors.ink,
+                      lineHeight: 1.4,
+                      overflowWrap: "anywhere",
+                    }}
+                  >
+                    {tile.name}
+                  </strong>
+                  <span style={{ fontSize: 10.5, fontWeight: 700, color: colors.olive600 }}>
+                    {faNumber(tile.count, 0)} استاد فعال
+                  </span>
+                </span>
+                <Icon name="arrowL" size={15} style={{ color: colors.olive600, flex: "0 0 auto" }} />
+              </button>
+              {topics.length > 0 ? (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 5, minWidth: 0 }}>
+                  {topics.map((topic) => (
+                    <button
+                      key={topic.id}
+                      type="button"
+                      onClick={() => navigateApp(`/category?name=${encodeURIComponent(tile.name)}`)}
+                      className="vodda-tappable"
+                      aria-label={topic.title}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        maxWidth: "100%",
+                        padding: "3px 9px",
+                        border: `1px solid ${colors.sand200}`,
+                        borderRadius: 999,
+                        background: colors.surface,
+                        color: colors.inkSecondary,
+                        fontSize: 10.5,
+                        fontWeight: 700,
+                        lineHeight: 1.5,
+                        fontFamily: typography.fontFamily,
+                        textAlign: "start",
+                        cursor: "pointer",
+                        overflowWrap: "anywhere",
+                      }}
+                    >
+                      {topic.title}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          );
+        })}
       </div>
     </section>
   );
@@ -330,9 +380,10 @@ function TopTeachersSection({
     return (
       <section aria-label="در حال بارگذاری اساتید برتر" style={{ display: "grid", gap: 12 }}>
         <Skeleton style={{ width: 130, height: 18 }} />
-        <div style={{ display: "grid", gridTemplateColumns: wide ? "repeat(3, minmax(0,1fr))" : "repeat(2, minmax(0, 1fr))", gap: 10 }}>
+        {/* ۰.۷.۲ — ردیف افقی */}
+        <div style={{ display: "flex", gap: 10, overflow: "hidden" }}>
           {Array.from({ length: 4 }).map((_, index) => (
-            <Skeleton key={index} style={{ aspectRatio: '4 / 5', borderRadius: 16 }} />
+            <Skeleton key={index} style={{ width: wide ? 220 : 172, aspectRatio: wide ? "1 / 1" : "4 / 5", borderRadius: 16, flex: "0 0 auto" }} />
           ))}
         </div>
       </section>
@@ -343,16 +394,20 @@ function TopTeachersSection({
   return (
     <section aria-label="اساتید برتر" style={{ display: "grid", gap: spacing.sm, minWidth: 0 }}>
       <SectionHeader title="اساتید برتر" action="مشاهدهٔ همه" onAction={() => navigateApp("/search", config)} />
+      {/* ۰.۷.۲ — همهٔ کارت‌ها در یک ردیف به سمت چپ اسکرول می‌شوند؛ هیچ کارتی به سطر بعد نمی‌رود */}
       <div
         style={{
-          display: "grid",
-          gridTemplateColumns: wide ? "repeat(3, minmax(0,1fr))" : "repeat(2, minmax(0, 1fr))",
+          display: "flex",
+          alignItems: "stretch",
           gap: 10,
+          overflowX: "auto",
+          overflowY: "hidden",
           minWidth: 0,
+          paddingBottom: 8,
         }}
       >
-        {teachers.slice(0, 6).map((teacher, index) => (
-          <div key={teacher.id} className="vodda-enter" style={{ minWidth: 0, animationDelay: `${index * 40}ms` }}>
+        {teachers.slice(0, 8).map((teacher, index) => (
+          <div key={teacher.id} className="vodda-enter" style={{ width: wide ? 220 : 172, flex: "0 0 auto", minWidth: 0, animationDelay: `${index * 40}ms` }}>
             <TeacherCard teacher={teacher} config={config} />
           </div>
         ))}
@@ -377,9 +432,10 @@ function PopularServicesGrid({
     return (
       <section aria-label="در حال بارگذاری خدمات پرکاربرد" style={{ display: "grid", gap: 12 }}>
         <Skeleton style={{ width: 150, height: 18 }} />
-        <div style={{ display: "grid", gridTemplateColumns: wide ? "repeat(4, minmax(0,1fr))" : "repeat(2, minmax(0, 1fr))", gap: 10 }}>
-          {Array.from({ length: 8 }).map((_, index) => (
-            <Skeleton key={index} style={{ height: 80, borderRadius: 18 }} />
+        {/* ۰.۷.۲ — ردیف افقی؛ کارت‌ها دوبرابر (نسبت 4/3) */}
+        <div style={{ display: "flex", gap: 10, overflow: "hidden" }}>
+          {Array.from({ length: 4 }).map((_, index) => (
+            <Skeleton key={index} style={{ width: wide ? 236 : 200, height: wide ? 177 : 150, borderRadius: 18, flex: "0 0 auto" }} />
           ))}
         </div>
       </section>
@@ -390,12 +446,16 @@ function PopularServicesGrid({
   return (
     <section aria-label="خدمات پرکاربرد" style={{ display: "grid", gap: spacing.sm, minWidth: 0 }}>
       <SectionHeader title="خدمات پرکاربرد" />
+      {/* ۰.۷.۲ — همهٔ کارت‌ها در یک ردیف به سمت چپ اسکرول می‌شوند؛ هیچ کارتی به سطر بعد نمی‌رود */}
       <div
         style={{
-          display: "grid",
-          gridTemplateColumns: wide ? "repeat(4, minmax(0,1fr))" : "repeat(2, minmax(0, 1fr))",
+          display: "flex",
+          alignItems: "stretch",
           gap: 10,
+          overflowX: "auto",
+          overflowY: "hidden",
           minWidth: 0,
+          paddingBottom: 8,
         }}
       >
         {services.map((service, index) => (
@@ -406,19 +466,24 @@ function PopularServicesGrid({
             className="vodda-tappable"
             aria-label={`${service.title} — ${faNumber(service.teacherCount, 0)} استاد`}
             style={{
-              height: wide ? 90 : 80,
+              width: wide ? 236 : 200,
+              aspectRatio: "4 / 3",
+              flex: "0 0 auto",
               display: "flex",
+              flexDirection: "column",
               alignItems: "center",
-              gap: 9,
-              padding: "10px 12px",
-              textAlign: "right",
-              border: "1.5px solid rgba(147,161,114,.42)",
+              justifyContent: "center",
+              gap: 7,
+              padding: "12px 10px",
+              textAlign: "center",
+              border: "1.5px solid rgba(147,161,114,.45)",
               borderRadius: 18,
               background: colors.surface,
-              boxShadow: "0 2px 10px rgba(46,54,34,.05)",
+              boxShadow: "0 3px 12px rgba(46,54,34,.05)",
               cursor: "pointer",
               fontFamily: typography.fontFamily,
               minWidth: 0,
+              overflow: "hidden",
               transition: "transform .16s ease, box-shadow .16s ease",
               animation: "vodda-enter .36s ease-out both",
               animationDelay: `${index * 50}ms`,
@@ -428,16 +493,16 @@ function PopularServicesGrid({
               aria-hidden="true"
               style={{
                 position: "relative",
-                width: 34,
-                height: 34,
-                flex: "0 0 34px",
+                flex: "0 0 44px",
+                width: 44,
+                height: 44,
                 display: "grid",
                 placeItems: "center",
-                borderRadius: 12,
+                borderRadius: 14,
                 background: "linear-gradient(140deg, #f2f5ea, #f7f0dc)",
               }}
             >
-              <Icon name="book" size={17} style={{ color: colors.olive600 }} />
+              <Icon name="book" size={20} style={{ color: colors.olive600 }} />
               <img
                 src={serviceImageSrc(service.imageKey)}
                 alt=""
@@ -459,23 +524,37 @@ function PopularServicesGrid({
                 }}
               />
             </span>
-            <span style={{ minWidth: 0, flex: 1 }}>
-              <strong
-                style={{
-                  display: "block",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                  fontSize: wide ? 15 : 14,
-                  fontWeight: 700,
-                  color: colors.ink,
-                }}
-              >
-                {service.title}
-              </strong>
-              <span style={{ display: "block", marginTop: 2, fontSize: 12, fontWeight: 600, color: colors.inkMuted }}>
-                {faNumber(service.teacherCount, 0)} استاد
-              </span>
+            <strong
+              style={{
+                display: "-webkit-box",
+                maxWidth: "100%",
+                overflow: "hidden",
+                WebkitBoxOrient: "vertical",
+                WebkitLineClamp: 2,
+                overflowWrap: "anywhere",
+                fontSize: 13.5,
+                fontWeight: 800,
+                lineHeight: 1.45,
+                color: colors.ink,
+              }}
+            >
+              {service.title}
+            </strong>
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+                maxWidth: "100%",
+                overflow: "hidden",
+                whiteSpace: "nowrap",
+                fontSize: 11.5,
+                fontWeight: 800,
+                color: colors.goldDark,
+              }}
+            >
+              <Icon name="star" size={12} fill style={{ color: colors.gold }} />
+              {faNumber(service.teacherCount, 0)} استاد
             </span>
           </button>
         ))}
@@ -484,26 +563,30 @@ function PopularServicesGrid({
   );
 }
 
-/* ۱.ب.۴ — خدمات رایگان — کارت افقی: عنوان، استاد + آواتار مربعی + تیک، مدت، نشان سبز «رایگان».
- * بدون خدمت رایگان کل بخش پنهان می‌شود. کلیک → پروفایل استاد با فیلتر همان خدمت. */
+/* ۱.ب.۴ / ۰.۷.۲ — خدمات رایگان: همان قالب کارت خدمات (4/3، دوبرابر) + برچسب سبز «رایگان»
+ * در ردیف اسکرول افقی به چپ — هیچ کارتی به سطر بعد نمی‌رود. کلیک → پروفایل استاد با فیلتر همان خدمت. */
 function FreeServicesList({
   cards,
   loading,
   runtime,
   config,
+  wide,
 }: {
   cards: FreeServiceCard[];
   loading: boolean;
   runtime: ReturnType<typeof usePlatform>;
   config: UniversalAppConfig;
+  wide: boolean;
 }) {
   if (loading) {
     return (
       <section aria-label="در حال بارگذاری خدمات رایگان" style={{ display: "grid", gap: 12 }}>
         <Skeleton style={{ width: 140, height: 18 }} />
-        {Array.from({ length: 3 }).map((_, index) => (
-          <Skeleton key={index} style={{ height: 64, borderRadius: 18 }} />
-        ))}
+        <div style={{ display: "flex", gap: 10, overflow: "hidden" }}>
+          {Array.from({ length: 3 }).map((_, index) => (
+            <Skeleton key={index} style={{ width: wide ? 236 : 200, height: wide ? 177 : 150, borderRadius: 18, flex: "0 0 auto" }} />
+          ))}
+        </div>
       </section>
     );
   }
@@ -512,8 +595,18 @@ function FreeServicesList({
   return (
     <section aria-label="خدمات رایگان" style={{ display: "grid", gap: spacing.sm, minWidth: 0 }}>
       <SectionHeader title="خدمات رایگان" description="بدون هزینه — برای شروع مسیر قرآن" />
-      <div style={{ display: "grid", gap: 10, minWidth: 0 }}>
-        {cards.slice(0, 6).map((card, index) => (
+      <div
+        style={{
+          display: "flex",
+          alignItems: "stretch",
+          gap: 10,
+          overflowX: "auto",
+          overflowY: "hidden",
+          minWidth: 0,
+          paddingBottom: 8,
+        }}
+      >
+        {cards.slice(0, 8).map((card, index) => (
           <button
             key={`${card.teacherId}-${card.id}`}
             type="button"
@@ -521,83 +614,114 @@ function FreeServicesList({
             className="vodda-tappable"
             aria-label={`${card.title} رایگان با ${card.teacherName}`}
             style={{
+              position: "relative",
+              width: wide ? 236 : 200,
+              aspectRatio: "4 / 3",
+              flex: "0 0 auto",
               display: "flex",
+              flexDirection: "column",
               alignItems: "center",
-              justifyContent: "space-between",
-              gap: 12,
-              width: "100%",
-              padding: "12px 15px",
-              textAlign: "right",
-              border: `1px solid ${colors.sand150}`,
+              justifyContent: "center",
+              gap: 7,
+              padding: "12px 10px 10px",
+              textAlign: "center",
+              border: "1.5px solid rgba(66,138,84,.4)",
               borderRadius: 18,
               background: colors.surface,
               boxShadow: shadows.xs,
               cursor: "pointer",
               fontFamily: typography.fontFamily,
               minWidth: 0,
+              overflow: "hidden",
               animation: "vodda-enter .36s ease-out both",
               animationDelay: `${index * 50}ms`,
             }}
           >
-            <span style={{ minWidth: 0, display: "grid", gap: 6 }}>
-              <strong
+            <span
+              style={{
+                position: "absolute",
+                top: 10,
+                insetInlineStart: 10,
+                display: "inline-flex",
+                alignItems: "center",
+                padding: "3px 10px",
+                borderRadius: 999,
+                background: colors.olive600,
+                color: "#fff",
+                fontSize: 10,
+                fontWeight: 800,
+                whiteSpace: "nowrap",
+              }}
+            >
+              رایگان
+            </span>
+            <span
+              aria-hidden="true"
+              style={{
+                flex: "0 0 44px",
+                width: 44,
+                height: 44,
+                display: "grid",
+                placeItems: "center",
+                borderRadius: 14,
+                background: "linear-gradient(140deg, #eef4e6, #e8f3e2)",
+                color: colors.olive600,
+              }}
+            >
+              <Icon name="quran" size={22} />
+            </span>
+            <strong
+              style={{
+                display: "-webkit-box",
+                maxWidth: "100%",
+                overflow: "hidden",
+                WebkitBoxOrient: "vertical",
+                WebkitLineClamp: 2,
+                overflowWrap: "anywhere",
+                fontSize: 13.5,
+                fontWeight: 800,
+                lineHeight: 1.45,
+                color: colors.ink,
+              }}
+            >
+              {card.title}
+            </strong>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 6, maxWidth: "100%", minWidth: 0 }}>
+              <Avatar
+                name={card.teacherName}
+                src={avatarSrc(card.avatarUrl || undefined, undefined, uploadsOriginOf(runtime.apiBaseUrl))}
+                size={22}
+              />
+              <span
                 style={{
-                  display: "block",
+                  maxWidth: 120,
                   overflow: "hidden",
                   textOverflow: "ellipsis",
                   whiteSpace: "nowrap",
-                  fontSize: 14.5,
-                  fontWeight: 800,
-                  color: colors.ink,
-                }}
-              >
-                {card.title}
-              </strong>
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 7, minWidth: 0 }}>
-                <Avatar
-                  name={card.teacherName}
-                  src={avatarSrc(card.avatarUrl || undefined, undefined, uploadsOriginOf(runtime.apiBaseUrl))}
-                  size={26}
-                />
-                <span
-                  style={{
-                    minWidth: 0,
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                    fontSize: 12.5,
-                    fontWeight: 700,
-                    color: colors.inkSecondary,
-                  }}
-                >
-                  {card.teacherName}
-                </span>
-                {card.tier ? <TierBadge tier={card.tier} size={13} /> : null}
-              </span>
-            </span>
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 9, flex: "0 0 auto" }}>
-              {card.duration > 0 ? (
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 700, color: colors.inkMuted, whiteSpace: "nowrap" }}>
-                  <Icon name="clock" size={13} />
-                  {faNumber(card.duration, 0)} دقیقه
-                </span>
-              ) : null}
-              <span
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  padding: "4px 11px",
-                  borderRadius: 999,
-                  background: "rgba(66,138,84,.12)",
-                  border: "1px solid rgba(66,138,84,.4)",
-                  color: "#2e7d43",
                   fontSize: 11.5,
-                  fontWeight: 800,
-                  whiteSpace: "nowrap",
+                  fontWeight: 700,
+                  color: colors.inkSecondary,
                 }}
               >
-                رایگان
+                {card.teacherName}
               </span>
+              {card.tier ? <TierBadge tier={card.tier} size={13} /> : null}
+            </span>
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+                maxWidth: "100%",
+                overflow: "hidden",
+                whiteSpace: "nowrap",
+                fontSize: 11.5,
+                fontWeight: 800,
+                color: colors.goldDark,
+              }}
+            >
+              <Icon name="clock" size={12} />
+              {card.duration > 0 ? `${faNumber(card.duration, 0)} دقیقه` : "جلسهٔ رایگان"}
             </span>
           </button>
         ))}
@@ -622,9 +746,10 @@ function RecommendedGrid({
     return (
       <section aria-label="در حال بارگذاری پیشنهادها" style={{ display: "grid", gap: 12 }}>
         <Skeleton style={{ width: 160, height: 18 }} />
-        <div style={{ display: "grid", gridTemplateColumns: wide ? "repeat(3, minmax(0,1fr))" : "repeat(2, minmax(0, 1fr))", gap: 10 }}>
+        {/* ۰.۷.۲ — ردیف افقی */}
+        <div style={{ display: "flex", gap: 10, overflow: "hidden" }}>
           {Array.from({ length: 4 }).map((_, index) => (
-            <Skeleton key={index} style={{ aspectRatio: '4 / 5', borderRadius: 16 }} />
+            <Skeleton key={index} style={{ width: wide ? 220 : 172, aspectRatio: wide ? "1 / 1" : "4 / 5", borderRadius: 16, flex: "0 0 auto" }} />
           ))}
         </div>
       </section>
@@ -635,17 +760,20 @@ function RecommendedGrid({
   return (
     <section aria-label="اساتید پیشنهادی" style={{ display: "grid", gap: spacing.sm, minWidth: 0 }}>
       <SectionHeader title="اساتید پیشنهادی" description="چیدمان وزنی بر پایهٔ rank استاد — تازه با هر بازدید" />
+      {/* ۰.۷.۲ — ردیف اسکرول افقی به چپ؛ هیچ کارتی به سطر بعد نمی‌رود */}
       <div
         style={{
-          display: "grid",
-          /* ۰.۷.۱ — همهٔ بخش‌های خانه از یک ستون‌بندی استفاده می‌کنند تا همهٔ کاشی‌ها هم‌اندازه بمانند */
-          gridTemplateColumns: wide ? "repeat(3, minmax(0,1fr))" : "repeat(2, minmax(0, 1fr))",
+          display: "flex",
+          alignItems: "stretch",
           gap: 10,
+          overflowX: "auto",
+          overflowY: "hidden",
           minWidth: 0,
+          paddingBottom: 8,
         }}
       >
         {teachers.map((teacher, index) => (
-          <div key={teacher.id} className="vodda-enter" style={{ minWidth: 0, animationDelay: `${index * 40}ms` }}>
+          <div key={teacher.id} className="vodda-enter" style={{ width: wide ? 220 : 172, flex: "0 0 auto", minWidth: 0, animationDelay: `${index * 40}ms` }}>
             <TeacherCard teacher={teacher} config={config} />
           </div>
         ))}
@@ -1166,7 +1294,7 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
       <VerseStrip />
 
       {/* ۱.ب.۲ — بخش ③ خانه‌های شش‌گانهٔ دسته‌بندی */}
-      <CategoryTileGrid tiles={tiles} loading={discoverLoading} wide={wide} />
+      <CategoryTileGrid tiles={tiles} groups={catalogGroups} loading={discoverLoading} wide={wide} />
 
       {teachersError && teachers.length === 0 ? (
         <Card elevated style={{ display: "grid", gap: spacing.md, textAlign: "center" }}>
@@ -1186,7 +1314,7 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
       <PopularServicesGrid services={popular} loading={discoverLoading} wide={wide} config={config} />
 
       {/* ۱.ب.۲ — بخش ۶ خدمات رایگان */}
-      <FreeServicesList cards={freeCards} loading={teachersLoading} runtime={runtime} config={config} />
+      <FreeServicesList cards={freeCards} loading={teachersLoading} runtime={runtime} config={config} wide={wide} />
 
       {/* ۱.ب.۲ — بخش ۷ اساتید پیشنهادی (۷ کارت، انتخاب وزنی) */}
       <RecommendedGrid teachers={recommended} loading={recommended === null} wide={wide} config={config} />

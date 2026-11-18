@@ -201,11 +201,12 @@ textarea::placeholder {
 }
 
 .public-nav-inner {
-  min-height: 72px;
+  min-height: 70px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
+  gap: 14px;
+  flex-wrap: nowrap;
 }
 
 .brand-subtitle {
@@ -219,15 +220,19 @@ textarea::placeholder {
 .desktop-nav {
   display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  gap: 2px;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .public-nav-link {
-  padding: 9px 12px;
+  padding: 8px 11px;
   border-radius: 11px;
   color: var(--ink-2s);
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .public-nav-link:hover {
@@ -2032,21 +2037,24 @@ a.blog-card:hover .blog-card-action {
 }
 
 .web-search-fields {
+  /* ۰.۷.۲ — هر فیلد جستجو یک ردیف کامل: کادر بزرگ‌تر و خواناتر */
   display: grid;
-  grid-template-columns: 1.45fr .75fr;
+  grid-template-columns: 1fr;
   gap: 10px;
 }
 
 .web-search-fields label {
-  min-height: 50px;
+  min-height: 54px;
   display: flex;
   align-items: center;
-  gap: 9px;
-  padding-inline: 13px;
+  gap: 10px;
+  padding-inline: 15px;
+  border: 1px solid var(--sand-150);
   border-radius: 14px;
   color: var(--ink-3);
   background: var(--sand-50);
 }
+.web-search-fields label:focus-within { border-color: var(--olive-400); background: #fff; }
 
 /* باگ category-routing — چیپ‌های زیردسته در جستجو با حالت دسته */
 .web-topic-chip {
@@ -5317,24 +5325,27 @@ a.blog-card:hover .blog-card-action {
 /* ═══════════════════════════════════════════════════════════
    ۲) دکمه اختصاصی و ویژهٔ فراخوان (ناوبری دسکتاپ + منو موبایل)
 ═══════════════════════════════════════════════════════════ */
+/* ۰.۷.۲ — دکمهٔ فراخوان: کمی بالاتر از ردیف ناوبری و برجسته‌تر (بزرگ‌تر + درخشش قوی‌تر) */
 .nav-dispatch-btn {
   position: relative;
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  margin-inline-start: 6px;
-  padding: 8px 15px;
-  border: 1.5px solid rgba(191, 149, 64, .55);
+  margin-inline-start: 10px;
+  padding: 10px 18px;
+  border: 1.5px solid rgba(191, 149, 64, .65);
   border-radius: 999px;
   color: #fff;
   background: linear-gradient(135deg, var(--olive-600), var(--olive-700));
-  font-size: 12.5px;
+  font-size: 13.5px;
   font-weight: 800;
   text-decoration: none;
+  white-space: nowrap;
+  transform: translateY(-3px);
   box-shadow:
-    0 0 0 1px rgba(191, 149, 64, .15),
-    0 0 16px rgba(191, 149, 64, .25),
-    0 4px 14px rgba(76, 90, 54, .25);
+    0 0 0 1px rgba(191, 149, 64, .18),
+    0 0 20px rgba(191, 149, 64, .34),
+    0 6px 18px rgba(76, 90, 54, .3);
   transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
   overflow: hidden;
 }
@@ -5354,12 +5365,12 @@ a.blog-card:hover .blog-card-action {
   75% { inset-inline-end: 130%; }
 }
 .nav-dispatch-btn:hover {
-  transform: translateY(-1px);
+  transform: translateY(-5px);
   filter: brightness(1.06);
   box-shadow:
-    0 0 0 1px rgba(191, 149, 64, .25),
-    0 0 26px rgba(191, 149, 64, .38),
-    0 6px 18px rgba(76, 90, 54, .3);
+    0 0 0 1px rgba(191, 149, 64, .28),
+    0 0 30px rgba(191, 149, 64, .45),
+    0 8px 22px rgba(76, 90, 54, .35);
 }
 .nav-dispatch-btn .nav-dispatch-dot {
   width: 7px;
@@ -6464,4 +6475,316 @@ a.blog-card:hover .blog-card-action {
   color: var(--olive-700);
   font-weight: 800;
   text-decoration: none;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ۰.۷.۲ / ۰.۷.۳ — سیستم ردیف اسکرول افقی + پنل دسته‌بندی + کارت خدمت
+   قانون: همهٔ کارت‌های بخش‌های کشف در یک ردیف به سمت چپ اسکرول می‌شوند
+   (در RTL سرریز به سمت چپ است)؛ هیچ کارتی به سطر بعد نمی‌رود.
+═══════════════════════════════════════════════════════════ */
+.vodda-hscroll {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  min-width: 0;
+  padding: 4px 2px 14px;
+  scroll-snap-type: x proximity;
+  scroll-padding-inline-start: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--sand-200) transparent;
+  -webkit-overflow-scrolling: touch;
+}
+.vodda-hscroll > * {
+  flex: 0 0 auto;
+  min-width: 0;
+  scroll-snap-align: start;
+}
+.vodda-hscroll::-webkit-scrollbar { height: 6px; }
+.vodda-hscroll::-webkit-scrollbar-thumb { background: var(--sand-200); border-radius: 999px; }
+.vodda-hscroll::-webkit-scrollbar-track { background: transparent; }
+
+/* ردیف کارت استاد — همان کارت مربعی استاندارد ۰.۷.۱، فقط در ردیف افقی */
+.vodda-teacher-row .vodda-teacher-card,
+.vodda-teacher-row a.vodda-teacher-card { width: 230px; }
+.vodda-teacher-row .landing-recommended-skel { width: 230px; border-radius: 16px; }
+@media (max-width: 639px) {
+  .vodda-teacher-row .vodda-teacher-card,
+  .vodda-teacher-row a.vodda-teacher-card { width: 172px; }
+  .vodda-teacher-row .landing-recommended-skel { width: 172px; }
+}
+
+/* ═══ ۰.۷.۳ — پنل واحد دسته‌بندی موضوعات قرآنی (کادر حاشیه‌دار زیبا) ═══ */
+.vodda-catalog-panel {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 16px 14px;
+  border: 1.5px solid var(--sand-150);
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 0 4px 18px rgba(46, 54, 34, .05);
+}
+@media (min-width: 640px) {
+  .vodda-catalog-panel { grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 18px 16px; }
+}
+@media (min-width: 1024px) {
+  .vodda-catalog-panel { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+}
+.vcp-tile {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  padding: 12px;
+  border: 1px solid var(--sand-150);
+  border-radius: 16px;
+  background: linear-gradient(150deg, #fbfcf7 0%, #f6f3e9 100%);
+  min-width: 0;
+  animation: landing-tile-in 360ms ease-out both;
+}
+.vcp-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  text-decoration: none;
+  color: inherit;
+}
+.vcp-icon {
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: linear-gradient(140deg, #f2f5ea, #f7f0dc);
+  overflow: hidden;
+}
+.vcp-icon img { width: 40px; height: 40px; max-width: 40px; max-height: 40px; object-fit: contain; }
+.vcp-text { min-width: 0; flex: 1; display: grid; gap: 1px; }
+.vcp-title {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: var(--ink, #2e3622);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.vcp-count { color: var(--olive-600); font-size: 10.5px; font-weight: 700; }
+.vcp-arrow {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  color: var(--olive-600);
+  background: rgba(147, 161, 114, .12);
+  transition: transform .16s ease, background .16s ease;
+}
+.vcp-head:hover .vcp-arrow { transform: translateX(-2px); background: rgba(147, 161, 114, .22); }
+.vcp-head:hover .vcp-title { color: var(--olive-700); }
+/* تمام زیردسته‌ها کامل نمایش داده می‌شوند — بدون بریدگی، wrap آزاد */
+.vcp-topics { display: flex; flex-wrap: wrap; gap: 5px; min-width: 0; }
+.vcp-chip {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding: 3.5px 9px;
+  border: 1px solid var(--sand-200);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ink-2, #5a5648);
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1.5;
+  text-decoration: none;
+  text-align: start;
+  overflow-wrap: anywhere;
+  transition: border-color .15s ease, background .15s ease, color .15s ease;
+}
+.vcp-chip:hover {
+  border-color: var(--olive-500, #93a172);
+  background: var(--olive-50);
+  color: var(--olive-700);
+}
+
+/* ═══ ۰.۷.۲ — ServiceCard واحد: نسبت 4/3، دوبرابر کارت قبلی، آیکون ۳۲px، متای طلایی، hover scale 1.05 ═══ */
+.vodda-service-card {
+  position: relative;
+  width: 232px;
+  aspect-ratio: 4 / 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 14px 12px;
+  border: 1.5px solid rgba(147, 161, 114, .45);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 3px 12px rgba(46, 54, 34, .05);
+  text-align: center;
+  text-decoration: none;
+  color: inherit;
+  min-width: 0;
+  overflow: hidden;
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+  animation: landing-tile-in 360ms ease-out both;
+}
+.vodda-service-card:hover,
+.vodda-service-card:focus-visible {
+  transform: scale(1.05);
+  border-color: rgba(147, 161, 114, .8);
+  box-shadow: 0 0 16px rgba(147, 161, 114, .35), 0 8px 20px rgba(46, 54, 34, .1);
+  z-index: 2;
+}
+.vsc-art {
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: linear-gradient(140deg, #f2f5ea, #f7f0dc);
+  color: var(--olive-600);
+  pointer-events: none;
+}
+.vsc-art img { width: 32px; height: 32px; max-width: 32px; max-height: 32px; object-fit: contain; }
+.vsc-title {
+  display: -webkit-box;
+  max-width: 100%;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow-wrap: anywhere;
+  font-size: 13.5px;
+  font-weight: 800;
+  line-height: 1.45;
+  color: var(--ink, #2e3622);
+}
+.vsc-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: 11.5px;
+  font-weight: 800;
+  color: var(--gold-dark, #8b681f);
+}
+/* کارت رایگان — همان قالب + برچسب سبز و ردیف استاد */
+.vsc-free { border-color: rgba(66, 138, 84, .4); }
+.vsc-free:hover,
+.vsc-free:focus-visible {
+  border-color: rgba(66, 138, 84, .75);
+  box-shadow: 0 0 16px rgba(66, 138, 84, .3), 0 8px 20px rgba(46, 54, 34, .1);
+}
+.vsc-freebadge {
+  position: absolute;
+  inset-block-start: 10px;
+  inset-inline-start: 10px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--olive-600);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .2px;
+  box-shadow: 0 2px 8px rgba(46, 84, 54, .25);
+}
+.vsc-teacher {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  min-width: 0;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--ink-2, #5a5648);
+}
+.vsc-teacher-name {
+  max-width: 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (max-width: 639px) {
+  .vodda-service-card { width: 196px; }
+}
+
+/* ═══ ۰.۷.۲ — نتایج جستجو: هر ردیف یک کارت پهن و بزرگ ═══ */
+.web-results-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+.web-results-list .vodda-teacher-card {
+  aspect-ratio: auto;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    'avatar name   foot'
+    'avatar tag    foot'
+    'avatar badges foot'
+    'avatar meta   foot';
+  grid-template-rows: auto auto auto auto;
+  align-items: center;
+  column-gap: 14px;
+  row-gap: 3px;
+  padding: 16px 18px;
+  text-align: start;
+}
+.web-results-list .vtc-avatar { grid-area: avatar; width: 64px; height: 64px; }
+.web-results-list .vtc-name { grid-area: name; font-size: 14.5px; min-height: 0; -webkit-line-clamp: 1; white-space: nowrap; text-overflow: ellipsis; display: block; }
+.web-results-list .vtc-tag { grid-area: tag; font-size: 11.5px; }
+.web-results-list .vtc-badges { grid-area: badges; justify-content: flex-start; }
+.web-results-list .vtc-meta { grid-area: meta; justify-content: flex-start; }
+.web-results-list .vtc-foot {
+  grid-area: foot;
+  align-self: center;
+  border-top: 0;
+  padding-top: 0;
+  min-width: 150px;
+}
+.web-results-list .vodda-teacher-card:hover { transform: translateY(-2px); }
+@media (max-width: 639px) {
+  .web-results-list .vtc-avatar { width: 54px; height: 54px; }
+  .web-results-list .vtc-foot { min-width: 120px; }
+  .web-results-list .vodda-teacher-card { padding: 13px 14px; column-gap: 11px; }
+}
+.web-results-list .web-search-loading-fix { display: none; }
+
+/* اسکلت در حالت‌های جدید */
+.web-results-list.web-search-loading > div { aspect-ratio: auto; height: 118px; width: 100%; }
+.vodda-service-row > .landing-recommended-skel { width: 232px; aspect-ratio: 4 / 3; border-radius: 18px; }
+
+/* دارک‌مود — پنل دسته‌ها، کارت خدمت، ردیف‌ها */
+@media (prefers-color-scheme: dark) {
+  .vodda-catalog-panel { background: rgba(255, 255, 255, .04); border-color: rgba(214, 220, 196, .16); box-shadow: none; }
+  .vcp-tile { background: linear-gradient(150deg, rgba(147, 161, 114, .08), rgba(191, 149, 64, .08)); border-color: rgba(214, 220, 196, .14); }
+  .vcp-title { color: #e6ebd8; }
+  .vcp-chip { background: rgba(255, 255, 255, .05); border-color: rgba(214, 220, 196, .18); color: #cfd6bc; }
+  .vcp-chip:hover { background: rgba(147, 161, 114, .18); color: #e6ebd8; }
+  .vodda-service-card { background: rgba(255, 255, 255, .04); border-color: rgba(214, 220, 196, .16); box-shadow: none; }
+  .vodda-service-card:hover, .vodda-service-card:focus-visible { box-shadow: 0 10px 24px rgba(0, 0, 0, .4); }
+  .vsc-title { color: #e6ebd8; }
+  .vsc-teacher { color: #c9d1b4; }
+  .web-results-list .vodda-teacher-card { background: rgba(255, 255, 255, .04); border-color: rgba(214, 220, 196, .16); box-shadow: none; }
+  .web-search-fields label { background: rgba(255, 255, 255, .04); border-color: rgba(214, 220, 196, .16); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vodda-service-card, .vcp-tile { animation: none !important; transition: none !important; }
+}
+
+/* عرض خیلی باریک ۳۲۰px */
+@media (max-width: 359px) {
+  .vodda-teacher-row .vodda-teacher-card,
+  .vodda-teacher-row a.vodda-teacher-card { width: 156px; }
+  .vodda-service-card { width: 178px; }
+  .vcp-title { font-size: 12.5px; }
+  .vcp-chip { font-size: 10px; }
+  .web-results-list .vtc-foot { min-width: 104px; }
 }
