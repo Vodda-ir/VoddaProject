@@ -718,28 +718,33 @@ textarea::placeholder {
   min-width: 0;
 }
 
+/* ═══ ۰.۷.۴ — کارت استاد به سبک اسنپ‌داکتر (دقیقاً مطابق snapp.doctor) ═══
+   سفید تخت، گوشهٔ 12px، حاشیهٔ بسیار روشن، ۱۶۵px عرض (ثابت در همهٔ بریک‌پوینت‌ها) و
+   min-height 200px؛ چینش ستونی با justify-between. ردیف بالا: آواتار ۶۴px در یک سمت و
+   ستون دو بج در سمت مقابل (امتیاز کهربایی / قیمت یا جلسهٔ زیتونی روشن).
+   نام ۱۴px یک‌خط، تخصص ۱۲px دوخط خاکستری، دکمهٔ outline تمام‌عرض با گوشهٔ 8px. */
 .vodda-teacher-card {
   position: relative;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 4px;
+  justify-content: space-between;
+  gap: 0;
   width: 100%;
   min-width: 0;
-  padding: 10px 9px 9px;
+  min-height: 200px;
+  padding: 12px;
   border: 1px solid var(--sand-150);
-  border-radius: 16px;
+  border-radius: 12px;
   background: #fff;
-  box-shadow: 0 3px 12px rgba(46, 54, 34, .04);
-  aspect-ratio: 4 / 5;
+  box-shadow: 0 1px 2px rgba(46, 54, 34, .03);
   overflow: hidden;
-  text-align: center;
+  text-align: start;
   transition: transform .18s ease, box-shadow .18s ease;
 }
 
 .vodda-teacher-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 26px rgba(46, 54, 34, .1);
+  box-shadow: 0 10px 22px rgba(46, 54, 34, .08);
 }
 
 .vodda-teacher-card > * {
@@ -755,12 +760,25 @@ a.vodda-teacher-card,
   display: block;
 }
 
-/* اسلات آواتار — اندازهٔ ثابت؛ کامپوننت Avatar با استایل درون‌خطی به ۱۰۰٪ اسلات می‌نشیند */
+.vtc-top {
+  display: block;
+  width: 100%;
+}
+
+/* ردیف بالای کارت — آواتار در یک سمت، ستون بج‌ها در سمت مقابل (هم‌تراز لبه) */
+.vtc-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+/* اسلات آواتار ۶۴px — کامپوننت Avatar با استایل درون‌خطی به ۱۰۰٪ اسلات می‌نشیند */
 .vtc-avatar {
   position: relative;
   flex: 0 0 auto;
-  width: 40px;
-  height: 40px;
+  width: 64px;
+  height: 64px;
 }
 .vtc-avatar > * {
   width: 100% !important;
@@ -772,120 +790,107 @@ a.vodda-teacher-card,
   height: 100% !important;
 }
 
-.vtc-name {
-  display: -webkit-box;
-  width: 100%;
-  overflow: hidden;
-  color: var(--ink);
-  font-size: 11px;
-  font-weight: 800;
-  line-height: 1.35;
-  min-height: 2.7em;
-  overflow-wrap: anywhere;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-}
-
-.vtc-tag {
-  width: 100%;
-  overflow: hidden;
-  color: var(--olive-600);
-  font-size: 10px;
-  font-weight: 600;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* ردیف نشان‌ها — همیشه با ارتفاع ثابت تا ریتم کارت‌ها با/بدون درجه یکسان بماند */
-.vtc-badges {
+/* ستون بج‌ها — چیده‌شده روی لبهٔ مقابل آواتار (مثل اسنپ‌داکتر: امتیاز بالا، عدد پایین) */
+.vtc-pills {
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
+  align-items: flex-end;
   gap: 4px;
-  min-height: 16px;
+  min-width: 0;
   max-width: 100%;
-  overflow: hidden;
-  flex-wrap: nowrap;
 }
-.vtc-badges > * {
-  flex: 0 0 auto;
-}
-
-.vtc-t1 {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 1px 6px;
-  border-radius: 999px;
-  color: #7a5e1e;
-  font-size: 9px;
-  font-weight: 800;
-  white-space: nowrap;
-  background: linear-gradient(135deg, rgba(191, 149, 64, .16), rgba(191, 149, 64, .3));
-  border: 1px solid rgba(191, 149, 64, .45);
-}
-
-.vtc-mini {
+.vtc-pill {
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  padding: 1px 5px;
-  border-radius: 999px;
-  color: var(--ink-2s);
-  font-size: 9px;
-  font-weight: 700;
+  max-width: 100%;
+  padding: 4px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
   white-space: nowrap;
-  background: rgba(255, 255, 255, .8);
-  border: 1px solid var(--sand-200);
+  overflow: hidden;
+}
+/* بج امتیاز — زمینهٔ کهربایی روشن با متن طلایی تیره (خوانایی AA) */
+.vtc-pill-rating {
+  background: #fff4dc;
+  color: #8b681f;
+}
+/* بج ویژهٔ درجهٔ ۱ هنگام نبودِ امتیاز — طلایی */
+.vtc-pill-gold {
+  background: linear-gradient(135deg, rgba(191, 149, 64, .16), rgba(191, 149, 64, .3));
+  border: 1px solid rgba(191, 149, 64, .45);
+  color: #7a5e1e;
+}
+/* بج قیمت / تعداد جلسه — زمینهٔ زیتونی روشن */
+.vtc-pill-info {
+  background: var(--olive-100);
+  color: var(--olive-700);
 }
 
-.vtc-meta {
-  display: none;
+/* نام — یک خط با ellipsis؛ 🏆 درجهٔ ۱ کنار نام (هم‌جای آیکون Pro اسنپ‌داکتر) */
+.vtc-name {
+  display: flex;
+  align-items: center;
+  gap: 5px;
   width: 100%;
+  margin-top: 9px;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.45;
+}
+.vtc-name-text {
+  min-width: 0;
   overflow: hidden;
-  color: var(--ink-3);
-  font-size: 10px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.vtc-meta .vtc-star { color: var(--gold); }
-
-.vtc-foot {
-  display: grid;
-  gap: 5px;
-  width: 100%;
-  margin-top: auto;
-  padding-top: 6px;
-  border-top: 1px solid var(--sand-100);
+.vtc-trophy {
+  flex: 0 0 auto;
+  font-size: 13px;
+  line-height: 1;
 }
 
-.vtc-price {
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: 4px;
+/* تخصص — دو خط با clamp؛ کف دو خط تا ارتفاع کارت‌ها یکسان بماند */
+.vtc-tag {
+  display: -webkit-box;
   width: 100%;
+  margin-top: 2px;
   overflow: hidden;
   color: var(--ink-3);
-  font-size: 10px;
-  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.45;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  min-height: 2.9em;
 }
-.vtc-price small { font-size: inherit; color: var(--ink-4); }
-.vtc-price strong { color: var(--ink); font-size: 11px; font-weight: 800; }
 
+/* دکمهٔ outline تمام‌width — دقیقاً «شروع مشاوره» اسنپ‌داکتر با رنگ برند وُدّا */
 .vtc-cta {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 5px;
   width: 100%;
-  min-height: 26px;
-  border-radius: 9px;
-  color: #fff;
-  background: var(--olive-600);
-  font-size: 10.5px;
-  font-weight: 700;
+  margin-top: 10px;
+  min-height: 34px;
+  border: 1.5px solid var(--olive-600);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--olive-700);
+  font-size: 13px;
+  font-weight: 800;
   white-space: nowrap;
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease;
+}
+.vodda-teacher-card:hover .vtc-cta,
+.vtc-cta:hover {
+  background: var(--olive-600);
+  color: #fff;
 }
 
 /* دو دکمهٔ عملیاتی کارت در پنل کاربر */
@@ -893,30 +898,29 @@ a.vodda-teacher-card,
   display: flex;
   gap: 6px;
   width: 100%;
+  margin-top: 10px;
 }
-.vtc-actions .vtc-cta { flex: 1 1 0; min-width: 0; }
+.vtc-actions .vtc-cta { flex: 1 1 0; min-width: 0; margin-top: 0; }
 .vtc-cta--ghost {
+  border-color: var(--sand-200);
   background: var(--olive-100);
   color: var(--olive-700);
 }
+.vtc-cta--ghost:hover {
+  background: var(--olive-200);
+  color: var(--olive-700);
+}
 
+/* عرض خیلی باریک ۳۲۰px — آواتار اسلات کوچک‌تر در گریدهای سلول‌باریک */
 @media (min-width: 480px) {
   .vodda-teacher-grid { gap: 14px; }
-  .vodda-teacher-card { gap: 6px; padding: 14px 13px 12px; aspect-ratio: 1 / 1; }
-  .vtc-avatar { width: 48px; height: 48px; }
-  .vtc-name { font-size: 13px; min-height: 2.7em; }
-  .vtc-tag { font-size: 10.5px; }
-  .vtc-badges { min-height: 18px; }
-  .vtc-t1 { font-size: 10px; padding: 2px 7px; }
-  .vtc-mini { font-size: 10px; padding: 2px 6px; }
-  .vtc-foot { gap: 6px; padding-top: 8px; }
-  .vtc-price { font-size: 10.5px; }
-  .vtc-price strong { font-size: 12.5px; }
-  .vtc-cta { min-height: 32px; font-size: 12px; border-radius: 10px; gap: 5px; }
+}
+@media (max-width: 359px) {
+  .vodda-teacher-grid .vtc-avatar { width: 56px; height: 56px; }
+  .vodda-teacher-grid .vtc-pill { font-size: 11px; padding: 3px 6px; }
 }
 @media (min-width: 768px) {
   .vodda-teacher-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .vtc-meta { display: block; font-size: 10.5px; }
 }
 @media (min-width: 1024px) {
   .vodda-teacher-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
@@ -6432,7 +6436,8 @@ a.blog-card:hover .blog-card-action {
   .landing-free-title { color: #e6ebd8; }
   .landing-free-teacher { color: #c9d1b4; }
   .landing-free-badge { background: rgba(66, 138, 84, .18); color: #7fd094; }
-  /* ۰.۷.۱ — کارت استاد واحد در دارک‌مود: فقط قاب/پس‌زمینه (لندینگ در دارک همچنان بستر روشن دارد — هم‌سایر کارت‌ها) */
+  /* ۰.۷.۴ — کارت استاد اسنپ‌داکتری در دارک‌مود: فقط قاب/پس‌زمینه (لندینگ در دارک همچنان
+     بستر روشن دارد — هم‌سایر کارت‌ها)؛ متن، بج‌ها و CTA با رنگ‌های حالت روشن می‌مانند. */
   .vodda-teacher-card { background: rgba(255, 255, 255, .04); border-color: rgba(214, 220, 196, .16); box-shadow: none; }
   .vodda-teacher-card:hover { box-shadow: 0 12px 26px rgba(0, 0, 0, .4); }
   .landing-recommended-skel {
@@ -6505,15 +6510,10 @@ a.blog-card:hover .blog-card-action {
 .vodda-hscroll::-webkit-scrollbar-thumb { background: var(--sand-200); border-radius: 999px; }
 .vodda-hscroll::-webkit-scrollbar-track { background: transparent; }
 
-/* ردیف کارت استاد — همان کارت مربعی استاندارد ۰.۷.۱، فقط در ردیف افقی */
+/* ردیف کارت استاد — کارت اسنپ‌داکتری ۱۶۵px ثابت در همهٔ بریک‌پوینت‌ها (دقیقاً مثل snapp.doctor) */
 .vodda-teacher-row .vodda-teacher-card,
-.vodda-teacher-row a.vodda-teacher-card { width: 230px; }
-.vodda-teacher-row .landing-recommended-skel { width: 230px; border-radius: 16px; }
-@media (max-width: 639px) {
-  .vodda-teacher-row .vodda-teacher-card,
-  .vodda-teacher-row a.vodda-teacher-card { width: 172px; }
-  .vodda-teacher-row .landing-recommended-skel { width: 172px; }
-}
+.vodda-teacher-row a.vodda-teacher-card { width: 165px; }
+.vodda-teacher-row .landing-recommended-skel { width: 165px; border-radius: 12px; min-height: 200px; }
 
 /* ═══ ۰.۷.۳ — پنل واحد دسته‌بندی موضوعات قرآنی (کادر حاشیه‌دار زیبا) ═══ */
 .vodda-catalog-panel {
@@ -6714,50 +6714,17 @@ a.blog-card:hover .blog-card-action {
   .vodda-service-card { width: 196px; }
 }
 
-/* ═══ ۰.۷.۲ — نتایج جستجو: هر ردیف یک کارت پهن و بزرگ ═══ */
+/* ═══ ۰.۷.۴ — نتایج جستجو: شبکهٔ کارت‌های اسنپ‌داکتری (کارت ۱۶۵px با کشش سلول) ═══ */
 .web-results-list {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 12px;
-}
-.web-results-list .vodda-teacher-card {
-  aspect-ratio: auto;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  grid-template-areas:
-    'avatar name   foot'
-    'avatar tag    foot'
-    'avatar badges foot'
-    'avatar meta   foot';
-  grid-template-rows: auto auto auto auto;
-  align-items: center;
-  column-gap: 14px;
-  row-gap: 3px;
-  padding: 16px 18px;
-  text-align: start;
-}
-.web-results-list .vtc-avatar { grid-area: avatar; width: 64px; height: 64px; }
-.web-results-list .vtc-name { grid-area: name; font-size: 14.5px; min-height: 0; -webkit-line-clamp: 1; white-space: nowrap; text-overflow: ellipsis; display: block; }
-.web-results-list .vtc-tag { grid-area: tag; font-size: 11.5px; }
-.web-results-list .vtc-badges { grid-area: badges; justify-content: flex-start; }
-.web-results-list .vtc-meta { grid-area: meta; justify-content: flex-start; }
-.web-results-list .vtc-foot {
-  grid-area: foot;
-  align-self: center;
-  border-top: 0;
-  padding-top: 0;
-  min-width: 150px;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 14px;
 }
 .web-results-list .vodda-teacher-card:hover { transform: translateY(-2px); }
-@media (max-width: 639px) {
-  .web-results-list .vtc-avatar { width: 54px; height: 54px; }
-  .web-results-list .vtc-foot { min-width: 120px; }
-  .web-results-list .vodda-teacher-card { padding: 13px 14px; column-gap: 11px; }
-}
 .web-results-list .web-search-loading-fix { display: none; }
 
 /* اسکلت در حالت‌های جدید */
-.web-results-list.web-search-loading > div { aspect-ratio: auto; height: 118px; width: 100%; }
+.web-results-list.web-search-loading > div { min-height: 200px; width: 100%; border-radius: 12px; }
 .vodda-service-row > .landing-recommended-skel { width: 232px; aspect-ratio: 4 / 3; border-radius: 18px; }
 
 /* دارک‌مود — پنل دسته‌ها، کارت خدمت، ردیف‌ها */
@@ -6771,7 +6738,6 @@ a.blog-card:hover .blog-card-action {
   .vodda-service-card:hover, .vodda-service-card:focus-visible { box-shadow: 0 10px 24px rgba(0, 0, 0, .4); }
   .vsc-title { color: #e6ebd8; }
   .vsc-teacher { color: #c9d1b4; }
-  .web-results-list .vodda-teacher-card { background: rgba(255, 255, 255, .04); border-color: rgba(214, 220, 196, .16); box-shadow: none; }
   .web-search-fields label { background: rgba(255, 255, 255, .04); border-color: rgba(214, 220, 196, .16); }
 }
 
@@ -6781,10 +6747,7 @@ a.blog-card:hover .blog-card-action {
 
 /* عرض خیلی باریک ۳۲۰px */
 @media (max-width: 359px) {
-  .vodda-teacher-row .vodda-teacher-card,
-  .vodda-teacher-row a.vodda-teacher-card { width: 156px; }
   .vodda-service-card { width: 178px; }
   .vcp-title { font-size: 12.5px; }
   .vcp-chip { font-size: 10px; }
-  .web-results-list .vtc-foot { min-width: 104px; }
 }

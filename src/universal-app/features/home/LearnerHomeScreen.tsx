@@ -383,7 +383,7 @@ function TopTeachersSection({
         {/* ۰.۷.۲ — ردیف افقی */}
         <div style={{ display: "flex", gap: 10, overflow: "hidden" }}>
           {Array.from({ length: 4 }).map((_, index) => (
-            <Skeleton key={index} style={{ width: wide ? 220 : 172, aspectRatio: wide ? "1 / 1" : "4 / 5", borderRadius: 16, flex: "0 0 auto" }} />
+            <Skeleton key={index} style={{ width: 165, minHeight: 200, borderRadius: 12, flex: "0 0 auto" }} />
           ))}
         </div>
       </section>
@@ -407,7 +407,7 @@ function TopTeachersSection({
         }}
       >
         {teachers.slice(0, 8).map((teacher, index) => (
-          <div key={teacher.id} className="vodda-enter" style={{ width: wide ? 220 : 172, flex: "0 0 auto", minWidth: 0, animationDelay: `${index * 40}ms` }}>
+          <div key={teacher.id} className="vodda-enter" style={{ width: 165, flex: "0 0 auto", minWidth: 0, animationDelay: `${index * 40}ms` }}>
             <TeacherCard teacher={teacher} config={config} />
           </div>
         ))}
@@ -749,7 +749,7 @@ function RecommendedGrid({
         {/* ۰.۷.۲ — ردیف افقی */}
         <div style={{ display: "flex", gap: 10, overflow: "hidden" }}>
           {Array.from({ length: 4 }).map((_, index) => (
-            <Skeleton key={index} style={{ width: wide ? 220 : 172, aspectRatio: wide ? "1 / 1" : "4 / 5", borderRadius: 16, flex: "0 0 auto" }} />
+            <Skeleton key={index} style={{ width: 165, minHeight: 200, borderRadius: 12, flex: "0 0 auto" }} />
           ))}
         </div>
       </section>
@@ -773,7 +773,7 @@ function RecommendedGrid({
         }}
       >
         {teachers.map((teacher, index) => (
-          <div key={teacher.id} className="vodda-enter" style={{ width: wide ? 220 : 172, flex: "0 0 auto", minWidth: 0, animationDelay: `${index * 40}ms` }}>
+          <div key={teacher.id} className="vodda-enter" style={{ width: 165, flex: "0 0 auto", minWidth: 0, animationDelay: `${index * 40}ms` }}>
             <TeacherCard teacher={teacher} config={config} />
           </div>
         ))}
