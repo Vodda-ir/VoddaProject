@@ -238,6 +238,14 @@ function BottomNavigation({
   const ctaActive = cta ? cta.activeRoutes.includes(routeName) : false;
   const leadingTabs = cta ? items.slice(0, Math.ceil(items.length / 2)) : items;
   const trailingTabs = cta ? items.slice(Math.ceil(items.length / 2)) : [];
+  /* ۰.۷.۶ — رفع پرش پروفایل به سطر دوم: تعداد ستون‌های گرید باید دقیقاً برابر
+     فرزندان واقعی باشد (تب‌های ابتدا + دکمهٔ فراخوان + تب‌های انتها) تا هیچ تبِی
+     به ردیف implicit دوم نیفتد — در همهٔ عرض‌ها فقط یک خط. */
+  const leadingCount = Math.ceil(items.length / 2);
+  const trailingCount = items.length - leadingCount;
+  const gridColumns = cta
+    ? `repeat(${leadingCount}, minmax(0, 1fr)) auto repeat(${trailingCount}, minmax(0, 1fr))`
+    : `repeat(${items.length}, minmax(0, 1fr))`;
 
   return (
     <nav
@@ -252,7 +260,7 @@ function BottomNavigation({
         minHeight: 68,
         transform: "translateX(-50%)",
         display: "grid",
-        gridTemplateColumns: cta ? "1fr 1fr auto 1fr 1fr" : `repeat(${items.length}, minmax(0, 1fr))`,
+        gridTemplateColumns: gridColumns,
         alignItems: "stretch",
         gap: 0,
         padding: "4px 8px max(4px, env(safe-area-inset-bottom))",
