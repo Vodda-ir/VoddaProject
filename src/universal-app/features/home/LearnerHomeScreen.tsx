@@ -394,23 +394,34 @@ function TopTeachersSection({
   return (
     <section aria-label="اساتید برتر" style={{ display: "grid", gap: spacing.sm, minWidth: 0 }}>
       <SectionHeader title="اساتید برتر" action="مشاهدهٔ همه" onAction={() => navigateApp("/search", config)} />
-      {/* ۰.۷.۲ — همهٔ کارت‌ها در یک ردیف به سمت چپ اسکرول می‌شوند؛ هیچ کارتی به سطر بعد نمی‌رود */}
+      {/* ۰.۷.۵ — کادر افقی کم‌رنگ و جذاب دور ردیف اساتید (مثل اسنپ‌داکتر)؛ کارت‌ها به چپ اسکرول می‌شوند */}
       <div
         style={{
-          display: "flex",
-          alignItems: "stretch",
-          gap: 10,
-          overflowX: "auto",
-          overflowY: "hidden",
+          borderRadius: 22,
+          border: `1.2px solid ${colors.sand150}`,
+          background: `linear-gradient(180deg, ${colors.surface}, ${colors.surfaceWarm})`,
+          padding: 12,
+          boxShadow: "0 6px 20px rgba(46,54,34,.06)",
           minWidth: 0,
-          paddingBottom: 8,
         }}
       >
-        {teachers.slice(0, 8).map((teacher, index) => (
-          <div key={teacher.id} className="vodda-enter" style={{ width: 165, flex: "0 0 auto", minWidth: 0, animationDelay: `${index * 40}ms` }}>
-            <TeacherCard teacher={teacher} config={config} />
-          </div>
-        ))}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "stretch",
+            gap: 10,
+            overflowX: "auto",
+            overflowY: "hidden",
+            minWidth: 0,
+            paddingBottom: 6,
+          }}
+        >
+          {teachers.slice(0, 8).map((teacher, index) => (
+            <div key={teacher.id} className="vodda-enter" style={{ width: 165, flex: "0 0 auto", minWidth: 0, animationDelay: `${index * 40}ms` }}>
+              <TeacherCard teacher={teacher} config={config} />
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   );
@@ -432,10 +443,10 @@ function PopularServicesGrid({
     return (
       <section aria-label="در حال بارگذاری خدمات پرکاربرد" style={{ display: "grid", gap: 12 }}>
         <Skeleton style={{ width: 150, height: 18 }} />
-        {/* ۰.۷.۲ — ردیف افقی؛ کارت‌ها دوبرابر (نسبت 4/3) */}
+        {/* ۰.۷.۵ — ردیف افقی؛ کارت‌های هویت طلایی */}
         <div style={{ display: "flex", gap: 10, overflow: "hidden" }}>
           {Array.from({ length: 4 }).map((_, index) => (
-            <Skeleton key={index} style={{ width: wide ? 236 : 200, height: wide ? 177 : 150, borderRadius: 18, flex: "0 0 auto" }} />
+            <Skeleton key={index} style={{ width: wide ? 252 : 226, height: wide ? 226 : 206, borderRadius: 20, flex: "0 0 auto" }} />
           ))}
         </div>
       </section>
@@ -446,7 +457,7 @@ function PopularServicesGrid({
   return (
     <section aria-label="خدمات پرکاربرد" style={{ display: "grid", gap: spacing.sm, minWidth: 0 }}>
       <SectionHeader title="خدمات پرکاربرد" />
-      {/* ۰.۷.۲ — همهٔ کارت‌ها در یک ردیف به سمت چپ اسکرول می‌شوند؛ هیچ کارتی به سطر بعد نمی‌رود */}
+      {/* ۰.۷.۵ — هویت اول کارت خدمت (طلایی/گرم): بنر تصویر موضوعی + چیپ شمارش + دکمهٔ CTA — ردیف اسکرول به چپ */}
       <div
         style={{
           display: "flex",
@@ -466,20 +477,18 @@ function PopularServicesGrid({
             className="vodda-tappable"
             aria-label={`${service.title} — ${faNumber(service.teacherCount, 0)} استاد`}
             style={{
-              width: wide ? 236 : 200,
-              aspectRatio: "4 / 3",
+              width: wide ? 252 : 226,
               flex: "0 0 auto",
               display: "flex",
               flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 7,
-              padding: "12px 10px",
-              textAlign: "center",
-              border: "1.5px solid rgba(147,161,114,.45)",
-              borderRadius: 18,
-              background: colors.surface,
-              boxShadow: "0 3px 12px rgba(46,54,34,.05)",
+              alignItems: "stretch",
+              gap: 0,
+              padding: 0,
+              textAlign: "start",
+              border: "1.4px solid rgba(191,149,64,.45)",
+              borderRadius: 20,
+              background: `linear-gradient(180deg, #fffdf6 0%, ${colors.surface} 72%)`,
+              boxShadow: "0 6px 18px rgba(139,104,31,.1)",
               cursor: "pointer",
               fontFamily: typography.fontFamily,
               minWidth: 0,
@@ -489,72 +498,93 @@ function PopularServicesGrid({
               animationDelay: `${index * 50}ms`,
             }}
           >
+            {/* بنر تصویر موضوعی + چیپ شمارش استاد */}
             <span
               aria-hidden="true"
               style={{
                 position: "relative",
-                flex: "0 0 44px",
-                width: 44,
-                height: 44,
-                display: "grid",
-                placeItems: "center",
-                borderRadius: 14,
+                display: "block",
+                height: wide ? 112 : 104,
+                overflow: "hidden",
                 background: "linear-gradient(140deg, #f2f5ea, #f7f0dc)",
               }}
             >
-              <Icon name="book" size={20} style={{ color: colors.olive600 }} />
               <img
                 src={serviceImageSrc(service.imageKey)}
                 alt=""
-                width={32}
-                height={32}
                 loading="lazy"
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  margin: "auto",
-                  width: 32,
-                  height: 32,
-                  maxWidth: 32,
-                  maxHeight: 32,
-                  objectFit: "contain",
-                }}
+                style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
                 onError={(event) => {
                   event.currentTarget.style.display = "none";
                 }}
               />
+              <span
+                aria-hidden="true"
+                style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(46,54,34,0) 42%, rgba(46,54,34,.3) 100%)" }}
+              />
+              <span
+                style={{
+                  position: "absolute",
+                  bottom: 8,
+                  insetInlineStart: 8,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 4,
+                  maxWidth: "calc(100% - 16px)",
+                  padding: "3.5px 10px",
+                  borderRadius: 999,
+                  border: "1px solid rgba(191,149,64,.4)",
+                  background: "rgba(255,253,246,.93)",
+                  color: colors.goldDark,
+                  fontSize: 10.5,
+                  fontWeight: 800,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
+              >
+                <Icon name="users" size={12} />
+                {faNumber(service.teacherCount, 0)} استاد
+              </span>
             </span>
-            <strong
-              style={{
-                display: "-webkit-box",
-                maxWidth: "100%",
-                overflow: "hidden",
-                WebkitBoxOrient: "vertical",
-                WebkitLineClamp: 2,
-                overflowWrap: "anywhere",
-                fontSize: 13.5,
-                fontWeight: 800,
-                lineHeight: 1.45,
-                color: colors.ink,
-              }}
-            >
-              {service.title}
-            </strong>
-            <span
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 4,
-                maxWidth: "100%",
-                overflow: "hidden",
-                whiteSpace: "nowrap",
-                fontSize: 11.5,
-                fontWeight: 800,
-                color: colors.goldDark,
-              }}
-            >
-              <Icon name="star" size={12} fill style={{ color: colors.gold }} />
-              {faNumber(service.teacherCount, 0)} استاد
+            <span style={{ display: "flex", flexDirection: "column", gap: 8, flex: 1, minWidth: 0, padding: "11px 12px 12px" }}>
+              <strong
+                style={{
+                  display: "-webkit-box",
+                  maxWidth: "100%",
+                  overflow: "hidden",
+                  WebkitBoxOrient: "vertical",
+                  WebkitLineClamp: 2,
+                  overflowWrap: "anywhere",
+                  fontSize: 14,
+                  fontWeight: 800,
+                  lineHeight: 1.45,
+                  color: colors.ink,
+                }}
+              >
+                {service.title}
+              </strong>
+              <span
+                style={{
+                  marginTop: "auto",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 4,
+                  padding: "7.5px 10px",
+                  border: "1.2px solid rgba(191,149,64,.55)",
+                  borderRadius: 10,
+                  background: "rgba(255,249,235,.72)",
+                  color: colors.goldDark,
+                  fontSize: 12,
+                  fontWeight: 800,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                }}
+              >
+                اساتید این خدمت
+                <Icon name="chevronL" size={13} />
+              </span>
             </span>
           </button>
         ))}
@@ -584,7 +614,7 @@ function FreeServicesList({
         <Skeleton style={{ width: 140, height: 18 }} />
         <div style={{ display: "flex", gap: 10, overflow: "hidden" }}>
           {Array.from({ length: 3 }).map((_, index) => (
-            <Skeleton key={index} style={{ width: wide ? 236 : 200, height: wide ? 177 : 150, borderRadius: 18, flex: "0 0 auto" }} />
+            <Skeleton key={index} style={{ width: wide ? 238 : 214, height: wide ? 230 : 210, borderRadius: 20, flex: "0 0 auto" }} />
           ))}
         </div>
       </section>
@@ -595,6 +625,7 @@ function FreeServicesList({
   return (
     <section aria-label="خدمات رایگان" style={{ display: "grid", gap: spacing.sm, minWidth: 0 }}>
       <SectionHeader title="خدمات رایگان" description="بدون هزینه — برای شروع مسیر قرآن" />
+      {/* ۰.۷.۵ — هویت دوم کارت خدمت (زیتونی/نعنایی): بنر تصویر + برچسب «رایگان» + دکمهٔ پر رزرو — ردیف اسکرول به چپ */}
       <div
         style={{
           display: "flex",
@@ -614,21 +645,18 @@ function FreeServicesList({
             className="vodda-tappable"
             aria-label={`${card.title} رایگان با ${card.teacherName}`}
             style={{
-              position: "relative",
-              width: wide ? 236 : 200,
-              aspectRatio: "4 / 3",
+              width: wide ? 238 : 214,
               flex: "0 0 auto",
               display: "flex",
               flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 7,
-              padding: "12px 10px 10px",
-              textAlign: "center",
-              border: "1.5px solid rgba(66,138,84,.4)",
-              borderRadius: 18,
-              background: colors.surface,
-              boxShadow: shadows.xs,
+              alignItems: "stretch",
+              gap: 0,
+              padding: 0,
+              textAlign: "start",
+              border: "1.4px solid rgba(66,138,84,.5)",
+              borderRadius: 20,
+              background: `linear-gradient(170deg, ${colors.olive50} 0%, ${colors.surface} 74%)`,
+              boxShadow: "0 8px 20px rgba(46,84,54,.12)",
               cursor: "pointer",
               fontFamily: typography.fontFamily,
               minWidth: 0,
@@ -637,91 +665,132 @@ function FreeServicesList({
               animationDelay: `${index * 50}ms`,
             }}
           >
-            <span
-              style={{
-                position: "absolute",
-                top: 10,
-                insetInlineStart: 10,
-                display: "inline-flex",
-                alignItems: "center",
-                padding: "3px 10px",
-                borderRadius: 999,
-                background: colors.olive600,
-                color: "#fff",
-                fontSize: 10,
-                fontWeight: 800,
-                whiteSpace: "nowrap",
-              }}
-            >
-              رایگان
-            </span>
+            {/* بنر تصویر موضوعی با ته‌رنگ سبز + برچسب رایگان + مدت جلسه */}
             <span
               aria-hidden="true"
               style={{
-                flex: "0 0 44px",
-                width: 44,
-                height: 44,
-                display: "grid",
-                placeItems: "center",
-                borderRadius: 14,
-                background: "linear-gradient(140deg, #eef4e6, #e8f3e2)",
-                color: colors.olive600,
-              }}
-            >
-              <Icon name="quran" size={22} />
-            </span>
-            <strong
-              style={{
-                display: "-webkit-box",
-                maxWidth: "100%",
+                position: "relative",
+                display: "block",
+                height: wide ? 92 : 86,
                 overflow: "hidden",
-                WebkitBoxOrient: "vertical",
-                WebkitLineClamp: 2,
-                overflowWrap: "anywhere",
-                fontSize: 13.5,
-                fontWeight: 800,
-                lineHeight: 1.45,
-                color: colors.ink,
+                background: colors.olive100,
               }}
             >
-              {card.title}
-            </strong>
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 6, maxWidth: "100%", minWidth: 0 }}>
-              <Avatar
-                name={card.teacherName}
-                src={avatarSrc(card.avatarUrl || undefined, undefined, uploadsOriginOf(runtime.apiBaseUrl))}
-                size={22}
+              <img
+                src={serviceImageSrc(card.imageKey)}
+                alt=""
+                loading="lazy"
+                style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+                onError={(event) => {
+                  event.currentTarget.style.display = "none";
+                }}
+              />
+              <span
+                aria-hidden="true"
+                style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(28,50,36,0) 42%, rgba(28,50,36,.32) 100%)" }}
               />
               <span
                 style={{
-                  maxWidth: 120,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
+                  position: "absolute",
+                  top: 8,
+                  insetInlineStart: 8,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 3,
+                  padding: "3.5px 10px",
+                  borderRadius: 999,
+                  background: colors.olive600,
+                  color: "#fff",
+                  fontSize: 10.5,
+                  fontWeight: 800,
                   whiteSpace: "nowrap",
-                  fontSize: 11.5,
-                  fontWeight: 700,
-                  color: colors.inkSecondary,
+                  boxShadow: "0 2px 8px rgba(46,84,54,.28)",
                 }}
               >
-                {card.teacherName}
+                <Icon name="gift" size={11} />
+                رایگان
               </span>
-              {card.tier ? <TierBadge tier={card.tier} size={13} /> : null}
+              <span
+                style={{
+                  position: "absolute",
+                  bottom: 8,
+                  insetInlineEnd: 8,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 3,
+                  padding: "3px 9px",
+                  borderRadius: 999,
+                  background: "rgba(255,255,255,.92)",
+                  border: `1px solid ${colors.olive100}`,
+                  color: colors.olive700,
+                  fontSize: 10,
+                  fontWeight: 800,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                <Icon name="clock" size={11} />
+                {card.duration > 0 ? `${faNumber(card.duration, 0)} دقیقه` : "جلسهٔ رایگان"}
+              </span>
             </span>
-            <span
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 4,
-                maxWidth: "100%",
-                overflow: "hidden",
-                whiteSpace: "nowrap",
-                fontSize: 11.5,
-                fontWeight: 800,
-                color: colors.goldDark,
-              }}
-            >
-              <Icon name="clock" size={12} />
-              {card.duration > 0 ? `${faNumber(card.duration, 0)} دقیقه` : "جلسهٔ رایگان"}
+            <span style={{ display: "flex", flexDirection: "column", gap: 8, flex: 1, minWidth: 0, padding: "11px 12px 12px" }}>
+              <strong
+                style={{
+                  display: "-webkit-box",
+                  maxWidth: "100%",
+                  overflow: "hidden",
+                  WebkitBoxOrient: "vertical",
+                  WebkitLineClamp: 2,
+                  overflowWrap: "anywhere",
+                  fontSize: 13.5,
+                  fontWeight: 800,
+                  lineHeight: 1.45,
+                  color: colors.ink,
+                }}
+              >
+                {card.title}
+              </strong>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 6, maxWidth: "100%", minWidth: 0 }}>
+                <Avatar
+                  name={card.teacherName}
+                  src={avatarSrc(card.avatarUrl || undefined, undefined, uploadsOriginOf(runtime.apiBaseUrl))}
+                  size={22}
+                />
+                <span
+                  style={{
+                    maxWidth: 110,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                    fontSize: 11.5,
+                    fontWeight: 700,
+                    color: colors.inkSecondary,
+                  }}
+                >
+                  {card.teacherName}
+                </span>
+                {card.tier ? <TierBadge tier={card.tier} size={13} /> : null}
+              </span>
+              <span
+                style={{
+                  marginTop: "auto",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 5,
+                  padding: "8.5px 10px",
+                  borderRadius: 11,
+                  background: colors.olive600,
+                  color: "#fff",
+                  fontSize: 12,
+                  fontWeight: 800,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  boxShadow: "0 4px 10px rgba(46,84,54,.22)",
+                }}
+              >
+                رزرو جلسهٔ رایگان
+                <Icon name="chevronL" size={13} />
+              </span>
             </span>
           </button>
         ))}
@@ -760,23 +829,34 @@ function RecommendedGrid({
   return (
     <section aria-label="اساتید پیشنهادی" style={{ display: "grid", gap: spacing.sm, minWidth: 0 }}>
       <SectionHeader title="اساتید پیشنهادی" description="چیدمان وزنی بر پایهٔ rank استاد — تازه با هر بازدید" />
-      {/* ۰.۷.۲ — ردیف اسکرول افقی به چپ؛ هیچ کارتی به سطر بعد نمی‌رود */}
+      {/* ۰.۷.۵ — کادر افقی کم‌رنگ و جذاب دور ردیف اساتید؛ اسکرول به چپ داخل خود کادر */}
       <div
         style={{
-          display: "flex",
-          alignItems: "stretch",
-          gap: 10,
-          overflowX: "auto",
-          overflowY: "hidden",
+          borderRadius: 22,
+          border: `1.2px solid ${colors.sand150}`,
+          background: `linear-gradient(180deg, ${colors.surface}, ${colors.surfaceWarm})`,
+          padding: 12,
+          boxShadow: "0 6px 20px rgba(46,54,34,.06)",
           minWidth: 0,
-          paddingBottom: 8,
         }}
       >
-        {teachers.map((teacher, index) => (
-          <div key={teacher.id} className="vodda-enter" style={{ width: 165, flex: "0 0 auto", minWidth: 0, animationDelay: `${index * 40}ms` }}>
-            <TeacherCard teacher={teacher} config={config} />
-          </div>
-        ))}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "stretch",
+            gap: 10,
+            overflowX: "auto",
+            overflowY: "hidden",
+            minWidth: 0,
+            paddingBottom: 6,
+          }}
+        >
+          {teachers.map((teacher, index) => (
+            <div key={teacher.id} className="vodda-enter" style={{ width: 165, flex: "0 0 auto", minWidth: 0, animationDelay: `${index * 40}ms` }}>
+              <TeacherCard teacher={teacher} config={config} />
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   );

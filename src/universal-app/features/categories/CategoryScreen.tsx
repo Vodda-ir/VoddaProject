@@ -210,8 +210,8 @@ export function CategoryScreen({ config }: CategoryScreenProps) {
 
       <div style={{ ...typography.bodySmall, color: colors.inkMuted }}>
         {activeTopicId > 0 && category
-          ? `فقط اساتیدِ «${category.topics.find((topic) => topic.id === activeTopicId)?.title ?? ""}»`
-          : "اساتیدی که حداقل یکی از زیردسته‌های این دسته را تدریس می‌کنند"}
+          ? `فقط اساتیدِ «${category.topics.find((topic) => topic.id === activeTopicId)?.title ?? ""}» — کارت هر استاد را بزنید تا جلسهٔ آنلاین رزرو کنید`
+          : "اساتیدی که حداقل یکی از زیردسته‌های این دسته را تدریس می‌کنند — کارت هر استاد را بزنید تا جلسهٔ آنلاین رزرو کنید"}
         {" · "}
         {visibleTeachers.length} استاد
       </div>
@@ -224,17 +224,28 @@ export function CategoryScreen({ config }: CategoryScreenProps) {
           action={activeTopicId > 0 ? <Button variant="secondary" onClick={() => setActiveTopicId(0)}>نمایش همهٔ زیردسته‌ها</Button> : undefined}
         />
       ) : (
+        /* ۰.۷.۵ — کادر کم‌رنگ و جذاب دور شبکهٔ اساتید همین دسته */
         <div
           style={{
-            display: "grid",
-            gridTemplateColumns: threeCol ? "repeat(3, minmax(0,1fr))" : "repeat(2, minmax(0,1fr))",
-            gap: 10,
-            minWidth: 0,
+            borderRadius: 22,
+            border: `1.2px solid ${colors.sand150}`,
+            background: `linear-gradient(180deg, ${colors.surface}, ${colors.surfaceWarm})`,
+            padding: 12,
+            boxShadow: "0 6px 20px rgba(46,54,34,.06)",
           }}
         >
-          {visibleTeachers.map((teacher) => (
-            <TeacherCard key={teacher.id} teacher={teacher} config={config} />
-          ))}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: threeCol ? "repeat(3, minmax(0,1fr))" : "repeat(2, minmax(0,1fr))",
+              gap: 10,
+              minWidth: 0,
+            }}
+          >
+            {visibleTeachers.map((teacher) => (
+              <TeacherCard key={teacher.id} teacher={teacher} config={config} />
+            ))}
+          </div>
         </div>
       )}
     </section>

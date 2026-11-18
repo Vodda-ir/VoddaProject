@@ -458,8 +458,9 @@ export function VerseOfDayCard() {
 
 /* ═════════ ۱.ب.۳ — خانه‌های شش‌گانهٔ دسته‌بندی (وب) ═════════ */
 
-/* ۰.۷.۳ — دسته‌بندی موضوعات قرآنی: همهٔ دسته‌ها و تمام زیردسته‌ها داخل یک کادر حاشیه‌دار واحد.
-   خانه‌های کوچک‌تر با متن کامل (بدون بریدگی) — کلیک روی خانه = فیلتر دسته، کلیک روی چیپ زیردسته = فیلتر همان موضوع. */
+/* ۰.۷.۵ — ناوبری سلسله‌مراتبی دسته‌بندی:
+   کلیک روی دسته → صفحهٔ /categories/:slug (زیردسته‌های همان دسته با تصویر موضوعی)
+   کلیک روی زیردسته → صفحهٔ اساتید همان خدمت + رزرو جلسهٔ آنلاین (/services/:id/teachers). */
 export function CategoryTiles({ categories = [] as CatalogCategory[], teachers = [] as Parameters<typeof buildCategoryTiles>[0] }: { categories?: CatalogCategory[]; teachers?: Parameters<typeof buildCategoryTiles>[0] }) {
   const tiles: CategoryTile[] = buildCategoryTiles(teachers, categories, 6);
 
@@ -476,15 +477,15 @@ export function CategoryTiles({ categories = [] as CatalogCategory[], teachers =
         <SectionTitle
           kicker="مسیرهای قرآنی"
           title="دسته‌بندی موضوعات قرآنی"
-          sub="همهٔ دسته‌ها و زیردسته‌های رسمی وُدّا در یک نگاه — هر خانه فقط اساتید همان دسته را نشان می‌دهد."
+          sub="روی هر دسته بزنید تا وارد زیردسته‌هایش شوید؛ سپس جلسهٔ آنلاین همان موضوع را رزرو کنید."
         />
         <div className="vodda-catalog-panel">
           {groups.map(({ tile, topics }, index) => (
             <div key={tile.name} className="vcp-tile" style={{ animationDelay: `${index * 40}ms` }}>
               <Link
-                href={`/search?category=${encodeURIComponent(tile.name)}`}
+                href={`/categories/${encodeURIComponent(tile.name)}`}
                 className="vcp-head"
-                aria-label={`${tile.name} — ${formatFaNumber(tile.count)} استاد فعال`}
+                aria-label={`ورود به زیردسته‌های ${tile.name} — ${formatFaNumber(tile.count)} استاد فعال`}
               >
                 <span className="vcp-icon" aria-hidden="true">
                   {/* تصویر خیالی ≤۴۰px — خطا → آیکون quran جایش می‌نشیند */}
@@ -508,8 +509,9 @@ export function CategoryTiles({ categories = [] as CatalogCategory[], teachers =
                   {topics.map((topic) => (
                     <Link
                       key={topic.id}
-                      href={`/search?category=${encodeURIComponent(tile.name)}&official_service_id=${topic.id}`}
+                      href={`/services/${topic.id}/teachers`}
                       className="vcp-chip"
+                      aria-label={`اساتید و رزرو جلسهٔ آنلاین ${topic.title}`}
                     >
                       {topic.title}
                     </Link>
@@ -696,9 +698,11 @@ export function FeaturedTeachers({ teachers, unavailable = false }: { teachers: 
         </div>
 
         {visible.length ? (
-          /* ۰.۷.۲ — کارت‌های استاد در ردیف افقی به سمت چپ اسکرول می‌شوند؛ هیچ کارتی به سطر بعد نمی‌رود */
-          <div className="vodda-hscroll vodda-teacher-row">
-            {visible.slice(0, 10).map((teacher) => <WebTeacherCard key={teacher.id} teacher={teacher} />)}
+          /* ۰.۷.۵ — کادر افقی کم‌رنگ و جذاب دور ردیف اساتید (مثل اسنپ‌داکتر)؛ کارت‌ها داخل آن به چپ اسکرول می‌شوند */
+          <div className="vodda-teachers-frame">
+            <div className="vodda-hscroll vodda-teacher-row">
+              {visible.slice(0, 10).map((teacher) => <WebTeacherCard key={teacher.id} teacher={teacher} />)}
+            </div>
           </div>
         ) : (
           <div className="landing-empty-state" role="status">
@@ -714,6 +718,8 @@ export function FeaturedTeachers({ teachers, unavailable = false }: { teachers: 
 
 /* ═════════ ۱.ب.۶ — خدمات پرکاربرد (وب) ═════════ */
 
+/* ۰.۷.۵ — هویت اول کارت خدمت (طلایی/گرم): بنر تصویر موضوعی تمام‌عرض + چیپ شمارش استاد
+   + عنوان + دکمهٔ «اساتید این خدمت» — کمی بزرگ‌تر از قبل. */
 export function PopularServices({ services }: { services: PopularServiceCard[] }) {
   if (services.length === 0) return null;
   return (
@@ -722,32 +728,38 @@ export function PopularServices({ services }: { services: PopularServiceCard[] }
         <SectionTitle
           kicker="پرکاربردترین‌ها"
           title="خدمات پرمخاطب وُدّا"
-          sub="۸ خدمتی که بیشترین استاد در وُدّا ارائه می‌دهند — کلیک = فقط اساتید همان خدمت."
+          sub="۸ خدمت پرطرفدار با تصویر موضوعی — کلیک = ورود به اساتید همان خدمت و رزرو جلسه."
         />
-        {/* ۰.۷.۲ — ServiceCard دوبرابرشده (نسبت 4/3، آیکون ۳۲px، متای طلایی) در ردیف اسکرول افقی به چپ */}
+        {/* ۰.۷.۵ — هویت طلایی در ردیف اسکرول افقی به چپ */}
         <div className="vodda-hscroll vodda-service-row">
           {services.map((service, index) => (
             <Link
               key={service.id}
               href={`/services/${service.id}/teachers`}
-              className="vodda-service-card"
+              className="vodda-service-card vsc-popular"
               style={{ animationDelay: `${index * 50}ms` }}
               aria-label={`${service.title} — ${formatFaNumber(service.teacherCount)} استاد`}
             >
-              <span className="vsc-art" aria-hidden="true">
+              <span className="vsc-banner" aria-hidden="true">
                 <img
                   src={serviceImageSrc(service.imageKey)}
                   alt=""
-                  width={32}
-                  height={32}
+                  width={252}
+                  height={118}
                   loading="lazy"
                   onError={(event) => { event.currentTarget.style.display = 'none'; }}
                 />
+                <span className="vsc-banner-tint" />
+                <span className="vsc-count-chip">
+                  <Icon name="users" size={12} />
+                  {formatFaNumber(service.teacherCount)} استاد
+                </span>
               </span>
-              <strong className="vsc-title">{service.title}</strong>
-              <span className="vsc-meta">
-                <Icon name="star" size={12} fill style={{ color: 'var(--gold, #b8952f)' }} />
-                {formatFaNumber(service.teacherCount)} استاد
+              <span className="vsc-body">
+                <strong className="vsc-title">{service.title}</strong>
+                <span className="vsc-foot">
+                  <span className="vsc-cta">اساتید این خدمت<Icon name="arrowL" size={13} /></span>
+                </span>
               </span>
             </Link>
           ))}
@@ -759,7 +771,8 @@ export function PopularServices({ services }: { services: PopularServiceCard[] }
 
 /* ═════════ ۱.ب.۴ — خدمات رایگان (وب) ═════════ */
 
-/* ۰.۷.۲ — کارت خدمت رایگان: همان قالب کارت خدمات (4/3) + برچسب سبز «رایگان» — در ردیف اسکرول افقی */
+/* ۰.۷.۵ — هویت دوم کارت خدمت (زیتونی/نعنایی): بنر تصویر با ته‌رنگ سبز + برچسب «رایگان»
+   + ردیف استاد + دکمهٔ پر «رزرو جلسهٔ رایگان» — شکل و رنگ کاملاً جدا از هویت طلایی. */
 export function FreeServiceCardRow({ card }: { card: FreeServiceCard }) {
   return (
     <Link
@@ -767,22 +780,40 @@ export function FreeServiceCardRow({ card }: { card: FreeServiceCard }) {
       className="vodda-service-card vsc-free"
       aria-label={`${card.title} رایگان با ${card.teacherName}`}
     >
-      <span className="vsc-freebadge">رایگان</span>
-      <span className="vsc-art" aria-hidden="true"><Icon name="quran" size={22} /></span>
-      <strong className="vsc-title">{card.title}</strong>
-      <span className="vsc-teacher">
-        <Avatar
-          size={22}
-          imageUrl={avatarUrl(card.avatarUrl || undefined)}
-          name={card.teacherName}
-          alt={card.teacherName}
+      <span className="vsc-banner vsc-banner-free" aria-hidden="true">
+        <img
+          src={serviceImageSrc(card.imageKey)}
+          alt=""
+          width={236}
+          height={98}
+          loading="lazy"
+          onError={(event) => { event.currentTarget.style.display = 'none'; }}
         />
-        <span className="vsc-teacher-name">{card.teacherName}</span>
-        {card.tier ? <TierSeal tier={card.tier} size={13} /> : null}
+        <span className="vsc-banner-tint vsc-banner-tint-free" />
+        <span className="vsc-freebadge">
+          <Icon name="gift" size={11} />
+          رایگان
+        </span>
       </span>
-      <span className="vsc-meta">
-        <Icon name="clock" size={12} />
-        {card.duration > 0 ? `${formatFaNumber(card.duration)} دقیقه` : 'جلسهٔ رایگان'}
+      <span className="vsc-body">
+        <strong className="vsc-title">{card.title}</strong>
+        <span className="vsc-teacher">
+          <Avatar
+            size={24}
+            imageUrl={avatarUrl(card.avatarUrl || undefined)}
+            name={card.teacherName}
+            alt={card.teacherName}
+          />
+          <span className="vsc-teacher-name">{card.teacherName}</span>
+          {card.tier ? <TierSeal tier={card.tier} size={13} /> : null}
+        </span>
+        <span className="vsc-foot">
+          <span className="vsc-duration">
+            <Icon name="clock" size={12} />
+            {card.duration > 0 ? `${formatFaNumber(card.duration)} دقیقه` : 'جلسهٔ رایگان'}
+          </span>
+          <span className="vsc-cta vsc-cta-free">رزرو جلسهٔ رایگان<Icon name="arrowL" size={13} /></span>
+        </span>
       </span>
     </Link>
   );
@@ -815,10 +846,12 @@ export function FreeServicesSection({ services }: { services: FreeServiceCard[] 
 
 function RecommendedSkeleton() {
   return (
-    <div className="vodda-hscroll vodda-teacher-row" aria-label="در حال بارگذاری پیشنهادها">
-      {Array.from({ length: 5 }).map((_, index) => (
-        <div key={index} className="landing-recommended-skel" />
-      ))}
+    <div className="vodda-teachers-frame">
+      <div className="vodda-hscroll vodda-teacher-row" aria-label="در حال بارگذاری پیشنهادها">
+        {Array.from({ length: 5 }).map((_, index) => (
+          <div key={index} className="landing-recommended-skel" />
+        ))}
+      </div>
     </div>
   );
 }
@@ -862,8 +895,10 @@ export function RecommendedTeachers({ limit = 7 }: { limit?: number }) {
             <p>پس از تکمیل پروفایل استادان، چیدمان پیشنهادی این‌جا نمایش داده می‌شود.</p>
           </div>
         ) : (
-          <div className="vodda-hscroll vodda-teacher-row">
-            {teachers.map((teacher) => <WebTeacherCard key={teacher.id} teacher={teacher} />)}
+          <div className="vodda-teachers-frame">
+            <div className="vodda-hscroll vodda-teacher-row">
+              {teachers.map((teacher) => <WebTeacherCard key={teacher.id} teacher={teacher} />)}
+            </div>
           </div>
         )}
       </div>

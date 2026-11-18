@@ -6609,22 +6609,47 @@ a.blog-card:hover .blog-card-action {
   color: var(--olive-700);
 }
 
-/* ═══ ۰.۷.۲ — ServiceCard واحد: نسبت 4/3، دوبرابر کارت قبلی، آیکون ۳۲px، متای طلایی، hover scale 1.05 ═══ */
+/* ═══ ۰.۷.۵ — کادر افقی کم‌رنگ و جذاب دور ردیف اساتید (مثل اسنپ‌داکتر) ═══
+   کارت‌های سفید اسنپ‌داکتری روی زمینهٔ کرم/زیتونیِ خیلی کم‌رنگ می‌نشینند تا
+   ردیف اساتید چشم‌نواز شود؛ اسکرول افقی به چپ داخل خود کادر حفظ می‌شود. */
+.vodda-teachers-frame {
+  position: relative;
+  border: 1.5px solid var(--sand-150);
+  border-radius: 26px;
+  background:
+    radial-gradient(120% 150% at 100% 0%, rgba(147, 161, 114, .14), transparent 55%),
+    radial-gradient(120% 150% at 0% 100%, rgba(191, 149, 64, .12), transparent 55%),
+    linear-gradient(180deg, #fcfdf8 0%, #f4f2e7 100%);
+  padding: 14px 12px 4px;
+  box-shadow: 0 8px 26px rgba(46, 54, 34, .06), inset 0 1px 0 rgba(255, 255, 255, .8);
+  overflow: hidden;
+}
+.vodda-teachers-frame::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  inset-inline: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, rgba(147, 161, 114, .5), rgba(191, 149, 64, .5), transparent);
+  pointer-events: none;
+}
+.vodda-teachers-frame .vodda-hscroll { padding-inline: 4px; }
+
+/* ═══ ۰.۷.۵ — ServiceCard با دو هویت جداگانه: بنر تصویر موضوعی + بدنه ═══
+   هویت اول (vsc-popular): طلایی/گرم — خدمات پرکاربرد.
+   هویت دوم (vsc-free): زیتونی/نعنایی — خدمات رایگان با برچسب «رایگان».
+   هر دو کمی بزرگ‌تر از قبل و با تصویر زیبای متناسب با موضوع. */
 .vodda-service-card {
   position: relative;
-  width: 232px;
-  aspect-ratio: 4 / 3;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  padding: 14px 12px;
-  border: 1.5px solid rgba(147, 161, 114, .45);
-  border-radius: 18px;
-  background: #fff;
-  box-shadow: 0 3px 12px rgba(46, 54, 34, .05);
-  text-align: center;
+  width: 252px;
+  padding: 0;
+  border: 1.5px solid rgba(191, 149, 64, .45);
+  border-radius: 20px;
+  background: linear-gradient(180deg, #fffdf6 0%, #fff 72%);
+  box-shadow: 0 6px 18px rgba(139, 104, 31, .1);
+  text-align: start;
   text-decoration: none;
   color: inherit;
   min-width: 0;
@@ -6634,23 +6659,60 @@ a.blog-card:hover .blog-card-action {
 }
 .vodda-service-card:hover,
 .vodda-service-card:focus-visible {
-  transform: scale(1.05);
-  border-color: rgba(147, 161, 114, .8);
-  box-shadow: 0 0 16px rgba(147, 161, 114, .35), 0 8px 20px rgba(46, 54, 34, .1);
+  transform: scale(1.04);
+  border-color: rgba(191, 149, 64, .8);
+  box-shadow: 0 0 16px rgba(191, 149, 64, .28), 0 10px 24px rgba(46, 54, 34, .12);
   z-index: 2;
 }
-.vsc-art {
-  flex: 0 0 44px;
-  width: 44px;
-  height: 44px;
-  display: grid;
-  place-items: center;
-  border-radius: 14px;
+/* بنر تصویر موضوعی — تصویرسازی باندل‌شدهٔ /avatars/services/srv-*.png */
+.vsc-banner {
+  position: relative;
+  display: block;
+  height: 118px;
+  overflow: hidden;
   background: linear-gradient(140deg, #f2f5ea, #f7f0dc);
-  color: var(--olive-600);
   pointer-events: none;
 }
-.vsc-art img { width: 32px; height: 32px; max-width: 32px; max-height: 32px; object-fit: contain; }
+.vsc-banner img {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  object-fit: cover;
+  display: block;
+}
+.vsc-banner-tint {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(46, 54, 34, 0) 42%, rgba(46, 54, 34, .3) 100%);
+}
+.vsc-count-chip {
+  position: absolute;
+  bottom: 8px;
+  inset-inline-start: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: calc(100% - 16px);
+  padding: 3.5px 10px;
+  border: 1px solid rgba(191, 149, 64, .4);
+  border-radius: 999px;
+  background: rgba(255, 253, 246, .93);
+  color: var(--gold-dark, #8b681f);
+  font-size: 10.5px;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.vsc-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  padding: 11px 12px 12px;
+}
 .vsc-title {
   display: -webkit-box;
   max-width: 100%;
@@ -6658,41 +6720,72 @@ a.blog-card:hover .blog-card-action {
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   overflow-wrap: anywhere;
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 800;
   line-height: 1.45;
   color: var(--ink, #2e3622);
 }
-.vsc-meta {
+.vsc-foot {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+.vsc-cta {
+  flex: 1;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  max-width: 100%;
-  overflow: hidden;
-  white-space: nowrap;
-  font-size: 11.5px;
-  font-weight: 800;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 7.5px 10px;
+  border: 1.2px solid rgba(191, 149, 64, .55);
+  border-radius: 10px;
+  background: rgba(255, 249, 235, .72);
   color: var(--gold-dark, #8b681f);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: background .16s ease, color .16s ease, border-color .16s ease;
 }
-/* کارت رایگان — همان قالب + برچسب سبز و ردیف استاد */
-.vsc-free { border-color: rgba(66, 138, 84, .4); }
+.vodda-service-card:hover .vsc-cta,
+.vodda-service-card:focus-visible .vsc-cta {
+  background: linear-gradient(180deg, #c9a24b, #b08a35);
+  border-color: transparent;
+  color: #fff;
+}
+/* ── هویت دوم: زیتونی/نعنایی — خدمات رایگان ── */
+.vsc-free {
+  width: 238px;
+  border-color: rgba(66, 138, 84, .45);
+  background: linear-gradient(180deg, #f6faf3 0%, #fff 72%);
+  box-shadow: 0 6px 18px rgba(46, 84, 54, .1);
+}
 .vsc-free:hover,
 .vsc-free:focus-visible {
-  border-color: rgba(66, 138, 84, .75);
-  box-shadow: 0 0 16px rgba(66, 138, 84, .3), 0 8px 20px rgba(46, 54, 34, .1);
+  border-color: rgba(66, 138, 84, .8);
+  box-shadow: 0 0 16px rgba(66, 138, 84, .26), 0 10px 24px rgba(46, 54, 34, .12);
 }
+.vsc-banner-free { height: 96px; }
+.vsc-banner-tint-free { background: linear-gradient(180deg, rgba(28, 50, 36, 0) 42%, rgba(28, 50, 36, .32) 100%); }
 .vsc-freebadge {
   position: absolute;
-  inset-block-start: 10px;
-  inset-inline-start: 10px;
-  padding: 3px 10px;
+  inset-block-start: 8px;
+  inset-inline-start: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3.5px 10px;
   border-radius: 999px;
   background: var(--olive-600);
   color: #fff;
-  font-size: 10px;
+  font-size: 10.5px;
   font-weight: 800;
   letter-spacing: .2px;
-  box-shadow: 0 2px 8px rgba(46, 84, 54, .25);
+  box-shadow: 0 2px 8px rgba(46, 84, 54, .28);
 }
 .vsc-teacher {
   display: inline-flex;
@@ -6705,14 +6798,87 @@ a.blog-card:hover .blog-card-action {
   color: var(--ink-2, #5a5648);
 }
 .vsc-teacher-name {
-  max-width: 130px;
+  max-width: 110px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-@media (max-width: 639px) {
-  .vodda-service-card { width: 196px; }
+.vsc-duration {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--olive-700, #5e6e43);
+  white-space: nowrap;
 }
+.vsc-cta-free {
+  border-color: transparent;
+  background: linear-gradient(180deg, var(--olive-600, #7d9060), var(--olive-700, #5e6e43));
+  color: #fff;
+  box-shadow: 0 4px 10px rgba(46, 84, 54, .22);
+}
+.vodda-service-card:hover .vsc-cta-free,
+.vodda-service-card:focus-visible .vsc-cta-free {
+  background: linear-gradient(180deg, var(--olive-700, #5e6e43), #4c5a36);
+  color: #fff;
+}
+@media (max-width: 639px) {
+  .vodda-service-card { width: 226px; }
+  .vodda-service-card.vsc-free { width: 214px; }
+  .vsc-banner { height: 106px; }
+  .vsc-banner-free { height: 88px; }
+}
+
+/* ═══ ۰.۷.۵ — صفحهٔ دسته‌بندی (/categories/:slug) ═══ */
+.vcat-head { display: grid; gap: 18px; margin: 26px 0 8px; }
+.vcat-hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 18px;
+  border: 1.5px solid var(--sand-150);
+  border-radius: 24px;
+  background:
+    radial-gradient(120% 160% at 100% 0%, rgba(191, 149, 64, .12), transparent 55%),
+    linear-gradient(150deg, #fff 0%, #f7f4ea 100%);
+  box-shadow: 0 6px 22px rgba(46, 54, 34, .06);
+  overflow: hidden;
+  min-width: 0;
+}
+.vcat-hero-img {
+  flex: 0 0 auto;
+  width: 88px;
+  height: 88px;
+  border-radius: 20px;
+  object-fit: cover;
+  border: 2px solid rgba(191, 149, 64, .4);
+  box-shadow: 0 4px 12px rgba(139, 104, 31, .18);
+}
+.vcat-hero-text { display: grid; gap: 4px; min-width: 0; flex: 1; }
+.vcat-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--olive-600, #7d9060);
+  font-size: 11.5px;
+  font-weight: 800;
+}
+.vcat-title { margin: 0; font-size: 21px; font-weight: 900; color: var(--ink, #2e3622); line-height: 1.4; }
+.vcat-sub { margin: 0; color: var(--ink-3, #8a8570); font-size: 12.5px; line-height: 1.7; }
+.vcat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(216px, 1fr));
+  gap: 12px;
+}
+.vcat-grid .vodda-service-card { width: auto; }
+.vcat-grid .vsc-banner { height: 96px; }
+.vcat-grid .vsc-title { font-size: 13.5px; }
+/* تنوع ظریف ته‌رنگ بنر زیردسته‌ها تا گرید یکنواخت نشود */
+.vcat-grid .vodda-service-card:nth-child(3n+2) .vsc-banner-tint { background: linear-gradient(180deg, rgba(28, 50, 36, 0) 42%, rgba(28, 50, 36, .26) 100%); }
+.vcat-grid .vodda-service-card:nth-child(3n) .vsc-banner-tint { background: linear-gradient(180deg, rgba(87, 66, 16, 0) 42%, rgba(87, 66, 16, .24) 100%); }
 
 /* ═══ ۰.۷.۴ — نتایج جستجو: شبکهٔ کارت‌های اسنپ‌داکتری (کارت ۱۶۵px با کشش سلول) ═══ */
 .web-results-list {
@@ -6725,19 +6891,37 @@ a.blog-card:hover .blog-card-action {
 
 /* اسکلت در حالت‌های جدید */
 .web-results-list.web-search-loading > div { min-height: 200px; width: 100%; border-radius: 12px; }
-.vodda-service-row > .landing-recommended-skel { width: 232px; aspect-ratio: 4 / 3; border-radius: 18px; }
+.vodda-service-row > .landing-recommended-skel { width: 252px; height: 228px; border-radius: 20px; }
 
-/* دارک‌مود — پنل دسته‌ها، کارت خدمت، ردیف‌ها */
+/* دارک‌مود — پنل دسته‌ها، کارت خدمت، کادر اساتید */
 @media (prefers-color-scheme: dark) {
   .vodda-catalog-panel { background: rgba(255, 255, 255, .04); border-color: rgba(214, 220, 196, .16); box-shadow: none; }
   .vcp-tile { background: linear-gradient(150deg, rgba(147, 161, 114, .08), rgba(191, 149, 64, .08)); border-color: rgba(214, 220, 196, .14); }
   .vcp-title { color: #e6ebd8; }
   .vcp-chip { background: rgba(255, 255, 255, .05); border-color: rgba(214, 220, 196, .18); color: #cfd6bc; }
   .vcp-chip:hover { background: rgba(147, 161, 114, .18); color: #e6ebd8; }
+  .vodda-teachers-frame {
+    background:
+      radial-gradient(120% 150% at 100% 0%, rgba(147, 161, 114, .1), transparent 55%),
+      radial-gradient(120% 150% at 0% 100%, rgba(191, 149, 64, .08), transparent 55%),
+      linear-gradient(180deg, rgba(255, 255, 255, .05), rgba(255, 255, 255, .02));
+    border-color: rgba(214, 220, 196, .16);
+    box-shadow: none;
+  }
   .vodda-service-card { background: rgba(255, 255, 255, .04); border-color: rgba(214, 220, 196, .16); box-shadow: none; }
   .vodda-service-card:hover, .vodda-service-card:focus-visible { box-shadow: 0 10px 24px rgba(0, 0, 0, .4); }
+  .vsc-banner { background: linear-gradient(140deg, rgba(147, 161, 114, .12), rgba(191, 149, 64, .12)); }
+  .vsc-count-chip { background: rgba(20, 26, 14, .72); border-color: rgba(214, 220, 196, .22); color: #e2c98a; }
   .vsc-title { color: #e6ebd8; }
+  .vsc-cta { background: rgba(191, 149, 64, .1); color: #e2c98a; border-color: rgba(191, 149, 64, .35); }
+  .vodda-service-card:hover .vsc-cta, .vodda-service-card:focus-visible .vsc-cta { color: #1c2110; background: #e2c98a; border-color: transparent; }
+  .vsc-free { background: rgba(255, 255, 255, .04); }
   .vsc-teacher { color: #c9d1b4; }
+  .vsc-duration { color: #a9bb8e; }
+  .vsc-cta-free { background: linear-gradient(180deg, var(--olive-600, #7d9060), var(--olive-700, #5e6e43)); color: #fff; }
+  .vcat-hero { background: linear-gradient(150deg, rgba(255, 255, 255, .05), rgba(255, 255, 255, .02)); border-color: rgba(214, 220, 196, .16); box-shadow: none; }
+  .vcat-title { color: #e6ebd8; }
+  .vcat-sub { color: #aab3a0; }
   .web-search-fields label { background: rgba(255, 255, 255, .04); border-color: rgba(214, 220, 196, .16); }
 }
 
@@ -6747,7 +6931,9 @@ a.blog-card:hover .blog-card-action {
 
 /* عرض خیلی باریک ۳۲۰px */
 @media (max-width: 359px) {
-  .vodda-service-card { width: 178px; }
+  .vodda-service-card { width: 208px; }
+  .vodda-service-card.vsc-free { width: 198px; }
   .vcp-title { font-size: 12.5px; }
   .vcp-chip { font-size: 10px; }
+  .vcat-hero-img { width: 72px; height: 72px; }
 }
