@@ -56,6 +56,7 @@ import {
 } from "../notifications/api";
 import { searchTeachers, fetchRecommendedTeachers } from "../teachers/api";
 import { TeacherCard } from "../teachers/TeacherCard";
+import { TopTeacherShowcase } from "./TopTeacherShowcase";
 import { TierBadge } from "../teachers/TierBadge";
 import type { Teacher } from "../teachers/types";
 import { nearestCity } from "@/lib/cities";
@@ -364,10 +365,10 @@ function TopTeachersSection({
     return (
       <section aria-label="در حال بارگذاری اساتید برتر" style={{ display: "grid", gap: 12 }}>
         <Skeleton style={{ width: 130, height: 18 }} />
-        {/* ۰.۷.۲ — ردیف افقی */}
+        {/* ۰.۹.۰ — ردیف افقی؛ کارت‌های مربعی نمایشی */}
         <div style={{ display: "flex", gap: 10, overflow: "hidden" }}>
           {Array.from({ length: 4 }).map((_, index) => (
-            <Skeleton key={index} style={{ width: 165, minHeight: 200, borderRadius: 12, flex: "0 0 auto" }} />
+            <Skeleton key={index} style={{ width: wide ? 226 : 200, minHeight: 340, borderRadius: 20, flex: "0 0 auto" }} />
           ))}
         </div>
       </section>
@@ -378,14 +379,14 @@ function TopTeachersSection({
   return (
     <section aria-label="اساتید برتر" style={{ display: "grid", gap: spacing.sm, minWidth: 0 }}>
       <SectionHeader title="اساتید برتر" action="مشاهدهٔ همه" onAction={() => navigateApp("/search", config)} />
-      {/* ۰.۷.۵ — کادر افقی کم‌رنگ و جذاب دور ردیف اساتید (مثل اسنپ‌داکتر)؛ کارت‌ها به چپ اسکرول می‌شوند */}
+      {/* ۰.۹.۰ — قاب هم‌خانوادهٔ نئونی دور ردیف اساتید برتر؛ کارت‌های مربعی ۱:۱ به چپ اسکرول می‌شوند */}
       <div
         style={{
           borderRadius: 22,
-          border: `1.2px solid ${colors.sand150}`,
+          border: `1.2px solid ${colors.goldSoft}`,
           background: `linear-gradient(180deg, ${colors.surface}, ${colors.surfaceWarm})`,
           padding: 12,
-          boxShadow: "0 6px 20px rgba(46,54,34,.06)",
+          boxShadow: "0 6px 20px rgba(46,54,34,.06), 0 0 12px rgba(191,149,64,.10)",
           minWidth: 0,
         }}
       >
@@ -401,8 +402,8 @@ function TopTeachersSection({
           }}
         >
           {teachers.slice(0, 8).map((teacher, index) => (
-            <div key={teacher.id} className="vodda-enter" style={{ width: 165, flex: "0 0 auto", minWidth: 0, animationDelay: `${index * 40}ms` }}>
-              <TeacherCard teacher={teacher} config={config} />
+            <div key={teacher.id} className="vodda-enter" style={{ width: wide ? 226 : 200, flex: "0 0 auto", minWidth: 0, animationDelay: `${index * 40}ms` }}>
+              <TopTeacherShowcase teacher={teacher} config={config} wide={wide} />
             </div>
           ))}
         </div>
@@ -441,18 +442,28 @@ function PopularServicesGrid({
   return (
     <section aria-label="خدمات پرکاربرد" style={{ display: "grid", gap: spacing.sm, minWidth: 0 }}>
       <SectionHeader title="خدمات پرکاربرد" />
-      {/* ۰.۷.۵ — هویت اول کارت خدمت (طلایی/گرم): بنر تصویر موضوعی + چیپ شمارش + دکمهٔ CTA — ردیف اسکرول به چپ */}
+      {/* ۰.۹.۱ — قاب هم‌خانوادهٔ نئونی دور ردیف خدمات پرکاربرد + کارت‌های هویت طلایی با چیپ رتبه */}
       <div
         style={{
-          display: "flex",
-          alignItems: "stretch",
-          gap: 10,
-          overflowX: "auto",
-          overflowY: "hidden",
+          borderRadius: 22,
+          border: `1.2px solid ${colors.goldSoft}`,
+          background: `linear-gradient(180deg, ${colors.surface}, ${colors.surfaceWarm})`,
+          padding: 12,
+          boxShadow: "0 6px 20px rgba(46,54,34,.06), 0 0 12px rgba(191,149,64,.10)",
           minWidth: 0,
-          paddingBottom: 8,
         }}
       >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "stretch",
+            gap: 10,
+            overflowX: "auto",
+            overflowY: "hidden",
+            minWidth: 0,
+            paddingBottom: 8,
+          }}
+        >
         {services.map((service, index) => (
           <button
             key={service.id}
@@ -469,10 +480,10 @@ function PopularServicesGrid({
               gap: 0,
               padding: 0,
               textAlign: "start",
-              border: "1.4px solid rgba(191,149,64,.45)",
+              border: "1.4px solid rgba(191,149,64,.6)",
               borderRadius: 20,
               background: `linear-gradient(180deg, #fffdf6 0%, ${colors.surface} 72%)`,
-              boxShadow: "0 6px 18px rgba(139,104,31,.1)",
+              boxShadow: "0 6px 18px rgba(139,104,31,.10), 0 0 12px rgba(191,149,64,.15)",
               cursor: "pointer",
               fontFamily: typography.fontFamily,
               minWidth: 0,
@@ -482,7 +493,7 @@ function PopularServicesGrid({
               animationDelay: `${index * 50}ms`,
             }}
           >
-            {/* بنر تصویر موضوعی + چیپ شمارش استاد */}
+            {/* بنر تصویر موضوعی + چیپ رتبهٔ پرکاربرد + چیپ شمارش استاد */}
             <span
               aria-hidden="true"
               style={{
@@ -506,6 +517,28 @@ function PopularServicesGrid({
                 aria-hidden="true"
                 style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(46,54,34,0) 42%, rgba(46,54,34,.3) 100%)" }}
               />
+              {/* چیپ رتبهٔ پرکاربرد — دایرهٔ طلایی با شمارهٔ فارسی */}
+              <span
+                aria-hidden="true"
+                style={{
+                  position: "absolute",
+                  top: 8,
+                  insetInlineStart: 8,
+                  width: 24,
+                  height: 24,
+                  display: "grid",
+                  placeItems: "center",
+                  borderRadius: "50%",
+                  background: "linear-gradient(135deg, #bf9540, #d8b869)",
+                  border: "1.5px solid rgba(255,253,246,.85)",
+                  boxShadow: "0 2px 8px rgba(139,104,31,.3), 0 0 8px rgba(191,149,64,.35)",
+                  color: "#fffdf6",
+                  fontSize: 11.5,
+                  fontWeight: 900,
+                }}
+              >
+                {faNumber(index + 1, 0)}
+              </span>
               <span
                 style={{
                   position: "absolute",
@@ -556,14 +589,15 @@ function PopularServicesGrid({
                   justifyContent: "center",
                   gap: 4,
                   padding: "7.5px 10px",
-                  border: "1.2px solid rgba(191,149,64,.55)",
+                  border: 0,
                   borderRadius: 10,
-                  background: "rgba(255,249,235,.72)",
-                  color: colors.goldDark,
+                  background: "linear-gradient(135deg, #bf9540, #d8b869)",
+                  color: "#fffdf6",
                   fontSize: 12,
                   fontWeight: 800,
                   whiteSpace: "nowrap",
                   overflow: "hidden",
+                  boxShadow: "0 4px 12px rgba(191,149,64,.28)",
                 }}
               >
                 اساتید این خدمت
@@ -571,8 +605,9 @@ function PopularServicesGrid({
               </span>
             </span>
           </button>
-        ))}
-      </div>
+          ))}
+          </div>
+        </div>
     </section>
   );
 }

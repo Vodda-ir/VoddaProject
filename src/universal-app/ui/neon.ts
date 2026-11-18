@@ -34,3 +34,15 @@ export function neonDivider(vertical: boolean): CSSProperties {
 /* پس‌زمینهٔ سلول فعال در شبکه‌های نئونی — ته‌رنگ طلایی خیلی ملایم */
 export const neonCellActiveBackground =
   "linear-gradient(150deg, rgba(191,149,64,.10), rgba(191,149,64,.04))";
+
+/* حلقهٔ نئونی استاتیک برای کارت‌ها — برادر کوچک‌ترِ کادرهای نئونی؛
+ * برای کارت‌های عادی (بدون انیمیشن تنفس). کارت‌های ویژه (درجهٔ ۱) کلاس
+ * vodda-neon-gold را می‌گیرند که نسخهٔ نفس‌کشندهٔ همین زبان است. */
+export function neonRingStyle(borderRadius = 20): CSSProperties {
+  return {
+    border: "1.4px solid rgba(191,149,64,.55)",
+    borderRadius,
+    boxShadow:
+      "0 0 0 1px rgba(216,184,105,.22), 0 10px 24px rgba(46,54,34,.10), 0 0 14px rgba(191,149,64,.16)",
+  };
+}

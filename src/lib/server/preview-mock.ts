@@ -116,6 +116,8 @@ function mockTeacher(
     price60: services[0]?.price ?? 200_000,
     female,
     verified: true,
+    /* ۰.۹.۰ — دو استاد mock با درجهٔ ۱ تا قاب نئونی نفس‌کشنده در پیش‌نمایش دیده شود */
+    is_tier1: id === 1 || id === 4,
     available: true,
     tier,
     instant_enabled: id % 3 === 1,
