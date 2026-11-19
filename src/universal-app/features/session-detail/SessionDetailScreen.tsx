@@ -80,11 +80,12 @@ function canJoinVideo(detail: SessionDetailData): boolean {
   return Date.now() >= start - 10 * 60_000;
 }
 
-/** پایان جلسه از لحظهٔ آغاز رسمی مجاز است. */
+/** پایان جلسه از لحظهٔ باز شدن پنجرهٔ ورود (۱۰ دقیقه قبل از شروع) مجاز است —
+ *  استاد می‌تواند کلاس را همان‌جا که برگزار شد همین‌حال ثبت و پایان دهد. */
 function canEndSession(detail: SessionDetailData): boolean {
   const start = startMs(detail);
   if (detail.status !== "confirmed" || Number.isNaN(start)) return false;
-  return Date.now() >= start;
+  return Date.now() >= start - 10 * 60_000;
 }
 
 /** برچسب و آیکون نوع جلسهٔ آنلاین — تلفنی/متنی/تصویری. */
@@ -581,7 +582,7 @@ export function SessionDetailScreen({
           ) : null}
           {isTeacher && !endReady ? (
             <span style={{ fontSize: 11, color: colors.inkMuted, textAlign: "center" }}>
-              {L("دکمهٔ «پایان جلسه» پس از آغاز رسمی جلسه فعال می‌شود.")}
+              {L("دکمهٔ «پایان جلسه» از ۱۰ دقیقه قبل از آغاز جلسه فعال می‌شود.")}
             </span>
           ) : null}
         </Card>
@@ -608,6 +609,38 @@ export function SessionDetailScreen({
               ? L("جلسهٔ متنی فعال است — گفت‌وگوی شما در چت امن پایین همین صفحه جریان دارد؛ متن، ویس و تصویر پشتیبانی می‌شود.")
               : L("پس از تأیید استاد، گفت‌وگوی جلسه در چت امن پایین همین صفحه جریان می‌گیرد.")}
           </span>
+        </Card>
+      ) : null}
+
+      {/* پایان جلسهٔ متنی (استاد) — قبلاً هیچ دکمهٔ پایان برای جلسهٔ متنی وجود نداشت */}
+      {isTeacher && detail.mode === "text" && detail.status === "confirmed" ? (
+        <Card style={{ display: "grid", gap: 12, padding: 16, borderRadius: 22 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ width: 42, height: 42, display: "grid", placeItems: "center", borderRadius: 14, flex: "0 0 42px", background: colors.greenBackground, border: `1px solid ${colors.greenBorder}`, color: colors.greenDeep }}>
+              <Icon name="checkCircle" size={21} />
+            </span>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <strong style={{ display: "block", fontSize: 13.5, fontWeight: 800, color: colors.ink }}>
+                {L("پایان جلسهٔ متنی و ثبت برگزاری")}
+              </strong>
+              <span style={{ display: "block", fontSize: 11.5, color: colors.inkMuted, marginTop: 1 }}>
+                {L("وقتی گفت‌وگوی جلسه تمام شد، این دکمه جلسه را نهایی و برگزاری آن را ثبت می‌کند.")}
+              </span>
+            </div>
+          </div>
+          <Button
+            variant="secondary"
+            fullWidth
+            disabled={busy}
+            onClick={() =>
+              void runAction(async () => {
+                await completeTeacherSession(runtime, detail.id);
+              })
+            }
+          >
+            <Icon name="checkCircle" size={18} />
+            {L("پایان جلسه و ثبت برگزاری")}
+          </Button>
         </Card>
       ) : null}
 

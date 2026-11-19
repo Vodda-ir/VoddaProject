@@ -94,6 +94,47 @@ export async function queryMediaPermission(
   }
 }
 
+export type MediaPermissionSnapshot = {
+  mic: "granted" | "denied" | "prompt" | "unknown";
+  camera: "granted" | "denied" | "prompt" | "unknown";
+};
+
+/** وضعیت هر دو مجوز با یک فراخوان — برای نشانگرهای وضعیت پیش از جلسه. */
+export async function queryMediaPermissions(): Promise<MediaPermissionSnapshot> {
+  const [mic, camera] = await Promise.all([
+    queryMediaPermission("microphone"),
+    queryMediaPermission("camera"),
+  ]);
+  return { mic, camera };
+}
+
+/** محیط اجرا را تشخیص می‌دهد تا راهنمای رفع انسداد مجوز دقیق باشد. */
+export function detectPlatformGuide(): "ios" | "android" | "desktop" {
+  if (typeof navigator === "undefined") return "desktop";
+  const ua = navigator.userAgent || "";
+  const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(ua));
+  if (isIOS) return "ios";
+  if (/Android/.test(ua)) return "android";
+  return "desktop";
+}
+
+/**
+ * راهنمای گام‌به‌گام رفع انسداد مجوز — مخصوص محیط اجرا (اپ اندروید، سافاری iOS
+ * یا مرورگر دسکتاپ). متن‌ها فارسی و قابل نمایش مستقیم در کادر خطا هستند.
+ */
+export function permissionUnblockGuide(platform = detectPlatformGuide(), audioOnly = false): string {
+  const media = audioOnly ? "میکروفون" : "دوربین و میکروفون";
+  if (platform === "ios") {
+    return audioOnly
+      ? "برای فعال‌سازی میکروفون: تنظیمات گوشی ← سافاری (یا اپ وُدّا) ← «میکروفون» را روشن کنید، سپس این صفحه را ببندید و دوباره باز کنید. اگر از سافاری استفاده می‌کنید، آیکون «aA» در نوار نشانی ← «تنظیمات وب‌سایت» ← میکروفون ← «اجازه دادن»."
+      : "برای فعال‌سازی دوربین و میکروفون: تنظیمات گوشی ← سافاری (یا اپ وُدّا) ← «دوربین» و «میکروفون» را روشن کنید، سپس این صفحه را ببندید و دوباره باز کنید. اگر از سافاری استفاده می‌کنید، آیکون «aA» در نوار نشانی ← «تنظیمات وب‌سایت» ← اجازهٔ دوربین و میکروفون.";
+  }
+  if (platform === "android") {
+    return `برای فعال‌سازی ${media}: آیکون قفل یا ⓘ کنار نشانی را بزنید ← «مجوزها» ← ${media} را روی «اجازه دادن» بگذارید. در اپ وُدّا: تنظیمات گوشی ← برنامه‌ها ← وُدّا ← مجوزها ← دوربین و میکروفون فعال باشد، سپس اپ را کامل ببندید و دوباره باز کنید.`;
+  }
+  return `برای فعال‌سازی ${media}: آیکون قفل کنار نشانی سایت را بزنید ← «مجوزهای این سایت» ← دوربین و میکروفون را «اجازه دادن» کنید و صفحه را دوباره باز کنید.`;
+}
+
 /**
  * Ladder: ideal constraints → plain audio+video → audio only. Guarantees the
  * class can start as long as ANY grant is possible; the plainest failure is

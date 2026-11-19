@@ -27,16 +27,30 @@ import { messageOf } from "../../ui/errorMessage";
 import { formatWalletAmount } from "../wallet/WalletTransactionCard";
 import { getTeacherDetail, fetchMyFollows, fetchFollowerCount, toggleFollowTeacher } from "./api";
 import type { TeacherDetail, TeacherReview, TeacherService } from "./types";
+import { BookingWizardSheet, type BookingWizardResult } from "../booking/BookingWizardSheet";
 
 function reviewDate(value: string, lang: "fa" | "en") {
   if (!value) return "";
   return formatAppDateTime(value, lang, { withTime: false });
 }
 
-function ServiceCard({ service }: { service: TeacherService }) {
+function ServiceCard({ service, onSelect }: { service: TeacherService; onSelect: (service: TeacherService) => void }) {
   const { L } = useAppearance();
   return (
-    <Card className="vodda-card--interactive" style={{ padding: spacing.lg }}>
+    <Card
+      className="vodda-card--interactive"
+      role="button"
+      tabIndex={0}
+      aria-label={L("رزرو {n}").replace("{n}", service.title)}
+      onClick={() => onSelect(service)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onSelect(service);
+        }
+      }}
+      style={{ padding: spacing.lg, cursor: "pointer" }}
+    >
       <div style={{ display: "flex", alignItems: "center", gap: spacing.md }}>
         <IconBadge icon={service.icon.includes("mic") ? "mic" : "book"} tone={service.icon.includes("mic") ? "clay" : "olive"} size={44} />
         <div style={{ minWidth: 0, flex: 1 }}>
@@ -60,31 +74,47 @@ function ServiceCard({ service }: { service: TeacherService }) {
             {formatWalletAmount(service.duration)} {L("دقیقه")}
           </span>
         </div>
-        {service.price === 0 ? (
+        <span style={{ flexShrink: 0, display: "grid", justifyItems: "end", gap: 5 }}>
+          {service.price === 0 ? (
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+                padding: "4px 11px",
+                borderRadius: 999,
+                background: colors.goldBackground,
+                border: `1px solid ${colors.gold}`,
+                color: colors.goldDark,
+                fontSize: 11.5,
+                fontWeight: 900,
+                whiteSpace: "nowrap",
+              }}
+            >
+              <Icon name="gift" size={12} stroke={2.4} />
+              {L("رایگان")}
+            </span>
+          ) : (
+            <strong style={{ ...typography.bodySmall, color: colors.olive700, whiteSpace: "nowrap" }}>
+              {formatWalletAmount(service.price)} {L("تومان")}
+            </strong>
+          )}
+          {/* راهنمای انتخاب — با لمس کارت، ویزارد رزرو همان‌جا باز می‌شود */}
           <span
+            aria-hidden="true"
             style={{
-              flexShrink: 0,
               display: "inline-flex",
               alignItems: "center",
-              gap: 4,
-              padding: "4px 11px",
-              borderRadius: 999,
-              background: colors.goldBackground,
-              border: `1px solid ${colors.gold}`,
-              color: colors.goldDark,
-              fontSize: 11.5,
-              fontWeight: 900,
-              whiteSpace: "nowrap",
+              gap: 3,
+              fontSize: 10,
+              fontWeight: 800,
+              color: colors.olive600,
             }}
           >
-            <Icon name="gift" size={12} stroke={2.4} />
-            {L("رایگان")}
+            <Icon name="plus" size={11} stroke={2.6} />
+            {L("رزرو")}
           </span>
-        ) : (
-          <strong style={{ ...typography.bodySmall, flexShrink: 0, color: colors.olive700, whiteSpace: "nowrap" }}>
-            {formatWalletAmount(service.price)} {L("تومان")}
-          </strong>
-        )}
+        </span>
       </div>
     </Card>
   );
@@ -141,6 +171,37 @@ export function LearnerTeacherProfileScreen({
   const [followerCount, setFollowerCount] = useState<number | null>(null);
   const [followBusy, setFollowBusy] = useState(false);
   const [followHint, setFollowHint] = useState<string | null>(null);
+  /* ویزارد رزرو — با لمس هر کارت خدمت، کادر رزرو همان‌جا باز می‌شود */
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [wizardService, setWizardService] = useState<TeacherService | null>(null);
+  const [wizardDefaultInstant, setWizardDefaultInstant] = useState(false);
+
+  const openBookingWizard = (service: TeacherService) => {
+    setWizardService(service);
+    setWizardDefaultInstant(false);
+    setWizardOpen(true);
+  };
+
+  const openInstantWizard = () => {
+    setWizardService(services[0] ?? null);
+    setWizardDefaultInstant(true);
+    setWizardOpen(true);
+  };
+
+  const handleWizardBooked = (result: BookingWizardResult) => {
+    setWizardOpen(false);
+    setWizardService(null);
+    if (result.gateway) {
+      // کاربر به درگاه بانک پست شده؛ صفحهٔ جلسات مقصد بازگشت است.
+      navigateApp("/sessions", config);
+      return;
+    }
+    if (result.wasInstant && result.instantSessionId > 0) {
+      navigateApp(`/session/${result.instantSessionId}`, config);
+      return;
+    }
+    navigateApp("/sessions", config);
+  };
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -389,7 +450,9 @@ export function LearnerTeacherProfileScreen({
         <h3 style={{ fontSize: 16, fontWeight: 800, margin: 0, color: colors.ink }}>{L("خدمات تأییدشده")}</h3>
         {services.length ? (
           <div style={{ display: "grid", gap: spacing.sm, marginTop: spacing.md }}>
-            {services.map((service) => <ServiceCard key={service.id} service={service} />)}
+            {services.map((service) => (
+              <ServiceCard key={service.id} service={service} onSelect={openBookingWizard} />
+            ))}
           </div>
         ) : serviceFilterId > 0 ? (
           <EmptyState
@@ -438,7 +501,7 @@ export function LearnerTeacherProfileScreen({
             fullWidth
             variant="secondary"
             disabled={services.length === 0}
-            onClick={() => navigateApp(`/book/${teacher.id}`, config)}
+            onClick={openInstantWizard}
             style={{ marginBottom: 8, borderColor: colors.goldSoft, color: colors.goldInk, background: colors.goldBackground }}
           >
             <Icon name="sparkle" size={18} style={{ color: colors.goldDark }} />
@@ -448,12 +511,26 @@ export function LearnerTeacherProfileScreen({
         <Button
           fullWidth
           disabled={services.length === 0}
-          onClick={() => navigateApp(`/book/${teacher.id}`, config)}
+          onClick={() => {
+            setWizardService(services[0] ?? null);
+            setWizardDefaultInstant(false);
+            setWizardOpen(true);
+          }}
         >
           <Icon name="calendar" size={18} />
           {services.length === 0 ? L("خدمت قابل رزرو وجود ندارد") : L("رزرو جلسه")}
         </Button>
       </div>
+
+      {/* ویزارد رزرو — از کارت‌های خدمت یا دکمه‌های پایین صفحه باز می‌شود */}
+      <BookingWizardSheet
+        open={wizardOpen}
+        teacher={teacher}
+        initialService={wizardService}
+        defaultInstant={wizardDefaultInstant}
+        onClose={() => setWizardOpen(false)}
+        onBooked={handleWizardBooked}
+      />
     </section>
   );
 }
