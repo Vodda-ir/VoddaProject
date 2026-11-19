@@ -59,7 +59,7 @@ type AppShellProps = {
 /* چیدمان ۵گانهٔ جدید (RTL): خانه (راست‌ترین) ← جستجو ← دکمهٔ مرکزی فراخوان ← جلسات ← پروفایل (چپ‌ترین).
  * کیف پول از نوار پایین حذف شد و به هدر بالای صفحه منتقل شد — همیشه در دسترس، بدون اشغال جای اصلی منو. */
 const learnerNavigation: NavigationItem[] = [
-  { label: "خانه", target: "home", icon: "home", routes: ["home"] },
+  { label: "خانه", target: "home", icon: "home", routes: ["home", "free-services"] },
   { label: "جستجو", target: "search", icon: "search", routes: ["search", "teacher", "book", "category", "service"] },
   { label: "جلسات", target: "sessions", icon: "calendar", routes: ["sessions"] },
   { label: "پروفایل", target: "profile", icon: "user", routes: ["profile", "profile-edit"] },

@@ -14,6 +14,7 @@ import { PresenceProviderScreen } from "./features/ceremony/PresenceProviderScre
 import { PresenceScreen } from "./features/ceremony/PresenceScreen";
 import { TeacherPresenceScreen } from "./features/ceremony/TeacherPresenceScreen";
 import { LearnerDispatchScreen } from "./features/dispatch/LearnerDispatchScreen";
+import { FreeServicesScreen } from "./features/discover/FreeServicesScreen";
 import { LearnerHomeScreen } from "./features/home/LearnerHomeScreen";
 import { ServiceTeachersScreen } from "./features/discover/ServiceTeachersScreen";
 import { LearnerProfileScreen } from "./features/profile/LearnerProfileScreen";
@@ -59,6 +60,7 @@ const routeTitleKeys: Record<AppRouteName, string> = {
   profile: "profile_title",
   "profile-edit": "profile_edit",
   dispatch: "dispatch_title",
+  "free-services": "free_services_title",
   "call-hub": "dispatch_title",
   "ceremony-new": "dispatch_title",
   "ceremony-calls": "dispatch_title",
@@ -172,6 +174,8 @@ function UniversalAppShellContent({
     <LearnerProfileScreen config={config} />
   ) : route.name === "dispatch" ? (
     <LearnerDispatchScreen config={config} />
+  ) : route.name === "free-services" ? (
+    <FreeServicesScreen config={config} />
   ) : route.name === "call-hub" ? (
     <CallHubScreen config={config} />
   ) : route.name === "ceremony-new" ? (
