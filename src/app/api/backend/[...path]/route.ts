@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isSameOriginMutation } from '@/lib/server/same-origin';
 import { listTier1Flags, setTier1Flag } from '@/lib/server/overlay';
+import {
+  createStory,
+  deleteStory,
+  incrementStoryViews,
+  listActiveStories,
+  listAllStories,
+} from '@/lib/server/stories';
 import { applyScoreEvent, scoreSnapshot, ensureScoreForTeacher } from '@/lib/server/gamification';
 import { enrichTeacherPayload, sortEnvelopeTier1First } from '@/lib/server/tier1';
 import { getFreeServices, getRecommendedTeachers } from '@/lib/server/discover';
@@ -155,6 +162,112 @@ async function handleFreeServices(request: NextRequest): Promise<Response> {
   }
 }
 
+/* ═════════ استوری‌های مدیر‌محور (E1) — مسیرهای محلی BFF ═════════
+ * فقط ادمین سامانه اجازهٔ انتشار/حذف دارد؛ خواندن عمومی است.
+ * تشخیص ادمین = نقش داخل توکن + تأیید امضای توکن نزد بک‌اند اصلی (/me).
+ * کش تأیید ۶۰ ثانیه‌ای — انتشار/حذف رخداد نادری است.
+ * در پیش‌نمایش dev (بدون بک‌اند) نقش توکن کافی است — همان مدل preview-mock. */
+
+const verifiedAdminTokens = new Map<string, number>();
+
+function tokenFingerprint(token: string): string {
+  return Buffer.from(token).toString('base64').slice(0, 64);
+}
+
+async function adminTokenValid(token: string | undefined): Promise<boolean> {
+  if (!token || tokenRole(token) !== 'admin') return false;
+  if (previewMockEnabled()) return true; // فقط سرور dev پیش‌نمایش — هرگز در تولید فعال نیست
+  const key = tokenFingerprint(token);
+  const validUntil = verifiedAdminTokens.get(key) ?? 0;
+  if (Date.now() < validUntil) return true;
+  try {
+    const upstream = await fetch(`${API_BASE}/me`, {
+      method: 'GET',
+      headers: { authorization: `Bearer ${token}` },
+      cache: 'no-store',
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!upstream.ok) return false;
+    verifiedAdminTokens.set(key, Date.now() + 60_000);
+    if (verifiedAdminTokens.size > 200) {
+      const now = Date.now();
+      for (const [cachedKey, until] of verifiedAdminTokens) {
+        if (until < now) verifiedAdminTokens.delete(cachedKey);
+      }
+    }
+    return true;
+  } catch {
+    return false; // fail-closed — بدون تأیید بک‌اند، انتشار باز نمی‌شود
+  }
+}
+
+async function handleStories(request: NextRequest, path: string[]): Promise<Response> {
+  /* GET /stories — زنده‌ها برای همه */
+  if (request.method === 'GET' && path.length === 1) {
+    const stories = await listActiveStories();
+    return NextResponse.json({ data: stories }, { headers: { 'cache-control': 'no-store' } });
+  }
+
+  const token = request.cookies.get('vodda_token')?.value;
+
+  /* GET /stories/all — فهرست کامل مدیر (شامل منقضی‌ها) */
+  if (request.method === 'GET' && path[1] === 'all' && path.length === 2) {
+    if (!(await adminTokenValid(token))) {
+      return NextResponse.json({ error: 'دسترسی فقط برای ادمین مجاز است' }, { status: 403 });
+    }
+    const stories = await listAllStories();
+    return NextResponse.json({ data: stories }, { headers: { 'cache-control': 'no-store' } });
+  }
+
+  /* POST /stories — انتشار استوری (مدیر) */
+  if (request.method === 'POST' && path.length === 1) {
+    if (!(await adminTokenValid(token))) {
+      return NextResponse.json({ error: 'دسترسی فقط برای ادمین مجاز است' }, { status: 403 });
+    }
+    const length = Number(request.headers.get('content-length') ?? '0');
+    if (Number.isFinite(length) && length > 2_600_000) {
+      return NextResponse.json({ error: 'حجم استوری بیش از حد مجاز است' }, { status: 413 });
+    }
+    const body = (await request.json().catch(() => ({}))) as {
+      media_url?: unknown;
+      caption?: unknown;
+      link?: unknown;
+      ttl_hours?: unknown;
+    };
+    try {
+      const story = await createStory({
+        mediaUrl: typeof body.media_url === 'string' ? body.media_url : '',
+        caption: typeof body.caption === 'string' ? body.caption : '',
+        link: typeof body.link === 'string' ? body.link : undefined,
+        ttlHours: typeof body.ttl_hours === 'number' ? body.ttl_hours : 24,
+      });
+      return NextResponse.json({ data: story }, { status: 201 });
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : 'انتشار استوری ناموفق بود' },
+        { status: 400 },
+      );
+    }
+  }
+
+  /* POST /stories/:id/view — شمارش بازدید (عمومی، best-effort) */
+  if (request.method === 'POST' && path.length === 3 && path[2] === 'view') {
+    const views = await incrementStoryViews(path[1]);
+    return NextResponse.json({ data: { views } });
+  }
+
+  /* DELETE /stories/:id — حذف (مدیر) */
+  if (request.method === 'DELETE' && path.length === 2) {
+    if (!(await adminTokenValid(token))) {
+      return NextResponse.json({ error: 'دسترسی فقط برای ادمین مجاز است' }, { status: 403 });
+    }
+    const removed = await deleteStory(path[1]);
+    return NextResponse.json({ data: { removed } });
+  }
+
+  return NextResponse.json({ error: 'not found' }, { status: 404 });
+}
+
 /* ── غنی‌سازی پاسخ استادها با overlay محلی (۱.الف.۵) ── */
 
 function shouldEnrich(method: string, path: string[]): boolean {
@@ -186,6 +299,8 @@ async function proxy(request: NextRequest, context: RouteContext): Promise<Respo
   /* مسیرهای محلی overlay/score/کشف — بدون تماس با بک‌اند */
   if (path[0] === 'teacher-flags') return handleTeacherFlags(request, path);
   if (path[0] === 'score') return handleScore(request, path);
+  /* E1 — استوری‌ها — مسیر محلی؛ در اپ نیتیو مسیر وجود ندارد و caller جایگزین می‌کند */
+  if (path[0] === 'stories') return handleStories(request, path);
   /* ۱.ب.۵ — GET /teachers/recommended در بک‌اند وجود ندارد؛ محلی */
   if (path[0] === 'teachers' && path[1] === 'recommended') return handleRecommended(request);
   /* ۱.ب.۴ — GET /services?is_free=true … در بک‌اند وجود ندارد؛ محلی */

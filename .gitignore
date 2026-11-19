@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
@@ -57,9 +56,8 @@ server.log
 preview-*.png
 test-*.png
 tool-results/
-=======
 shot-*.png
 frontend-dev.log
->>>>>>> origin/main
-shot-*.png
-frontend-dev.log
+
+# E1 — دادهٔ runtime استوری‌ها (نباید در دیپلوی بازنویسی شود)
+db/vodda-stories.json

@@ -172,7 +172,24 @@ export function previewMockResponse(request: NextRequest, path: string[]): Respo
   const head = path[0] ?? '';
 
   if (head === 'me' && path.length === 1) {
-    return jsonResponse({ data: MOCK_LEARNER });
+    /* E1 — نقش جلسهٔ پیش‌نمایش از payload توکن خوانده می‌شود تا UI ادمین/کاربر
+     * عادی دقیقاً مثل تولید رفتار کند. با VODDA_PREVIEW_ADMIN=1 همیشه ادمین.
+     * هرگز در تولید ست نمی‌شود. */
+    let role = '';
+    try {
+      const token = request.cookies.get('vodda_token')?.value ?? '';
+      const payload = token
+        ? (JSON.parse(Buffer.from(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8')) as { role?: unknown })
+        : {};
+      role = typeof payload.role === 'string' ? payload.role : '';
+    } catch {
+      role = '';
+    }
+    if (process.env.VODDA_PREVIEW_ADMIN === '1') role = 'admin';
+    if (role === 'admin') {
+      return jsonResponse({ data: { ...MOCK_LEARNER, role: 'admin', name: 'مدیر سامانه وُدّا' } });
+    }
+    return jsonResponse({ data: { ...MOCK_LEARNER, role: role === 'teacher' ? 'teacher' : 'learner' } });
   }
   if (head === 'catalog' && path[1] === 'services' && path.length === 2) {
     return jsonResponse({ data: { categories: MOCK_CATALOG_CATEGORIES } });
