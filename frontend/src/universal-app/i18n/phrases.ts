@@ -10,6 +10,7 @@ import areaAuthProfile from "./fragments/auth-profile";
 import areaCeremony from "./fragments/ceremony";
 import areaHomeSessions from "./fragments/home-sessions";
 import areaSearchTeachers from "./fragments/search-teachers";
+import areaSessionsBooking from "./fragments/sessions-booking";
 import areaTeacherPanel from "./fragments/teacher-panel";
 import areaWalletMisc from "./fragments/wallet-misc";
 import { hasPersianScript, localizeCityName, transliterateFa } from "./transliterate";
@@ -19,6 +20,7 @@ const fragments: Array<Record<string, string>> = [
   areaCeremony,
   areaHomeSessions,
   areaSearchTeachers,
+  areaSessionsBooking,
   areaTeacherPanel,
   areaWalletMisc,
 ];

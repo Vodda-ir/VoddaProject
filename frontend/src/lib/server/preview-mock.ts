@@ -91,7 +91,7 @@ const MOCK_CATALOG_CATEGORIES: Array<{ category: string; services: Array<{ id: n
   },
 ];
 
-type MockService = { id: number; title: string; duration: number; price: number; icon: string; active: boolean };
+type MockService = { id: number; title: string; duration: number; price: number; icon: string; active: boolean; mode?: string };
 
 function mockTeacher(
   id: number,
@@ -136,16 +136,29 @@ function mockTeacher(
 }
 
 function service(id: number, title: string, price: number): MockService {
-  return { id, title, duration: 60, price, icon: 'book', active: true };
+  return { id, title, duration: 60, price, icon: 'book', active: true, mode: '' };
 }
 
-/* خدمت رایگان نمونهٔ پیش‌نمایش — مدت ۳۰ دقیقه برای بج ساعت کارت رایگان */
+/** خدمت رایگان نمونهٔ پیش‌نمایش — مدت ۳۰ دقیقه برای بج ساعت کارت رایگان */
 function freeService(id: number, title: string): MockService {
-  return { id, title, duration: 30, price: 0, icon: 'gift', active: true };
+  return { id, title, duration: 30, price: 0, icon: 'gift', active: true, mode: '' };
+}
+
+/* ۱.۷ — خدمات آنلاین سه‌حالتهٔ نمونه (تلفنی/متنی/تصویری) تا ویزارد رزرو در
+ * پیش‌نمایش با انتخاب روش برگزاری و قیمت‌های مستقل دیده شود — فقط mock. */
+function onlineService(id: number, title: string, price: number, mode: 'voice' | 'text' | 'video', duration: number): MockService {
+  const icon = mode === 'voice' ? 'phone' : mode === 'text' ? 'message' : 'video';
+  return { id, title, duration, price, icon, active: true, mode };
 }
 
 const MOCK_TEACHERS = [
-  mockTeacher(1, 'استاد احمد محمدی', 'تهران', false, 'gold', 4.8, 32, [service(1, 'روخوانی قرآن کریم', 320_000), service(2, 'آموزش الفبا و نوآموزان', 200_000)], 't-01.png'),
+  mockTeacher(1, 'استاد احمد محمدی', 'تهران', false, 'gold', 4.8, 32, [
+    service(1, 'روخوانی قرآن کریم', 320_000),
+    onlineService(101, 'تماس تلفنی قرآنی', 180_000, 'voice', 30),
+    onlineService(102, 'چت پرسش و پاسخ قرآنی', 120_000, 'text', 40),
+    onlineService(103, 'کلاس تصویری تجوید', 350_000, 'video', 60),
+    service(2, 'آموزش الفبا و نوآموزان', 200_000),
+  ], 't-01.png'),
   mockTeacher(2, 'استاد فاطمه حسینی', 'قم', true, 'silver', 4.9, 41, [service(1, 'روخوانی قرآن کریم', 280_000), service(3, 'روان‌خوانی و اصلاح قرائت', 300_000), freeService(19, 'آشنایی با روخوانی — جلسهٔ آغازین')], 't-02.png'),
   mockTeacher(3, 'استاد رضا کریمی', 'مشهد', false, 'bronze', 4.5, 18, [service(2, 'آموزش الفبا و نوآموزان', 220_000)], 't-03.png'),
   mockTeacher(4, 'استاد مریم احمدی', 'تهران', true, 'gold', 4.9, 55, [service(4, 'آموزش تجوید قرآن کریم', 360_000), service(6, 'روایت حفص از عاصم', 380_000)], 't-04.png'),
@@ -166,10 +179,88 @@ function jsonResponse(payload: unknown): Response {
   });
 }
 
+/* وضعیت جلسات نمونهٔ پیش‌نمایش — «پایان جلسه» استاد وضعیت را به done می‌برد */
+const completedMockSessions = new Set<number>();
+
+/** جلسهٔ نمونهٔ پیش‌نمایش — جزئیات جلسهٔ فوری تازه‌ثبت‌شده برای پرش از ویزارد؛
+ *  نقش نمایشگر از توکن کوکی خوانده می‌شود تا نمای استاد/شاگرد هر دو تست شود. */
+function mockSession(id: number, request: NextRequest): Record<string, unknown> {
+  let viewerRole = 'learner';
+  try {
+    const token = request.cookies.get('vodda_token')?.value ?? '';
+    const payload = token
+      ? (JSON.parse(Buffer.from(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8')) as { role?: unknown })
+      : {};
+    if (payload.role === 'teacher' || payload.role === 'admin') viewerRole = 'teacher';
+  } catch {
+    viewerRole = 'learner';
+  }
+  const start = new Date(Date.now() + 2 * 60_000);
+  const end = new Date(start.getTime() + 30 * 60_000);
+  const pad = (value: number) => String(value).padStart(2, '0');
+  const localDate = `${start.getFullYear()}-${pad(start.getMonth() + 1)}-${pad(start.getDate())}`;
+  const localStart = `${pad(start.getHours())}:${pad(start.getMinutes())}`;
+  const localEnd = `${pad(end.getHours())}:${pad(end.getMinutes())}`;
+  const completed = completedMockSessions.has(id);
+  return {
+    id,
+    learner_id: MOCK_LEARNER.id,
+    learner: { id: MOCK_LEARNER.id, name: MOCK_LEARNER.name, avatar_url: '' },
+    teacher: { id: 1, user_id: 101, user: { name: 'استاد احمد محمدی', avatar_url: '/avatars/teachers/t-01.png' } },
+    service: 'تماس تلفنی قرآنی',
+    title: 'تماس تلفنی قرآنی',
+    scheduled_at: start.toISOString(),
+    local_date: localDate,
+    local_start: localStart,
+    local_end: localEnd,
+    duration: 30,
+    price: 180_000,
+    status: completed ? 'done' : 'confirmed',
+    note: '',
+    reject_note: '',
+    instant: true,
+    rated: false,
+    mode: id % 2 === 0 ? 'video' : 'voice',
+    viewer_role: viewerRole,
+  };
+}
+
+/* تقویم آزاد نمونهٔ پیش‌نمایش — دو بازهٔ صبح و عصر در ۱۴ روز آینده */
+function mockAvailability(): Array<Record<string, unknown>> {
+  const rows: Array<Record<string, unknown>> = [];
+  const now = new Date();
+  const pad = (value: number) => String(value).padStart(2, '0');
+  for (let day = 1; day <= 14; day++) {
+    for (const hour of [9, 10, 11, 16, 17, 18]) {
+      const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() + day, hour, 0, 0);
+      const end = new Date(start.getTime() + 60 * 60_000);
+      rows.push({
+        start_at: start.toISOString(),
+        end_at: end.toISOString(),
+        local_date: `${start.getFullYear()}-${pad(start.getMonth() + 1)}-${pad(start.getDate())}`,
+        local_start: `${pad(start.getHours())}:${pad(start.getMinutes())}`,
+        local_end: `${pad(end.getHours())}:${pad(end.getMinutes())}`,
+        weekday: (start.getDay() + 1) % 7,
+      });
+    }
+  }
+  return rows;
+}
+
 /** پاسخ نمونه برای مسیرهای GET پیش‌نمایش — null یعنی این مسیر mock ندارد. */
 export function previewMockResponse(request: NextRequest, path: string[]): Response | null {
-  if (request.method !== 'GET') return null;
   const head = path[0] ?? '';
+
+  /* POST رزرو در پیش‌نمایش — جلسهٔ فوری/زمان‌دار نمونه ثبت می‌شود */
+  if (request.method === 'POST' && head === 'sessions' && path.length === 1) {
+    return jsonResponse({ data: { session: { id: 9001 } } });
+  }
+  /* POST «پایان جلسه» استاد در پیش‌نمایش — وضعیت جلسه به done می‌رود */
+  if (request.method === 'POST' && head === 'teacher' && path[1] === 'sessions' && path[3] === 'complete') {
+    completedMockSessions.add(Number(path[2]) || 0);
+    return jsonResponse({ data: { ok: true } });
+  }
+  if (request.method !== 'GET') return null;
 
   if (head === 'me' && path.length === 1) {
     /* E1 — نقش جلسهٔ پیش‌نمایش از payload توکن خوانده می‌شود تا UI ادمین/کاربر
@@ -216,6 +307,14 @@ export function previewMockResponse(request: NextRequest, path: string[]): Respo
   if (head === 'teachers' && path.length === 2 && /^\d+$/.test(path[1] ?? '')) {
     const teacher = MOCK_TEACHERS.find((row) => row.id === Number(path[1]));
     return jsonResponse({ data: { teacher: teacher ?? null, reviews: [] } });
+  }
+  /* ۱.۷ — تقویم آزاد نمونه برای ویزارد رزرو */
+  if (head === 'teachers' && path.length === 3 && path[2] === 'availability') {
+    return jsonResponse({ data: mockAvailability() });
+  }
+  /* ۱.۷ — جزئیات جلسهٔ نمونهٔ پیش‌نمایش */
+  if (head === 'sessions' && path.length === 2) {
+    return jsonResponse({ data: mockSession(Number(path[1]) || 9001, request) });
   }
   if (head === 'notifications') {
     return jsonResponse({ data: [] });

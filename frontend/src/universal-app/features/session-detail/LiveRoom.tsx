@@ -19,13 +19,14 @@ import {
 } from "../../../lib/live/client";
 import { LiveEngine, type EngineRole } from "../../../lib/live/engine";
 import { acquireMediaStream } from "../../platform/media-permissions";
+import { MediaPermissionGate } from "./MediaPermissionGate";
 import { usePlatform } from "../../platform/context";
 import { localizedDigits } from "../../ui/persian";
 import { Avatar, Icon } from "../../ui";
 import { useAppearance } from "../../ui/appearance";
 import { colors, typography } from "../../ui/theme";
 
-import { announceSessionStart } from "./api";
+import { announceSessionStart, completeTeacherSession } from "./api";
 
 type ChatLine = { id: string; from: number; text: string; at: number; mine: boolean };
 type Reaction = { id: string; emoji: string; at: number };
@@ -98,6 +99,7 @@ function RoundButton({
         position: "relative",
         width: 54,
         height: 54,
+        flex: "0 0 auto",
         display: "grid",
         placeItems: "center",
         borderRadius: "50%",
@@ -213,53 +215,80 @@ export function LiveRoom({
 
   const isTeacherSide = role !== "learner";
 
-  /* ---------- پیش‌آزمون: پیش‌نمایش دوربین و سطح صدا ---------- */
-  useEffect(() => {
-    if (phase !== "preflight") return;
-    let stream: MediaStream | null = null;
-    let raf = 0;
-    let ctx: AudioContext | null = null;
-    (async () => {
-      const result = await acquireMediaStream(audioOnly ? "audio" : "both");
-      if (!result.ok) {
-        setMediaError(result.message);
-        return;
-      }
-      stream = result.stream;
+  /* ---------- پیش‌آزمون: مدیریت استریم پیش‌نمایش ---------- */
+  const previewStreamRef = useRef<MediaStream | null>(null);
+
+  /** خاموش‌کردن نسانگر صدا (بدون توقف ترک‌ها — برای واگذاری استریم به کلاس). */
+  const stopPreviewMeter = useCallback(() => {
+    void audioCtxRef.current?.close();
+    audioCtxRef.current = null;
+    if (liveRafRef.current) {
+      cancelAnimationFrame(liveRafRef.current);
+      liveRafRef.current = 0;
+    }
+  }, []);
+
+  /** توقف کامل پیش‌آزمون — ترک‌ها بسته و پیش‌نمایش پاک می‌شود. */
+  const stopPreview = useCallback(() => {
+    stopPreviewMeter();
+    previewStreamRef.current?.getTracks().forEach((track) => track.stop());
+    previewStreamRef.current = null;
+    setPreviewStream(null);
+    setMicLevel(0);
+  }, [stopPreviewMeter]);
+
+  /** اتصال استریم آمادهٔ مجوز به پیش‌نمایش + نسانگر سطح صدا. */
+  const attachPreview = useCallback(
+    (stream: MediaStream) => {
+      stopPreviewMeter();
+      previewStreamRef.current = stream;
       setPreviewStream(stream);
       setMediaError("");
       if (!audioOnly && previewVideoRef.current) previewVideoRef.current.srcObject = stream;
       const [audioTrack] = stream.getAudioTracks();
       if (audioTrack) {
-        ctx = new AudioContext();
-        audioCtxRef.current = ctx;
-        const source = ctx.createMediaStreamSource(new MediaStream([audioTrack]));
-        const analyser = ctx.createAnalyser();
-        analyser.fftSize = 256;
-        source.connect(analyser);
-        const buffer = new Uint8Array(analyser.frequencyBinCount);
-        const tick = () => {
-          analyser.getByteFrequencyData(buffer);
-          const avg = buffer.reduce((sum, value) => sum + value, 0) / buffer.length;
-          setMicLevel(Math.min(100, Math.round((avg / 128) * 100)));
-          raf = requestAnimationFrame(tick);
-        };
-        tick();
+        try {
+          const ctx = new AudioContext();
+          audioCtxRef.current = ctx;
+          const analyser = ctx.createAnalyser();
+          analyser.fftSize = 256;
+          ctx.createMediaStreamSource(new MediaStream([audioTrack])).connect(analyser);
+          const buffer = new Uint8Array(analyser.frequencyBinCount);
+          const tick = () => {
+            analyser.getByteFrequencyData(buffer);
+            const avg = buffer.reduce((sum, value) => sum + value, 0) / buffer.length;
+            setMicLevel(Math.min(100, Math.round((avg / 128) * 100)));
+            liveRafRef.current = requestAnimationFrame(tick);
+          };
+          liveRafRef.current = requestAnimationFrame(tick);
+        } catch {
+          /* نمایش سطح صدا اختیاری است */
+        }
       }
-    })();
-    return () => {
-      cancelAnimationFrame(raf);
-      void ctx?.close();
-      stream?.getTracks().forEach((track) => track.stop());
-    };
-  }, [phase, audioOnly]);
+    },
+    [audioOnly, stopPreviewMeter],
+  );
 
-  useEffect(() => () => {
-    clientRef.current?.close();
-    engineRef.current?.close();
-    void audioCtxRef.current?.close();
-    if (liveRafRef.current) cancelAnimationFrame(liveRafRef.current);
-  }, []);
+  /** گیت مجوز استریم می‌دهد — پیش‌نمایش روشن می‌شود. */
+  const handleGateStream = useCallback(
+    (stream: MediaStream | null) => {
+      if (!stream) {
+        stopPreview();
+        return;
+      }
+      attachPreview(stream);
+    },
+    [attachPreview, stopPreview],
+  );
+
+  useEffect(
+    () => () => {
+      clientRef.current?.close();
+      engineRef.current?.close();
+      stopPreview();
+    },
+    [stopPreview],
+  );
 
   /* ---------- شمارش معکوس کلاس ---------- */
   useEffect(() => {
@@ -354,18 +383,24 @@ export function LiveRoom({
   /* ---------- ورود به کلاس ---------- */
   const joinClassroom = useCallback(
     async (withMedia: boolean) => {
-      audioCtxRef.current?.close();
-      audioCtxRef.current = null;
-      previewStream?.getTracks().forEach((track) => track.stop());
+      stopPreviewMeter();
 
+      // استریم پیش‌آزمون (مجوز گرفته‌شده) مستقیم به کلاس منتقل می‌شود تا
+      // پنجرهٔ مجوز دوبار باز نشود؛ نبودش، تازه گرفته می‌شود.
       let stream: MediaStream | null = null;
       if (withMedia) {
-        const result = await acquireMediaStream(audioOnly ? "audio" : "both");
-        if (!result.ok) {
-          setMediaError(result.message);
-          return;
+        if (previewStreamRef.current) {
+          stream = previewStreamRef.current;
+          previewStreamRef.current = null;
+          setPreviewStream(null);
+        } else {
+          const result = await acquireMediaStream(audioOnly ? "audio" : "both");
+          if (!result.ok) {
+            setMediaError(result.message);
+            return;
+          }
+          stream = result.stream;
         }
-        stream = result.stream;
         setMediaError("");
       }
       liveStreamRef.current = stream;
@@ -437,7 +472,7 @@ export function LiveRoom({
         if (isTeacherSide && !peerSignaledRef.current) void engine.initiate();
       }, 8_000);
     },
-    [handleEvent, previewStream, role, runtime, sessionId, isTeacherSide, audioOnly],
+    [handleEvent, stopPreviewMeter, role, runtime, sessionId, isTeacherSide, audioOnly],
   );
 
   /* ---------- تلاش دوبارهٔ رسانه در میانهٔ کلاس ---------- */
@@ -520,9 +555,13 @@ export function LiveRoom({
       void audioCtxRef.current?.close();
       audioCtxRef.current = null;
       if (complete && isTeacherSide) {
-        void runtime
-          .request(`/sessions/${sessionId}/complete`, { method: "POST" })
-          .catch(() => { /* تسویه ممکن است به‌زمان وابسته باشد */ });
+        // ثبت برگزاری با کلید رسمی استاد — اگر مسیر مستقیم در دسترس نبود،
+        // مسیر عمومی جلسه تلاش می‌شود تا «پایان جلسه» هرگز بی‌اثر نماند.
+        void completeTeacherSession(runtime, sessionId).catch(async () => {
+          await runtime
+            .request(`/sessions/${sessionId}/complete`, { method: "POST" })
+            .catch(() => { /* تسویه ممکن است به‌زمان وابسته باشد */ });
+        });
       }
       window.setTimeout(() => {
         setEnding(false);
@@ -745,43 +784,17 @@ export function LiveRoom({
           </div>
           )}
 
-          {mediaError && (
-            <div style={{ padding: "10px 20px 0" }}>
-              <div
-                style={{
-                  padding: "13px 15px",
-                  borderRadius: 16,
-                  background: "rgba(191,149,64,.13)",
-                  border: "1px solid rgba(191,149,64,.35)",
-                  display: "grid",
-                  gap: 9,
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#e7d5a8", fontSize: 12.5, fontWeight: 800 }}>
-                  <Icon name="info" size={15} />
-                  {audioOnly ? (fa ? "مجوز میکروفون لازم است" : "Microphone permission required") : (fa ? "مجوز دوربین/میکروفون لازم است" : "Camera/mic permission required")}
-                </div>
-                <span style={{ fontSize: 11.8, lineHeight: 2, color: "#e8dcbc" }}>{mediaError}</span>
-                <button
-                  type="button"
-                  onClick={() => window.location.reload()}
-                  style={{
-                    justifySelf: "start",
-                    border: 0,
-                    borderRadius: 12,
-                    padding: "8px 16px",
-                    background: colors.gold,
-                    color: colors.onGold,
-                    fontWeight: 800,
-                    fontSize: 12.5,
-                    cursor: "pointer",
-                  }}
-                >
-                  {fa ? "تلاش دوباره" : "Retry"}
-                </button>
-              </div>
+          {/* گیت مجوز — پنجرهٔ مجوز به‌صورت خودکار باز می‌شود؛ اگر انسداد شد،
+              راهنمای دقیق همان دستگاه + دکمهٔ تلاش دوباره نمایش داده می‌شود */}
+          <MediaPermissionGate audioOnly={audioOnly} stream={previewStream} onStream={handleGateStream} />
+
+          {mediaError && !previewStream ? (
+            <div style={{ padding: "8px 20px 0" }}>
+              <span role="alert" style={{ display: "block", fontSize: 11.8, lineHeight: 1.9, color: "#f2c9c2" }}>
+                {mediaError}
+              </span>
             </div>
-          )}
+          ) : null}
 
           <div style={{ marginTop: "auto", padding: "18px 20px calc(18px + env(safe-area-inset-bottom))", display: "grid", gap: 10 }}>
             <button
@@ -1142,17 +1155,20 @@ export function LiveRoom({
             </div>
           )}
 
-          {/* نوار ابزار پایین */}
+          {/* نوار ابزار پایین — در صفحهٔ باریک به دو ردیف می‌شکند تا دکمهٔ
+              «پایان جلسه» همیشه داخل صفحه و قابل لمس بماند */}
           <div
             style={{
               position: "absolute",
               bottom: 0,
               insetInline: 0,
-              padding: `10px 16px calc(14px + env(safe-area-inset-bottom))`,
+              padding: `10px 12px calc(14px + env(safe-area-inset-bottom))`,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              gap: 12,
+              flexWrap: "wrap",
+              columnGap: 12,
+              rowGap: 10,
               background: "linear-gradient(0deg, rgba(15,19,10,.78), rgba(15,19,10,0))",
               zIndex: 30,
             }}
