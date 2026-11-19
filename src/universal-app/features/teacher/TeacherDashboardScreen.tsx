@@ -12,6 +12,7 @@ import { RoleModeSheet } from "../auth/RoleModeSheet";
 import { getTeacherCeremonyInbox } from "../ceremony/api";
 import { getTeacherDispatchInbox } from "../dispatch/api";
 import { NotificationsBell } from "../notifications/NotificationsBell";
+import { TeacherStoriesPanel } from "../stories/TeacherStoriesPanel";
 import { CityLocator } from "../home/CityLocator";
 import {
   Avatar,
@@ -535,6 +536,9 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
       </div>
 
       <CityLocator />
+
+      {/* E2 — استوری‌های من: انتشار تصویری (فشرده‌سازی خودکار) فقط برای دنبال‌کننده‌ها */}
+      <TeacherStoriesPanel />
 
       {loading ? (
         <LoadingState label={L("در حال دریافت داشبورد استاد…")} style={{ minHeight: 180 }} />

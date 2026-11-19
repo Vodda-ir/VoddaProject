@@ -61,3 +61,6 @@ frontend-dev.log
 
 # E1 — دادهٔ runtime استوری‌ها (نباید در دیپلوی بازنویسی شود)
 db/vodda-stories.json
+
+# E2 — دادهٔ runtime دنبال‌کردن اساتید
+db/vodda-follows.json

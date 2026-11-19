@@ -3,11 +3,18 @@ import { isSameOriginMutation } from '@/lib/server/same-origin';
 import { listTier1Flags, setTier1Flag } from '@/lib/server/overlay';
 import {
   createStory,
-  deleteStory,
+  deleteStoryAuthorized,
   incrementStoryViews,
   listActiveStories,
   listAllStories,
 } from '@/lib/server/stories';
+import {
+  followerCountOf,
+  followTeacher,
+  getFollowsOf,
+  normalizeTeacherId,
+  unfollowTeacher,
+} from '@/lib/server/follows';
 import { applyScoreEvent, scoreSnapshot, ensureScoreForTeacher } from '@/lib/server/gamification';
 import { enrichTeacherPayload, sortEnvelopeTier1First } from '@/lib/server/tier1';
 import { getFreeServices, getRecommendedTeachers } from '@/lib/server/discover';
@@ -162,67 +169,142 @@ async function handleFreeServices(request: NextRequest): Promise<Response> {
   }
 }
 
-/* ═════════ استوری‌های مدیر‌محور (E1) — مسیرهای محلی BFF ═════════
- * فقط ادمین سامانه اجازهٔ انتشار/حذف دارد؛ خواندن عمومی است.
- * تشخیص ادمین = نقش داخل توکن + تأیید امضای توکن نزد بک‌اند اصلی (/me).
- * کش تأیید ۶۰ ثانیه‌ای — انتشار/حذف رخداد نادری است.
+/* ═════════ استوری‌های مدیر‌محور + دنبال‌کردن اساتید (E2) — مسیرهای محلی BFF ═════════
+ * انتشار: ادمین (برند) و استادها (فقط تصویر، ۲۴ ساعت) — با هویت تأییدشده نزد بک‌اند (/me).
+ * دید استوری استاد: فقط دنبال‌کننده‌های او (و خودش)؛ استوری برند برای همه.
+ * تشخیص هویت = نقش داخل توکن + تأیید امضا نزد بک‌اند اصلی؛ کش تأیید ۶۰ ثانیه‌ای.
  * در پیش‌نمایش dev (بدون بک‌اند) نقش توکن کافی است — همان مدل preview-mock. */
 
-const verifiedAdminTokens = new Map<string, number>();
+type VerifiedSession = {
+  uid: string;
+  /** برای استاد = شناسهٔ پروفایل استاد؛ برای بقیه = uid */
+  authorId: string;
+  name: string;
+  role: string;
+  avatar: string;
+};
+
+const verifiedSessions = new Map<string, { session: VerifiedSession | null; until: number }>();
 
 function tokenFingerprint(token: string): string {
   return Buffer.from(token).toString('base64').slice(0, 64);
 }
 
-async function adminTokenValid(token: string | undefined): Promise<boolean> {
-  if (!token || tokenRole(token) !== 'admin') return false;
-  if (previewMockEnabled()) return true; // فقط سرور dev پیش‌نمایش — هرگز در تولید فعال نیست
-  const key = tokenFingerprint(token);
-  const validUntil = verifiedAdminTokens.get(key) ?? 0;
-  if (Date.now() < validUntil) return true;
+function tokenPayload(token: string | undefined): Record<string, unknown> | null {
+  if (!token) return null;
   try {
-    const upstream = await fetch(`${API_BASE}/me`, {
-      method: 'GET',
-      headers: { authorization: `Bearer ${token}` },
-      cache: 'no-store',
-      signal: AbortSignal.timeout(10_000),
-    });
-    if (!upstream.ok) return false;
-    verifiedAdminTokens.set(key, Date.now() + 60_000);
-    if (verifiedAdminTokens.size > 200) {
-      const now = Date.now();
-      for (const [cachedKey, until] of verifiedAdminTokens) {
-        if (until < now) verifiedAdminTokens.delete(cachedKey);
-      }
-    }
-    return true;
+    const payload = token.split('.')[1];
+    if (!payload) return null;
+    const json = JSON.parse(Buffer.from(payload.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8'));
+    return json && typeof json === 'object' ? (json as Record<string, unknown>) : null;
   } catch {
-    return false; // fail-closed — بدون تأیید بک‌اند، انتشار باز نمی‌شود
+    return null;
   }
 }
 
-async function handleStories(request: NextRequest, path: string[]): Promise<Response> {
-  /* GET /stories — زنده‌ها برای همه */
-  if (request.method === 'GET' && path.length === 1) {
-    const stories = await listActiveStories();
-    return NextResponse.json({ data: stories }, { headers: { 'cache-control': 'no-store' } });
+function sessionFromPayload(payload: Record<string, unknown> | null): VerifiedSession | null {
+  const role = typeof payload?.role === 'string' ? payload.role : '';
+  if (process.env.VODDA_PREVIEW_ADMIN === '1') {
+    const uid = String(typeof payload?.uid === 'number' ? payload.uid : 95);
+    return { uid, authorId: uid, name: 'مدیر سامانه وُدّا', role: 'admin', avatar: '' };
   }
+  if (role !== 'admin' && role !== 'teacher' && role !== 'learner') return null;
+  const uid = String(typeof payload?.uid === 'number' && payload.uid > 0 ? payload.uid : 1);
+  const name = role === 'admin' ? 'مدیر سامانه وُدّا' : role === 'teacher' ? 'استاد نمونه وُدّا' : 'قرآن‌آموز وُدّا';
+  return { uid, authorId: uid, name, role, avatar: '' };
+}
 
+async function verifiedSession(token: string | undefined): Promise<VerifiedSession | null> {
+  if (!token) return null;
+  const key = tokenFingerprint(token);
+  const cached = verifiedSessions.get(key);
+  if (cached && Date.now() < cached.until) return cached.session;
+  let session: VerifiedSession | null = null;
+  if (previewMockEnabled()) {
+    // فقط سرور dev پیش‌نمایش — هرگز در تولید فعال نیست
+    session = sessionFromPayload(tokenPayload(token));
+  } else {
+    try {
+      const upstream = await fetch(`${API_BASE}/me`, {
+        method: 'GET',
+        headers: { authorization: `Bearer ${token}` },
+        cache: 'no-store',
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (upstream.ok) {
+        const payload = (await upstream.json().catch(() => null)) as { data?: Record<string, unknown> } | null;
+        const me = payload?.data && typeof payload.data === 'object' ? payload.data : null;
+        const id = typeof me?.id === 'number' && me.id > 0 ? me.id : 0;
+        const role = typeof me?.role === 'string' ? me.role : '';
+        if (me && id > 0 && (role === 'admin' || role === 'teacher' || role === 'learner')) {
+          const teacherRecord = me.teacher && typeof me.teacher === 'object' ? (me.teacher as { id?: unknown }) : null;
+          const teacherId = typeof teacherRecord?.id === 'number' && teacherRecord.id > 0 ? teacherRecord.id : id;
+          session = {
+            uid: String(id),
+            authorId: String(role === 'teacher' ? teacherId : id),
+            name: typeof me.name === 'string' ? me.name.slice(0, 60) : '',
+            role,
+            avatar: typeof me.avatar_url === 'string' ? me.avatar_url.slice(0, 300) : '',
+          };
+        }
+      }
+    } catch {
+      session = null; // fail-closed — بدون تأیید بک‌اند، هویت باز نمی‌شود
+    }
+  }
+  verifiedSessions.set(key, { session, until: Date.now() + 60_000 });
+  if (verifiedSessions.size > 400) {
+    const now = Date.now();
+    for (const [cachedKey, value] of verifiedSessions) {
+      if (value.until < now) verifiedSessions.delete(cachedKey);
+    }
+  }
+  return session;
+}
+
+async function handleStories(request: NextRequest, path: string[]): Promise<Response> {
   const token = request.cookies.get('vodda_token')?.value;
+
+  /* GET /stories — برند برای همه؛ استادی‌ها فقط برای دنبال‌کننده‌ها و صاحب استوری */
+  if (request.method === 'GET' && path.length === 1) {
+    const active = await listActiveStories();
+    const session = await verifiedSession(token);
+    const follows = session ? await getFollowsOf(session.uid) : [];
+    const visible = active.filter((story) => {
+      if (story.author.role === 'admin') return true;
+      if (!session) return false;
+      if (session.role === 'admin') return true; // مدیر همه را برای نظارت می‌بیند
+      if (story.author.id === session.authorId) return true; // استوری خود استاد
+      return follows.includes(story.author.id); // دنبال‌کننده
+    });
+    return NextResponse.json(
+      {
+        data: visible,
+        // هویت جلسه برای گروه‌بندی «استوری‌های خودم» در ریل
+        me: session ? { author_id: session.authorId, role: session.role } : null,
+      },
+      { headers: { 'cache-control': 'no-store' } },
+    );
+  }
 
   /* GET /stories/all — فهرست کامل مدیر (شامل منقضی‌ها) */
   if (request.method === 'GET' && path[1] === 'all' && path.length === 2) {
-    if (!(await adminTokenValid(token))) {
+    const session = await verifiedSession(token);
+    if (session?.role !== 'admin') {
       return NextResponse.json({ error: 'دسترسی فقط برای ادمین مجاز است' }, { status: 403 });
     }
     const stories = await listAllStories();
     return NextResponse.json({ data: stories }, { headers: { 'cache-control': 'no-store' } });
   }
 
-  /* POST /stories — انتشار استوری (مدیر) */
+  /* POST /stories — انتشار استوری (ادمین برند یا استاد — فقط تصویر) */
   if (request.method === 'POST' && path.length === 1) {
-    if (!(await adminTokenValid(token))) {
-      return NextResponse.json({ error: 'دسترسی فقط برای ادمین مجاز است' }, { status: 403 });
+    const session = await verifiedSession(token);
+    if (!session) {
+      return NextResponse.json({ error: 'برای انتشار استوری ابتدا وارد شوید' }, { status: 401 });
+    }
+    if (session.role !== 'admin' && session.role !== 'teacher') {
+      return NextResponse.json({ error: 'انتشار استوری فقط برای مدیر سامانه و اساتید مجاز است' }, { status: 403 });
     }
     const length = Number(request.headers.get('content-length') ?? '0');
     if (Number.isFinite(length) && length > 2_600_000) {
@@ -234,12 +316,16 @@ async function handleStories(request: NextRequest, path: string[]): Promise<Resp
       link?: unknown;
       ttl_hours?: unknown;
     };
+    const author = session.role === 'admin'
+      ? { id: session.uid, name: 'وُدّا', role: 'admin' as const, avatar: '' }
+      : { id: session.authorId, name: session.name || 'استاد وُدّا', role: 'teacher' as const, avatar: session.avatar };
     try {
       const story = await createStory({
         mediaUrl: typeof body.media_url === 'string' ? body.media_url : '',
         caption: typeof body.caption === 'string' ? body.caption : '',
-        link: typeof body.link === 'string' ? body.link : undefined,
-        ttlHours: typeof body.ttl_hours === 'number' ? body.ttl_hours : 24,
+        link: session.role === 'admin' && typeof body.link === 'string' ? body.link : undefined,
+        ttlHours: session.role === 'admin' && typeof body.ttl_hours === 'number' ? body.ttl_hours : 24,
+        author,
       });
       return NextResponse.json({ data: story }, { status: 201 });
     } catch (error) {
@@ -256,13 +342,57 @@ async function handleStories(request: NextRequest, path: string[]): Promise<Resp
     return NextResponse.json({ data: { views } });
   }
 
-  /* DELETE /stories/:id — حذف (مدیر) */
+  /* DELETE /stories/:id — ادمین هر استوری؛ استاد فقط استوری خودش */
   if (request.method === 'DELETE' && path.length === 2) {
-    if (!(await adminTokenValid(token))) {
-      return NextResponse.json({ error: 'دسترسی فقط برای ادمین مجاز است' }, { status: 403 });
+    const session = await verifiedSession(token);
+    if (!session || (session.role !== 'admin' && session.role !== 'teacher')) {
+      return NextResponse.json({ error: 'دسترسی حذف استوری مجاز نیست' }, { status: 403 });
     }
-    const removed = await deleteStory(path[1]);
-    return NextResponse.json({ data: { removed } });
+    const result = await deleteStoryAuthorized(path[1], { role: session.role, authorId: session.authorId });
+    if (result === 'forbidden') {
+      return NextResponse.json({ error: 'حذف استوری دیگران مجاز نیست' }, { status: 403 });
+    }
+    return NextResponse.json({ data: { removed: result === 'removed' } });
+  }
+
+  return NextResponse.json({ error: 'not found' }, { status: 404 });
+}
+
+/* ═════════ دنبال‌کردن اساتید (E2) — مسیرهای محلی BFF ═════════ */
+
+async function handleFollows(request: NextRequest, path: string[]): Promise<Response> {
+  const token = request.cookies.get('vodda_token')?.value;
+
+  /* GET /follows/count/:teacherId — عمومی (نمایش روی پروفایل) */
+  if (request.method === 'GET' && path[1] === 'count' && path.length === 3) {
+    const teacherId = normalizeTeacherId(path[2]);
+    if (!teacherId) return NextResponse.json({ error: 'شناسه استاد نامعتبر است' }, { status: 400 });
+    const count = await followerCountOf(teacherId);
+    return NextResponse.json({ data: { count } }, { headers: { 'cache-control': 'no-store' } });
+  }
+
+  const session = await verifiedSession(token);
+  if (!session) {
+    return NextResponse.json({ error: 'برای دنبال‌کردن استاد ابتدا وارد شوید' }, { status: 401 });
+  }
+
+  /* GET /follows — فهرست استادهای دنبال‌شدهٔ من */
+  if (request.method === 'GET' && path.length === 1) {
+    const teacherIds = await getFollowsOf(session.uid);
+    return NextResponse.json({ data: { teacher_ids: teacherIds } }, { headers: { 'cache-control': 'no-store' } });
+  }
+
+  /* PUT /follows/:teacherId — دنبال‌کردن | DELETE — لغو */
+  if ((request.method === 'PUT' || request.method === 'DELETE') && path.length === 2) {
+    const teacherId = normalizeTeacherId(path[1]);
+    if (!teacherId) return NextResponse.json({ error: 'شناسه استاد نامعتبر است' }, { status: 400 });
+    if (request.method === 'PUT') {
+      await followTeacher(session.uid, teacherId);
+    } else {
+      await unfollowTeacher(session.uid, teacherId);
+    }
+    const count = await followerCountOf(teacherId);
+    return NextResponse.json({ data: { following: request.method === 'PUT', count } });
   }
 
   return NextResponse.json({ error: 'not found' }, { status: 404 });
@@ -299,8 +429,9 @@ async function proxy(request: NextRequest, context: RouteContext): Promise<Respo
   /* مسیرهای محلی overlay/score/کشف — بدون تماس با بک‌اند */
   if (path[0] === 'teacher-flags') return handleTeacherFlags(request, path);
   if (path[0] === 'score') return handleScore(request, path);
-  /* E1 — استوری‌ها — مسیر محلی؛ در اپ نیتیو مسیر وجود ندارد و caller جایگزین می‌کند */
+  /* E1/E2 — استوری‌ها و دنبال‌کردن — مسیر محلی؛ در اپ نیتیو مسیر وجود ندارد و caller جایگزین می‌کند */
   if (path[0] === 'stories') return handleStories(request, path);
+  if (path[0] === 'follows') return handleFollows(request, path);
   /* ۱.ب.۵ — GET /teachers/recommended در بک‌اند وجود ندارد؛ محلی */
   if (path[0] === 'teachers' && path[1] === 'recommended') return handleRecommended(request);
   /* ۱.ب.۴ — GET /services?is_free=true … در بک‌اند وجود ندارد؛ محلی */

@@ -65,8 +65,8 @@ import { searchTeachers, fetchRecommendedTeachers } from "../teachers/api";
 import { VoddaPicksCarousel } from "./VoddaPicksCarousel";
 import { StoryRail, markStorySeen } from "../stories/StoryRail";
 import { StoryViewer } from "../stories/StoryViewer";
+import { fetchStoriesFeed, type Story } from "../stories/api";
 import { StoryComposer } from "../stories/StoryComposer";
-import { fetchStories, type Story } from "../stories/api";
 import type { Teacher } from "../teachers/types";
 import { nearestCity } from "@/lib/cities";
 import {
@@ -417,30 +417,9 @@ function ScrollHintRow({ children }: { children: ReactNode }) {
   );
 }
 
-/* نگاشت کلید تصویر خدمت به آیکون خطی وکتوری کارت باریک بنتو */
-type AppIconName = Parameters<typeof Icon>[0]["name"];
-const SLIM_SERVICE_ICON: Record<string, AppIconName> = {
-  quran: "quran",
-  tajweed: "book",
-  alphabet: "book",
-  hifz: "star",
-  voice: "mic",
-  tafsir: "doc",
-  mosque: "pin",
-  kids: "users",
-  medal: "award",
-  mentor: "user",
-  azan: "bell",
-};
-
-function slimServiceIcon(imageKey: string): AppIconName {
-  return SLIM_SERVICE_ICON[imageKey] ?? "quran";
-}
-
-/* ۱.ب.۶ — خدمات پرکاربرد — چیدمان بنتوی نامتقارن (تم لوکس و ساختاریافته):
- *  کارت بزرگ راست (بنر تصویر + گرادیان تیره + بج طلایی شمارش استاد + دکمهٔ شیشه‌ای)
- *  + کارت باریک چپ (زمینهٔ زیتونی تیره + وکتور مینیمال).
- *  بقیهٔ خدمات به‌صورت چیپ‌های کم‌حجم زیر بنتو حفظ می‌شوند تا هیچ خدمتی از دسترس خارج نشود. */
+/* ۱.ب.۶ — خدمات پرکاربرد — چیدمان جدید (E2):
+ *  کارت بزرگ تمام‌عرض (بنر تصویر + گرادیان تیره + بج طلایی شمارش استاد + دکمهٔ شیشه‌ای)
+ *  — کارت باریک کناری حذف شد؛ خدمت‌های بعدی به‌صورت ردیف کارتی زیر کارت بزرگ می‌آیند. */
 function PopularServicesGrid({
   services,
   loading,
@@ -456,17 +435,14 @@ function PopularServicesGrid({
     return (
       <section aria-label="در حال بارگذاری خدمات پرکاربرد" style={{ display: "grid", gap: 12 }}>
         <Skeleton style={{ width: 150, height: 18 }} />
-        <div style={{ display: "grid", gridTemplateColumns: "1.35fr 1fr", gap: 10 }}>
-          <Skeleton style={{ height: wide ? 258 : 214, borderRadius: 20 }} />
-          <Skeleton style={{ height: wide ? 258 : 214, borderRadius: 20 }} />
-        </div>
+        <Skeleton style={{ height: wide ? 292 : 252, borderRadius: 20 }} />
       </section>
     );
   }
   if (services.length === 0) return null;
 
-  const [hero, slim] = services;
-  const rest = services.slice(2, 8);
+  const [hero] = services;
+  const rest = services.slice(1, 9);
 
   return (
     <section aria-label="خدمات پرکاربرد" style={{ display: "grid", gap: spacing.sm, minWidth: 0 }}>
@@ -474,7 +450,7 @@ function PopularServicesGrid({
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: slim ? "1.35fr 1fr" : "1fr",
+          gridTemplateColumns: "1fr",
           gap: 10,
           minWidth: 0,
         }}
@@ -489,7 +465,7 @@ function PopularServicesGrid({
             style={{
               position: "relative",
               minWidth: 0,
-              minHeight: wide ? 258 : 214,
+              minHeight: wide ? 292 : 252,
               padding: 0,
               textAlign: "start",
               border: "1px solid rgba(191,149,64,.55)",
@@ -612,134 +588,6 @@ function PopularServicesGrid({
               >
                 اساتید این خدمت
                 <Icon name="chevronL" size={13} />
-              </span>
-            </span>
-          </button>
-        ) : null}
-        {/* ─── کارت باریک چپ: زمینهٔ زیتونی تیره + وکتور مینیمال + فلش ─── */}
-        {slim ? (
-          <button
-            type="button"
-            onClick={() => navigateApp(`/service/${slim.id}`, config)}
-            className="vodda-tappable"
-            aria-label={`${slim.title} — ${faNumber(slim.teacherCount, 0)} استاد`}
-            style={{
-              position: "relative",
-              minWidth: 0,
-              minHeight: wide ? 258 : 214,
-              display: "flex",
-              padding: 0,
-              textAlign: "start",
-              border: "1px solid rgba(46,54,34,.28)",
-              borderRadius: 20,
-              overflow: "hidden",
-              background: "linear-gradient(155deg, #3c472b 0%, #4c5a36 58%, #5e6e43 100%)",
-              cursor: "pointer",
-              fontFamily: typography.fontFamily,
-              boxShadow: "0 14px 30px rgba(46,54,34,.22)",
-              animation: "vodda-enter .36s ease-out both",
-              animationDelay: "60ms",
-            }}
-          >
-            {/* وکتور مینیمال خدمت — آیکون خطی بزرگ کم‌رنگ در گوشه */}
-            <Icon
-              name={slimServiceIcon(slim.imageKey)}
-              size={104}
-              stroke={1.1}
-              style={{
-                position: "absolute",
-                insetInlineEnd: -14,
-                bottom: -12,
-                color: "rgba(255,250,240,.16)",
-                pointerEvents: "none",
-              }}
-            />
-            <span
-              aria-hidden="true"
-              style={{
-                position: "absolute",
-                top: -26,
-                insetInlineStart: -26,
-                width: 92,
-                height: 92,
-                borderRadius: "50%",
-                background: "radial-gradient(circle, rgba(216,184,105,.24), transparent 70%)",
-              }}
-            />
-            <span
-              style={{
-                position: "relative",
-                flex: 1,
-                minWidth: 0,
-                display: "flex",
-                flexDirection: "column",
-                gap: 8,
-                padding: 12,
-              }}
-            >
-              <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6, minWidth: 0 }}>
-                <span
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 4,
-                    padding: "3.5px 9px",
-                    borderRadius: 999,
-                    background: "rgba(255,253,246,.16)",
-                    border: "1px solid rgba(255,253,246,.3)",
-                    color: "#fffdf6",
-                    fontSize: 10,
-                    fontWeight: 800,
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  <Icon name="users" size={11} />
-                  {faNumber(slim.teacherCount, 0)} استاد
-                </span>
-                <span
-                  aria-hidden="true"
-                  style={{
-                    width: 28,
-                    height: 28,
-                    display: "grid",
-                    placeItems: "center",
-                    borderRadius: "50%",
-                    background: "rgba(255,253,246,.14)",
-                    border: "1px solid rgba(255,253,246,.35)",
-                    color: "#fffdf6",
-                    flex: "0 0 auto",
-                  }}
-                >
-                  <Icon name="chevronL" size={14} stroke={2} />
-                </span>
-              </span>
-              <strong
-                style={{
-                  marginTop: "auto",
-                  color: "#fffdf6",
-                  fontSize: 14.5,
-                  fontWeight: 900,
-                  lineHeight: 1.55,
-                  display: "-webkit-box",
-                  WebkitBoxOrient: "vertical",
-                  WebkitLineClamp: 3,
-                  overflow: "hidden",
-                  overflowWrap: "anywhere",
-                }}
-              >
-                {slim.title}
-              </strong>
-              <span
-                style={{
-                  color: "rgba(255,250,240,.72)",
-                  fontSize: 10,
-                  fontWeight: 600,
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                }}
-              >
-                {slim.category}
               </span>
             </span>
           </button>
@@ -1319,12 +1167,14 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
   /* ۱.ب — دادهٔ کشف */
   const [catalogGroups, setCatalogGroups] = useState<CatalogCategory[]>([]);
   const [recommended, setRecommended] = useState<Teacher[] | null>(null);
-  /* E1 — استوری‌های مدیر‌محور */
+  /* E1/E2 — استوری‌ها (برند + اساتید دنبال‌شده) */
   const [stories, setStories] = useState<Story[]>([]);
   const [storiesLoading, setStoriesLoading] = useState(true);
   const [storyViewerIndex, setStoryViewerIndex] = useState<number | null>(null);
   const [storyComposerOpen, setStoryComposerOpen] = useState(false);
   const [storySeenKey, setStorySeenKey] = useState(0);
+  const [storyMyAuthorId, setStoryMyAuthorId] = useState("");
+  const [storyMyRole, setStoryMyRole] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -1412,8 +1262,10 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
   /* E1 — استوری‌های زندهٔ مدیر (fail-safe؛ خطا = بدون ریل) */
   const loadStories = useCallback(async () => {
     setStoriesLoading(true);
-    const rows = await fetchStories(runtime);
-    setStories(rows);
+    const feed = await fetchStoriesFeed(runtime);
+    setStories(feed.stories);
+    setStoryMyAuthorId(feed.myAuthorId);
+    setStoryMyRole(feed.myRole);
     setStoriesLoading(false);
   }, [runtime]);
 
@@ -1725,11 +1577,12 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
         </div>
       </header>
 
-      {/* E1 — بخش ② استوری‌های وُدّا (مدیر‌محور؛ جایگزین کادر آیهٔ روز) */}
+      {/* E1/E2 — بخش ② استوری‌های وُدّا — کاشی جدا برای هر استوری خودم + کاشی هر نویسنده */}
       <StoryRail
         stories={stories}
         loading={storiesLoading}
-        isAdmin={user?.role === "admin"}
+        myRole={storyMyRole || user?.role || ""}
+        myAuthorId={storyMyAuthorId}
         seenRefreshKey={storySeenKey}
         onOpen={(index) => setStoryViewerIndex(index)}
         onCompose={() => setStoryComposerOpen(true)}
@@ -1785,13 +1638,14 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
         onClose={() => setRoleSheetOpen(false)}
       />
 
-      {/* E1 — نمایشگر تمام‌صفحهٔ استوری + فرم انتشار مدیر */}
+      {/* E1/E2 — نمایشگر تمام‌صفحهٔ استوری + فرم انتشار */}
       {storyViewerIndex !== null && stories.length > 0 ? (
         <StoryViewer
           stories={stories}
           startIndex={storyViewerIndex}
           runtime={runtime}
-          isAdmin={user?.role === "admin"}
+          myRole={storyMyRole || user?.role || ""}
+          myAuthorId={storyMyAuthorId}
           onClose={() => {
             setStoryViewerIndex(null);
             setStorySeenKey((value) => value + 1);
@@ -1808,6 +1662,7 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
       <StoryComposer
         open={storyComposerOpen}
         runtime={runtime}
+        mode={storyMyRole === "teacher" ? "teacher" : "admin"}
         onClose={() => setStoryComposerOpen(false)}
         onPublished={() => {
           setStoryComposerOpen(false);

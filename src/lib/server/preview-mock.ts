@@ -189,7 +189,19 @@ export function previewMockResponse(request: NextRequest, path: string[]): Respo
     if (role === 'admin') {
       return jsonResponse({ data: { ...MOCK_LEARNER, role: 'admin', name: 'مدیر سامانه وُدّا' } });
     }
-    return jsonResponse({ data: { ...MOCK_LEARNER, role: role === 'teacher' ? 'teacher' : 'learner' } });
+    if (role === 'teacher') {
+      /* E2 — استاد پیش‌نمایش: شکل /me با آبجکت teacher تا داشبورد و پنل استوری کامل کار کند */
+      return jsonResponse({
+        data: {
+          ...MOCK_LEARNER,
+          id: 7,
+          role: 'teacher',
+          name: 'استاد نمونه وُدّا',
+          teacher: { id: 7, rating: 4.8, reviews: 96, sessions: 140 },
+        },
+      });
+    }
+    return jsonResponse({ data: { ...MOCK_LEARNER, role: 'learner' } });
   }
   if (head === 'catalog' && path[1] === 'services' && path.length === 2) {
     return jsonResponse({ data: { categories: MOCK_CATALOG_CATEGORIES } });
