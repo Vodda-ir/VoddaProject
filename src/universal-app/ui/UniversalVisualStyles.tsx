@@ -347,12 +347,32 @@ export function UniversalVisualStyles() {
         max-width: 100%;
         overflow-x: clip;
       }
+      /* لایهٔ شیشه‌ای ناوبری (Glassmorphism) با بریدگی نیم‌دایرهٔ وسط (Notch).
+       * ماسک روی لایهٔ پس‌زمینه است نه خود nav — وگرنه دکمهٔ شناور مرکزی
+       * (فرزند nav) هم بریده می‌شد.
+       * پس‌زمینه دو مرحله‌ای: فالبک solid برای وب‌ویوهای قدیمی، سپس color-mix
+       * شفاف بر پایهٔ var(--v-surface) تا در حالت تاریک هم درست باشد. */
       .vodda-bottom-nav {
         transform: translateZ(0);
       }
-      /* هالهٔ نرم زیر پیل تب فعال — مسیر کاربر همیشه روشن است (فاز نور) */
-      .vodda-bottom-nav a[aria-current="page"] > span {
-        box-shadow: 0 6px 16px rgba(76, 90, 54, .30);
+      .vodda-bottom-nav-glass {
+        position: absolute;
+        inset: 0;
+        border-radius: 22px 22px 0 0;
+        background: rgba(255, 255, 255, 0.78);
+        background: color-mix(in srgb, var(--v-surface, #ffffff) 78%, transparent);
+        -webkit-backdrop-filter: blur(18px) saturate(1.5);
+        backdrop-filter: blur(18px) saturate(1.5);
+        box-shadow: 0 -10px 30px rgba(46, 54, 34, 0.10);
+        pointer-events: none;
+        /* بریدگی نیم‌دایرهٔ مرکز — شعاع ۳۳px هم‌قطر با دکمهٔ شناور فراخوان */
+        -webkit-mask-image: radial-gradient(circle 33px at 50% 0, transparent 31.5px, #000 33px);
+        mask-image: radial-gradient(circle 33px at 50% 0, transparent 31.5px, #000 33px);
+      }
+      [data-vodda-theme="dark"] .vodda-bottom-nav-glass {
+        background: rgba(29, 33, 24, 0.82);
+        background: color-mix(in srgb, var(--v-surface, #1d2118) 82%, transparent);
+        box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.35);
       }
       /* هالهٔ طلایی تنفّسی دور دکمهٔ مرکزی فراخوان */
       .vodda-nav-cta-orb {
@@ -373,6 +393,10 @@ export function UniversalVisualStyles() {
       }
       .vodda-bottom-nav a {
         transition: color 150ms ease, background 150ms ease, transform 150ms ease;
+      }
+      /* فشرده‌شدن تب هنگام لمس — بازخورد لمسی آیتم‌های ناوبری */
+      .vodda-bottom-nav a:active {
+        transform: scale(0.94);
       }
       .vodda-nav-cta-orb {
         transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
