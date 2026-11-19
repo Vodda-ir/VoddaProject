@@ -16,6 +16,7 @@ export type AppRouteName =
   | "profile"
   | "profile-edit"
   | "dispatch"
+  | "free-services"
   | "call-hub"
   | "ceremony-new"
   | "ceremony-calls"
@@ -53,6 +54,7 @@ export const appRoutePaths = {
   profile: "/profile",
   "profile-edit": "/profile/edit",
   dispatch: "/dispatch",
+  "free-services": "/free-services",
   "call-hub": "/call",
   "ceremony-new": "/ceremony/new",
   "ceremony-calls": "/ceremony/calls",
