@@ -20,6 +20,16 @@ import type { BookingSlot } from "./types";
 // باگ persian-dates — برچسب روزها از util مرکزی شمسی (weekday از خود تاریخ، نه عدد دستی)
 const weekdays = ["شنبه", "یکشنبه", "دوشنبه", "سه‌شنبه", "چهارشنبه", "پنجشنبه", "جمعه"];
 
+/** هویت بصری سه نوع جلسهٔ آنلاین — تلفنی/متنی/تصویری. */
+function sessionModeMeta(mode: string): { label: string; icon: "phone" | "message" | "video"; hint: string } | null {
+  if (mode === "voice") return { label: "تلفنی و صوتی", icon: "phone", hint: "تماس صوتی از داخل اپ — شماره‌ها پنهان می‌مانند" };
+  if (mode === "text") return { label: "متنی (چت)", icon: "message", hint: "چت امن با متن، ویس و تصویر" };
+  if (mode === "video") return { label: "تصویری", icon: "video", hint: "کلاس زندهٔ تصویری با دوربین و میکروفون" };
+  return null;
+}
+
+const MODE_ORDER: Record<string, number> = { voice: 0, text: 1, video: 2 };
+
 function BookingStepHeader({ number, title }: { number: number; title: string }) {
   const { lang } = useAppearance();
   return (
@@ -175,10 +185,23 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
   );
 
   const allServices = teacher?.services.filter((item) => item.active && item.id > 0) ?? [];
+  // سه نوع جلسهٔ آنلاین اول می‌آیند (صوتی، متنی، تصویری) — انتخاب روش برگزاری برای کاربر واضح باشد.
+  const sortedServices = useMemo(
+    () =>
+      [...allServices].sort((left, right) => {
+        const leftMode = MODE_ORDER[left.mode ?? ""];
+        const rightMode = MODE_ORDER[right.mode ?? ""];
+        if (leftMode != null && rightMode != null) return leftMode - rightMode;
+        if (leftMode != null) return -1;
+        if (rightMode != null) return 1;
+        return 0;
+      }),
+    [allServices],
+  );
   // فیلتر خدمات رایگان: وقتی از کارت جلسهٔ رایگان آمده‌ایم، خدمات پولی نمایش داده نمی‌شوند
   const services = useMemo(
-    () => (freeOnly ? allServices.filter((item) => item.price === 0) : allServices),
-    [allServices, freeOnly],
+    () => (freeOnly ? sortedServices.filter((item) => item.price === 0) : sortedServices),
+    [sortedServices, freeOnly],
   );
   const isSelfTeacher = Boolean(teacher?.userId && meId && teacher.userId === meId);
   const isFreeService = service ? service.price === 0 : false;
@@ -443,6 +466,7 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
           <div style={{ display: "grid", gap: spacing.sm }}>
             {services.map((item) => {
               const selected = service?.id === item.id;
+              const modeMeta = sessionModeMeta(item.mode ?? "");
               return (
                 <button
                   key={item.id}
@@ -456,15 +480,44 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
                     padding: 13,
                     textAlign: "right",
                     color: colors.ink,
-                    background: selected ? colors.olive50 : colors.sand50,
-                    border: selected ? `1.6px solid ${colors.olive600}` : `1px solid ${colors.sand200}`,
+                    background: selected ? colors.olive50 : modeMeta ? colors.greenBackground : colors.sand50,
+                    border: selected
+                      ? `1.6px solid ${colors.olive600}`
+                      : modeMeta
+                        ? `1px solid ${colors.greenBorder}`
+                        : `1px solid ${colors.sand200}`,
                     borderRadius: 16,
                     cursor: "pointer",
                     fontFamily: typography.fontFamily,
                   }}
                 >
                   <span>
-                    <strong style={{ display: "block", ...typography.body }}>{L(item.title)}</strong>
+                    <span style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
+                      <strong style={{ display: "block", ...typography.body }}>{L(item.title)}</strong>
+                      {modeMeta ? (
+                        <span
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 4,
+                            padding: "2px 9px",
+                            borderRadius: 999,
+                            background: colors.greenChip,
+                            color: colors.greenInk,
+                            fontSize: 10.5,
+                            fontWeight: 800,
+                          }}
+                        >
+                          <Icon name={modeMeta.icon} size={12} stroke={2.2} />
+                          {L(modeMeta.label)}
+                        </span>
+                      ) : null}
+                    </span>
+                    {modeMeta ? (
+                      <span style={{ display: "block", marginTop: 4, fontSize: 11, lineHeight: 1.8, color: colors.greenInk, opacity: 0.9 }}>
+                        {L(modeMeta.hint)}
+                      </span>
+                    ) : null}
                     <span
                       style={{
                         display: "inline-flex",
@@ -611,6 +664,7 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
             {[
               [L("استاد"), N(teacher.name)],
               [L("خدمت"), L(service.title)],
+              ...(sessionModeMeta(service.mode ?? "") ? [[L("نوع جلسه"), L(sessionModeMeta(service.mode ?? "")!.label)]] : []),
               [L("تاریخ"), formatAppDate(slot.localDate, lang, { withWeekday: slot.weekday })],
               [L("ساعت"), `${slot.localStart} ${L("تا")} ${slot.localEnd}`],
               [L("مدت"), `${localizedDigits(service.duration, lang)} ${L("دقیقه")}`],

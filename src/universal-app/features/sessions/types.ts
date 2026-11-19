@@ -1,5 +1,8 @@
 export type LearnerSessionStatus = "pending" | "confirmed" | "done" | "canceled" | string;
 
+/** نوع میزبانِ جلسه: صوتی/متنی/تصویری — خالی یعنی جلسهٔ معمولی. */
+export type SessionHostingMode = "voice" | "text" | "video" | "";
+
 export type LearnerSession = {
   id: number;
   teacherId: number;
@@ -18,6 +21,8 @@ export type LearnerSession = {
   rejectNote: string;
   /** جلسهٔ فوری — رزروِ همین‌لحظه. */
   instant: boolean;
+  /** نوع جلسهٔ آنلاین (تلفنی/متنی/تصویری). */
+  mode: SessionHostingMode;
 };
 
 type UnknownRecord = Record<string, unknown>;
@@ -50,6 +55,8 @@ export function parseLearnerSession(value: unknown): LearnerSession | null {
 
   const teacher = record(row.teacher);
   const teacherUser = record(teacher?.user);
+  const rawMode = text(row.mode);
+  const mode = rawMode === "voice" || rawMode === "text" || rawMode === "video" ? rawMode : "";
 
   return {
     id,
@@ -68,6 +75,7 @@ export function parseLearnerSession(value: unknown): LearnerSession | null {
     note: text(row.note),
     rejectNote: text(row.reject_note),
     instant: row.instant === true,
+    mode,
   };
 }
 

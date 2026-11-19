@@ -3,6 +3,7 @@ package usecase
 import (
         "context"
         "errors"
+        "strconv"
         "strings"
         "time"
 
@@ -259,6 +260,128 @@ func (uc *TeacherUsecase) DeleteService(ctx context.Context, userID, serviceID u
                 return domain.ErrForbidden
         }
         return uc.teachers.DeleteService(ctx, t.ID, serviceID)
+}
+
+// ── online session services (voice / text / video) ──
+
+// OnlineServiceConfig is the merged view of one of the three online session
+// offerings managed from «خدمات جلسات آنلاین». service_id is 0 until the
+// teacher saves the config the first time; saving creates the underlying
+// bookable service row (regular price/duration flow, wallet & gateway
+// settlement included) so bookings keep working through the existing path.
+type OnlineServiceConfig struct {
+        Mode      string `json:"mode"`
+        Title     string `json:"title"`
+        Icon      string `json:"icon"`
+        Duration  int    `json:"duration"`
+        Price     int64  `json:"price"`
+        Active    bool   `json:"active"`
+        ServiceID uint   `json:"service_id"`
+}
+
+// onlineServiceCatalog is the platform-owned catalog of the three online
+// session styles. Titles are server-side constants — the teacher only sets
+// duration, price and the active switch.
+var onlineServiceCatalog = []OnlineServiceConfig{
+        {Mode: "voice", Title: "جلسهٔ تلفنی و صوتی", Icon: "phone", Duration: 30, Price: 150_000, Active: false},
+        {Mode: "text", Title: "جلسهٔ متنی (چت)", Icon: "message", Duration: 60, Price: 100_000, Active: false},
+        {Mode: "video", Title: "جلسهٔ تصویری", Icon: "video", Duration: 45, Price: 200_000, Active: false},
+}
+
+func onlineServiceDefault(mode domain.SessionMode) (OnlineServiceConfig, bool) {
+        for _, entry := range onlineServiceCatalog {
+                if domain.SessionMode(entry.Mode) == mode {
+                        return entry, true
+                }
+        }
+        return OnlineServiceConfig{}, false
+}
+
+// OnlineServices returns the three online session configs of the teacher,
+// merged with any saved rows.
+func (uc *TeacherUsecase) OnlineServices(ctx context.Context, userID uint) ([]OnlineServiceConfig, error) {
+        t, err := uc.teacherForUser(ctx, userID)
+        if err != nil {
+                return nil, err
+        }
+        saved := make(map[domain.SessionMode]domain.Service, 3)
+        for _, s := range t.Services {
+                if s.Mode != "" {
+                        saved[s.Mode] = s
+                }
+        }
+        out := make([]OnlineServiceConfig, 0, len(onlineServiceCatalog))
+        for _, entry := range onlineServiceCatalog {
+                if row, ok := saved[domain.SessionMode(entry.Mode)]; ok {
+                        entry.Duration = row.Duration
+                        entry.Price = row.Price
+                        entry.Active = row.Active
+                        entry.ServiceID = row.ID
+                }
+                out = append(out, entry)
+        }
+        return out, nil
+}
+
+// UpsertOnlineService creates or updates the service row behind one of the
+// three online session modes. Teachers self-serve these configs: the titles
+// come from the server catalog, so no moderation round-trip is needed.
+func (uc *TeacherUsecase) UpsertOnlineService(ctx context.Context, userID uint, mode domain.SessionMode, duration int, price int64, active bool) ([]OnlineServiceConfig, error) {
+        defaults, ok := onlineServiceDefault(mode)
+        if !ok || duration < 10 || duration > 240 || price < 0 || price > 1_000_000_000 {
+                return nil, domain.ErrValidation
+        }
+        t, err := uc.teacherForUser(ctx, userID)
+        if err != nil {
+                return nil, err
+        }
+        var existing *domain.Service
+        for i := range t.Services {
+                if t.Services[i].Mode == mode {
+                        existing = &t.Services[i]
+                        break
+                }
+        }
+        if existing == nil {
+                row := &domain.Service{
+                        TeacherID: t.ID,
+                        Title:     defaults.Title,
+                        Duration:  duration,
+                        Price:     price,
+                        Icon:      defaults.Icon,
+                        Active:    active,
+                        Mode:      mode,
+                }
+                if err := uc.teachers.AddService(ctx, row); err != nil {
+                        return nil, err
+                }
+                NotifyAdmins(ctx, uc.notifs, uc.users, "مدیریت: خدمت جلسهٔ آنلاین ثبت شد",
+                        "استاد خدمت آنلاین «"+defaults.Title+"» را با قیمت "+fmtInt(price)+" تومان فعال کرد.")
+        } else {
+                existing.Duration = duration
+                existing.Price = price
+                existing.Active = active
+                if err := uc.teachers.UpdateService(ctx, existing); err != nil {
+                        return nil, err
+                }
+        }
+        return uc.OnlineServices(ctx, userID)
+}
+
+// fmtInt renders an int64 with thousand separators for notification bodies.
+func fmtInt(value int64) string {
+        digits := strconv.FormatInt(value, 10)
+        if len(digits) <= 3 {
+                return digits
+        }
+        out := make([]byte, 0, len(digits)+len(digits)/3)
+        for i := 0; i < len(digits); i++ {
+                if i > 0 && (len(digits)-i)%3 == 0 {
+                        out = append(out, ',')
+                }
+                out = append(out, digits[i])
+        }
+        return string(out)
 }
 
 // ── work times ──

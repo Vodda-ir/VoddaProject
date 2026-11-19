@@ -45,6 +45,7 @@ import {
   type SessionMessageData,
 } from "./api";
 import { LiveRoom } from "./LiveRoom";
+import { SessionChat } from "./SessionChat";
 import { useAppearance } from "../../ui/appearance";
 import type { TranslationKey } from "../../i18n";
 
@@ -84,6 +85,14 @@ function canEndSession(detail: SessionDetailData): boolean {
   const start = startMs(detail);
   if (detail.status !== "confirmed" || Number.isNaN(start)) return false;
   return Date.now() >= start;
+}
+
+/** برچسب و آیکون نوع جلسهٔ آنلاین — تلفنی/متنی/تصویری. */
+function modeBadge(mode: string): { label: string; icon: "phone" | "message" | "video" } | null {
+  if (mode === "voice") return { label: "جلسهٔ تلفنی و صوتی", icon: "phone" };
+  if (mode === "text") return { label: "جلسهٔ متنی (چت)", icon: "message" };
+  if (mode === "video") return { label: "جلسهٔ تصویری", icon: "video" };
+  return null;
 }
 
 function timeHint(detail: SessionDetailData, lang: "fa" | "en", L: (text: string) => string): string {
@@ -288,11 +297,13 @@ export function SessionDetailScreen({
     }
   }, [id, runtime]);
 
+  // نظرسنجی پیام‌ها: چت جلسهٔ متنی زنده‌تر است (۴ ثانیه)، چت هماهنگی ۱۰ ثانیه.
+  const messagePollMs = detail?.mode === "text" ? 4_000 : 10_000;
   useEffect(() => {
     void loadMessages();
-    const timer = window.setInterval(() => void loadMessages(), 10_000);
+    const timer = window.setInterval(() => void loadMessages(), messagePollMs);
     return () => window.clearInterval(timer);
-  }, [loadMessages]);
+  }, [loadMessages, messagePollMs]);
 
   async function runAction(action: () => Promise<void>) {
     if (busy) return;
@@ -416,6 +427,29 @@ export function SessionDetailScreen({
           </div>
         </div>
 
+        {modeBadge(detail.mode) ? (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 7,
+              padding: "9px 12px",
+              borderRadius: 12,
+              background: colors.greenBackground,
+              border: `1px solid ${colors.greenBorder}`,
+              color: colors.greenInk,
+              fontSize: 12,
+              fontWeight: 800,
+            }}
+          >
+            <Icon name={modeBadge(detail.mode)!.icon} size={15} style={{ flex: "0 0 auto", color: colors.greenDeep }} />
+            {L(modeBadge(detail.mode)!.label)}
+            {detail.mode === "voice" ? (
+              <span style={{ fontSize: 10.5, fontWeight: 700, opacity: 0.85 }}>· {L("شمارهٔ شما هرگز نمایش داده نمی‌شود")}</span>
+            ) : null}
+          </div>
+        ) : null}
+
         <div
           style={{
             display: "flex",
@@ -484,17 +518,35 @@ export function SessionDetailScreen({
         </Card>
       ) : null}
 
-      {/* کلاس تصویری */}
-      {detail.status === "confirmed" ? (
+      {/* جلسهٔ آنلاین — کلاس تصویری یا تماس صوتی امن (حالت متنی چت اختصاصی دارد) */}
+      {detail.status === "confirmed" && detail.mode !== "text" ? (
         <Card style={{ display: "grid", gap: 12, padding: 16, borderRadius: 22 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ width: 42, height: 42, display: "grid", placeItems: "center", borderRadius: 14, flex: "0 0 42px", background: colors.olive100, color: colors.olive700 }}>
-              <Icon name="video" size={21} />
+            <span
+              style={{
+                width: 42,
+                height: 42,
+                display: "grid",
+                placeItems: "center",
+                borderRadius: 14,
+                flex: "0 0 42px",
+                background: detail.mode === "voice" ? colors.greenBackground : colors.olive100,
+                border: detail.mode === "voice" ? `1px solid ${colors.greenBorder}` : "transparent",
+                color: detail.mode === "voice" ? colors.greenDeep : colors.olive700,
+              }}
+            >
+              <Icon name={detail.mode === "voice" ? "phone" : "video"} size={21} />
             </span>
             <div style={{ minWidth: 0, flex: 1 }}>
-              <strong style={{ display: "block", fontSize: 13.5, fontWeight: 800, color: colors.ink }}>{L("کلاس تصویری وُدّا")}</strong>
+              <strong style={{ display: "block", fontSize: 13.5, fontWeight: 800, color: colors.ink }}>
+                {detail.mode === "voice" ? L("تماس صوتی امن وُدّا") : L("کلاس تصویری وُدّا")}
+              </strong>
               <span style={{ display: "block", fontSize: 11.5, color: colors.inkMuted, marginTop: 1 }}>
-                {joinReady ? L("کلاس باز است — همین حالا وارد شوید.") : hint || L("پنجرهٔ ورود از ۱۰ دقیقه قبل از شروع باز می‌شود.")}
+                {joinReady
+                  ? detail.mode === "voice"
+                    ? L("تماس باز است — از داخل اپ برقرار می‌شود؛ شمارهٔ شما پنهان می‌ماند.")
+                    : L("کلاس باز است — همین حالا وارد شوید.")
+                  : hint || L("پنجرهٔ ورود از ۱۰ دقیقه قبل از شروع باز می‌شود.")}
               </span>
             </div>
           </div>
@@ -505,8 +557,12 @@ export function SessionDetailScreen({
             onClick={() => setLiveOpen(true)}
             style={{ minHeight: 48 }}
           >
-            <Icon name="video" size={19} />
-            {joinReady ? t("session_start_video") : t("session_not_time_yet")}
+            <Icon name={detail.mode === "voice" ? "phone" : "video"} size={19} />
+            {joinReady
+              ? detail.mode === "voice"
+                ? t("session_start_voice")
+                : t("session_start_video")
+              : t("session_not_time_yet")}
           </Button>
           {isTeacher && endReady ? (
             <Button
@@ -531,13 +587,41 @@ export function SessionDetailScreen({
         </Card>
       ) : null}
 
+      {/* راهنمای حالت متنی — چت اختصاصی پایین همین صفحه است */}
+      {detail.mode === "text" && detail.status !== "done" && detail.status !== "canceled" ? (
+        <Card
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            padding: 14,
+            borderRadius: 22,
+            border: `1.5px solid ${colors.greenBorder}`,
+            background: colors.greenBackground,
+          }}
+        >
+          <span style={{ width: 42, height: 42, display: "grid", placeItems: "center", borderRadius: 14, flex: "0 0 42px", background: colors.greenChip, color: colors.greenDeep }}>
+            <Icon name="message" size={21} />
+          </span>
+          <span style={{ minWidth: 0, flex: 1, fontSize: 12, lineHeight: 1.9, color: colors.greenInk, fontWeight: 600 }}>
+            {detail.status === "confirmed"
+              ? L("جلسهٔ متنی فعال است — گفت‌وگوی شما در چت امن پایین همین صفحه جریان دارد؛ متن، ویس و تصویر پشتیبانی می‌شود.")
+              : L("پس از تأیید استاد، گفت‌وگوی جلسه در چت امن پایین همین صفحه جریان می‌گیرد.")}
+          </span>
+        </Card>
+      ) : null}
+
       {/* اقدامات قرآن‌آموز */}
       {isLearner && (detail.status === "pending" || detail.status === "confirmed") ? (
         <Card style={{ display: "grid", gap: 10, padding: 15, borderRadius: 22 }}>
           <span style={{ fontSize: 12, color: colors.inkMuted, lineHeight: 1.9 }}>
             {detail.status === "pending"
               ? L("درخواست شما برای استاد ارسال شده و در انتظار تأیید اوست. می‌توانید از چت زیر هماهنگ کنید یا جلسه را لغو کنید.")
-              : L("جلسه تأیید شد. برای هماهنگی از چت زیر استفاده کنید و سر موعد وارد کلاس تصویری شوید.")}
+              : detail.mode === "voice"
+                ? L("جلسه تأیید شد. سر موعد، دکمهٔ «شروع تماس صوتی» را بزنید؛ تماس از داخل اپ برقرار می‌شود و شماره‌ها پنهان می‌مانند.")
+                : detail.mode === "text"
+                  ? L("جلسه تأیید شد — گفت‌وگوی امن شما در چت پایین همین صفحه جریان دارد.")
+                  : L("جلسه تأیید شد. برای هماهنگی از چت زیر استفاده کنید و سر موعد وارد کلاس تصویری شوید.")}
           </span>
           {canCancelSession(detail) ? (
             <Button variant="secondary" fullWidth loading={busy} onClick={() => setCancelOpen(true)}>
@@ -577,15 +661,25 @@ export function SessionDetailScreen({
         </Card>
       ) : null}
 
-      <CoordinationChat
-        detail={detail}
-        messages={messages}
-        sending={sending}
-        onSend={(body) => void submitMessage(body)}
-        peerLabel={peerLabel}
-      />
+      {detail.mode === "text" ? (
+        <SessionChat
+          detail={detail}
+          peerLabel={peerLabel}
+          peerAvatar={peerAvatar}
+          messages={messages}
+          onRefresh={() => void loadMessages()}
+        />
+      ) : (
+        <CoordinationChat
+          detail={detail}
+          messages={messages}
+          sending={sending}
+          onSend={(body) => void submitMessage(body)}
+          peerLabel={peerLabel}
+        />
+      )}
 
-      {/* پوشش کلاس تصویری */}
+      {/* پوشش کلاس تصویری/تماس صوتی */}
       {liveOpen ? (
         <LiveRoom
           sessionId={detail.id}
@@ -595,6 +689,7 @@ export function SessionDetailScreen({
           peerAvatar={peerAvatar || undefined}
           startAt={detail.scheduledAt}
           durationMinutes={detail.duration}
+          audioOnly={detail.mode === "voice"}
           onClose={() => {
             setLiveOpen(false);
             void load();

@@ -25,6 +25,8 @@ import { Avatar, Icon } from "../../ui";
 import { useAppearance } from "../../ui/appearance";
 import { colors, typography } from "../../ui/theme";
 
+import { announceSessionStart } from "./api";
+
 type ChatLine = { id: string; from: number; text: string; at: number; mine: boolean };
 type Reaction = { id: string; emoji: string; at: number };
 
@@ -36,6 +38,8 @@ type LiveRoomProps = {
   peerAvatar?: string;
   startAt: string;
   durationMinutes: number;
+  /** جلسهٔ تلفنی/صوتی — فقط میکروفون، بدون دوربین (شماره‌ها پنهان می‌مانند). */
+  audioOnly?: boolean;
   onClose: () => void;
 };
 
@@ -168,6 +172,7 @@ export function LiveRoom({
   peerAvatar,
   startAt,
   durationMinutes,
+  audioOnly = false,
   onClose,
 }: LiveRoomProps) {
   const runtime = usePlatform();
@@ -201,6 +206,7 @@ export function LiveRoom({
   const remoteVideoRef = useRef<HTMLVideoElement | null>(null);
   const liveStreamRef = useRef<MediaStream | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
+  const liveRafRef = useRef(0);
   const chatBodyRef = useRef<HTMLDivElement | null>(null);
   const myIdRef = useRef<number>(myUserId);
   const peerSignaledRef = useRef(false);
@@ -214,7 +220,7 @@ export function LiveRoom({
     let raf = 0;
     let ctx: AudioContext | null = null;
     (async () => {
-      const result = await acquireMediaStream("both");
+      const result = await acquireMediaStream(audioOnly ? "audio" : "both");
       if (!result.ok) {
         setMediaError(result.message);
         return;
@@ -222,7 +228,7 @@ export function LiveRoom({
       stream = result.stream;
       setPreviewStream(stream);
       setMediaError("");
-      if (previewVideoRef.current) previewVideoRef.current.srcObject = stream;
+      if (!audioOnly && previewVideoRef.current) previewVideoRef.current.srcObject = stream;
       const [audioTrack] = stream.getAudioTracks();
       if (audioTrack) {
         ctx = new AudioContext();
@@ -246,12 +252,13 @@ export function LiveRoom({
       void ctx?.close();
       stream?.getTracks().forEach((track) => track.stop());
     };
-  }, [phase]);
+  }, [phase, audioOnly]);
 
   useEffect(() => () => {
     clientRef.current?.close();
     engineRef.current?.close();
     void audioCtxRef.current?.close();
+    if (liveRafRef.current) cancelAnimationFrame(liveRafRef.current);
   }, []);
 
   /* ---------- شمارش معکوس کلاس ---------- */
@@ -353,7 +360,7 @@ export function LiveRoom({
 
       let stream: MediaStream | null = null;
       if (withMedia) {
-        const result = await acquireMediaStream("both");
+        const result = await acquireMediaStream(audioOnly ? "audio" : "both");
         if (!result.ok) {
           setMediaError(result.message);
           return;
@@ -364,6 +371,12 @@ export function LiveRoom({
       liveStreamRef.current = stream;
       setHasLiveMedia(Boolean(stream));
       setPhase("live");
+
+      // اعلام آماده‌باش: طرف مقابل اعلان «آمادهٔ جلسه» با زنگ می‌گیرد و
+      // می‌داند هم‌وقتش در اتاق منتظر است (یک‌بار در هر ورود).
+      void announceSessionStart(runtime, sessionId).catch(() => {
+        /* اعلام اختیاری است — اتصال مستقل انجام می‌شود */
+      });
 
       // transport اختصاصی اپ: درخواست‌ها با توکن Bearer مستقیم به API می‌روند
       // (در وب همین runtime به BFF نسبی وصل است) — یک مسیر برای هر دو محیط.
@@ -388,10 +401,34 @@ export function LiveRoom({
         send: (type, payload) => client.send(type, payload),
       });
       engineRef.current = engine;
-      engine.setCameraTrack(stream?.getVideoTracks()[0] ?? null);
+      engine.setCameraTrack(audioOnly ? null : stream?.getVideoTracks()[0] ?? null);
       await engine.ensureConnection();
       if (stream) await engine.setLocalMedia(stream);
-      if (localVideoRef.current && stream) localVideoRef.current.srcObject = stream;
+      if (!audioOnly && localVideoRef.current && stream) localVideoRef.current.srcObject = stream;
+
+      // سطح صدای میکروفون در طول تماس صوتی (نمایش زنده)
+      if (audioOnly && stream) {
+        const [track] = stream.getAudioTracks();
+        if (track) {
+          try {
+            const ctx = new AudioContext();
+            audioCtxRef.current = ctx;
+            const analyser = ctx.createAnalyser();
+            analyser.fftSize = 256;
+            ctx.createMediaStreamSource(new MediaStream([track])).connect(analyser);
+            const buffer = new Uint8Array(analyser.frequencyBinCount);
+            const tick = () => {
+              analyser.getByteFrequencyData(buffer);
+              const avg = buffer.reduce((sum, value) => sum + value, 0) / buffer.length;
+              setMicLevel(Math.min(100, Math.round((avg / 128) * 100)));
+              liveRafRef.current = requestAnimationFrame(tick);
+            };
+            liveRafRef.current = requestAnimationFrame(tick);
+          } catch {
+            /* نمایش سطح صدا اختیاری است */
+          }
+        }
+      }
 
       await client.connect();
 
@@ -400,12 +437,12 @@ export function LiveRoom({
         if (isTeacherSide && !peerSignaledRef.current) void engine.initiate();
       }, 8_000);
     },
-    [handleEvent, previewStream, role, runtime, sessionId, isTeacherSide],
+    [handleEvent, previewStream, role, runtime, sessionId, isTeacherSide, audioOnly],
   );
 
   /* ---------- تلاش دوبارهٔ رسانه در میانهٔ کلاس ---------- */
   const retryLiveMedia = useCallback(async () => {
-    const result = await acquireMediaStream("both");
+    const result = await acquireMediaStream(audioOnly ? "audio" : "both");
     if (!result.ok) {
       showNotice(result.message);
       return;
@@ -415,11 +452,11 @@ export function LiveRoom({
     setHasLiveMedia(true);
     setMediaError("");
     await engineRef.current?.setLocalMedia(stream);
-    engineRef.current?.setCameraTrack(stream.getVideoTracks()[0] ?? null);
-    if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+    engineRef.current?.setCameraTrack(audioOnly ? null : stream.getVideoTracks()[0] ?? null);
+    if (!audioOnly && localVideoRef.current) localVideoRef.current.srcObject = stream;
     setMicOn(true);
     setCamOn(stream.getVideoTracks().length > 0);
-  }, [showNotice]);
+  }, [showNotice, audioOnly]);
 
   /* ---------- چرخش دوربین (موبایل) ---------- */
   const facingRef = useRef<"user" | "environment">("user");
@@ -476,6 +513,12 @@ export function LiveRoom({
       clientRef.current?.send("control", { action: complete ? "end" : "bye" });
       clientRef.current?.close();
       engineRef.current?.close();
+      if (liveRafRef.current) {
+        cancelAnimationFrame(liveRafRef.current);
+        liveRafRef.current = 0;
+      }
+      void audioCtxRef.current?.close();
+      audioCtxRef.current = null;
       if (complete && isTeacherSide) {
         void runtime
           .request(`/sessions/${sessionId}/complete`, { method: "POST" })
@@ -539,7 +582,7 @@ export function LiveRoom({
           <div style={{ padding: `calc(16px + env(safe-area-inset-top)) 20px 8px`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
             <div style={{ display: "grid", gap: 2 }}>
               <span style={{ fontSize: 11.5, fontWeight: 700, color: "#b6c09b", letterSpacing: .3 }}>
-                {fa ? "کلاس تصویری وُدّا" : "Vodda Live Class"}
+                {audioOnly ? (fa ? "تماس صوتی امن وُدّا" : "Vodda Secure Call") : (fa ? "کلاس تصویری وُدّا" : "Vodda Live Class")}
               </span>
               <strong style={{ fontSize: 16.5, fontWeight: 800, color: "#fffaf0" }}>{peerLabel}</strong>
             </div>
@@ -560,8 +603,66 @@ export function LiveRoom({
             </span>
           </div>
 
-          {/* کارت پیش‌نمایش */}
+          {/* کارت پیش‌نمایش — صوتی: آواتار + سطح میکروفون؛ تصویری: ویدیو */}
           <div style={{ padding: "14px 20px 6px" }}>
+            {audioOnly ? (
+              <div
+                style={{
+                  borderRadius: 24,
+                  padding: "34px 20px 26px",
+                  display: "grid",
+                  justifyItems: "center",
+                  gap: 16,
+                  background: "#141a0e",
+                  border: "1px solid rgba(255,255,255,.09)",
+                  boxShadow: "0 18px 44px rgba(0,0,0,.4)",
+                }}
+              >
+                {previewStream ? (
+                  <span style={{ borderRadius: "50%", animation: "voddaPulse 2.4s infinite", display: "grid" }}>
+                    <Avatar name={fa ? "شما" : "You"} size={104} ring={false} />
+                  </span>
+                ) : (
+                  <span
+                    style={{
+                      width: 74,
+                      height: 74,
+                      borderRadius: "50%",
+                      ...glassStyle(),
+                      display: "grid",
+                      placeItems: "center",
+                      animation: "voddaSpin 1.1s linear infinite",
+                    }}
+                  >
+                    <span style={{ width: 34, height: 34, borderRadius: "50%", border: "3px solid rgba(255,255,255,.2)", borderTopColor: colors.goldAccent }} />
+                  </span>
+                )}
+                <span style={{ fontSize: 12.5, color: "#c9d1ba", fontWeight: 600 }}>
+                  {previewStream
+                    ? fa
+                      ? "میکروفون شما آماده است — تماس کاملاً درون‌اپی است و شمارهٔ شما هرگز نمایش داده نمی‌شود."
+                      : "Mic ready — the call stays inside the app; numbers are never shown."
+                    : fa
+                      ? "در حال دسترسی به میکروفون…"
+                      : "Accessing microphone…"}
+                </span>
+                {/* سطح صدای میکروفون */}
+                <div style={{ width: "100%", display: "flex", alignItems: "center", gap: 10 }}>
+                  <Icon name="mic" size={15} stroke={1.8} style={{ color: "#c9d1ba" }} />
+                  <div style={{ flex: 1, height: 6, borderRadius: 999, background: "rgba(255,255,255,.1)", overflow: "hidden" }}>
+                    <div
+                      style={{
+                        width: `${micLevel}%`,
+                        height: "100%",
+                        borderRadius: 999,
+                        background: "linear-gradient(90deg, #93a172, #b3d56e)",
+                        transition: "width .12s linear",
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            ) : (
             <div
               style={{
                 position: "relative",
@@ -623,9 +724,11 @@ export function LiveRoom({
                 </span>
               )}
             </div>
+            )}
           </div>
 
-          {/* سطح صدای میکروفون */}
+          {/* سطح صدای میکروفون (پیش‌آزمون تصویری) */}
+          {!audioOnly && (
           <div style={{ padding: "6px 24px", display: "flex", alignItems: "center", gap: 10 }}>
             <Icon name="mic" size={15} stroke={1.8} />
             <div style={{ flex: 1, height: 6, borderRadius: 999, background: "rgba(255,255,255,.1)", overflow: "hidden" }}>
@@ -640,6 +743,7 @@ export function LiveRoom({
               />
             </div>
           </div>
+          )}
 
           {mediaError && (
             <div style={{ padding: "10px 20px 0" }}>
@@ -655,7 +759,7 @@ export function LiveRoom({
               >
                 <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#e7d5a8", fontSize: 12.5, fontWeight: 800 }}>
                   <Icon name="info" size={15} />
-                  {fa ? "مجوز دوربین/میکروفون لازم است" : "Camera/mic permission required"}
+                  {audioOnly ? (fa ? "مجوز میکروفون لازم است" : "Microphone permission required") : (fa ? "مجوز دوربین/میکروفون لازم است" : "Camera/mic permission required")}
                 </div>
                 <span style={{ fontSize: 11.8, lineHeight: 2, color: "#e8dcbc" }}>{mediaError}</span>
                 <button
@@ -699,8 +803,8 @@ export function LiveRoom({
                 boxShadow: "0 10px 26px rgba(76,90,54,.5)",
               }}
             >
-              <Icon name="video" size={19} stroke={1.9} />
-              {fa ? "ورود به کلاس با دوربین و میکروفون" : "Join with camera & mic"}
+              <Icon name={audioOnly ? "phone" : "video"} size={19} stroke={1.9} />
+              {audioOnly ? (fa ? "ورود به تماس صوتی" : "Join the call") : (fa ? "ورود به کلاس با دوربین و میکروفون" : "Join with camera & mic")}
             </button>
             <button
               type="button"
@@ -715,7 +819,7 @@ export function LiveRoom({
                 cursor: "pointer",
               }}
             >
-              {fa ? "ورود بدون رسانه (فقط تماشا)" : "Join without media"}
+              {audioOnly ? (fa ? "ورود بدون میکروفون (فقط شنیدن)" : "Listen only") : (fa ? "ورود بدون رسانه (فقط تماشا)" : "Join without media")}
             </button>
           </div>
         </div>
@@ -766,16 +870,73 @@ export function LiveRoom({
       ) : (
         /* ─────────── کلاس زنده ─────────── */
         <>
-          {/* صحنهٔ ویدیو */}
-          <video
-            ref={remoteVideoRef}
-            autoPlay
-            playsInline
-            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", background: "#171c10" }}
-          />
+          {/* صحنهٔ ویدیو — در تماس صوتی پنهان است و صحنهٔ صوتی جایگزین می‌شود */}
+          {!audioOnly && (
+            <video
+              ref={remoteVideoRef}
+              autoPlay
+              playsInline
+              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", background: "#171c10" }}
+            />
+          )}
 
-          {/* نگه‌دارندهٔ انتظار */}
-          {!remoteActive && (
+          {/* صحنهٔ تماس صوتی — آواتار طرف مقابل و موج صدا */}
+          {audioOnly && (
+            <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", padding: 28 }}>
+              <div style={{ display: "grid", justifyItems: "center", gap: 18, textAlign: "center" }}>
+                <span
+                  style={{
+                    borderRadius: "50%",
+                    display: "grid",
+                    animation: remoteActive || peerOnline ? "none" : "voddaPulse 2.2s infinite",
+                    boxShadow: remoteActive ? "0 0 0 3px rgba(179,213,110,.55), 0 18px 44px rgba(0,0,0,.45)" : "0 14px 34px rgba(0,0,0,.4)",
+                    transition: "box-shadow .4s ease",
+                  }}
+                >
+                  <Avatar name={peerName} src={peerAvatar} size={132} ring={false} />
+                </span>
+                <strong style={{ fontSize: 18, fontWeight: 900, color: "#fffaf0" }}>{peerLabel}</strong>
+                {remoteActive ? (
+                  <div style={{ display: "grid", justifyItems: "center", gap: 10 }}>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "5px 14px", borderRadius: 999, ...glassStyle({ background: "rgba(179,213,110,.16)", borderColor: "rgba(179,213,110,.4)" }), color: "#d7e6b8", fontSize: 11.5, fontWeight: 800 }}>
+                      <span style={{ width: 7, height: 7, borderRadius: 999, background: "#9dc564", boxShadow: "0 0 8px #9dc564" }} />
+                      {fa ? "صدا متصل شد" : "Voice connected"}
+                    </span>
+                    {/* موج صدای خودم */}
+                    <div style={{ width: 180, display: "flex", alignItems: "center", gap: 9 }}>
+                      <Icon name="mic" size={14} stroke={1.8} style={{ color: micOn ? "#b3d56e" : "#77836b" }} />
+                      <div style={{ flex: 1, height: 5, borderRadius: 999, background: "rgba(255,255,255,.12)", overflow: "hidden" }}>
+                        <div
+                          style={{
+                            width: `${micLevel}%`,
+                            height: "100%",
+                            borderRadius: 999,
+                            background: "linear-gradient(90deg, #93a172, #b3d56e)",
+                            transition: "width .12s linear",
+                            opacity: micOn ? 1 : 0.25,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <span style={{ fontSize: 12.5, color: "#c9d1ba", fontWeight: 600 }}>{waitingText}</span>
+                )}
+                {status === "error" && (
+                  <button
+                    type="button"
+                    onClick={() => void retryLiveMedia()}
+                    style={{ border: 0, borderRadius: 12, padding: "9px 18px", background: colors.gold, color: colors.onGold, fontWeight: 800, fontSize: 12.5, cursor: "pointer" }}
+                  >
+                    {fa ? "تلاش دوباره" : "Retry"}
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* نگه‌دارندهٔ انتظار (تصویری) */}
+          {!audioOnly && !remoteActive && (
             <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", padding: 28 }}>
               <div style={{ display: "grid", justifyItems: "center", gap: 16, textAlign: "center" }}>
                 <div style={{ position: "relative" }}>
@@ -896,7 +1057,8 @@ export function LiveRoom({
             </div>
           )}
 
-          {/* ویدیوی خودم (PiP) */}
+          {/* ویدیوی خودم (PiP) — فقط در کلاس تصویری */}
+          {!audioOnly && (
           <div
             style={{
               position: "absolute",
@@ -925,6 +1087,7 @@ export function LiveRoom({
               </div>
             )}
           </div>
+          )}
 
           {/* واکنش‌های شناور */}
           {reactions.map((reaction) => (
@@ -1004,6 +1167,7 @@ export function LiveRoom({
             >
               <Icon name="mic" size={22} stroke={1.9} />
             </RoundButton>
+            {!audioOnly && (
             <RoundButton
               label={camOn ? (fa ? "خاموش کردن دوربین" : "Camera off") : (fa ? "روشن کردن دوربین" : "Camera on")}
               active={camOn}
@@ -1014,6 +1178,8 @@ export function LiveRoom({
             >
               <span style={{ opacity: camOn ? 1 : 0.45 }}><Icon name="video" size={22} stroke={1.9} /></span>
             </RoundButton>
+            )}
+            {!audioOnly && (
             <RoundButton
               label={fa ? "واکنش‌ها" : "Reactions"}
               active={reactionsOpen}
@@ -1021,6 +1187,7 @@ export function LiveRoom({
             >
               <span style={{ fontSize: 21, lineHeight: 1 }}>🎉</span>
             </RoundButton>
+            )}
             <RoundButton
               label={fa ? "گفت‌وگو" : "Chat"}
               active={chatOpen}
@@ -1032,9 +1199,11 @@ export function LiveRoom({
             >
               <Icon name="message" size={21} stroke={1.9} />
             </RoundButton>
+            {!audioOnly && (
             <RoundButton label={fa ? "چرخش دوربین" : "Flip camera"} onClick={() => void flipCamera()}>
               <span style={{ fontSize: 20, lineHeight: 1 }}>🔄</span>
             </RoundButton>
+            )}
             <RoundButton
               label={isTeacherSide ? (fa ? "پایان کلاس" : "End class") : (fa ? "خروج" : "Leave")}
               danger

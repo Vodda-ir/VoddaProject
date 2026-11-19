@@ -493,3 +493,92 @@ f["پذیرش جدید برای مراسم"] = "New ceremony offer";
 f["پذیرش "] = "Offer ";
 f["کاربر پیشنهاد شما را انتخاب کرد و جلسه فوری قطعی شد؛ همین حالا وارد کلاس شوید"] = "A user chose your offer and the instant session is confirmed; join the class right now.";
 f["کاربر پیشنهاد شما را انتخاب کرد و جلسه فوری قطعی شد؛ همین حالا وارد کلاس شوید."] = "A user chose your offer and the instant session is confirmed; join the class right now.";
+
+// E4 — سیستم جلسات آنلاین سه‌حالته (تلفنی / متنی / تصویری)
+f["خدمات جلسات آنلاین"] = "Online session services";
+f["سه روش برگزاری جلسه با قیمت مستقل — قرآن‌آموز هنگام رزرو بین آن‌ها انتخاب می‌کند؛ شمارهٔ شما هیچ‌گاه نمایش داده نمی‌شود."] =
+  "Three hosting styles with independent pricing — learners pick one at booking; your number is never shown.";
+f["در حال دریافت خدمات آنلاین…"] = "Loading online services…";
+f["دریافت خدمات آنلاین ناموفق بود"] = "Failed to load online services";
+f["ویرایش {title}"] = "Edit {title}";
+f["غیرفعال — برای فعال‌سازی ویرایش کنید"] = "Inactive — edit to enable";
+f["خدمت جلسهٔ آنلاین ذخیره شد"] = "Online session service saved";
+f["مدت جلسه باید بین ۱۰ تا ۲۴۰ دقیقه باشد."] = "Duration must be 10–240 minutes.";
+f["فعال و قابل رزرو"] = "Active and bookable";
+f["غیرفعال"] = "Inactive";
+f["قرآن‌آموزان می‌توانند این نوع جلسه را رزرو کنند."] = "Learners can book this session type.";
+f["این نوع جلسه در صفحهٔ رزرو نمایش داده نمی‌شود."] = "This session type is hidden from the booking screen.";
+f["قیمت جلسهٔ آنلاین به تومان"] = "Online session price in Toman";
+f["یا مبلغ دلخواه — صفر یعنی رایگان"] = "Or a custom amount — zero means free";
+f["جلسهٔ تلفنی و صوتی"] = "Phone / voice session";
+f["جلسهٔ متنی (چت)"] = "Text session (chat)";
+f["جلسهٔ تصویری"] = "Video session";
+f["تماس صوتی از داخل اپ؛ شماره‌ها پنهان می‌مانند"] = "In-app voice call; numbers stay hidden";
+f["چت امن با متن، ویس و تصویر"] = "Secure chat with text, voice notes and images";
+f["کلاس زندهٔ تصویری با دوربین و میکروفون"] = "Live video class with camera and mic";
+f["تلفنی و صوتی"] = "Phone / voice";
+f["متنی (چت)"] = "Text (chat)";
+f["تصویری"] = "Video";
+f["تماس صوتی از داخل اپ — شماره‌ها پنهان می‌مانند"] = "In-app voice call — numbers stay hidden";
+f["نوع جلسه"] = "Session type";
+f["نوع جلسه: {n}"] = "Session type: {n}";
+f["تماس صوتی امن وُدّا"] = "Vodda secure voice call";
+f["تماس باز است — از داخل اپ برقرار می‌شود؛ شمارهٔ شما پنهان می‌ماند."] =
+  "The call is open — it happens inside the app; your number stays hidden.";
+f["جلسه تأیید شد. سر موعد، دکمهٔ «شروع تماس صوتی» را بزنید؛ تماس از داخل اپ برقرار می‌شود و شماره‌ها پنهان می‌مانند."] =
+  "Session approved. At the scheduled time tap «Start voice call»; the call happens inside the app and numbers stay hidden.";
+f["جلسه تأیید شد — گفت‌وگوی امن شما در چت پایین همین صفحه جریان دارد."] =
+  "Session approved — your secure conversation lives in the chat below.";
+f["جلسهٔ متنی فعال است — گفت‌وگوی شما در چت امن پایین همین صفحه جریان دارد؛ متن، ویس و تصویر پشتیبانی می‌شود."] =
+  "Text session active — your conversation lives in the secure chat below; text, voice notes and images are supported.";
+f["پس از تأیید استاد، گفت‌وگوی جلسه در چت امن پایین همین صفحه جریان می‌گیرد."] =
+  "Once the teacher approves, the conversation happens in the secure chat below.";
+f["چت جلسه"] = "Session chat";
+f["چت جلسه — متن، ویس و تصویر"] = "Session chat — text, voice notes and images";
+f["امن — شماره‌ها پنهان"] = "Secure — numbers hidden";
+f["هنوز پیامی رد و بدل نشده؛ گفت‌وگو را با سلام شروع کنید. می‌توانید متن، ویس یا تصویر بفرستید."] =
+  "No messages yet; say hi to start. You can send text, voice notes or images.";
+f["ضبط پیام صوتی"] = "Record a voice note";
+f["ارسال تصویر"] = "Send an image";
+f["در حال ضبط"] = "Recording";
+f["لغو"] = "Cancel";
+f["اتمام و ارسال"] = "Done & send";
+f["حذف"] = "Remove";
+f["ارسال"] = "Send";
+f["در حال ارسال…"] = "Sending…";
+f["پیام صوتی ارسال شد"] = "Voice note sent";
+f["تصویر ارسال شد"] = "Image sent";
+f["فقط فایل تصویری انتخاب کنید."] = "Please pick an image file.";
+f["حجم تصویر بیش از حد مجاز است (حداکثر ۲۵ مگابایت پیش از فشرده‌سازی)."] =
+  "Image too large (max 25MB before compression).";
+f["ضبط صدا در این مرورگر ممکن نشد؛ کروم را به‌روزرسانی کنید."] = "Recording failed in this browser; please update Chrome.";
+f["پخش پیام صوتی"] = "Play voice note";
+f["توقف پخش پیام صوتی"] = "Pause voice note";
+f["نمایش تصویر تمام‌صفحه"] = "View image fullscreen";
+f["تصویر چت جلسه"] = "Session chat image";
+f["پیش‌نمایش تصویر"] = "Image preview";
+f["بستن تصویر"] = "Close image";
+f["متن پیام"] = "Message text";
+f["پیام خود را بنویسید…"] = "Type your message…";
+f["ارسال پیام"] = "Send message";
+f["جلسه لغو شده است"] = "Session canceled";
+f["آمادهٔ جلسه"] = "Ready for the session";
+f["آمادهٔ جلسه: "] = "Ready for the session: ";
+f["قرآن‌آموز آمادهٔ شروع جلسه است؛ از جزئیات جلسه وارد تماس شوید."] =
+  "The learner is ready to start; open the session details to join the call.";
+f["استاد آمادهٔ شروع جلسه است؛ از جزئیات جلسه وارد تماس شوید."] =
+  "The teacher is ready to start; open the session details to join the call.";
+f["آمادهٔ جلسه — هم‌وقت منتظر است"] = "Session ready — your peer is waiting";
+f["طرف مقابل آمادهٔ جلسه است"] = "Your peer is ready";
+f["ورود به تماس صوتی"] = "Join the voice call";
+f["ورود به کلاس با دوربین و میکروفون"] = "Join with camera & mic";
+f["ورود بدون میکروفون (فقط شنیدن)"] = "Join without mic (listen only)";
+f["میکروفون شما آماده است — تماس کاملاً درون‌اپی است و شمارهٔ شما هرگز نمایش داده نمی‌شود."] =
+  "Your mic is ready — the call stays inside the app; your number is never shown.";
+f["در حال دسترسی به میکروفون…"] = "Accessing microphone…";
+f["مجوز میکروفون لازم است"] = "Microphone permission required";
+f["تماس صوتی امن وُدّا"] = "Vodda secure voice call";
+f["صدا متصل شد"] = "Voice connected";
+f["شمارهٔ شما هرگز نمایش داده نمی‌شود"] = "Your number is never shown";
+f["شمارهٔ شما هیچ‌گاه نمایش داده نمی‌شود"] = "Your number is never shown";
+f["همین حالا وقت می‌خواهید؟"] = "Need a time right now?";

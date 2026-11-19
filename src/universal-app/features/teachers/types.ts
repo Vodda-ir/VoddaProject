@@ -1,3 +1,5 @@
+export type SessionMode = "voice" | "text" | "video";
+
 export type TeacherService = {
   id: number;
   title: string;
@@ -5,6 +7,8 @@ export type TeacherService = {
   price: number;
   icon: string;
   active: boolean;
+  /** نوع جلسهٔ آنلاین: "voice" | "text" | "video"؛ خالی = خدمت معمولی. */
+  mode: SessionMode | "";
 };
 
 export type TeacherReview = {
@@ -82,6 +86,8 @@ function booleanValue(value: unknown, fallback = false) {
 
 export function parseTeacherService(value: unknown): TeacherService {
   const data = record(value);
+  const rawMode = stringValue(data.mode);
+  const mode: SessionMode | "" = rawMode === "voice" || rawMode === "text" || rawMode === "video" ? rawMode : "";
   return {
     id: numberValue(data.id),
     title: stringValue(data.title),
@@ -89,6 +95,7 @@ export function parseTeacherService(value: unknown): TeacherService {
     price: numberValue(data.price),
     icon: stringValue(data.icon, "book"),
     active: booleanValue(data.active),
+    mode,
   };
 }
 

@@ -183,6 +183,7 @@ func (uc *SessionUsecase) Book(ctx context.Context, learnerID uint, in BookInput
                 Note:        in.Note,
                 Instant:     in.Instant,
                 ViaDispatch: in.ViaDispatch,
+                Mode:        svc.Mode,
         }
 
         if gatewayPayment {
@@ -681,12 +682,39 @@ func (uc *SessionUsecase) SessionMessages(ctx context.Context, callerID uint, ca
         return uc.sessions.SessionMessages(ctx, sessionID, limit)
 }
 
-// SendSessionMessage appends a coordination message and notifies the
-// counterpart (best effort) so neither side misses it.
-func (uc *SessionUsecase) SendSessionMessage(ctx context.Context, callerID uint, callerRole domain.Role, sessionID uint, body string) (*domain.SessionMessage, error) {
-        body = strings.TrimSpace(body)
-        if len(body) == 0 || len(body) > 1000 {
+// SendSessionMessage appends a coordination/chat message and notifies the
+// counterpart (best effort) so neither side misses it. Kind selects text
+// (plain body), audio (voice note; MediaURL + DurationMS) or image (MediaURL).
+// Media URLs are always served from /uploads/session-media/ — uploaded by the
+// handler before reaching this usecase.
+func (uc *SessionUsecase) SendSessionMessage(ctx context.Context, callerID uint, callerRole domain.Role, sessionID uint, body string, kind string, mediaURL string, durationMS int) (*domain.SessionMessage, error) {
+        kind = strings.ToLower(strings.TrimSpace(kind))
+        if kind == "" {
+                kind = "text"
+        }
+        if kind != "text" && kind != "audio" && kind != "image" {
                 return nil, domain.ErrValidation
+        }
+        body = strings.TrimSpace(body)
+        if len(body) > 1000 {
+                return nil, domain.ErrValidation
+        }
+        mediaURL = strings.TrimSpace(mediaURL)
+        if durationMS < 0 || durationMS > 600_000 {
+                return nil, domain.ErrValidation
+        }
+        switch kind {
+        case "text":
+                if len(body) == 0 || mediaURL != "" {
+                        return nil, domain.ErrValidation
+                }
+        case "audio", "image":
+                if !strings.HasPrefix(mediaURL, "/uploads/session-media/") || strings.Contains(mediaURL, "..") || len(mediaURL) > 255 {
+                        return nil, domain.ErrValidation
+                }
+                if kind == "audio" && durationMS <= 0 {
+                        return nil, domain.ErrValidation
+                }
         }
         s, role, err := uc.LiveAccess(ctx, callerID, callerRole, sessionID)
         if err != nil {
@@ -695,18 +723,65 @@ func (uc *SessionUsecase) SendSessionMessage(ctx context.Context, callerID uint,
         if s.Status == domain.SessionCanceled {
                 return nil, domain.ErrConflict
         }
-        message := &domain.SessionMessage{SessionID: s.ID, SenderID: callerID, Body: body}
+        message := &domain.SessionMessage{
+                SessionID:  s.ID,
+                SenderID:   callerID,
+                Body:       body,
+                Kind:       kind,
+                MediaURL:   mediaURL,
+                DurationMS: durationMS,
+        }
         if err := uc.sessions.CreateSessionMessage(ctx, message); err != nil {
                 return nil, err
         }
         if role == domain.RoleLearner {
                 if teacher, terr := uc.teachers.ByID(ctx, s.TeacherID); terr == nil {
-                        uc.notify(ctx, teacher.UserID, "پیام جدید در جلسه", "قرآن‌آموز برای جلسه «"+s.Title+"» پیامی فرستاد.")
+                        uc.notify(ctx, teacher.UserID, "پیام جدید در جلسه", "قرآن‌آموز برای جلسهٔ «"+s.Title+"» "+messagePreview(kind, body)+" فرستاد.")
                 }
         } else if role == domain.RoleTeacher {
-                uc.notify(ctx, s.LearnerID, "پیام جدید از استاد", "استاد برای جلسه «"+s.Title+"» پیامی فرستاد.")
+                uc.notify(ctx, s.LearnerID, "پیام جدید از استاد", "استاد برای جلسهٔ «"+s.Title+"» "+messagePreview(kind, body)+" فرستاد.")
         }
         return message, nil
+}
+
+// messagePreview describes a chat message for push notifications.
+func messagePreview(kind, body string) string {
+        switch kind {
+        case "audio":
+                return "یک پیام صوتی"
+        case "image":
+                return "یک تصویر"
+        default:
+                runes := []rune(body)
+                if len(runes) > 40 {
+                        return "پیام «" + string(runes[:40]) + "…»"
+                }
+                return "پیام «" + body + "»"
+        }
+}
+
+// AnnounceSessionStart lets either party ring the counterpart when they are
+// ready (already waiting in the room or about to start). The counterpart
+// receives an actionable notification; the call alert bar classifies its
+// title («آمادهٔ جلسه: …») and deep-links back to the session detail.
+func (uc *SessionUsecase) AnnounceSessionStart(ctx context.Context, callerID uint, callerRole domain.Role, sessionID uint) (*domain.Session, error) {
+        s, role, err := uc.LiveAccess(ctx, callerID, callerRole, sessionID)
+        if err != nil {
+                return nil, err
+        }
+        if s.Status == domain.SessionCanceled {
+                return nil, domain.ErrConflict
+        }
+        if role == domain.RoleLearner {
+                if teacher, terr := uc.teachers.ByID(ctx, s.TeacherID); terr == nil && teacher != nil {
+                        uc.notify(ctx, teacher.UserID, "آمادهٔ جلسه: "+s.Title,
+                                "قرآن‌آموز آمادهٔ شروع جلسه است؛ از جزئیات جلسه وارد تماس شوید.")
+                }
+        } else {
+                uc.notify(ctx, s.LearnerID, "آمادهٔ جلسه: "+s.Title,
+                        "استاد آمادهٔ شروع جلسه است؛ از جزئیات جلسه وارد تماس شوید.")
+        }
+        return s, nil
 }
 
 // TeacherUnseenSessionCount powers the red counter on the teacher sessions tab.

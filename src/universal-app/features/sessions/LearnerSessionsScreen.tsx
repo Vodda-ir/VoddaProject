@@ -67,6 +67,37 @@ function canCancel(session: LearnerSession): boolean {
   return Number.isNaN(timestamp) || Date.now() < timestamp;
 }
 
+/** برچسب کوتاه نوع جلسهٔ آنلاین روی کارت. */
+function sessionModeChip(session: LearnerSession, L: (text: string) => string) {
+  const map: Record<string, { label: string; icon: "phone" | "message" | "video" }> = {
+    voice: { label: "تلفنی و صوتی", icon: "phone" },
+    text: { label: "متنی (چت)", icon: "message" },
+    video: { label: "تصویری", icon: "video" },
+  };
+  const meta = map[session.mode];
+  if (!meta) return null;
+  return (
+    <span
+      aria-label={L("نوع جلسه: {n}").replace("{n}", L(meta.label))}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 4,
+        padding: "3px 9px",
+        borderRadius: radii.pill,
+        background: colors.greenBackground,
+        border: `1px solid ${colors.greenBorder}`,
+        color: colors.greenInk,
+        fontSize: 10,
+        fontWeight: 800,
+      }}
+    >
+      <Icon name={meta.icon} size={11} stroke={2.2} />
+      {L(meta.label)}
+    </span>
+  );
+}
+
 function SessionCard({
   session,
   busy,
@@ -90,13 +121,14 @@ function SessionCard({
       onClick={onOpen}
     >
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: spacing.md }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
           <StatusPill status={session.status} label={statusLabel(session.status, t)} />
           {session.instant ? (
             <span aria-label={L("جلسهٔ فوری")} style={{ padding: "3px 9px", borderRadius: radii.pill, color: "#fffaf0", background: "linear-gradient(145deg,#d8b869,#b8923c)", fontSize: 10, fontWeight: 800 }}>
               {L("فوری")}
             </span>
           ) : null}
+          {sessionModeChip(session, L)}
         </div>
         <span style={{ ...typography.caption, color: colors.inkMuted }}>
           {L("{n} دقیقه").replace("{n}", localizedDigits(session.duration, lang))}
