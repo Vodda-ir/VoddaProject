@@ -158,7 +158,8 @@ export function RoleModeSheet({
           className="vodda-card vodda-tappable"
           onClick={() => {
             onClose();
-            window.location.assign("/panel/admin");
+            /* E3 — مدیریت درون‌اپی: دیگر خروج از اپ و پرش به پنل وب نیست */
+            navigateApp("/a", config);
           }}
           style={{
             width: "100%",
@@ -170,7 +171,7 @@ export function RoleModeSheet({
             textAlign: "right",
             border: `1px solid ${colors.goldSoft}`,
             borderRadius: 18,
-            color: colors.ink,
+            color: "#7a5e1e",
             background: gradients.gold,
             boxShadow: shadows.xs,
             fontFamily: typography.fontFamily,
@@ -186,21 +187,21 @@ export function RoleModeSheet({
               placeItems: "center",
               flex: "0 0 48px",
               borderRadius: 14,
-              color: colors.goldDark,
+              color: "#7a5e1e",
               background: colors.goldBackground,
             }}
           >
             <Icon name="shield" size={24} />
           </span>
           <span style={{ minWidth: 0, flex: 1 }}>
-            <strong style={{ fontSize: 15, fontWeight: 800, display: "block", color: colors.goldDark }}>
-              {L("پنل مدیریت")}
+            <strong style={{ fontSize: 15, fontWeight: 800, display: "block", color: "#7a5e1e" }}>
+              {L("مدیریت سامانه")}
             </strong>
-            <span style={{ ...typography.bodySmall, display: "block", marginTop: 3, color: colors.inkMuted }}>
-              {L("مدیریت کاربران، اساتید و مالی")}
+            <span style={{ ...typography.bodySmall, display: "block", marginTop: 3, color: "#6f6a5b" }}>
+              {L("داشبورد، اساتید و کاربران — درون اپ")}
             </span>
           </span>
-          <Icon name="arrowUpRight" size={20} style={{ color: colors.goldDark }} />
+          <Icon name="shield" size={20} style={{ color: "#7a5e1e" }} />
         </button>
       ) : null}
     </Sheet>

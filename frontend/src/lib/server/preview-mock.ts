@@ -223,5 +223,75 @@ export function previewMockResponse(request: NextRequest, path: string[]): Respo
   if (head === 'support' && path[1] === 'chat' && path[2] === 'unread') {
     return jsonResponse({ data: { unread: 0 } });
   }
+  /* E3 — mock مدیریت درون‌اپی (فقط dev) — داشبورد، اساتید و کاربران */
+  if (head === 'admin' && path[1] === 'dashboard' && path.length === 2) {
+    return jsonResponse({
+      data: {
+        learners: 128,
+        teachers: 34,
+        pending_teachers: 3,
+        sessions: 512,
+        done_sessions: 447,
+        charge_volume: 182_400_000,
+        commission: 27_360_000,
+      },
+    });
+  }
+  if (head === 'admin' && path[1] === 'teachers' && path.length === 2) {
+    const status = request.nextUrl.searchParams.get('status') ?? 'pending';
+    const all = [
+      {
+        id: 21,
+        user_id: 41,
+        name: 'محدثه راوند',
+        field: 'روخوانی و تجوید',
+        city: 'تهران',
+        status: 'pending',
+        verified: false,
+        tier: '',
+        rating: 4.8,
+        sessions: 12,
+        created_at: '2026-11-01T10:00:00Z',
+      },
+      {
+        id: 7,
+        user_id: 11,
+        name: 'سمیرا کاظمی',
+        field: 'حفظ قرآن',
+        city: 'اصفهان',
+        status: 'approved',
+        verified: true,
+        tier: 'طلایی',
+        rating: 4.9,
+        sessions: 84,
+        created_at: '2026-08-12T10:00:00Z',
+      },
+      {
+        id: 9,
+        user_id: 15,
+        name: 'عبدالرحمن شریفی',
+        field: 'تفسیر موضوعی',
+        city: 'مشهد',
+        status: 'rejected',
+        verified: false,
+        tier: '',
+        rating: 0,
+        sessions: 0,
+        created_at: '2026-09-02T10:00:00Z',
+      },
+    ].filter((row) => row.status === status);
+    return jsonResponse({ data: all, total: all.length });
+  }
+  if (head === 'admin' && path[1] === 'users' && path.length === 2) {
+    const role = request.nextUrl.searchParams.get('role') ?? '';
+    const q = (request.nextUrl.searchParams.get('q') ?? '').trim();
+    const all = [
+      { id: 95, name: 'عارف رضائی', mobile: '09121234567', role: 'learner', city: 'تهران', active: true, wallet: 2_500_000, created_at: '2025-01-01T00:00:00Z' },
+      { id: 11, name: 'سمیرا کاظمی', mobile: '09121234568', role: 'teacher', city: 'اصفهان', active: true, wallet: 5_100_000, created_at: '2026-02-10T00:00:00Z' },
+      { id: 41, name: 'محدثه راوند', mobile: '09121234569', role: 'teacher', city: 'تهران', active: false, wallet: 0, created_at: '2026-10-20T00:00:00Z' },
+      { id: 1, name: 'مدیر سامانه', mobile: '09120000000', role: 'admin', city: 'قم', active: true, wallet: 0, created_at: '2024-05-01T00:00:00Z' },
+    ].filter((row) => (role ? row.role === role : true)).filter((row) => (q ? row.name.includes(q) || row.mobile.includes(q) : true));
+    return jsonResponse({ data: all, total: all.length });
+  }
   return null;
 }

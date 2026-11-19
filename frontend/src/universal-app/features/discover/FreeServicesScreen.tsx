@@ -71,6 +71,17 @@ export function FreeServicesScreen({ config }: FreeServicesScreenProps) {
 
   const cards = useMemo(() => freeServiceCards(teachers, new Map(), 0), [teachers]);
 
+  /* E3 — فیلتر «نوع خدمت» از کاشی‌های مربعی صفحهٔ نخست (?type=…) */
+  const [typeFilter, setTypeFilter] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    const raw = new URLSearchParams(window.location.search).get("type");
+    return raw && raw.trim() ? raw.trim() : null;
+  });
+  const visibleCards = useMemo(
+    () => (typeFilter ? cards.filter((card) => card.title === typeFilter) : cards),
+    [cards, typeFilter],
+  );
+
   return (
     <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: wide ? 18 : 14, minWidth: 0 }}>
       {/* نوار معرفی — دو بج کوچک خلاصهٔ ارزش */}
@@ -110,10 +121,45 @@ export function FreeServicesScreen({ config }: FreeServicesScreenProps) {
             }}
           >
             <Icon name="users" size={13} />
-            {faNumber(cards.length, 0)} {L("خدمت رایگان")}
+            {faNumber(visibleCards.length, 0)} {L("خدمت رایگان")}
           </span>
         ) : null}
       </div>
+
+      {/* E3 — چیپ فیلتر نوع خدمت + حذف فیلتر */}
+      {typeFilter ? (
+        <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8, minWidth: 0 }}>
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "7px 12px",
+              borderRadius: 999,
+              border: "1px solid rgba(58,167,109,.4)",
+              background: "#e7f6ee",
+              color: "#2e8f5c",
+              fontSize: 11.5,
+              fontWeight: 800,
+              maxWidth: "100%",
+            }}
+          >
+            <Icon name="filter" size={13} />
+            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {L("نوع خدمت:")} {typeFilter}
+            </span>
+            <button
+              type="button"
+              onClick={() => setTypeFilter(null)}
+              aria-label={L("حذف فیلتر نوع خدمت")}
+              className="vodda-tappable"
+              style={{ display: "grid", placeItems: "center", padding: 0, border: 0, background: "transparent", color: "#2e8f5c", cursor: "pointer" }}
+            >
+              <Icon name="x" size={13} />
+            </button>
+          </span>
+        </div>
+      ) : null}
 
       {loading ? (
         <div style={{ display: "grid", gap: 12, minWidth: 0 }}>
@@ -135,9 +181,15 @@ export function FreeServicesScreen({ config }: FreeServicesScreenProps) {
           title={L("فعلاً خدمت رایگانی ثبت نشده")}
           description={L("به‌زودی استادها جلسهٔ آغازین رایگانشان را اینجا نمایش می‌دهند.")}
         />
+      ) : visibleCards.length === 0 ? (
+        <EmptyState
+          icon={<Icon name="filter" size={30} />}
+          title={L("برای این نوع خدمت فعلاً پیشنهادی نیست")}
+          description={L("فیلتر را حذف کنید یا نوع دیگری را انتخاب کنید.")}
+        />
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 12, minWidth: 0 }}>
-          {cards.map((card, index) => (
+          {visibleCards.map((card, index) => (
             <FreeServiceBigCard
               key={`${card.teacherId}-${card.id}`}
               card={card}

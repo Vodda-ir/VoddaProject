@@ -36,6 +36,7 @@ export type AppRouteName =
   | "teacher-dispatch"
   | "teacher-ceremony"
   | "teacher-presence"
+  | "admin-home"
   | "not-found";
 
 export type AppRoute = {
@@ -71,6 +72,7 @@ export const appRoutePaths = {
   "teacher-dispatch": "/t/dispatch",
   "teacher-ceremony": "/t/ceremony",
   "teacher-presence": "/t/presence",
+  "admin-home": "/a",
 } as const;
 
 export type StaticAppRouteName = keyof typeof appRoutePaths;

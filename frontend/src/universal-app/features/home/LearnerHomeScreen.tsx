@@ -8,6 +8,7 @@ import {
   useState,
   type CSSProperties,
   type ReactNode,
+  type UIEvent,
 } from "react";
 import type { UniversalAppConfig } from "../../config";
 import { usePlatform } from "../../platform/context";
@@ -265,7 +266,7 @@ function CategoryTileGrid({
                   overflow: "hidden",
                 }}
               >
-                <Icon name="quran" size={22} style={{ color: colors.olive600 }} />
+                <Icon name="quran" size={22} style={{ color: "#4c5a36" }} />
                 <img
                   src={serviceImageSrc(tile.imageKey)}
                   alt=""
@@ -329,97 +330,9 @@ function CategoryTileGrid({
   );
 }
 
-/* ۰.۹.۲ — راهنمای لبهٔ اسکرول: گرادیانت محو روی سمتِ دارای محتوای پنهان.
- * RTL: در آغاز لبهٔ چپ (به کاربر می‌گوید می‌تواند به چپ بکشد)؛ پس از رسیدن به
- * انتهای ردیف، لبهٔ راست. در LTR معکوس. به‌روزرسانی با scroll/resize و بعد از هر
- * رندر (تبدیل اسکلت به کارت واقعی هم حساب می‌شود). */
-function ScrollHintRow({ children }: { children: ReactNode }) {
-  const { lang } = useAppearance();
-  const rowRef = useRef<HTMLDivElement | null>(null);
-  const [canStart, setCanStart] = useState(false);
-  const [canEnd, setCanEnd] = useState(false);
-
-  const update = useCallback(() => {
-    const el = rowRef.current;
-    if (!el) return;
-    const hidden = el.scrollWidth - el.clientWidth;
-    if (hidden <= 8) {
-      setCanStart(false);
-      setCanEnd(false);
-      return;
-    }
-    /* RTL و LTR: فاصلهٔ طی‌شده از لبهٔ شروع = قدرمطلق scrollLeft */
-    const position = Math.abs(el.scrollLeft);
-    setCanEnd(position < hidden - 8);
-    setCanStart(position > 8);
-  }, []);
-
-  /* بعد از هر رندر — محتوای ردیف ممکن است تازه از اسکلت به کارت تبدیل شده باشد */
-  useEffect(() => {
-    update();
-  });
-
-  useEffect(() => {
-    const el = rowRef.current;
-    if (!el) return;
-    el.addEventListener("scroll", update, { passive: true });
-    window.addEventListener("resize", update);
-    return () => {
-      el.removeEventListener("scroll", update);
-      window.removeEventListener("resize", update);
-    };
-  }, [update]);
-
-  const isRTL = lang !== "en";
-  const solid = "rgba(252,250,244,.95)";
-  const fade = (side: "start" | "end") => {
-    /* سمت بیرونیِ گرادیانت (لبهٔ دید) پررنگ، سمت محتوا شفاف */
-    const solidFirst = (side === "end") === isRTL;
-    return (
-      <span
-        aria-hidden="true"
-        style={{
-          position: "absolute",
-          top: 0,
-          bottom: 0,
-          width: 30,
-          zIndex: 2,
-          pointerEvents: "none",
-          ...(side === "end" ? { insetInlineEnd: 0 } : { insetInlineStart: 0 }),
-          background: solidFirst
-            ? `linear-gradient(to right, ${solid}, rgba(252,250,244,0))`
-            : `linear-gradient(to right, rgba(252,250,244,0), ${solid})`,
-        }}
-      />
-    );
-  };
-
-  return (
-    <span style={{ position: "relative", display: "block", minWidth: 0 }}>
-      <div
-        ref={rowRef}
-        className="vodda-scroll-rail"
-        style={{
-          display: "flex",
-          alignItems: "stretch",
-          gap: 10,
-          overflowX: "auto",
-          overflowY: "hidden",
-          minWidth: 0,
-          paddingBottom: 14,
-        }}
-      >
-        {children}
-      </div>
-      {canEnd ? fade("end") : null}
-      {canStart ? fade("start") : null}
-    </span>
-  );
-}
-
-/* ۱.ب.۶ — خدمات پرکاربرد — چیدمان جدید (E2):
- *  کارت بزرگ تمام‌عرض (بنر تصویر + گرادیان تیره + بج طلایی شمارش استاد + دکمهٔ شیشه‌ای)
- *  — کارت باریک کناری حذف شد؛ خدمت‌های بعدی به‌صورت ردیف کارتی زیر کارت بزرگ می‌آیند. */
+/* ۱.ب.۶ — خدمات پرکاربرد — کاروسل رنگی (E3):
+ *  کل بخش داخل یک صحنهٔ رنگی «خیره‌کننده» — گرادیانت زمردی‌→طلایی با هالهٔ نئونی؛
+ *  کارت‌های خدمت اسلایدهای اسکرول‌_snap با نقطه‌های وضعیت؛ همهٔ خدمت‌ها در یک کادر. */
 function PopularServicesGrid({
   services,
   loading,
@@ -431,6 +344,8 @@ function PopularServicesGrid({
   wide: boolean;
   config: UniversalAppConfig;
 }) {
+  const [activeSlide, setActiveSlide] = useState(0);
+
   if (loading) {
     return (
       <section aria-label="در حال بارگذاری خدمات پرکاربرد" style={{ display: "grid", gap: 12 }}>
@@ -441,22 +356,43 @@ function PopularServicesGrid({
   }
   if (services.length === 0) return null;
 
-  const [hero] = services;
-  const rest = services.slice(1, 9);
+  const slides = services.slice(0, 8);
+
+  const handleStageScroll = (event: UIEvent<HTMLDivElement>) => {
+    const el = event.currentTarget;
+    const first = el.firstElementChild as HTMLElement | null;
+    if (!first || first.offsetWidth <= 0) return;
+    const stride = first.offsetWidth + 10;
+    const index = Math.round(Math.abs(el.scrollLeft) / stride);
+    setActiveSlide(Math.min(slides.length - 1, Math.max(0, index)));
+  };
 
   return (
     <section aria-label="خدمات پرکاربرد" style={{ display: "grid", gap: spacing.sm, minWidth: 0 }}>
       <SectionHeader title="خدمات پرکاربرد" description="پرترددترین خدمت‌های قرآنی وُدّا" />
+      {/* ─── صحنهٔ رنگی کاروسل — زمردی عمیق با هالهٔ طلایی و نئون نعنایی ─── */}
       <div
         style={{
-          display: "grid",
-          gridTemplateColumns: "1fr",
-          gap: 10,
+          position: "relative",
+          borderRadius: 22,
+          padding: 12,
           minWidth: 0,
+          background: "linear-gradient(140deg, #102b22 0%, #1c5340 44%, #2f7a56 78%, #3f9468 100%)",
+          border: "1px solid rgba(216,184,105,.55)",
+          boxShadow: "0 18px 40px rgba(16,43,34,.30), 0 0 20px rgba(58,167,109,.22)",
+          overflow: "hidden",
         }}
       >
-        {/* ─── کارت بزرگ راست: عکس خدمت با گرادیان تیره + بج طلایی + دکمهٔ شیشه‌ای ─── */}
-        {hero ? (
+        {/* هاله‌های نورانی پس‌زمینهٔ صحنه */}
+        <span aria-hidden="true" style={{ position: "absolute", top: -46, insetInlineStart: -40, width: 170, height: 170, borderRadius: "50%", background: "radial-gradient(circle, rgba(216,184,105,.30), transparent 70%)" }} />
+        <span aria-hidden="true" style={{ position: "absolute", bottom: -52, insetInlineEnd: -36, width: 190, height: 190, borderRadius: "50%", background: "radial-gradient(circle, rgba(143,208,168,.24), transparent 70%)" }} />
+        {/* اسلایدها — اسکرول snap افقی؛ هر خدمت یک کارت تصویری با بج طلایی */}
+        <div
+          onScroll={handleStageScroll}
+          className="vodda-scroll-rail"
+          style={{ display: "flex", gap: 10, overflowX: "auto", overflowY: "hidden", minWidth: 0, position: "relative", scrollSnapType: "x mandatory", paddingBottom: 2 }}
+        >
+          {slides.map((hero, index) => (
           <button
             type="button"
             onClick={() => navigateApp(`/service/${hero.id}`, config)}
@@ -465,18 +401,22 @@ function PopularServicesGrid({
             style={{
               position: "relative",
               minWidth: 0,
-              minHeight: wide ? 292 : 252,
+              flex: "0 0 auto",
+              width: wide ? 320 : "min(86%, 320px)",
+              scrollSnapAlign: "center",
+              minHeight: wide ? 268 : 232,
               padding: 0,
               textAlign: "start",
-              border: "1px solid rgba(191,149,64,.55)",
-              borderRadius: 20,
+              border: "1px solid rgba(216,184,105,.55)",
+              borderRadius: 18,
               overflow: "hidden",
               background: colors.olive900,
               cursor: "pointer",
               fontFamily: typography.fontFamily,
-              boxShadow: "0 14px 30px rgba(46,54,34,.16), 0 0 14px rgba(191,149,64,.12)",
+              boxShadow: "0 14px 30px rgba(10,22,16,.38), 0 0 14px rgba(191,149,64,.16)",
               transition: "transform .16s ease, box-shadow .16s ease",
               animation: "vodda-enter .36s ease-out both",
+              animationDelay: `${index * 70}ms`,
             }}
           >
             <img
@@ -591,129 +531,27 @@ function PopularServicesGrid({
               </span>
             </span>
           </button>
+          ))}
+        </div>
+        {/* نقطه‌های وضعیت کاروسل — اسلاید فعال با نشان طلایی */}
+        {slides.length > 1 ? (
+          <span aria-hidden="true" style={{ position: "relative", display: "flex", justifyContent: "center", gap: 5, paddingTop: 10 }}>
+            {slides.map((slide, dotIndex) => (
+              <span
+                key={slide.id}
+                style={{
+                  width: dotIndex === activeSlide ? 18 : 6,
+                  height: 6,
+                  borderRadius: 999,
+                  background: dotIndex === activeSlide ? "linear-gradient(90deg, #d8b869, #f2dfae)" : "rgba(255,253,246,.38)",
+                  boxShadow: dotIndex === activeSlide ? "0 0 8px rgba(216,184,105,.55)" : "none",
+                  transition: "width .25s ease, background .25s ease",
+                }}
+              />
+            ))}
+          </span>
         ) : null}
       </div>
-      {/* ۱.۱ — بقیهٔ خدمات پرکاربرد — کادرهای کوچک هم‌خانواده با تصویر موضوعی،
-       * اسکرول افقی به چپ با گرادیانت راهنمای لبه — چیپ‌های قبلی حذف شدند */}
-      {rest.length > 0 ? (
-        <ScrollHintRow>
-          {rest.map((service, index) => (
-            <button
-              key={service.id}
-              type="button"
-              onClick={() => navigateApp(`/service/${service.id}`, config)}
-              className="vodda-tappable vodda-enter"
-              aria-label={`${service.title} — ${faNumber(service.teacherCount, 0)} استاد`}
-              style={{
-                width: wide ? 176 : 158,
-                flex: "0 0 auto",
-                minWidth: 0,
-                display: "grid",
-                padding: 0,
-                textAlign: "start",
-                border: `1px solid ${colors.goldSoft}`,
-                borderRadius: 16,
-                background: colors.surface,
-                overflow: "hidden",
-                cursor: "pointer",
-                fontFamily: typography.fontFamily,
-                boxShadow: "0 6px 16px rgba(46,54,34,.07)",
-                animationDelay: `${index * 45}ms`,
-              }}
-            >
-              <span
-                style={{
-                  position: "relative",
-                  display: "block",
-                  width: "100%",
-                  aspectRatio: "1.6 / 1",
-                  overflow: "hidden",
-                  borderBottom: "1px solid rgba(191,149,64,.22)",
-                }}
-              >
-                <img
-                  src={serviceImageSrc(service.imageKey)}
-                  alt=""
-                  loading="lazy"
-                  style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
-                  onError={(event) => {
-                    event.currentTarget.style.display = "none";
-                  }}
-                />
-                <span
-                  style={{
-                    position: "absolute",
-                    top: 6,
-                    insetInlineStart: 6,
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 3,
-                    padding: "2.5px 8px",
-                    borderRadius: 999,
-                    background: "linear-gradient(135deg, #bf9540, #d8b869)",
-                    border: "1px solid rgba(255,253,246,.8)",
-                    color: "#fffdf6",
-                    fontSize: 9.5,
-                    fontWeight: 900,
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  <Icon name="users" size={10} />
-                  {faNumber(service.teacherCount, 0)} استاد
-                </span>
-              </span>
-              <span style={{ display: "grid", gap: 7, padding: "9px 10px 10px" }}>
-                <strong
-                  style={{
-                    fontSize: 12,
-                    fontWeight: 800,
-                    lineHeight: 1.55,
-                    color: colors.ink,
-                    display: "-webkit-box",
-                    WebkitBoxOrient: "vertical",
-                    WebkitLineClamp: 2,
-                    overflow: "hidden",
-                    overflowWrap: "anywhere",
-                    minHeight: 37,
-                  }}
-                >
-                  {service.title}
-                </strong>
-                <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6, minWidth: 0 }}>
-                  <span
-                    style={{
-                      fontSize: 9.5,
-                      fontWeight: 700,
-                      color: colors.inkMuted,
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {service.category}
-                  </span>
-                  <span
-                    aria-hidden="true"
-                    style={{
-                      width: 22,
-                      height: 22,
-                      display: "grid",
-                      placeItems: "center",
-                      borderRadius: "50%",
-                      background: colors.surfaceSoft,
-                      border: `1px solid ${colors.sand150}`,
-                      color: colors.goldDark,
-                      flex: "0 0 auto",
-                    }}
-                  >
-                    <Icon name="chevronL" size={11} stroke={2.2} />
-                  </span>
-                </span>
-              </span>
-            </button>
-          ))}
-        </ScrollHintRow>
-      ) : null}
     </section>
   );
 }
@@ -735,6 +573,13 @@ function FreeServicesShowcase({
   config: UniversalAppConfig;
   wide: boolean;
 }) {
+  /* E3 — گروه‌بندی خدمت‌های رایگان بر اساس نوع (عنوان خدمت) برای کاشی‌های مربعی */
+  const typeGroups = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const card of cards) map.set(card.title, (map.get(card.title) ?? 0) + 1);
+    return [...map.entries()].slice(0, 8).map(([title, count]) => ({ title, count }));
+  }, [cards]);
+
   if (loading) {
     return (
       <section aria-label="در حال بارگذاری خدمات رایگان" style={{ display: "grid", gap: 12 }}>
@@ -856,7 +701,7 @@ function FreeServicesShowcase({
               style={{
                 fontSize: 11.5,
                 fontWeight: 600,
-                color: colors.inkSecondary,
+                color: "#4a463b",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
                 whiteSpace: "nowrap",
@@ -933,7 +778,7 @@ function FreeServicesShowcase({
                 borderRadius: 999,
                 border: `1px solid ${colors.sand150}`,
                 background: "rgba(255,255,255,.78)",
-                color: colors.inkSecondary,
+                color: "#4a463b",
                 fontSize: 10,
                 fontWeight: 700,
                 whiteSpace: "nowrap",
@@ -951,7 +796,7 @@ function FreeServicesShowcase({
                 borderRadius: 999,
                 border: "1px solid rgba(191,149,64,.4)",
                 background: "rgba(255,255,255,.78)",
-                color: colors.goldDark,
+                color: "#7a5e1e",
                 fontSize: 10,
                 fontWeight: 800,
                 whiteSpace: "nowrap",
@@ -981,6 +826,83 @@ function FreeServicesShowcase({
           </span>
         </span>
       </button>
+
+      {/* E3 — کاشی‌های مربعی «ورود بر اساس نوع خدمت» زیر بنر — هر کاشی یک نوع خدمت؛
+       * کلیک → صفحهٔ خدمات رایگان فیلترشده بر همان نوع. بنر اصلی: دیدن اساتید و انتخاب بر اساس استاد. */}
+      {typeGroups.length > 0 ? (
+        <div style={{ display: "grid", gap: 7, minWidth: 0 }}>
+          <span style={{ fontSize: 11, fontWeight: 800, color: colors.inkSecondary, paddingInlineStart: 2 }}>
+            ورود بر اساس نوع خدمت
+          </span>
+          <div
+            className="vodda-scroll-rail"
+            style={{ display: "flex", gap: 8, overflowX: "auto", overflowY: "hidden", minWidth: 0, paddingBlock: 2 }}
+          >
+            {typeGroups.map((group, index) => {
+              const tileIcons = ["quran", "book", "mic", "headphones", "users", "sparkle", "award", "gift"] as const;
+              return (
+                <button
+                  key={group.title}
+                  type="button"
+                  onClick={() => navigateApp(`/free-services?type=${encodeURIComponent(group.title)}`, config)}
+                  className="vodda-tappable vodda-enter"
+                  aria-label={`خدمات رایگان ${group.title} — ${faNumber(group.count, 0)} خدمت`}
+                  style={{
+                    width: 86,
+                    aspectRatio: "1 / 1",
+                    flex: "0 0 auto",
+                    minWidth: 0,
+                    display: "grid",
+                    alignContent: "center",
+                    justifyItems: "center",
+                    gap: 4,
+                    borderRadius: 16,
+                    padding: "8px 6px",
+                    border: "1px solid rgba(58,167,109,.32)",
+                    background: colors.surface,
+                    boxShadow: "0 6px 14px rgba(46,84,54,.10)",
+                    cursor: "pointer",
+                    fontFamily: typography.fontFamily,
+                    animationDelay: `${index * 45}ms`,
+                  }}
+                >
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      width: 36,
+                      height: 36,
+                      display: "grid",
+                      placeItems: "center",
+                      borderRadius: "50%",
+                      background: "linear-gradient(145deg, #43b07f, #2e8f5c)",
+                      color: "#ffffff",
+                      boxShadow: "0 5px 12px rgba(58,167,109,.30)",
+                    }}
+                  >
+                    <Icon name={tileIcons[index % tileIcons.length]} size={18} />
+                  </span>
+                  <strong
+                    style={{
+                      maxWidth: 74,
+                      fontSize: 9.5,
+                      fontWeight: 800,
+                      color: colors.ink,
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {group.title}
+                  </strong>
+                  <span style={{ fontSize: 8.5, fontWeight: 700, color: "#2e8f5c" }}>
+                    {faNumber(group.count, 0)} خدمت
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }
@@ -1150,9 +1072,6 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
   const runtime = usePlatform();
   const { L, t } = useAppearance();
   const wide = useMinWidth(768);
-  /* در عرض‌های خیلی باریک (<۳۶۰) عنوان مرکزی هدر پنهان می‌شود تا با خوشهٔ
-   * کیف پول/اعلان/پروفایل هم‌پوشانی رخ ندهد (صفرِ سرریز در ۳۲۰px). */
-  const showHeaderTitle = useMinWidth(360);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [teachersLoading, setTeachersLoading] = useState(!teachersCacheFresh());
@@ -1406,9 +1325,8 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
 
   return (
     <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", minWidth: 0, gap: wide ? 32 : 24 }}>
-      {/* ۱.ب.۲ — بخش ① header (چیدمان جدید): ردیف ۱ چیپ شهر — ردیف ۲ سه‌منطقه‌ای:
-       *  راست: سلام و نام کاربر | مرکز: عنوان اپ «وُدّا» | چپ: کیف پول + اعلان‌ها + پروفایل.
-       *  کیف پول از نوار پایین به هدر منتقل شد — همیشه در دسترس بدون اشغال جای منو. */}
+      {/* ۱.ب.۲ — بخش ① header (چیدمان E3): ردیف ۱ چیپ شهر — ردیف ۲: راست آواتار پروفایل + سلام، چپ اعلان‌ها.
+       *  کیف پول و عنوان «وُدّا» از هدر حذف شدند — هدر خلوت‌تر؛ کیف پول از صفحهٔ پروفایل در دسترس است. */}
       <header
         className="vodda-enter"
         style={{
@@ -1426,24 +1344,19 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
             }}
           />
         </div>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: showHeaderTitle ? "minmax(0, 1fr) auto minmax(0, 1fr)" : "minmax(0, 1fr) minmax(0, 1fr)",
-            alignItems: "center",
-            gap: spacing.sm,
-          }}
-        >
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: spacing.sm, minWidth: 0 }}>
+          {/* راست: آواتار پروفایل + سلام — پروفایل راست‌چین؛ کیف پول و عنوان «وُدّا» حذف شدند (E3) */}
           <button
             type="button"
             onClick={() => { if (user) setRoleSheetOpen(true); }}
             aria-label="تغییر حساب"
             className="vodda-tappable"
             style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
               minWidth: 0,
-              justifySelf: "start",
-              display: "grid",
-              gap: 2,
+              flex: "1 1 auto",
               padding: 0,
               textAlign: "start",
               border: 0,
@@ -1454,95 +1367,11 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
           >
             <span
               style={{
-                ...typography.caption,
-                color: colors.inkMuted,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-                textAlign: "start",
-              }}
-            >
-              {greetingLabel()}{today ? ` · ${today}` : ""}
-            </span>
-            <strong
-              style={{
-                ...typography.body,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-                textAlign: "start",
-                color: colors.ink,
-                fontWeight: 900,
-              }}
-            >
-              {firstName} جان 🌿
-            </strong>
-          </button>
-          {/* عنوان اپ — مرکز هدر (در عرض خیلی باریک پنهان) */}
-          {showHeaderTitle ? (
-            <div aria-hidden="true" style={{ display: "grid", justifyItems: "center", gap: 3 }}>
-              <strong
-                style={{
-                  fontSize: 19,
-                  fontWeight: 900,
-                  lineHeight: 1.2,
-                  letterSpacing: 0.3,
-                  color: colors.olive800,
-                }}
-              >
-                {t("app_title")}
-              </strong>
-              <span
-                style={{
-                  width: 26,
-                  height: 2.5,
-                  borderRadius: 999,
-                  background: "linear-gradient(90deg, transparent, rgba(191,149,64,.9), transparent)",
-                  boxShadow: "0 0 6px rgba(191,149,64,.45)",
-                }}
-              />
-            </div>
-          ) : null}
-          {/* خوشهٔ کنش‌ها (چپ): کیف پول + اعلان‌ها + پروفایل */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8, flex: "0 0 auto" }}>
-            <button
-              type="button"
-              aria-label="کیف پول"
-              title="کیف پول"
-              className="vodda-tappable"
-              onClick={() => navigateApp("/wallet", config)}
-              style={{
-                width: 38,
-                height: 38,
-                display: "grid",
-                placeItems: "center",
-                padding: 0,
-                border: `1px solid ${colors.olive100}`,
-                borderRadius: "50%",
-                color: colors.olive700,
-                background: colors.olive50,
-                cursor: "pointer",
-                flex: "0 0 auto",
-              }}
-            >
-              <Icon name="wallet" size={17} />
-            </button>
-            <NotificationsBell runtime={runtime} user={user} />
-            <button
-              type="button"
-              onClick={() => { if (user) setRoleSheetOpen(true); }}
-              aria-label="تغییر حساب"
-              className="vodda-tappable"
-              style={{
                 position: "relative",
                 width: 38,
                 height: 38,
                 display: "grid",
                 placeItems: "center",
-                padding: 0,
-                border: 0,
-                background: "transparent",
-                cursor: user ? "pointer" : "default",
                 flex: "0 0 auto",
               }}
             >
@@ -1572,8 +1401,37 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
                   <Icon name="refresh" size={8} stroke={2.4} />
                 </span>
               ) : null}
-            </button>
-          </div>
+            </span>
+            <span style={{ minWidth: 0, display: "grid", gap: 2 }}>
+              <span
+                style={{
+                  ...typography.caption,
+                  color: colors.inkMuted,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                  textAlign: "start",
+                }}
+              >
+                {greetingLabel()}{today ? ` · ${today}` : ""}
+              </span>
+              <strong
+                style={{
+                  ...typography.body,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                  textAlign: "start",
+                  color: colors.ink,
+                  fontWeight: 900,
+                }}
+              >
+                {firstName} جان 🌿
+              </strong>
+            </span>
+          </button>
+          {/* چپ: فقط اعلان‌ها — کیف پول از هدر حذف و به پروفایل منتقل شد */}
+          <NotificationsBell runtime={runtime} user={user} />
         </div>
       </header>
 

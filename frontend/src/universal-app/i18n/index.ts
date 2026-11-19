@@ -104,6 +104,9 @@ export const fa = {
   session_reject: "رد جلسه",
   session_finish: "اتمام جلسه",
 
+  // ── مدیریت درون‌اپی (E3) ──
+  admin_title: "مدیریت سامانه",
+
   // ── فراخوان ──
   dispatch_title: "فراخوان اساتید",
   dispatch_now: "جلسهٔ فوری — همین حالا",
@@ -243,6 +246,9 @@ export const en: Partial<Record<TranslationKey, string>> = {
   session_accept: "Accept session",
   session_reject: "Decline session",
   session_finish: "End session",
+
+  // ── In-app admin (E3) ──
+  admin_title: "System admin",
 
   // ── Dispatch ──
   dispatch_title: "Call for teachers",
