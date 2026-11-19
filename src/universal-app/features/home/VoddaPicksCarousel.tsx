@@ -148,7 +148,7 @@ export function VoddaPicksCarousel({
         >
           <div style={{ display: "flex", gap: 10, overflow: "hidden" }}>
             {Array.from({ length: 2 }).map((_, index) => (
-              <SlideSkeleton key={index} style={{ width: isWide ? "calc(50% - 5px)" : "calc(100% - 26px)", minHeight: 420, flex: "0 0 auto" }} />
+              <SlideSkeleton key={index} style={{ width: isWide ? "calc(50% - 5px)" : "calc(100% - 26px)", minHeight: isWide ? 256 : 286, flex: "0 0 auto" }} />
             ))}
           </div>
         </div>
@@ -334,7 +334,7 @@ export function VoddaPicksCarousel({
                 animationDelay: `${Math.min(index, 6) * 40}ms`,
               }}
             >
-              <TeacherCard teacher={teacher} config={config} wide={isWide} />
+              <TeacherCard teacher={teacher} config={config} wide={isWide} variant="square" />
             </div>
           ))}
         </div>
