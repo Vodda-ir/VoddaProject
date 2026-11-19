@@ -394,6 +394,7 @@ function PopularServicesGrid({
         >
           {slides.map((hero, index) => (
           <button
+            key={hero.id}
             type="button"
             onClick={() => navigateApp(`/service/${hero.id}`, config)}
             className="vodda-tappable"
