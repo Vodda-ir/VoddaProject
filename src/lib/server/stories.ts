@@ -129,15 +129,20 @@ async function mutateStories(mutator: (data: StoriesData) => void): Promise<Stor
 
 /* ── خواندن‌ها ── */
 
-/** استوری‌های زندهٔ عمومی — جدیدترین نخست. */
+/** استوری‌های زندهٔ عمومی — جدیدترین نخست؛ شاخهٔ کش هم باید مرتب باشد
+ * (نوشتن‌ها کش را با ترتیب خام فایل بازنویسی می‌کنند — بدون این مرتب‌سازی،
+ * ترتیب ریل و لنگر نمایشگر غیرقطعی می‌شود). */
 export async function listActiveStories(): Promise<StoredStory[]> {
   const now = Date.now();
   if (cache && now - cache.at < CACHE_TTL_MS) {
-    return cache.data.stories.filter((story) => Date.parse(story.expires_at) > now).slice(0, 40);
+    return [...cache.data.stories]
+      .filter((story) => Date.parse(story.expires_at) > now)
+      .sort((left, right) => Date.parse(right.created_at) - Date.parse(left.created_at))
+      .slice(0, 40);
   }
   const data = await readFileRaw();
   cache = { data, at: Date.now() };
-  return data.stories
+  return [...data.stories]
     .filter((story) => Date.parse(story.expires_at) > Date.now())
     .sort((left, right) => Date.parse(right.created_at) - Date.parse(left.created_at))
     .slice(0, 40);

@@ -6,6 +6,7 @@ import { Icon, colors, typography } from "../../ui";
 import { useAppearance } from "../../ui/appearance";
 import { localizedDigits } from "../../ui/persian";
 import { markStoryView, removeStory, type Story } from "./api";
+import { readSeenStoryIds } from "./StoryRail";
 
 /* ═══ E1 — نمایشگر تمام‌صفحهٔ استوری (عملکرد اینستاگرامی) ═══
  * نوارهای پیشرفت پلکانی، چرخش خودکار ۵ ثانیه، تپ به دو نیمهٔ تصویر (قبلی/بعدی
@@ -62,6 +63,11 @@ export function StoryViewer({
     [stories],
   );
   const [index, setIndex] = useState(() => {
+    /* پخش اینستاگرامی — از نخستین دیده‌نشده (قدیمی‌ترین) آغاز می‌شود؛ اگر همه
+     * دیده شده باشند، روی استوری لنگرِ ریل (جدیدترین) می‌ماند. */
+    const seen = new Set(readSeenStoryIds());
+    const firstUnseen = ordered.findIndex((item) => !seen.has(item.id));
+    if (firstUnseen >= 0) return firstUnseen;
     const anchor = stories[Math.min(Math.max(0, startIndex), Math.max(0, stories.length - 1))];
     const mapped = anchor ? ordered.findIndex((item) => item.id === anchor.id) : 0;
     return Math.max(0, mapped);
