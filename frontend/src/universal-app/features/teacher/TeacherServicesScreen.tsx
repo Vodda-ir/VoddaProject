@@ -38,6 +38,18 @@ type TeacherService = {
   duration: number;
   price: number;
   active: boolean;
+  mode: string;
+};
+
+/** یکی از سه نوع جلسهٔ آنلاین (تلفنی/متنی/تصویری) — سرویس‌محور، قیمت/مدت/فعال‌سازی. */
+type OnlineServiceConfig = {
+  mode: "voice" | "text" | "video";
+  title: string;
+  icon: "phone" | "message" | "video";
+  duration: number;
+  price: number;
+  active: boolean;
+  serviceId: number;
 };
 
 type CatalogEntry = {
@@ -71,7 +83,52 @@ function parseService(value: unknown): TeacherService | null {
     duration: asInteger(row.duration, 30),
     price: asInteger(row.price),
     active: row.active === true,
+    mode: asString(row.mode),
   };
+}
+
+const ONLINE_MODE_META: Record<OnlineServiceConfig["mode"], { title: string; icon: "phone" | "message" | "video"; hint: string }> = {
+  voice: { title: "جلسهٔ تلفنی و صوتی", icon: "phone", hint: "تماس صوتی از داخل اپ؛ شماره‌ها پنهان می‌مانند" },
+  text: { title: "جلسهٔ متنی (چت)", icon: "message", hint: "چت امن با متن، ویس و تصویر" },
+  video: { title: "جلسهٔ تصویری", icon: "video", hint: "کلاس زندهٔ تصویری با دوربین و میکروفون" },
+};
+
+function parseOnlineService(value: unknown): OnlineServiceConfig | null {
+  const row = asRecord(value);
+  if (!row) return null;
+  const mode = asString(row.mode);
+  if (mode !== "voice" && mode !== "text" && mode !== "video") return null;
+  const meta = ONLINE_MODE_META[mode];
+  return {
+    mode,
+    title: asString(row.title, meta.title) || meta.title,
+    icon: meta.icon,
+    duration: asInteger(row.duration, 30),
+    price: asInteger(row.price),
+    active: row.active === true,
+    serviceId: asInteger(row.service_id),
+  };
+}
+
+async function getOnlineServices(runtime: PlatformRuntime): Promise<OnlineServiceConfig[]> {
+  const response = await runtime.request<ApiEnvelope<UnknownRecord>>("/teacher/online-services");
+  return asArray(asRecord(response.data)?.services)
+    .map(parseOnlineService)
+    .filter((item): item is OnlineServiceConfig => item !== null);
+}
+
+async function saveOnlineService(
+  runtime: PlatformRuntime,
+  mode: OnlineServiceConfig["mode"],
+  draft: { duration: number; price: number; active: boolean },
+): Promise<OnlineServiceConfig[]> {
+  const response = await runtime.request<ApiEnvelope<UnknownRecord>>(`/teacher/online-services/${mode}`, {
+    method: "PUT",
+    body: JSON.stringify(draft),
+  });
+  return asArray(asRecord(response.data)?.services)
+    .map(parseOnlineService)
+    .filter((item): item is OnlineServiceConfig => item !== null);
 }
 
 async function getServices(runtime: PlatformRuntime): Promise<TeacherService[]> {
@@ -236,6 +293,15 @@ export function TeacherServicesScreen() {
   const [deactivateTarget, setDeactivateTarget] = useState<TeacherService | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<TeacherService | null>(null);
 
+  // خدمات جلسات آنلاین — سه نوع تلفنی/متنی/تصویری با قیمت مستقل
+  const [onlineServices, setOnlineServices] = useState<OnlineServiceConfig[]>([]);
+  const [onlineLoading, setOnlineLoading] = useState(true);
+  const [onlineSaving, setOnlineSaving] = useState(false);
+  const [editingOnline, setEditingOnline] = useState<OnlineServiceConfig | null>(null);
+  const [onlineDraft, setOnlineDraft] = useState<ServiceDraft>(emptyDraft);
+  const [onlineActive, setOnlineActive] = useState(true);
+  const [onlineError, setOnlineError] = useState<string | null>(null);
+
   // باگ refresh-loop: اجرای دوم StrictMode یا فراخوانی دیرهنگام نباید state را با دادهٔ کهنه بازنویسی کند.
   const loadGeneration = useRef(0);
 
@@ -270,10 +336,24 @@ export function TeacherServicesScreen() {
     }
   }, [runtime]);
 
+  const loadOnlineServices = useCallback(async () => {
+    setOnlineLoading(true);
+    setOnlineError(null);
+    try {
+      setOnlineServices(await getOnlineServices(runtime));
+    } catch (loadError) {
+      setOnlineServices([]);
+      setOnlineError(messageOf(loadError));
+    } finally {
+      setOnlineLoading(false);
+    }
+  }, [runtime]);
+
   useEffect(() => {
     void load();
     void loadCatalog();
-  }, [load, loadCatalog]);
+    void loadOnlineServices();
+  }, [load, loadCatalog, loadOnlineServices]);
 
   /* خدمات استاد بر اساس شناسهٔ خدمت رسمی — برای تشخیص انتخاب‌شده‌ها */
   const serviceByOfficialId = useMemo(() => {
@@ -286,10 +366,12 @@ export function TeacherServicesScreen() {
 
   /* خدمت‌های قدیمی بدون تطابق با کاتالوگ آنلاین — در بخش جداگانه حفظ می‌شوند.
      ردیف‌های ثبت‌شده روی کاتالوگ حضوری (شناسه‌های ۱۰۱ به بالا) به مسیر
-     «خدمات حضوری» تعلق دارند و این‌جا نمایش داده نمی‌شوند. */
+     «خدمات حضوری» تعلق دارند و این‌جا نمایش داده نمی‌شوند. سه نوع جلسهٔ
+     آنلاین هم بخش اختصاصی خودشان را دارند. */
   const orphanServices = useMemo(() => {
     const catalogIds = new Set(categories.flatMap((group) => group.services.map((entry) => entry.id)));
     return services.filter((service) => {
+      if (service.mode) return false; // تلفنی/متنی/تصویری → بخش جلسات آنلاین
       if (service.official_service_id == null) return true;
       if (service.official_service_id >= 100) return false; // خدمات حضوری → /t/presence
       return !catalogIds.has(service.official_service_id);
@@ -439,6 +521,33 @@ export function TeacherServicesScreen() {
   /* خدمت رایگان — قیمت صفر تومانی (جلسات رایگان اساتید) */
   const isFreeService = draft.price.trim() === "0";
 
+  /** ذخیرهٔ یکی از سه نوع جلسهٔ آنلاین (مدت/قیمت/فعال‌سازی). */
+  async function saveOnlineConfig() {
+    if (!editingOnline || onlineSaving) return;
+    const duration = Number.parseInt(onlineDraft.duration.trim(), 10);
+    const price = Number.parseInt(onlineDraft.price.trim() || "0", 10);
+    if (!Number.isFinite(duration) || duration < 10 || duration > 240) {
+      setOnlineError(L("مدت جلسه باید بین ۱۰ تا ۲۴۰ دقیقه باشد."));
+      return;
+    }
+    if (!Number.isFinite(price) || price < 0) {
+      setOnlineError(L("مبلغ معتبر وارد کنید."));
+      return;
+    }
+    setOnlineSaving(true);
+    setOnlineError(null);
+    try {
+      const next = await saveOnlineService(runtime, editingOnline.mode, { duration, price, active: onlineActive });
+      setOnlineServices(next);
+      setEditingOnline(null);
+      showToast(L("خدمت جلسهٔ آنلاین ذخیره شد"));
+    } catch (mutationError) {
+      setOnlineError(messageOf(mutationError));
+    } finally {
+      setOnlineSaving(false);
+    }
+  }
+
   const editingIcon = (editing?.official_service_id != null
     ? categories.flatMap((group) => group.services).find((entry) => entry.id === editing.official_service_id)?.icon
     : undefined) as "book" | undefined;
@@ -460,6 +569,84 @@ export function TeacherServicesScreen() {
             </span>
           </div>
         </div>
+      </Card>
+
+      {/* خدمات جلسات آنلاین — سه نوع با قیمت مستقل */}
+      <Card style={{ display: "grid", gap: 12, padding: 16, borderRadius: 20, border: `1.5px solid ${colors.greenBorder}`, background: colors.greenBackground }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ width: 42, height: 42, display: "grid", placeItems: "center", borderRadius: 14, flex: "0 0 42px", background: colors.greenChip, color: colors.greenDeep }}>
+            <Icon name="headphones" size={21} />
+          </span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <strong style={{ display: "block", fontSize: 14, fontWeight: 900, color: colors.greenInk }}>{L("خدمات جلسات آنلاین")}</strong>
+            <span style={{ display: "block", fontSize: 11.5, lineHeight: 1.8, color: colors.greenInk, opacity: 0.85 }}>
+              {L("سه روش برگزاری جلسه با قیمت مستقل — قرآن‌آموز هنگام رزرو بین آن‌ها انتخاب می‌کند؛ شمارهٔ شما هیچ‌گاه نمایش داده نمی‌شود.")}
+            </span>
+          </div>
+        </div>
+
+        {onlineLoading ? <LoadingState label={L("در حال دریافت خدمات آنلاین…")} style={{ minHeight: 120 }} /> : null}
+        {!onlineLoading && onlineError ? (
+          <ErrorState
+            title={L("دریافت خدمات آنلاین ناموفق بود")}
+            description={L(onlineError)}
+            action={<Button variant="secondary" onClick={() => void loadOnlineServices()}>{L("تلاش دوباره")}</Button>}
+          />
+        ) : null}
+
+        {!onlineLoading && !onlineError
+          ? onlineServices.map((config) => (
+              <div
+                key={config.mode}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  padding: 12,
+                  borderRadius: 16,
+                  background: config.active ? colors.surface : "transparent",
+                  border: `1px solid ${config.active ? colors.greenBorder : colors.sand200}`,
+                }}
+              >
+                <span
+                  style={{
+                    width: 40,
+                    height: 40,
+                    flex: "0 0 40px",
+                    display: "grid",
+                    placeItems: "center",
+                    borderRadius: 12,
+                    background: config.active ? colors.greenChip : colors.sand100,
+                    color: config.active ? colors.greenDeep : colors.inkMuted,
+                  }}
+                >
+                  <Icon name={config.icon} size={20} />
+                </span>
+                <span style={{ flex: 1, minWidth: 0, display: "grid", gap: 2 }}>
+                  <strong style={{ fontSize: 13, fontWeight: 800, color: colors.greenInk }}>{L(config.title)}</strong>
+                  <span style={{ fontSize: 11, color: colors.greenInk, opacity: 0.85, lineHeight: 1.7 }}>
+                    {config.active
+                      ? `${L("{n} دقیقه").replace("{n}", localizedDigits(config.duration, lang))} · ${config.price === 0 ? L("رایگان") : L("هر جلسه {n} تومان").replace("{n}", amountLabel(config.price, lang))}`
+                      : L("غیرفعال — برای فعال‌سازی ویرایش کنید")}
+                  </span>
+                </span>
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setEditingOnline(config);
+                    setOnlineDraft({ duration: String(config.duration), price: String(config.price) });
+                    setOnlineActive(config.active);
+                    setOnlineError(null);
+                  }}
+                  style={{ minHeight: 42, padding: "0 14px", fontSize: 12.5, flex: "0 0 auto" }}
+                  aria-label={L("ویرایش {title}").replace("{title}", L(config.title))}
+                >
+                  <Icon name="edit" size={15} />
+                  {L("ویرایش")}
+                </Button>
+              </div>
+            ))
+          : null}
       </Card>
 
       {loading ? <LoadingState label={L("در حال دریافت خدمات…")} /> : null}
@@ -865,6 +1052,130 @@ export function TeacherServicesScreen() {
           <Button variant="secondary" disabled={saving} onClick={() => setDeleteTarget(null)}>{L("انصراف")}</Button>
           <Button variant="danger" loading={saving} onClick={() => void remove()}>{L("حذف")}</Button>
         </div>
+      </Dialog>
+
+      {/* ویرایشگر جلسهٔ آنلاین — مدت، قیمت و کلید فعال‌سازی */}
+      <Dialog
+        open={editingOnline !== null}
+        title={L("ویرایش {title}").replace("{title}", L(editingOnline ? editingOnline.title : "جلسهٔ آنلاین"))}
+        onClose={() => { if (!onlineSaving) setEditingOnline(null); }}
+      >
+        {editingOnline ? (
+          <div style={{ display: "grid", gap: spacing.md }}>
+            <div style={{ display: "flex", gap: 10, alignItems: "center", border: `1.5px solid ${colors.greenBorder}`, background: colors.greenBackground, borderRadius: radii.lg, padding: 12 }}>
+              <IconBadge icon={editingOnline.icon} tone="olive" size={38} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <strong style={{ ...typography.body, display: "block" }}>{L(editingOnline.title)}</strong>
+                <span style={{ ...typography.caption, color: colors.greenInk, lineHeight: 1.7 }}>{L(ONLINE_MODE_META[editingOnline.mode].hint)}</span>
+              </div>
+            </div>
+
+            <label style={{ display: "grid", gap: spacing.xs, ...typography.bodySmall }}>
+              <span style={{ fontWeight: 700 }}>{L("مدت جلسه (دقیقه)")}</span>
+              <div role="group" aria-label={L("مدت‌های پیشنهادی")} style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {DURATION_PRESETS.map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    aria-pressed={onlineDraft.duration === String(preset)}
+                    onClick={() => setOnlineDraft((current) => ({ ...current, duration: String(preset) }))}
+                    style={quickChipStyle(onlineDraft.duration === String(preset))}
+                  >
+                    {L("{n} دقیقه").replace("{n}", localizedDigits(preset, lang))}
+                  </button>
+                ))}
+              </div>
+              <input
+                inputMode="numeric"
+                value={localizedDigits(onlineDraft.duration, lang)}
+                disabled={onlineSaving}
+                onChange={(event) => setOnlineDraft((current) => ({ ...current, duration: digitsOnly(event.target.value, 3) }))}
+                placeholder={L("یا مدت دلخواه — بین ۱۰ تا ۲۴۰")}
+                style={{ width: "100%", padding: spacing.md, border: `1px solid ${colors.sand200}`, borderRadius: radii.md, background: colors.surface, color: colors.ink, boxShadow: shadows.xs, fontFamily: typography.fontFamily }}
+              />
+            </label>
+
+            <div style={{ display: "grid", gap: spacing.xs, ...typography.bodySmall }}>
+              <span style={{ fontWeight: 700 }}>{L("قیمت هر جلسه (تومان)")}</span>
+              <div role="group" aria-label={L("قیمت‌های پیشنهادی")} style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {PRICE_PRESETS.map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    aria-pressed={onlineDraft.price === String(preset)}
+                    onClick={() => setOnlineDraft((current) => ({ ...current, price: String(preset) }))}
+                    style={quickChipStyle(onlineDraft.price === String(preset))}
+                  >
+                    {pricePresetLabel(preset, lang)}
+                  </button>
+                ))}
+              </div>
+              <AmountInput
+                value={onlineDraft.price}
+                onChange={(next) => setOnlineDraft((current) => ({ ...current, price: next }))}
+                ariaLabel={L("قیمت جلسهٔ آنلاین به تومان")}
+                placeholder={L("یا مبلغ دلخواه — صفر یعنی رایگان")}
+              />
+            </div>
+
+            <button
+              type="button"
+              role="switch"
+              aria-checked={onlineActive}
+              onClick={() => setOnlineActive((value) => !value)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                padding: "11px 13px",
+                textAlign: "right",
+                borderRadius: radii.md,
+                cursor: "pointer",
+                fontFamily: typography.fontFamily,
+                border: onlineActive ? `1.6px solid ${colors.olive600}` : `1px solid ${colors.sand200}`,
+                background: onlineActive ? colors.olive50 : colors.surface,
+              }}
+            >
+              <span style={{ flex: 1, minWidth: 0, display: "grid", gap: 1 }}>
+                <strong style={{ fontSize: 13, fontWeight: 800, color: onlineActive ? colors.olive700 : colors.ink }}>
+                  {onlineActive ? L("فعال و قابل رزرو") : L("غیرفعال")}
+                </strong>
+                <span style={{ fontSize: 11.5, color: colors.inkMuted, lineHeight: 1.7 }}>
+                  {onlineActive ? L("قرآن‌آموزان می‌توانند این نوع جلسه را رزرو کنند.") : L("این نوع جلسه در صفحهٔ رزرو نمایش داده نمی‌شود.")}
+                </span>
+              </span>
+              <span
+                aria-hidden="true"
+                style={{
+                  flexShrink: 0,
+                  width: 44,
+                  height: 26,
+                  borderRadius: 999,
+                  background: onlineActive ? colors.olive600 : colors.sand200,
+                  position: "relative",
+                  transition: "background .18s ease",
+                }}
+              >
+                <span
+                  style={{
+                    position: "absolute",
+                    top: 3,
+                    insetInlineStart: onlineActive ? 21 : 3,
+                    width: 20,
+                    height: 20,
+                    borderRadius: "50%",
+                    background: "#fff",
+                    boxShadow: "0 1px 4px rgba(0,0,0,.25)",
+                    transition: "inset-inline-start .18s ease",
+                  }}
+                />
+              </span>
+            </button>
+
+            {onlineError ? <span role="alert" style={{ ...typography.caption, color: colors.danger }}>{L(onlineError)}</span> : null}
+            <Button fullWidth loading={onlineSaving} onClick={() => void saveOnlineConfig()}>{L("ذخیره تغییرات")}</Button>
+          </div>
+        ) : null}
       </Dialog>
     </section>
   );

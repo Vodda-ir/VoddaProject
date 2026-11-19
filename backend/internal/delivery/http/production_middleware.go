@@ -240,6 +240,77 @@ func ValidateAvatarUpload(maxBytes int64) gin.HandlerFunc {
         }
 }
 
+// sessionMediaSniffs maps the real content type (magic bytes) to the filename
+// extensions the bytes may carry — used by ValidateSessionMediaUpload so a
+// renamed executable can never pose as a voice note or photo.
+var sessionMediaSniffs = map[string]map[string]bool{
+        "video/webm":      {".webm": true},
+        "application/ogg": {".ogg": true},
+        "audio/ogg":       {".ogg": true},
+        "audio/mpeg":      {".mp3": true},
+        "video/mp4":       {".m4a": true, ".mp4": true},
+        "audio/mp4":       {".m4a": true, ".mp4": true},
+        "audio/x-m4a":     {".m4a": true},
+        "audio/wav":       {".wav": true},
+        "image/jpeg":      {".jpg": true, ".jpeg": true},
+        "image/png":       {".png": true},
+        "image/webp":      {".webp": true},
+}
+
+// ValidateSessionMediaUpload guards POST /sessions/:id/messages multipart
+// uploads (voice notes and images of the text-mode session chat): bounded
+// body, real bytes matched against the filename extension per kind.
+func ValidateSessionMediaUpload(maxBytes int64) gin.HandlerFunc {
+        return func(c *gin.Context) {
+                if !strings.HasPrefix(strings.ToLower(c.ContentType()), "multipart/") {
+                        c.Next()
+                        return
+                }
+
+                c.Request.Body = nethttp.MaxBytesReader(c.Writer, c.Request.Body, maxBytes+(1<<20))
+                if err := c.Request.ParseMultipartForm(maxBytes); err != nil {
+                        c.AbortWithStatusJSON(nethttp.StatusRequestEntityTooLarge, gin.H{"error": "حجم فایل بیش از حد مجاز است (حداکثر ۵ مگابایت)"})
+                        return
+                }
+                header, err := c.FormFile("file")
+                if err != nil {
+                        c.AbortWithStatusJSON(nethttp.StatusBadRequest, gin.H{"error": "فایل پیوست معتبر نیست"})
+                        return
+                }
+                if header.Size <= 0 || header.Size > maxBytes {
+                        c.AbortWithStatusJSON(nethttp.StatusRequestEntityTooLarge, gin.H{"error": "حجم فایل باید حداکثر ۵ مگابایت باشد"})
+                        return
+                }
+
+                file, err := header.Open()
+                if err != nil {
+                        c.AbortWithStatusJSON(nethttp.StatusBadRequest, gin.H{"error": "خواندن فایل ممکن نیست"})
+                        return
+                }
+                buf := make([]byte, 512)
+                n, readErr := io.ReadFull(file, buf)
+                _ = file.Close()
+                if readErr != nil && readErr != io.ErrUnexpectedEOF {
+                        c.AbortWithStatusJSON(nethttp.StatusBadRequest, gin.H{"error": "فایل ناقص است"})
+                        return
+                }
+                mimeType := nethttp.DetectContentType(buf[:n])
+                ext := strings.ToLower(filepath.Ext(header.Filename))
+                if ext == ".oga" {
+                        ext = ".ogg"
+                }
+                validExtensions, ok := sessionMediaSniffs[mimeType]
+                if !ok || !validExtensions[ext] {
+                        c.AbortWithStatusJSON(nethttp.StatusUnsupportedMediaType, gin.H{
+                                "error": "فرمت پیوند باید تصویر (JPG/PNG/WebP) یا پیام صوتی (WebM/OGG/MP3/M4A) باشد",
+                        })
+                        return
+                }
+
+                c.Next()
+        }
+}
+
 // isBlankImageFile decodes the uploaded JPEG/PNG (guarded by pixel budget) and
 // reports whether every sampled pixel is (nearly) identical — i.e. a blank tile.
 func isBlankImageFile(header *multipart.FileHeader, mimeType string) (bool, error) {

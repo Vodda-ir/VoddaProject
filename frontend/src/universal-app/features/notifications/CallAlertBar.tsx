@@ -25,6 +25,7 @@ const FRESH_WINDOW_BY_KIND: Record<CallAlert["kind"], number> = {
   session: 6 * 60 * 60 * 1000,
   ceremony: 6 * 60 * 60 * 1000,
   admin: 24 * 60 * 60 * 1000,
+  ready: 30 * 60 * 1000,
 };
 const LS_CHIME = "vodda:call-alert:last-chime";
 const LS_DISMISSED = "vodda:call-alert:dismissed";
@@ -34,7 +35,7 @@ type CallAlert = {
   /** نام فراخوان — بخش بعد از «:» در تیتر اعلان */
   name: string;
   body: string;
-  kind: "ceremony" | "dispatch" | "session" | "instant" | "admin";
+  kind: "ceremony" | "dispatch" | "session" | "instant" | "admin" | "ready";
 };
 
 function dismissedIds(): number[] {
@@ -116,9 +117,11 @@ function toCallAlert(id: number, title: string, body: string, read: boolean, cre
         ? "dispatch"
         : title.includes("جلسهٔ فوری") || title.includes("جلسه فوری")
           ? "instant"
-          : title.includes("درخواست جلسه")
-            ? "session"
-            : "";
+          : title.includes("آمادهٔ جلسه") || title.includes("آماده جلسه")
+            ? "ready"
+            : title.includes("درخواست جلسه")
+              ? "session"
+              : "";
   if (kind === "") return null;
   if (Date.now() - createdMs > FRESH_WINDOW_BY_KIND[kind]) return null;
   const name = title.split(":").slice(1).join(":").trim() ||
@@ -126,9 +129,11 @@ function toCallAlert(id: number, title: string, body: string, read: boolean, cre
       ? "مراسم حضوری"
       : kind === "instant"
         ? "جلسهٔ فوری"
-        : kind === "admin"
-          ? "رویداد پنل مدیریت"
-          : "درخواست جلسه");
+        : kind === "ready"
+          ? "طرف مقابل آمادهٔ جلسه است"
+          : kind === "admin"
+            ? "رویداد پنل مدیریت"
+            : "درخواست جلسه");
   return { id, name, body, kind };
 }
 
@@ -180,7 +185,7 @@ export function CallAlertBar({ config }: { config: UniversalAppConfig }) {
         ? "/t/ceremony"
         : current.kind === "dispatch"
           ? "/t/dispatch"
-          : "/t/sessions"; // جلسهٔ فوری و درخواست جلسهٔ معمولی → فهرست جلسات استاد
+          : "/t/sessions"; // جلسهٔ فوری، درخواست جلسه و «آمادهٔ جلسه» → فهرست جلسات استاد
     navigateApp(target, config);
   }, [config, runtime]);
 
@@ -244,6 +249,7 @@ export function CallAlertBar({ config }: { config: UniversalAppConfig }) {
     session: "درخواست جلسهٔ جدید",
     instant: "جلسهٔ فوری — همین حالا",
     admin: "اعلان زندهٔ پنل مدیریت",
+    ready: "آمادهٔ جلسه — هم‌وقت منتظر است",
   };
   const label = L(labelByKind[alert.kind]);
 

@@ -8,6 +8,9 @@ import type { PlatformRuntime } from "../../platform/types";
 
 export type SessionViewerRole = "learner" | "teacher" | "admin";
 
+/** نوع میزبان جلسه — صوتی/متنی/تصویری؛ خالی یعنی جلسهٔ معمولی وُدّا. */
+export type SessionHostingMode = "voice" | "text" | "video" | "";
+
 export type SessionDetailData = {
   id: number;
   learnerId: number;
@@ -30,14 +33,22 @@ export type SessionDetailData = {
   rejectNote: string;
   instant: boolean;
   rated: boolean;
+  /** نوع جلسهٔ آنلاین: تلفنی (تماس صوتی داخل اپ)، متنی (چت) یا تصویری. */
+  mode: SessionHostingMode;
   viewerRole: SessionViewerRole;
 };
+
+export type SessionMessageKind = "text" | "audio" | "image";
 
 export type SessionMessageData = {
   id: number;
   sessionId: number;
   senderId: number;
   body: string;
+  kind: SessionMessageKind;
+  mediaUrl: string;
+  /** طول پیام صوتی به میلی‌ثانیه. */
+  durationMs: number;
   createdAt: string;
 };
 
@@ -69,6 +80,8 @@ function parseSessionDetail(value: unknown): SessionDetailData | null {
   const teacher = record(row.teacher);
   const teacherUser = record(teacher?.user);
   const role = text(row.viewer_role, "learner");
+  const rawMode = text(row.mode);
+  const mode = rawMode === "voice" || rawMode === "text" || rawMode === "video" ? rawMode : "";
   return {
     id,
     learnerId: integer(row.learner_id),
@@ -90,6 +103,7 @@ function parseSessionDetail(value: unknown): SessionDetailData | null {
     rejectNote: text(row.reject_note),
     instant: row.instant === true,
     rated: row.rated === true,
+    mode,
     viewerRole: role === "teacher" ? "teacher" : role === "admin" ? "admin" : "learner",
   };
 }
@@ -116,11 +130,16 @@ function parseSessionMessage(value: unknown): SessionMessageData | null {
   if (!row) return null;
   const id = integer(row.id);
   if (id <= 0) return null;
+  const rawKind = text(row.kind, "text");
+  const kind: SessionMessageKind = rawKind === "audio" || rawKind === "image" ? rawKind : "text";
   return {
     id,
     sessionId: integer(row.session_id),
     senderId: integer(row.sender_id),
     body: text(row.body),
+    kind,
+    mediaUrl: text(row.media_url),
+    durationMs: integer(row.duration_ms),
     createdAt: text(row.created_at),
   };
 }
@@ -147,6 +166,35 @@ export async function sendSessionMessage(
     body: JSON.stringify({ body }),
   });
   return parseSessionMessage(response.data);
+}
+
+/** پیام صوتی (ویس) یا تصویر چت جلسه — آپلود multipart با progress واقعی. */
+export async function sendSessionMediaMessage(
+  runtime: PlatformRuntime,
+  sessionId: number,
+  input: { file: Blob; filename: string; kind: "audio" | "image"; durationMs?: number; caption?: string },
+): Promise<SessionMessageData | null> {
+  assertValidSessionId(sessionId);
+  const form = new FormData();
+  form.append("kind", input.kind);
+  form.append("file", input.file, input.filename);
+  if (input.kind === "audio" && input.durationMs) {
+    form.append("duration_ms", String(Math.max(1, Math.round(input.durationMs))));
+  }
+  if (input.caption?.trim()) {
+    form.append("body", input.caption.trim().slice(0, 1000));
+  }
+  const response = await runtime.request<ApiEnvelope>(`/sessions/${sessionId}/messages`, {
+    method: "POST",
+    body: form,
+  });
+  return parseSessionMessage(response.data);
+}
+
+/** اعلام آماده‌باش شروع جلسه — طرف مقابل اعلان «آمادهٔ جلسه» می‌گیرد. */
+export async function announceSessionStart(runtime: PlatformRuntime, sessionId: number): Promise<void> {
+  assertValidSessionId(sessionId);
+  await runtime.request<ApiEnvelope>(`/sessions/${sessionId}/announce`, { method: "POST" });
 }
 
 /** آیا پیام، ارسالِ خودِ نمایشگر است؟ (پیام استاد با user_id او ثبت می‌شود) */

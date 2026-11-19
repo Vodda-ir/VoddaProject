@@ -8,6 +8,7 @@ import (
         "os"
         "path/filepath"
         "strconv"
+        "strings"
         "time"
 
         "github.com/gin-gonic/gin"
@@ -351,6 +352,43 @@ func (h *Handler) DeleteService(c *gin.Context) {
                 return
         }
         ok(c, gin.H{"deleted": true})
+}
+
+// GetOnlineServices handles GET /teacher/online-services — the three online
+// session offerings (voice/text/video) with their saved duration/price/active.
+func (h *Handler) GetOnlineServices(c *gin.Context) {
+        items, err := h.Teacher.OnlineServices(c, userID(c))
+        if err != nil {
+                fail(c, err)
+                return
+        }
+        ok(c, gin.H{"services": items})
+}
+
+// PutOnlineService handles PUT /teacher/online-services/:mode — creates or
+// updates the bookable service row behind one online session mode. The title
+// is fixed by the server; the teacher only sets duration/price/active.
+func (h *Handler) PutOnlineService(c *gin.Context) {
+        mode := domain.SessionMode(strings.ToLower(strings.TrimSpace(c.Param("mode"))))
+        var in struct {
+                Duration int   `json:"duration" binding:"required"`
+                Price    int64 `json:"price"`
+                Active   *bool `json:"active"`
+        }
+        if err := c.ShouldBindJSON(&in); err != nil {
+                fail(c, domain.ErrValidation)
+                return
+        }
+        active := true
+        if in.Active != nil {
+                active = *in.Active
+        }
+        items, err := h.Teacher.UpsertOnlineService(c, userID(c), mode, in.Duration, in.Price, active)
+        if err != nil {
+                fail(c, err)
+                return
+        }
+        ok(c, gin.H{"services": items})
 }
 
 func (h *Handler) SetWorkTimes(c *gin.Context) {

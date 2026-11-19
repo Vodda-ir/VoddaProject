@@ -51,6 +51,8 @@ type TeacherSession = {
   rejectNote: string;
   /** جلسهٔ فوری — رزرو همین‌لحظه. */
   instant: boolean;
+  /** نوع جلسهٔ آنلاین — تلفنی/متنی/تصویری. */
+  mode: string;
   /** در لحظهٔ دریافت فهرست هنوز دیده‌نشده بود — با نشان قرمز مشخص می‌شود. */
   unseen: boolean;
 };
@@ -94,6 +96,7 @@ function parseTeacherSession(value: unknown): TeacherSession | null {
     note: asString(row.note),
     rejectNote: asString(row.reject_note),
     instant: row.instant === true,
+    mode: asString(row.mode),
     // دیده‌نشده = مهر دیده‌شدن هنوز ثبت نشده باشد؛ هم نشان سروری و هم
     // حالت قدیمی transient پشتیبانی می‌شود.
     unseen: row.unseen === true || asString(row.teacher_seen_at) === "",
@@ -216,10 +219,41 @@ function SessionCard({
   return (
     <Card className="vodda-card--interactive" style={{ ...commonCardStyle, cursor: "pointer", borderColor: session.unseen ? "rgba(216,184,105,.9)" : undefined, borderWidth: session.unseen ? 1.5 : undefined }} onClick={onOpen}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: spacing.md }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
           <StatusPill status={session.status} label={statusLabel(session.status, t)} />
           {session.instant ? (
             <span style={{ padding: "3px 9px", borderRadius: radii.pill, color: "#fffaf0", background: "linear-gradient(145deg,#d8b869,#b8923c)", fontSize: 10, fontWeight: 800 }}>{L("فوری")}</span>
+          ) : null}
+          {session.mode ? (
+            (() => {
+              const map: Record<string, { label: string; icon: "phone" | "message" | "video" }> = {
+                voice: { label: "تلفنی و صوتی", icon: "phone" },
+                text: { label: "متنی (چت)", icon: "message" },
+                video: { label: "تصویری", icon: "video" },
+              };
+              const meta = map[session.mode];
+              if (!meta) return null;
+              return (
+                <span
+                  aria-label={L("نوع جلسه: {n}").replace("{n}", L(meta.label))}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 4,
+                    padding: "3px 9px",
+                    borderRadius: radii.pill,
+                    background: colors.greenBackground,
+                    border: `1px solid ${colors.greenBorder}`,
+                    color: colors.greenInk,
+                    fontSize: 10,
+                    fontWeight: 800,
+                  }}
+                >
+                  <Icon name={meta.icon} size={11} stroke={2.2} />
+                  {L(meta.label)}
+                </span>
+              );
+            })()
           ) : null}
           {session.unseen ? (
             <span aria-label={L("جلسهٔ دیده‌نشده")} style={{ padding: "3px 9px", borderRadius: radii.pill, color: "#ffffff", background: colors.danger, fontSize: 10, fontWeight: 800 }}>{L("جدید")}</span>

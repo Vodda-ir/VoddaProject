@@ -140,19 +140,33 @@ func (t *Teacher) Normalize() {
         }
 }
 
+// SessionMode enumerates the hosting style of an online session. "" keeps
+// legacy behaviour (video class + coordination chat); "voice" is the in-app
+// private phone-style call (numbers stay hidden), "text" is the rich chat
+// session (text, voice notes, images) and "video" is the live video class.
+type SessionMode string
+
+const (
+        ModeVoice SessionMode = "voice"
+        ModeText  SessionMode = "text"
+        ModeVideo SessionMode = "video"
+)
+
 // Service is a bookable offering of a teacher. The title is always sourced
 // from the platform's official service catalog (OfficialServiceID); teachers
-// cannot invent custom service titles.
+// cannot invent custom service titles. Mode marks one of the three online
+// session offerings (voice/text/video) managed from «خدمات جلسات آنلاین».
 type Service struct {
-        ID                uint     `gorm:"primaryKey" json:"id"`
-        TeacherID         uint     `gorm:"index" json:"teacher_id"`
-        OfficialServiceID *uint    `gorm:"index" json:"official_service_id,omitempty"`
-        Title             string   `gorm:"size:160" json:"title"`
-        Duration          int      `json:"duration"`
-        Price             int64    `json:"price"`
-        Icon              string   `gorm:"size:30" json:"icon"`
-        Active            bool     `gorm:"default:false" json:"active"`
-        Teacher           *Teacher `gorm:"foreignKey:TeacherID" json:"teacher,omitempty"`
+        ID                uint        `gorm:"primaryKey" json:"id"`
+        TeacherID         uint        `gorm:"index" json:"teacher_id"`
+        OfficialServiceID *uint       `gorm:"index" json:"official_service_id,omitempty"`
+        Title             string      `gorm:"size:160" json:"title"`
+        Duration          int         `json:"duration"`
+        Price             int64       `json:"price"`
+        Icon              string      `gorm:"size:30" json:"icon"`
+        Active            bool        `gorm:"default:false" json:"active"`
+        Mode              SessionMode `gorm:"size:16;default:'';index" json:"mode"`
+        Teacher           *Teacher    `gorm:"foreignKey:TeacherID" json:"teacher,omitempty"`
 }
 
 // OfficialService is a platform-approved service catalog entry. Teachers can
@@ -241,6 +255,9 @@ type Session struct {
         // the teacher already opted in, so instant dispatch sessions are
         // auto-confirmed (gateway settlement included) without a second accept.
         ViaDispatch bool `gorm:"default:false" json:"via_dispatch"`
+        // Mode snapshots the hosting style of the booked service (voice/text/
+        // video); empty keeps the legacy video-class behaviour.
+        Mode SessionMode `gorm:"size:16;default:''" json:"mode"`
         // TeacherSeenAt is set the first time the owning teacher views the session
         // (list or detail) — the base of the unseen counter badge.
         TeacherSeenAt *time.Time `gorm:"index" json:"teacher_seen_at,omitempty"`
@@ -257,11 +274,17 @@ type Session struct {
 
 // SessionMessage is one persisted chat message exchanged between the learner
 // and the teacher of a session to coordinate before/after the live class.
+// Text sessions carry the full conversation here: Kind selects text (plain
+// body), audio (voice note with DurationMS) or image (MediaURL served from
+// /uploads/session-media/).
 type SessionMessage struct {
         ID        uint      `gorm:"primaryKey" json:"id"`
         SessionID uint      `gorm:"index:idx_session_messages_session" json:"session_id"`
         SenderID  uint      `gorm:"index" json:"sender_id"`
         Body      string    `gorm:"size:1000" json:"body"`
+        Kind      string    `gorm:"size:12;default:text" json:"kind"`
+        MediaURL  string    `gorm:"size:255" json:"media_url,omitempty"`
+        DurationMS int      `json:"duration_ms,omitempty"`
         CreatedAt time.Time `json:"created_at"`
 }
 
