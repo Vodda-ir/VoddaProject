@@ -112,8 +112,6 @@ compose_up() {
   (cd "$BASE_DIR" && docker compose -f docker-compose.deploy.yml --env-file .env.production \
     up -d --pull never --wait backend frontend)
 }
-step "[4/6] Restarting containers (backend + frontend)"
-compose_up || { fail "compose up failed"; do_rollback; exit 1; }
 
 # ── health helpers (سازگار با ایمیج‌های قدیمی‌تر) ─────────────
 fe_health() {
@@ -137,8 +135,12 @@ wait_health() {  # wait_health <attempts>
   done
   return 1
 }
+
+# do_rollback باید پیش از اولین فراخوان تعریف شود — در نسخهٔ قبلی بعد از
+# «compose up» تعریف شده بود و در همان مسیر خطا «command not found» می‌داد
+# یعنی رول‌بک خودکار عملاً هرگز اجرا نمی‌شد.
 do_rollback() {
-  fail "health check failed → AUTO-ROLLBACK to previous image"
+  fail "deployment failed → AUTO-ROLLBACK to previous image"
   local failed=0 svc
   for svc in frontend backend; do
     if docker image inspect "vodda-$svc:rollback-last" >/dev/null 2>&1; then
@@ -148,6 +150,9 @@ do_rollback() {
   compose_up || failed=1
   return "$failed"
 }
+
+step "[4/6] Restarting containers (backend + frontend)"
+compose_up || { fail "compose up failed"; do_rollback; exit 1; }
 
 # ── ۵) health check با rollback خودکار ──────────────────────
 step "[5/6] Health check (auto-rollback armed)"
