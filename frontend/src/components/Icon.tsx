@@ -5,7 +5,7 @@ export type IconName =
   | 'home' | 'search' | 'calendar' | 'wallet' | 'user' | 'phone' | 'video' | 'camera'
   | 'book' | 'mic' | 'star' | 'heart' | 'chevronL' | 'chevronUp' | 'arrowL' | 'arrowDownLeft' | 'arrowUpRight' | 'play'
   | 'check' | 'checkCircle' | 'bell' | 'message' | 'pin' | 'clock' | 'info' | 'shield'
-  | 'award' | 'users' | 'sparkle' | 'download' | 'quran' | 'headphones'
+  | 'award' | 'users' | 'sparkle' | 'download' | 'quran' | 'headphones' | 'megaphone'
   | 'settings' | 'filter' | 'refresh' | 'plus' | 'logout' | 'edit' | 'grid' | 'list' | 'trending' | 'coins' | 'doc' | 'x' | 'trash' | 'gift'
   | 'sun' | 'moon';
 
@@ -54,6 +54,7 @@ export function Icon({
     play: <path d="M8 5.5v13l11-6.5-11-6.5Z" fill="currentColor" stroke="currentColor" strokeWidth={stroke} strokeLinejoin="round" />,
     check: <path {...p} d="m5 12.5 4.5 4.5L19 7" />,
     checkCircle: <><circle {...p} cx="12" cy="12" r="8.5" /><path {...p} d="m8.5 12 2.4 2.4 4.6-4.8" /></>,
+    megaphone: <><path {...p} d="m3.5 10.6 17-4.9v12.6l-17-4.9v-2.8Z" /><path {...p} d="M11.7 17.2a3.1 3.1 0 1 1-5.9-1.6" /></>,
     bell: <><path {...p} d="M6 10a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6Z" /><path {...p} d="M10 19a2 2 0 0 0 4 0" /></>,
     message: <path {...p} d="M5 5h14a1.5 1.5 0 0 1 1.5 1.5v8A1.5 1.5 0 0 1 19 16H9l-4 3.5V6.5A1.5 1.5 0 0 1 6.5 5Z" />,
     pin: <><path {...p} d="M12 21s6.5-5.5 6.5-11a6.5 6.5 0 1 0-13 0C5.5 15.5 12 21 12 21Z" /><circle {...p} cx="12" cy="10" r="2.3" /></>,

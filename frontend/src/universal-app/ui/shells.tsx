@@ -43,7 +43,8 @@ type NavigationCta = {
 const learnerCallToAction: NavigationCta = {
   labelKey: "dispatch_title",
   ariaLabelKey: "dispatch_title",
-  icon: "bell",
+  /* بلندگوی فراخوان به‌جای زنگوله — مفهوم «فراخوان اساتید» را می‌رساند */
+  icon: "megaphone",
   target: "call-hub",
   activeRoutes: ["call-hub", "dispatch", "ceremony-new", "ceremony-calls", "ceremony-call"],
 };
@@ -55,11 +56,12 @@ type AppShellProps = {
   title?: string;
 };
 
+/* چیدمان ۵گانهٔ جدید (RTL): خانه (راست‌ترین) ← جستجو ← دکمهٔ مرکزی فراخوان ← جلسات ← پروفایل (چپ‌ترین).
+ * کیف پول از نوار پایین حذف شد و به هدر بالای صفحه منتقل شد — همیشه در دسترس، بدون اشغال جای اصلی منو. */
 const learnerNavigation: NavigationItem[] = [
   { label: "خانه", target: "home", icon: "home", routes: ["home"] },
   { label: "جستجو", target: "search", icon: "search", routes: ["search", "teacher", "book", "category", "service"] },
   { label: "جلسات", target: "sessions", icon: "calendar", routes: ["sessions"] },
-  { label: "کیف پول", target: "wallet", icon: "wallet", routes: ["wallet"] },
   { label: "پروفایل", target: "profile", icon: "user", routes: ["profile", "profile-edit"] },
 ];
 
@@ -71,11 +73,11 @@ const teacherNavigation: NavigationItem[] = [
   { labelKey: "nav_profile", target: "teacher-profile", icon: "user", routes: ["teacher-profile"] },
 ];
 
+/* کیف پول دیگر تب پایین نیست — با ورود از چیپ هدر، سربرگ با دکمهٔ بازگشت نمایش داده می‌شود */
 const tabRoutes = new Set<AppRouteName>([
   "home",
   "search",
   "sessions",
-  "wallet",
   "profile",
   "teacher-home",
   "teacher-requests",
@@ -164,6 +166,7 @@ function BottomNavigation({
   badgeFor?: (item: NavigationItem) => number | undefined;
 }) {
   const { t, L, lang } = useAppearance();
+  /* تب خطی مدرن — بدون پیل پس‌زمینه؛ آیتم فعال: زیتونی + نقطهٔ کوچک طلایی زیر آیکون */
   const renderTab = (item: NavigationItem, badge?: number) => {
     const active = item.routes.includes(routeName);
     return (
@@ -174,53 +177,39 @@ function BottomNavigation({
         onClick={(event) => navigate(event, item.target, config)}
         style={{
           minWidth: 0,
-          minHeight: 60,
+          minHeight: 62,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          gap: 3,
+          gap: 4,
           borderRadius: radii.md,
           color: active ? colors.olive700 : colors.inkMuted,
           background: "transparent",
           textDecoration: "none",
-          fontSize: 11.5,
+          fontSize: 11,
           fontWeight: active ? 800 : 600,
         }}
       >
-        <span
-          style={{
-            width: 58,
-            height: 30,
-            display: "grid",
-            placeItems: "center",
-            borderRadius: radii.pill,
-            /* روی پیل سبزِ فعال، آیکون روشن می‌ماند — در تاریک surface تیره می‌شود */
-            color: active ? colors.onOlive : colors.inkMuted,
-            background: active ? colors.olive600 : "transparent",
-            boxShadow: undefined,
-          }}
-        >
-          <Icon name={item.icon} size={19} stroke={active ? 2 : 1.7} />
-        </span>
-        <span style={{ position: "relative", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }}>
+        <span style={{ position: "relative", display: "grid", placeItems: "center" }}>
+          <Icon name={item.icon} size={21} stroke={active ? 2.1 : 1.7} />
           {badge !== undefined && badge > 0 ? (
             <span
               aria-label={L("{n} مورد دیده نشده").replace("{n}", localizedDigits(badge, lang))}
               style={{
                 position: "absolute",
-                top: -30,
-                insetInlineEnd: 2,
-                minWidth: 18,
-                height: 18,
+                top: -6,
+                insetInlineEnd: -9,
+                minWidth: 17,
+                height: 17,
                 display: "grid",
                 placeItems: "center",
-                padding: "0 5px",
+                padding: "0 4px",
                 borderRadius: 999,
                 background: colors.danger,
-                border: "2px solid var(--v-sand50, #faf8f2)",
+                border: `2px solid ${colors.surface}`,
                 color: "#ffffff",
-                fontSize: 9.5,
+                fontSize: 9,
                 fontWeight: 900,
                 lineHeight: 1,
                 boxShadow: "0 3px 8px rgba(179,64,58,.4)",
@@ -229,6 +218,18 @@ function BottomNavigation({
               {localizedDigits(badge > 99 ? "+99" : badge, lang)}
             </span>
           ) : null}
+        </span>
+        <span
+          aria-hidden
+          style={{
+            width: 4.5,
+            height: 4.5,
+            borderRadius: 999,
+            background: active ? colors.gold : "transparent",
+            boxShadow: active ? "0 0 7px rgba(191,149,64,.6)" : "none",
+          }}
+        />
+        <span style={{ position: "relative", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%", lineHeight: 1.2 }}>
           {item.labelKey ? t(item.labelKey) : item.label ?? ""}
         </span>
       </a>
@@ -257,70 +258,75 @@ function BottomNavigation({
         left: "50%",
         bottom: 0,
         width: "min(100%, 600px)",
-        minHeight: 68,
         transform: "translateX(-50%)",
-        display: "grid",
-        gridTemplateColumns: gridColumns,
-        alignItems: "stretch",
-        gap: 0,
-        padding: "4px 8px max(4px, env(safe-area-inset-bottom))",
-        borderTop: `1px solid ${colors.sand150}`,
-        background: colors.surface,
-        boxShadow: "0 -6px 24px rgba(46,54,34,.055)",
+        padding: "4px 8px max(6px, env(safe-area-inset-bottom))",
       }}
     >
-      {leadingTabs.map((item) => renderTab(item, badgeFor?.(item)))}
-      {cta ? (
-        <a
-          key="nav-cta"
-          href={appRouteUrl(cta.target, config)}
-          aria-label={t(cta.ariaLabelKey)}
-          aria-current={ctaActive ? "true" : undefined}
-          onClick={(event) => navigate(event, cta.target, config)}
-          style={{
-            minWidth: 76,
-            minHeight: 60,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "flex-end",
-            gap: 3,
-            textDecoration: "none",
-          }}
-        >
-          <span
-            aria-hidden
-            className="vodda-nav-cta-orb"
+      {/* لایهٔ شیشه‌ای با بریدگی نیم‌دایره (Notch) — جدا از محتوا تا دکمهٔ شناور بریده نشود */}
+      <span aria-hidden className="vodda-bottom-nav-glass" />
+      <div
+        style={{
+          position: "relative",
+          display: "grid",
+          gridTemplateColumns: gridColumns,
+          alignItems: "stretch",
+          gap: 0,
+          minHeight: 62,
+        }}
+      >
+        {leadingTabs.map((item) => renderTab(item, badgeFor?.(item)))}
+        {cta ? (
+          <a
+            key="nav-cta"
+            href={appRouteUrl(cta.target, config)}
+            aria-label={t(cta.ariaLabelKey)}
+            aria-current={ctaActive ? "true" : undefined}
+            onClick={(event) => navigate(event, cta.target, config)}
             style={{
-              width: 56,
-              height: 56,
-              marginTop: -26,
-              display: "grid",
-              placeItems: "center",
-              borderRadius: "50%",
-              color: colors.onOlive,
-              background: ctaActive ? gradients.goldRich : gradients.hero,
-              border: `2px solid ${ctaActive ? colors.goldDark : colors.goldSoft}`,
-              boxShadow: ctaActive
-                ? "0 16px 34px rgba(139,104,31,.42), 0 4px 10px rgba(46,54,34,.16)"
-                : "0 16px 34px rgba(76,90,54,.36), 0 4px 10px rgba(46,54,34,.14)",
+              minWidth: 72,
+              minHeight: 62,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "flex-end",
+              gap: 3,
+              textDecoration: "none",
             }}
           >
-            <Icon name={cta.icon} size={25} stroke={2.2} />
-          </span>
-          <span
-            style={{
-              fontSize: 11.5,
-              fontWeight: 800,
-              lineHeight: 1.2,
-              color: ctaActive ? colors.goldDark : colors.olive700,
-            }}
-          >
-            {t(cta.labelKey)}
-          </span>
-        </a>
-      ) : null}
-      {trailingTabs.map((item) => renderTab(item, badgeFor?.(item)))}
+            <span
+              aria-hidden
+              className="vodda-nav-cta-orb"
+              style={{
+                width: 54,
+                height: 54,
+                marginTop: -30,
+                display: "grid",
+                placeItems: "center",
+                borderRadius: "50%",
+                color: colors.onOlive,
+                background: ctaActive ? gradients.goldRich : gradients.hero,
+                border: `2px solid ${ctaActive ? colors.goldDark : colors.goldSoft}`,
+                boxShadow: ctaActive
+                  ? "0 12px 26px rgba(139,104,31,.40), 0 3px 8px rgba(46,54,34,.16)"
+                  : "0 12px 26px rgba(76,90,54,.34), 0 3px 8px rgba(46,54,34,.14)",
+              }}
+            >
+              <Icon name={cta.icon} size={23} stroke={2.1} />
+            </span>
+            <span
+              style={{
+                fontSize: 10.5,
+                fontWeight: 800,
+                lineHeight: 1.2,
+                color: ctaActive ? colors.goldDark : colors.olive700,
+              }}
+            >
+              {t(cta.labelKey)}
+            </span>
+          </a>
+        ) : null}
+        {trailingTabs.map((item) => renderTab(item, badgeFor?.(item)))}
+      </div>
     </nav>
   );
 }

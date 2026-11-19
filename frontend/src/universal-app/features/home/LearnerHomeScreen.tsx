@@ -116,11 +116,6 @@ function faNumber(value: number, maximumFractionDigits = 1) {
   return formatNumber(value, "fa", { maximumFractionDigits });
 }
 
-function walletShort(wallet: number) {
-  if (wallet >= 1_000_000) return `${faNumber(wallet / 1_000_000)} میلیون`;
-  return `${faNumber(Math.round(wallet / 1000), 0)} هزار`;
-}
-
 // استادهای مداحی فعلاً از تمام سطوح کاربری پنهان می‌شوند (پلتفرم تخصصاً قرآنی).
 const MADDAHI_PATTERN = /مداح|هم‌نوا|همنوا/;
 
@@ -499,7 +494,30 @@ function TopTeachersSection({
   );
 }
 
-/* ۱.ب.۶ — خدمات پرکاربرد — کارت کوچک ۸۰/۹۰px، تصویر ≤۳۲px، کلیک = فقط اساتید همان خدمت */
+/* نگاشت کلید تصویر خدمت به آیکون خطی وکتوری کارت باریک بنتو */
+type AppIconName = Parameters<typeof Icon>[0]["name"];
+const SLIM_SERVICE_ICON: Record<string, AppIconName> = {
+  quran: "quran",
+  tajweed: "book",
+  alphabet: "book",
+  hifz: "star",
+  voice: "mic",
+  tafsir: "doc",
+  mosque: "pin",
+  kids: "users",
+  medal: "award",
+  mentor: "user",
+  azan: "bell",
+};
+
+function slimServiceIcon(imageKey: string): AppIconName {
+  return SLIM_SERVICE_ICON[imageKey] ?? "quran";
+}
+
+/* ۱.ب.۶ — خدمات پرکاربرد — چیدمان بنتوی نامتقارن (تم لوکس و ساختاریافته):
+ *  کارت بزرگ راست (بنر تصویر + گرادیان تیره + بج طلایی شمارش استاد + دکمهٔ شیشه‌ای)
+ *  + کارت باریک چپ (زمینهٔ زیتونی تیره + وکتور مینیمال).
+ *  بقیهٔ خدمات به‌صورت چیپ‌های کم‌حجم زیر بنتو حفظ می‌شوند تا هیچ خدمتی از دسترس خارج نشود. */
 function PopularServicesGrid({
   services,
   loading,
@@ -515,176 +533,158 @@ function PopularServicesGrid({
     return (
       <section aria-label="در حال بارگذاری خدمات پرکاربرد" style={{ display: "grid", gap: 12 }}>
         <Skeleton style={{ width: 150, height: 18 }} />
-        {/* ۰.۷.۵ — ردیف افقی؛ کارت‌های هویت طلایی */}
-        <div style={{ display: "flex", gap: 10, overflow: "hidden" }}>
-          {Array.from({ length: 4 }).map((_, index) => (
-            <Skeleton key={index} style={{ width: wide ? 252 : 226, height: wide ? 226 : 206, borderRadius: 20, flex: "0 0 auto" }} />
-          ))}
+        <div style={{ display: "grid", gridTemplateColumns: "1.35fr 1fr", gap: 10 }}>
+          <Skeleton style={{ height: wide ? 258 : 214, borderRadius: 20 }} />
+          <Skeleton style={{ height: wide ? 258 : 214, borderRadius: 20 }} />
         </div>
       </section>
     );
   }
   if (services.length === 0) return null;
 
+  const [hero, slim] = services;
+  const rest = services.slice(2, 8);
+
   return (
     <section aria-label="خدمات پرکاربرد" style={{ display: "grid", gap: spacing.sm, minWidth: 0 }}>
-      <SectionHeader title="خدمات پرکاربرد" />
-      {/* ۰.۹.۱ — قاب هم‌خانوادهٔ نئونی دور ردیف خدمات پرکاربرد + کارت‌های هویت طلایی با چیپ رتبه */}
+      <SectionHeader title="خدمات پرکاربرد" description="پرترددترین خدمت‌های قرآنی وُدّا" />
       <div
         style={{
-          borderRadius: 22,
-          border: `1.2px solid ${colors.goldSoft}`,
-          background: `linear-gradient(180deg, ${colors.surface}, ${colors.surfaceWarm})`,
-          padding: 12,
-          boxShadow: "0 6px 20px rgba(46,54,34,.06), 0 0 12px rgba(191,149,64,.10)",
+          display: "grid",
+          gridTemplateColumns: slim ? "1.35fr 1fr" : "1fr",
+          gap: 10,
           minWidth: 0,
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "stretch",
-            gap: 10,
-            overflowX: "auto",
-            overflowY: "hidden",
-            minWidth: 0,
-            paddingBottom: 8,
-          }}
-        >
-        {services.map((service, index) => (
+        {/* ─── کارت بزرگ راست: عکس خدمت با گرادیان تیره + بج طلایی + دکمهٔ شیشه‌ای ─── */}
+        {hero ? (
           <button
-            key={service.id}
             type="button"
-            onClick={() => navigateApp(`/service/${service.id}`, config)}
+            onClick={() => navigateApp(`/service/${hero.id}`, config)}
             className="vodda-tappable"
-            aria-label={`${service.title} — ${faNumber(service.teacherCount, 0)} استاد`}
+            aria-label={`${hero.title} — ${faNumber(hero.teacherCount, 0)} استاد`}
             style={{
-              width: wide ? 252 : 226,
-              flex: "0 0 auto",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "stretch",
-              gap: 0,
+              position: "relative",
+              minWidth: 0,
+              minHeight: wide ? 258 : 214,
               padding: 0,
               textAlign: "start",
-              border: "1.4px solid rgba(191,149,64,.6)",
+              border: "1px solid rgba(191,149,64,.55)",
               borderRadius: 20,
-              background: `linear-gradient(180deg, #fffdf6 0%, ${colors.surface} 72%)`,
-              boxShadow: "0 6px 18px rgba(139,104,31,.10), 0 0 12px rgba(191,149,64,.15)",
+              overflow: "hidden",
+              background: colors.olive900,
               cursor: "pointer",
               fontFamily: typography.fontFamily,
-              minWidth: 0,
-              overflow: "hidden",
+              boxShadow: "0 14px 30px rgba(46,54,34,.16), 0 0 14px rgba(191,149,64,.12)",
               transition: "transform .16s ease, box-shadow .16s ease",
               animation: "vodda-enter .36s ease-out both",
-              animationDelay: `${index * 50}ms`,
             }}
           >
-            {/* بنر تصویر موضوعی + چیپ رتبهٔ پرکاربرد + چیپ شمارش استاد */}
+            <img
+              src={serviceImageSrc(hero.imageKey)}
+              alt=""
+              loading="lazy"
+              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+              onError={(event) => {
+                event.currentTarget.style.display = "none";
+              }}
+            />
             <span
               aria-hidden="true"
               style={{
-                position: "relative",
-                display: "block",
-                height: wide ? 112 : 104,
-                overflow: "hidden",
-                background: "linear-gradient(140deg, #f2f5ea, #f7f0dc)",
+                position: "absolute",
+                inset: 0,
+                background: "linear-gradient(180deg, rgba(24,32,18,.10) 26%, rgba(24,32,18,.44) 58%, rgba(24,32,18,.84) 100%)",
+              }}
+            />
+            {/* بج طلایی شمارش استاد */}
+            <span
+              style={{
+                position: "absolute",
+                top: 10,
+                insetInlineStart: 10,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+                padding: "4px 10px",
+                borderRadius: 999,
+                background: "linear-gradient(135deg, #bf9540, #d8b869)",
+                border: "1.5px solid rgba(255,253,246,.8)",
+                boxShadow: "0 3px 10px rgba(139,104,31,.35)",
+                color: "#fffdf6",
+                fontSize: 11,
+                fontWeight: 900,
+                whiteSpace: "nowrap",
               }}
             >
-              <img
-                src={serviceImageSrc(service.imageKey)}
-                alt=""
-                loading="lazy"
-                style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
-                onError={(event) => {
-                  event.currentTarget.style.display = "none";
-                }}
-              />
-              <span
-                aria-hidden="true"
-                style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(46,54,34,0) 42%, rgba(46,54,34,.3) 100%)" }}
-              />
-              {/* چیپ رتبهٔ پرکاربرد — دایرهٔ طلایی با شمارهٔ فارسی */}
-              <span
-                aria-hidden="true"
-                style={{
-                  position: "absolute",
-                  top: 8,
-                  insetInlineStart: 8,
-                  width: 24,
-                  height: 24,
-                  display: "grid",
-                  placeItems: "center",
-                  borderRadius: "50%",
-                  background: "linear-gradient(135deg, #bf9540, #d8b869)",
-                  border: "1.5px solid rgba(255,253,246,.85)",
-                  boxShadow: "0 2px 8px rgba(139,104,31,.3), 0 0 8px rgba(191,149,64,.35)",
-                  color: "#fffdf6",
-                  fontSize: 11.5,
-                  fontWeight: 900,
-                }}
-              >
-                {faNumber(index + 1, 0)}
-              </span>
-              <span
-                style={{
-                  position: "absolute",
-                  bottom: 8,
-                  insetInlineStart: 8,
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 4,
-                  maxWidth: "calc(100% - 16px)",
-                  padding: "3.5px 10px",
-                  borderRadius: 999,
-                  border: "1px solid rgba(191,149,64,.4)",
-                  background: "rgba(255,253,246,.93)",
-                  color: colors.goldDark,
-                  fontSize: 10.5,
-                  fontWeight: 800,
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                }}
-              >
-                <Icon name="users" size={12} />
-                {faNumber(service.teacherCount, 0)} استاد
-              </span>
+              <Icon name="users" size={12} />
+              {faNumber(hero.teacherCount, 0)} استاد
             </span>
-            <span style={{ display: "flex", flexDirection: "column", gap: 8, flex: 1, minWidth: 0, padding: "11px 12px 12px" }}>
+            {/* فلش شیشه‌ای گوشهٔ کارت — اشارهٔ کلیک‌پذیری */}
+            <span
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                top: 10,
+                insetInlineEnd: 10,
+                width: 30,
+                height: 30,
+                display: "grid",
+                placeItems: "center",
+                borderRadius: "50%",
+                background: "rgba(255,253,246,.18)",
+                border: "1px solid rgba(255,253,246,.45)",
+                backdropFilter: "blur(8px)",
+                WebkitBackdropFilter: "blur(8px)",
+                color: "#fffdf6",
+              }}
+            >
+              <Icon name="chevronL" size={15} stroke={2} />
+            </span>
+            <span
+              style={{
+                position: "absolute",
+                insetInlineStart: 12,
+                insetInlineEnd: 12,
+                bottom: 12,
+                display: "grid",
+                gap: 9,
+                minWidth: 0,
+              }}
+            >
               <strong
                 style={{
+                  color: "#fffdf6",
+                  fontSize: 15.5,
+                  fontWeight: 900,
+                  lineHeight: 1.5,
+                  textShadow: "0 1px 10px rgba(24,32,18,.5)",
                   display: "-webkit-box",
-                  maxWidth: "100%",
-                  overflow: "hidden",
                   WebkitBoxOrient: "vertical",
                   WebkitLineClamp: 2,
+                  overflow: "hidden",
                   overflowWrap: "anywhere",
-                  fontSize: 14,
-                  fontWeight: 800,
-                  lineHeight: 1.45,
-                  color: colors.ink,
                 }}
               >
-                {service.title}
+                {hero.title}
               </strong>
               <span
                 style={{
-                  marginTop: "auto",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  gap: 4,
-                  padding: "7.5px 10px",
-                  border: 0,
-                  borderRadius: 10,
-                  background: "linear-gradient(135deg, #bf9540, #d8b869)",
+                  gap: 5,
+                  padding: "8px 10px",
+                  borderRadius: 12,
+                  background: "rgba(255,253,246,.16)",
+                  border: "1px solid rgba(255,253,246,.42)",
+                  backdropFilter: "blur(10px)",
+                  WebkitBackdropFilter: "blur(10px)",
                   color: "#fffdf6",
-                  fontSize: 12,
+                  fontSize: 11.5,
                   fontWeight: 800,
                   whiteSpace: "nowrap",
                   overflow: "hidden",
-                  boxShadow: "0 4px 12px rgba(191,149,64,.28)",
                 }}
               >
                 اساتید این خدمت
@@ -692,15 +692,181 @@ function PopularServicesGrid({
               </span>
             </span>
           </button>
+        ) : null}
+        {/* ─── کارت باریک چپ: زمینهٔ زیتونی تیره + وکتور مینیمال + فلش ─── */}
+        {slim ? (
+          <button
+            type="button"
+            onClick={() => navigateApp(`/service/${slim.id}`, config)}
+            className="vodda-tappable"
+            aria-label={`${slim.title} — ${faNumber(slim.teacherCount, 0)} استاد`}
+            style={{
+              position: "relative",
+              minWidth: 0,
+              minHeight: wide ? 258 : 214,
+              display: "flex",
+              padding: 0,
+              textAlign: "start",
+              border: "1px solid rgba(46,54,34,.28)",
+              borderRadius: 20,
+              overflow: "hidden",
+              background: "linear-gradient(155deg, #3c472b 0%, #4c5a36 58%, #5e6e43 100%)",
+              cursor: "pointer",
+              fontFamily: typography.fontFamily,
+              boxShadow: "0 14px 30px rgba(46,54,34,.22)",
+              animation: "vodda-enter .36s ease-out both",
+              animationDelay: "60ms",
+            }}
+          >
+            {/* وکتور مینیمال خدمت — آیکون خطی بزرگ کم‌رنگ در گوشه */}
+            <Icon
+              name={slimServiceIcon(slim.imageKey)}
+              size={104}
+              stroke={1.1}
+              style={{
+                position: "absolute",
+                insetInlineEnd: -14,
+                bottom: -12,
+                color: "rgba(255,250,240,.16)",
+                pointerEvents: "none",
+              }}
+            />
+            <span
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                top: -26,
+                insetInlineStart: -26,
+                width: 92,
+                height: 92,
+                borderRadius: "50%",
+                background: "radial-gradient(circle, rgba(216,184,105,.24), transparent 70%)",
+              }}
+            />
+            <span
+              style={{
+                position: "relative",
+                flex: 1,
+                minWidth: 0,
+                display: "flex",
+                flexDirection: "column",
+                gap: 8,
+                padding: 12,
+              }}
+            >
+              <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6, minWidth: 0 }}>
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 4,
+                    padding: "3.5px 9px",
+                    borderRadius: 999,
+                    background: "rgba(255,253,246,.16)",
+                    border: "1px solid rgba(255,253,246,.3)",
+                    color: "#fffdf6",
+                    fontSize: 10,
+                    fontWeight: 800,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  <Icon name="users" size={11} />
+                  {faNumber(slim.teacherCount, 0)} استاد
+                </span>
+                <span
+                  aria-hidden="true"
+                  style={{
+                    width: 28,
+                    height: 28,
+                    display: "grid",
+                    placeItems: "center",
+                    borderRadius: "50%",
+                    background: "rgba(255,253,246,.14)",
+                    border: "1px solid rgba(255,253,246,.35)",
+                    color: "#fffdf6",
+                    flex: "0 0 auto",
+                  }}
+                >
+                  <Icon name="chevronL" size={14} stroke={2} />
+                </span>
+              </span>
+              <strong
+                style={{
+                  marginTop: "auto",
+                  color: "#fffdf6",
+                  fontSize: 14.5,
+                  fontWeight: 900,
+                  lineHeight: 1.55,
+                  display: "-webkit-box",
+                  WebkitBoxOrient: "vertical",
+                  WebkitLineClamp: 3,
+                  overflow: "hidden",
+                  overflowWrap: "anywhere",
+                }}
+              >
+                {slim.title}
+              </strong>
+              <span
+                style={{
+                  color: "rgba(255,250,240,.72)",
+                  fontSize: 10,
+                  fontWeight: 600,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
+              >
+                {slim.category}
+              </span>
+            </span>
+          </button>
+        ) : null}
+      </div>
+      {/* بقیهٔ خدمات پرکاربرد — چیپ‌های کم‌حجم، هم‌زمان دسترس‌پذیر */}
+      {rest.length > 0 ? (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 7, minWidth: 0 }}>
+          {rest.map((service) => (
+            <button
+              key={service.id}
+              type="button"
+              onClick={() => navigateApp(`/service/${service.id}`, config)}
+              className="vodda-tappable"
+              aria-label={`${service.title} — ${faNumber(service.teacherCount, 0)} استاد`}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "6.5px 11px",
+                borderRadius: 999,
+                border: `1px solid ${colors.goldSoft}`,
+                background: colors.surface,
+                color: colors.inkSecondary,
+                fontSize: 11.5,
+                fontWeight: 700,
+                cursor: "pointer",
+                fontFamily: typography.fontFamily,
+                minWidth: 0,
+                boxShadow: "0 2px 8px rgba(46,54,34,.05)",
+              }}
+            >
+              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 168 }}>{service.title}</span>
+              <span style={{ color: colors.goldDark, fontWeight: 900, fontSize: 10.5, flex: "0 0 auto" }}>
+                {faNumber(service.teacherCount, 0)}
+              </span>
+            </button>
           ))}
-          </div>
         </div>
+      ) : null}
     </section>
   );
 }
 
-/* ۱.ب.۴ / ۰.۷.۲ — خدمات رایگان: همان قالب کارت خدمات (4/3، دوبرابر) + برچسب سبز «رایگان»
- * در ردیف اسکرول افقی به چپ — هیچ کارتی به سطر بعد نمی‌رود. کلیک → پروفایل استاد با فیلتر همان خدمت. */
+/* ۱.ب.۴ — خدمات رایگان — تم سبک و کاربرپسند (چیدمان جدید):
+ * لیست عمودی از کارت‌های افقیِ کشیده با گوشه‌های گرد و سایهٔ خیلی نرم.
+ * ساختار هر کارت (راست به چپ): عکس گرد بزرگ استاد با مهر درجه ← عنوان بولد +
+ * نام استاد ← بج‌های کوچک (ساعت «۳۰ دقیقه» + بج نعنایی هدیه «رایگان») ←
+ * دکمهٔ توپر سبز نعنایی «رزرو جلسه» در چپ + روبان کوچک «رایگان» گوشهٔ کارت.
+ * کلیک → پروفایل استاد با فیلتر همان خدمت. */
 function FreeServicesList({
   cards,
   loading,
@@ -718,9 +884,9 @@ function FreeServicesList({
     return (
       <section aria-label="در حال بارگذاری خدمات رایگان" style={{ display: "grid", gap: 12 }}>
         <Skeleton style={{ width: 140, height: 18 }} />
-        <div style={{ display: "flex", gap: 10, overflow: "hidden" }}>
-          {Array.from({ length: 3 }).map((_, index) => (
-            <Skeleton key={index} style={{ width: wide ? 238 : 214, height: wide ? 230 : 210, borderRadius: 20, flex: "0 0 auto" }} />
+        <div style={{ display: "grid", gridTemplateColumns: wide ? "repeat(2, minmax(0,1fr))" : "minmax(0,1fr)", gap: 11 }}>
+          {Array.from({ length: wide ? 4 : 3 }).map((_, index) => (
+            <Skeleton key={index} style={{ height: 78, borderRadius: 18 }} />
           ))}
         </div>
       </section>
@@ -731,16 +897,12 @@ function FreeServicesList({
   return (
     <section aria-label="خدمات رایگان" style={{ display: "grid", gap: spacing.sm, minWidth: 0 }}>
       <SectionHeader title="خدمات رایگان" description="بدون هزینه — برای شروع مسیر قرآن" />
-      {/* ۰.۷.۵ — هویت دوم کارت خدمت (زیتونی/نعنایی): بنر تصویر + برچسب «رایگان» + دکمهٔ پر رزرو — ردیف اسکرول به چپ */}
       <div
         style={{
-          display: "flex",
-          alignItems: "stretch",
-          gap: 10,
-          overflowX: "auto",
-          overflowY: "hidden",
+          display: "grid",
+          gridTemplateColumns: wide ? "repeat(2, minmax(0,1fr))" : "minmax(0,1fr)",
+          gap: 11,
           minWidth: 0,
-          paddingBottom: 8,
         }}
       >
         {cards.slice(0, 8).map((card, index) => (
@@ -751,152 +913,157 @@ function FreeServicesList({
             className="vodda-tappable"
             aria-label={`${card.title} رایگان با ${card.teacherName}`}
             style={{
-              width: wide ? 238 : 214,
-              flex: "0 0 auto",
+              position: "relative",
               display: "flex",
-              flexDirection: "column",
-              alignItems: "stretch",
-              gap: 0,
-              padding: 0,
+              alignItems: "center",
+              gap: 10,
+              padding: "11px 12px",
+              minWidth: 0,
               textAlign: "start",
-              border: "1.4px solid rgba(66,138,84,.5)",
-              borderRadius: 20,
-              background: `linear-gradient(170deg, ${colors.olive50} 0%, ${colors.surface} 74%)`,
-              boxShadow: "0 8px 20px rgba(46,84,54,.12)",
+              border: "1px solid rgba(46,54,34,.07)",
+              borderRadius: 18,
+              background: colors.surface,
+              boxShadow: "0 10px 24px rgba(46,54,34,.08)",
               cursor: "pointer",
               fontFamily: typography.fontFamily,
-              minWidth: 0,
               overflow: "hidden",
               animation: "vodda-enter .36s ease-out both",
-              animationDelay: `${index * 50}ms`,
+              animationDelay: `${index * 45}ms`,
             }}
           >
-            {/* بنر تصویر موضوعی با ته‌رنگ سبز + برچسب رایگان + مدت جلسه */}
+            {/* روبان کوچک «رایگان» گوشهٔ کارت */}
             <span
               aria-hidden="true"
               style={{
-                position: "relative",
-                display: "block",
-                height: wide ? 92 : 86,
-                overflow: "hidden",
-                background: colors.olive100,
+                position: "absolute",
+                top: 12,
+                insetInlineEnd: -26,
+                width: 92,
+                transform: "rotate(-45deg)",
+                textAlign: "center",
+                padding: "2.5px 0",
+                background: "linear-gradient(135deg, #43b07f, #2e8f5c)",
+                color: "#ffffff",
+                fontSize: 8.5,
+                fontWeight: 900,
+                letterSpacing: 0.2,
+                boxShadow: "0 2px 6px rgba(46,84,54,.25)",
               }}
             >
-              <img
-                src={serviceImageSrc(card.imageKey)}
-                alt=""
-                loading="lazy"
-                style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
-                onError={(event) => {
-                  event.currentTarget.style.display = "none";
-                }}
-              />
-              <span
-                aria-hidden="true"
-                style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(28,50,36,0) 42%, rgba(28,50,36,.32) 100%)" }}
-              />
-              <span
-                style={{
-                  position: "absolute",
-                  top: 8,
-                  insetInlineStart: 8,
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 3,
-                  padding: "3.5px 10px",
-                  borderRadius: 999,
-                  background: colors.olive600,
-                  color: "#fff",
-                  fontSize: 10.5,
-                  fontWeight: 800,
-                  whiteSpace: "nowrap",
-                  boxShadow: "0 2px 8px rgba(46,84,54,.28)",
-                }}
-              >
-                <Icon name="gift" size={11} />
-                رایگان
-              </span>
-              <span
-                style={{
-                  position: "absolute",
-                  bottom: 8,
-                  insetInlineEnd: 8,
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 3,
-                  padding: "3px 9px",
-                  borderRadius: 999,
-                  background: "rgba(255,255,255,.92)",
-                  border: `1px solid ${colors.olive100}`,
-                  color: colors.olive700,
-                  fontSize: 10,
-                  fontWeight: 800,
-                  whiteSpace: "nowrap",
-                }}
-              >
-                <Icon name="clock" size={11} />
-                {card.duration > 0 ? `${faNumber(card.duration, 0)} دقیقه` : "جلسهٔ رایگان"}
-              </span>
+              رایگان
             </span>
-            <span style={{ display: "flex", flexDirection: "column", gap: 8, flex: 1, minWidth: 0, padding: "11px 12px 12px" }}>
+            {/* عکس گرد و بزرگ استاد + مهر درجه */}
+            <span style={{ position: "relative", flex: "0 0 auto", display: "inline-flex" }}>
+              <Avatar
+                name={card.teacherName}
+                src={avatarSrc(card.avatarUrl || undefined, undefined, uploadsOriginOf(runtime.apiBaseUrl))}
+                size={54}
+                ring
+              />
+              {card.tier ? (
+                <span
+                  aria-hidden="true"
+                  style={{
+                    position: "absolute",
+                    bottom: -3,
+                    insetInlineStart: -4,
+                    display: "inline-flex",
+                    padding: 1,
+                    borderRadius: "50%",
+                    background: colors.surface,
+                  }}
+                >
+                  <TierBadge tier={card.tier} size={16} />
+                </span>
+              ) : null}
+            </span>
+            {/* عنوان خدمت + نام استاد + بج‌های کوچک */}
+            <span style={{ flex: "1 1 auto", minWidth: 0, display: "grid", gap: 4 }}>
               <strong
                 style={{
-                  display: "-webkit-box",
-                  maxWidth: "100%",
-                  overflow: "hidden",
-                  WebkitBoxOrient: "vertical",
-                  WebkitLineClamp: 2,
-                  overflowWrap: "anywhere",
                   fontSize: 13.5,
                   fontWeight: 800,
-                  lineHeight: 1.45,
+                  lineHeight: 1.5,
                   color: colors.ink,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
                 }}
               >
                 {card.title}
               </strong>
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 6, maxWidth: "100%", minWidth: 0 }}>
-                <Avatar
-                  name={card.teacherName}
-                  src={avatarSrc(card.avatarUrl || undefined, undefined, uploadsOriginOf(runtime.apiBaseUrl))}
-                  size={22}
-                />
-                <span
-                  style={{
-                    maxWidth: 110,
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                    fontSize: 11.5,
-                    fontWeight: 700,
-                    color: colors.inkSecondary,
-                  }}
-                >
-                  {card.teacherName}
-                </span>
-                {card.tier ? <TierBadge tier={card.tier} size={13} /> : null}
-              </span>
               <span
                 style={{
-                  marginTop: "auto",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 5,
-                  padding: "8.5px 10px",
-                  borderRadius: 11,
-                  background: colors.olive600,
-                  color: "#fff",
-                  fontSize: 12,
-                  fontWeight: 800,
-                  whiteSpace: "nowrap",
+                  fontSize: 10.5,
+                  fontWeight: 600,
+                  color: colors.inkMuted,
                   overflow: "hidden",
-                  boxShadow: "0 4px 10px rgba(46,84,54,.22)",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
                 }}
               >
-                رزرو جلسهٔ رایگان
-                <Icon name="chevronL" size={13} />
+                {card.teacherName}{card.teacherCity ? ` · ${card.teacherCity}` : ""}
               </span>
+              <span style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 4 }}>
+                {card.duration > 0 ? (
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 3,
+                      padding: "2.5px 8px",
+                      borderRadius: 999,
+                      border: `1px solid ${colors.sand150}`,
+                      background: colors.surfaceSoft,
+                      color: colors.inkSecondary,
+                      fontSize: 9.5,
+                      fontWeight: 700,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    <Icon name="clock" size={10} />
+                    {faNumber(card.duration, 0)} دقیقه
+                  </span>
+                ) : null}
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 3,
+                    padding: "2.5px 8px",
+                    borderRadius: 999,
+                    border: "1px solid rgba(58,167,109,.35)",
+                    background: "#e7f6ee",
+                    color: "#2e8f5c",
+                    fontSize: 9.5,
+                    fontWeight: 800,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  <Icon name="gift" size={10} />
+                  رایگان
+                </span>
+              </span>
+            </span>
+            {/* دکمهٔ توپر سبز نعنایی «رزرو جلسه» */}
+            <span
+              style={{
+                flex: "0 0 auto",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+                padding: "9px 11px",
+                borderRadius: 12,
+                background: "linear-gradient(145deg, #43b07f, #2e8f5c)",
+                color: "#ffffff",
+                fontSize: 11,
+                fontWeight: 800,
+                whiteSpace: "nowrap",
+                boxShadow: "0 6px 14px rgba(58,167,109,.30)",
+              }}
+            >
+              رزرو جلسه
+              <Icon name="chevronL" size={12} />
             </span>
           </button>
         ))}
@@ -1121,8 +1288,11 @@ function NotificationsBell({
 
 export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
   const runtime = usePlatform();
-  const { L } = useAppearance();
+  const { L, t } = useAppearance();
   const wide = useMinWidth(768);
+  /* در عرض‌های خیلی باریک (<۳۶۰) عنوان مرکزی هدر پنهان می‌شود تا با خوشهٔ
+   * کیف پول/اعلان/پروفایل هم‌پوشانی رخ ندهد (صفرِ سرریز در ۳۲۰px). */
+  const showHeaderTitle = useMinWidth(360);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [teachersLoading, setTeachersLoading] = useState(!teachersCacheFresh());
@@ -1343,7 +1513,9 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
 
   return (
     <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", minWidth: 0, gap: wide ? 32 : 24 }}>
-      {/* ۱.ب.۲ — بخش ① header: chip شهر + اعلان + آواتار */}
+      {/* ۱.ب.۲ — بخش ① header (چیدمان جدید): ردیف ۱ چیپ شهر — ردیف ۲ سه‌منطقه‌ای:
+       *  راست: سلام و نام کاربر | مرکز: عنوان اپ «وُدّا» | چپ: کیف پول + اعلان‌ها + پروفایل.
+       *  کیف پول از نوار پایین به هدر منتقل شد — همیشه در دسترس بدون اشغال جای منو. */}
       <header
         className="vodda-enter"
         style={{
@@ -1363,10 +1535,10 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
         </div>
         <div
           style={{
-            display: "flex",
+            display: "grid",
+            gridTemplateColumns: showHeaderTitle ? "minmax(0, 1fr) auto minmax(0, 1fr)" : "minmax(0, 1fr) minmax(0, 1fr)",
             alignItems: "center",
-            justifyContent: "space-between",
-            gap: spacing.md,
+            gap: spacing.sm,
           }}
         >
           <button
@@ -1376,23 +1548,115 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
             className="vodda-tappable"
             style={{
               minWidth: 0,
-              display: "flex",
-              alignItems: "center",
-              gap: 11,
+              justifySelf: "start",
+              display: "grid",
+              gap: 2,
               padding: 0,
-              textAlign: "right",
+              textAlign: "start",
               border: 0,
-              color: colors.ink,
               background: "transparent",
               fontFamily: typography.fontFamily,
               cursor: user ? "pointer" : "default",
             }}
           >
-            <span style={{ position: "relative", display: "inline-flex" }}>
+            <span
+              style={{
+                ...typography.caption,
+                color: colors.inkMuted,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                textAlign: "start",
+              }}
+            >
+              {greetingLabel()}{today ? ` · ${today}` : ""}
+            </span>
+            <strong
+              style={{
+                ...typography.body,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                textAlign: "start",
+                color: colors.ink,
+                fontWeight: 900,
+              }}
+            >
+              {firstName} جان 🌿
+            </strong>
+          </button>
+          {/* عنوان اپ — مرکز هدر (در عرض خیلی باریک پنهان) */}
+          {showHeaderTitle ? (
+            <div aria-hidden="true" style={{ display: "grid", justifyItems: "center", gap: 3 }}>
+              <strong
+                style={{
+                  fontSize: 19,
+                  fontWeight: 900,
+                  lineHeight: 1.2,
+                  letterSpacing: 0.3,
+                  color: colors.olive800,
+                }}
+              >
+                {t("app_title")}
+              </strong>
+              <span
+                style={{
+                  width: 26,
+                  height: 2.5,
+                  borderRadius: 999,
+                  background: "linear-gradient(90deg, transparent, rgba(191,149,64,.9), transparent)",
+                  boxShadow: "0 0 6px rgba(191,149,64,.45)",
+                }}
+              />
+            </div>
+          ) : null}
+          {/* خوشهٔ کنش‌ها (چپ): کیف پول + اعلان‌ها + پروفایل */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8, flex: "0 0 auto" }}>
+            <button
+              type="button"
+              aria-label="کیف پول"
+              title="کیف پول"
+              className="vodda-tappable"
+              onClick={() => navigateApp("/wallet", config)}
+              style={{
+                width: 38,
+                height: 38,
+                display: "grid",
+                placeItems: "center",
+                padding: 0,
+                border: `1px solid ${colors.olive100}`,
+                borderRadius: "50%",
+                color: colors.olive700,
+                background: colors.olive50,
+                cursor: "pointer",
+                flex: "0 0 auto",
+              }}
+            >
+              <Icon name="wallet" size={17} />
+            </button>
+            <NotificationsBell runtime={runtime} user={user} />
+            <button
+              type="button"
+              onClick={() => { if (user) setRoleSheetOpen(true); }}
+              aria-label="تغییر حساب"
+              className="vodda-tappable"
+              style={{
+                position: "relative",
+                width: 38,
+                height: 38,
+                display: "grid",
+                placeItems: "center",
+                padding: 0,
+                border: 0,
+                background: "transparent",
+                cursor: user ? "pointer" : "default",
+                flex: "0 0 auto",
+              }}
+            >
               <Avatar
                 name={user?.name}
                 src={avatarSrc(user?.avatar_url, user?.updated_at, uploadsOriginOf(runtime.apiBaseUrl))}
-                size={48}
+                size={38}
                 ring
               />
               {user ? (
@@ -1402,8 +1666,8 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
                     position: "absolute",
                     insetInlineStart: -4,
                     bottom: -2,
-                    width: 18,
-                    height: 18,
+                    width: 17,
+                    height: 17,
                     display: "grid",
                     placeItems: "center",
                     borderRadius: "50%",
@@ -1412,55 +1676,9 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
                     background: colors.goldBackground,
                   }}
                 >
-                  <Icon name="refresh" size={9} stroke={2.4} />
+                  <Icon name="refresh" size={8} stroke={2.4} />
                 </span>
               ) : null}
-            </span>
-            <span style={{ minWidth: 0 }}>
-              <span style={{ ...typography.caption, display: "block", color: colors.inkMuted }}>
-                {greetingLabel()}،{today ? ` امروز ${today}` : ""}
-              </span>
-              <strong
-                style={{
-                  ...typography.body,
-                  display: "block",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                  color: colors.ink,
-                  fontWeight: 900,
-                }}
-              >
-                {firstName} جان 🌿
-              </strong>
-            </span>
-          </button>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "0 0 auto" }}>
-            <NotificationsBell runtime={runtime} user={user} />
-            <button
-              type="button"
-              aria-label="کیف پول"
-              className="vodda-tappable"
-              onClick={() => navigateApp("/wallet", config)}
-              style={{
-                minWidth: 44,
-                height: 44,
-                display: "grid",
-                placeItems: "center",
-                alignContent: "center",
-                gap: 1,
-                padding: "4px 8px",
-                border: `1px solid ${colors.olive100}`,
-                borderRadius: 16,
-                color: colors.olive700,
-                background: colors.olive50,
-                cursor: "pointer",
-              }}
-            >
-              <Icon name="wallet" size={18} />
-              <span style={{ fontSize: 9.5, fontWeight: 700, lineHeight: 1, whiteSpace: "nowrap" }}>
-                {user && user.wallet > 0 ? walletShort(user.wallet) : "کیف پول"}
-              </span>
             </button>
           </div>
         </div>
