@@ -20,9 +20,14 @@ const nextConfig = {
   },
 
   async headers() {
+    // حالت پیش‌نمایش محلی (VODDA_PREVIEW_MOCK=1): پنل پیش‌نمایش، اپ را داخل
+    // iframe نشان می‌دهد و X-Frame-Options/frame-ancestors رندر آن را منع
+    // می‌کنند (پنل خالی می‌ماند). این دو فقط در پیش‌نمایش حذف می‌شوند؛ در
+    // پروداکشن متغیر هرگز ست نمی‌شود و هدرهای سخت‌گیرانه دست‌نخورده می‌مانند.
+    const previewMode = process.env.VODDA_PREVIEW_MOCK === '1';
     const headers = [
       { key: 'X-Content-Type-Options', value: 'nosniff' },
-      { key: 'X-Frame-Options', value: 'DENY' },
+      ...(previewMode ? [] : [{ key: 'X-Frame-Options', value: 'DENY' }]),
       { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
       {
         // geolocation=(self) — the ceremony venue picker needs the device GPS to
@@ -38,8 +43,10 @@ const nextConfig = {
         // browser (the Monafaseh-proven hand-off). Without this entry the
         // browser silently blocks the form navigation and the user never
         // reaches the bank page.
-        value:
-          "base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self' https://sep.shaparak.ir",
+        // frame-ancestors در حالت پیش‌نمایش حذف می‌شود تا iframe پنل رندر شود.
+        value: previewMode
+          ? "base-uri 'self'; object-src 'none'; form-action 'self' https://sep.shaparak.ir"
+          : "base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self' https://sep.shaparak.ir",
       },
     ];
     if (process.env.NODE_ENV === 'production') {

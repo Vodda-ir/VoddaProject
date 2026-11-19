@@ -4,6 +4,7 @@ import { listTier1Flags, setTier1Flag } from '@/lib/server/overlay';
 import { applyScoreEvent, scoreSnapshot, ensureScoreForTeacher } from '@/lib/server/gamification';
 import { enrichTeacherPayload, sortEnvelopeTier1First } from '@/lib/server/tier1';
 import { getFreeServices, getRecommendedTeachers } from '@/lib/server/discover';
+import { previewMockEnabled, previewMockResponse } from '@/lib/server/preview-mock';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -174,6 +175,12 @@ async function proxy(request: NextRequest, context: RouteContext): Promise<Respo
   }
   if (!isSameOriginMutation(request)) {
     return NextResponse.json({ error: 'درخواست بین‌دامنه‌ای مجاز نیست' }, { status: 403 });
+  }
+
+  /* پیش‌نمایش محلی (فقط dev) — پاسخ نمونه بدون تماس با بک‌اند */
+  if (previewMockEnabled()) {
+    const mocked = previewMockResponse(request, path);
+    if (mocked) return mocked;
   }
 
   /* مسیرهای محلی overlay/score/کشف — بدون تماس با بک‌اند */
