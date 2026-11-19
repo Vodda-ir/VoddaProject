@@ -227,7 +227,7 @@ export function LearnerProfileScreen({ config }: LearnerProfileScreenProps) {
           const rows: Array<{ icon: "user" | "wallet" | "shield"; label: string; path: string; external?: boolean }> = [
             { icon: "user" as const, label: t("profile_edit"), path: "/profile/edit" },
             { icon: "wallet" as const, label: t("profile_wallet_row"), path: "/wallet" },
-            ...(isAdmin ? [{ icon: "shield" as const, label: L("پنل مدیریت"), path: "/panel/admin", external: true }] : []),
+            ...(isAdmin ? [{ icon: "shield" as const, label: L("مدیریت سامانه"), path: "/a" }] : []),
           ];
           return rows.map((row, index) => (
             <button

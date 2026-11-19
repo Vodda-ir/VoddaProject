@@ -68,6 +68,10 @@ export const colors = {
   greenBorder: "var(--v-greenBorder, #a9cfb4)",
   greenChip: "var(--v-greenChip, #d9edde)",
   greenBackground: "var(--v-greenBackground, #eef8f1)",
+  /* E3 — هالهٔ نئونی قاب اپ — سبز نعنایی هماهنگ با تم؛ در حالت تاریک درخشان‌تر */
+  neonEdge: "var(--v-neonEdge, rgba(58,167,109,.52))",
+  neonGlow: "var(--v-neonGlow, rgba(58,167,109,.26))",
+  neonInner: "var(--v-neonInner, rgba(58,167,109,.07))",
 } as const;
 
 export const gradients = {

@@ -113,6 +113,10 @@ export function UniversalVisualStyles() {
         --v-greenBackground: #16211a;
         /* پنل‌های طلایی/کِرِم — تیره تا کادرها خیره‌کننده نشوند */
         --v-grad-goldPanel: linear-gradient(150deg, #2b2517 0%, #221e13 70%);
+        /* E3 — هالهٔ نئونی قاب اپ — در حالت تاریک درخشان‌تر و سردتر */
+        --v-neonEdge: rgba(122,193,154,.60);
+        --v-neonGlow: rgba(88,190,130,.34);
+        --v-neonInner: rgba(88,190,130,.10);
         --v-grad-goldRow: linear-gradient(145deg, #2e2715 0%, #241f10 100%);
         --v-grad-cream: linear-gradient(150deg, #2b2517 0%, #221e13 75%);
         --v-grad-oliveBtn: linear-gradient(145deg, #7c8f58 0%, #5e6e43 100%);

@@ -25,6 +25,7 @@ import { SessionDetailScreen } from "./features/session-detail/SessionDetailScre
 import { TeacherDashboardScreen } from "./features/teacher/TeacherDashboardScreen";
 import { TeacherDispatchScreen } from "./features/teacher/TeacherDispatchScreen";
 import { TeacherProfileScreen } from "./features/teacher/TeacherProfileScreen";
+import { AdminDashboardScreen } from "./features/admin/AdminDashboardScreen";
 import { TeacherReviewsScreen } from "./features/teacher/TeacherReviewsScreen";
 import { TeacherServicesScreen } from "./features/teacher/TeacherServicesScreen";
 import { TeacherSessionsScreen } from "./features/teacher/TeacherSessionsScreen";
@@ -80,6 +81,7 @@ const routeTitleKeys: Record<AppRouteName, string> = {
   "teacher-dispatch": "dispatch_title",
   "teacher-ceremony": "dispatch_title",
   "teacher-presence": "dispatch_title",
+  "admin-home": "admin_title",
   "not-found": "not_found_title",
 };
 
@@ -214,6 +216,8 @@ function UniversalAppShellContent({
     <TeacherDispatchScreen config={config} initialTab="ceremony" />
   ) : route.name === "teacher-presence" ? (
     <TeacherPresenceScreen config={config} />
+  ) : route.name === "admin-home" ? (
+    <AdminDashboardScreen config={config} />
   ) : (
     <RoutePlaceholder routeName={route.name} pathname={route.pathname} config={config} />
   );

@@ -100,7 +100,9 @@ const frameStyle: CSSProperties = {
   margin: "0 auto",
   background: colors.sand50,
   position: "relative",
-  boxShadow: shadows.md,
+  /* E3 — قاب نئونی دور فضای اپ (از بالا تا پایین صفحه) — هالهٔ سبز هماهنگ با تم؛
+   * در حالت تاریک با متغیرهای --v-neon* درخشان‌تر می‌شود. */
+  boxShadow: `0 0 0 1.5px ${colors.neonEdge}, 0 0 24px ${colors.neonGlow}, inset 0 0 20px ${colors.neonInner}, ${shadows.md}`,
 };
 
 const contentStyle: CSSProperties = {
