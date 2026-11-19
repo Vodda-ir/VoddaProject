@@ -45,7 +45,6 @@ import {
   type CatalogCategory,
   type CatalogRow,
 } from "@/lib/category";
-import { verseOfDay } from "@/lib/verses";
 import {
   buildCategoryTiles,
   byDiscoveryRank,
@@ -64,6 +63,10 @@ import {
 } from "../notifications/api";
 import { searchTeachers, fetchRecommendedTeachers } from "../teachers/api";
 import { VoddaPicksCarousel } from "./VoddaPicksCarousel";
+import { StoryRail, markStorySeen } from "../stories/StoryRail";
+import { StoryViewer } from "../stories/StoryViewer";
+import { StoryComposer } from "../stories/StoryComposer";
+import { fetchStories, type Story } from "../stories/api";
 import type { Teacher } from "../teachers/types";
 import { nearestCity } from "@/lib/cities";
 import {
@@ -164,31 +167,7 @@ function HomeSkeleton({ wide }: { wide: boolean }) {
   );
 }
 
-/* ۱.ب.۲ — بخش ② آیهٔ روز (متن مشترک با وب — src/lib/verses.ts) */
-function VerseStrip() {
-  const quote = verseOfDay();
-  const isQuran = quote.source.startsWith("قرآن");
-  return (
-    <div
-      className="vodda-enter"
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: spacing.sm,
-        padding: "10px 14px",
-        borderRadius: radii.lg,
-        background: colors.olive50,
-        border: `1px solid ${colors.olive100}`,
-      }}
-    >
-      <Icon name="quran" size={18} style={{ color: colors.olive700, flex: "0 0 auto" }} />
-      <p style={{ margin: 0, minWidth: 0, flex: 1, fontSize: 12.5, lineHeight: 1.9, color: colors.ink, fontWeight: 600 }}>
-        {isQuran ? "﴿" : "«"} {quote.text} {isQuran ? "﴾" : "»"}
-        <span style={{ color: colors.olive700, fontWeight: 800, fontSize: 11 }}> — {quote.source}</span>
-      </p>
-    </div>
-  );
-}
+/* E1 — بخش ② استوری‌های وُدّا؛ کادر «آیهٔ روز» به درخواست کاربر حذف شد. */
 
 /* ۰.۷.۷ — کادر دسته‌بندی موضوعات: حاشیهٔ نئونی طلایی + خط‌های نئونی افقی/عمودی میان سلول‌ها؛
  * داخل کادر فقط موضوع‌های اصلی با تعداد استادِ هر موضوع — کلیک روی هر موضوع،
@@ -1340,6 +1319,12 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
   /* ۱.ب — دادهٔ کشف */
   const [catalogGroups, setCatalogGroups] = useState<CatalogCategory[]>([]);
   const [recommended, setRecommended] = useState<Teacher[] | null>(null);
+  /* E1 — استوری‌های مدیر‌محور */
+  const [stories, setStories] = useState<Story[]>([]);
+  const [storiesLoading, setStoriesLoading] = useState(true);
+  const [storyViewerIndex, setStoryViewerIndex] = useState<number | null>(null);
+  const [storyComposerOpen, setStoryComposerOpen] = useState(false);
+  const [storySeenKey, setStorySeenKey] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -1423,6 +1408,18 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
       active = false;
     };
   }, [runtime, reloadKey]);
+
+  /* E1 — استوری‌های زندهٔ مدیر (fail-safe؛ خطا = بدون ریل) */
+  const loadStories = useCallback(async () => {
+    setStoriesLoading(true);
+    const rows = await fetchStories(runtime);
+    setStories(rows);
+    setStoriesLoading(false);
+  }, [runtime]);
+
+  useEffect(() => {
+    void loadStories();
+  }, [loadStories]);
 
   /* ۱.ب.۳/۵/۶ — کاتالوگ رسمی خدمات برای خانه‌های دسته، پرکاربرد و رایگان */
   useEffect(() => {
@@ -1728,8 +1725,15 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
         </div>
       </header>
 
-      {/* ۱.ب.۲ — بخش ② آیهٔ روز */}
-      <VerseStrip />
+      {/* E1 — بخش ② استوری‌های وُدّا (مدیر‌محور؛ جایگزین کادر آیهٔ روز) */}
+      <StoryRail
+        stories={stories}
+        loading={storiesLoading}
+        isAdmin={user?.role === "admin"}
+        seenRefreshKey={storySeenKey}
+        onOpen={(index) => setStoryViewerIndex(index)}
+        onCompose={() => setStoryComposerOpen(true)}
+      />
 
       {/* ۱.ب.۲ — بخش ③ خانه‌های شش‌گانهٔ دسته‌بندی */}
       <CategoryTileGrid tiles={tiles} loading={discoverLoading} wide={wide} />
@@ -1779,6 +1783,37 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
         config={config}
         user={user}
         onClose={() => setRoleSheetOpen(false)}
+      />
+
+      {/* E1 — نمایشگر تمام‌صفحهٔ استوری + فرم انتشار مدیر */}
+      {storyViewerIndex !== null && stories.length > 0 ? (
+        <StoryViewer
+          stories={stories}
+          startIndex={storyViewerIndex}
+          runtime={runtime}
+          isAdmin={user?.role === "admin"}
+          onClose={() => {
+            setStoryViewerIndex(null);
+            setStorySeenKey((value) => value + 1);
+          }}
+          onSeen={(id) => markStorySeen(id)}
+          onDeleted={(id) => {
+            setStories((rows) => rows.filter((story) => story.id !== id));
+            setStoryViewerIndex(null);
+            setStorySeenKey((value) => value + 1);
+          }}
+        />
+      ) : null}
+
+      <StoryComposer
+        open={storyComposerOpen}
+        runtime={runtime}
+        onClose={() => setStoryComposerOpen(false)}
+        onPublished={() => {
+          setStoryComposerOpen(false);
+          setStorySeenKey((value) => value + 1);
+          void loadStories();
+        }}
       />
     </div>
   );
