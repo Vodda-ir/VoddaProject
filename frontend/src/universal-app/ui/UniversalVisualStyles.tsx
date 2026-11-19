@@ -285,10 +285,11 @@ export function UniversalVisualStyles() {
       .vodda-button:not(:disabled):hover {
         filter: brightness(.985);
       }
-      /* بازخورد فشار روی دکمه‌ها — حس لمس فیزیکی (فاز جان‌بخشی) */
+      /* بازخورد فشار روی دکمه‌ها — حس لمس فیزیکی (فاز جان‌بخشی)؛
+         ۰.۹.۲ — تیرگی active محسوس‌تر شد تا حس کلیک واضح منتقل شود */
       .vodda-button:not(:disabled):active {
         transform: scale(.97);
-        filter: brightness(.965);
+        filter: brightness(.92);
       }
       .vodda-button:not(:disabled) {
         transition: transform 150ms ease, box-shadow 150ms ease, background 150ms ease, opacity 150ms ease, filter 150ms ease;

@@ -1,6 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import type { UniversalAppConfig } from "../../config";
 import { usePlatform } from "../../platform/context";
 import type { AuthUser } from "../../platform/types";
@@ -349,6 +357,94 @@ function CategoryTileGrid({
   );
 }
 
+/* ۰.۹.۲ — راهنمای لبهٔ اسکرول: گرادیانت محو روی سمتِ دارای محتوای پنهان.
+ * RTL: در آغاز لبهٔ چپ (به کاربر می‌گوید می‌تواند به چپ بکشد)؛ پس از رسیدن به
+ * انتهای ردیف، لبهٔ راست. در LTR معکوس. به‌روزرسانی با scroll/resize و بعد از هر
+ * رندر (تبدیل اسکلت به کارت واقعی هم حساب می‌شود). */
+function ScrollHintRow({ children }: { children: ReactNode }) {
+  const { lang } = useAppearance();
+  const rowRef = useRef<HTMLDivElement | null>(null);
+  const [canStart, setCanStart] = useState(false);
+  const [canEnd, setCanEnd] = useState(false);
+
+  const update = useCallback(() => {
+    const el = rowRef.current;
+    if (!el) return;
+    const hidden = el.scrollWidth - el.clientWidth;
+    if (hidden <= 8) {
+      setCanStart(false);
+      setCanEnd(false);
+      return;
+    }
+    /* RTL و LTR: فاصلهٔ طی‌شده از لبهٔ شروع = قدرمطلق scrollLeft */
+    const position = Math.abs(el.scrollLeft);
+    setCanEnd(position < hidden - 8);
+    setCanStart(position > 8);
+  }, []);
+
+  /* بعد از هر رندر — محتوای ردیف ممکن است تازه از اسکلت به کارت تبدیل شده باشد */
+  useEffect(() => {
+    update();
+  });
+
+  useEffect(() => {
+    const el = rowRef.current;
+    if (!el) return;
+    el.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    return () => {
+      el.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+    };
+  }, [update]);
+
+  const isRTL = lang !== "en";
+  const solid = "rgba(252,250,244,.95)";
+  const fade = (side: "start" | "end") => {
+    /* سمت بیرونیِ گرادیانت (لبهٔ دید) پررنگ، سمت محتوا شفاف */
+    const solidFirst = (side === "end") === isRTL;
+    return (
+      <span
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          top: 0,
+          bottom: 0,
+          width: 30,
+          zIndex: 2,
+          pointerEvents: "none",
+          ...(side === "end" ? { insetInlineEnd: 0 } : { insetInlineStart: 0 }),
+          background: solidFirst
+            ? `linear-gradient(to right, ${solid}, rgba(252,250,244,0))`
+            : `linear-gradient(to right, rgba(252,250,244,0), ${solid})`,
+        }}
+      />
+    );
+  };
+
+  return (
+    <span style={{ position: "relative", display: "block", minWidth: 0 }}>
+      <div
+        ref={rowRef}
+        className="vodda-scroll-rail"
+        style={{
+          display: "flex",
+          alignItems: "stretch",
+          gap: 10,
+          overflowX: "auto",
+          overflowY: "hidden",
+          minWidth: 0,
+          paddingBottom: 14,
+        }}
+      >
+        {children}
+      </div>
+      {canEnd ? fade("end") : null}
+      {canStart ? fade("start") : null}
+    </span>
+  );
+}
+
 /* ۱.ب.۲ — بخش ④ اساتید برتر — سطر اول درجهٔ ۱ (هم‌شهری فقط اولویت) */
 function TopTeachersSection({
   teachers,
@@ -390,23 +486,14 @@ function TopTeachersSection({
           minWidth: 0,
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "stretch",
-            gap: 10,
-            overflowX: "auto",
-            overflowY: "hidden",
-            minWidth: 0,
-            paddingBottom: 6,
-          }}
-        >
+        {/* ۰.۹.۲ — گرادیانت راهنمای لبه: RTL ابتدا لبهٔ چپ، پس از اسکرول لبهٔ راست */}
+        <ScrollHintRow>
           {teachers.slice(0, 8).map((teacher, index) => (
             <div key={teacher.id} className="vodda-enter" style={{ width: wide ? 226 : 200, flex: "0 0 auto", minWidth: 0, animationDelay: `${index * 40}ms` }}>
               <TopTeacherShowcase teacher={teacher} config={config} wide={wide} />
             </div>
           ))}
-        </div>
+        </ScrollHintRow>
       </div>
     </section>
   );
@@ -834,10 +921,10 @@ function RecommendedGrid({
     return (
       <section aria-label="در حال بارگذاری پیشنهادها" style={{ display: "grid", gap: 12 }}>
         <Skeleton style={{ width: 160, height: 18 }} />
-        {/* ۰.۷.۲ — ردیف افقی */}
+        {/* ۰.۹.۲ — اسکلت هم‌شکل کارت مربعی واحد (همان شکل اساتید برتر) */}
         <div style={{ display: "flex", gap: 10, overflow: "hidden" }}>
           {Array.from({ length: 4 }).map((_, index) => (
-            <Skeleton key={index} style={{ width: 165, minHeight: 200, borderRadius: 12, flex: "0 0 auto" }} />
+            <Skeleton key={index} style={{ width: wide ? 226 : 200, minHeight: 340, borderRadius: 20, flex: "0 0 auto" }} />
           ))}
         </div>
       </section>
@@ -848,34 +935,24 @@ function RecommendedGrid({
   return (
     <section aria-label="اساتید پیشنهادی" style={{ display: "grid", gap: spacing.sm, minWidth: 0 }}>
       <SectionHeader title="اساتید پیشنهادی" description="چیدمان وزنی بر پایهٔ rank استاد — تازه با هر بازدید" />
-      {/* ۰.۷.۵ — کادر افقی کم‌رنگ و جذاب دور ردیف اساتید؛ اسکرول به چپ داخل خود کادر */}
+      {/* ۰.۹.۲ — کادر طلایی هم‌خانوادهٔ اساتید برتر + کارت مربعی واحد + گرادیانت راهنمای لبه */}
       <div
         style={{
           borderRadius: 22,
-          border: `1.2px solid ${colors.sand150}`,
+          border: `1.2px solid ${colors.goldSoft}`,
           background: `linear-gradient(180deg, ${colors.surface}, ${colors.surfaceWarm})`,
           padding: 12,
-          boxShadow: "0 6px 20px rgba(46,54,34,.06)",
+          boxShadow: "0 6px 20px rgba(46,54,34,.06), 0 0 12px rgba(191,149,64,.10)",
           minWidth: 0,
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "stretch",
-            gap: 10,
-            overflowX: "auto",
-            overflowY: "hidden",
-            minWidth: 0,
-            paddingBottom: 6,
-          }}
-        >
+        <ScrollHintRow>
           {teachers.map((teacher, index) => (
-            <div key={teacher.id} className="vodda-enter" style={{ width: 165, flex: "0 0 auto", minWidth: 0, animationDelay: `${index * 40}ms` }}>
-              <TeacherCard teacher={teacher} config={config} />
+            <div key={teacher.id} className="vodda-enter" style={{ width: wide ? 226 : 200, flex: "0 0 auto", minWidth: 0, animationDelay: `${index * 40}ms` }}>
+              <TeacherCard teacher={teacher} config={config} wide={wide} />
             </div>
           ))}
-        </div>
+        </ScrollHintRow>
       </div>
     </section>
   );
