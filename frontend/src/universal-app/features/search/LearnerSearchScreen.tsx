@@ -1718,10 +1718,14 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
                       gridTemplateColumns: "minmax(0, 1fr)",
                       gap: 14,
                       minWidth: 0,
+                      /* ۱.۲ — کارت مربعی در هر ردیف؛ در میزبانِ پهن، عرض کادر مهار می‌شود */
+                      maxWidth: 420,
+                      width: "100%",
+                      marginInline: "auto",
                     }}
                   >
                     {fallback.map((teacher) => (
-                      <TeacherCard key={teacher.id} teacher={teacher} config={config} />
+                      <TeacherCard key={teacher.id} teacher={teacher} config={config} variant="square" />
                     ))}
                   </div>
                 </div>
@@ -1735,10 +1739,14 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
                   gridTemplateColumns: "minmax(0, 1fr)",
                   gap: 14,
                   minWidth: 0,
+                  /* ۱.۲ — کارت مربعی در هر ردیف؛ در میزبانِ پهن، عرض کادر مهار می‌شود */
+                  maxWidth: 420,
+                  width: "100%",
+                  marginInline: "auto",
                 }}
               >
                 {visible.map((teacher) => (
-                  <TeacherCard key={teacher.id} teacher={teacher} config={config} />
+                  <TeacherCard key={teacher.id} teacher={teacher} config={config} variant="square" />
                 ))}
               </div>
               {hasMore ? (

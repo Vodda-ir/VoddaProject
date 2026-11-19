@@ -120,8 +120,10 @@ function mockTeacher(
     verified: true,
     /* ۰.۹.۰ — دو استاد mock با درجهٔ ۱ تا قاب نئونی نفس‌کشنده در پیش‌نمایش دیده شود */
     is_tier1: id === 1 || id === 4,
-    available: true,
-    tier,
+    /* ۱.۲ — یکی دو استاد آفلاین تا چراغ قرمز چشمک‌زن در پیش‌نمایش دیده شود */
+    available: id !== 3 && id !== 7,
+    /* ۱.۲ — نگاشت درجهٔ نمونه به کلید واقعی tierMeta تا مهر آبی/سبز/قرمز در پیش‌نمایش دیده شود */
+    tier: tier === 'gold' ? 'international' : tier === 'silver' ? 'grade2' : 'grade3',
     instant_enabled: id % 3 === 1,
     free_enabled: id % 5 === 2,
     rating,
