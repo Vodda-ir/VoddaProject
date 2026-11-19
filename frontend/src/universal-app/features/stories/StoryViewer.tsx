@@ -5,6 +5,7 @@ import type { PlatformRuntime } from "../../platform/types";
 import { Icon, colors, typography } from "../../ui";
 import { useAppearance } from "../../ui/appearance";
 import { localizedDigits } from "../../ui/persian";
+import { resolveAssetUrl } from "../../platform/asset";
 import { markStoryView, removeStory, type Story } from "./api";
 import { readSeenStoryIds } from "./StoryRail";
 
@@ -42,7 +43,8 @@ export function StoryViewer({
   stories,
   startIndex,
   runtime,
-  isAdmin,
+  myRole,
+  myAuthorId,
   onClose,
   onSeen,
   onDeleted,
@@ -50,13 +52,18 @@ export function StoryViewer({
   stories: Story[];
   startIndex: number;
   runtime: PlatformRuntime;
-  isAdmin: boolean;
+  /** نقش جلسهٔ فعلی — «admin» دید آمار/حذف همه را می‌دهد */
+  myRole: string;
+  /** شناسهٔ نویسندهٔ جلسه — صاحب استوری هم آمار/حذف استوری خودش را می‌بیند */
+  myAuthorId: string;
   onClose: () => void;
   onSeen: (id: string) => void;
   onDeleted: (id: string) => void;
 }) {
   const { L, lang } = useAppearance();
   const rtl = lang !== "en";
+  /* مدیریت استوری فعلی — ادمین: همه؛ استاد: استوری خودش */
+  const canManage = (story: Story) => myRole === "admin" || (Boolean(myAuthorId) && story.author.id === myAuthorId);
   /* ترتیب پخش اینستاگرامی — قدیمی‌ترین نخست؛ ریل بندانگشتیِ جدیدترین را نشان می‌دهد */
   const ordered = useMemo(
     () => [...stories].sort((left, right) => Date.parse(left.createdAt) - Date.parse(right.createdAt)),
@@ -229,7 +236,7 @@ export function StoryViewer({
         ))}
       </div>
 
-      {/* سربرگ: مهر مربعی + نام و زمان + شمار بازدید مدیر + حذف + بستن */}
+      {/* سربرگ: مهر مربعی نویسنده + نام و زمان + شمار بازدید صاحب استوری + حذف + بستن */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px 8px", minWidth: 0 }}>
         <span
           style={{
@@ -241,21 +248,21 @@ export function StoryViewer({
           }}
         >
           <img
-            src={story.mediaUrl}
+            src={story.author.avatar ? resolveAssetUrl(story.author.avatar) ?? story.mediaUrl : story.mediaUrl}
             alt=""
             style={{ width: 30, height: 30, borderRadius: 7, objectFit: "cover", display: "block", border: "1.5px solid #fffdf6" }}
           />
         </span>
         <span style={{ flex: "1 1 auto", minWidth: 0, display: "grid", gap: 1 }}>
           <strong style={{ fontSize: 13.5, fontWeight: 900, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {L("وُدّا")}
+            {story.author.name || L("وُدّا")}
           </strong>
           <span style={{ fontSize: 10.5, fontWeight: 600, color: "rgba(255,253,246,.72)" }}>
             {timeAgoLabel(story.createdAt, lang)}
           </span>
         </span>
 
-        {isAdmin ? (
+        {canManage(story) ? (
           <span
             title={L("شمار بازدید")}
             style={{
@@ -276,7 +283,7 @@ export function StoryViewer({
           </span>
         ) : null}
 
-        {isAdmin ? (
+        {canManage(story) ? (
           <button
             type="button"
             onClick={handleDelete}

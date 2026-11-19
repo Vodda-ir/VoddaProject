@@ -8,9 +8,10 @@ import { messageOf } from "../../ui/errorMessage";
 import { localizedDigits } from "../../ui/persian";
 import { publishStory } from "./api";
 
-/* ═══ E1 — فرم انتشار استوری (فقط مدیر سامانه) ═══
- * انتخاب تصویر (فشرده‌سازی سمت کلاینت تا سقف ۱۲۰۰px)، متن، پیوند اختیاری CTA و
- * مدت اعتبار (۲۴ ساعت تا ۳۰ روز). کادر پیش‌نمایش مربعی با حاشیهٔ طلایی. */
+/* ═══ E1/E2 — فرم انتشار استوری (مدیر برند یا استاد) ═══
+ * مدیر: تصویر (فشرده‌سازی سمت کلاینت تا سقف ۱۲۰۰px)، متن، پیوند اختیاری CTA و مدت اعتبار.
+ * استاد: **فقط تصویر** با فشرده‌سازی خودکار — بدون متن/پیوند؛ ۲۴ ساعت اعتبار ثابت.
+ * کادر پیش‌نمایش مربعی با حاشیهٔ طلایی. */
 
 const TTL_OPTIONS: Array<{ label: string; hours: number }> = [
   { label: "۲۴ ساعت", hours: 24 },
@@ -60,15 +61,19 @@ async function compressImageFile(file: File): Promise<string> {
 export function StoryComposer({
   open,
   runtime,
+  mode = "admin",
   onClose,
   onPublished,
 }: {
   open: boolean;
   runtime: PlatformRuntime;
+  /** «admin» = متن + پیوند + مدت اعتبار | «teacher» = فقط تصویر، ۲۴ ساعت */
+  mode?: "admin" | "teacher";
   onClose: () => void;
   onPublished: () => void;
 }) {
   const { L } = useAppearance();
+  const teacherMode = mode === "teacher";
   const [mediaUrl, setMediaUrl] = useState("");
   const [caption, setCaption] = useState("");
   const [link, setLink] = useState("");
@@ -104,15 +109,16 @@ export function StoryComposer({
   }
 
   async function handlePublish() {
-    if (!mediaUrl || !caption.trim() || busy) return;
+    if (!mediaUrl || busy) return;
+    if (!teacherMode && !caption.trim()) return;
     setError(null);
     setBusy(true);
     try {
       await publishStory(runtime, {
         mediaUrl,
         caption: caption.trim(),
-        link: link.trim() || undefined,
-        ttlHours,
+        link: teacherMode ? undefined : link.trim() || undefined,
+        ttlHours: teacherMode ? 24 : ttlHours,
       });
       reset();
       onPublished();
@@ -174,10 +180,12 @@ export function StoryComposer({
             >
               <Icon name="camera" size={30} stroke={1.7} />
               <span style={{ fontSize: 13, fontWeight: 800 }}>
-                {reading ? L("در حال پردازش تصویر…") : L("تصویر تبلیغ را انتخاب کنید")}
+                {reading ? L("در حال پردازش تصویر…") : teacherMode ? L("تصویر استوری را انتخاب کنید") : L("تصویر تبلیغ را انتخاب کنید")}
               </span>
               <span style={{ fontSize: 10.5, fontWeight: 600, color: colors.inkMuted }}>
-                {L("مربع یا عمودی — تا ۱۲۰۰ پیکسل فشرده می‌شود")}
+                {teacherMode
+                  ? L("تصویر خودکار کم‌حجم می‌شود — بدون فشار به سرور")
+                  : L("مربع یا عمودی — تا ۱۲۰۰ پیکسل فشرده می‌شود")}
               </span>
             </button>
           )}
@@ -200,87 +208,106 @@ export function StoryComposer({
           </div>
         ) : null}
 
-        <label style={{ display: "grid", gap: 6 }}>
-          <span style={{ fontSize: 12, fontWeight: 800, color: colors.inkSecondary }}>{L("متن استوری")}</span>
-          <textarea
-            value={caption}
-            onChange={(event) => setCaption(event.target.value.slice(0, 300))}
-            rows={2}
-            maxLength={300}
-            placeholder={L("متن تبلیغ یا اعلان…")}
+        {teacherMode ? (
+          <p
             style={{
-              resize: "none",
-              borderRadius: 14,
-              border: `1px solid ${colors.border}`,
-              background: colors.surface,
-              padding: "10px 12px",
-              fontSize: 13,
-              fontWeight: 600,
-              lineHeight: 1.9,
-              color: colors.ink,
-              fontFamily: typography.fontFamily,
-              outline: "none",
+              margin: 0,
+              padding: "9px 12px",
+              borderRadius: 12,
+              background: colors.olive50,
+              border: `1px solid ${colors.olive100}`,
+              fontSize: 11,
+              fontWeight: 700,
+              color: colors.olive700,
             }}
-          />
-          <span style={{ fontSize: 10.5, color: colors.inkMuted, justifySelf: "end" }}>
-            {localizedDigits(caption.length, "fa")}/{localizedDigits(300, "fa")}
-          </span>
-        </label>
+          >
+            {L("استوری شما ۲۴ ساعت نمایش داده می‌شود و فقط دنبال‌کننده‌های شما آن را می‌بینند.")}
+          </p>
+        ) : (
+          <>
+            <label style={{ display: "grid", gap: 6 }}>
+              <span style={{ fontSize: 12, fontWeight: 800, color: colors.inkSecondary }}>{L("متن استوری")}</span>
+              <textarea
+                value={caption}
+                onChange={(event) => setCaption(event.target.value.slice(0, 300))}
+                rows={2}
+                maxLength={300}
+                placeholder={L("متن تبلیغ یا اعلان…")}
+                style={{
+                  resize: "none",
+                  borderRadius: 14,
+                  border: `1px solid ${colors.border}`,
+                  background: colors.surface,
+                  padding: "10px 12px",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  lineHeight: 1.9,
+                  color: colors.ink,
+                  fontFamily: typography.fontFamily,
+                  outline: "none",
+                }}
+              />
+              <span style={{ fontSize: 10.5, color: colors.inkMuted, justifySelf: "end" }}>
+                {localizedDigits(caption.length, "fa")}/{localizedDigits(300, "fa")}
+              </span>
+            </label>
 
-        <label style={{ display: "grid", gap: 6 }}>
-          <span style={{ fontSize: 12, fontWeight: 800, color: colors.inkSecondary }}>
-            {L("پیوند (اختیاری)")}
-          </span>
-          <input
-            value={link}
-            onChange={(event) => setLink(event.target.value)}
-            dir="ltr"
-            placeholder="https://vodda.ir/…"
-            inputMode="url"
-            style={{
-              borderRadius: 14,
-              border: `1px solid ${colors.border}`,
-              background: colors.surface,
-              padding: "10px 12px",
-              fontSize: 13,
-              fontWeight: 600,
-              color: colors.ink,
-              fontFamily: typography.fontFamily,
-              outline: "none",
-            }}
-          />
-        </label>
+            <label style={{ display: "grid", gap: 6 }}>
+              <span style={{ fontSize: 12, fontWeight: 800, color: colors.inkSecondary }}>
+                {L("پیوند (اختیاری)")}
+              </span>
+              <input
+                value={link}
+                onChange={(event) => setLink(event.target.value)}
+                dir="ltr"
+                placeholder="https://vodda.ir/…"
+                inputMode="url"
+                style={{
+                  borderRadius: 14,
+                  border: `1px solid ${colors.border}`,
+                  background: colors.surface,
+                  padding: "10px 12px",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: colors.ink,
+                  fontFamily: typography.fontFamily,
+                  outline: "none",
+                }}
+              />
+            </label>
 
-        <div style={{ display: "grid", gap: 8 }}>
-          <span style={{ fontSize: 12, fontWeight: 800, color: colors.inkSecondary }}>{L("مدت نمایش")}</span>
-          <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
-            {TTL_OPTIONS.map((option) => {
-              const active = option.hours === ttlHours;
-              return (
-                <button
-                  key={option.hours}
-                  type="button"
-                  onClick={() => setTtlHours(option.hours)}
-                  aria-pressed={active}
-                  className="vodda-tappable"
-                  style={{
-                    padding: "8px 14px",
-                    borderRadius: 999,
-                    border: `1px solid ${active ? colors.gold : colors.border}`,
-                    background: active ? colors.goldBackground : colors.surface,
-                    color: active ? colors.goldDark : colors.inkSecondary,
-                    fontSize: 12,
-                    fontWeight: active ? 900 : 700,
-                    cursor: "pointer",
-                    fontFamily: typography.fontFamily,
-                  }}
-                >
-                  {L(option.label)}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+            <div style={{ display: "grid", gap: 8 }}>
+              <span style={{ fontSize: 12, fontWeight: 800, color: colors.inkSecondary }}>{L("مدت نمایش")}</span>
+              <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
+                {TTL_OPTIONS.map((option) => {
+                  const active = option.hours === ttlHours;
+                  return (
+                    <button
+                      key={option.hours}
+                      type="button"
+                      onClick={() => setTtlHours(option.hours)}
+                      aria-pressed={active}
+                      className="vodda-tappable"
+                      style={{
+                        padding: "8px 14px",
+                        borderRadius: 999,
+                        border: `1px solid ${active ? colors.gold : colors.border}`,
+                        background: active ? colors.goldBackground : colors.surface,
+                        color: active ? colors.goldDark : colors.inkSecondary,
+                        fontSize: 12,
+                        fontWeight: active ? 900 : 700,
+                        cursor: "pointer",
+                        fontFamily: typography.fontFamily,
+                      }}
+                    >
+                      {L(option.label)}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </>
+        )}
 
         {error ? (
           <p role="alert" style={{ margin: 0, fontSize: 12, fontWeight: 700, color: colors.danger }}>
@@ -288,7 +315,7 @@ export function StoryComposer({
           </p>
         ) : null}
 
-        <Button onClick={handlePublish} disabled={!mediaUrl || !caption.trim() || busy || reading}>
+        <Button onClick={handlePublish} disabled={!mediaUrl || (!teacherMode && !caption.trim()) || busy || reading}>
           {busy ? L("در حال انتشار…") : L("انتشار استوری")}
         </Button>
       </div>

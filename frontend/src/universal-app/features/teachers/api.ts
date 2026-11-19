@@ -103,3 +103,53 @@ export async function getTeacherDetail(runtime: PlatformRuntime, id: number): Pr
     reviews: rows.map(parseTeacherReview).filter((review) => review.id > 0),
   };
 }
+
+/* ═══ E2 — دنبال‌کردن اساتید (مسیر محلی BFF /follows) ═══ */
+
+export type FollowToggleResult = {
+  following: boolean;
+  count: number;
+};
+
+/** استادهایی که کاربر فعلی دنبال می‌کند — خطا = [] (fail-safe). */
+export async function fetchMyFollows(runtime: PlatformRuntime): Promise<string[]> {
+  try {
+    const response = await runtime.request<ApiEnvelope<{ teacher_ids?: unknown }>>("/follows");
+    const rows = response.data?.teacher_ids;
+    if (!Array.isArray(rows)) return [];
+    return rows
+      .map((item) => (typeof item === "string" || typeof item === "number" ? String(item) : ""))
+      .filter((item) => /^[0-9]{1,12}$/.test(item));
+  } catch {
+    return [];
+  }
+}
+
+/** شمار دنبال‌کننده‌های استاد — خطا = null (نمایش «—»). */
+export async function fetchFollowerCount(runtime: PlatformRuntime, teacherId: number): Promise<number | null> {
+  if (!Number.isInteger(teacherId) || teacherId <= 0) return null;
+  try {
+    const response = await runtime.request<ApiEnvelope<{ count?: unknown }>>(`/follows/count/${teacherId}`);
+    const count = response.data?.count;
+    return typeof count === "number" && Number.isFinite(count) && count >= 0 ? count : null;
+  } catch {
+    return null;
+  }
+}
+
+/** دنبال‌کردن/لغو دنبال‌کردن — خطای سرور (۴۰۱ وارد نشدن) بالادست مدیریت می‌شود. */
+export async function toggleFollowTeacher(
+  runtime: PlatformRuntime,
+  teacherId: number,
+  follow: boolean,
+): Promise<FollowToggleResult> {
+  const response = await runtime.request<ApiEnvelope<{ following?: unknown; count?: unknown }>>(
+    `/follows/${teacherId}`,
+    { method: follow ? "PUT" : "DELETE" },
+  );
+  const count = response.data?.count;
+  return {
+    following: follow,
+    count: typeof count === "number" && Number.isFinite(count) && count >= 0 ? count : 0,
+  };
+}

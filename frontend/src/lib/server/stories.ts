@@ -15,16 +15,27 @@ import 'server-only';
 import { promises as fs } from 'fs';
 import path from 'path';
 
+export type StoryAuthor = {
+  /** شناسهٔ رشته‌ای — ادمین: uid کاربر؛ استاد: شناسهٔ پروفایل استاد */
+  id: string;
+  name: string;
+  role: 'admin' | 'teacher';
+  /** مسیر نسبی آواتار (مثل /uploads/…) یا خالی برای مهر برند */
+  avatar: string;
+};
+
 export type StoredStory = {
   id: string;
   /** data:image/... — تصویر فشرده‌شدهٔ سمت کلاینت (بدون فایل‌سیستم اضافه) */
   media_url: string;
   caption: string;
-  /** پیوند اختیاری CTA — فقط http/https */
+  /** پیوند اختیاری CTA — فقط http/https؛ استادی‌ها پیوند ندارند */
   link?: string;
   created_at: string;
   expires_at: string;
   views: number;
+  /** E2 — نویسندهٔ استوری؛ استوری‌های قدیمی به ادمین برند نگاشت می‌شوند */
+  author: StoryAuthor;
 };
 
 export type StoriesData = {
@@ -36,8 +47,10 @@ export type CreateStoryInput = {
   mediaUrl: string;
   caption: string;
   link?: string;
-  /** ساعت اعتبار — ۲۴ تا ۷۲۰ (۳۰ روز) */
+  /** ساعت اعتبار — ۱ تا ۷۲۰ (۳۰ روز)؛ استادها ۲۴ ساعت ثابت */
   ttlHours: number;
+  /** نویسنده — فقط از هویت تأییدشدهٔ BFF پر می‌شود، هرگز از کلاینت */
+  author: StoryAuthor;
 };
 
 function emptyStories(): StoriesData {
@@ -49,7 +62,7 @@ const STORIES_PATH = path.join(process.cwd(), 'db', 'vodda-stories.json');
 /** سقف دادهٔ هر استوری — data URL فشردهٔ JPEG (~۱.۵MB base64) */
 const MAX_MEDIA_CHARS = 2_100_000;
 /** سقف تعداد استوری ذخیره‌شده — قدیمی‌ها هنگام ایجاد حذف می‌شوند */
-const MAX_STORIES = 60;
+const MAX_STORIES = 120;
 
 let cache: { data: StoriesData; at: number } | null = null;
 const CACHE_TTL_MS = 1_000;
@@ -58,6 +71,17 @@ let writeChain: Promise<void> = Promise.resolve();
 
 function isDataImage(value: string): boolean {
   return /^data:image\/(png|jpeg|jpg|webp);base64,[A-Za-z0-9+/=]+$/.test(value);
+}
+
+function sanitizeAuthor(raw: unknown): StoryAuthor {
+  const fallback: StoryAuthor = { id: 'admin', name: 'وُدّا', role: 'admin', avatar: '' };
+  if (!raw || typeof raw !== 'object') return fallback;
+  const record = raw as Partial<StoryAuthor>;
+  const role = record.role === 'teacher' ? 'teacher' : 'admin';
+  const id = typeof record.id === 'string' && /^[a-zA-Z0-9_-]{1,40}$/.test(record.id) ? record.id : 'admin';
+  const name = typeof record.name === 'string' ? record.name.replace(/\s+/g, ' ').trim().slice(0, 60) : '';
+  const avatar = typeof record.avatar === 'string' && record.avatar.length <= 300 ? record.avatar : '';
+  return { id, name: name || (role === 'admin' ? 'وُدّا' : 'استاد وُدّا'), role, avatar };
 }
 
 function safeLink(value: unknown): string | undefined {
@@ -90,6 +114,7 @@ function sanitizeStory(raw: Partial<StoredStory>): StoredStory | null {
     created_at: created,
     expires_at: expires,
     views: typeof raw.views === 'number' && Number.isFinite(raw.views) && raw.views >= 0 ? Math.floor(raw.views) : 0,
+    author: sanitizeAuthor(raw.author),
   };
 }
 
@@ -164,10 +189,8 @@ export async function createStory(input: CreateStoryInput): Promise<StoredStory>
   if (media.length > MAX_MEDIA_CHARS) {
     throw new Error('حجم تصویر بیش از حد مجاز است.');
   }
+  // زیرنویس اختیاری شد — استادها فقط تصویر منتشر می‌کنند (E2)
   const caption = cleanCaption(input.caption);
-  if (!caption) {
-    throw new Error('متن استوری لازم است.');
-  }
   const ttl = Math.round(input.ttlHours);
   if (!Number.isFinite(ttl) || ttl < 1 || ttl > 720) {
     throw new Error('مدت اعتبار باید بین ۱ تا ۷۲۰ ساعت باشد.');
@@ -176,16 +199,19 @@ export async function createStory(input: CreateStoryInput): Promise<StoredStory>
   if (typeof input.link === 'string' && input.link.trim() && !link) {
     throw new Error('پیوند نامعتبر است — فقط http/https.');
   }
+  // استادها پیوند CTA ندارند — فقط ادمین برند
+  const finalLink = input.author.role === 'teacher' ? undefined : link;
 
   const now = new Date();
   const story: StoredStory = {
     id: `st_${now.getTime().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
     media_url: media,
     caption,
-    link,
+    link: finalLink,
     created_at: now.toISOString(),
     expires_at: new Date(now.getTime() + ttl * 60 * 60 * 1000).toISOString(),
     views: 0,
+    author: sanitizeAuthor(input.author),
   };
 
   await mutateStories((data) => {
@@ -199,15 +225,20 @@ export async function createStory(input: CreateStoryInput): Promise<StoredStory>
   return story;
 }
 
-export async function deleteStory(id: string): Promise<boolean> {
-  if (!/^[a-z0-9_]{6,40}$/.test(id)) return false;
-  let removed = false;
-  await mutateStories((data) => {
-    const before = data.stories.length;
-    data.stories = data.stories.filter((story) => story.id !== id);
-    removed = data.stories.length < before;
+export async function deleteStoryAuthorized(
+  id: string,
+  by: { role: string; authorId: string },
+): Promise<'removed' | 'missing' | 'forbidden'> {
+  if (!/^[a-z0-9_]{6,40}$/.test(id)) return 'missing';
+  const data = await readFileRaw();
+  const story = data.stories.find((item) => item.id === id);
+  if (!story) return 'missing';
+  // ادمین هر استوری؛ استاد فقط استوری خودش (E2)
+  if (by.role !== 'admin' && story.author.id !== by.authorId) return 'forbidden';
+  await mutateStories((current) => {
+    current.stories = current.stories.filter((item) => item.id !== id);
   });
-  return removed;
+  return 'removed';
 }
 
 export async function incrementStoryViews(id: string): Promise<number | null> {

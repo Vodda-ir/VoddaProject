@@ -5,6 +5,15 @@ import type { PlatformRuntime } from "../../platform/types";
  * مسیر BFF محلی /stories — در اپ نیتیو (تماس مستقیم با بک‌اند) وجود ندارد؛
  * فراخوانی‌ها fail-safe هستند تا صفحهٔ خانه هرگز نشکند. */
 
+export type StoryAuthor = {
+  /** ادمین: uid کاربر؛ استاد: شناسهٔ پروفایل استاد */
+  id: string;
+  name: string;
+  role: "admin" | "teacher";
+  /** مسیر نسبی آواتار یا خالی (مهر برند) */
+  avatar: string;
+};
+
 export type Story = {
   id: string;
   mediaUrl: string;
@@ -13,6 +22,7 @@ export type Story = {
   createdAt: string;
   expiresAt: string;
   views: number;
+  author: StoryAuthor;
 };
 
 export type CreateStoryPayload = {
@@ -32,6 +42,15 @@ function parseStory(value: unknown): Story | null {
   const expiresAt = asString(row.expires_at ?? row.expiresAt);
   if (!createdAt || !expiresAt) return null;
   const link = asString(row.link);
+  /* E2 — نویسنده؛ استوری‌های قدیمی بدون author به ادمین برند نگاشت می‌شوند */
+  const authorRow = row.author && typeof row.author === "object" ? (row.author as Record<string, unknown>) : null;
+  const authorRole = authorRow?.role === "teacher" ? "teacher" : "admin";
+  const author: StoryAuthor = {
+    id: asString(authorRow?.id) || "admin",
+    name: asString(authorRow?.name) || (authorRole === "admin" ? "وُدّا" : "استاد وُدّا"),
+    role: authorRole,
+    avatar: asString(authorRow?.avatar ?? authorRow?.avatar_url),
+  };
   return {
     id,
     mediaUrl,
@@ -40,18 +59,33 @@ function parseStory(value: unknown): Story | null {
     createdAt,
     expiresAt,
     views: Math.max(0, Math.round(asNumber(row.views))),
+    author,
   };
 }
 
-/** استوری‌های زندهٔ عمومی — خطا = [] (ریل پنهان می‌شود). */
-export async function fetchStories(runtime: PlatformRuntime): Promise<Story[]> {
+/** استوری‌های زندهٔ قابل‌دیدن + هویت جلسه (برای گروه‌بندی «استوری‌های خودم») — خطا = حالت خالی. */
+export type StoriesFeed = {
+  stories: Story[];
+  /** شناسهٔ نویسندهٔ جلسهٔ فعلی — استادی‌ها شناسهٔ پروفایل؛ بقیه uid */
+  myAuthorId: string;
+  /** نقش جلسه — «admin» / «teacher» / «learner» / '' */
+  myRole: string;
+};
+
+export async function fetchStoriesFeed(runtime: PlatformRuntime): Promise<StoriesFeed> {
   try {
-    const response = await runtime.request<ApiEnvelope>("/stories");
-    return asArray(response.data)
+    const response = await runtime.request<ApiEnvelope & { me?: unknown }>("/stories");
+    const rows = asArray(response.data)
       .map(parseStory)
       .filter((story): story is Story => story !== null);
+    const me = response.me && typeof response.me === "object" ? (response.me as Record<string, unknown>) : null;
+    return {
+      stories: rows,
+      myAuthorId: asString(me?.author_id),
+      myRole: asString(me?.role),
+    };
   } catch {
-    return [];
+    return { stories: [], myAuthorId: "", myRole: "" };
   }
 }
 

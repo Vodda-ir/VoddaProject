@@ -25,7 +25,7 @@ import { TierBadge } from "./TierBadge";
 import { TeacherBioBlocks } from "./BioBlocks";
 import { messageOf } from "../../ui/errorMessage";
 import { formatWalletAmount } from "../wallet/WalletTransactionCard";
-import { getTeacherDetail } from "./api";
+import { getTeacherDetail, fetchMyFollows, fetchFollowerCount, toggleFollowTeacher } from "./api";
 import type { TeacherDetail, TeacherReview, TeacherService } from "./types";
 
 function reviewDate(value: string, lang: "fa" | "en") {
@@ -136,6 +136,11 @@ export function LearnerTeacherProfileScreen({
   const [reloadKey, setReloadKey] = useState(0);
   /* ۱.ب.۴ — فیلتر خدمت از لینک کارت رایگان (?service=<id>) — فقط همان خدمت با امکان برداشتن فیلتر */
   const [serviceFilterId, setServiceFilterId] = useState(0);
+  /* E2 — دنبال‌کردن استاد */
+  const [following, setFollowing] = useState(false);
+  const [followerCount, setFollowerCount] = useState<number | null>(null);
+  const [followBusy, setFollowBusy] = useState(false);
+  const [followHint, setFollowHint] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -167,6 +172,20 @@ export function LearnerTeacherProfileScreen({
     };
   }, [runtime, parsedId, reloadKey]);
 
+  useEffect(() => {
+    if (loading || error || !detail) return;
+    let active = true;
+    void fetchFollowerCount(runtime, parsedId).then((count) => {
+      if (active && count !== null) setFollowerCount(count);
+    });
+    void fetchMyFollows(runtime).then((ids) => {
+      if (active) setFollowing(ids.includes(String(parsedId)));
+    });
+    return () => {
+      active = false;
+    };
+  }, [runtime, parsedId, loading, error, detail]);
+
   if (loading) return <LoadingState label={L("در حال دریافت پروفایل استاد…")} />;
   if (error || !detail) {
     return (
@@ -186,6 +205,33 @@ export function LearnerTeacherProfileScreen({
   const ratingLabel = teacher.reviews > 0
     ? teacher.rating.toLocaleString(lang === "en" ? "en-US" : "fa-IR", { maximumFractionDigits: 1 })
     : "—";
+
+  async function handleFollowToggle() {
+    if (followBusy) return;
+    setFollowBusy(true);
+    setFollowHint(null);
+    const optimistic = !following;
+    setFollowing(optimistic);
+    setFollowerCount((current) => (current === null ? optimistic ? 1 : 0 : Math.max(0, current + (optimistic ? 1 : -1))));
+    try {
+      const result = await toggleFollowTeacher(runtime, parsedId, optimistic);
+      setFollowing(result.following);
+      setFollowerCount(result.count);
+    } catch (toggleError) {
+      // برگشت خوش‌بینانه
+      setFollowing(!optimistic);
+      setFollowerCount((current) => (current === null ? null : Math.max(0, current + (optimistic ? -1 : 1))));
+      const status = (toggleError as { status?: number }).status;
+      setFollowHint(
+        status === 401
+          ? L("برای دنبال‌کردن استاد ابتدا وارد شوید")
+          : L("دنبال‌کردن ثبت نشد — دوباره تلاش کنید"),
+      );
+      if (status === 401) navigateApp("/login", config);
+    } finally {
+      setFollowBusy(false);
+    }
+  }
 
   return (
     <section className="vodda-screen" style={{ display: "grid", gap: spacing.xl }}>
@@ -278,6 +324,61 @@ export function LearnerTeacherProfileScreen({
           </div>
         ))}
       </div>
+
+      {/* E2 — دنبال‌کردن استاد + شمار دنبال‌کننده */}
+      <div className="vodda-enter vodda-enter-delay-1" style={{ display: "flex", alignItems: "stretch", gap: 8, minWidth: 0 }}>
+        <button
+          type="button"
+          onClick={() => void handleFollowToggle()}
+          disabled={followBusy}
+          aria-pressed={following}
+          className="vodda-tappable"
+          style={{
+            flex: 1,
+            minWidth: 0,
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 7,
+            padding: "11px 14px",
+            borderRadius: 14,
+            border: `1.5px solid ${following ? colors.olive100 : colors.gold}`,
+            background: following ? colors.olive50 : colors.goldBackground,
+            color: following ? colors.olive700 : colors.goldDark,
+            fontSize: 13,
+            fontWeight: 900,
+            cursor: followBusy ? "wait" : "pointer",
+            fontFamily: typography.fontFamily,
+          }}
+        >
+          <Icon name={following ? "check" : "plus"} size={15} stroke={2.2} />
+          {following ? L("دنبال‌شده") : L("دنبال‌کردن استاد")}
+        </button>
+        <span
+          title={L("شمار دنبال‌کننده")}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 5,
+            padding: "11px 13px",
+            borderRadius: 14,
+            border: `1px solid ${colors.border}`,
+            background: colors.surface,
+            color: colors.inkSecondary,
+            fontSize: 12,
+            fontWeight: 800,
+            flex: "0 0 auto",
+          }}
+        >
+          <Icon name="users" size={14} />
+          {followerCount === null ? "—" : localizedDigits(followerCount, lang === "en" ? "en" : "fa")}
+        </span>
+      </div>
+      {followHint ? (
+        <p role="alert" style={{ margin: 0, fontSize: 11.5, fontWeight: 700, color: colors.danger, textAlign: "center" }}>
+          {followHint}
+        </p>
+      ) : null}
 
       <section>
         <h3 style={{ fontSize: 16, fontWeight: 800, margin: 0, color: colors.ink }}>{L("دربارهٔ استاد")}</h3>
