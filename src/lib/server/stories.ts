@@ -14,6 +14,7 @@ import 'server-only';
 
 import { promises as fs } from 'fs';
 import path from 'path';
+import { getStoriesEnabled } from '@/lib/server/app-settings';
 
 export type StoryAuthor = {
   /** شناسهٔ رشته‌ای — ادمین: uid کاربر؛ استاد: شناسهٔ پروفایل استاد */
@@ -159,6 +160,9 @@ async function mutateStories(mutator: (data: StoriesData) => void): Promise<Stor
  * ترتیب ریل و لنگر نمایشگر غیرقطعی می‌شود). */
 export async function listActiveStories(): Promise<StoredStory[]> {
   const now = Date.now();
+  /* کلید ادمین — وقتی استوری‌ها غیرفعال شده باشد ریل عمومی خالی می‌شود (اپ و سایت هر دو). */
+  const enabled = await getStoriesEnabled();
+  if (!enabled) return [];
   if (cache && now - cache.at < CACHE_TTL_MS) {
     return [...cache.data.stories]
       .filter((story) => Date.parse(story.expires_at) > now)

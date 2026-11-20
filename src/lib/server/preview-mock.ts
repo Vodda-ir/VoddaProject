@@ -260,6 +260,29 @@ export function previewMockResponse(request: NextRequest, path: string[]): Respo
     completedMockSessions.add(Number(path[2]) || 0);
     return jsonResponse({ data: { ok: true } });
   }
+  /* E3+ — عملیات‌های ادمین در پیش‌نمایش (پیش از گارد GET) — پاسخ موفق نمونه */
+  if (request.method === 'POST' && head === 'support-staff' && path[1] === 'tickets' && path.length === 4 && path[3] === 'messages') {
+    const now = new Date().toISOString();
+    return jsonResponse({ data: { message: { id: Date.now() % 100_000_000, sender_id: 1, sender_name: 'مدیر سامانه وُدّا', sender_side: 'staff', kind: 'text', body: 'پاسخ نمونهٔ پیش‌نمایش', attachment_url: '', attachment_mime: '', duration_ms: 0, created_at: now } } });
+  }
+  if (request.method === 'POST' && head === 'support-staff' && path[1] === 'tickets' && path.length === 4 && (path[3] === 'status' || path[3] === 'assign')) {
+    return jsonResponse({ data: { ok: true } });
+  }
+  if (request.method === 'POST' && head === 'admin' && path[1] === 'teachers' && path.length === 4 && path[3] === 'review') {
+    return jsonResponse({ data: { ok: true } });
+  }
+  if (request.method === 'POST' && head === 'admin' && path[1] === 'withdrawals' && path.length === 4 && path[3] === 'process') {
+    return jsonResponse({ data: { ok: true } });
+  }
+  if (request.method === 'PUT' && head === 'admin' && path[1] === 'services' && path.length === 4 && (path[3] === 'approve' || path[3] === 'reject')) {
+    return jsonResponse({ data: { ok: true } });
+  }
+  if (request.method === 'PATCH' && head === 'admin' && path[1] === 'teachers' && path.length === 4 && path[3] === 'settings') {
+    return jsonResponse({ data: { verified: true, tier: 'grade2' } });
+  }
+  if (request.method === 'DELETE' && head === 'admin' && path[1] === 'reviews' && path.length === 3) {
+    return jsonResponse({ data: { ok: true } });
+  }
   if (request.method !== 'GET') return null;
 
   if (head === 'me' && path.length === 1) {
@@ -391,6 +414,163 @@ export function previewMockResponse(request: NextRequest, path: string[]): Respo
       { id: 1, name: 'مدیر سامانه', mobile: '09120000000', role: 'admin', city: 'قم', active: true, wallet: 0, created_at: '2024-05-01T00:00:00Z' },
     ].filter((row) => (role ? row.role === role : true)).filter((row) => (q ? row.name.includes(q) || row.mobile.includes(q) : true));
     return jsonResponse({ data: all, total: all.length });
+  }
+  /* E3+ — تحلیل غنی، جلسات، نظرات، خدمات، برداشت‌ها، بلاگ، عملیات و تنظیمات
+   * + پشتیبانی ادمین — دادهٔ نمونهٔ پیش‌نمایش تا ۱۲ بخش مدیریت درون‌اپی زنده دیده شوند. */
+  if (head === 'admin' && path[1] === 'analytics' && path.length === 2) {
+    const days = Math.min(90, Math.max(1, Number(request.nextUrl.searchParams.get('days') ?? '30')));
+    const now = Date.now();
+    const series = Array.from({ length: days }, (_, index) => {
+      const date = new Date(now - (days - 1 - index) * 86_400_000).toISOString().slice(5, 10);
+      const wave = Math.sin(index / 3.2) * 0.4 + 1;
+      return {
+        date,
+        new_users: Math.round(6 * wave + (index % 5)),
+        new_teachers: Math.round(wave),
+        sessions_created: Math.round(14 * wave + (index % 4)),
+        sessions_done: Math.round(11 * wave + (index % 3)),
+        charge: Math.round(2_400_000 * wave),
+        commission: Math.round(360_000 * wave),
+      };
+    });
+    return jsonResponse({
+      data: {
+        days,
+        series,
+        users: { total: 128, learners: 93, teachers: 34, admins: 1, active: 121, new_week: 18 },
+        sessions: { total: 512, pending: 9, confirmed: 14, done: 447, canceled: 42, rated: 388, minutes: 17_880 },
+        finance: { charge_volume: 182_400_000, commission: 27_360_000, earnings: 131_500_000, wallet_liability: 8_900_000, pending_withdrawals: 2, pending_withdrawal_amount: 1_650_000 },
+        rating: { avg: 4.6, count: 388 },
+        status_breakdown: [
+          { status: 'done', count: 447 },
+          { status: 'canceled', count: 42 },
+          { status: 'confirmed', count: 14 },
+          { status: 'pending', count: 9 },
+        ],
+        fields: [
+          { name: 'روخوانی و تجوید', count: 14 },
+          { name: 'حفظ قرآن', count: 9 },
+          { name: 'تفسیر موضوعی', count: 7 },
+          { name: 'قرائت و صوت', count: 4 },
+        ],
+        top_teachers: [
+          { id: 7, name: 'سمیرا کاظمی', avatar_url: '', field: 'حفظ قرآن', city: 'اصفهان', tier: 'international', rating: 4.9, reviews: 132, done_sessions: 84, earned: 24_800_000 },
+          { id: 41, name: 'محدثه راوند', avatar_url: '', field: 'روخوانی و تجوید', city: 'تهران', tier: 'grade2', rating: 4.8, reviews: 96, done_sessions: 61, earned: 18_200_000 },
+        ],
+        recent_users: [
+          { id: 95, name: 'عارف رضائی', avatar_url: '', role: 'learner', created_at: '2026-11-20T09:00:00Z' },
+          { id: 41, name: 'محدثه راوند', avatar_url: '', role: 'teacher', created_at: '2026-11-19T18:30:00Z' },
+        ],
+        recent_sessions: [
+          { id: 9001, title: 'روخوانی و تجوید — جلسهٔ پنجم', status: 'done', price: 145_000, scheduled_at: '2026-11-20T17:00:00Z', learner_name: 'عارف رضائی', learner_avatar: '', teacher_name: 'محدثه راوند' },
+          { id: 8990, title: 'حفظ سورهٔ یس', status: 'pending', price: 210_000, scheduled_at: '2026-11-21T10:00:00Z', learner_name: 'زهرا محمدی', learner_avatar: '', teacher_name: 'سمیرا کاظمی' },
+        ],
+      },
+    });
+  }
+  if (head === 'admin' && path[1] === 'sessions' && path.length === 2) {
+    const status = request.nextUrl.searchParams.get('status') ?? '';
+    const all = [
+      { id: 9001, service: 'روخوانی و تجوید — جلسهٔ پنجم', status: 'done', price: 145_000, duration: 60, scheduled_at: '2026-11-20T17:00:00Z', local_date: '۱۴۰۵/۰۹/۰۱', local_start: '۱۷:۰۰', local_end: '۱۸:۰۰', note: '', rated: true, learner: { id: 95, name: 'عارف رضائی', avatar_url: '' }, teacher: { user: { id: 41, name: 'محدثه راوند' } } },
+      { id: 8990, service: 'حفظ سورهٔ یس', status: 'pending', price: 210_000, duration: 45, scheduled_at: '2026-11-21T10:00:00Z', local_date: '۱۴۰۵/۰۹/۰۲', local_start: '۱۰:۰۰', local_end: '۱۰:۴۵', note: 'اولین جلسه', rated: false, learner: { id: 88, name: 'زهرا محمدی', avatar_url: '' }, teacher: { user: { id: 11, name: 'سمیرا کاظمی' } } },
+      { id: 8970, service: 'تفسیر موضوعی — آیهٔ نور', status: 'canceled', price: 180_000, duration: 60, scheduled_at: '2026-11-18T20:00:00Z', local_date: '۱۴۰۵/۰۸/۳۰', local_start: '۲۰:۰۰', local_end: '۲۱:۰۰', note: '', rated: false, learner: { id: 95, name: 'عارف رضائی', avatar_url: '' }, teacher: { user: { id: 15, name: 'عبدالرحمن شریفی' } } },
+    ].filter((row) => (status ? row.status === status : true));
+    return jsonResponse({ data: all, total: all.length });
+  }
+  if (head === 'admin' && path[1] === 'reviews' && path.length === 2) {
+    return jsonResponse({
+      data: [
+        { id: 311, session_id: 9001, teacher_id: 41, rating: 5, text: 'کلاس بسیار روان و با محتوای عالی بود، تجویدم بهتر شد.', created_at: '2026-11-20T19:00:00Z', learner_id: 95, learner_name: 'عارف رضائی', learner_avatar: '', teacher_name: 'محدثه راوند', teacher_field: 'روخوانی و تجوید' },
+        { id: 306, session_id: 8970, teacher_id: 15, rating: 2, text: 'زمان جلسه دو بار تغییر کرد و منتظر ماندم.', created_at: '2026-11-18T22:10:00Z', learner_id: 95, learner_name: 'عارف رضائی', learner_avatar: '', teacher_name: 'عبدالرحمن شریفی', teacher_field: 'تفسیر موضوعی' },
+      ],
+      total: 388,
+    });
+  }
+  if (head === 'admin' && path[1] === 'services' && path.length === 2) {
+    return jsonResponse({
+      data: [
+        { id: 401, title: 'روخوانی جزء ۳۰ با تصحیح', duration: 30, price: 120_000, teacher: { city: 'تهران', field: 'روخوانی', tag: 'تجوید', user: { name: 'محدثه راوند', avatar_url: '' } } },
+        { id: 402, title: 'مشاورهٔ حفظ — برنامه‌ریزی حفظ کل قرآن', duration: 60, price: 260_000, teacher: { city: 'اصفهان', field: 'حفظ قرآن', tag: '', user: { name: 'سمیرا کاظمی', avatar_url: '' } } },
+      ],
+    });
+  }
+  if (head === 'admin' && path[1] === 'withdrawals' && path.length === 2) {
+    const status = request.nextUrl.searchParams.get('status') ?? '';
+    const all = [
+      { id: 771, amount: 1_000_000, card: '6037-9975-****-1234', sheba: '', status: 'pending', created_at: '2026-11-19T14:00:00Z', user: { id: 11, name: 'سمیرا کاظمی', avatar_url: '' } },
+      { id: 769, amount: 650_000, card: '', sheba: 'IR1205700281800****', status: 'pending', created_at: '2026-11-18T09:30:00Z', user: { id: 41, name: 'محدثه راوند', avatar_url: '' } },
+      { id: 741, amount: 2_400_000, card: '', sheba: 'IR5205700281800****', status: 'paid', created_at: '2026-11-10T11:00:00Z', user: { id: 11, name: 'سمیرا کاظمی', avatar_url: '' } },
+    ].filter((row) => (status ? row.status === status : true));
+    return jsonResponse({ data: all, total: all.length });
+  }
+  if (head === 'admin' && path[1] === 'posts' && path.length === 2) {
+    return jsonResponse({
+      data: [
+        { id: 31, slug: 'fazilat-tilavat', title: 'فضیلت تلاوت قرآن کریم', excerpt: 'چرا تلاوت روزانه پیوند انسان با کلام وحی است؛ نگاهی به آیات و روایات.', cover_url: '', category: 'معارف', status: 'published', read_minutes: 6, views: 1240, published_at: '2026-10-05T08:00:00Z', created_at: '2026-10-05T08:00:00Z', updated_at: '2026-10-05T08:00:00Z' },
+        { id: 32, slug: 'ravesh-hafez', title: 'روش‌های عملی حفظ قرآن', excerpt: 'از تکرار هوشمند تا مرور پله‌ای — روشی آزموده برای حافظان.', cover_url: '', category: 'آموزش', status: 'draft', read_minutes: 9, views: 0, published_at: '', created_at: '2026-11-01T08:00:00Z', updated_at: '2026-11-01T08:00:00Z' },
+      ],
+      total: 2,
+    });
+  }
+  if (head === 'admin' && path[1] === 'post-stats' && path.length === 2) {
+    return jsonResponse({ data: { total: 2, published: 1, drafts: 1, views: 1240, categories: ['معارف', 'آموزش'] } });
+  }
+  if (head === 'admin' && path[1] === 'audit-logs' && path.length === 2) {
+    return jsonResponse({
+      data: [
+        { id: 1204, actor_id: 1, action: 'POST:/api/v1/admin/teachers/:id/review', target_type: 'teacher', target_id: 21, request_id: 'req_a41f9', metadata: '', created_at: '2026-11-20T12:40:00Z' },
+        { id: 1203, actor_id: 1, action: 'POST:/api/v1/admin/withdrawals/:id/process', target_type: 'withdrawal', target_id: 741, request_id: 'req_b8812', metadata: '', created_at: '2026-11-10T11:05:00Z' },
+        { id: 1201, actor_id: 1, action: 'PATCH:/api/v1/admin/users/:id/active', target_type: 'user', target_id: 41, request_id: 'req_c19aa', metadata: '', created_at: '2026-11-08T16:20:00Z' },
+      ],
+      total: 3,
+    });
+  }
+  if (head === 'admin' && path[1] === 'settings' && path.length === 2 && request.method === 'GET') {
+    return jsonResponse({ data: { settings: { support_email: 'info@vodda.app', support_phone: '02191008080', instagram: '', telegram: 'https://t.me/vodda', whatsapp: '', announcement_on: 'false', announcement_text: '', announcement_link: '', about_short: 'وُدّا، پلتفرم آنلاین آموزش قرآن کریم — از یادگیری تا تدریس.', google_client_id: '', google_client_secret: '', google_redirect_uri: '' } } });
+  }
+  if (head === 'admin' && path[1] === 'users' && path.length === 3) {
+    const detail = {
+      user: { id: Number(path[2]) || 95, name: 'عارف رضائی', mobile: '09121234567', role: 'learner', city: 'تهران', bio: '', active: true, wallet: 2_500_000, created_at: '2025-01-01T00:00:00Z' },
+      transactions: [
+        { id: 551, type: 'charge', title: 'شارژ از درگاه سامان‌سپ', amount: 3_000_000, created_at: '2026-11-15T10:00:00Z' },
+        { id: 540, type: 'session', title: 'پرداخت جلسهٔ روخوانی', amount: -145_000, created_at: '2026-11-20T16:55:00Z' },
+      ],
+      sessions: [
+        { id: 9001, service: 'روخوانی و تجوید — جلسهٔ پنجم', scheduled_at: '2026-11-20T17:00:00Z', duration: 60, price: 145_000, status: 'done' },
+      ],
+    };
+    return jsonResponse({ data: detail });
+  }
+  if (head === 'support-staff' && path[1] === 'tickets' && path.length === 2) {
+    const status = request.nextUrl.searchParams.get('status') ?? '';
+    const all = [
+      { id: 51, subject: 'خطا در پرداخت جلسه', status: 'open', unread_staff: 1, assigned_to: null, last_message_at: '2026-11-20T18:12:00Z', created_at: '2026-11-20T18:00:00Z', user: { id: 95, name: 'عارف رضائی', mobile: '09121234567', role: 'learner' }, assignee: null },
+      { id: 48, subject: 'تنظیم زمان‌های تدریس', status: 'answered', unread_staff: 0, assigned_to: 1, last_message_at: '2026-11-19T21:00:00Z', created_at: '2026-11-19T20:00:00Z', user: { id: 41, name: 'محدثه راوند', mobile: '09121234569', role: 'teacher' }, assignee: { id: 1, name: 'مدیر سامانه' } },
+    ].filter((row) => (status ? row.status === status : true));
+    return jsonResponse({ data: all, total: all.length });
+  }
+  if (head === 'support-staff' && path[1] === 'tickets' && path.length === 3) {
+    const ticketId = Number(path[2]) || 51;
+    const ticket = ticketId === 48
+      ? { id: 48, subject: 'تنظیم زمان‌های تدریس', status: 'answered', unread_staff: 0, assigned_to: 1, last_message_at: '2026-11-19T21:00:00Z', created_at: '2026-11-19T20:00:00Z', user: { id: 41, name: 'محدثه راوند', mobile: '09121234569', role: 'teacher' }, assignee: { id: 1, name: 'مدیر سامانه' } }
+      : { id: 51, subject: 'خطا در پرداخت جلسه', status: 'open', unread_staff: 1, assigned_to: null, last_message_at: '2026-11-20T18:12:00Z', created_at: '2026-11-20T18:00:00Z', user: { id: 95, name: 'عارف رضائی', mobile: '09121234567', role: 'learner' }, assignee: null };
+    const messages = [
+      { id: 901, sender_id: 95, sender_name: 'عارف رضائی', sender_side: 'user', kind: 'text', body: 'سلام، پرداخت جلسه انجام شد ولی جلسه تأیید نشد.', attachment_url: '', attachment_mime: '', duration_ms: 0, created_at: '2026-11-20T18:00:00Z' },
+      { id: 902, sender_id: 95, sender_name: 'عارف رضائی', sender_side: 'user', kind: 'text', body: ' رسید پرداخت را دارم، بررسی می‌کنید؟', attachment_url: '', attachment_mime: '', duration_ms: 0, created_at: '2026-11-20T18:12:00Z' },
+    ];
+    return jsonResponse({ data: { ticket, messages } });
+  }
+  /* ارسال پیام کارشناس در پیش‌نمایش — mock آن پیش از گارد GET انجام می‌شود */
+  if (head === 'admin' && path[1] === 'support' && path[2] === 'agents' && path.length === 3) {
+    return jsonResponse({ data: [{ id: 5, user_id: 15, user: { id: 15, name: 'عبدالرحمن شریفی', mobile: '09121234570', role: 'teacher' } }] });
+  }
+  if (head === 'admin' && path[1] === 'support' && path[2] === 'messages' && path.length === 3) {
+    return jsonResponse({
+      data: [
+        { id: 21, name: 'مریم حسینی', contact: 'maryam@example.com', message: 'برای دورهٔ حفظ سفارشی چطور ثبت‌نام کنم؟', status: 'new', created_at: '2026-11-17T10:00:00Z' },
+        { id: 20, name: 'سعید کاظمی', contact: '0912xxxxxxx', message: 'امکان جلسهٔ حضوری هم دارید؟', status: 'resolved', created_at: '2026-11-12T10:00:00Z' },
+      ],
+    });
   }
   return null;
 }
