@@ -6677,7 +6677,7 @@ a.blog-card:hover .blog-card-action {
 
 /* ═══ ۰.۷.۵ — ServiceCard با دو هویت جداگانه: بنر تصویر موضوعی + بدنه ═══
    هویت اول (vsc-popular): طلایی/گرم — خدمات پرکاربرد.
-   هویت دوم (vsc-free): زیتونی/نعنایی — خدمات رایگان با برچسب «رایگان».
+   هویت دوم (vsc-free): زیتونیِ برند — خدمات رایگان با برچسب «رایگان».
    هر دو کمی بزرگ‌تر از قبل و با تصویر زیبای متناسب با موضوع. */
 .vodda-service-card {
   position: relative;
@@ -6797,20 +6797,20 @@ a.blog-card:hover .blog-card-action {
   border-color: transparent;
   color: #fff;
 }
-/* ── هویت دوم: زیتونی/نعنایی — خدمات رایگان ── */
+/* ── هویت دوم: زیتونیِ برند — خدمات رایگان (هم‌راستا با تم خانه) ── */
 .vsc-free {
   width: 238px;
-  border-color: rgba(66, 138, 84, .45);
-  background: linear-gradient(180deg, #f6faf3 0%, #fff 72%);
-  box-shadow: 0 6px 18px rgba(46, 84, 54, .1);
+  border-color: rgba(94, 110, 67, .42);
+  background: linear-gradient(180deg, #f6f8ee 0%, #fff 72%);
+  box-shadow: 0 6px 18px rgba(46, 54, 34, .1);
 }
 .vsc-free:hover,
 .vsc-free:focus-visible {
-  border-color: rgba(66, 138, 84, .8);
-  box-shadow: 0 0 16px rgba(66, 138, 84, .26), 0 10px 24px rgba(46, 54, 34, .12);
+  border-color: rgba(94, 110, 67, .75);
+  box-shadow: 0 0 16px rgba(94, 110, 67, .24), 0 10px 24px rgba(46, 54, 34, .12);
 }
 .vsc-banner-free { height: 96px; }
-.vsc-banner-tint-free { background: linear-gradient(180deg, rgba(28, 50, 36, 0) 42%, rgba(28, 50, 36, .32) 100%); }
+.vsc-banner-tint-free { background: linear-gradient(180deg, rgba(46, 54, 34, 0) 42%, rgba(46, 54, 34, .32) 100%); }
 .vsc-freebadge {
   position: absolute;
   inset-block-start: 8px;
@@ -6825,7 +6825,7 @@ a.blog-card:hover .blog-card-action {
   font-size: 10.5px;
   font-weight: 800;
   letter-spacing: .2px;
-  box-shadow: 0 2px 8px rgba(46, 84, 54, .28);
+  box-shadow: 0 2px 8px rgba(76, 90, 54, .28);
 }
 .vsc-teacher {
   display: inline-flex;
