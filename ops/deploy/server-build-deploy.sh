@@ -77,18 +77,31 @@ else
 fi
 
 # ── گارد دیسک: build روی ۱۷GB فضا نمرهد ─────────────────────
+# (۱.۸.۳.۲) اصلاح گارد ۱.۸.۳.۱: prune --allِ همیشگی کش را کامل می‌زد و build سرد
+# از سقف رانر عبور می‌کرد (run دوم cancelled شد). اکنون پاک‌سازی لایه‌ای:
+#   همیشه: تگ‌های قدیمی :<sha> + ایمیج معلق + باندل تار قدیمی  (کش فعال حفظ می‌شود
+#   تا build سریع بماند)  —  در صورت کمبود، ارتقا به builder prune --all تا سقف سخت
+step "[2.5/6] Disk guard — stale sha tags + dangling prune (active cache kept for fast build)"
+before_mb=$(df -Pm / | awk 'NR==2{print $4}')
+docker image prune -f >/dev/null 2>&1 || true
+# rmi بدون ‎-f‎: اگر تگ دیگری (مثل :prod/:rollback-last) روی همان ایمیج باشد فقط
+# همان تگ برداشته می‌شود و اگر کانتینری در حال استفاده باشد خطا می‌دهد و رد می‌شود — ایمن
+for img in $(docker images --format '{{.Repository}}:{{.Tag}}' \
+             | grep -E '^vodda-(frontend|backend|monafaseh|monafaseh-migrator|bashar|bashar-migrator):[0-9a-f]{7,40}$' || true); do
+  docker rmi "$img" >/dev/null 2>&1 || true
+done
+rm -f "$BASE_DIR/vodda-docker-bundle.tar.gz" "$BASE_DIR/vodda-docker-bundle.tar.gz.uploading" >/dev/null 2>&1 || true
 free_mb=$(df -Pm / | awk 'NR==2{print $4}')
 if [ "$free_mb" -lt 2048 ]; then
-  warn "disk low (${free_mb}MB) — pruning inactive build cache and dangling images"
-  docker builder prune -f >/dev/null 2>&1 || true
-  docker image prune -f >/dev/null 2>&1 || true
+  warn "disk low after light prune (${free_mb}MB) — escalating to full build-cache prune (cold build, slower)"
+  docker builder prune --all -f >/dev/null 2>&1 || true
   free_mb=$(df -Pm / | awk 'NR==2{print $4}')
 fi
-if [ "$free_mb" -lt 1536 ]; then
-  fail "not enough disk for build (${free_mb}MB < 1536MB). Free space manually first."
+if [ "$free_mb" -lt 2048 ]; then
+  fail "not enough disk for build even after full prune (${free_mb}MB < 2048MB). Free space manually first."
   echo "DEPLOY_FAILED"; exit 1
 fi
-info "disk free: ${free_mb}MB"
+info "disk free: ${before_mb}MB → ${free_mb}MB after prune"
 
 # ── ۳) build ────────────────────────────────────────────────
 build_one() {
@@ -186,6 +199,17 @@ for i in 1 2 3 4 5; do
   [ "$i" = "5" ] && warn "public check through CDN not green yet (CDN cache?) — local health is ok"
   sleep 4
 done
+# ── پاک‌سازی پس از دیپلوی موفق (۱.۸.۳.۲) ────────────────────
+# فقط کش dangling + ایمیج معلق + تگ‌های قدیمی :<sha> — کش فعال حفظ می‌شود تا
+# build بعدی سریع بماند؛ در صورت کمبود دیسک، گارد ۲.۵/۶ دیپلوی بعدی ارتقا می‌دهد
+step "[6.5/6] Cleaning stale sha tags and dangling cache to keep server disk healthy"
+docker builder prune -f >/dev/null 2>&1 || true
+docker image prune -f >/dev/null 2>&1 || true
+for img in $(docker images --format '{{.Repository}}:{{.Tag}}' \
+             | grep -E '^vodda-(frontend|backend|monafaseh|monafaseh-migrator|bashar|bashar-migrator):[0-9a-f]{7,40}$' || true); do
+  docker rmi "$img" >/dev/null 2>&1 || true
+done
+
 log_result ok
 step "✓ DONE in $(( $(date +%s) - T0 ))s — vodda-frontend/backend:$SHORT_SHA"
 echo "DEPLOY_OK"
