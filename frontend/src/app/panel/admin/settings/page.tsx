@@ -10,6 +10,7 @@ import {
 import { StatCard } from '@/components/admin/AdminUI';
 import { getToken } from '@/lib/auth';
 import { toFaDigits } from '@/lib/persian';
+import { confirmDialog } from '@/lib/confirm';
 
 type SettingsMap = Record<string, string>;
 
@@ -82,6 +83,49 @@ export default function AdminSettings() {
   const [error, setError] = useState('');
   const [savedAt, setSavedAt] = useState<string>('');
   const token = getToken();
+
+  /* کلید استوری‌ها — فروشگاه محلی BFF (اپ و سایت هم‌زمان) */
+  const [storiesEnabled, setStoriesEnabled] = useState(true);
+  const [storiesBusy, setStoriesBusy] = useState(false);
+
+  const loadStories = useCallback(async () => {
+    try {
+      const response = await fetch('/api/backend/app-settings', { cache: 'no-store' });
+      const body = await response.json().catch(() => ({}));
+      if (response.ok) setStoriesEnabled(body.data?.stories_enabled !== false);
+    } catch {
+      /* fail-safe — پیش‌فرض فعال */
+    }
+  }, []);
+
+  useEffect(() => { void loadStories(); }, [loadStories]);
+
+  async function toggleStories() {
+    if (storiesBusy) return;
+    const next = !storiesEnabled;
+    if (
+      !next &&
+      !(await confirmDialog('استوری‌ها برای همه کاربران اپ پنهان می‌شود. ادامه می‌دهید؟', { danger: true, confirmLabel: 'غیرفعال‌کردن' }))
+    ) {
+      return;
+    }
+    setStoriesBusy(true);
+    setError('');
+    try {
+      const response = await fetch('/api/backend/app-settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ settings: { stories_enabled: next } }),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(body.error || 'ثبت کلید استوری‌ها انجام نشد.');
+      setStoriesEnabled(body.data?.stories_enabled !== false);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'ثبت کلید استوری‌ها انجام نشد.');
+    } finally {
+      setStoriesBusy(false);
+    }
+  }
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -207,6 +251,51 @@ export default function AdminSettings() {
         <div className="adm-skeleton" style={{ height: 320, borderRadius: 18 }} />
       ) : (
         <div style={{ display: 'grid', gap: 14 }}>
+          {/* کلید استوری‌ها — هم‌ارز پنل مدیریت اپ */}
+          <PanelSection
+            title="استوری‌های سامانه"
+            description="ریل استوری صفحهٔ خانهٔ اپ. با خاموش‌کردن این کلید، استوری‌های موجود برای همه پنهان و انتشار استوری جدید بسته می‌شود — در اپ و سایت هم‌زمان."
+          >
+            <div style={{ padding: '6px 18px 18px', display: 'grid', gap: 12 }}>
+              <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '13px 16px', borderRadius: 14, background: storiesEnabled ? 'var(--olive-100)' : 'var(--sand-50)', border: '1px solid var(--sand-150)' }}>
+                <span style={{ display: 'grid', gap: 4, minWidth: 0 }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12.5, fontWeight: 800 }}>
+                    <Icon name="sparkle" size={16} style={{ color: storiesEnabled ? 'var(--olive-700)' : 'var(--ink-4)' }} />
+                    فعال بودن استوری‌ها
+                  </span>
+                  <small style={{ color: 'var(--ink-3)', fontSize: 10.5, lineHeight: 1.9 }}>
+                    {storiesEnabled
+                      ? 'استوری برند و اساتید در ریل صفحهٔ خانه اپ دیده می‌شود و انتشار باز است.'
+                      : 'ریل استوری خالی نشان داده می‌شود و انتشار استوری برای همه بسته است. داده‌ها حذف نمی‌شوند.'}
+                  </small>
+                </span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={storiesEnabled}
+                  disabled={storiesBusy}
+                  onClick={() => void toggleStories()}
+                  style={{
+                    width: 44, height: 25, borderRadius: 999, border: 0, cursor: storiesBusy ? 'wait' : 'pointer',
+                    background: storiesEnabled ? 'var(--olive-600)' : 'var(--sand-200)',
+                    position: 'relative', transition: 'background .18s ease', flexShrink: 0, opacity: storiesBusy ? 0.7 : 1,
+                  }}
+                >
+                  <span style={{
+                    position: 'absolute', top: 3,
+                    insetInlineStart: storiesEnabled ? 22 : 3,
+                    width: 19, height: 19, borderRadius: '50%', background: '#fff',
+                    boxShadow: '0 1px 4px rgba(0,0,0,.2)',
+                    transition: 'inset-inline-start .18s ease',
+                  }} />
+                </button>
+              </label>
+              <small style={{ color: 'var(--ink-4)', fontSize: 10 }}>
+                این کلید بلافاصله اعمال می‌شود و جدا از «ثبت تغییرات» پایین صفحه است.
+              </small>
+            </div>
+          </PanelSection>
+
           {FIELDS.map((section) => (
             <PanelSection key={section.group} title={section.group} description={section.description}>
               <div style={{ padding: '6px 18px 18px', display: 'grid', gap: 14 }}>
