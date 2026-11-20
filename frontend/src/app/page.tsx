@@ -1,11 +1,12 @@
 import { api, type Teacher } from '@/lib/api';
+import { redirect } from 'next/navigation';
 import { enrichTeacherPayload, sortTeacherRowsTier1First } from '@/lib/server/tier1';
 import { freeServiceCards, popularServiceCards } from '@/lib/home/discover';
 import type { CatalogCategory } from '@/lib/category';
 import {
   Nav, Hero, VerseOfDayCard, CategoryTiles, FeaturedTeachers, PopularServices,
-  FreeServicesSection, RecommendedTeachers, HowItWorks, WhyVodda, BecomeTeacher,
-  DownloadApp, Footer,
+  FreeServicesSection, RecommendedTeachers, BanoTeachers, HowItWorks, WhyVodda,
+  BecomeTeacher, DownloadApp, Footer,
 } from '@/components/web/sections';
 
 /* ۱.ب — فهرست کامل استادان برای موتور کشف: برتر + رایگان + پرکاربرد + خانه‌های دسته. */
@@ -31,6 +32,9 @@ async function getCatalogCategories(): Promise<CatalogCategory[]> {
 }
 
 export default async function Home() {
+  /* پیش‌نمایش محلی (فقط dev، با VODDA_PREVIEW_MOCK=1) — ریشه مستقیم به اپ می‌رود */
+  if (process.env.VODDA_PREVIEW_MOCK === '1') redirect('/app');
+
   const [{ teachers, unavailable }, categories] = await Promise.all([getTeachers(), getCatalogCategories()]);
 
   /* موتور کشف مشترک (src/lib/home/discover.ts) — همان منطق اپ؛ پارتی کامل. */
@@ -49,6 +53,8 @@ export default async function Home() {
       <PopularServices services={popular} />
       <FreeServicesSection services={freeCards} />
       <RecommendedTeachers limit={7} />
+      {/* ۱.ب.۳ — «اساتید بانو» — پایانی‌ترین بخش کشف استاد؛ هویت رز متمایز، هم‌گامی با اپ */}
+      <BanoTeachers teachers={tier1First} unavailable={unavailable} />
       <HowItWorks />
       <WhyVodda />
       <BecomeTeacher />

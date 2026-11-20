@@ -12,6 +12,7 @@ import { RoleModeSheet } from "../auth/RoleModeSheet";
 import { getTeacherCeremonyInbox } from "../ceremony/api";
 import { getTeacherDispatchInbox } from "../dispatch/api";
 import { NotificationsBell } from "../notifications/NotificationsBell";
+import { fetchStoriesEnabled } from "../stories/api";
 import { TeacherStoriesPanel } from "../stories/TeacherStoriesPanel";
 import { CityLocator } from "../home/CityLocator";
 import {
@@ -402,6 +403,8 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
   const [user, setUser] = useState<AuthUser | null>(null);
   /* ۱.الف.۶ — امتیاز/سطح استاد؛ best-effort و خارج از مسیر خطای داشبورد */
   const [score, setScore] = useState<TeacherScoreSnapshot | null>(null);
+  /* ۱.ب.۳ — کلید استوری‌ها؛ خاموش = پنل استوری داشبورد استاد هم پنهان می‌شود */
+  const [storiesEnabled, setStoriesEnabled] = useState(false);
   // باگ refresh-loop: پاسخ دیرهنگام شمارندهٔ فراخوان نباید با دادهٔ کهنه بازنویسی شود.
   const loadGeneration = useRef(0);
 
@@ -412,6 +415,21 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
         if (!cancelled) setUser(sessionUser);
       })
       .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [runtime]);
+
+  /* ۱.ب.۳ — کلید استوری‌ها (fail-safe؛ خطا = پنهان) — پنل استوری فقط با کلید روشن */
+  useEffect(() => {
+    let cancelled = false;
+    fetchStoriesEnabled(runtime)
+      .then((enabled) => {
+        if (!cancelled) setStoriesEnabled(enabled);
+      })
+      .catch(() => {
+        if (!cancelled) setStoriesEnabled(false);
+      });
     return () => {
       cancelled = true;
     };
@@ -537,8 +555,9 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
 
       <CityLocator />
 
-      {/* E2 — استوری‌های من: انتشار تصویری (فشرده‌سازی خودکار) فقط برای دنبال‌کننده‌ها */}
-      <TeacherStoriesPanel />
+      {/* E2 — استوری‌های من: انتشار تصویری (فشرده‌سازی خودکار) فقط برای دنبال‌کننده‌ها
+       * ۱.ب.۳ — کلید خاموش = سیستم استوری پنهان؛ پنل استاد هم بدون آن رندر نمی‌شود. */}
+      {storiesEnabled ? <TeacherStoriesPanel /> : null}
 
       {loading ? (
         <LoadingState label={L("در حال دریافت داشبورد استاد…")} style={{ minHeight: 180 }} />

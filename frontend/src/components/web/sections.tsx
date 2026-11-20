@@ -906,6 +906,43 @@ export function RecommendedTeachers({ limit = 7 }: { limit?: number }) {
   );
 }
 
+/* ═════════ ۱.ب.۳ — اساتید بانو (وب) — هم‌گامی با کاروسل اپ ═════════
+ * درخواست مدیر: بخش پایانی صفحهٔ اصلی برای استادان بانو با هویت رنگی متمایز
+ * (رز/گل‌مُشکی به‌جای طلایی برند). همان ردیف اسکرول اساتید برتر؛ فیلتر female. */
+export function BanoTeachers({ teachers, unavailable = false }: { teachers: Teacher[]; unavailable?: boolean }) {
+  const bano = useMemo(() => teachers.filter((teacher) => teacher.female), [teachers]);
+
+  return (
+    <section className="landing-section landing-bano" aria-label="اساتید بانو">
+      <div className="public-container">
+        <div className="landing-section-head">
+          <SectionTitle
+            kicker="اساتید بانو وُدّا"
+            title="قرآن‌آموزی در محضر بانوان استاد"
+            sub="استادان بانوی وُدّا در یک نگاه — بانوانی که در محضر خانم‌ها آرام‌تر می‌آموزند، این‌جا انتخاب می‌کنند."
+            center={false}
+          />
+          <WebBtn variant="ghost" icon="arrowL" href="/search?female=true">مشاهده همه اساتید بانو</WebBtn>
+        </div>
+
+        {bano.length ? (
+          <div className="vodda-teachers-frame vodda-teachers-frame-bano">
+            <div className="vodda-hscroll vodda-teacher-row">
+              {bano.slice(0, 10).map((teacher) => <WebTeacherCard key={teacher.id} teacher={teacher} />)}
+            </div>
+          </div>
+        ) : (
+          <div className="landing-empty-state" role="status">
+            <span><Icon name="heart" size={27} /></span>
+            <strong>{unavailable ? 'ارتباط با فهرست استادان برقرار نیست' : 'هنوز استاد بانویی منتشر نشده'}</strong>
+            <p>{unavailable ? 'چند لحظه بعد دوباره تلاش کنید.' : 'پس از تأیید نخستین پروفایل‌ها، این بخش به‌صورت خودکار تکمیل می‌شود.'}</p>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 export function WhyVodda() {
   const items = [
     ['shield' as const, 'پروفایل بررسی‌شده', 'استاد پیش از تأیید مدیر در نتایج عمومی نمایش داده نمی‌شود.'],

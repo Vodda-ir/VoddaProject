@@ -15,12 +15,14 @@ import path from 'path';
 
 export type AppSettingsData = {
   version: 1;
-  /** کلید استوری‌ها — وقتی false باشد ریل استوری اپ خالی و انتشار بسته می‌شود. */
+  /** کلید استوری‌ها — وقتی false باشد ریل استوری اپ خالی و انتشار بسته می‌شود.
+   * ۱.ب.۳ — به درخواست مدیر «فعلاً پنهان»: پیش‌فرض سامانه اکنون غیرفعال است و
+   * کلید از پنل مدیریت (اپ و وب) هر زمان قابل بازگشایی است. */
   stories_enabled: boolean;
 };
 
 function emptySettings(): AppSettingsData {
-  return { version: 1, stories_enabled: true };
+  return { version: 1, stories_enabled: false };
 }
 
 const SETTINGS_PATH = path.join(process.cwd(), 'db', 'vodda-app-settings.json');
@@ -37,7 +39,8 @@ async function readFileRaw(): Promise<AppSettingsData> {
     if (!parsed || typeof parsed !== 'object') return emptySettings();
     return {
       version: 1,
-      stories_enabled: parsed.stories_enabled !== false,
+      /* ۱.ب.۳ — کلید غایب = پنهان (پیش‌فرض جدید)؛ خرابی هرگز «فعال» را جعل نمی‌کند. */
+      stories_enabled: parsed.stories_enabled === true,
     };
   } catch {
     return emptySettings();
@@ -62,10 +65,14 @@ async function mutateSettings(mutator: (data: AppSettingsData) => void): Promise
   return run;
 }
 
-/** کلید استوری‌ها — پیش‌فرض فعال؛ خرابی فایل هرگز «غیرفعال» را جعل نمی‌کند. */
+/** کلید استوری‌ها — پیش‌فرض پنهان (۱.ب.۳)؛ کلید فقط از مدیریت سامانه روشن می‌شود. */
 export async function getStoriesEnabled(): Promise<boolean> {
-  const data = await readFileRaw();
-  return data.stories_enabled;
+  try {
+    const data = await readFileRaw();
+    return data.stories_enabled;
+  } catch {
+    return false;
+  }
 }
 
 export async function setStoriesEnabled(enabled: boolean): Promise<AppSettingsData> {

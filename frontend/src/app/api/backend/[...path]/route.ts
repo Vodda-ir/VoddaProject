@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isSameOriginMutation } from '@/lib/server/same-origin';
+import { getStoriesEnabled, readAppSettings, setStoriesEnabled } from '@/lib/server/app-settings';
 import { listTier1Flags, setTier1Flag } from '@/lib/server/overlay';
 import {
   createStory,
@@ -169,6 +170,35 @@ async function handleFreeServices(request: NextRequest): Promise<Response> {
   }
 }
 
+/* ═══ تنظیمات درون‌اپی (کلید استوری‌ها) — مسیر محلی BFF ═══
+ * GET عمومی است (اپ و سایت برای پنهان‌کردن ریل استوری به آن نگاه می‌کنند)؛
+ * فقط PUT ادمین‌سازی‌شده است. پاسخ GET فقط یک کلید بولی دارد — هیچ دادهٔ حساسی نیست. */
+
+async function handleAppSettings(request: NextRequest): Promise<Response> {
+  const token = request.cookies.get('vodda_token')?.value;
+  const isAdmin = tokenRole(token) === 'admin';
+
+  if (request.method === 'GET') {
+    const settings = await readAppSettings();
+    return NextResponse.json({ data: settings }, { headers: { 'cache-control': 'no-store' } });
+  }
+
+  if (request.method === 'PUT') {
+    if (!isAdmin) {
+      return NextResponse.json({ error: 'دسترسی فقط برای ادمین مجاز است' }, { status: 403 });
+    }
+    const body = (await request.json().catch(() => ({}))) as { settings?: unknown };
+    const changes = body.settings && typeof body.settings === 'object' ? (body.settings as Record<string, unknown>) : {};
+    if ('stories_enabled' in changes) {
+      await setStoriesEnabled(changes.stories_enabled === true);
+    }
+    const settings = await readAppSettings();
+    return NextResponse.json({ data: settings }, { headers: { 'cache-control': 'no-store' } });
+  }
+
+  return NextResponse.json({ error: 'not found' }, { status: 404 });
+}
+
 /* ═════════ استوری‌های مدیر‌محور + دنبال‌کردن اساتید (E2) — مسیرهای محلی BFF ═════════
  * انتشار: ادمین (برند) و استادها (فقط تصویر، ۲۴ ساعت) — با هویت تأییدشده نزد بک‌اند (/me).
  * دید استوری استاد: فقط دنبال‌کننده‌های او (و خودش)؛ استوری برند برای همه.
@@ -265,8 +295,12 @@ async function verifiedSession(token: string | undefined): Promise<VerifiedSessi
 async function handleStories(request: NextRequest, path: string[]): Promise<Response> {
   const token = request.cookies.get('vodda_token')?.value;
 
-  /* GET /stories — برند برای همه؛ استادی‌ها فقط برای دنبال‌کننده‌ها و صاحب استوری */
+  /* GET /stories — برند برای همه؛ استادی‌ها فقط برای دنبال‌کننده‌ها و صاحب استوری
+   * ۱.ب.۳ — کلید استوری‌ها خاموش = فهرست همیشه خالی؛ سامانهٔ استوری برای همه پنهان است. */
   if (request.method === 'GET' && path.length === 1) {
+    if (!(await getStoriesEnabled())) {
+      return NextResponse.json({ data: [], me: null }, { headers: { 'cache-control': 'no-store' } });
+    }
     const active = await listActiveStories();
     const session = await verifiedSession(token);
     const follows = session ? await getFollowsOf(session.uid) : [];
@@ -305,6 +339,10 @@ async function handleStories(request: NextRequest, path: string[]): Promise<Resp
     }
     if (session.role !== 'admin' && session.role !== 'teacher') {
       return NextResponse.json({ error: 'انتشار استوری فقط برای مدیر سامانه و اساتید مجاز است' }, { status: 403 });
+    }
+    /* کلید ادمین — وقتی استوری‌ها خاموش شده باشند انتشار بسته است. */
+    if (!(await getStoriesEnabled())) {
+      return NextResponse.json({ error: 'انتشار استوری در حال حاضر غیرفعال است — از مدیریت سامانه فعال کنید' }, { status: 403 });
     }
     const length = Number(request.headers.get('content-length') ?? '0');
     if (Number.isFinite(length) && length > 2_600_000) {
@@ -428,6 +466,7 @@ async function proxy(request: NextRequest, context: RouteContext): Promise<Respo
 
   /* مسیرهای محلی overlay/score/کشف — بدون تماس با بک‌اند */
   if (path[0] === 'teacher-flags') return handleTeacherFlags(request, path);
+  if (path[0] === 'app-settings') return handleAppSettings(request);
   if (path[0] === 'score') return handleScore(request, path);
   /* E1/E2 — استوری‌ها و دنبال‌کردن — مسیر محلی؛ در اپ نیتیو مسیر وجود ندارد و caller جایگزین می‌کند */
   if (path[0] === 'stories') return handleStories(request, path);

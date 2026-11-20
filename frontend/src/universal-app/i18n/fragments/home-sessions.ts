@@ -16,6 +16,10 @@ const f: Record<string, string> = {
   "استادهای جلسه‌های قبلی تو": "Teachers from your past sessions",
   "رزرو دوباره": "Book again",
   "مشاهدهٔ همه": "View all",
+  /* ۱.ب.۳ — کاروسل «اساتید بانو» */
+  "اساتید بانو": "Lady Teachers",
+  "قرآن‌آموزی در محضر استادان بانوی وُدّا": "Quran learning with Vodda's lady teachers",
+  "در حال بارگذاری اساتید بانو": "Loading lady teachers",
   "اساتید منتخب وُدّا": "Vodda featured teachers",
   "هر بار منتخبی متفاوت از توانمندترین استادان — بر پایهٔ عملکرد، رتبه و فعالیت":
     "A different pick of our most capable teachers every time — based on performance, rating and activity",
