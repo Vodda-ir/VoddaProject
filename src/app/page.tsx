@@ -46,15 +46,15 @@ export default async function Home() {
     <div style={{ background: 'var(--sand-50)' }}>
       <Nav />
       <Hero />
-      {/* ۱.ب.۲ — ترتیب بخش‌های کشف: آیه ← خانه‌های دسته ← اساتید برتر ← پرکاربرد ← رایگان ← پیشنهادی */}
+      {/* ۱.ب.۲ — ترتیب بخش‌های کشف: آیه ← خانه‌های دسته ← اساتید برتر ← پرکاربرد ← اساتید بانو ← رایگان ← پیشنهادی */}
       <VerseOfDayCard />
       <CategoryTiles categories={categories} teachers={teachers} />
       <FeaturedTeachers teachers={tier1First.slice(0, 8)} unavailable={unavailable} />
       <PopularServices services={popular} />
+      {/* ۱.ب.۴ — «اساتید بانو» بالای خدمات رایگان — هم‌گامی با ترتیب تازهٔ اپ */}
+      <BanoTeachers teachers={tier1First} unavailable={unavailable} />
       <FreeServicesSection services={freeCards} />
       <RecommendedTeachers limit={7} />
-      {/* ۱.ب.۳ — «اساتید بانو» — پایانی‌ترین بخش کشف استاد؛ هویت رز متمایز، هم‌گامی با اپ */}
-      <BanoTeachers teachers={tier1First} unavailable={unavailable} />
       <HowItWorks />
       <WhyVodda />
       <BecomeTeacher />

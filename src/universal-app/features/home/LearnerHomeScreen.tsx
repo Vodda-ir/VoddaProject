@@ -1495,16 +1495,16 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
       {/* ۱.ب.۲ — بخش ۵ خدمات پرکاربرد */}
       <PopularServicesGrid services={popular} loading={discoverLoading} wide={wide} config={config} />
 
-      {/* ۱.۱ — بخش ۶ خدمات رایگان — کارت نمایشی بزرگ ثابت */}
-      <FreeServicesShowcase cards={freeCards} loading={teachersLoading} runtime={runtime} config={config} wide={wide} />
-
-      {/* ۱.ب.۳ — کاروسل «اساتید بانو» — پایانی‌ترین بخش صفحهٔ اصلی؛ پالت رز مستقل */}
+      {/* ۱.ب.۴ — کاروسل «اساتید بانو» — بالای خدمات رایگان (جابه‌جایی به درخواست مدیر)؛ پالت رز مستقل */}
       <BanoTeachersCarousel
         teachers={banoTeachers}
         loading={teachersLoading}
         wide={wide}
         config={config}
       />
+
+      {/* ۱.۱ — بخش ۶ خدمات رایگان — کارت نمایشی بزرگ ثابت؛ اکنون پایان‌بخش خانه */}
+      <FreeServicesShowcase cards={freeCards} loading={teachersLoading} runtime={runtime} config={config} wide={wide} />
 
       {/* ۱.۱ — بخش ۸ footer: نوار پایین اپ (MobileAppShell) */}
 

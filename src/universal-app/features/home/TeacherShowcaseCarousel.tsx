@@ -15,7 +15,9 @@ type ShowcaseIconName = Parameters<typeof Icon>[0]["name"];
 /* ═══ ۱.ب.۳ — موتور مشترک کروسل استادها ═══
  * نسخهٔ تعمیم‌یافتهٔ «پیشنهاد وُدّا» (۱.۱) برای پشتیبانی از چند هویت رنگی:
  *  • طلایی/کرم — «پیشنهاد وُدّا» (برترین + پیشنهادی)
- *  • رز/گل‌مُشکی — «اساتید بانو» (پایانی‌ترین بخش صفحهٔ اصلی)
+ *  • رز/گل‌مُشکی — «اساتید بانو» (بالای خدمات رایگان)
+ * ۱.ب.۴ — شعار برجستهٔ سرِ کاروسل: پراپ slogan اختیاری — نخستین ردیف قاب،
+ * پیش از سربرگ و کادرها؛ با نشان رنگی همان هویت و خط‌کش گرادیانی زیرش.
  * سازوکار یکسان: اسلاید ۱ کارت مربعی در موبایل (با پیش‌نمای لبه) و ۲ کارت در
  * دسکتاپ؛ فلش + نقطه‌گذار + چرخش خودکار ۴.۵ ثانیه با توقف هنگام تعامل کاربر.
  * کارت‌ها همان کارت یکدست TeacherCard (۰.۹.۲) هستند. */
@@ -73,6 +75,7 @@ export function TeacherShowcaseCarousel({
   loadingLabel,
   title,
   subtitle,
+  slogan,
   icon,
   seeAllHref,
 }: {
@@ -85,6 +88,8 @@ export function TeacherShowcaseCarousel({
   loadingLabel: string;
   title: string;
   subtitle: string;
+  /** ۱.ب.۴ — شعار برجستهٔ سرِ کاروسل؛ کادرها پس از آن به نمایش درمی‌آیند. */
+  slogan?: string;
   icon: ShowcaseIconName;
   seeAllHref: string;
 }) {
@@ -229,6 +234,37 @@ export function TeacherShowcaseCarousel({
           gap: 12,
         }}
       >
+        {/* ۱.ب.۴ — شعار برجستهٔ سرِ کاروسل — کادرها پس از شعار به نمایش درمی‌آیند */}
+        {slogan ? (
+          <div style={{ display: "grid", justifyItems: "center", gap: 5, minWidth: 0 }}>
+            <span aria-hidden="true" style={{ color: theme.accent, display: "grid", placeItems: "center", lineHeight: 1 }}>
+              <Icon name={icon} size={14} stroke={2} />
+            </span>
+            <p
+              style={{
+                margin: 0,
+                fontSize: isWide ? 17 : 15.5,
+                fontWeight: 900,
+                lineHeight: 1.9,
+                textAlign: "center",
+                color: theme.titleColor,
+                maxWidth: "100%",
+              }}
+            >
+              {L(slogan)}
+            </p>
+            <span
+              aria-hidden="true"
+              style={{
+                width: isWide ? 160 : 112,
+                height: 3,
+                borderRadius: 999,
+                background: `linear-gradient(90deg, transparent, ${theme.accent}, transparent)`,
+              }}
+            />
+          </div>
+        ) : null}
+
         {/* سربرگ کروسل: نشان رنگی + عنوان + کنش‌ها */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
           <span

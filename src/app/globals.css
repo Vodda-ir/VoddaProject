@@ -6649,6 +6649,32 @@ a.blog-card:hover .blog-card-action {
   background: linear-gradient(90deg, transparent, rgba(168, 74, 99, .5), rgba(205, 139, 161, .55), transparent);
 }
 
+/* ═══ ۱.ب.۴ — شعار برجستهٔ سرِ کاروسل‌های استاد (برتر/بانو) — کادرها پس از شعار ═══ */
+.vodda-carousel-slogan {
+  margin: 2px auto 16px;
+  max-width: 680px;
+  text-align: center;
+  font-size: 17px;
+  font-weight: 900;
+  line-height: 1.9;
+  color: var(--olive-800, #43502e);
+}
+.vodda-carousel-slogan::after {
+  content: "";
+  display: block;
+  width: 160px;
+  height: 3px;
+  margin: 8px auto 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, rgba(191, 149, 64, .65), transparent);
+}
+.vodda-carousel-slogan-bano {
+  color: #8a4257;
+}
+.vodda-carousel-slogan-bano::after {
+  background: linear-gradient(90deg, transparent, rgba(168, 74, 99, .6), transparent);
+}
+
 /* ═══ ۰.۷.۵ — ServiceCard با دو هویت جداگانه: بنر تصویر موضوعی + بدنه ═══
    هویت اول (vsc-popular): طلایی/گرم — خدمات پرکاربرد.
    هویت دوم (vsc-free): زیتونی/نعنایی — خدمات رایگان با برچسب «رایگان».
@@ -6933,6 +6959,10 @@ a.blog-card:hover .blog-card-action {
   .vsc-teacher { color: #c9d1b4; }
   .vsc-duration { color: #a9bb8e; }
   .vsc-cta-free { background: linear-gradient(180deg, var(--olive-600, #7d9060), var(--olive-700, #5e6e43)); color: #fff; }
+  .vodda-carousel-slogan { color: #e6ebd8; }
+  .vodda-carousel-slogan::after { background: linear-gradient(90deg, transparent, rgba(226, 201, 138, .55), transparent); }
+  .vodda-carousel-slogan-bano { color: #eec9d4; }
+  .vodda-carousel-slogan-bano::after { background: linear-gradient(90deg, transparent, rgba(205, 139, 161, .55), transparent); }
   .vcat-hero { background: linear-gradient(150deg, rgba(255, 255, 255, .05), rgba(255, 255, 255, .02)); border-color: rgba(214, 220, 196, .16); box-shadow: none; }
   .vcat-title { color: #e6ebd8; }
   .vcat-sub { color: #aab3a0; }

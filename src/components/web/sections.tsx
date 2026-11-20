@@ -698,12 +698,16 @@ export function FeaturedTeachers({ teachers, unavailable = false }: { teachers: 
         </div>
 
         {visible.length ? (
-          /* ۰.۷.۵ — کادر افقی کم‌رنگ و جذاب دور ردیف اساتید (مثل اسنپ‌داکتر)؛ کارت‌ها داخل آن به چپ اسکرول می‌شوند */
-          <div className="vodda-teachers-frame">
-            <div className="vodda-hscroll vodda-teacher-row">
-              {visible.slice(0, 10).map((teacher) => <WebTeacherCard key={teacher.id} teacher={teacher} />)}
+          <>
+            {/* ۱.ب.۴ — شعار برجستهٔ سرِ کاروسل — کادرها پس از شعار به نمایش درمی‌آیند */}
+            <p className="vodda-carousel-slogan">قرآن را از برترین‌ها بیاموزید</p>
+            {/* ۰.۷.۵ — کادر افقی کم‌رنگ و جذاب دور ردیف اساتید (مثل اسنپ‌داکتر)؛ کارت‌ها داخل آن به چپ اسکرول می‌شوند */}
+            <div className="vodda-teachers-frame">
+              <div className="vodda-hscroll vodda-teacher-row">
+                {visible.slice(0, 10).map((teacher) => <WebTeacherCard key={teacher.id} teacher={teacher} />)}
+              </div>
             </div>
-          </div>
+          </>
         ) : (
           <div className="landing-empty-state" role="status">
             <span><Icon name="users" size={27} /></span>
@@ -926,11 +930,15 @@ export function BanoTeachers({ teachers, unavailable = false }: { teachers: Teac
         </div>
 
         {bano.length ? (
-          <div className="vodda-teachers-frame vodda-teachers-frame-bano">
-            <div className="vodda-hscroll vodda-teacher-row">
-              {bano.slice(0, 10).map((teacher) => <WebTeacherCard key={teacher.id} teacher={teacher} />)}
+          <>
+            {/* ۱.ب.۴ — شعار برجستهٔ سرِ کاروسل — کادرها پس از شعار به نمایش درمی‌آیند */}
+            <p className="vodda-carousel-slogan vodda-carousel-slogan-bano">قرآن را با مهرِ بانوانِ وُدّا بیاموزید</p>
+            <div className="vodda-teachers-frame vodda-teachers-frame-bano">
+              <div className="vodda-hscroll vodda-teacher-row">
+                {bano.slice(0, 10).map((teacher) => <WebTeacherCard key={teacher.id} teacher={teacher} />)}
+              </div>
             </div>
-          </div>
+          </>
         ) : (
           <div className="landing-empty-state" role="status">
             <span><Icon name="heart" size={27} /></span>

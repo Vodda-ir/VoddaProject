@@ -9,7 +9,8 @@ import type { Teacher } from "../teachers/types";
  * قاب طلایی و گرادیان کرم. از ۱.ب.۳ موتور مشترک TeacherShowcaseCarousel با
  * هویت طلایی برند استفاده می‌کند؛ اسلاید ۱ کارت مربعی در موبایل (با پیش‌نمای
  * لبه) و ۲ کارت در دسکتاپ؛ فلش + نقطه‌گذار + چرخش خودکار ۴.۵ ثانیه با توقف
- * هنگام تعامل کاربر. کارت‌ها همان کارت یکدست TeacherCard (۰.۹.۲) هستند. */
+ * هنگام تعامل کاربر. کارت‌ها همان کارت یکدست TeacherCard (۰.۹.۲) هستند.
+ * ۱.ب.۴ — شعار برجستهٔ سرِ کاروسل پیش از کادرها. */
 
 export function VoddaPicksCarousel({
   teachers,
@@ -33,6 +34,7 @@ export function VoddaPicksCarousel({
       loadingLabel="در حال بارگذاری پیشنهادها"
       title="پیشنهاد وُدّا"
       subtitle="برگزیدهٔ برترین و پیشنهادی‌ترین استادها برای شما"
+      slogan="قرآن را از برترین‌ها بیاموزید"
       icon="sparkle"
       seeAllHref="/search"
     />
