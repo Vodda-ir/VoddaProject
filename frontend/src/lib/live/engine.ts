@@ -37,6 +37,18 @@ const DEFAULT_ICE: RTCIceServer[] = [
     username: 'vodda',
     credential: 'Vd-turn-2026!x7Kq',
   },
+  {
+    // TURN پشتیبان رایگان — اگر TURN اصلی پاسخ نداد (قطعی سرور یا شبکهٔ
+    // سخت اپراتور/CGNAT)، ICE خودکار روی این می‌رود و تماس وصل می‌ماند.
+    // رفع «با مجوز هم کار نمی‌کند»: ریشه، پیوند یک‌طرفه به یک TURN واحد بود.
+    urls: [
+      'turn:openrelay.metered.ca:80',
+      'turn:openrelay.metered.ca:80?transport=tcp',
+      'turns:openrelay.metered.ca:443',
+    ],
+    username: 'openrelayproject',
+    credential: 'openrelayproject',
+  },
 ];
 
 export class LiveEngine {

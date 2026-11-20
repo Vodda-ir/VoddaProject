@@ -212,6 +212,10 @@ export function LiveRoom({
   const chatBodyRef = useRef<HTMLDivElement | null>(null);
   const myIdRef = useRef<number>(myUserId);
   const peerSignaledRef = useRef(false);
+  /** ورود خودکار — مثل مونافسه: با نخستین استریم مجاز مستقیم داخل جلسه. */
+  const autoJoinDoneRef = useRef(false);
+  /** کاربر مسیر بدون‌رسانه را انتخاب کرده — ورود خودکار لغو می‌شود. */
+  const autoJoinCancelRef = useRef(false);
 
   const isTeacherSide = role !== "learner";
 
@@ -474,6 +478,17 @@ export function LiveRoom({
     },
     [handleEvent, stopPreviewMeter, role, runtime, sessionId, isTeacherSide, audioOnly],
   );
+
+  /* ---------- ورود خودکار — «اصلا مجوز نخواه» ----------
+   * مجوز از قبل granted باشد: بدون صفحهٔ پیش‌آزمون و بدون دکمهٔ دوم، با همان
+   * نخستین استریمِ مجاز مستقیم داخل تماس می‌رویم (تجربهٔ مونافسه و حتی روان‌تر).
+   * حالت prompt: پنجرهٔ مجوز یک‌بار خودکار باز می‌شود و بلافاصله ورود خودکار.
+   * فقط حالت «مسدود» راهنمای رفع انسداد می‌آید و ورود خودکار نمی‌شود. */
+  useEffect(() => {
+    if (!previewStream || autoJoinDoneRef.current || autoJoinCancelRef.current) return;
+    autoJoinDoneRef.current = true;
+    void joinClassroom(true);
+  }, [previewStream, joinClassroom]);
 
   /* ---------- تلاش دوبارهٔ رسانه در میانهٔ کلاس ---------- */
   const retryLiveMedia = useCallback(async () => {
@@ -821,7 +836,10 @@ export function LiveRoom({
             </button>
             <button
               type="button"
-              onClick={() => void joinClassroom(false)}
+              onClick={() => {
+                autoJoinCancelRef.current = true;
+                void joinClassroom(false);
+              }}
               style={{
                 padding: "12px 0",
                 borderRadius: 16,
