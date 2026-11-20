@@ -5,8 +5,8 @@ import { freeServiceCards, popularServiceCards } from '@/lib/home/discover';
 import type { CatalogCategory } from '@/lib/category';
 import {
   Nav, Hero, VerseOfDayCard, CategoryTiles, FeaturedTeachers, PopularServices,
-  FreeServicesSection, RecommendedTeachers, HowItWorks, WhyVodda, BecomeTeacher,
-  DownloadApp, Footer,
+  FreeServicesSection, RecommendedTeachers, BanoTeachers, HowItWorks, WhyVodda,
+  BecomeTeacher, DownloadApp, Footer,
 } from '@/components/web/sections';
 
 /* ۱.ب — فهرست کامل استادان برای موتور کشف: برتر + رایگان + پرکاربرد + خانه‌های دسته. */
@@ -53,6 +53,8 @@ export default async function Home() {
       <PopularServices services={popular} />
       <FreeServicesSection services={freeCards} />
       <RecommendedTeachers limit={7} />
+      {/* ۱.ب.۳ — «اساتید بانو» — پایانی‌ترین بخش کشف استاد؛ هویت رز متمایز، هم‌گامی با اپ */}
+      <BanoTeachers teachers={tier1First} unavailable={unavailable} />
       <HowItWorks />
       <WhyVodda />
       <BecomeTeacher />

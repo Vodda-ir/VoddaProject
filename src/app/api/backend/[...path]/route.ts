@@ -170,13 +170,13 @@ async function handleFreeServices(request: NextRequest): Promise<Response> {
   }
 }
 
-/* ═══ تنظیمات درون‌اپی (کلید استوری‌ها) — مسیر محلی BFF، فقط ادمین ═══ */
+/* ═══ تنظیمات درون‌اپی (کلید استوری‌ها) — مسیر محلی BFF ═══
+ * GET عمومی است (اپ و سایت برای پنهان‌کردن ریل استوری به آن نگاه می‌کنند)؛
+ * فقط PUT ادمین‌سازی‌شده است. پاسخ GET فقط یک کلید بولی دارد — هیچ دادهٔ حساسی نیست. */
 
 async function handleAppSettings(request: NextRequest): Promise<Response> {
   const token = request.cookies.get('vodda_token')?.value;
-  if (tokenRole(token) !== 'admin') {
-    return NextResponse.json({ error: 'دسترسی فقط برای ادمین مجاز است' }, { status: 403 });
-  }
+  const isAdmin = tokenRole(token) === 'admin';
 
   if (request.method === 'GET') {
     const settings = await readAppSettings();
@@ -184,6 +184,9 @@ async function handleAppSettings(request: NextRequest): Promise<Response> {
   }
 
   if (request.method === 'PUT') {
+    if (!isAdmin) {
+      return NextResponse.json({ error: 'دسترسی فقط برای ادمین مجاز است' }, { status: 403 });
+    }
     const body = (await request.json().catch(() => ({}))) as { settings?: unknown };
     const changes = body.settings && typeof body.settings === 'object' ? (body.settings as Record<string, unknown>) : {};
     if ('stories_enabled' in changes) {
@@ -292,8 +295,12 @@ async function verifiedSession(token: string | undefined): Promise<VerifiedSessi
 async function handleStories(request: NextRequest, path: string[]): Promise<Response> {
   const token = request.cookies.get('vodda_token')?.value;
 
-  /* GET /stories — برند برای همه؛ استادی‌ها فقط برای دنبال‌کننده‌ها و صاحب استوری */
+  /* GET /stories — برند برای همه؛ استادی‌ها فقط برای دنبال‌کننده‌ها و صاحب استوری
+   * ۱.ب.۳ — کلید استوری‌ها خاموش = فهرست همیشه خالی؛ سامانهٔ استوری برای همه پنهان است. */
   if (request.method === 'GET' && path.length === 1) {
+    if (!(await getStoriesEnabled())) {
+      return NextResponse.json({ data: [], me: null }, { headers: { 'cache-control': 'no-store' } });
+    }
     const active = await listActiveStories();
     const session = await verifiedSession(token);
     const follows = session ? await getFollowsOf(session.uid) : [];

@@ -66,8 +66,9 @@ import { searchTeachers, fetchRecommendedTeachers } from "../teachers/api";
 import { VoddaPicksCarousel } from "./VoddaPicksCarousel";
 import { StoryRail, markStorySeen } from "../stories/StoryRail";
 import { StoryViewer } from "../stories/StoryViewer";
-import { fetchStoriesFeed, type Story } from "../stories/api";
+import { fetchStoriesEnabled, fetchStoriesFeed, type Story } from "../stories/api";
 import { StoryComposer } from "../stories/StoryComposer";
+import { BanoTeachersCarousel } from "./BanoTeachersCarousel";
 import type { Teacher } from "../teachers/types";
 import { nearestCity } from "@/lib/cities";
 import {
@@ -1087,7 +1088,8 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
   /* ۱.ب — دادهٔ کشف */
   const [catalogGroups, setCatalogGroups] = useState<CatalogCategory[]>([]);
   const [recommended, setRecommended] = useState<Teacher[] | null>(null);
-  /* E1/E2 — استوری‌ها (برند + اساتید دنبال‌شده) */
+  /* E1/E2 — استوری‌ها (برند + اساتید دنبال‌شده) — ۱.ب.۳: پیش‌فرض پنهان تا کلید مدیریت روشن شود */
+  const [storiesEnabled, setStoriesEnabled] = useState(false);
   const [stories, setStories] = useState<Story[]>([]);
   const [storiesLoading, setStoriesLoading] = useState(true);
   const [storyViewerIndex, setStoryViewerIndex] = useState<number | null>(null);
@@ -1179,8 +1181,19 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
     };
   }, [runtime, reloadKey]);
 
-  /* E1 — استوری‌های زندهٔ مدیر (fail-safe؛ خطا = بدون ریل) */
+  /* E1 — استوری‌های زندهٔ مدیر (fail-safe؛ خطا = بدون ریل)
+   * ۱.ب.۳ — نخست کلید استوری‌ها خوانده می‌شود؛ خاموش = هیچ تماسی برای فید زده نمی‌شود. */
   const loadStories = useCallback(async () => {
+    const enabled = await fetchStoriesEnabled(runtime);
+    if (!enabled) {
+      setStoriesEnabled(false);
+      setStories([]);
+      setStoryMyAuthorId("");
+      setStoryMyRole("");
+      setStoriesLoading(false);
+      return;
+    }
+    setStoriesEnabled(true);
     setStoriesLoading(true);
     const feed = await fetchStoriesFeed(runtime);
     setStories(feed.stories);
@@ -1316,6 +1329,13 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
     return merged;
   }, [topTeachers, recommended]);
 
+  /* ۱.ب.۳ — «اساتید بانو» — بانوان استاد وُدّا با همان اولویت درجه ۱/هم‌شهری؛
+   * حداکثر ۸ اسلاید تا کروسل پایانی صفحه سبک بماند. */
+  const banoTeachers = useMemo(
+    () => withCityPriority(teachers.filter((teacher) => teacher.female)).slice(0, 8),
+    [teachers, withCityPriority],
+  );
+
   const firstName = user?.name?.trim().split(/\s+/)[0] || "دوست";
   const today = todayLabel();
   const discoverLoading = teachersLoading || (catalogGroups.length === 0 && teachers.length === 0);
@@ -1436,16 +1456,19 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
         </div>
       </header>
 
-      {/* E1/E2 — بخش ② استوری‌های وُدّا — کاشی جدا برای هر استوری خودم + کاشی هر نویسنده */}
-      <StoryRail
-        stories={stories}
-        loading={storiesLoading}
-        myRole={storyMyRole || user?.role || ""}
-        myAuthorId={storyMyAuthorId}
-        seenRefreshKey={storySeenKey}
-        onOpen={(index) => setStoryViewerIndex(index)}
-        onCompose={() => setStoryComposerOpen(true)}
-      />
+      {/* E1/E2 — بخش ② استوری‌های وُدّا — کاشی جدا برای هر استوری خودم + کاشی هر نویسنده
+       * ۱.ب.۳ — کلید خاموش = سیستم استوری کامل پنهان (ریل، نمایشگر و انتشار). */}
+      {storiesEnabled ? (
+        <StoryRail
+          stories={stories}
+          loading={storiesLoading}
+          myRole={storyMyRole || user?.role || ""}
+          myAuthorId={storyMyAuthorId}
+          seenRefreshKey={storySeenKey}
+          onOpen={(index) => setStoryViewerIndex(index)}
+          onCompose={() => setStoryComposerOpen(true)}
+        />
+      ) : null}
 
       {/* ۱.ب.۲ — بخش ③ خانه‌های شش‌گانهٔ دسته‌بندی */}
       <CategoryTileGrid tiles={tiles} loading={discoverLoading} wide={wide} />
@@ -1475,6 +1498,14 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
       {/* ۱.۱ — بخش ۶ خدمات رایگان — کارت نمایشی بزرگ ثابت */}
       <FreeServicesShowcase cards={freeCards} loading={teachersLoading} runtime={runtime} config={config} wide={wide} />
 
+      {/* ۱.ب.۳ — کاروسل «اساتید بانو» — پایانی‌ترین بخش صفحهٔ اصلی؛ پالت رز مستقل */}
+      <BanoTeachersCarousel
+        teachers={banoTeachers}
+        loading={teachersLoading}
+        wide={wide}
+        config={config}
+      />
+
       {/* ۱.۱ — بخش ۸ footer: نوار پایین اپ (MobileAppShell) */}
 
       {/* ۱.ب.۱ — sheet انتخاب شهر (موقعیت من / جستجو / ۱۲ پرتردد / همهٔ شهرها) */}
@@ -1497,8 +1528,8 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
         onClose={() => setRoleSheetOpen(false)}
       />
 
-      {/* E1/E2 — نمایشگر تمام‌صفحهٔ استوری + فرم انتشار */}
-      {storyViewerIndex !== null && stories.length > 0 ? (
+      {/* E1/E2 — نمایشگر تمام‌صفحهٔ استوری + فرم انتشار — فقط وقتی کلید استوری روشن است */}
+      {storiesEnabled && storyViewerIndex !== null && stories.length > 0 ? (
         <StoryViewer
           stories={stories}
           startIndex={storyViewerIndex}
@@ -1518,17 +1549,19 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
         />
       ) : null}
 
-      <StoryComposer
-        open={storyComposerOpen}
-        runtime={runtime}
-        mode={storyMyRole === "teacher" ? "teacher" : "admin"}
-        onClose={() => setStoryComposerOpen(false)}
-        onPublished={() => {
-          setStoryComposerOpen(false);
-          setStorySeenKey((value) => value + 1);
-          void loadStories();
-        }}
-      />
+      {storiesEnabled ? (
+        <StoryComposer
+          open={storyComposerOpen}
+          runtime={runtime}
+          mode={storyMyRole === "teacher" ? "teacher" : "admin"}
+          onClose={() => setStoryComposerOpen(false)}
+          onPublished={() => {
+            setStoryComposerOpen(false);
+            setStorySeenKey((value) => value + 1);
+            void loadStories();
+          }}
+        />
+      ) : null}
     </div>
   );
 }

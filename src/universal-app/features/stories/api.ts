@@ -89,6 +89,19 @@ export async function fetchStoriesFeed(runtime: PlatformRuntime): Promise<Storie
   }
 }
 
+/* ۱.ب.۳ — کلید استوری‌ها (پنل مدیریت): خوانش عمومی GET /app-settings.
+ * خطا = پنهان (fail-safe به سمت خاموش) تا با خرابی، استوری برای کسی نمایش داده نشود. */
+export async function fetchStoriesEnabled(runtime: PlatformRuntime): Promise<boolean> {
+  try {
+    const response = await runtime.request<ApiEnvelope & { data?: { stories_enabled?: unknown } }>(
+      "/app-settings",
+    );
+    return response.data?.stories_enabled === true;
+  } catch {
+    return false;
+  }
+}
+
 /** فهرست کامل برای مدیر — شامل منقضی‌ها؛ خطا بالادست مدیریت می‌شود. */
 export async function fetchAllStoriesAdmin(runtime: PlatformRuntime): Promise<Story[]> {
   const response = await runtime.request<ApiEnvelope>("/stories/all");
