@@ -77,18 +77,28 @@ else
 fi
 
 # ── گارد دیسک: build روی ۱۷GB فضا نمرهد ─────────────────────
+# (۱.۸.۳.۱) درس دیپلوی شکست‌خوردهٔ d04efb9: مسیر prod پس از هر دیپلوی کش بیلد
+# را پاک نمی‌کرد و ایمیج‌های قدیمی تگ‌شدهٔ :<sha> انباشته می‌شدند تا دیسک هنگام
+# copy لایه‌ها «no space left on device» بدهد. اکنون پیش از هر build همیشه:
+#   ۱) کش بیلد کامل (builder prune --all)  ۲) ایمیج‌های معلق  ۳) تگ‌های قدیمی :<sha>
+#   ۴) باندل تار قدیمی/نیمه‌کارهٔ مسیر domains  — و سپس سقف سخت ۲۰۴۸MB
+step "[2.5/6] Disk guard — always prune build cache, dangling images and stale sha tags"
+before_mb=$(df -Pm / | awk 'NR==2{print $4}')
+docker builder prune --all -f >/dev/null 2>&1 || true
+docker image prune -f >/dev/null 2>&1 || true
+# rmi بدون ‎-f‎: اگر تگ دیگری (مثل :prod/:rollback-last) روی همان ایمیج باشد فقط
+# همان تگ برداشته می‌شود و اگر کانتینری در حال استفاده باشد خطا می‌دهد و رد می‌شود — ایمن
+for img in $(docker images --format '{{.Repository}}:{{.Tag}}' \
+             | grep -E '^vodda-(frontend|backend|monafaseh|monafaseh-migrator|bashar|bashar-migrator):[0-9a-f]{7,40}$' || true); do
+  docker rmi "$img" >/dev/null 2>&1 || true
+done
+rm -f "$BASE_DIR/vodda-docker-bundle.tar.gz" "$BASE_DIR/vodda-docker-bundle.tar.gz.uploading" >/dev/null 2>&1 || true
 free_mb=$(df -Pm / | awk 'NR==2{print $4}')
 if [ "$free_mb" -lt 2048 ]; then
-  warn "disk low (${free_mb}MB) — pruning inactive build cache and dangling images"
-  docker builder prune -f >/dev/null 2>&1 || true
-  docker image prune -f >/dev/null 2>&1 || true
-  free_mb=$(df -Pm / | awk 'NR==2{print $4}')
-fi
-if [ "$free_mb" -lt 1536 ]; then
-  fail "not enough disk for build (${free_mb}MB < 1536MB). Free space manually first."
+  fail "not enough disk for build even after full prune (${free_mb}MB < 2048MB). Free space manually first."
   echo "DEPLOY_FAILED"; exit 1
 fi
-info "disk free: ${free_mb}MB"
+info "disk free: ${before_mb}MB → ${free_mb}MB after prune"
 
 # ── ۳) build ────────────────────────────────────────────────
 build_one() {
@@ -186,6 +196,11 @@ for i in 1 2 3 4 5; do
   [ "$i" = "5" ] && warn "public check through CDN not green yet (CDN cache?) — local health is ok"
   sleep 4
 done
+# ── پاک‌سازی کش بیلد پس از دیپلوی موفق (۱.۸.۳.۱) ────────────
+# دیسک سرور کوچک است؛ کش هر build چند گیگ فضا می‌گیرد — مانند مسیر bashar
+step "[6.5/6] Cleaning build cache to keep server disk healthy"
+docker builder prune --all -f >/dev/null 2>&1 || true
+
 log_result ok
 step "✓ DONE in $(( $(date +%s) - T0 ))s — vodda-frontend/backend:$SHORT_SHA"
 echo "DEPLOY_OK"
