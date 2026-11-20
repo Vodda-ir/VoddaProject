@@ -20,6 +20,9 @@ const f: Record<string, string> = {
   "اساتید بانو": "Lady Teachers",
   "قرآن‌آموزی در محضر استادان بانوی وُدّا": "Quran learning with Vodda's lady teachers",
   "در حال بارگذاری اساتید بانو": "Loading lady teachers",
+  /* ۱.ب.۴ — شعار برجستهٔ سرِ کاروسل‌ها */
+  "قرآن را از برترین‌ها بیاموزید": "Learn the Quran from the finest teachers",
+  "قرآن را با مهرِ بانوانِ وُدّا بیاموزید": "Learn the Quran with the warmth of Vodda's lady teachers",
   "اساتید منتخب وُدّا": "Vodda featured teachers",
   "هر بار منتخبی متفاوت از توانمندترین استادان — بر پایهٔ عملکرد، رتبه و فعالیت":
     "A different pick of our most capable teachers every time — based on performance, rating and activity",

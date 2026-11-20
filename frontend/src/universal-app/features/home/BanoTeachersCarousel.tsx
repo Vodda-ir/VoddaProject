@@ -4,7 +4,8 @@ import type { UniversalAppConfig } from "../../config";
 import { TeacherShowcaseCarousel, type TeacherShowcaseTheme } from "./TeacherShowcaseCarousel";
 import type { Teacher } from "../teachers/types";
 
-/* ═══ ۱.ب.۳ — «اساتید بانو» — کاروسل اختصاصی بانوان استاد در پایان صفحهٔ اصلی ═══
+/* ═══ ۱.ب.۳ — «اساتید بانو» — کاروسل اختصاصی بانوان استاد، بالای خدمات رایگان ═══
+ * ۱.ب.۴ — به درخواست مدیر بالای «خدمات رایگان» می‌آید و شعار برجسته دارد.
  * درخواست مدیر: کاروسی زیبا مشابه «اساتید برتر» ولی با رنگ کاملاً متمایز.
  * هویت رز/گل‌مُشکی (در تقابل با طلایی/کرم برند): قاب blush، نشان قلبِ رز،
  * نقطه‌گذار و فلش‌های رز — همهٔ سازوکارها (اسلاید مربعی، پیش‌نمای لبه، فلش،
@@ -49,6 +50,7 @@ export function BanoTeachersCarousel({
       loadingLabel="در حال بارگذاری اساتید بانو"
       title="اساتید بانو"
       subtitle="قرآن‌آموزی در محضر استادان بانوی وُدّا"
+      slogan="قرآن را با مهرِ بانوانِ وُدّا بیاموزید"
       icon="heart"
       seeAllHref="/search?female=true"
     />
