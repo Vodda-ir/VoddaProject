@@ -34,6 +34,9 @@ type Handler struct {
         Blog         *usecase.BlogUsecase
         Notif        domain.NotificationRepository
         Live         *LiveHub
+        // BBB drives the BigBlueButton classroom (اشتراک بیگ‌بلوباتن ایران);
+        // nil keeps the feature off without touching the built-in live room.
+        BBB *usecase.BbbUsecase
         // FrontendBase is the public frontend origin the Google login callback
         // redirects into (normally FRONTEND_BASE_URL).
         FrontendBase string

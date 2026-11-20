@@ -86,6 +86,7 @@ func main() {
         )
 
         sessionUsecase := usecase.NewSessionUsecase(sessionRepo, teacherRepo, userRepo, walletRepo, notifRepo, cfg, financialRepo).WithBookingGateway(paymentUsecase)
+        bbbUsecase := usecase.NewBbbUsecase(sessionUsecase, userRepo, settingsRepo, cfg)
         dispatchUsecase := usecase.NewDispatchUsecase(
                 repository.NewDispatchRepository(db), teacherRepo, userRepo, sessionUsecase, notifRepo,
         )
@@ -117,6 +118,7 @@ func main() {
                         }),
                 Notif:   notifRepo,
                 Live:    delivery.NewLiveHub(),
+                BBB:     bbbUsecase,
                 Blog:    usecase.NewBlogUsecase(postRepo),
                 Payment: paymentUsecase,
                 FrontendBase: cfg.FrontendBaseURL,

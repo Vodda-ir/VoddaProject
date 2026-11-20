@@ -46,6 +46,8 @@ type Config struct {
 
         Google GoogleConfig
 
+        BBB BBBConfig
+
         PlatformCommissionPercent int
 }
 
@@ -98,6 +100,15 @@ type GoogleConfig struct {
         ClientID     string
         ClientSecret string
         RedirectURI  string
+}
+
+// BBBConfig holds the BigBlueButton classroom endpoint (اشتراک بیگ‌بلوباتن
+// ایران). Empty APIURL keeps the integration off; the admin-panel settings
+// (bbb_api_url / bbb_shared_secret — live-editable, secret masked) override
+// these env values at runtime. The shared secret never leaves the backend.
+type BBBConfig struct {
+        APIURL       string
+        SharedSecret string
 }
 
 // Load reads configuration from the environment, applying development-safe defaults.
@@ -167,6 +178,10 @@ func Load() *Config {
                         // The callback must match the redirect URI registered in
                         // the Google Cloud console for this client id.
                         RedirectURI: getEnv("GOOGLE_OAUTH_REDIRECT_URI", "https://api.vodda.ir/api/v1/auth/google/callback"),
+                },
+                BBB: BBBConfig{
+                        APIURL:       getOptionalEnv("BBB_API_URL"),
+                        SharedSecret: getOptionalEnv("BBB_SHARED_SECRET"),
                 },
                 PlatformCommissionPercent: getInt("PLATFORM_COMMISSION_PERCENT", 15),
         }

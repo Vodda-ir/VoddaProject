@@ -197,6 +197,27 @@ export async function announceSessionStart(runtime: PlatformRuntime, sessionId: 
   await runtime.request<ApiEnvelope>(`/sessions/${sessionId}/announce`, { method: "POST" });
 }
 
+/** اطلاعات اتصال به کلاس بیگ‌بلوباتن — URL امضاشده فقط سمت سرور ساخته می‌شود. */
+export type BbbJoinData = {
+  joinUrl: string;
+  meetingId: string;
+  role: "moderator" | "viewer";
+};
+
+export async function getBbbJoin(runtime: PlatformRuntime, sessionId: number): Promise<BbbJoinData> {
+  assertValidSessionId(sessionId);
+  const response = await runtime.request<ApiEnvelope>(`/bbb/sessions/${sessionId}/join`);
+  const row = record(response.data);
+  const joinUrl = text(row?.join_url);
+  if (!joinUrl) throw new Error("لینک ورود به بیگ‌بلوباتن دریافت نشد.");
+  const rawRole = text(row?.role, "viewer");
+  return {
+    joinUrl,
+    meetingId: text(row?.meeting_id),
+    role: rawRole === "moderator" ? "moderator" : "viewer",
+  };
+}
+
 /** آیا پیام، ارسالِ خودِ نمایشگر است؟ (پیام استاد با user_id او ثبت می‌شود) */
 export function isMyMessage(message: SessionMessageData, detail: SessionDetailData): boolean {
   if (detail.viewerRole === "teacher" || detail.viewerRole === "admin") {

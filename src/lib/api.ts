@@ -115,6 +115,17 @@ export type SessionListItem = {
   teacher?: Teacher;
 };
 
+/* ── بیگ‌بلوباتن — کلاس زنده روی زیرساخت اشتراک BBB ایران ── */
+export type BbbJoinInfo = {
+  join_url: string;
+  meeting_id: string;
+  role: 'moderator' | 'viewer';
+};
+export type BbbStatusInfo = {
+  running: boolean;
+  participants: number;
+};
+
 export type Withdrawal = {
   id: number;
   teacher_id?: number;
@@ -432,6 +443,17 @@ export const api = {
     }),
   teacherCompleteSession: (token: string, id: number) =>
     request<{ data: SessionListItem }>(`/teacher/sessions/${id}/complete`, {
+      method: 'POST',
+      headers: auth(token),
+    }),
+  /* ── بیگ‌بلوباتن — کلاس زنده روی زیرساخت اشتراک BBB ایران؛ URL امضاشده
+     فقط از سمت سرور ساخته می‌شود و Secret هرگز به کلاینت نمی‌رسد ── */
+  bbbJoin: (token: string, id: number) =>
+    request<{ data: BbbJoinInfo }>(`/bbb/sessions/${id}/join`, { headers: auth(token) }),
+  bbbStatus: (token: string, id: number) =>
+    request<{ data: BbbStatusInfo }>(`/bbb/sessions/${id}/status`, { headers: auth(token) }),
+  bbbEnd: (token: string, id: number) =>
+    request<{ data: { ended: boolean } }>(`/bbb/sessions/${id}/end`, {
       method: 'POST',
       headers: auth(token),
     }),
