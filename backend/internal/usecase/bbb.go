@@ -58,6 +58,10 @@ type bbbAPIError struct{ MessageKey string }
 
 func (e *bbbAPIError) Error() string { return "bigbluebutton api failed: " + e.MessageKey }
 
+// Is surfaces every provider-side rejection as ErrBBBUnavailable in the HTTP
+// layer (502 + retry guidance) instead of an opaque internal error.
+func (e *bbbAPIError) Is(target error) bool { return target == domain.ErrBBBUnavailable }
+
 // bbbXMLResponse is the minimal parse of every BBB XML answer this usecase
 // consumes. attendeeCount lives inside getMeetingInfo's meetingInfo element.
 type bbbXMLResponse struct {
@@ -159,9 +163,13 @@ func (uc *BbbUsecase) ensureMeeting(ctx context.Context, apiURL, secret string, 
         meetingID := bbbMeetingID(session.ID)
         running, err := uc.call(ctx, apiURL, secret, "isMeetingRunning", url.Values{"meetingID": {meetingID}})
         if err != nil {
-                return err
-        }
-        if running.Running == "true" {
+                // سرویس‌دهنده برای اتاقِ ساخته‌نشده notFound برمی‌گرداند (نه
+                // running=false) — یعنی هنوز کلاسی باز نشده و باید ساخت.
+                var apiErr *bbbAPIError
+                if !errors.As(err, &apiErr) || apiErr.MessageKey != "notFound" {
+                        return err
+                }
+        } else if running.Running == "true" {
                 return nil
         }
         title := strings.TrimSpace(session.Title)
@@ -205,18 +213,26 @@ func (uc *BbbUsecase) Join(ctx context.Context, callerID uint, callerRole domain
                 return nil, err
         }
         role := "VIEWER"
-        if roomRole == domain.RoleTeacher || roomRole == domain.RoleAdmin {
+        moderatorPW, attendeePW := bbbPasswords(bbbMeetingID(sessionID), secret)
+        if roomRole == domain.RoleTeacher || domain.RoleAdmin == roomRole {
                 role = "MODERATOR"
+        }
+        roomPassword := attendeePW
+        if role == "MODERATOR" {
+                roomPassword = moderatorPW
         }
         fullName := strings.TrimSpace(user.Name)
         if fullName == "" {
                 fullName = "کاربر وُدّا"
         }
+        // سرویس‌دهندهٔ اشتراک، join را فقط با password می‌پذیرد (درخواستِ role-only
+        // با خطای داخلی لاراول پاسخ می‌دهد)؛ رمز اتاقِ متناسب با نقش امضا می‌شود:
+        // استاد/مدیر MODERATOR و قرآن‌آموز VIEWER (قابل ارتقا درون اتاق).
         joinParams := url.Values{
                 "meetingID":    {bbbMeetingID(sessionID)},
                 "fullName":     {fullName},
                 "userID":       {fmt.Sprintf("u%d", callerID)},
-                "role":         {role},
+                "password":     {roomPassword},
                 "joinViaHtml5": {"true"},
                 "redirect":     {"true"},
         }
@@ -240,7 +256,12 @@ func (uc *BbbUsecase) Status(ctx context.Context, callerID uint, callerRole doma
         meetingID := bbbMeetingID(sessionID)
         runningResp, err := uc.call(ctx, apiURL, secret, "isMeetingRunning", url.Values{"meetingID": {meetingID}})
         if err != nil {
-                return nil, err
+                var apiErr *bbbAPIError
+                if !errors.As(err, &apiErr) || apiErr.MessageKey != "notFound" {
+                        return nil, err
+                }
+                // notFound — اتاق هنوز ساخته یا اجرا نشده است؛ پاسخ آرام ادامه بده.
+                return map[string]any{"running": false, "participants": 0}, nil
         }
         running := runningResp.Running == "true"
         participants := 0

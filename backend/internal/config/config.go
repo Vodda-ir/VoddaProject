@@ -103,9 +103,11 @@ type GoogleConfig struct {
 }
 
 // BBBConfig holds the BigBlueButton classroom endpoint (اشتراک بیگ‌بلوباتن
-// ایران). Empty APIURL keeps the integration off; the admin-panel settings
-// (bbb_api_url / bbb_shared_secret — live-editable, secret masked) override
-// these env values at runtime. The shared secret never leaves the backend.
+// ایران). The subscription's own endpoint is baked in as the code-level
+// fallback so the online classroom works out-of-the-box; BBB_API_URL /
+// BBB_SHARED_SECRET env vars override it, and the admin-panel settings
+// (bbb_api_url / bbb_shared_secret — live-editable, secret masked) win over
+// both at runtime. The shared secret never leaves the backend.
 type BBBConfig struct {
         APIURL       string
         SharedSecret string
@@ -180,8 +182,12 @@ func Load() *Config {
                         RedirectURI: getEnv("GOOGLE_OAUTH_REDIRECT_URI", "https://api.vodda.ir/api/v1/auth/google/callback"),
                 },
                 BBB: BBBConfig{
-                        APIURL:       getOptionalEnv("BBB_API_URL"),
-                        SharedSecret: getOptionalEnv("BBB_SHARED_SECRET"),
+                        // اشتراک بیگ‌بلوباتن ایران به‌عنوان پیش‌فرض در کد نشسته است تا
+                        // کلاس آنلاین بدون هیچ تنظیمی کار کند؛ متغیرهای محیطی
+                        // BBB_API_URL / BBB_SHARED_SECRET و سپس تنظیمات پنل مدیریت
+                        // (bbb_api_url / bbb_shared_secret) روی آن اولویت دارند.
+                        APIURL:       getEnv("BBB_API_URL", "https://app.bigbluebutton.me/bigbluebutton/i8batno3/api"),
+                        SharedSecret: getEnv("BBB_SHARED_SECRET", "mfsttg9umi8skos88gk8gs8gwswcs8s"),
                 },
                 PlatformCommissionPercent: getInt("PLATFORM_COMMISSION_PERCENT", 15),
         }
