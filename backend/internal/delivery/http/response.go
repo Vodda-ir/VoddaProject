@@ -64,6 +64,10 @@ func fail(c *gin.Context, err error) {
                 status, msg = http.StatusBadRequest, "هنوز استادی با جلسهٔ فوریِ فعال برای این موضوع نیست؛ کمی بعد دوباره تلاش کنید"
         case errors.Is(err, domain.ErrSelfBooking):
                 status, msg = http.StatusBadRequest, "نمی‌توانید استاد خودتان را رزرو کنید؛ برای رزرو با حساب قرآن‌آموز وارد شوید"
+        case errors.Is(err, domain.ErrBBBNotConfigured):
+                status, msg = http.StatusNotFound, "اتصال بیگ‌بلوباتن هنوز تنظیم نشده است؛ مدیر باید URL و Secret اشتراک را در پنل مدیریت ثبت کند"
+        case errors.Is(err, domain.ErrBBBUnavailable):
+                status, msg = http.StatusBadGateway, "اتصال به سرور بیگ‌بلوباتن برقرار نشد؛ چند لحظه بعد دوباره تلاش کنید"
         }
         c.AbortWithStatusJSON(status, gin.H{"error": msg})
 }

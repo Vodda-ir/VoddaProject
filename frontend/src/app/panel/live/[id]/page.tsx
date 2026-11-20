@@ -71,7 +71,7 @@ export default function LiveClassroomPage() {
   const [micLevel, setMicLevel] = useState(0);
 
   // live state
-  const [phase, setPhase] = useState<'preflight' | 'live' | 'ended'>('preflight');
+  const [phase, setPhase] = useState<'preflight' | 'live' | 'ended' | 'bbb'>('preflight');
   const [status, setStatus] = useState<LiveStatus>('connecting');
   const [micOn, setMicOn] = useState(true);
   const [camOn, setCamOn] = useState(true);
@@ -98,6 +98,11 @@ export default function LiveClassroomPage() {
   const [handRaised, setHandRaised] = useState(false);
   const [notice, setNotice] = useState('');
   const [countdown, setCountdown] = useState('');
+
+  // بیگ‌بلوباتن — کلاس کامل روی زیرساخت اشتراک BBB ایران؛ مسیری مستقل از
+  // اتاق P2P وُدّا که بدون دوربین/میکروفون محلی هم کار می‌کند.
+  const [bbbUrl, setBbbUrl] = useState('');
+  const [bbbBusy, setBbbBusy] = useState(false);
 
   // refs (non-rendering objects)
   const clientRef = useRef<LiveClient | null>(null);
@@ -584,6 +589,35 @@ export default function LiveClassroomPage() {
     router.push(isTeacherSide ? '/panel/teacher/sessions' : '/panel/user/sessions');
   }
 
+  /* ---------------- بیگ‌بلوباتن: ورود و پایان کلاس ---------------- */
+  async function joinBbb() {
+    const token = getToken();
+    if (!token || !session) return;
+    setBbbBusy(true);
+    try {
+      const response = await api.bbbJoin(token, session.id);
+      const url = response.data?.join_url || '';
+      if (!url) throw new Error('لینک ورود به بیگ‌بلوباتن دریافت نشد.');
+      setBbbUrl(url);
+      setPhase('bbb');
+    } catch (cause) {
+      setNotice(cause instanceof Error ? cause.message : 'ورود به بیگ‌بلوباتن ممکن نشد.');
+      window.setTimeout(() => setNotice(''), 6000);
+    } finally {
+      setBbbBusy(false);
+    }
+  }
+
+  async function endBbb() {
+    const token = getToken();
+    if (!token || !session) return;
+    const confirmed = await confirmDialog('جلسهٔ بیگ‌بلوباتن برای همهٔ حاضران پایان یابد؟');
+    if (!confirmed) return;
+    try { await api.bbbEnd(token, session.id); } catch { /* شاید جلسه از قبل بسته شده باشد */ }
+    setPhase('ended');
+    router.push(isTeacherSide ? '/panel/teacher/sessions' : '/panel/user/sessions');
+  }
+
 /* ---------------- render ---------------- */
   const STAGE_BG = 'linear-gradient(168deg, #1c2214 0%, #252c1c 46%, #171c10 100%)';
   const GLASS = 'rgba(255,255,255,0.08)';
@@ -671,6 +705,8 @@ export default function LiveClassroomPage() {
             </div>
           )}
 
+          {notice && <div role="status" style={{ padding: '12px 16px', borderRadius: 14, background: 'rgba(191,149,64,.13)', border: '1px solid rgba(191,149,64,.35)', color: '#e7d5a8', fontSize: 12.5, fontWeight: 700 }}>{notice}</div>}
+
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             <button type="button" onClick={() => void joinClassroom(true)} style={{ flex: 1, minWidth: 220, padding: '15px 0', borderRadius: 18, border: 0, background: 'linear-gradient(145deg, #4c5a36, #5e6e43 60%, #728350)', color: '#fffaf0', fontWeight: 800, fontSize: 14.5, cursor: 'pointer', boxShadow: '0 12px 30px rgba(76,90,54,.45)' }}>
               ورود به کلاس با دوربین و میکروفون
@@ -678,9 +714,54 @@ export default function LiveClassroomPage() {
             <button type="button" onClick={() => void joinClassroom(false)} style={{ flex: 1, minWidth: 170, padding: '13px 0', borderRadius: 16, ...glass(), color: '#e8ecdb', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
               ورود بدون رسانه (فقط تماشا)
             </button>
+            <button type="button" disabled={bbbBusy} onClick={() => void joinBbb()} style={{ flex: '1 1 100%', padding: '13px 0', borderRadius: 16, border: '1px dashed rgba(216,184,105,.45)', background: 'rgba(216,184,105,.08)', color: '#e7d5a8', fontWeight: 800, fontSize: 13, cursor: bbbBusy ? 'wait' : 'pointer', opacity: bbbBusy ? 0.72 : 1 }}>
+              {bbbBusy ? 'در حال ساخت کلاس بیگ‌بلوباتن…' : 'ورود با بیگ‌بلوباتن (کلاس کامل با تختهٔ هم‌نویسی)'}
+            </button>
           </div>
         </section>
         <style jsx global>{`@keyframes liveSpin { to { transform: rotate(360deg); } }`}</style>
+      </main>
+    );
+  }
+
+  if (phase === 'bbb') {
+    return (
+      <main style={{ padding: '18px 14px calc(28px + env(safe-area-inset-bottom))', maxWidth: 1240, margin: '0 auto', display: 'grid', gap: 12 }}>
+        <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+          <div style={{ display: 'grid', gap: 3 }}>
+            <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--olive-600)', letterSpacing: 0.4 }}>کلاس بیگ‌بلوباتن</span>
+            <strong style={{ fontSize: 16.5, fontWeight: 900 }}>کلاس زنده · {session.service}</strong>
+            <span style={{ fontSize: 12, color: 'var(--ink-3)' }}>{countdown}</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 13px', borderRadius: 999, background: 'var(--olive-100)', fontSize: 11.5, fontWeight: 700, color: 'var(--olive-700)' }}>
+              {role === 'learner' ? 'ورود به‌عنوان قرآن‌آموز' : 'ورود به‌عنوان مدرس'}
+            </span>
+            <button type="button" onClick={() => window.open(bbbUrl, '_blank', 'noopener')} style={{ border: '1px solid var(--sand-150)', borderRadius: 12, padding: '9px 14px', background: 'var(--surface)', color: 'var(--ink-2)', fontWeight: 800, fontSize: 12, cursor: 'pointer' }}>
+              باز کردن در تب جدید
+            </button>
+            {isTeacherSide && (
+              <button type="button" onClick={() => void endBbb()} style={{ border: 0, borderRadius: 12, padding: '9px 14px', background: '#b3403a', color: '#fff', fontWeight: 800, fontSize: 12, cursor: 'pointer' }}>
+                پایان جلسه
+              </button>
+            )}
+            <button type="button" onClick={() => { setNotice(''); setPhase('preflight'); }} style={{ border: 0, borderRadius: 12, padding: '9px 14px', background: 'var(--olive-600)', color: '#fff', fontWeight: 800, fontSize: 12, cursor: 'pointer' }}>
+              بازگشت
+            </button>
+          </div>
+        </header>
+        <section style={{ position: 'relative', borderRadius: 26, overflow: 'hidden', background: STAGE_BG, border: '1px solid rgba(255,255,255,.08)', boxShadow: '0 22px 60px rgba(30,36,20,.35)', height: 'min(72vh, 820px)', minHeight: 480 }}>
+          <iframe
+            src={bbbUrl}
+            title="کلاس بیگ‌بلوباتن"
+            allow="camera; microphone; autoplay; fullscreen; display-capture; clipboard-read; clipboard-write"
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0 }}
+          />
+        </section>
+        <p style={{ margin: 0, fontSize: 11.5, color: 'var(--ink-3)', lineHeight: 2 }}>
+          صدا و تصویر روی زیرساخت بیگ‌بلوباتن برگزار می‌شود و از سرورهای وُدّا عبور نمی‌کند. اگر صحنهٔ کلاس نمایش داده نشد، با «باز کردن در تب جدید» وارد شوید؛ ضبط جلسه فعال نیست.
+        </p>
+        <style jsx global>{`@keyframes livePulse { 0% { box-shadow: 0 0 0 0 rgba(179,213,110,.4); } 70% { box-shadow: 0 0 0 16px rgba(179,213,110,0); } 100% { box-shadow: 0 0 0 0 rgba(179,213,110,0); } }`}</style>
       </main>
     );
   }

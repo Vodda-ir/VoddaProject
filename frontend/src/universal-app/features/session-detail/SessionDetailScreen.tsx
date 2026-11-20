@@ -35,6 +35,7 @@ import {
   acceptTeacherSession,
   cancelSessionAsLearner,
   completeTeacherSession,
+  getBbbJoin,
   getTeacherUnseenSessionCount,
   getSessionDetail,
   getSessionMessages,
@@ -251,6 +252,7 @@ export function SessionDetailScreen({
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [liveOpen, setLiveOpen] = useState(false);
+  const [bbbBusy, setBbbBusy] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [cancelOpen, setCancelOpen] = useState(false);
@@ -305,6 +307,23 @@ export function SessionDetailScreen({
     const timer = window.setInterval(() => void loadMessages(), messagePollMs);
     return () => window.clearInterval(timer);
   }, [loadMessages, messagePollMs]);
+
+  // کلاس کامل بیگ‌بلوباتن — URL امضاشده از سرور گرفته و در مرورگر باز می‌شود
+  // (اپ: مرورگر سیستم؛ وب: تب جدید). اتاق P2P وُدّا دست‌نخورده می‌ماند.
+  const openBbb = useCallback(async () => {
+    if (!detail) return;
+    setBbbBusy(true);
+    try {
+      const join = await getBbbJoin(runtime, detail.id);
+      setActionError(null);
+      const opened = window.open(join.joinUrl, "_blank");
+      if (!opened) setActionError(t("session_bbb_popup_blocked"));
+    } catch (bbbError) {
+      setActionError(messageOf(bbbError));
+    } finally {
+      setBbbBusy(false);
+    }
+  }, [detail, runtime, L, t]);
 
   async function runAction(action: () => Promise<void>) {
     if (busy) return;
@@ -565,6 +584,19 @@ export function SessionDetailScreen({
                 : t("session_start_video")
               : t("session_not_time_yet")}
           </Button>
+          {joinReady ? (
+            <Button
+              variant="secondary"
+              fullWidth
+              disabled={bbbBusy}
+              loading={bbbBusy}
+              onClick={() => void openBbb()}
+              style={{ minHeight: 46 }}
+            >
+              <Icon name="play" size={17} />
+              {t("session_bbb_join")}
+            </Button>
+          ) : null}
           {isTeacher && endReady ? (
             <Button
               variant="secondary"

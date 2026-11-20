@@ -71,6 +71,15 @@ const FIELDS: Array<{ group: string; description: string; icon: Parameters<typeo
       { key: 'google_redirect_uri', label: 'Redirect URI', type: 'text', ltr: true, hint: 'همین مقدار باید در Google Cloud Console هم ثبت شود' },
     ],
   },
+  {
+    group: 'کلاس بیگ‌بلوباتن',
+    description: 'اتصال جلسات آنلاین به اشتراک بیگ‌بلوباتن ایران. هر دو مقدار را از حساب شما در app.bigbluebutton.me ← «مدیریت جلسات» ← «تنظیمات» بردارید.',
+    icon: 'video',
+    fields: [
+      { key: 'bbb_api_url', label: 'BBB API URL', type: 'url', placeholder: 'https://…/bigbluebutton/api', ltr: true, hint: 'همان آدرس کامل پوشهٔ API که پنل بیگ‌بلوباتن نمایش می‌دهد' },
+      { key: 'bbb_shared_secret', label: 'BBB Shared Secret', type: 'text', placeholder: 'رشتهٔ محرمانهٔ اتصال', ltr: true, hint: 'پوشانده نمایش داده می‌شود و فقط سمت سرور استفاده می‌گردد' },
+    ],
+  },
 ];
 
 const ALL_KEYS = FIELDS.flatMap((section) => section.fields.map((field) => field.key));

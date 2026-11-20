@@ -506,6 +506,11 @@ var settingDefaults = map[string]string{
         "google_client_id":  "",
         "google_client_secret": "",
         "google_redirect_uri":  "https://api.vodda.ir/api/v1/auth/google/callback",
+        // بیگ‌بلوباتن — URL و Secret اشتراک کلاس آنلاین؛ مقادیر از حساب کاربری
+        // بیگ‌بلوباتن ایران (مدیریت جلسات ← تنظیمات) اینجا ثبت می‌شود و
+        // Secret فقط پوشانده‌شده برمی‌گردد.
+        "bbb_api_url":       "",
+        "bbb_shared_secret": "",
 }
 
 var settingWhitelist = map[string]bool{}
@@ -514,6 +519,7 @@ var settingMaxValue = map[string]int{
         "whatsapp": 120, "announcement_text": 300, "announcement_link": 300,
         "announcement_on": 8, "about_short": 400,
         "google_client_id": 220, "google_client_secret": 220, "google_redirect_uri": 300,
+        "bbb_api_url": 300, "bbb_shared_secret": 300,
 }
 
 // settingSecrets are stored but never returned verbatim by GET /admin/settings;
@@ -522,6 +528,7 @@ const settingsSecretMask = "••••••••"
 
 var settingSecrets = map[string]bool{
         "google_client_secret": true,
+        "bbb_shared_secret":    true,
 }
 
 func init() {

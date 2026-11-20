@@ -25,4 +25,8 @@ var (
         // فراخوان-specific errors with learner-friendly wording (dispatch UX).
         ErrCallActive             = errors.New("an active dispatch call already exists")
         ErrNoTeachersForTopic     = errors.New("no teachers available for this topic yet")
+        // بیگ‌بلوباتن — کلاس زنده روی زیرساخت اشتراک BigBlueButton ایران.
+        // NotConfigured: URL/Secret هنوز ثبت نشده‌اند؛ Unreachable: سرویس‌دهنده پاسخ نداد.
+        ErrBBBNotConfigured = errors.New("bigbluebutton is not configured")
+        ErrBBBUnavailable   = errors.New("bigbluebutton endpoint unreachable")
 )

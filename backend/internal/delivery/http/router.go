@@ -182,6 +182,15 @@ func NewRouter(cfg *config.Config, h *Handler, tm *token.Manager, readiness func
                         live.POST("/signal", mutationLimiter.Middleware("live-signal"), h.LiveSignal)
                 }
 
+                // کلاس بیگ‌بلوباتن — join/status/end روی زیرساخت اشتراک
+                // بیگ‌بلوباتن ایران؛ مجوز ورود همان LiveAccess کلاس داخلی است.
+                bbb := authed.Group("/bbb")
+                {
+                        bbb.GET("/sessions/:id/join", mutationLimiter.Middleware("bbb-join"), h.BbbJoin)
+                        bbb.GET("/sessions/:id/status", h.BbbStatus)
+                        bbb.POST("/sessions/:id/end", mutationLimiter.Middleware("bbb-end"), h.BbbEnd)
+                }
+
                 // فراخوان اساتید — learner-side dispatch (call-out) endpoints.
                 dispatch := authed.Group("/dispatch")
                 {
