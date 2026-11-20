@@ -332,7 +332,8 @@ function CategoryTileGrid({
 }
 
 /* ۱.ب.۶ — خدمات پرکاربرد — کاروسل رنگی (E3):
- *  کل بخش داخل یک صحنهٔ رنگی «خیره‌کننده» — گرادیانت زمردی‌→طلایی با هالهٔ نئونی؛
+ *  کل بخش داخل یک صحنهٔ رنگی «خیره‌کننده» — گرادیانت زیتونیِ برند (hero) با هالهٔ طلایی؛
+ *  بازطراحی هم‌راستا با تم صفحهٔ اصلی (زیتونی + طلایی + کِرِم) — رنگ زمردی/نعنایی حذف شد.
  *  کارت‌های خدمت اسلایدهای اسکرول‌_snap با نقطه‌های وضعیت؛ همهٔ خدمت‌ها در یک کادر. */
 function PopularServicesGrid({
   services,
@@ -371,22 +372,22 @@ function PopularServicesGrid({
   return (
     <section aria-label="خدمات پرکاربرد" style={{ display: "grid", gap: spacing.sm, minWidth: 0 }}>
       <SectionHeader title="خدمات پرکاربرد" description="پرترددترین خدمت‌های قرآنی وُدّا" />
-      {/* ─── صحنهٔ رنگی کاروسل — زمردی عمیق با هالهٔ طلایی و نئون نعنایی ─── */}
+      {/* ─── صحنهٔ رنگی کاروسل — زیتونی برند با هالهٔ طلایی ─── */}
       <div
         style={{
           position: "relative",
           borderRadius: 22,
           padding: 12,
           minWidth: 0,
-          background: "linear-gradient(140deg, #102b22 0%, #1c5340 44%, #2f7a56 78%, #3f9468 100%)",
+          background: gradients.hero,
           border: "1px solid rgba(216,184,105,.55)",
-          boxShadow: "0 18px 40px rgba(16,43,34,.30), 0 0 20px rgba(58,167,109,.22)",
+          boxShadow: "0 18px 40px rgba(46,54,34,.30), 0 0 20px rgba(191,149,64,.22)",
           overflow: "hidden",
         }}
       >
         {/* هاله‌های نورانی پس‌زمینهٔ صحنه */}
         <span aria-hidden="true" style={{ position: "absolute", top: -46, insetInlineStart: -40, width: 170, height: 170, borderRadius: "50%", background: "radial-gradient(circle, rgba(216,184,105,.30), transparent 70%)" }} />
-        <span aria-hidden="true" style={{ position: "absolute", bottom: -52, insetInlineEnd: -36, width: 190, height: 190, borderRadius: "50%", background: "radial-gradient(circle, rgba(143,208,168,.24), transparent 70%)" }} />
+        <span aria-hidden="true" style={{ position: "absolute", bottom: -52, insetInlineEnd: -36, width: 190, height: 190, borderRadius: "50%", background: "radial-gradient(circle, rgba(214,220,196,.26), transparent 70%)" }} />
         {/* اسلایدها — اسکرول snap افقی؛ هر خدمت یک کارت تصویری با بج طلایی */}
         <div
           onScroll={handleStageScroll}
@@ -559,9 +560,11 @@ function PopularServicesGrid({
 }
 
 /* ۱.۱ — خدمات رایگان — کارت نمایشی بزرگ و ثابت:
- * به‌جای پشتهٔ ۴-۵ کارت، یک کادر حرفه‌ای بزرگ «هدیهٔ وُدّا» با نشان هدیهٔ نعنایی،
+ * به‌جای پشتهٔ ۴-۵ کارت، یک کادر حرفه‌ای بزرگ «هدیهٔ وُدّا» با نشان هدیهٔ طلایی،
  * خوشهٔ آواتار استادهای رایگان و بج‌های خلاصه؛ کلیک → صفحهٔ فهرست کامل
- * خدمات رایگان (/free-services) با همان طرح اما ابعاد درشت‌تر. */
+ * خدمات رایگان (/free-services) با همان طرح اما ابعاد درشت‌تر.
+ * بازطراحی هم‌راستا با تم صفحهٔ اصلی: هویت کِرِم/طلایی (هم‌خانوادهٔ قاب «پیشنهاد وُدّا»)
+ * به‌جای رنگ نعنایی پیشین — درخواست مدیر برای یکدستی سبک خانه. */
 function FreeServicesShowcase({
   cards,
   loading,
@@ -611,16 +614,16 @@ function FreeServicesShowcase({
           minWidth: 0,
           width: "100%",
           textAlign: "start",
-          border: "1px solid rgba(58,167,109,.28)",
+          border: `1px solid ${colors.goldSoft}`,
           borderRadius: 22,
-          background: "linear-gradient(150deg, #f0f8f2 0%, #eef3ea 48%, #f7f0dc 100%)",
-          boxShadow: "0 16px 34px rgba(46,84,54,.12), 0 0 16px rgba(58,167,109,.10)",
+          background: "linear-gradient(165deg, #fffdf6 0%, #faf3e0 55%, #f5ecd4 100%)",
+          boxShadow: "0 16px 34px rgba(139,104,31,.12), 0 0 16px rgba(191,149,64,.14)",
           cursor: "pointer",
           fontFamily: typography.fontFamily,
           overflow: "hidden",
         }}
       >
-        {/* تزئینات پس‌زمینه — هاله‌های نعنایی/طلایی نرم */}
+        {/* تزئینات پس‌زمینه — هاله‌های طلایی/کِرِمی نرم */}
         <span
           aria-hidden="true"
           style={{
@@ -630,7 +633,7 @@ function FreeServicesShowcase({
             width: 130,
             height: 130,
             borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(58,167,109,.16), transparent 70%)",
+            background: "radial-gradient(circle, rgba(191,149,64,.18), transparent 70%)",
           }}
         />
         <span
@@ -656,18 +659,18 @@ function FreeServicesShowcase({
             transform: "rotate(-45deg)",
             textAlign: "center",
             padding: "3.5px 0",
-            background: "linear-gradient(135deg, #43b07f, #2e8f5c)",
-            color: "#ffffff",
+            background: "linear-gradient(135deg, #d4ab52, #bf9540 52%, #8b681f)",
+            color: "#fffdf6",
             fontSize: 10,
             fontWeight: 900,
             letterSpacing: 0.2,
-            boxShadow: "0 2px 8px rgba(46,84,54,.28)",
+            boxShadow: "0 2px 8px rgba(139,104,31,.30)",
           }}
         >
           هدیهٔ وُدّا
         </span>
 
-        {/* ردیف اصلی: نشان هدیهٔ نعنایی + متن + خوشهٔ آواتار استادها */}
+        {/* ردیف اصلی: نشان هدیهٔ طلایی + متن + خوشهٔ آواتار استادها */}
         <span style={{ position: "relative", display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
           <span
             aria-hidden="true"
@@ -677,16 +680,16 @@ function FreeServicesShowcase({
               display: "grid",
               placeItems: "center",
               borderRadius: "50%",
-              background: "linear-gradient(145deg, #43b07f, #2e8f5c)",
-              color: "#ffffff",
+              background: "linear-gradient(145deg, #d4ab52, #bf9540 52%, #8b681f)",
+              color: "#fffdf6",
               flex: "0 0 auto",
-              boxShadow: "0 10px 22px rgba(58,167,109,.35)",
+              boxShadow: "0 10px 22px rgba(139,104,31,.35)",
             }}
           >
             <Icon name="gift" size={30} stroke={1.7} />
           </span>
           <span style={{ flex: "1 1 auto", minWidth: 0, display: "grid", gap: 4 }}>
-            <span style={{ fontSize: 10.5, fontWeight: 800, color: "#2e8f5c", letterSpacing: 0.2 }}>
+            <span style={{ fontSize: 10.5, fontWeight: 800, color: "#7a5e1e", letterSpacing: 0.2 }}>
               جلسهٔ آغازین هدیه
             </span>
             <strong
@@ -760,9 +763,9 @@ function FreeServicesShowcase({
                 gap: 4,
                 padding: "3.5px 9px",
                 borderRadius: 999,
-                border: "1px solid rgba(58,167,109,.35)",
+                border: "1px solid rgba(191,149,64,.45)",
                 background: "rgba(255,255,255,.78)",
-                color: "#2e8f5c",
+                color: "#7a5e1e",
                 fontSize: 10,
                 fontWeight: 800,
                 whiteSpace: "nowrap",
@@ -815,12 +818,12 @@ function FreeServicesShowcase({
               gap: 5,
               padding: "10px 14px",
               borderRadius: 13,
-              background: "linear-gradient(145deg, #43b07f, #2e8f5c)",
-              color: "#ffffff",
+              background: "linear-gradient(145deg, #d4ab52, #bf9540 52%, #8b681f)",
+              color: "#fffdf6",
               fontSize: 12,
               fontWeight: 800,
               whiteSpace: "nowrap",
-              boxShadow: "0 8px 18px rgba(58,167,109,.32)",
+              boxShadow: "0 8px 18px rgba(139,104,31,.32)",
             }}
           >
             مشاهدهٔ همهٔ خدمات رایگان
@@ -860,9 +863,9 @@ function FreeServicesShowcase({
                     gap: 4,
                     borderRadius: 16,
                     padding: "8px 6px",
-                    border: "1px solid rgba(58,167,109,.32)",
+                    border: "1px solid rgba(191,149,64,.38)",
                     background: colors.surface,
-                    boxShadow: "0 6px 14px rgba(46,84,54,.10)",
+                    boxShadow: "0 6px 14px rgba(139,104,31,.10)",
                     cursor: "pointer",
                     fontFamily: typography.fontFamily,
                     animationDelay: `${index * 45}ms`,
@@ -876,9 +879,9 @@ function FreeServicesShowcase({
                       display: "grid",
                       placeItems: "center",
                       borderRadius: "50%",
-                      background: "linear-gradient(145deg, #43b07f, #2e8f5c)",
-                      color: "#ffffff",
-                      boxShadow: "0 5px 12px rgba(58,167,109,.30)",
+                      background: "linear-gradient(145deg, #d4ab52, #bf9540 52%, #8b681f)",
+                      color: "#fffdf6",
+                      boxShadow: "0 5px 12px rgba(139,104,31,.30)",
                     }}
                   >
                     <Icon name={tileIcons[index % tileIcons.length]} size={18} />
@@ -896,7 +899,7 @@ function FreeServicesShowcase({
                   >
                     {group.title}
                   </strong>
-                  <span style={{ fontSize: 8.5, fontWeight: 700, color: "#2e8f5c" }}>
+                  <span style={{ fontSize: 8.5, fontWeight: 700, color: colors.goldInk }}>
                     {faNumber(group.count, 0)} خدمت
                   </span>
                 </button>
