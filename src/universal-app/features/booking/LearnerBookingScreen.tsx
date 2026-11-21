@@ -13,7 +13,7 @@ import { usePlatform } from "../../platform/context";
 import { navigateApp } from "../../router";
 import { getTeacherDetail } from "../teachers/api";
 import type { Teacher, TeacherService } from "../teachers/types";
-import { Avatar, Button, Card, EmptyState, ErrorState, Icon, LoadingState, colors, gradients, radii, shadows, spacing, typography } from "../../ui";
+import { Avatar, Button, Card, EmptyState, ErrorState, Icon, LoadingState, MenuSelect, colors, gradients, radii, shadows, spacing, typography } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
 import { useAppearance } from "../../ui/appearance";
 import { localizedDigits } from "../../ui/persian";
@@ -115,6 +115,53 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
   const inPersonVisible = useMemo(
     () => (freeOnly ? inPersonServices.filter((item) => item.price === 0) : inPersonServices),
     [inPersonServices, freeOnly],
+  );
+  // گروه‌های لیست کشویی خدمات — آنلاین (صوتی/متنی/تصویری) و حضوری با تم طلایی
+  const menuGroups = useMemo(
+    () => [
+      ...(services.length > 0
+        ? [
+            {
+              title: L("جلسات آنلاین"),
+              items: services.map((item) => {
+                const modeMeta = sessionModeMeta(item.mode ?? "");
+                return {
+                  key: String(item.id),
+                  title: item.title,
+                  sub: `${localizedDigits(item.duration, lang)} ${L("دقیقه")} · ${
+                    item.price === 0
+                      ? L("رایگان")
+                      : `${formatWalletAmount(Math.max(0, item.price))} ${L("تومان")}`
+                  }`,
+                  icon: modeMeta ? modeMeta.icon : "book",
+                  badge: modeMeta ? L(modeMeta.label) : undefined,
+                  gold: item.price === 0,
+                };
+              }),
+            },
+          ]
+        : []),
+      ...(inPersonVisible.length > 0
+        ? [
+            {
+              title: L("جلسات حضوری — در محل"),
+              items: inPersonVisible.map((item) => ({
+                key: String(item.id),
+                title: item.title,
+                sub: `${localizedDigits(item.duration, lang)} ${L("دقیقه")} · ${
+                  item.price === 0
+                    ? L("رایگان")
+                    : `${formatWalletAmount(Math.max(0, item.price))} ${L("تومان")}`
+                }`,
+                icon: "pin",
+                badge: L("حضوری"),
+                gold: true,
+              })),
+            },
+          ]
+        : []),
+    ],
+    [services, inPersonVisible, lang, L],
   );
   const isSelfTeacher = Boolean(teacher?.userId && meId && teacher.userId === meId);
 
@@ -251,6 +298,7 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
         </p>
       ) : null}
 
+      {/* انتخاب خدمت — لیست کشویی زیبا به‌جای چیپ‌ها و کادرها */}
       <Card className="vodda-enter vodda-enter-delay-1" style={{ padding: 18, borderRadius: 20, borderColor: colors.sand200, boxShadow: "none" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
           <strong style={{ fontSize: 15.5, fontWeight: 900, color: colors.ink }}>{L("خدمات قابل رزرو")}</strong>
@@ -269,7 +317,7 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
             }}
           >
             <Icon name="grid" size={12} />
-            {localizedDigits(services.length, lang)} {L("خدمت")}
+            {localizedDigits(services.length + inPersonVisible.length, lang)} {L("خدمت")}
           </span>
         </div>
 
@@ -313,7 +361,7 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
           <div style={{ height: 14 }} />
         )}
 
-        {services.length === 0 ? (
+        {services.length + inPersonVisible.length === 0 ? (
           freeOnly ? (
             <EmptyState
               title={L("خدمت رایگان فعالی ندارد")}
@@ -324,270 +372,40 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
             <EmptyState title={L("خدمت قابل رزرو وجود ندارد")} description={L("این استاد فعلاً خدمت فعال و قابل رزروی ندارد.")} />
           )
         ) : (
-          <div style={{ display: "grid", gap: spacing.sm }}>
-            {services.map((item, index) => {
-              const modeMeta = sessionModeMeta(item.mode ?? "");
-              const isGold = item.price === 0;
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => openWizard(item)}
-                  className={`vodda-enter vodda-enter-delay-${Math.min(3, index + 1)}`}
-                  aria-label={L("رزرو {n}").replace("{n}", item.title)}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: spacing.md,
-                    padding: 13,
-                    textAlign: "right",
-                    width: "100%",
-                    minWidth: 0,
-                    color: colors.ink,
-                    background: item.mode ? colors.greenBackground : colors.sand50,
-                    border: isGold
-                      ? `1px solid ${colors.gold}`
-                      : item.mode
-                        ? `1px solid ${colors.greenBorder}`
-                        : `1px solid ${colors.sand200}`,
-                    borderRadius: 16,
-                    cursor: "pointer",
-                    fontFamily: typography.fontFamily,
-                  }}
-                >
-                  <span
-                    aria-hidden="true"
-                    style={{
-                      width: 42,
-                      height: 42,
-                      display: "grid",
-                      placeItems: "center",
-                      flex: "0 0 42px",
-                      borderRadius: 14,
-                      background: modeMeta
-                        ? colors.greenChip
-                        : isGold
-                          ? colors.goldBackground
-                          : colors.olive50,
-                      color: modeMeta ? colors.greenDeep : isGold ? colors.goldDark : colors.olive700,
-                      border: modeMeta ? "transparent" : `1px solid ${isGold ? colors.goldSoft : colors.olive100}`,
-                    }}
-                  >
-                    <Icon name={modeMeta ? modeMeta.icon : isGold ? "gift" : "book"} size={19} />
-                  </span>
-                  <span style={{ minWidth: 0, flex: 1, display: "grid", gap: 3 }}>
-                    <strong style={{ fontSize: 13.5, fontWeight: 800, display: "block" }}>{L(item.title)}</strong>
-                    <span style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                      {modeMeta ? (
-                        <span
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: 4,
-                            padding: "2px 9px",
-                            borderRadius: 999,
-                            background: colors.greenChip,
-                            color: colors.greenInk,
-                            fontSize: 10.5,
-                            fontWeight: 800,
-                          }}
-                        >
-                          <Icon name={modeMeta.icon} size={11} stroke={2.2} />
-                          {L(modeMeta.label)}
-                        </span>
-                      ) : null}
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10.5, color: colors.inkMuted, fontWeight: 700 }}>
-                        <Icon name="clock" size={11} stroke={2} />
-                        {localizedDigits(item.duration, lang)} {L("دقیقه")}
-                      </span>
-                    </span>
-                  </span>
-                  <span style={{ flex: "0 0 auto", textAlign: "left", display: "grid", justifyItems: "end", gap: 4 }}>
-                    {item.price === 0 ? (
-                      <span
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: 4,
-                          padding: "3px 10px",
-                          borderRadius: 999,
-                          background: colors.goldBackground,
-                          border: `1px solid ${colors.gold}`,
-                          color: colors.goldDark,
-                          fontSize: 11,
-                          fontWeight: 900,
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        <Icon name="gift" size={11} stroke={2.4} />
-                        {L("رایگان")}
-                      </span>
-                    ) : (
-                      <strong style={{ fontSize: 12.5, fontWeight: 900, color: colors.olive700, whiteSpace: "nowrap" }}>
-                        {formatWalletAmount(Math.max(0, item.price))} {L("تومان")}
-                      </strong>
-                    )}
-                    <span
-                      aria-hidden="true"
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: 3,
-                        fontSize: 10,
-                        fontWeight: 800,
-                        color: colors.olive600,
-                      }}
-                    >
-                      <Icon name="plus" size={11} stroke={2.6} />
-                      {L("رزرو")}
-                    </span>
-                  </span>
-                </button>
-              );
-            })}
+          <div style={{ marginTop: 2 }}>
+            <MenuSelect
+              ariaLabel="انتخاب خدمت برای شروع رزرو"
+              placeholder={L("برای شروع رزرو، یک خدمت را انتخاب کنید…")}
+              displayTitle={wizardService?.title ?? inPersonService?.title ?? undefined}
+              displaySub={
+                wizardService || inPersonService
+                  ? `${localizedDigits((wizardService ?? inPersonService)?.duration ?? 0, lang)} ${L("دقیقه")} · ${
+                      (wizardService ?? inPersonService)!.price === 0
+                        ? L("رایگان")
+                        : `${formatWalletAmount(Math.max(0, (wizardService ?? inPersonService)!.price))} ${L("تومان")}`
+                    }`
+                  : undefined
+              }
+              displayIcon={
+                wizardService
+                  ? (sessionModeMeta(wizardService.mode ?? "")?.icon ?? "book")
+                  : inPersonService
+                    ? "pin"
+                    : undefined
+              }
+              displayGold={Boolean(inPersonService)}
+              countLabel={L("خدمت")}
+              groups={menuGroups}
+              onPick={(key) => {
+                const picked = [...services, ...inPersonVisible].find((item) => String(item.id) === key);
+                if (!picked) return;
+                if (picked.mode === "in_person") openInPerson(picked);
+                else openWizard(picked);
+              }}
+            />
           </div>
         )}
       </Card>
-
-      {/* بخش جلسات حضوری — ویزارد مخصوص در محل (محل برگزاری، موضوع، زمان، پرداخت) */}
-      {inPersonVisible.length > 0 ? (
-        <Card className="vodda-enter vodda-enter-delay-1" style={{ padding: 18, borderRadius: 20, borderColor: colors.goldSoft, boxShadow: "none" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
-            <strong style={{ fontSize: 15.5, fontWeight: 900, color: colors.ink }}>{L("خدمات حضوری")}</strong>
-            <span
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 5,
-                padding: "4px 12px",
-                borderRadius: 999,
-                background: colors.goldBackground,
-                border: `1px solid ${colors.goldSoft}`,
-                color: colors.goldDark,
-                fontSize: 11.5,
-                fontWeight: 800,
-              }}
-            >
-              <Icon name="pin" size={12} />
-              {L("در محل")}
-            </span>
-          </div>
-          <p style={{ margin: "10px 0 0", fontSize: 11.5, lineHeight: 1.9, color: colors.inkMuted }}>
-            {L("جلسهٔ درون‌حضوری با استاد — در دفتر استاد یا محل شما؛ تقویم و پرداخت مثل جلسات آنلاین.")}
-          </p>
-          <div style={{ display: "grid", gap: spacing.sm, marginTop: 14 }}>
-            {inPersonVisible.map((item, index) => {
-              const isGold = item.price === 0;
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => openInPerson(item)}
-                  className={`vodda-enter vodda-enter-delay-${Math.min(3, index + 1)}`}
-                  aria-label={L("رزرو حضوری {n}").replace("{n}", item.title)}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: spacing.md,
-                    padding: 13,
-                    textAlign: "right",
-                    width: "100%",
-                    minWidth: 0,
-                    color: colors.ink,
-                    background: colors.goldBackground,
-                    border: isGold ? `1.5px solid ${colors.gold}` : `1px solid ${colors.goldSoft}`,
-                    borderRadius: 16,
-                    cursor: "pointer",
-                    fontFamily: typography.fontFamily,
-                  }}
-                >
-                  <span
-                    aria-hidden="true"
-                    style={{
-                      width: 42,
-                      height: 42,
-                      display: "grid",
-                      placeItems: "center",
-                      flex: "0 0 42px",
-                      borderRadius: 14,
-                      background: "linear-gradient(145deg,#d8b869,#b8923c)",
-                      color: "#fffaf0",
-                    }}
-                  >
-                    <Icon name="pin" size={19} />
-                  </span>
-                  <span style={{ minWidth: 0, flex: 1, display: "grid", gap: 3 }}>
-                    <strong style={{ fontSize: 13.5, fontWeight: 800, display: "block" }}>{L(item.title)}</strong>
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                      <span
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: 4,
-                          padding: "2px 9px",
-                          borderRadius: 999,
-                          background: colors.surface,
-                          border: `1px solid ${colors.goldSoft}`,
-                          color: colors.goldDark,
-                          fontSize: 10.5,
-                          fontWeight: 800,
-                        }}
-                      >
-                        <Icon name="pin" size={11} stroke={2.2} />
-                        {L("حضوری")}
-                      </span>
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10.5, color: colors.inkMuted, fontWeight: 700 }}>
-                        <Icon name="clock" size={11} stroke={2} />
-                        {localizedDigits(item.duration, lang)} {L("دقیقه")}
-                      </span>
-                    </span>
-                  </span>
-                  <span style={{ flex: "0 0 auto", textAlign: "left", display: "grid", justifyItems: "end", gap: 4 }}>
-                    {item.price === 0 ? (
-                      <span
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: 4,
-                          padding: "3px 10px",
-                          borderRadius: 999,
-                          background: colors.surface,
-                          border: `1px solid ${colors.gold}`,
-                          color: colors.goldDark,
-                          fontSize: 11,
-                          fontWeight: 900,
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        <Icon name="gift" size={11} stroke={2.4} />
-                        {L("رایگان")}
-                      </span>
-                    ) : (
-                      <strong style={{ fontSize: 12.5, fontWeight: 900, color: colors.goldDark, whiteSpace: "nowrap" }}>
-                        {formatWalletAmount(Math.max(0, item.price))} {L("تومان")}
-                      </strong>
-                    )}
-                    <span
-                      aria-hidden="true"
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: 3,
-                        fontSize: 10,
-                        fontWeight: 800,
-                        color: colors.goldDark,
-                      }}
-                    >
-                      <Icon name="plus" size={11} stroke={2.6} />
-                      {L("رزرو حضوری")}
-                    </span>
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </Card>
-      ) : null}
 
       {/* راهنمای چرخهٔ رزرو */}
       <div
@@ -617,7 +435,7 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
           <Icon name="info" size={18} stroke={2.2} />
         </span>
         <span style={{ minWidth: 0, flex: 1, fontSize: 11.5, lineHeight: 2, color: colors.goldInk, fontWeight: 600 }}>
-          {L("با انتخاب هر خدمت، کادر رزرو باز می‌شود: نوع جلسه (فوری یا زمان‌دار)، روش برگزاری (تلفنی، متنی یا تصویری)، تاریخ و زمان، و پرداخت — همه در همان کادر با چرخهٔ مراحل مشخص انجام می‌شود. جلسات حضوری هم ویزارد مخصوص خودشان را دارند: محل برگزاری، موضوع، زمان و پرداخت.")}
+          {L("از لیست کشویی، خدمت دلخواه را انتخاب کنید تا چرخهٔ رزرو باز شود: نوع جلسه (فوری یا زمان‌دار)، روش برگزاری (تلفنی، متنی یا تصویری)، تاریخ و زمان، و پرداخت — هر مرحله مستقل و با نوار پیشرفت مشخص. جلسات حضوری هم ویزارد مخصوص خودشان را دارند: محل برگزاری، موضوع، زمان و پرداخت.")}
         </span>
       </div>
 

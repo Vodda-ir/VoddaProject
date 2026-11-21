@@ -1,4 +1,5 @@
 export { Icon } from "./Icon";
+export { MenuSelect, type MenuGroup, type MenuOption } from "./MenuSelect";
 export {
   Avatar,
   Button,

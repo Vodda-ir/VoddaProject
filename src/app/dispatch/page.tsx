@@ -15,6 +15,7 @@ import type {
   Teacher,
 } from '@/lib/api';
 import { avatarUrl, fullUrl, getToken } from '@/lib/auth';
+import { MenuSelect, type WebMenuGroup } from '@/components/web/MenuSelect';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
 import { formatDateTime } from '@/lib/datetime';
 
@@ -62,6 +63,8 @@ export default function DispatchPage() {
   const [topic, setTopic] = useState<OfficialServiceItem | null>(null);
   const [whenMode, setWhenMode] = useState<'now' | 'later'>('now');
   const [laterAt, setLaterAt] = useState('');
+  // ویزارد مرحله‌ای فراخوان — هر مرحله چرخهٔ مستقل خودش: ۰ موضوع، ۱ زمان، ۲ ثبت
+  const [wizardStep, setWizardStep] = useState(0);
   const [note, setNote] = useState('');
   const [view, setView] = useState<DispatchCallViewData | null>(null);
   const [mode, setMode] = useState<'broadcast' | 'list'>('broadcast');
@@ -278,6 +281,28 @@ export default function DispatchPage() {
 
   const candidates = view?.candidates ?? [];
 
+  /* ─── ویزارد فراخوان — گروه‌های لیست کشویی موضوعات + مراحل چرخه ─── */
+  const menuGroups = useMemo<WebMenuGroup[]>(
+    () => grouped.map(([category, items]) => ({
+      title: category,
+      items: items.map((item) => ({ key: String(item.id), title: item.title, icon: item.icon })),
+    })),
+    [grouped],
+  );
+  const wizardSteps = ['topic', 'time', 'submit'] as const;
+  const stepValid = (step: number): boolean => {
+    switch (step) {
+      case 0: return topic !== null;
+      case 1: return whenMode === 'now' || (laterAt !== '' && new Date(laterAt).getTime() > Date.now() + 10 * 60_000);
+      default: return true;
+    }
+  };
+  const whenLabelValue = whenMode === 'now'
+    ? '⚡ در اسرع وقت — همین حالا'
+    : laterAt
+      ? `📅 ${formatDateTime(new Date(laterAt), 'fa', 'weekdayDayMonth')}`
+      : '—';
+
   return (
     <div style={{ background: 'var(--sand-50)', minHeight: '100vh' }}>
       <Nav />
@@ -294,7 +319,7 @@ export default function DispatchPage() {
             <span style={{ color: 'var(--olive-500)' }}><Icon name="bell" size={34} /></span>
             <h2 style={{ margin: '10px 0 6px', fontSize: 20 }}>برای ثبت فراخوان، ابتدا وارد حساب شوید</h2>
             <p style={{ margin: '0 0 16px', color: 'var(--ink-2)' }}>ورود با شماره موبایل و کد تأیید انجام می‌شود.</p>
-            <Link href="/panel/login" className="ops-primary-btn" style={{ display: 'inline-flex' }}>
+            <Link href="/panel/login" className="web-fancy-btn" style={{ display: 'inline-flex', textDecoration: 'none' }}>
               ورود به حساب وُدّا
             </Link>
           </section>
@@ -401,135 +426,209 @@ export default function DispatchPage() {
             {error ? <div className="ops-error" role="alert"><span>{error}</span></div> : null}
 
             <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
-              <button type="button" className="ops-ghost-btn" onClick={() => void cancel()} disabled={canceling}>
+              <button type="button" className="web-fancy-ghost" onClick={() => void cancel()} disabled={canceling}>
                 {canceling ? 'در حال لغو…' : 'لغو فراخوان'}
               </button>
             </div>
           </div>
         ) : (
           <div style={{ display: 'grid', gap: 16 }}>
-            {topic ? (
-              <>
-                <section className="ops-data-surface neon-frame-gold">
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
-                    <span style={{ display: 'grid', placeItems: 'center', width: 44, height: 44, borderRadius: 14, background: 'var(--olive-50)', color: 'var(--olive-600)', flex: '0 0 auto' }}>
-                      <Icon name="quran" size={21} />
-                    </span>
-                    <div style={{ minWidth: 0, flex: 1 }}>
-                      <strong style={{ fontSize: 16 }}>{topic.title}</strong>
-                      <span style={{ display: 'block', fontSize: 12.5, color: 'var(--ink-2)', marginTop: 3, lineHeight: 1.8 }}>{topic.description}</span>
-                    </div>
-                    <button type="button" className="ops-ghost-btn" onClick={() => setTopic(null)}>تغییر موضوع</button>
-                  </div>
-                </section>
-
-                <ModeSelector mode={mode} onChange={setMode} topicTitle={topic.title} />
-
-                {mode === 'broadcast' ? (
-                <section className="ops-data-surface neon-frame">
-                <strong style={{ fontSize: 13.5, display: 'block', marginBottom: 8 }}>کی می‌خواهید؟</strong>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
-                  <button type="button" onClick={() => setWhenMode('now')} className={whenMode === 'now' ? 'web-filter-active-chip' : 'web-filter-chip'}>
-                    ⚡ در اسرع وقت
-                  </button>
-                  <button type="button" onClick={() => setWhenMode('later')} className={whenMode === 'later' ? 'web-filter-active-chip' : 'web-filter-chip'}>
-                    📅 زمان مشخص
-                  </button>
-                </div>
-                {whenMode === 'later' ? (
-                  <input className="input-base"
-                    type="datetime-local"
-                    value={laterAt}
-                    min={new Date(Date.now() + 3600000).toISOString().slice(0, 16)}
-                    onChange={(event) => setLaterAt(event.target.value)}
-                    dir="ltr"
-                    aria-label="زمان جلسه"
-                    style={{ width: '100%', maxWidth: 320, padding: '10px 12px', borderRadius: 12, border: '1px solid var(--sand-200)', background: '#fff', fontFamily: 'inherit', marginBottom: 6 }}
-                  />
-                ) : null}
-                <p style={{ margin: '4px 0 14px', fontSize: 11.5, color: 'var(--ink-3)', lineHeight: 1.8 }}>
-                  در «در اسرع وقت» ساعت نهایی با توافق استاد مشخص می‌شود.
-                </p>
-
-                <strong style={{ fontSize: 13.5, display: 'block', marginBottom: 8 }}>یادداشت برای اساتید (اختیاری)</strong>
-                <textarea className="input-base"
-                  value={note}
-                  onChange={(event) => setNote(event.target.value.slice(0, 300))}
-                  rows={2}
-                  placeholder="مثلاً: مبتدی هستم، برای شروع کمکم کنید…"
-                  style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1px solid var(--sand-200)', background: '#fff', fontFamily: 'inherit', resize: 'vertical', lineHeight: 1.9 }}
-                  aria-label="یادداشت فراخوان"
-                />
-
-                {error ? <div className="ops-error" role="alert" style={{ marginTop: 12 }}><span>{error}</span></div> : null}
-
-                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 16 }}>
-                  <button type="button" className="ops-primary-btn" onClick={() => void start()} disabled={creating}>
-                    {creating ? 'در حال ارسال…' : '🔔 ثبت فراخوان برای اساتید'}
-                  </button>
-                </div>
-                <p style={{ margin: '10px 0 0', fontSize: 11.5, color: 'var(--ink-3)', lineHeight: 1.8 }}>
-                  فراخوان برای همهٔ اساتیدِ تأییدشدهٔ همین موضوع پخش می‌شود و نخستین پاسخ‌ها به‌صورت زنده همین‌جا نمایش داده می‌شود.
-                </p>
-                </section>
-                ) : (
-                  <TeacherListMode
-                    topic={topic}
-                    teachers={list}
-                    total={listTotal}
-                    loading={listLoading}
-                    onSwitchToBroadcast={() => setMode('broadcast')}
-                  />
-                )}
-              </>
+            {topic && mode === 'list' ? (
+              /* شیوهٔ فهرست اساتید — انتخاب مستقیم، بدون مراحل زمان/ثبت */
+              <TeacherListMode
+                topic={topic}
+                teachers={list}
+                total={listTotal}
+                loading={listLoading}
+                onSwitchToBroadcast={() => setMode('broadcast')}
+              />
             ) : (
-              <section className="ops-data-surface">
-                <div className="ops-data-head" style={{ marginBottom: 12 }}>
-                  <div>
-                    <strong>۱. موضوع آموزش را انتخاب کنید</strong>
-                    <span style={{ display: 'block', marginTop: 2 }}>از فهرست رسمی خدمات وُدّا — {toFaDigits(catalog.length)} موضوع تأییدشده</span>
+              <section className="ops-data-surface neon-frame" style={{ display: 'grid', gap: 14 }}>
+                {/* ─── سرستون چرخه: عنوان + شمار مرحله + نوار پیشرفت + برچسب‌ها ─── */}
+                <div style={{ display: 'grid', gap: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+                    <strong style={{ fontSize: 15.5, fontWeight: 900 }}>چرخهٔ فراخوان اساتید</strong>
+                    <span className="web-menu-count" style={{ fontSize: 11.5, padding: '4px 12px', gap: 5 }}>
+                      <Icon name="list" size={13} />
+                      مرحلهٔ {toFaDigits(wizardStep + 1)} از {toFaDigits(3)}
+                    </span>
                   </div>
-                </div>
-                <div className="web-search-fields" style={{ marginBottom: 14 }}>
-                  <label>
-                    <Icon name="search" size={18} />
-                    <input className="input-base"
-                      type="search"
-                      value={query}
-                      onChange={(event) => setQuery(event.target.value)}
-                      placeholder="جستجو در موضوعات؛ مثلاً تجوید، حفظ، صوت و لحن…"
-                      aria-label="جستجوی موضوع"
-                    />
-                  </label>
-                </div>
-                {loading ? (
-                  <p style={{ color: 'var(--ink-3)', fontSize: 13 }}>در حال دریافت موضوعات…</p>
-                ) : (
-                  <div style={{ display: 'grid', gap: 16, maxHeight: 560, overflowY: 'auto', paddingLeft: 4 }}>
-                    {grouped.map(([category, items]) => (
-                      <div key={category}>
-                        <strong style={{ display: 'block', fontSize: 12.5, color: 'var(--olive-700)', margin: '2px 0 8px' }}>{category}</strong>
-                        <div style={{ display: 'grid', gap: 8 }}>
-                          {items.map((item) => (
-                            <button
-                              key={item.id}
-                              type="button"
-                              onClick={() => { setTopic(item); setError(''); }}
-                              className="web-topic-row"
-                              title={item.description}
-                            >
-                              <span className="web-topic-icon"><Icon name="book" size={16} /></span>
-                              <span style={{ minWidth: 0, flex: 1 }}>
-                                <strong>{item.title}</strong>
-                              </span>
-                              <Icon name="chevronL" size={15} style={{ color: 'var(--ink-4)' }} />
-                            </button>
-                          ))}
-                        </div>
-                      </div>
+                  <div role="progressbar" aria-valuemin={1} aria-valuemax={3} aria-valuenow={wizardStep + 1} style={{ display: 'flex', gap: 5 }}>
+                    {wizardSteps.map((step, index) => (
+                      <span key={step} aria-hidden="true" className="wizard-progress-seg" data-done={index <= wizardStep} />
                     ))}
                   </div>
-                )}
+                  <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 2 }}>
+                    {[
+                      { key: 'topic', title: 'موضوع', icon: 'book' as const },
+                      { key: 'time', title: 'زمان', icon: 'calendar' as const },
+                      { key: 'submit', title: 'ثبت', icon: 'checkCircle' as const },
+                    ].map((step, index) => {
+                      const done = index < wizardStep;
+                      const active = index === wizardStep;
+                      return (
+                        <button
+                          key={step.key}
+                          type="button"
+                          className="wizard-step-chip"
+                          data-done={done}
+                          data-active={active}
+                          onClick={() => { if (index <= wizardStep) setWizardStep(index); }}
+                        >
+                          <Icon name={done ? 'check' : step.icon} size={12} stroke={2.2} />
+                          {step.title}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* ───── مرحلهٔ ۱: موضوع — لیست کشویی زیبا با جستجو + انتخاب شیوه ───── */}
+                {wizardStep === 0 ? (
+                  <div style={{ display: 'grid', gap: 12 }}>
+                    {loading ? (
+                      <p style={{ color: 'var(--ink-3)', fontSize: 13, margin: 0 }}>در حال دریافت موضوعات…</p>
+                    ) : (
+                      <>
+                        <MenuSelect
+                          ariaLabel="انتخاب موضوع آموزش"
+                          placeholder="موضوع را از فهرست رسمی وُدّا انتخاب کنید…"
+                          displayTitle={topic?.title}
+                          displaySub={topic ? topic.description : undefined}
+                          displayIcon={topic?.icon}
+                          countLabel="موضوع"
+                          searchable
+                          searchPlaceholder="جستجو در موضوعات؛ مثلاً تجوید، حفظ، صوت و لحن…"
+                          groups={menuGroups}
+                          onPick={(key) => {
+                            const picked = catalog.find((item) => String(item.id) === key);
+                            if (picked) { setTopic(picked); setError(''); }
+                          }}
+                        />
+                        {topic ? (
+                          <div role="status" style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '11px 13px', borderRadius: 15, background: 'var(--olive-50)', border: '1px solid var(--olive-100)' }}>
+                            <span aria-hidden="true" style={{ display: 'grid', placeItems: 'center', width: 34, height: 34, flex: '0 0 34px', borderRadius: 11, background: 'var(--olive-600)', color: '#fff' }}>
+                              <Icon name="quran" size={17} />
+                            </span>
+                            <span style={{ minWidth: 0, flex: 1, fontSize: 12, color: 'var(--olive-700)', lineHeight: 1.9, fontWeight: 600 }}>
+                              {topic.description}
+                            </span>
+                          </div>
+                        ) : (
+                          <p style={{ margin: 0, fontSize: 12, color: 'var(--ink-3)', lineHeight: 1.9 }}>
+                            از فهرست رسمی خدمات وُدّا — {toFaDigits(catalog.length)} موضوع تأییدشده
+                          </p>
+                        )}
+                      </>
+                    )}
+
+                    <strong style={{ fontSize: 13.5, display: 'block' }}>برای موضوع انتخابی کدام شیوه را می‌پسندید؟</strong>
+                    <div role="radiogroup" aria-label="شیوهٔ ادامه" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 10 }}>
+                      <button type="button" role="radio" aria-checked={mode === 'broadcast'} onClick={() => setMode('broadcast')} className="web-fancy-pill" data-active={mode === 'broadcast'} data-gold="true" style={{ minHeight: 52, justifyContent: 'flex-start', alignItems: 'flex-start', padding: 14 }}>
+                        <Icon name="bell" size={17} style={{ marginTop: 3 }} />
+                        <span style={{ textAlign: 'right' }}>
+                          <span style={{ display: 'block' }}>فراخوان زنده</span>
+                          <span style={{ display: 'block', fontSize: 11, fontWeight: 700, opacity: .85, lineHeight: 1.8 }}>درخواست شما بین همهٔ اساتید موضوع پخش می‌شود و نخستین پاسخ‌ها زنده دیده می‌شوند.</span>
+                        </span>
+                      </button>
+                      <button type="button" role="radio" aria-checked={mode === 'list'} onClick={() => setMode('list')} className="web-fancy-pill" data-active={mode === 'list'} data-gold="false" style={{ minHeight: 52, justifyContent: 'flex-start', alignItems: 'flex-start', padding: 14 }}>
+                        <Icon name="users" size={17} style={{ marginTop: 3 }} />
+                        <span style={{ textAlign: 'right' }}>
+                          <span style={{ display: 'block' }}>فهرست اساتید</span>
+                          <span style={{ display: 'block', fontSize: 11, fontWeight: 700, opacity: .85, lineHeight: 1.8 }}>پروفایل اساتید همان موضوع را ببینید و مستقیم رزرو کنید.</span>
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+
+                {/* ───── مرحلهٔ ۲: زمان — دکمه‌های فانتزی فوری/زمان‌دار ───── */}
+                {wizardStep === 1 ? (
+                  <div style={{ display: 'grid', gap: 12 }}>
+                    <strong style={{ fontSize: 13.5, display: 'block' }}>کی می‌خواهید؟</strong>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      <button type="button" onClick={() => setWhenMode('now')} className="web-fancy-pill" data-active={whenMode === 'now'} data-gold="true" aria-pressed={whenMode === 'now'}>
+                        ⚡ در اسرع وقت
+                      </button>
+                      <button type="button" onClick={() => setWhenMode('later')} className="web-fancy-pill" data-active={whenMode === 'later'} data-gold="false" aria-pressed={whenMode === 'later'}>
+                        📅 زمان مشخص
+                      </button>
+                    </div>
+                    {whenMode === 'later' ? (
+                      <input className="input-base"
+                        type="datetime-local"
+                        value={laterAt}
+                        min={new Date(Date.now() + 3600000).toISOString().slice(0, 16)}
+                        onChange={(event) => setLaterAt(event.target.value)}
+                        dir="ltr"
+                        aria-label="زمان جلسه"
+                        style={{ width: '100%', maxWidth: 320, padding: '10px 12px', borderRadius: 12, border: '1px solid var(--sand-200)', background: '#fff', fontFamily: 'inherit', marginBottom: 6 }}
+                      />
+                    ) : null}
+                    <p style={{ margin: 0, fontSize: 11.5, color: 'var(--ink-3)', lineHeight: 1.8 }}>
+                      در «در اسرع وقت» ساعت نهایی با توافق استاد مشخص می‌شود.
+                    </p>
+                  </div>
+                ) : null}
+
+                {/* ───── مرحلهٔ ۳: بازبینی و ثبت ───── */}
+                {wizardStep === 2 ? (
+                  <div style={{ display: 'grid', gap: 12 }}>
+                    <strong style={{ fontSize: 13.5, display: 'block' }}>بازبینی و ثبت فراخوان</strong>
+                    <div style={{ display: 'grid', gap: 8 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, padding: '10px 13px', borderRadius: 13, background: 'var(--sand-50)', border: '1px solid var(--sand-200)' }}>
+                        <span style={{ fontSize: 12, color: 'var(--ink-3)' }}>موضوع</span>
+                        <strong style={{ fontSize: 12.5, textAlign: 'left', minWidth: 0 }}>{topic?.title ?? '—'}</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, padding: '10px 13px', borderRadius: 13, background: 'var(--sand-50)', border: '1px solid var(--sand-200)' }}>
+                        <span style={{ fontSize: 12, color: 'var(--ink-3)' }}>زمان</span>
+                        <strong style={{ fontSize: 12.5, textAlign: 'left', minWidth: 0 }}>{whenLabelValue}</strong>
+                      </div>
+                    </div>
+
+                    <div>
+                      <strong style={{ fontSize: 13.5, display: 'block', marginBottom: 8 }}>یادداشت برای اساتید (اختیاری)</strong>
+                      <textarea className="input-base"
+                        value={note}
+                        onChange={(event) => setNote(event.target.value.slice(0, 300))}
+                        rows={2}
+                        placeholder="مثلاً: مبتدی هستم، برای شروع کمکم کنید…"
+                        style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1px solid var(--sand-200)', background: '#fff', fontFamily: 'inherit', resize: 'vertical', lineHeight: 1.9 }}
+                        aria-label="یادداشت فراخوان"
+                      />
+                    </div>
+
+                    {error ? <div className="ops-error" role="alert"><span>{error}</span></div> : null}
+
+                    <button type="button" className="web-fancy-btn web-fancy-btn-gold" onClick={() => void start()} disabled={creating || !topic} style={{ width: '100%' }}>
+                      {creating ? 'در حال ارسال…' : '🔔 ثبت فراخوان برای اساتید'}
+                    </button>
+                    <p style={{ margin: 0, fontSize: 11.5, color: 'var(--ink-3)', lineHeight: 1.8 }}>
+                      فراخوان برای همهٔ اساتیدِ تأییدشدهٔ همین موضوع پخش می‌شود و نخستین پاسخ‌ها به‌صورت زنده همین‌جا نمایش داده می‌شود.
+                    </p>
+                  </div>
+                ) : null}
+
+                {/* ─── ناوبری چرخه — بازگشت / مرحلهٔ بعد ─── */}
+                {wizardStep < 2 ? (
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    {wizardStep > 0 ? (
+                      <button type="button" className="web-fancy-ghost" onClick={() => setWizardStep((value) => Math.max(0, value - 1))} style={{ flex: '0 0 auto', minWidth: 112 }}>
+                        بازگشت
+                      </button>
+                    ) : null}
+                    <button
+                      type="button"
+                      className="web-fancy-btn"
+                      onClick={() => setWizardStep((value) => Math.min(2, value + 1))}
+                      disabled={!stepValid(wizardStep)}
+                      style={{ flex: 1, opacity: stepValid(wizardStep) ? 1 : .55 }}
+                    >
+                      مرحلهٔ بعد
+                      <Icon name="chevronL" size={15} />
+                    </button>
+                  </div>
+                ) : null}
               </section>
             )}
           </div>
@@ -581,8 +680,8 @@ function CandidateRow({
         <span className="web-filter-chip">پاسخ سریع</span>
       </div>
       <div style={{ display: 'flex', gap: 8 }}>
-        <button type="button" className="ops-ghost-btn" onClick={onDecline} disabled={busy}>رد</button>
-        <button type="button" className="ops-primary-btn" onClick={onChoose} disabled={busy}>
+        <button type="button" className="web-fancy-ghost" onClick={onDecline} disabled={busy} style={{ minWidth: 96 }}>رد</button>
+        <button type="button" className="web-fancy-btn" onClick={onChoose} disabled={busy} style={{ flex: 1 }}>
           {busy ? 'در حال ثبت…' : 'انتخاب و رزرو این استاد'}
         </button>
       </div>
@@ -617,9 +716,9 @@ function MatchedCard({
         </p>
       ) : null}
       <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
-        <Link href="/panel/user/sessions" className="ops-primary-btn" style={{ display: 'inline-flex' }}>پیگیری در جلسات من</Link>
-        <button type="button" className="ops-ghost-btn" onClick={onNew}>فراخوان جدید</button>
-        <button type="button" className="ops-ghost-btn" onClick={onCancel} disabled={canceling} style={{ color: 'var(--rose)' }}>
+        <Link href="/panel/user/sessions" className="web-fancy-btn" style={{ display: 'inline-flex', textDecoration: 'none' }}>پیگیری در جلسات من</Link>
+        <button type="button" className="web-fancy-ghost" onClick={onNew}>فراخوان جدید</button>
+        <button type="button" className="web-fancy-ghost" onClick={onCancel} disabled={canceling} style={{ color: 'var(--rose)' }}>
           {canceling ? 'در حال لغو…' : 'لغو فراخوان'}</button>
       </div>
     </section>
@@ -743,7 +842,7 @@ function TeacherListMode({
           <small>اساتید موضوع «{topic.title}»</small>
           <strong>{loading ? 'در حال دریافت اساتید…' : `${toFaDigits(total)} استاد یافت شد`}</strong>
         </div>
-        <button type="button" onClick={onSwitchToBroadcast} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'none', border: 0, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 800, fontSize: 12.5, color: 'var(--olive-600)' }}>
+        <button type="button" className="web-fancy-ghost" onClick={onSwitchToBroadcast} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12.5 }}>
           <Icon name="bell" size={15} /> کسی مناسب نبود؟ فراخوان بزنید
         </button>
       </div>
@@ -759,7 +858,7 @@ function TeacherListMode({
           <p style={{ margin: '6px 0 14px', fontSize: 12.5, color: 'var(--ink-3)', lineHeight: 1.9 }}>
             اشکالی ندارد! فراخوان بزنید تا به‌محض ثبت‌نام یا آنلاین‌شدن اساتیدِ این موضوع، درخواست شما به آن‌ها اعلام شود.
           </p>
-          <button type="button" className="ops-primary-btn" style={{ display: 'inline-flex' }} onClick={onSwitchToBroadcast}>
+          <button type="button" className="web-fancy-btn" style={{ display: 'inline-flex' }} onClick={onSwitchToBroadcast}>
             🔔 رفتن به شیوهٔ فراخوان زنده
           </button>
         </section>

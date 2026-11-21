@@ -15,12 +15,14 @@ import {
   Icon,
   IllustrationDispatch,
   LoadingState,
+  MenuSelect,
   colors,
   gradients,
   radii,
   shadows,
   spacing,
   typography,
+  type MenuGroup,
 } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
 import { showToast } from "../../ui/toast";
@@ -171,17 +173,25 @@ function CandidateCard({
       </div>
 
       <div style={{ display: "flex", gap: spacing.sm }}>
-        <Button
-          variant="secondary"
+        <button
+          type="button"
+          className="vodda-tappable"
           onClick={onDecline}
           disabled={busy}
-          style={{ minHeight: 44, flex: "0 0 auto", paddingInline: 16 }}
+          style={{ ...fancyGhost, minHeight: 44, flex: "0 0 auto", width: "auto", minWidth: 96, paddingInline: 16, opacity: busy ? 0.6 : 1 }}
         >
           {L("رد")}
-        </Button>
-        <Button onClick={onChoose} loading={busy} disabled={busy} style={{ minHeight: 44, flex: 1 }}>
-          {L("انتخاب و رزرو این استاد")}
-        </Button>
+        </button>
+        <button
+          type="button"
+          className="vodda-tappable"
+          onClick={onChoose}
+          disabled={busy}
+          style={{ ...fancyPrimary, minHeight: 44, flex: 1, opacity: busy ? 0.65 : 1, cursor: busy ? "wait" : "pointer" }}
+        >
+          {busy ? L("در حال ثبت…") : L("انتخاب و رزرو این استاد")}
+          <Icon name="checkCircle" size={16} />
+        </button>
       </div>
     </div>
   );
@@ -201,13 +211,48 @@ const chipStyle: React.CSSProperties = {
 
 type ScreenMode = "idle" | "searching" | "matched";
 
+/* ─── دکمه‌های فانتزی فراخوان — گرادیانی/پیل به‌جای کادر ─── */
+const fancyPrimary: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 8,
+  minHeight: 50,
+  paddingInline: 20,
+  borderRadius: 999,
+  border: "none",
+  cursor: "pointer",
+  fontFamily: typography.fontFamily,
+  fontWeight: 800,
+  fontSize: 14,
+  color: colors.onOlive,
+  background: gradients.hero,
+  boxShadow: shadows.olive,
+  width: "100%",
+};
+
+const fancyGold: React.CSSProperties = {
+  ...fancyPrimary,
+  color: "#fffaf0",
+  background: "linear-gradient(145deg,#d8b869,#b8923c)",
+  boxShadow: "0 10px 26px rgba(184,146,60,.38)",
+};
+
+const fancyGhost: React.CSSProperties = {
+  ...fancyPrimary,
+  color: colors.inkSecondary,
+  background: colors.surface,
+  border: `1.5px solid ${colors.sand200}`,
+  boxShadow: "none",
+  fontWeight: 700,
+};
+
 export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }) {
   const runtime = usePlatform();
   const { L, lang, N } = useAppearance();
   const [catalog, setCatalog] = useState<OfficialService[]>([]);
   const [catalogLoading, setCatalogLoading] = useState(true);
   const [catalogError, setCatalogError] = useState("");
-  const [query, setQuery] = useState("");
   const [selectedTopic, setSelectedTopic] = useState<OfficialService | null>(null);
   const [note, setNote] = useState("");
   const [whenMode, setWhenMode] = useState<"now" | "later">("now");
@@ -223,6 +268,8 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
   const [resuming, setResuming] = useState(true);
   const [payMethod, setPayMethod] = useState<"wallet" | "gateway">("gateway");
   const [tick, setTick] = useState(0);
+  // ویزارد مرحله‌ای فراخوان — هر مرحله چرخهٔ مستقل خودش: ۰ موضوع، ۱ زمان، ۲ ثبت
+  const [composerStep, setComposerStep] = useState(0);
   const pollRef = useRef<number | null>(null);
   /** فراخوانی که کاربر با «فراخوان جدید» از آن عبور کرده — تا کارت موفقیت
    *  دوباره روی آهنگ‌ساز تحمیل نشود و بتوان فراخوان تازه ساخت. */
@@ -284,23 +331,15 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
     [call, tick],
   );
 
-  const filteredCatalog = useMemo(() => {
-    const q = query.trim();
-    if (!q) return catalog;
-    return catalog.filter(
-      (item) => item.title.includes(q) || item.category.includes(q) || item.description.includes(q),
-    );
-  }, [catalog, query]);
-
   const grouped = useMemo(() => {
     const groups = new Map<string, OfficialService[]>();
-    for (const item of filteredCatalog) {
+    for (const item of catalog) {
       const rows = groups.get(item.category) ?? [];
       rows.push(item);
       groups.set(item.category, rows);
     }
     return [...groups.entries()];
-  }, [filteredCatalog]);
+  }, [catalog]);
 
   /* گزینه‌های شمسی «زمان مشخص» — هم‌سو با فرم مراسم (A3/B1) */
   const dayOptions = useMemo(
@@ -637,16 +676,55 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
         ) : null}
 
         <div style={{ position: "sticky", zIndex: 12, bottom: "calc(68px + env(safe-area-inset-bottom))", padding: "8px 0 12px", background: colors.sand50 }}>
-          <Button variant="secondary" fullWidth loading={canceling} disabled={canceling} onClick={() => void cancel()} style={{ minHeight: 50 }}>
-            {L("لغو فراخوان")}
-          </Button>
+          <button
+            type="button"
+            className="vodda-tappable"
+            disabled={canceling}
+            onClick={() => void cancel()}
+            style={{ ...fancyGhost, minHeight: 50, opacity: canceling ? 0.65 : 1, cursor: canceling ? "wait" : "pointer" }}
+          >
+            {canceling ? L("در حال لغو…") : L("لغو فراخوان")}
+          </button>
         </div>
       </div>
     );
   }
 
-  // ── idle: topic picker + call composer ──
+  // ── idle: ویزارد مرحله‌ای فراخوان — موضوع → زمان → ثبت ──
   const topic = selectedTopic;
+  const composerSteps = useMemo(
+    () => [
+      { key: "topic", title: L("موضوع"), icon: "book" as const },
+      { key: "time", title: L("زمان"), icon: "calendar" as const },
+      { key: "submit", title: L("ثبت"), icon: "checkCircle" as const },
+    ],
+    [L],
+  );
+  const composerValid = (step: number): boolean => {
+    switch (step) {
+      case 0: return topic !== null;
+      case 1: return whenMode === "later" ? isWhenInFuture(when) : true;
+      default: return true;
+    }
+  };
+  const whenLabelValue =
+    whenMode === "now"
+      ? L("جلسهٔ فوری — همین حالا")
+      : (() => {
+          const option = dayOptions.find((item) => item.value === when.localDate);
+          return `${option?.label ?? when.localDate} · ${localizedDigits(String(when.hh).padStart(2, "0"), lang)}:${localizedDigits(String(when.mm).padStart(2, "0"), lang)}`;
+        })();
+  const topicGroups = useMemo<MenuGroup[]>(
+    () => grouped.map(([category, items]) => ({
+      title: L(category),
+      items: items.map((item) => ({
+        key: String(item.id),
+        title: L(item.title),
+        icon: item.icon,
+      })),
+    })),
+    [grouped, L],
+  );
   return (
     <div className="vodda-screen" style={{ display: "grid", gap: spacing.lg }}>
       <div
@@ -686,36 +764,168 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
         </div>
       </div>
 
-      {topic ? (
-        <Card className="vodda-enter" style={{ padding: 18, borderRadius: 20, display: "grid", gap: spacing.md }}>
-          <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-            <div style={{ display: "grid", placeItems: "center", width: 42, height: 42, borderRadius: 13, background: colors.olive50, color: colors.olive600, flex: "0 0 42px" }}>
-              <TopicIcon icon={topic.icon} size={21} />
-            </div>
-            <div style={{ minWidth: 0, flex: 1 }}>
-              <strong style={{ display: "block", fontSize: 15, fontWeight: 800, color: colors.ink }}>{topic.title}</strong>
-              <span style={{ fontSize: 12, color: colors.inkMuted, lineHeight: 1.8, display: "block" }}>{topic.description}</span>
-            </div>
-            <button
-              type="button"
-              onClick={() => { setSelectedTopic(null); setActionError(""); }}
-              aria-label={L("تغییر موضوع")}
-              style={{ background: "none", border: "none", color: colors.inkMuted, cursor: "pointer", padding: 4, fontFamily: typography.fontFamily }}
+      {/* ─── ویزارد مرحله‌ای فراخوان — هر مرحله چرخهٔ مستقل خودش، نه زیرشاخهٔ مراحل قبل ─── */}
+      <Card className="vodda-enter vodda-enter-delay-1" style={{ padding: 18, borderRadius: 20, display: "grid", gap: spacing.md }}>
+        {/* سرستون چرخه: عنوان + شمار مرحله + نوار پیشرفت + برچسب‌ها */}
+        <div style={{ display: "grid", gap: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+            <strong style={{ fontSize: 15.5, fontWeight: 900, color: colors.ink, minWidth: 0 }}>
+              {L("چرخهٔ فراخوان اساتید")}
+            </strong>
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 5,
+                padding: "4px 12px",
+                borderRadius: 999,
+                background: colors.olive50,
+                border: `1px solid ${colors.olive100}`,
+                color: colors.olive700,
+                fontSize: 11.5,
+                fontWeight: 800,
+                flex: "0 0 auto",
+                whiteSpace: "nowrap",
+              }}
             >
-              <Icon name="refresh" size={17} />
-            </button>
+              <Icon name="list" size={13} />
+              {L("مرحلهٔ {n} از {m}")
+                .replace("{n}", localizedDigits(composerStep + 1, lang))
+                .replace("{m}", localizedDigits(composerSteps.length, lang))}
+            </span>
           </div>
 
-          <div style={{ height: 1, background: colors.sand150 }} />
+          {/* نوار پیشرفت — هر پاره‌خط یک مرحله؛ انجام‌شده پررنگ */}
+          <div role="progressbar" aria-valuemin={1} aria-valuemax={composerSteps.length} aria-valuenow={composerStep + 1} style={{ display: "flex", gap: 5 }}>
+            {composerSteps.map((step, index) => (
+              <span
+                key={step.key}
+                aria-hidden="true"
+                style={{
+                  flex: 1,
+                  height: 5,
+                  borderRadius: 999,
+                  background: index <= composerStep ? colors.olive600 : colors.sand150,
+                  transition: "background .3s ease",
+                }}
+              />
+            ))}
+          </div>
 
-          <div>
-            <strong style={{ fontSize: 13.5, color: colors.ink, display: "block", marginBottom: 8 }}>{L("چه زمانی؟")}</strong>
+          {/* برچسب مراحل — انجام‌شده تیک، فعلی برجسته؛ مراحل قبلی برای بازگشت کلیک‌پذیرند */}
+          <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 2 }}>
+            {composerSteps.map((step, index) => {
+              const done = index < composerStep;
+              const active = index === composerStep;
+              return (
+                <button
+                  key={step.key}
+                  type="button"
+                  onClick={() => { if (index <= composerStep) setComposerStep(index); }}
+                  aria-current={active ? "step" : undefined}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 5,
+                    padding: "5px 11px",
+                    borderRadius: 999,
+                    flex: "0 0 auto",
+                    whiteSpace: "nowrap",
+                    fontSize: 11,
+                    fontWeight: 800,
+                    cursor: index <= composerStep ? "pointer" : "default",
+                    fontFamily: typography.fontFamily,
+                    color: done ? "#fffaf0" : active ? colors.olive700 : colors.inkMuted,
+                    background: done ? colors.olive600 : active ? colors.olive50 : colors.surface,
+                    border: `1px solid ${done ? colors.olive600 : active ? colors.olive100 : colors.sand150}`,
+                  }}
+                >
+                  <Icon name={done ? "check" : step.icon} size={12} stroke={2.2} />
+                  {step.title}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div style={{ height: 1, background: colors.sand150 }} />
+
+        {/* ───── مرحلهٔ ۱: موضوع — لیست کشویی زیبا با جستجو ───── */}
+        {composerStep === 0 ? (
+          <div style={{ display: "grid", gap: 12 }}>
+            {catalogLoading ? (
+              <LoadingState label={L("در حال دریافت موضوعات…")} />
+            ) : catalogError ? (
+              <ErrorState
+                title={L("دریافت موضوعات ناموفق بود")}
+                description={L(catalogError)}
+                action={<Button variant="secondary" onClick={() => void loadCatalog()}>{L("تلاش دوباره")}</Button>}
+              />
+            ) : catalog.length === 0 ? (
+              <EmptyState
+                illustration={<IllustrationDispatch size={150} />}
+                title={L("موضوعی برای فراخوان نیست")}
+                description={L("فهرست رسمی موضوعات خالی است.")}
+              />
+            ) : (
+              <>
+                <MenuSelect
+                  ariaLabel="انتخاب موضوع آموزش"
+                  placeholder={L("موضوع را از فهرست رسمی وُدّا انتخاب کنید…")}
+                  displayTitle={topic ? L(topic.title) : undefined}
+                  displaySub={topic ? topic.category : undefined}
+                  displayIcon={topic?.icon}
+                  countLabel={L("موضوع")}
+                  searchable
+                  searchPlaceholder={L("جستجو در موضوعات؛ مثلاً تجوید، حفظ، صوت و لحن…")}
+                  groups={topicGroups}
+                  onPick={(key) => {
+                    const picked = catalog.find((item) => String(item.id) === key);
+                    if (!picked) return;
+                    setSelectedTopic(picked);
+                    setActionError("");
+                  }}
+                />
+                {topic ? (
+                  <div
+                    role="status"
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: 10,
+                      padding: "11px 13px",
+                      borderRadius: 15,
+                      background: colors.olive50,
+                      border: `1px solid ${colors.olive100}`,
+                    }}
+                  >
+                    <span aria-hidden="true" style={{ display: "grid", placeItems: "center", width: 34, height: 34, flex: "0 0 34px", borderRadius: 11, background: colors.olive600, color: colors.onOlive }}>
+                      <TopicIcon icon={topic.icon} size={17} />
+                    </span>
+                    <span style={{ minWidth: 0, flex: 1, fontSize: 12, color: colors.olive700, lineHeight: 1.9, fontWeight: 600 }}>
+                      {topic.description}
+                    </span>
+                  </div>
+                ) : (
+                  <p style={{ margin: 0, fontSize: 12, color: colors.inkMuted, lineHeight: 1.9 }}>
+                    {L("از فهرست رسمی خدمات وُدّا — {n} موضوع تأییدشده").replace("{n}", fa(catalog.length, lang))}
+                  </p>
+                )}
+              </>
+            )}
+          </div>
+        ) : null}
+
+        {/* ───── مرحلهٔ ۲: زمان — دکمه‌های فانتزی فوری/زمان‌دار ───── */}
+        {composerStep === 1 ? (
+          <div style={{ display: "grid", gap: 12 }}>
+            <strong style={{ fontSize: 13.5, color: colors.ink }}>{L("چه زمانی؟")}</strong>
             <div style={{ display: "flex", gap: spacing.sm, flexWrap: "wrap" }}>
-              <button type="button" aria-pressed={whenMode === "now"} onClick={() => setWhenMode("now")} className="vodda-tappable" style={whenChip(whenMode === "now", true)}>
-                <Icon name="sparkle" size={14} style={{ marginInlineEnd: 5 }} /> {L("جلسهٔ فوری — همین حالا")}
+              <button type="button" aria-pressed={whenMode === "now"} onClick={() => setWhenMode("now")} className="vodda-tappable" style={fancyWhen(whenMode === "now", true)}>
+                <Icon name="sparkle" size={14} /> {L("جلسهٔ فوری — همین حالا")}
               </button>
-              <button type="button" aria-pressed={whenMode === "later"} onClick={() => setWhenMode("later")} className="vodda-tappable" style={whenChip(whenMode === "later", false)}>
-                <Icon name="calendar" size={14} style={{ marginInlineEnd: 5 }} /> {L("زمان مشخص")}
+              <button type="button" aria-pressed={whenMode === "later"} onClick={() => setWhenMode("later")} className="vodda-tappable" style={fancyWhen(whenMode === "later", false)}>
+                <Icon name="calendar" size={14} /> {L("زمان مشخص")}
               </button>
             </div>
             {whenMode === "now" ? (
@@ -725,7 +935,7 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
                   display: "flex",
                   alignItems: "flex-start",
                   gap: 9,
-                  marginTop: 10,
+                  marginTop: 2,
                   padding: "10px 12px",
                   borderRadius: 14,
                   border: `1px solid ${colors.goldSoft}`,
@@ -742,9 +952,8 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
                   </span>
                 </span>
               </div>
-            ) : null}
-            {whenMode === "later" ? (
-              <div style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr", gap: spacing.sm, marginTop: 10 }}>
+            ) : (
+              <div style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr", gap: spacing.sm, marginTop: 2 }}>
                 <SelectField
                   ariaLabel={L("روز جلسه")}
                   value={when.localDate}
@@ -761,115 +970,100 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
                   options={timeOptions}
                 />
               </div>
-            ) : null}
-            <p style={{ margin: "8px 0 0", fontSize: 12, color: colors.inkMuted, lineHeight: 1.8 }}>
+            )}
+            <p style={{ margin: 0, fontSize: 12, color: colors.inkMuted, lineHeight: 1.8 }}>
               {whenMode === "later"
                 ? L("ساعت‌ها به وقت تهران است؛ زمان نهایی با تأیید استاد قطعی می‌شود.")
                 : L("بعد از ثبت، اساتید آماده اعلام حضور می‌کنند و شما یکی را انتخاب می‌کنید.")}
             </p>
           </div>
+        ) : null}
 
-          <div>
-            <strong style={{ fontSize: 13.5, color: colors.ink, display: "block", marginBottom: 8 }}>{L("یادداشت برای اساتید (اختیاری)")}</strong>
-            <textarea
-              value={note}
-              onChange={(event) => setNote(event.target.value.slice(0, 300))}
-              rows={2}
-              placeholder={L("مثلاً: مبتدی هستم، برای شروع کمکم کنید…")}
-              style={{ ...inputStyle, resize: "none", lineHeight: 1.9 }}
-              aria-label={L("یادداشت فراخوان")}
-            />
-          </div>
-
-          {actionError ? (
-            <p role="alert" style={{ ...typography.bodySmall, padding: spacing.md, borderRadius: radii.md, background: colors.dangerBackground, color: colors.danger, margin: 0 }}>
-              {L(actionError)}
-            </p>
-          ) : null}
-
-          <div style={{ display: "grid", gap: spacing.sm }}>
-            <Button fullWidth loading={creating} disabled={creating} onClick={() => void start()} style={{ minHeight: 52 }}>
-              {L("ثبت فراخوان برای اساتید")}
-            </Button>
-            <Button variant="secondary" fullWidth onClick={() => navigateApp(`/search?topic=${topic.id}`, config)} style={{ minHeight: 46 }}>
-              {L("یا مشاهدهٔ اساتید همین موضوع")}
-            </Button>
-          </div>
-        </Card>
-      ) : (
-        <Card className="vodda-enter vodda-enter-delay-1" style={{ padding: 18, borderRadius: 20 }}>
-          <strong style={{ fontSize: 15, fontWeight: 800, color: colors.ink, display: "block" }}>{L("۱. موضوع آموزش را انتخاب کنید")}</strong>
-          <span style={{ fontSize: 12, color: colors.inkMuted, display: "block", margin: "4px 0 12px" }}>
-            {L("از فهرست رسمی خدمات وُدّا — {n} موضوع تأییدشده").replace("{n}", fa(catalog.length, lang))}
-          </span>
-          <input
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder={L("جستجو در موضوعات؛ مثلاً تجوید، حفظ، صوت و لحن…")}
-            style={{ ...inputStyle, marginBottom: 12 }}
-            aria-label={L("جستجوی موضوع")}
-          />
-          {catalogLoading ? (
-            <LoadingState label={L("در حال دریافت موضوعات…")} />
-          ) : catalogError ? (
-            <ErrorState
-              title={L("دریافت موضوعات ناموفق بود")}
-              description={L(catalogError)}
-              action={<Button variant="secondary" onClick={() => void loadCatalog()}>{L("تلاش دوباره")}</Button>}
-            />
-          ) : filteredCatalog.length === 0 ? (
-            <EmptyState
-              illustration={<IllustrationDispatch size={150} />}
-              title={L("موضوعی پیدا نشد")}
-              description={L("عبارت دیگری را جستجو کنید.")}
-            />
-          ) : (
-            <div style={{ display: "grid", gap: spacing.lg, maxHeight: 520, overflowY: "auto", paddingInlineEnd: 4 }}>
-              {grouped.map(([category, items]) => (
-                <div key={category}>
-                  <strong style={{ display: "block", fontSize: 12.5, color: colors.olive700, margin: "2px 0 8px" }}>{L(category)}</strong>
-                  <div style={{ display: "grid", gap: spacing.sm }}>
-                    {items.map((item) => (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => { setSelectedTopic(item); setActionError(""); }}
-                        style={topicRowStyle}
-                      >
-                        <span style={{ display: "grid", placeItems: "center", width: 34, height: 34, borderRadius: 11, background: colors.olive50, color: colors.olive600, flex: "0 0 34px" }}>
-                          <TopicIcon icon={item.icon} size={17} />
-                        </span>
-                        <span style={{ minWidth: 0, flex: 1 }}>
-                          <strong style={{ display: "block", fontSize: 13.5, fontWeight: 700, color: colors.ink }}>{L(item.title)}</strong>
-                        </span>
-                        <Icon name="chevronL" size={15} style={{ color: colors.inkFaint, flex: "0 0 auto" }} />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ))}
+        {/* ───── مرحلهٔ ۳: بازبینی و ثبت ───── */}
+        {composerStep === 2 ? (
+          <div style={{ display: "grid", gap: 12 }}>
+            <strong style={{ fontSize: 13.5, color: colors.ink }}>{L("بازبینی و ثبت فراخوان")}</strong>
+            <div style={{ display: "grid", gap: 8 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 16, padding: "10px 13px", borderRadius: 13, background: colors.sand50, border: `1px solid ${colors.sand150}` }}>
+                <span style={{ fontSize: 12, color: colors.inkMuted }}>{L("موضوع")}</span>
+                <strong style={{ fontSize: 12.5, textAlign: "left", minWidth: 0 }}>{topic ? L(topic.title) : "—"}</strong>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 16, padding: "10px 13px", borderRadius: 13, background: colors.sand50, border: `1px solid ${colors.sand150}` }}>
+                <span style={{ fontSize: 12, color: colors.inkMuted }}>{L("زمان")}</span>
+                <strong style={{ fontSize: 12.5, textAlign: "left", minWidth: 0 }}>{whenLabelValue}</strong>
+              </div>
             </div>
-          )}
-        </Card>
-      )}
+
+            <div>
+              <strong style={{ fontSize: 13.5, color: colors.ink, display: "block", marginBottom: 8 }}>{L("یادداشت برای اساتید (اختیاری)")}</strong>
+              <textarea
+                value={note}
+                onChange={(event) => setNote(event.target.value.slice(0, 300))}
+                rows={2}
+                placeholder={L("مثلاً: مبتدی هستم، برای شروع کمکم کنید…")}
+                style={{ ...inputStyle, resize: "none", lineHeight: 1.9 }}
+                aria-label={L("یادداشت فراخوان")}
+              />
+            </div>
+
+            {actionError ? (
+              <p role="alert" style={{ ...typography.bodySmall, padding: spacing.md, borderRadius: radii.md, background: colors.dangerBackground, color: colors.danger, margin: 0 }}>
+                {L(actionError)}
+              </p>
+            ) : null}
+
+            <button type="button" className="vodda-tappable" disabled={creating || !topic} onClick={() => void start()} style={{ ...fancyGold, opacity: creating || !topic ? 0.6 : 1, cursor: creating ? "wait" : !topic ? "not-allowed" : "pointer" }}>
+              <Icon name="bell" size={16} />
+              {creating ? L("در حال ارسال…") : L("ثبت فراخوان برای اساتید")}
+            </button>
+            <button type="button" className="vodda-tappable" onClick={() => navigateApp(topic ? `/search?topic=${topic.id}` : "/search", config)} style={{ ...fancyGhost, minHeight: 46 }}>
+              <Icon name="search" size={15} />
+              {L("یا مشاهدهٔ اساتید همین موضوع")}
+            </button>
+          </div>
+        ) : null}
+
+        {/* ─── ناوبری چرخه — بازگشت / مرحلهٔ بعد ─── */}
+        {composerStep < composerSteps.length - 1 ? (
+          <div style={{ display: "flex", gap: spacing.sm }}>
+            {composerStep > 0 ? (
+              <button type="button" className="vodda-tappable" onClick={() => setComposerStep((value) => value - 1)} style={{ ...fancyGhost, flex: "0 0 auto", width: "auto", minWidth: 118 }}>
+                {L("بازگشت")}
+              </button>
+            ) : null}
+            <button
+              type="button"
+              className="vodda-tappable"
+              disabled={!composerValid(composerStep)}
+              onClick={() => setComposerStep((value) => Math.min(composerSteps.length - 1, value + 1))}
+              style={{ ...fancyPrimary, flex: 1, opacity: composerValid(composerStep) ? 1 : 0.55, cursor: composerValid(composerStep) ? "pointer" : "not-allowed" }}
+            >
+              {L("مرحلهٔ بعد")}
+              <Icon name="chevronL" size={15} />
+            </button>
+          </div>
+        ) : null}
+      </Card>
     </div>
   );
 }
 
-const whenChip = (active: boolean, gold = false): React.CSSProperties => ({
+/* دکمهٔ فانتزی زمان — گرادیانی/پیل به‌جای چیپ کادری */
+const fancyWhen = (active: boolean, gold = false): React.CSSProperties => ({
   display: "inline-flex",
   alignItems: "center",
-  padding: "9px 14px",
+  gap: 6,
+  padding: "11px 18px",
   borderRadius: 999,
   fontSize: 13,
-  fontWeight: 700,
+  fontWeight: 800,
   cursor: "pointer",
   fontFamily: "inherit",
-  color: active ? (gold ? colors.goldInk : colors.onOlive) : colors.inkSecondary,
-  background: active ? (gold ? colors.goldSurface : colors.olive600) : colors.surface,
-  border: `1px solid ${active ? (gold ? colors.goldAccent : colors.olive600) : colors.sand200}`,
-  boxShadow: active && gold ? "0 0 0 3px rgba(231,213,168,.28)" : "none",
+  color: active ? (gold ? "#fffaf0" : colors.onOlive) : colors.inkSecondary,
+  background: active ? (gold ? "linear-gradient(145deg,#d8b869,#b8923c)" : gradients.hero) : colors.surface,
+  border: `1.5px solid ${active ? "transparent" : colors.sand200}`,
+  boxShadow: active ? (gold ? "0 10px 26px rgba(184,146,60,.38)" : shadows.olive) : "none",
+  transition: "transform .18s ease, box-shadow .18s ease",
 });
 
 const inputStyle: React.CSSProperties = {
@@ -883,20 +1077,6 @@ const inputStyle: React.CSSProperties = {
   fontFamily: "inherit",
   outline: "none",
   boxSizing: "border-box",
-};
-
-const topicRowStyle: React.CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  gap: 10,
-  padding: 10,
-  textAlign: "right",
-  background: colors.sand50,
-  border: `1px solid ${colors.sand200}`,
-  borderRadius: 14,
-  cursor: "pointer",
-  fontFamily: "inherit",
-  width: "100%",
 };
 
 const liveDotStyle: React.CSSProperties = {
