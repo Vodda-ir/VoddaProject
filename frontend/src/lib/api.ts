@@ -65,6 +65,8 @@ export type Teacher = {
   skills?: string[];
   /** نشانی محل برگزاری جلسات حضوری استاد — خالی یعنی فقط «محل شما». */
   in_person_address?: string;
+  /** کلید جلسهٔ فوری استاد — رزرو آغاز دو دقیقهٔ بعد ممکن می‌شود. */
+  instant_enabled?: boolean;
   user?: { id: number; name: string; avatar_url: string; active?: boolean; updated_at?: string };
   services?: TeacherService[];
 };
@@ -384,6 +386,8 @@ export const api = {
       scheduled_at: string;
       note?: string;
       payment_method?: PaymentMethod;
+      /** جلسهٔ فوری — آغاز دو دقیقهٔ بعد (نیازمند کلید فعال استاد). */
+      instant?: boolean;
       /** جلسات حضوری — محل برگزاری: teacher (دفتر استاد) یا learner (محل شما). */
       in_person_place?: 'teacher' | 'learner';
       in_person_address?: string;
