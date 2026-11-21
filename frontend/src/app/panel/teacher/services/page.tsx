@@ -125,17 +125,19 @@ export default function TeacherServicesPage() {
             const busy = busyId === service.id;
             return (
               <article className="ops-row" key={service.id} style={{ opacity: busy ? .55 : 1 }}>
-                <span style={{ width: 44, height: 44, display: 'grid', placeItems: 'center', flex: '0 0 44px', borderRadius: 13, color: 'var(--olive-700)', background: 'var(--olive-100)' }}>
-                  <Icon name="book" size={20} />
+                <span style={{ width: 44, height: 44, display: 'grid', placeItems: 'center', flex: '0 0 44px', borderRadius: 13, color: service.mode === 'in_person' ? '#8d6d1f' : 'var(--olive-700)', background: service.mode === 'in_person' ? 'var(--gold-bg)' : 'var(--olive-100)' }}>
+                  <Icon name={service.mode === 'in_person' ? 'pin' : 'book'} size={20} />
                 </span>
                 <div className="ops-row-main">
                   <div className="ops-row-title">
                     <strong>{service.title}</strong>
+                    {service.mode === 'in_person' && <PanelStatus status="pending">حضوری</PanelStatus>}
                     <PanelStatus status={service.active ? 'active' : 'pending'}>{service.active ? 'فعال و قابل رزرو' : 'غیرفعال'}</PanelStatus>
                   </div>
                   <div className="ops-row-meta">
                     <span><Icon name="clock" size={13} />{toFaDigits(service.duration)} دقیقه</span>
                     <span>{formatFaNumber(service.price)} تومان</span>
+                    {service.mode === 'in_person' && <span><Icon name="pin" size={13} />جلسهٔ حضوری — در محل استاد یا محل قرآن‌آموز</span>}
                     <span>#{toFaDigits(service.id)}</span>
                   </div>
                 </div>

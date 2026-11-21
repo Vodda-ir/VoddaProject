@@ -70,7 +70,7 @@ function tokenRole(token: string | undefined): string {
 
 /** ۱.الف.۵ — پرچم درجه ۱ (فقط ادمین) */
 async function handleTeacherFlags(request: NextRequest, path: string[]): Promise<Response> {
-  const token = request.cookies.get('vodda_token')?.value;
+  const token = request.cookies.get('vodda_token')?.value ?? request.headers.get('authorization')?.replace(/^Bearer /i, '') ?? '';
   if (tokenRole(token) !== 'admin') {
     return NextResponse.json({ error: 'دسترسی فقط برای ادمین مجاز است' }, { status: 403 });
   }
@@ -96,7 +96,7 @@ async function handleTeacherFlags(request: NextRequest, path: string[]): Promise
 
 /** ۱.الف.۶ — امتیاز و سطح استاد */
 async function handleScore(request: NextRequest, path: string[]): Promise<Response> {
-  const token = request.cookies.get('vodda_token')?.value;
+  const token = request.cookies.get('vodda_token')?.value ?? request.headers.get('authorization')?.replace(/^Bearer /i, '') ?? '';
   // GET score/teacher/:id برای صاحب حساب و ادمین؛ POST رویداد فقط ادمین.
   if (!token && !isPublicRequest('GET', ['teachers'])) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
@@ -175,7 +175,7 @@ async function handleFreeServices(request: NextRequest): Promise<Response> {
  * فقط PUT ادمین‌سازی‌شده است. پاسخ GET فقط یک کلید بولی دارد — هیچ دادهٔ حساسی نیست. */
 
 async function handleAppSettings(request: NextRequest): Promise<Response> {
-  const token = request.cookies.get('vodda_token')?.value;
+  const token = request.cookies.get('vodda_token')?.value ?? request.headers.get('authorization')?.replace(/^Bearer /i, '') ?? '';
   const isAdmin = tokenRole(token) === 'admin';
 
   if (request.method === 'GET') {
@@ -293,7 +293,7 @@ async function verifiedSession(token: string | undefined): Promise<VerifiedSessi
 }
 
 async function handleStories(request: NextRequest, path: string[]): Promise<Response> {
-  const token = request.cookies.get('vodda_token')?.value;
+  const token = request.cookies.get('vodda_token')?.value ?? request.headers.get('authorization')?.replace(/^Bearer /i, '') ?? '';
 
   /* GET /stories — برند برای همه؛ استادی‌ها فقط برای دنبال‌کننده‌ها و صاحب استوری
    * ۱.ب.۳ — کلید استوری‌ها خاموش = فهرست همیشه خالی؛ سامانهٔ استوری برای همه پنهان است. */
@@ -399,7 +399,7 @@ async function handleStories(request: NextRequest, path: string[]): Promise<Resp
 /* ═════════ دنبال‌کردن اساتید (E2) — مسیرهای محلی BFF ═════════ */
 
 async function handleFollows(request: NextRequest, path: string[]): Promise<Response> {
-  const token = request.cookies.get('vodda_token')?.value;
+  const token = request.cookies.get('vodda_token')?.value ?? request.headers.get('authorization')?.replace(/^Bearer /i, '') ?? '';
 
   /* GET /follows/count/:teacherId — عمومی (نمایش روی پروفایل) */
   if (request.method === 'GET' && path[1] === 'count' && path.length === 3) {
@@ -478,7 +478,7 @@ async function proxy(request: NextRequest, context: RouteContext): Promise<Respo
     return handleFreeServices(request);
   }
 
-  const token = request.cookies.get('vodda_token')?.value;
+  const token = request.cookies.get('vodda_token')?.value ?? request.headers.get('authorization')?.replace(/^Bearer /i, '') ?? '';
   if (!token && !isPublicRequest(request.method, path)) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }

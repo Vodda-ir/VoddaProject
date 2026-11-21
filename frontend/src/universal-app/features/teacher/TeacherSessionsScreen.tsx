@@ -51,8 +51,12 @@ type TeacherSession = {
   rejectNote: string;
   /** جلسهٔ فوری — رزرو همین‌لحظه. */
   instant: boolean;
-  /** نوع جلسهٔ آنلاین — تلفنی/متنی/تصویری. */
+  /** نوع جلسه — تلفنی/متنی/تصویری/حضوری. */
   mode: string;
+  /** جلسات حضوری — محل برگزاری: "teacher" یا "learner". */
+  inPersonPlace: string;
+  /** نشانی دقیق محل برگزاری جلسات حضوری. */
+  inPersonAddress: string;
   /** در لحظهٔ دریافت فهرست هنوز دیده‌نشده بود — با نشان قرمز مشخص می‌شود. */
   unseen: boolean;
 };
@@ -97,6 +101,10 @@ function parseTeacherSession(value: unknown): TeacherSession | null {
     rejectNote: asString(row.reject_note),
     instant: row.instant === true,
     mode: asString(row.mode),
+    inPersonPlace: asString(row.in_person_place) === "teacher" || asString(row.in_person_place) === "learner"
+      ? asString(row.in_person_place)
+      : "",
+    inPersonAddress: asString(row.in_person_address),
     // دیده‌نشده = مهر دیده‌شدن هنوز ثبت نشده باشد؛ هم نشان سروری و هم
     // حالت قدیمی transient پشتیبانی می‌شود.
     unseen: row.unseen === true || asString(row.teacher_seen_at) === "",
@@ -226,10 +234,11 @@ function SessionCard({
           ) : null}
           {session.mode ? (
             (() => {
-              const map: Record<string, { label: string; icon: "phone" | "message" | "video" }> = {
+              const map: Record<string, { label: string; icon: "phone" | "message" | "video" | "pin" }> = {
                 voice: { label: "تلفنی و صوتی", icon: "phone" },
                 text: { label: "متنی (چت)", icon: "message" },
                 video: { label: "تصویری", icon: "video" },
+                in_person: { label: "حضوری", icon: "pin" },
               };
               const meta = map[session.mode];
               if (!meta) return null;
@@ -277,6 +286,31 @@ function SessionCard({
         <Icon name="calendar" size={16} style={{ flex: "0 0 auto", color: colors.olive500 }} />
         {officialTime(session, L, lang) || L("زمان رسمی جلسه دریافت نشد")}
       </div>
+
+      {/* جلسات حضوری — نشانی محل برگزاری برای استاد دیده می‌شود */}
+      {session.mode === "in_person" && session.inPersonAddress ? (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 6,
+            padding: "11px 14px",
+            borderRadius: 13,
+            background: colors.goldBackground,
+            border: `1px solid ${colors.goldSoft}`,
+            color: colors.goldDark,
+            fontSize: 12,
+            fontWeight: 600,
+            lineHeight: 1.9,
+          }}
+        >
+          <Icon name="pin" size={15} style={{ flex: "0 0 auto", marginTop: 4, color: colors.goldDark }} />
+          <span style={{ minWidth: 0, flex: 1, wordBreak: "break-word" }}>
+            {L("محل برگزاری: {n}")
+              .replace("{n}", session.inPersonPlace === "teacher" ? L("در محل شما — ") + session.inPersonAddress : L("در محل قرآن‌آموز — ") + session.inPersonAddress)}
+          </span>
+        </div>
+      ) : null}
 
       {session.note ? <p style={{ margin: 0, fontSize: 12, color: colors.inkMuted }}>{L("یادداشت: {note}").replace("{note}", session.note)}</p> : null}
       {session.rejectNote ? <p style={{ margin: 0, fontSize: 12, color: colors.clay }}>{L("دلیل رد: {note}").replace("{note}", session.rejectNote)}</p> : null}

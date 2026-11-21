@@ -369,14 +369,16 @@ func (h *Handler) GetOnlineServices(c *gin.Context) {
 }
 
 // PutOnlineService handles PUT /teacher/online-services/:mode — creates or
-// updates the bookable service row behind one online session mode. The title
-// is fixed by the server; the teacher only sets duration/price/active.
+// updates the bookable service row behind one session mode (voice/text/
+// video/in_person). The title is fixed by the server; the teacher only sets
+// duration/price/active (plus the meeting address for in_person).
 func (h *Handler) PutOnlineService(c *gin.Context) {
         mode := domain.SessionMode(strings.ToLower(strings.TrimSpace(c.Param("mode"))))
         var in struct {
-                Duration int   `json:"duration" binding:"required"`
-                Price    int64 `json:"price"`
-                Active   *bool `json:"active"`
+                Duration int    `json:"duration" binding:"required"`
+                Price    int64  `json:"price"`
+                Active   *bool  `json:"active"`
+                Address  string `json:"address"`
         }
         if err := c.ShouldBindJSON(&in); err != nil {
                 fail(c, domain.ErrValidation)
@@ -386,7 +388,7 @@ func (h *Handler) PutOnlineService(c *gin.Context) {
         if in.Active != nil {
                 active = *in.Active
         }
-        items, err := h.Teacher.UpsertOnlineService(c, userID(c), mode, in.Duration, in.Price, active)
+        items, err := h.Teacher.UpsertOnlineService(c, userID(c), mode, in.Duration, in.Price, active, in.Address)
         if err != nil {
                 fail(c, err)
                 return
@@ -472,13 +474,15 @@ func (h *Handler) DeleteWorkTime(c *gin.Context) {
 
 func (h *Handler) Book(c *gin.Context) {
         var in struct {
-                TeacherID     uint   `json:"teacher_id" binding:"required"`
-                ServiceID     uint   `json:"service_id" binding:"required"`
-                ScheduledAt   string `json:"scheduled_at" binding:"required"`
-                Note          string `json:"note"`
-                PaymentMethod string `json:"payment_method"`
-                ReturnTo      string `json:"return_to"`
-                Instant       bool   `json:"instant"`
+                TeacherID       uint   `json:"teacher_id" binding:"required"`
+                ServiceID       uint   `json:"service_id" binding:"required"`
+                ScheduledAt     string `json:"scheduled_at" binding:"required"`
+                Note            string `json:"note"`
+                PaymentMethod   string `json:"payment_method"`
+                ReturnTo        string `json:"return_to"`
+                Instant         bool   `json:"instant"`
+                InPersonPlace   string `json:"in_person_place"`
+                InPersonAddress string `json:"in_person_address"`
         }
         if err := c.ShouldBindJSON(&in); err != nil {
                 fail(c, domain.ErrValidation)
@@ -490,13 +494,15 @@ func (h *Handler) Book(c *gin.Context) {
                 return
         }
         result, err := h.Session.Book(c, userID(c), usecase.BookInput{
-                TeacherID:     in.TeacherID,
-                ServiceID:     in.ServiceID,
-                ScheduledAt:   at,
-                Note:          in.Note,
-                PaymentMethod: in.PaymentMethod,
-                ReturnPath:    in.ReturnTo,
-                Instant:       in.Instant,
+                TeacherID:       in.TeacherID,
+                ServiceID:       in.ServiceID,
+                ScheduledAt:     at,
+                Note:            in.Note,
+                PaymentMethod:   in.PaymentMethod,
+                ReturnPath:      in.ReturnTo,
+                Instant:         in.Instant,
+                InPersonPlace:   in.InPersonPlace,
+                InPersonAddress: in.InPersonAddress,
         })
         if err != nil {
                 fail(c, err)

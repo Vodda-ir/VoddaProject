@@ -44,8 +44,20 @@ export type BookingGatewayResult = {
 
 export async function createBooking(
   runtime: PlatformRuntime,
-  input: { teacherId: number; serviceId: number; scheduledAt: string; note?: string; paymentMethod?: BookingPaymentMethod; instant?: boolean },
+  input: {
+    teacherId: number;
+    serviceId: number;
+    scheduledAt: string;
+    note?: string;
+    paymentMethod?: BookingPaymentMethod;
+    instant?: boolean;
+    /** جلسات حضوری — محل برگزاری: "teacher" (دفتر استاد) یا "learner" (محل شما). */
+    inPersonPlace?: "teacher" | "learner";
+    /** نشانی دقیق محل — فقط برای inPersonPlace === "learner". */
+    inPersonAddress?: string;
+  },
 ) {
+  const inPerson = input.inPersonPlace === "teacher" || input.inPersonPlace === "learner";
   return runtime.request<ApiEnvelope<BookingGatewayResult>>("/sessions", {
     method: "POST",
     body: JSON.stringify({
@@ -56,6 +68,13 @@ export async function createBooking(
       payment_method: input.paymentMethod ?? "wallet",
       // جلسهٔ فوری — رزرو همین‌لحظه (نیازمند فعال‌بودن کلید استاد)
       instant: input.instant === true,
+      // جلسات حضوری — محل برگزاری و نشانی (برای جلسات آنلاین ارسال نمی‌شود)
+      ...(inPerson
+        ? {
+            in_person_place: input.inPersonPlace,
+            in_person_address: inPerson && input.inPersonPlace === "learner" ? (input.inPersonAddress?.trim() ?? "") : "",
+          }
+        : {}),
       // بعد از راند‌تریپ درگاه، کاربر به فهرست جلسات اپ یونیورسال برمی‌گردد
       // (نه پنل قدیمی) — قرارداد در backend: sanitizeReturnPath.
       return_to: APP_LANDING_SESSIONS,

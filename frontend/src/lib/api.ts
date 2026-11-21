@@ -19,6 +19,8 @@ export type TeacherService = {
   price: number;
   icon?: string;
   active?: boolean;
+  /** نوع جلسه: voice/text/video یا in_person (جلسهٔ حضوری)؛ خالی = خدمت معمولی. */
+  mode?: 'voice' | 'text' | 'video' | 'in_person' | '';
 };
 
 export type OfficialService = {
@@ -61,6 +63,8 @@ export type Teacher = {
   sessions: number;
   followers: number;
   skills?: string[];
+  /** نشانی محل برگزاری جلسات حضوری استاد — خالی یعنی فقط «محل شما». */
+  in_person_address?: string;
   user?: { id: number; name: string; avatar_url: string; active?: boolean; updated_at?: string };
   services?: TeacherService[];
 };
@@ -111,6 +115,11 @@ export type SessionListItem = {
   note?: string;
   reject_note?: string;
   rated: boolean;
+  /** نوع جلسه: voice/text/video/in_person؛ خالی = جلسهٔ معمولی. */
+  mode?: string;
+  /** جلسات حضوری — محل برگزاری و نشانی. */
+  in_person_place?: string;
+  in_person_address?: string;
   learner?: { id: number; name: string; avatar_url?: string; updated_at?: string };
   teacher?: Teacher;
 };
@@ -369,7 +378,16 @@ export const api = {
     }),
   bookSession: (
     token: string,
-    body: { teacher_id: number; service_id: number; scheduled_at: string; note?: string; payment_method?: PaymentMethod },
+    body: {
+      teacher_id: number;
+      service_id: number;
+      scheduled_at: string;
+      note?: string;
+      payment_method?: PaymentMethod;
+      /** جلسات حضوری — محل برگزاری: teacher (دفتر استاد) یا learner (محل شما). */
+      in_person_place?: 'teacher' | 'learner';
+      in_person_address?: string;
+    },
   ) =>
     request<{ data: BookingResult }>('/sessions', {
       method: 'POST',
