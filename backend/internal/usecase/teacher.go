@@ -262,13 +262,15 @@ func (uc *TeacherUsecase) DeleteService(ctx context.Context, userID, serviceID u
         return uc.teachers.DeleteService(ctx, t.ID, serviceID)
 }
 
-// ── online session services (voice / text / video) ──
+// ── session services (voice / text / video / in_person) ──
 
-// OnlineServiceConfig is the merged view of one of the three online session
-// offerings managed from «خدمات جلسات آنلاین». service_id is 0 until the
-// teacher saves the config the first time; saving creates the underlying
-// bookable service row (regular price/duration flow, wallet & gateway
-// settlement included) so bookings keep working through the existing path.
+// OnlineServiceConfig is the merged view of one bookable session offering
+// managed from «خدمات جلسات آنلاین» (voice/text/video) and «خدمات جلسات
+// حضوری» (in_person). service_id is 0 until the teacher saves the config the
+// first time; saving creates the underlying bookable service row (regular
+// price/duration flow, wallet & gateway settlement included) so bookings
+// keep working through the existing path. For in_person, Address carries the
+// teacher's public meeting address (دفتر/مؤسسه) used by «در محل استاد».
 type OnlineServiceConfig struct {
         Mode      string `json:"mode"`
         Title     string `json:"title"`
@@ -277,15 +279,17 @@ type OnlineServiceConfig struct {
         Price     int64  `json:"price"`
         Active    bool   `json:"active"`
         ServiceID uint   `json:"service_id"`
+        Address   string `json:"address,omitempty"`
 }
 
-// onlineServiceCatalog is the platform-owned catalog of the three online
-// session styles. Titles are server-side constants — the teacher only sets
-// duration, price and the active switch.
+// onlineServiceCatalog is the platform-owned catalog of the session styles.
+// Titles are server-side constants — the teacher only sets duration, price
+// and the active switch (plus the meeting address for in_person).
 var onlineServiceCatalog = []OnlineServiceConfig{
         {Mode: "voice", Title: "جلسهٔ تلفنی و صوتی", Icon: "phone", Duration: 30, Price: 150_000, Active: false},
         {Mode: "text", Title: "جلسهٔ متنی (چت)", Icon: "message", Duration: 60, Price: 100_000, Active: false},
         {Mode: "video", Title: "جلسهٔ تصویری", Icon: "video", Duration: 45, Price: 200_000, Active: false},
+        {Mode: "in_person", Title: "جلسهٔ حضوری", Icon: "pin", Duration: 60, Price: 300_000, Active: false},
 }
 
 func onlineServiceDefault(mode domain.SessionMode) (OnlineServiceConfig, bool) {
@@ -297,14 +301,14 @@ func onlineServiceDefault(mode domain.SessionMode) (OnlineServiceConfig, bool) {
         return OnlineServiceConfig{}, false
 }
 
-// OnlineServices returns the three online session configs of the teacher,
-// merged with any saved rows.
+// OnlineServices returns the session configs of the teacher (online styles +
+// in_person), merged with any saved rows.
 func (uc *TeacherUsecase) OnlineServices(ctx context.Context, userID uint) ([]OnlineServiceConfig, error) {
         t, err := uc.teacherForUser(ctx, userID)
         if err != nil {
                 return nil, err
         }
-        saved := make(map[domain.SessionMode]domain.Service, 3)
+        saved := make(map[domain.SessionMode]domain.Service, len(onlineServiceCatalog))
         for _, s := range t.Services {
                 if s.Mode != "" {
                         saved[s.Mode] = s
@@ -318,15 +322,21 @@ func (uc *TeacherUsecase) OnlineServices(ctx context.Context, userID uint) ([]On
                         entry.Active = row.Active
                         entry.ServiceID = row.ID
                 }
+                // نشانی محل برگزاری حضوری — ملک پروفایل استاد، فقط برای ردیف حضوری
+                if domain.SessionMode(entry.Mode) == domain.ModeInPerson {
+                        entry.Address = t.InPersonAddress
+                }
                 out = append(out, entry)
         }
         return out, nil
 }
 
 // UpsertOnlineService creates or updates the service row behind one of the
-// three online session modes. Teachers self-serve these configs: the titles
-// come from the server catalog, so no moderation round-trip is needed.
-func (uc *TeacherUsecase) UpsertOnlineService(ctx context.Context, userID uint, mode domain.SessionMode, duration int, price int64, active bool) ([]OnlineServiceConfig, error) {
+// session modes (voice/text/video/in_person). Teachers self-serve these
+// configs: the titles come from the server catalog, so no moderation
+// round-trip is needed. For in_person, address (optional) updates the
+// teacher's public meeting address used by «در محل استاد» bookings.
+func (uc *TeacherUsecase) UpsertOnlineService(ctx context.Context, userID uint, mode domain.SessionMode, duration int, price int64, active bool, address string) ([]OnlineServiceConfig, error) {
         defaults, ok := onlineServiceDefault(mode)
         if !ok || duration < 10 || duration > 240 || price < 0 || price > 1_000_000_000 {
                 return nil, domain.ErrValidation
@@ -334,6 +344,16 @@ func (uc *TeacherUsecase) UpsertOnlineService(ctx context.Context, userID uint, 
         t, err := uc.teacherForUser(ctx, userID)
         if err != nil {
                 return nil, err
+        }
+        if mode == domain.ModeInPerson {
+                clean := strings.TrimSpace(address)
+                if len([]rune(clean)) > 255 {
+                        return nil, domain.ErrValidation
+                }
+                t.InPersonAddress = clean
+                if err := uc.teachers.Update(ctx, t); err != nil {
+                        return nil, err
+                }
         }
         var existing *domain.Service
         for i := range t.Services {

@@ -1,4 +1,4 @@
-export type SessionMode = "voice" | "text" | "video";
+export type SessionMode = "voice" | "text" | "video" | "in_person";
 
 export type TeacherService = {
   id: number;
@@ -7,7 +7,7 @@ export type TeacherService = {
   price: number;
   icon: string;
   active: boolean;
-  /** نوع جلسهٔ آنلاین: "voice" | "text" | "video"؛ خالی = خدمت معمولی. */
+  /** نوع جلسه: "voice" | "text" | "video" | "in_person"؛ خالی = خدمت معمولی. */
   mode: SessionMode | "";
 };
 
@@ -50,6 +50,8 @@ export type Teacher = {
   tier1Badges?: string[];
   /** کلید جلسهٔ فوری — استاد پذیرای رزرو همین‌لحظه است. */
   instantEnabled: boolean;
+  /** نشانی محل برگزاری جلسات حضوری استاد (دفتر/مؤسسه) — خالی یعنی فقط «محل شما». */
+  inPersonAddress: string;
   /** کلید جلسات رایگان — خدمات صفر تومانی استاد فعال‌اند. */
   freeEnabled: boolean;
   rating: number;
@@ -87,7 +89,10 @@ function booleanValue(value: unknown, fallback = false) {
 export function parseTeacherService(value: unknown): TeacherService {
   const data = record(value);
   const rawMode = stringValue(data.mode);
-  const mode: SessionMode | "" = rawMode === "voice" || rawMode === "text" || rawMode === "video" ? rawMode : "";
+  const mode: SessionMode | "" =
+    rawMode === "voice" || rawMode === "text" || rawMode === "video" || rawMode === "in_person"
+      ? rawMode
+      : "";
   return {
     id: numberValue(data.id),
     title: stringValue(data.title),
@@ -149,6 +154,7 @@ export function parseTeacher(value: unknown): Teacher {
       ? data.tier1_badges.filter((item): item is string => typeof item === "string")
       : undefined,
     instantEnabled: booleanValue(data.instant_enabled),
+    inPersonAddress: stringValue(data.in_person_address),
     freeEnabled: booleanValue(data.free_enabled, true),
     rating: numberValue(data.rating),
     reviews: numberValue(data.reviews),

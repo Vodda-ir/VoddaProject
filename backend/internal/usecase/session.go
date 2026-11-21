@@ -85,6 +85,11 @@ type BookInput struct {
         // ViaDispatch marks the booking as born from a فراخوان confirm — used
         // by the settlement path to auto-confirm instant dispatch sessions.
         ViaDispatch bool
+        // In-person bookings (جلسات حضوری) declare where the meeting happens:
+        // "teacher" (at the teacher's registered address) or "learner" with the
+        // learner-provided address in InPersonAddress. Ignored for online modes.
+        InPersonPlace   string
+        InPersonAddress string
 }
 
 // Book creates a booking: the wallet method charges the learner's wallet up
@@ -130,6 +135,31 @@ func (uc *SessionUsecase) Book(ctx context.Context, learnerID uint, in BookInput
                 return nil, domain.ErrFreeUnavailable
         }
 
+        // جلسات حضوری — قواعد مخصوص حضور: رزرو فوری معنا ندارد (استاد باید خود را
+        // به محل برساند) و محل برگزاری باید صریح انتخاب شده باشد.
+        inPerson := svc.Mode == domain.ModeInPerson
+        if inPerson {
+                if in.Instant {
+                        return nil, domain.ErrValidation
+                }
+                place := strings.TrimSpace(in.InPersonPlace)
+                if place != "teacher" && place != "learner" {
+                        return nil, domain.ErrValidation
+                }
+                if place == "teacher" && strings.TrimSpace(teacher.InPersonAddress) == "" {
+                        return nil, domain.ErrValidation
+                }
+                if place == "learner" {
+                        addr := strings.TrimSpace(in.InPersonAddress)
+                        if len([]rune(addr)) < 5 || len([]rune(addr)) > 255 {
+                                return nil, domain.ErrValidation
+                        }
+                }
+        } else {
+                // فیلدهای حضوری برای جلسات آنلاین بی‌معنا هستند — نادیده گرفته می‌شوند.
+                in.InPersonPlace, in.InPersonAddress = "", ""
+        }
+
         now := time.Now()
         if in.Instant {
                 // جلسهٔ فوری — رزرو همین لحظه: پنجرهٔ آغاز کوتاه و بدون قالب هفتگی.
@@ -163,7 +193,10 @@ func (uc *SessionUsecase) Book(ctx context.Context, learnerID uint, in BookInput
         // summon chime for these titles (see CallAlertBar matching).
         notifyTitle := "درخواست جلسه جدید: " + svc.Title
         notifyBody := "یک قرآن‌آموز برای «" + svc.Title + "» درخواست جلسه ثبت کرد؛ از بخش درخواست‌ها تأیید یا رد کنید."
-        if in.Instant {
+        if inPerson {
+                notifyTitle = "درخواست جلسهٔ حضوری جدید: " + svc.Title
+                notifyBody = "یک قرآن‌آموز جلسهٔ حضوری «" + svc.Title + "» رزرو کرد؛ از بخش درخواست‌های جلسه تأیید یا رد کنید."
+        } else if in.Instant {
                 notifyTitle = "جلسهٔ فوری جدید: " + svc.Title
                 notifyBody = "یک قرآن‌آموز همین حالا درخواست جلسهٔ فوری ثبت کرد؛ سریع تأیید کنید تا کلاس آغاز شود."
         } else if svc.Price == 0 {
@@ -184,6 +217,15 @@ func (uc *SessionUsecase) Book(ctx context.Context, learnerID uint, in BookInput
                 Instant:     in.Instant,
                 ViaDispatch: in.ViaDispatch,
                 Mode:        svc.Mode,
+        }
+        // snapshot محل برگزاری حضوری — نشانی استاد یا نشانی واردهٔ قرآن‌آموز
+        if inPerson {
+                s.InPersonPlace = strings.TrimSpace(in.InPersonPlace)
+                if s.InPersonPlace == "teacher" {
+                        s.InPersonAddress = strings.TrimSpace(teacher.InPersonAddress)
+                } else {
+                        s.InPersonAddress = strings.TrimSpace(in.InPersonAddress)
+                }
         }
 
         if gatewayPayment {

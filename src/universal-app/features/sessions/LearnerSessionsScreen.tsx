@@ -67,12 +67,13 @@ function canCancel(session: LearnerSession): boolean {
   return Number.isNaN(timestamp) || Date.now() < timestamp;
 }
 
-/** برچسب کوتاه نوع جلسهٔ آنلاین روی کارت. */
+/** برچسب کوتاه نوع جلسه روی کارت. */
 function sessionModeChip(session: LearnerSession, L: (text: string) => string) {
-  const map: Record<string, { label: string; icon: "phone" | "message" | "video" }> = {
+  const map: Record<string, { label: string; icon: "phone" | "message" | "video" | "pin" }> = {
     voice: { label: "تلفنی و صوتی", icon: "phone" },
     text: { label: "متنی (چت)", icon: "message" },
     video: { label: "تصویری", icon: "video" },
+    in_person: { label: "حضوری", icon: "pin" },
   };
   const meta = map[session.mode];
   if (!meta) return null;
@@ -158,6 +159,31 @@ function SessionCard({
         <Icon name="calendar" size={16} style={{ flex: "0 0 auto", color: colors.olive500 }} />
         {officialTime(session, lang, L)}
       </div>
+
+      {/* جلسات حضوری — نشانی دقیق محل برگزاری روی کارت دیده می‌شود */}
+      {session.mode === "in_person" && session.inPersonAddress ? (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 6,
+            padding: "11px 14px",
+            borderRadius: 13,
+            background: colors.goldBackground,
+            border: `1px solid ${colors.goldSoft}`,
+            color: colors.goldDark,
+            fontSize: 12,
+            fontWeight: 600,
+            lineHeight: 1.9,
+          }}
+        >
+          <Icon name="pin" size={15} style={{ flex: "0 0 auto", marginTop: 4, color: colors.goldDark }} />
+          <span style={{ minWidth: 0, flex: 1, wordBreak: "break-word" }}>
+            {L("محل برگزاری: {n}")
+              .replace("{n}", session.inPersonPlace === "teacher" ? L("در محل استاد — ") + session.inPersonAddress : session.inPersonAddress)}
+          </span>
+        </div>
+      ) : null}
 
       {session.rejectNote ? (
         <p style={{ ...typography.caption, margin: 0, color: colors.danger }}>

@@ -125,6 +125,8 @@ function mockTeacher(
     /* ۱.۲ — نگاشت درجهٔ نمونه به کلید واقعی tierMeta تا مهر آبی/سبز/قرمز در پیش‌نمایش دیده شود */
     tier: tier === 'gold' ? 'international' : tier === 'silver' ? 'grade2' : 'grade3',
     instant_enabled: id % 3 === 1,
+    /* جلسات حضوری (۱.۱۰) — استاد نمونهٔ ۱ نشانی دفتر دارد تا ویزارد حضوری کامل دیده شود */
+    in_person_address: id === 1 ? 'تهران، خیابان ولیعصر، کوچهٔ مهر، پلاک ۱۲، واحد ۳' : '',
     free_enabled: id % 5 === 2,
     rating,
     reviews,
@@ -151,12 +153,19 @@ function onlineService(id: number, title: string, price: number, mode: 'voice' |
   return { id, title, duration, price, icon, active: true, mode };
 }
 
+/** جلسهٔ حضوری نمونهٔ پیش‌نمایش — مرحلهٔ محل برگزاری + موضوع + زمان + پرداخت */
+function inPersonService(id: number, title: string, price: number, duration: number): MockService {
+  return { id, title, duration, price, icon: 'pin', active: true, mode: 'in_person' };
+}
+
 const MOCK_TEACHERS = [
   mockTeacher(1, 'استاد احمد محمدی', 'تهران', false, 'gold', 4.8, 32, [
     service(1, 'روخوانی قرآن کریم', 320_000),
     onlineService(101, 'تماس تلفنی قرآنی', 180_000, 'voice', 30),
     onlineService(102, 'چت پرسش و پاسخ قرآنی', 120_000, 'text', 40),
     onlineService(103, 'کلاس تصویری تجوید', 350_000, 'video', 60),
+    /* جلسهٔ حضوری نمونه — بخش «خدمات حضوری» و ویزارد مخصوص حضور */
+    inPersonService(104, 'جلسهٔ حضوری', 300_000, 60),
     service(2, 'آموزش الفبا و نوآموزان', 200_000),
   ], 't-01.png'),
   mockTeacher(2, 'استاد فاطمه حسینی', 'قم', true, 'silver', 4.9, 41, [service(1, 'روخوانی قرآن کریم', 280_000), service(3, 'روان‌خوانی و اصلاح قرائت', 300_000), freeService(19, 'آشنایی با روخوانی — جلسهٔ آغازین')], 't-02.png'),
@@ -291,7 +300,11 @@ export function previewMockResponse(request: NextRequest, path: string[]): Respo
      * هرگز در تولید ست نمی‌شود. */
     let role = '';
     try {
-      const token = request.cookies.get('vodda_token')?.value ?? '';
+      /* نقش از کوکی یا هدر Authorization خوانده می‌شود — هدر برای فراخوانی
+       * سمت‌سرورِ middleware پنل در پیش‌نمایش لازم است. */
+      const token = request.cookies.get('vodda_token')?.value
+        ?? request.headers.get('authorization')?.replace(/^Bearer /i, '')
+        ?? '';
       const payload = token
         ? (JSON.parse(Buffer.from(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8')) as { role?: unknown })
         : {};
@@ -338,6 +351,90 @@ export function previewMockResponse(request: NextRequest, path: string[]): Respo
   /* ۱.۷ — جزئیات جلسهٔ نمونهٔ پیش‌نمایش */
   if (head === 'sessions' && path.length === 2) {
     return jsonResponse({ data: mockSession(Number(path[1]) || 9001, request) });
+  }
+  /* ۱.۱۰ — فهرست جلسات نمونهٔ پیش‌نمایش — یک جلسهٔ حضوری تا چیپ «حضوری» و
+   * نشانی محل برگزاری روی کارت جلسات دیده شود */
+  if (head === 'sessions' && path.length === 1) {
+    const detail = mockSession(9001, request);
+    const inPerson = {
+      ...detail,
+      id: 9002,
+      service: 'جلسهٔ حضوری',
+      title: 'جلسهٔ حضوری',
+      duration: 60,
+      price: 300_000,
+      status: 'pending',
+      instant: false,
+      mode: 'in_person',
+      in_person_place: 'teacher',
+      in_person_address: 'تهران، خیابان ولیعصر، کوچهٔ مهر، پلاک ۱۲، واحد ۳',
+      note: 'روخوانی و تصحیح سورهٔ بقره',
+    };
+    return jsonResponse({ data: [detail, inPerson] });
+  }
+  /* ۱.۱۰ — خدمات جلسهٔ استاد در پیش‌نمایش (سه نوع آنلاین + حضوری با نشانی) */
+  if (head === 'teacher' && path[1] === 'online-services') {
+    return jsonResponse({
+      data: {
+        services: [
+          { mode: 'voice', title: 'جلسهٔ تلفنی و صوتی', icon: 'phone', duration: 30, price: 150_000, active: true, service_id: 901 },
+          { mode: 'text', title: 'جلسهٔ متنی (چت)', icon: 'message', duration: 60, price: 100_000, active: false, service_id: 902 },
+          { mode: 'video', title: 'جلسهٔ تصویری', icon: 'video', duration: 45, price: 200_000, active: true, service_id: 903 },
+          { mode: 'in_person', title: 'جلسهٔ حضوری', icon: 'pin', duration: 60, price: 300_000, active: true, service_id: 904, address: 'تهران، خیابان ولیعصر، کوچهٔ مهر، پلاک ۱۲، واحد ۳' },
+        ],
+      },
+    });
+  }
+  /* ۱.۱۰ — شمار جلسات دیده‌نشدهٔ استاد در پیش‌نمایش */
+  if (head === 'teacher' && path[1] === 'sessions' && path[2] === 'unseen-count') {
+    return jsonResponse({ data: { count: 0 } });
+  }
+  /* ۱.۱۰ — فهرست جلسات استاد در پیش‌نمایش — شامل جلسهٔ حضوری با نشانی محل */
+  if (head === 'teacher' && path[1] === 'sessions' && path.length === 2 && path[2] !== 'mark-seen') {
+    const detail = mockSession(9001, request);
+    const inPerson = {
+      ...detail,
+      id: 9002,
+      learner: { id: 47, name: 'سارا محمدی', avatar_url: '' },
+      service: 'جلسهٔ حضوری',
+      title: 'جلسهٔ حضوری',
+      duration: 60,
+      price: 300_000,
+      status: 'pending',
+      instant: false,
+      mode: 'in_person',
+      in_person_place: 'learner',
+      in_person_address: 'قم، خیابان انقلاب، کوچهٔ ۱۲، پلاک ۷، طبقهٔ دوم',
+      note: 'روخوانی و تصحیح سورهٔ بقره',
+    };
+    return jsonResponse({ data: [detail, inPerson] });
+  }
+  /* ۱.۱۰ — پروفایل استاد در پیش‌نمایش — خدمات فعال نمونه */
+  if (head === 'teacher' && path[1] === 'me' && path.length === 2 && request.method === 'GET') {
+    return jsonResponse({
+      data: {
+        id: 1,
+        user_id: 101,
+        in_person_address: 'تهران، خیابان ولیعصر، کوچهٔ مهر، پلاک ۱۲، واحد ۳',
+        services: [
+          { id: 901, official_service_id: 1, title: 'روخوانی قرآن کریم', duration: 60, price: 320_000, icon: 'book', active: true, mode: '' },
+          { id: 904, official_service_id: null, title: 'جلسهٔ حضوری', duration: 60, price: 300_000, icon: 'pin', active: true, mode: 'in_person' },
+        ],
+      },
+    });
+  }
+  /* ۱.۱۰ — تحلیل‌های نمونه تا چیدمان پنل بدون درنگ ۳۰ ثانیه‌ای بار شود */
+  if (head === 'me' && path[1] === 'analytics') {
+    return jsonResponse({
+      data: {
+        days: 30,
+        series: [],
+        totals: {
+          sessions_total: 0, pending: 0, confirmed: 0, done: 0,
+          canceled: 0, rated: 0, minutes_learned: 0, teachers_count: 0, spent_total: 0,
+        },
+      },
+    });
   }
   if (head === 'notifications') {
     return jsonResponse({ data: [] });

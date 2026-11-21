@@ -104,6 +104,10 @@ type Teacher struct {
         // InstantEnabled اجازهٔ رزرو فوری (همین لحظه) را می‌دهد؛ وقتی خاموش باشد
         // درخواست‌های فوری و فراخوان‌های فوری به این استاد نمی‌رسند.
         InstantEnabled bool `gorm:"default:false" json:"instant_enabled"`
+        // InPersonAddress is the teacher's public meeting address (دفتر، مؤسسه،
+        // مسجد…) for جلسات حضوری booked «در محل استاد». Empty means learners can
+        // only book this teacher in-person at their own place.
+        InPersonAddress string `gorm:"size:255;default:''" json:"in_person_address"`
         // FreeEnabled کلید اصلی جلسات رایگان است؛ وقتی خاموش باشد خدمات صفر
         // تومانی این استاد از تابلوی رایگان حذف و رزرو رایگان بسته می‌شود.
         FreeEnabled bool `gorm:"default:true" json:"free_enabled"`
@@ -140,22 +144,26 @@ func (t *Teacher) Normalize() {
         }
 }
 
-// SessionMode enumerates the hosting style of an online session. "" keeps
+// SessionMode enumerates the hosting style of a session. "" keeps
 // legacy behaviour (video class + coordination chat); "voice" is the in-app
 // private phone-style call (numbers stay hidden), "text" is the rich chat
-// session (text, voice notes, images) and "video" is the live video class.
+// session (text, voice notes, images), "video" is the live video class and
+// "in_person" is جلسهٔ حضوری — the meeting happens at a physical location
+// (teacher's registered address or the learner's place), never instant.
 type SessionMode string
 
 const (
         ModeVoice SessionMode = "voice"
         ModeText  SessionMode = "text"
         ModeVideo SessionMode = "video"
+        ModeInPerson SessionMode = "in_person"
 )
 
 // Service is a bookable offering of a teacher. The title is always sourced
 // from the platform's official service catalog (OfficialServiceID); teachers
-// cannot invent custom service titles. Mode marks one of the three online
-// session offerings (voice/text/video) managed from «خدمات جلسات آنلاین».
+// cannot invent custom service titles. Mode marks the session offering
+// (voice/text/video managed from «خدمات جلسات آنلاین», in_person from
+// «خدمات جلسات حضوری»).
 type Service struct {
         ID                uint        `gorm:"primaryKey" json:"id"`
         TeacherID         uint        `gorm:"index" json:"teacher_id"`
@@ -256,8 +264,13 @@ type Session struct {
         // auto-confirmed (gateway settlement included) without a second accept.
         ViaDispatch bool `gorm:"default:false" json:"via_dispatch"`
         // Mode snapshots the hosting style of the booked service (voice/text/
-        // video); empty keeps the legacy video-class behaviour.
+        // video/in_person); empty keeps the legacy video-class behaviour.
         Mode SessionMode `gorm:"size:16;default:''" json:"mode"`
+        // In-person sessions snapshot where the meeting happens: "teacher" (at
+        // the teacher's registered InPersonAddress) or "learner" (address the
+        // learner provided, kept in InPersonAddress). Empty for online sessions.
+        InPersonPlace   string `gorm:"size:10;default:''" json:"in_person_place"`
+        InPersonAddress string `gorm:"size:255;default:''" json:"in_person_address"`
         // TeacherSeenAt is set the first time the owning teacher views the session
         // (list or detail) — the base of the unseen counter badge.
         TeacherSeenAt *time.Time `gorm:"index" json:"teacher_seen_at,omitempty"`

@@ -28,6 +28,7 @@ import { formatWalletAmount } from "../wallet/WalletTransactionCard";
 import { getTeacherDetail, fetchMyFollows, fetchFollowerCount, toggleFollowTeacher } from "./api";
 import type { TeacherDetail, TeacherReview, TeacherService } from "./types";
 import { BookingWizardSheet, type BookingWizardResult } from "../booking/BookingWizardSheet";
+import { InPersonWizardSheet, type InPersonWizardResult } from "../booking/InPersonWizardSheet";
 
 function reviewDate(value: string, lang: "fa" | "en") {
   if (!value) return "";
@@ -63,15 +64,16 @@ function ServiceCard({ service, onSelect }: { service: TeacherService; onSelect:
               marginTop: 4,
               padding: "2px 9px",
               borderRadius: 999,
-              background: colors.olive50,
-              border: `1px solid ${colors.olive100}`,
-              color: colors.olive700,
+              background: service.mode === "in_person" ? colors.goldBackground : colors.olive50,
+              border: `1px solid ${service.mode === "in_person" ? colors.goldSoft : colors.olive100}`,
+              color: service.mode === "in_person" ? colors.goldDark : colors.olive700,
               fontSize: 11.5,
               fontWeight: 700,
             }}
           >
-            <Icon name="clock" size={12} stroke={2} />
-            {formatWalletAmount(service.duration)} {L("دقیقه")}
+            <Icon name={service.mode === "in_person" ? "pin" : "clock"} size={12} stroke={2} />
+            {service.mode === "in_person" ? L("حضوری") : formatWalletAmount(service.duration)}
+            {service.mode !== "in_person" ? ` ${L("دقیقه")}` : ""}
           </span>
         </div>
         <span style={{ flexShrink: 0, display: "grid", justifyItems: "end", gap: 5 }}>
@@ -175,8 +177,17 @@ export function LearnerTeacherProfileScreen({
   const [wizardOpen, setWizardOpen] = useState(false);
   const [wizardService, setWizardService] = useState<TeacherService | null>(null);
   const [wizardDefaultInstant, setWizardDefaultInstant] = useState(false);
+  /* ویزارد حضوری — خدمات با mode=in_person کادر مخصوص خودشان را دارند */
+  const [inPersonOpen, setInPersonOpen] = useState(false);
+  const [inPersonService, setInPersonService] = useState<TeacherService | null>(null);
 
   const openBookingWizard = (service: TeacherService) => {
+    // جلسات حضوری به ویزارد مخصوص حضور می‌روند (محل برگزاری، موضوع، زمان، پرداخت)
+    if (service.mode === "in_person") {
+      setInPersonService(service);
+      setInPersonOpen(true);
+      return;
+    }
     setWizardService(service);
     setWizardDefaultInstant(false);
     setWizardOpen(true);
@@ -198,6 +209,16 @@ export function LearnerTeacherProfileScreen({
     }
     if (result.wasInstant && result.instantSessionId > 0) {
       navigateApp(`/session/${result.instantSessionId}`, config);
+      return;
+    }
+    navigateApp("/sessions", config);
+  };
+
+  const handleInPersonBooked = (result: InPersonWizardResult) => {
+    setInPersonOpen(false);
+    setInPersonService(null);
+    if (result.gateway) {
+      navigateApp("/sessions", config);
       return;
     }
     navigateApp("/sessions", config);
@@ -530,6 +551,15 @@ export function LearnerTeacherProfileScreen({
         defaultInstant={wizardDefaultInstant}
         onClose={() => setWizardOpen(false)}
         onBooked={handleWizardBooked}
+      />
+
+      {/* ویزارد رزرو حضوری — خدمات حضوری کادر مخصوص خودشان را دارند */}
+      <InPersonWizardSheet
+        open={inPersonOpen}
+        teacher={teacher}
+        initialService={inPersonService}
+        onClose={() => setInPersonOpen(false)}
+        onBooked={handleInPersonBooked}
       />
     </section>
   );

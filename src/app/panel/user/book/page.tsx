@@ -24,6 +24,9 @@ export default function BookingPage() {
   const [selectedDateKey, setSelectedDateKey] = useState('');
   const [selectedStart, setSelectedStart] = useState('');
   const [note, setNote] = useState('');
+  // جلسات حضوری — محل برگزاری: دفتر استاد یا محل شما (با نشانی واردهٔ کاربر)
+  const [inPersonPlace, setInPersonPlace] = useState<'teacher' | 'learner' | ''>('');
+  const [inPersonAddress, setInPersonAddress] = useState('');
   const [loading, setLoading] = useState(true);
   const [loadingAvailability, setLoadingAvailability] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -85,6 +88,10 @@ export default function BookingPage() {
 
   const services = useMemo(() => (teacher?.services || []).filter((service) => service.active !== false), [teacher]);
   const selectedService = useMemo(() => services.find((service) => service.id === serviceId) || null, [serviceId, services]);
+  // جلسهٔ حضوری — ویزارد مراحل مخصوص حضور را دارد (محل برگزاری بین تاریخ و خدمت)
+  const isInPersonService = selectedService?.mode === 'in_person';
+  const teacherHasAddress = Boolean(teacher?.in_person_address && teacher.in_person_address.trim().length > 0);
+  const inPersonValid = !isInPersonService || (inPersonPlace === 'teacher' ? teacherHasAddress : inPersonPlace === 'learner' && inPersonAddress.trim().length >= 5);
   const dateGroups = useMemo(() => {
     const groups = new Map<string, AvailabilitySlot[]>();
     for (const slot of availability) {
@@ -113,6 +120,9 @@ export default function BookingPage() {
     setSelectedStart('');
     setAvailability([]);
     setError('');
+    // جلسات حضوری — انتخاب محل با خدمت تازه ریست می‌شود
+    setInPersonPlace('');
+    setInPersonAddress('');
   }
   function chooseDate(localDate: string) {
     setSelectedDateKey(localDate);
@@ -145,6 +155,12 @@ export default function BookingPage() {
       setError('خدمت، تاریخ و ساعت معتبر را انتخاب کنید.');
       return;
     }
+    if (!inPersonValid) {
+      setError(isInPersonService && inPersonPlace === 'learner' && inPersonAddress.trim().length < 5
+        ? 'نشانی دقیق محل جلسه را وارد کنید.'
+        : 'محل برگزاری را انتخاب کنید.');
+      return;
+    }
     setSubmitting(true);
     setError('');
     try {
@@ -154,6 +170,13 @@ export default function BookingPage() {
         scheduled_at: selectedSlot.start_at,
         note: note.trim() || undefined,
         payment_method: paymentMethod,
+        // جلسات حضوری — محل برگزاری و نشانی؛ برای جلسات آنلاین ارسال نمی‌شود
+        ...(isInPersonService && inPersonPlace
+          ? {
+              in_person_place: inPersonPlace,
+              in_person_address: inPersonPlace === 'learner' ? inPersonAddress.trim() : '',
+            }
+          : {}),
       });
       const result: BookingResult = response.data;
       if (result.token) {
@@ -184,9 +207,31 @@ export default function BookingPage() {
     <section style={{ background: '#fff', borderRadius: 20, padding: 16, display: 'flex', gap: 14, alignItems: 'center', marginBottom: 16, boxShadow: 'var(--sh-sm)' }}><Avatar size={56} ring tier={teacher.tier} imageUrl={fullUrl(teacher.user?.avatar_url)} /><div><div style={{ fontSize: 16, fontWeight: 800 }}>{teacher.user?.name || 'استاد وُدّا'}</div><div style={{ fontSize: 13, color: 'var(--olive-600)', fontWeight: 600 }}>{teacher.tag}</div></div></section>
     {isSelfTeacher && <div role="alert" style={{ fontSize: 13, lineHeight: 1.9, color: '#8d6d1f', background: 'var(--gold-bg)', padding: 12, borderRadius: 12, marginBottom: 16 }}>این پروفایل متعلق به حساب شماست؛ رزرو جلسه با خودتان ممکن نیست. برای آزمایش فرآیند، با حساب قرآن‌آموز وارد شوید و استاد دیگری را رزرو کنید.</div>}
     {error && <div role="alert" style={{ fontSize: 13, color: 'var(--rose)', background: 'var(--clay-bg)', padding: 12, borderRadius: 12, marginBottom: 16 }}>{error}</div>}
-    <Card title="۱. انتخاب خدمت">{services.length === 0 ? <EmptyText>این استاد فعلاً خدمت تأییدشده‌ای برای رزرو ندارد.</EmptyText> : <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>{services.map((service) => <button key={service.id} type="button" onClick={() => chooseService(service)} style={serviceButton(service.id === serviceId)}><div style={{ width: 44, height: 44, borderRadius: 12, background: 'var(--olive-100)', color: 'var(--olive-600)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="book" size={22} /></div><div style={{ flex: 1, textAlign: 'right' }}><div style={{ fontSize: 14.5, fontWeight: 700 }}>{service.title}</div><div style={{ fontSize: 12, color: 'var(--ink-3)' }}>{fa(service.duration)} دقیقه</div></div><div style={{ fontSize: 15, fontWeight: 800, color: 'var(--olive-700)' }}>{toman(service.price)} تومان</div></button>)}</div>}</Card>
-    <Card title="۲. انتخاب تاریخ و ساعت" disabled={!selectedService}>{!selectedService ? <EmptyText>ابتدا یک خدمت را انتخاب کنید.</EmptyText> : loadingAvailability ? <EmptyText>در حال دریافت زمان‌های قابل رزرو…</EmptyText> : availabilityError ? <div role="alert" style={{ color: 'var(--rose)', lineHeight: 1.9 }}>{availabilityError}<button type="button" onClick={refreshAvailability} style={{ display: 'block', marginTop: 10, border: 0, borderRadius: 10, padding: '8px 12px', background: 'var(--rose)', color: '#fff', cursor: 'pointer' }}>تلاش دوباره</button></div> : dateGroups.length === 0 ? <EmptyText>در ۱۴ روز آینده زمان آزاد و قابل رزروی برای این خدمت وجود ندارد.</EmptyText> : <><div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8 }}>{dateGroups.map((group) => <button key={group.localDate} type="button" onClick={() => chooseDate(group.localDate)} style={dateButton(selectedDateKey === group.localDate)}><span>{formatLocalDate(group.localDate)}</span><small style={{ opacity: .72 }}>{fa(group.slots.length)} زمان</small></button>)}</div>{selectedDate && <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 16 }}>{selectedDate.slots.map((slot) => <button key={slot.start_at} type="button" onClick={() => setSelectedStart(slot.start_at)} style={slotButton(selectedStart === slot.start_at)}>{fa(slot.local_start)} تا {fa(slot.local_end)}</button>)}</div>}</>}</Card>
-    <Card title="۳. تأیید و ثبت" disabled={!selectedSlot}>{!selectedSlot || !selectedService ? <EmptyText>پس از انتخاب خدمت و زمان، خلاصهٔ رزرو اینجا نمایش داده می‌شود.</EmptyText> : <><div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}><SummaryRow label="خدمت" value={selectedService.title} /><SummaryRow label="تاریخ" value={formatLocalDate(selectedSlot.local_date)} /><SummaryRow label="ساعت" value={`${fa(selectedSlot.local_start)} تا ${fa(selectedSlot.local_end)}`} /><SummaryRow label="مدت" value={`${fa(selectedService.duration)} دقیقه`} /><SummaryRow label="مبلغ" value={`${toman(selectedService.price)} تومان`} /></div>
+    <Card title="۱. انتخاب خدمت">{services.length === 0 ? <EmptyText>این استاد فعلاً خدمت تأییدشده‌ای برای رزرو ندارد.</EmptyText> : <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>{services.map((service) => <button key={service.id} type="button" onClick={() => chooseService(service)} style={serviceButton(service.id === serviceId)}><div style={{ width: 44, height: 44, borderRadius: 12, background: service.mode === 'in_person' ? 'var(--gold-bg, #fdf6e3)' : 'var(--olive-100)', color: service.mode === 'in_person' ? '#8d6d1f' : 'var(--olive-600)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name={service.mode === 'in_person' ? 'pin' : 'book'} size={22} /></div><div style={{ flex: 1, textAlign: 'right' }}><div style={{ fontSize: 14.5, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>{service.title}{service.mode === 'in_person' ? <span style={{ fontSize: 10, fontWeight: 800, color: '#8d6d1f', background: 'var(--gold-bg, #fdf6e3)', border: '1px solid #e8d9a8', padding: '2px 8px', borderRadius: 999 }}>حضوری</span> : null}</div><div style={{ fontSize: 12, color: 'var(--ink-3)' }}>{fa(service.duration)} دقیقه</div></div><div style={{ fontSize: 15, fontWeight: 800, color: 'var(--olive-700)' }}>{toman(service.price)} تومان</div></button>)}</div>}</Card>
+    {isInPersonService ? <Card title="۲. محل برگزاری" disabled={!selectedService}>{!selectedService ? <EmptyText>ابتدا یک خدمت را انتخاب کنید.</EmptyText> : <div role="radiogroup" aria-label="محل برگزاری جلسهٔ حضوری" style={{ display: 'grid', gap: 10 }}>
+      <button type="button" role="radio" aria-checked={inPersonPlace === 'teacher'} disabled={!teacherHasAddress} onClick={() => teacherHasAddress && setInPersonPlace('teacher')} style={{ ...placeOption(inPersonPlace === 'teacher', !teacherHasAddress) }}>
+        <div style={{ width: 42, height: 42, borderRadius: 12, background: inPersonPlace === 'teacher' ? 'var(--olive-600)' : 'var(--gold-bg, #fdf6e3)', color: inPersonPlace === 'teacher' ? '#fff' : '#8d6d1f', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: '0 0 42px' }}><Icon name="pin" size={20} /></div>
+        <span style={{ flex: 1, textAlign: 'right', minWidth: 0 }}>
+          <span style={{ display: 'block', fontSize: 14, fontWeight: 800 }}>در محل استاد</span>
+          <span style={{ display: 'block', fontSize: 12, color: 'var(--ink-3)', marginTop: 2, lineHeight: 1.8 }}>{teacherHasAddress ? `نشانی ثبت‌شدهٔ استاد: ${teacher?.in_person_address}` : 'این استاد هنوز نشانی محل برگزاری خود را ثبت نکرده است؛ می‌توانید جلسه را در محل خودتان برگزار کنید.'}</span>
+        </span>
+        <span style={radioDot(inPersonPlace === 'teacher')} aria-hidden="true" />
+      </button>
+      <button type="button" role="radio" aria-checked={inPersonPlace === 'learner'} onClick={() => setInPersonPlace('learner')} style={placeOption(inPersonPlace === 'learner', false)}>
+        <div style={{ width: 42, height: 42, borderRadius: 12, background: inPersonPlace === 'learner' ? 'var(--olive-600)' : 'var(--olive-100)', color: inPersonPlace === 'learner' ? '#fff' : 'var(--olive-600)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: '0 0 42px' }}><Icon name="home" size={20} /></div>
+        <span style={{ flex: 1, textAlign: 'right', minWidth: 0 }}>
+          <span style={{ display: 'block', fontSize: 14, fontWeight: 800 }}>در محل شما</span>
+          <span style={{ display: 'block', fontSize: 12, color: 'var(--ink-3)', marginTop: 2, lineHeight: 1.8 }}>استاد به نشانی شما می‌آید؛ نشانی دقیق را در کادر زیر می‌نویسید.</span>
+        </span>
+        <span style={radioDot(inPersonPlace === 'learner')} aria-hidden="true" />
+      </button>
+      {inPersonPlace === 'learner' ? <div style={{ display: 'grid', gap: 6 }}>
+        <textarea aria-label="نشانی دقیق محل جلسه" value={inPersonAddress} maxLength={255} onChange={(event) => setInPersonAddress(event.target.value)} placeholder="مثلاً: تهران، خیابان ولیعصر، کوچهٔ مهر، پلاک ۱۲، واحد ۳…" style={{ width: '100%', minHeight: 80, padding: 14, borderRadius: 14, border: '1px solid var(--sand-200)', resize: 'vertical', fontFamily: 'inherit' }} />
+        <span style={{ fontSize: 11, color: 'var(--ink-4)', textAlign: 'left' }}>{fa(inPersonAddress.trim().length)}/۲۵۵</span>
+      </div> : inPersonPlace === 'teacher' && teacherHasAddress ? <div role="status" style={{ fontSize: 12.5, color: '#8d6d1f', background: 'var(--gold-bg, #fdf6e3)', border: '1px solid #e8d9a8', padding: '10px 12px', borderRadius: 12, lineHeight: 1.9 }}>{teacher?.in_person_address}</div> : null}
+    </div>}</Card> : null}
+    <Card title={isInPersonService ? "۳. انتخاب تاریخ و ساعت" : "۲. انتخاب تاریخ و ساعت"} disabled={!selectedService}>{!selectedService ? <EmptyText>ابتدا یک خدمت را انتخاب کنید.</EmptyText> : loadingAvailability ? <EmptyText>در حال دریافت زمان‌های قابل رزرو…</EmptyText> : availabilityError ? <div role="alert" style={{ color: 'var(--rose)', lineHeight: 1.9 }}>{availabilityError}<button type="button" onClick={refreshAvailability} style={{ display: 'block', marginTop: 10, border: 0, borderRadius: 10, padding: '8px 12px', background: 'var(--rose)', color: '#fff', cursor: 'pointer' }}>تلاش دوباره</button></div> : dateGroups.length === 0 ? <EmptyText>در ۱۴ روز آینده زمان آزاد و قابل رزروی برای این خدمت وجود ندارد.</EmptyText> : <><div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8 }}>{dateGroups.map((group) => <button key={group.localDate} type="button" onClick={() => chooseDate(group.localDate)} style={dateButton(selectedDateKey === group.localDate)}><span>{formatLocalDate(group.localDate)}</span><small style={{ opacity: .72 }}>{fa(group.slots.length)} زمان</small></button>)}</div>{selectedDate && <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 16 }}>{selectedDate.slots.map((slot) => <button key={slot.start_at} type="button" onClick={() => setSelectedStart(slot.start_at)} style={slotButton(selectedStart === slot.start_at)}>{fa(slot.local_start)} تا {fa(slot.local_end)}</button>)}</div>}</>}</Card>
+    <Card title={isInPersonService ? "۴. تأیید و ثبت" : "۳. تأیید و ثبت"} disabled={!selectedSlot || !inPersonValid}>{!selectedSlot || !selectedService ? <EmptyText>پس از انتخاب خدمت و زمان، خلاصهٔ رزرو اینجا نمایش داده می‌شود.</EmptyText> : !inPersonValid ? <EmptyText>برای جلسهٔ حضوری، ابتدا محل برگزاری را مشخص کنید.</EmptyText> : <><div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}><SummaryRow label="خدمت" value={selectedService.title} />{isInPersonService ? <SummaryRow label="محل برگزاری" value={inPersonPlace === 'teacher' ? 'در محل استاد' : 'در محل شما'} /> : null}{isInPersonService && (inPersonPlace === 'teacher' ? (teacher?.in_person_address || '') : inPersonPlace === 'learner' ? inPersonAddress.trim() : '') ? <SummaryRow label="نشانی" value={inPersonPlace === 'teacher' ? (teacher?.in_person_address || '') : inPersonAddress.trim()} /> : null}<SummaryRow label="تاریخ" value={formatLocalDate(selectedSlot.local_date)} /><SummaryRow label="ساعت" value={`${fa(selectedSlot.local_start)} تا ${fa(selectedSlot.local_end)}`} /><SummaryRow label="مدت" value={`${fa(selectedService.duration)} دقیقه`} /><SummaryRow label="مبلغ" value={`${toman(selectedService.price)} تومان`} /></div>
       <div role="radiogroup" aria-label="روش پرداخت" style={{ display: 'grid', gap: 10, marginBottom: 16 }}>
         <button type="button" role="radio" aria-checked={paymentMethod === 'wallet'} disabled={!walletCovers} onClick={() => walletCovers && setPaymentMethod('wallet')} style={paymentOption(paymentMethod === 'wallet', !walletCovers)}>
           <span style={radioDot(paymentMethod === 'wallet')} aria-hidden="true" />
@@ -217,6 +262,7 @@ function Card({ title, children, disabled = false }: { title: string; children: 
 function EmptyText({ children }: { children: React.ReactNode }) { return <p style={{ fontSize: 14, color: 'var(--ink-4)', lineHeight: 1.9 }}>{children}</p>; }
 function SummaryRow({ label, value }: { label: string; value: string }) { return <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, paddingBottom: 10, borderBottom: '1px solid var(--sand-100)' }}><span style={{ color: 'var(--ink-3)', fontSize: 13 }}>{label}</span><strong style={{ fontSize: 13.5, textAlign: 'left' }}>{value}</strong></div>; }
 function paymentOption(selected: boolean, disabled: boolean): React.CSSProperties { return { display: 'flex', alignItems: 'center', gap: 12, width: '100%', padding: 14, borderRadius: 16, border: `1.5px solid ${selected ? 'var(--olive-600)' : 'var(--sand-200)'}`, background: selected ? 'var(--olive-50)' : '#fff', cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? .55 : 1, textAlign: 'right', fontFamily: 'inherit' }; }
+function placeOption(selected: boolean, disabled: boolean): React.CSSProperties { return { display: 'flex', alignItems: 'center', gap: 12, width: '100%', padding: 14, borderRadius: 16, border: `1.5px solid ${selected ? 'var(--olive-600)' : 'var(--sand-200)'}`, background: selected ? 'var(--olive-50)' : '#fff', cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? .55 : 1, textAlign: 'right', fontFamily: 'inherit' }; }
 function radioDot(selected: boolean): React.CSSProperties { return { width: 20, height: 20, flex: '0 0 20px', borderRadius: 999, border: `2px solid ${selected ? 'var(--olive-600)' : 'var(--sand-200)'}`, background: selected ? 'var(--olive-600)' : '#fff', boxShadow: selected ? 'inset 0 0 0 4px #fff' : 'none', transition: 'all .15s' }; }
 const primaryButton: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '13px 20px', borderRadius: 999, background: 'var(--olive-600)', color: '#fff', fontWeight: 700, boxShadow: 'var(--sh-olive)' };
 const serviceButton = (selected: boolean): React.CSSProperties => ({ display: 'flex', alignItems: 'center', gap: 12, width: '100%', padding: 12, borderRadius: 16, border: `1.5px solid ${selected ? 'var(--olive-600)' : 'var(--sand-200)'}`, background: selected ? 'var(--olive-50)' : '#fff', cursor: 'pointer' });

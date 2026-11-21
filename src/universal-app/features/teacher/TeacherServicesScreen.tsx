@@ -27,7 +27,7 @@ import { showToast } from "../../ui/toast";
 import { messageOf } from "../../ui/errorMessage";
 import { formatWalletAmount } from "../wallet/WalletTransactionCard";
 import { AmountInput } from "../ceremony/fields";
-import { formatToman } from "../ceremony/elements";
+import { formatToman, inputStyle } from "../ceremony/elements";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -41,15 +41,17 @@ type TeacherService = {
   mode: string;
 };
 
-/** یکی از سه نوع جلسهٔ آنلاین (تلفنی/متنی/تصویری) — سرویس‌محور، قیمت/مدت/فعال‌سازی. */
+/** یکی از انواع جلسهٔ قابل رزرو (تلفنی/متنی/تصویری/حضوری) — سرویس‌محور، قیمت/مدت/فعال‌سازی. */
 type OnlineServiceConfig = {
-  mode: "voice" | "text" | "video";
+  mode: "voice" | "text" | "video" | "in_person";
   title: string;
-  icon: "phone" | "message" | "video";
+  icon: "phone" | "message" | "video" | "pin";
   duration: number;
   price: number;
   active: boolean;
   serviceId: number;
+  /** جلسات حضوری — نشانی محل برگزاری استاد (دفتر/مؤسسه). */
+  address: string;
 };
 
 type CatalogEntry = {
@@ -87,17 +89,18 @@ function parseService(value: unknown): TeacherService | null {
   };
 }
 
-const ONLINE_MODE_META: Record<OnlineServiceConfig["mode"], { title: string; icon: "phone" | "message" | "video"; hint: string }> = {
+const ONLINE_MODE_META: Record<OnlineServiceConfig["mode"], { title: string; icon: "phone" | "message" | "video" | "pin"; hint: string }> = {
   voice: { title: "جلسهٔ تلفنی و صوتی", icon: "phone", hint: "تماس صوتی از داخل اپ؛ شماره‌ها پنهان می‌مانند" },
   text: { title: "جلسهٔ متنی (چت)", icon: "message", hint: "چت امن با متن، ویس و تصویر" },
   video: { title: "جلسهٔ تصویری", icon: "video", hint: "کلاس زندهٔ تصویری با دوربین و میکروفون" },
+  in_person: { title: "جلسهٔ حضوری", icon: "pin", hint: "جلسهٔ درون‌حضوری در دفتر شما یا محل قرآن‌آموز" },
 };
 
 function parseOnlineService(value: unknown): OnlineServiceConfig | null {
   const row = asRecord(value);
   if (!row) return null;
   const mode = asString(row.mode);
-  if (mode !== "voice" && mode !== "text" && mode !== "video") return null;
+  if (mode !== "voice" && mode !== "text" && mode !== "video" && mode !== "in_person") return null;
   const meta = ONLINE_MODE_META[mode];
   return {
     mode,
@@ -107,6 +110,7 @@ function parseOnlineService(value: unknown): OnlineServiceConfig | null {
     price: asInteger(row.price),
     active: row.active === true,
     serviceId: asInteger(row.service_id),
+    address: asString(row.address),
   };
 }
 
@@ -120,7 +124,7 @@ async function getOnlineServices(runtime: PlatformRuntime): Promise<OnlineServic
 async function saveOnlineService(
   runtime: PlatformRuntime,
   mode: OnlineServiceConfig["mode"],
-  draft: { duration: number; price: number; active: boolean },
+  draft: { duration: number; price: number; active: boolean; address?: string },
 ): Promise<OnlineServiceConfig[]> {
   const response = await runtime.request<ApiEnvelope<UnknownRecord>>(`/teacher/online-services/${mode}`, {
     method: "PUT",
@@ -293,7 +297,7 @@ export function TeacherServicesScreen() {
   const [deactivateTarget, setDeactivateTarget] = useState<TeacherService | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<TeacherService | null>(null);
 
-  // خدمات جلسات آنلاین — سه نوع تلفنی/متنی/تصویری با قیمت مستقل
+  // خدمات جلسات آنلاین — سه نوع تلفنی/متنی/تصویری با قیمت مستقل + جلسهٔ حضوری
   const [onlineServices, setOnlineServices] = useState<OnlineServiceConfig[]>([]);
   const [onlineLoading, setOnlineLoading] = useState(true);
   const [onlineSaving, setOnlineSaving] = useState(false);
@@ -301,6 +305,8 @@ export function TeacherServicesScreen() {
   const [onlineDraft, setOnlineDraft] = useState<ServiceDraft>(emptyDraft);
   const [onlineActive, setOnlineActive] = useState(true);
   const [onlineError, setOnlineError] = useState<string | null>(null);
+  // جلسهٔ حضوری — نشانی محل برگزاری استاد (دفتر/مؤسسه) در ویرایشگر حضوری
+  const [inPersonAddress, setInPersonAddress] = useState("");
 
   // باگ refresh-loop: اجرای دوم StrictMode یا فراخوانی دیرهنگام نباید state را با دادهٔ کهنه بازنویسی کند.
   const loadGeneration = useRef(0);
@@ -379,6 +385,16 @@ export function TeacherServicesScreen() {
   }, [services, categories]);
 
   const activeCount = services.filter((service) => service.active).length;
+
+  /* جلسهٔ حضوری — سطر اختصاصی با نشانی محل برگزاری؛ از فهرست آنلاین جدا می‌شود */
+  const onlineOnly = useMemo(
+    () => onlineServices.filter((item) => item.mode !== "in_person"),
+    [onlineServices],
+  );
+  const inPersonConfig = useMemo(
+    () => onlineServices.find((item) => item.mode === "in_person") ?? null,
+    [onlineServices],
+  );
 
   const normalizedQuery = normalizePersian(query);
   const searching = normalizedQuery.length > 0;
@@ -521,7 +537,7 @@ export function TeacherServicesScreen() {
   /* خدمت رایگان — قیمت صفر تومانی (جلسات رایگان اساتید) */
   const isFreeService = draft.price.trim() === "0";
 
-  /** ذخیرهٔ یکی از سه نوع جلسهٔ آنلاین (مدت/قیمت/فعال‌سازی). */
+  /** ذخیرهٔ یکی از انواع جلسهٔ قابل رزرو (مدت/قیمت/فعال‌سازی + نشانی حضوری). */
   async function saveOnlineConfig() {
     if (!editingOnline || onlineSaving) return;
     const duration = Number.parseInt(onlineDraft.duration.trim(), 10);
@@ -534,13 +550,22 @@ export function TeacherServicesScreen() {
       setOnlineError(L("مبلغ معتبر وارد کنید."));
       return;
     }
+    if (editingOnline.mode === "in_person" && inPersonAddress.trim().length > 255) {
+      setOnlineError(L("نشانی محل برگزاری حداکثر ۲۵۵ کاراکتر است."));
+      return;
+    }
     setOnlineSaving(true);
     setOnlineError(null);
     try {
-      const next = await saveOnlineService(runtime, editingOnline.mode, { duration, price, active: onlineActive });
+      const next = await saveOnlineService(runtime, editingOnline.mode, {
+        duration,
+        price,
+        active: onlineActive,
+        ...(editingOnline.mode === "in_person" ? { address: inPersonAddress.trim() } : {}),
+      });
       setOnlineServices(next);
       setEditingOnline(null);
-      showToast(L("خدمت جلسهٔ آنلاین ذخیره شد"));
+      showToast(L("خدمت جلسه ذخیره شد"));
     } catch (mutationError) {
       setOnlineError(messageOf(mutationError));
     } finally {
@@ -595,7 +620,7 @@ export function TeacherServicesScreen() {
         ) : null}
 
         {!onlineLoading && !onlineError
-          ? onlineServices.map((config) => (
+          ? onlineOnly.map((config) => (
               <div
                 key={config.mode}
                 style={{
@@ -636,6 +661,7 @@ export function TeacherServicesScreen() {
                     setEditingOnline(config);
                     setOnlineDraft({ duration: String(config.duration), price: String(config.price) });
                     setOnlineActive(config.active);
+                    if (config.mode === "in_person") setInPersonAddress(config.address);
                     setOnlineError(null);
                   }}
                   style={{ minHeight: 42, padding: "0 14px", fontSize: 12.5, flex: "0 0 auto" }}
@@ -648,6 +674,81 @@ export function TeacherServicesScreen() {
             ))
           : null}
       </Card>
+
+      {/* خدمات جلسات حضوری — سطر اختصاصی حضوری با نشانی محل برگزاری */}
+      {!onlineLoading && !onlineError && inPersonConfig ? (
+        <Card style={{ display: "grid", gap: 12, padding: 16, borderRadius: 20, border: `1.5px solid ${colors.goldSoft}`, background: colors.goldBackground }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ width: 42, height: 42, display: "grid", placeItems: "center", borderRadius: 14, flex: "0 0 42px", background: "linear-gradient(145deg,#d8b869,#b8923c)", color: "#fffaf0" }}>
+              <Icon name="pin" size={21} />
+            </span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <strong style={{ display: "block", fontSize: 14, fontWeight: 900, color: colors.goldDark }}>{L("خدمات جلسات حضوری")}</strong>
+              <span style={{ display: "block", fontSize: 11.5, lineHeight: 1.8, color: colors.goldDark, opacity: 0.9 }}>
+                {L("جلسهٔ درون‌حضوری در دفتر شما یا محل قرآن‌آموز — قرآن‌آموز هنگام رزرو محل برگزاری را انتخاب می‌کند و تقویم و پرداخت مثل جلسات آنلاین است.")}
+              </span>
+            </div>
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              padding: 12,
+              borderRadius: 16,
+              background: inPersonConfig.active ? colors.surface : "transparent",
+              border: `1px solid ${inPersonConfig.active ? colors.gold : colors.sand200}`,
+            }}
+          >
+            <span
+              style={{
+                width: 40,
+                height: 40,
+                flex: "0 0 40px",
+                display: "grid",
+                placeItems: "center",
+                borderRadius: 12,
+                background: inPersonConfig.active ? colors.goldBackground : colors.sand100,
+                color: inPersonConfig.active ? colors.goldDark : colors.inkMuted,
+              }}
+            >
+              <Icon name="pin" size={20} />
+            </span>
+            <span style={{ flex: 1, minWidth: 0, display: "grid", gap: 2 }}>
+              <strong style={{ fontSize: 13, fontWeight: 800, color: colors.ink }}>{L(inPersonConfig.title)}</strong>
+              <span style={{ fontSize: 11, color: colors.inkSecondary, lineHeight: 1.7 }}>
+                {inPersonConfig.active
+                  ? `${L("{n} دقیقه").replace("{n}", localizedDigits(inPersonConfig.duration, lang))} · ${inPersonConfig.price === 0 ? L("رایگان") : L("هر جلسه {n} تومان").replace("{n}", amountLabel(inPersonConfig.price, lang))}`
+                  : L("غیرفعال — برای فعال‌سازی ویرایش کنید")}
+              </span>
+              {inPersonConfig.active ? (
+                <span style={{ display: "inline-flex", alignItems: "flex-start", gap: 4, fontSize: 10.5, color: colors.goldDark, fontWeight: 700, lineHeight: 1.7 }}>
+                  <Icon name="pin" size={12} stroke={2.2} style={{ flex: "0 0 auto", marginTop: 2 }} />
+                  {inPersonConfig.address
+                    ? L("نشانی دفتر شما ثبت شده است")
+                    : L("بدون نشانی — فقط رزرو «در محل شما» ممکن است")}
+                </span>
+              ) : null}
+            </span>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setEditingOnline(inPersonConfig);
+                setOnlineDraft({ duration: String(inPersonConfig.duration), price: String(inPersonConfig.price) });
+                setOnlineActive(inPersonConfig.active);
+                setInPersonAddress(inPersonConfig.address);
+                setOnlineError(null);
+              }}
+              style={{ minHeight: 42, padding: "0 14px", fontSize: 12.5, flex: "0 0 auto" }}
+              aria-label={L("ویرایش {title}").replace("{title}", L(inPersonConfig.title))}
+            >
+              <Icon name="edit" size={15} />
+              {L("ویرایش")}
+            </Button>
+          </div>
+        </Card>
+      ) : null}
 
       {loading ? <LoadingState label={L("در حال دریافت خدمات…")} /> : null}
       {!loading && error ? (
@@ -1062,13 +1163,31 @@ export function TeacherServicesScreen() {
       >
         {editingOnline ? (
           <div style={{ display: "grid", gap: spacing.md }}>
-            <div style={{ display: "flex", gap: 10, alignItems: "center", border: `1.5px solid ${colors.greenBorder}`, background: colors.greenBackground, borderRadius: radii.lg, padding: 12 }}>
+            <div style={{ display: "flex", gap: 10, alignItems: "center", border: `1.5px solid ${editingOnline.mode === "in_person" ? colors.goldSoft : colors.greenBorder}`, background: editingOnline.mode === "in_person" ? colors.goldBackground : colors.greenBackground, borderRadius: radii.lg, padding: 12 }}>
               <IconBadge icon={editingOnline.icon} tone="olive" size={38} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <strong style={{ ...typography.body, display: "block" }}>{L(editingOnline.title)}</strong>
-                <span style={{ ...typography.caption, color: colors.greenInk, lineHeight: 1.7 }}>{L(ONLINE_MODE_META[editingOnline.mode].hint)}</span>
+                <span style={{ ...typography.caption, color: colors.inkSecondary, lineHeight: 1.7 }}>{L(ONLINE_MODE_META[editingOnline.mode].hint)}</span>
               </div>
             </div>
+
+            {editingOnline.mode === "in_person" ? (
+              <label style={{ display: "grid", gap: spacing.xs, ...typography.bodySmall }}>
+                <span style={{ fontWeight: 700 }}>{L("نشانی محل برگزاری شما (دفتر، مؤسسه، مسجد…)")}</span>
+                <textarea
+                  value={inPersonAddress}
+                  disabled={onlineSaving}
+                  onChange={(event) => setInPersonAddress(event.target.value.slice(0, 255))}
+                  rows={2}
+                  placeholder={L("مثلاً: تهران، خیابان ولیعصر، کوچهٔ مهر، پلاک ۱۲، واحد ۳…")}
+                  aria-label={L("نشانی محل برگزاری حضوری")}
+                  style={{ ...inputStyle, resize: "none", lineHeight: 1.9 }}
+                />
+                <span style={{ fontSize: 10.5, color: colors.inkMuted, lineHeight: 1.7 }}>
+                  {L("این نشانی فقط به قرآن‌آموزی که جلسه را «در محل استاد» رزرو کند نمایش داده می‌شود؛ خالی بماند یعنی فقط رزرو در محل خودش ممکن است.")}
+                </span>
+              </label>
+            ) : null}
 
             <label style={{ display: "grid", gap: spacing.xs, ...typography.bodySmall }}>
               <span style={{ fontWeight: 700 }}>{L("مدت جلسه (دقیقه)")}</span>

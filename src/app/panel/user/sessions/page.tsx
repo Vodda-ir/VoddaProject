@@ -284,8 +284,14 @@ export default function UserSessionsPage() {
                   <div className="ops-row-meta">
                     <span>{toFaDigits(session.duration)} دقیقه</span>
                     <span>{formatFaNumber(session.price)} تومان</span>
+                    {session.mode === 'in_person' && <span><Icon name="pin" size={11} /> جلسهٔ حضوری</span>}
                     {session.when === 'past' && session.rated && <span><Icon name="star" size={11} fill style={{ color: 'var(--gold)' }} /> نظر ثبت شده</span>}
                   </div>
+                  {session.mode === 'in_person' && session.in_person_address && (
+                    <div style={{ marginTop: 6, fontSize: 11, color: '#8d6d1f', background: 'var(--gold-bg)', border: '1px solid #e8d9a8', borderRadius: 9, padding: '5px 10px', display: 'inline-block', lineHeight: 1.8 }}>
+                      <Icon name="pin" size={12} /> محل برگزاری: {session.in_person_place === 'teacher' ? 'در محل استاد — ' : ''}{session.in_person_address}
+                    </div>
+                  )}
                   {session.reject_note && (
                     <div style={{ marginTop: 6, fontSize: 11, color: 'var(--clay)', background: 'var(--clay-bg)', borderRadius: 9, padding: '5px 10px', display: 'inline-block' }}>
                       دلیل لغو: {session.reject_note}

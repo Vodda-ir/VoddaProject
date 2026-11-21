@@ -63,7 +63,8 @@ type DateGroup = { localDate: string; weekday: number; slots: BookingSlot[] };
 
 /* ─────────────────────  کارت گزینهٔ انتخابی (رادیو)  ───────────────────── */
 
-function OptionCard({
+/** کارت رادیویی مشترک ویزاردها — آنلاین و حضوری از همین کامپوننت استفاده می‌کنند. */
+export function OptionCard({
   selected,
   disabled = false,
   icon,
@@ -75,7 +76,7 @@ function OptionCard({
 }: {
   selected: boolean;
   disabled?: boolean;
-  icon: "sparkle" | "calendar" | "phone" | "message" | "video";
+  icon: "sparkle" | "calendar" | "phone" | "message" | "video" | "pin" | "book" | "wallet" | "home";
   tone: "gold" | "olive";
   title: string;
   desc: string;
