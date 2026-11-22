@@ -46,16 +46,20 @@ export default async function Home() {
   return (
     <div style={{ background: 'var(--sand-50)' }}>
       <Nav />
-      {/* ۱.۱۲.۰ — بنر تبلیغاتی «منافسه» بالای صفحه — کلیک به monafeseh.ir */}
-      <MonafesehPromoBanner />
+      {/* ۱.۱۳.۰ — بنر کارت‌محور «منافسه» بالای صفحه — کلیک به monafeseh.ir */}
+      <div className="public-container promo-top-wrap">
+        <MonafesehPromoBanner />
+      </div>
       <Hero />
       {/* ۱.ب.۲ — ترتیب بخش‌های کشف: آیه ← خانه‌های دسته ← اساتید برتر ← پرکاربرد ← اساتید بانو ← رایگان ← پیشنهادی */}
       <VerseOfDayCard />
       <CategoryTiles categories={categories} teachers={teachers} />
       <FeaturedTeachers teachers={tier1First.slice(0, 8)} unavailable={unavailable} />
       <PopularServices services={popular} />
-      {/* ۱.۱۲.۰ — بنر تبلیغاتی «اینستا قرآن» وسط صفحه — کلیک به اپ اینستا قرآن */}
-      <InstaQuranPromoBanner />
+      {/* ۱.۱۳.۰ — بنر کارت‌محور «اینستا قرآن» وسط صفحه — کلیک به اپ اینستا قرآن */}
+      <div className="public-container">
+        <InstaQuranPromoBanner />
+      </div>
       {/* ۱.ب.۴ — «اساتید بانو» بالای خدمات رایگان — هم‌گامی با ترتیب تازهٔ اپ */}
       <BanoTeachers teachers={tier1First} unavailable={unavailable} />
       <FreeServicesSection services={freeCards} />

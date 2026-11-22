@@ -8,7 +8,7 @@ import type { Teacher } from '@/lib/api';
 import { clearToken, avatarUrl, fullUrl } from '@/lib/auth';
 import type { CatalogCategory } from '@/lib/category';
 import { formatFaNumber, toFaDigits } from '@/lib/persian';
-import { Icon } from '../Icon';
+import { Icon, type IconName } from '../Icon';
 import { Avatar, GeoPattern, SectionTitle, WebBtn } from './ui';
 import { CityChip, sortByCityPriority } from './CityChip';
 import { CITY_CHANGE_EVENT, readStoredCity, storedCityUsable } from '@/lib/userCity';
@@ -232,6 +232,16 @@ export function Nav() {
 }
 
 function AppPreview() {
+  /* ۱.۱۳.۰ — بازسازی دقیق نمایی از رابط فعلی اپ (گزینهٔ A): هدر تازه با سلام
+   * بر پایهٔ ساعت، بنر کوچک منافسه، دسته‌بندی موضوعات با نئون طلایی، صحنهٔ
+   * خدمات پرکاربرد زیتونی و نوار پایین با دکمهٔ میانی «فراخوان استاد». */
+  const catTiles: Array<{ icon: IconName; name: string; count: string; img: string }> = [
+    { icon: 'quran', name: 'قرآن‌آموزی پایه', count: '۱۹۶', img: '/images/home/cat-quran.webp' },
+    { icon: 'book', name: 'تجوید و علوم قرائت', count: '۶۶', img: '/images/home/cat-tajweed.webp' },
+    { icon: 'mic', name: 'صوت و لحن و هنر قرآنی', count: '۴۶', img: '/images/home/cat-voice.webp' },
+    { icon: 'star', name: 'حفظ قرآن', count: '۶۴', img: '/images/home/cat-hifz.webp' },
+  ];
+
   return (
     <div className="landing-app-stage" aria-label="نمایی از رابط اپ وُدّا">
       <div className="landing-orb landing-orb-gold" />
@@ -239,57 +249,95 @@ function AppPreview() {
 
       <span className="landing-preview-label">نمونه رابط اپ</span>
       <div className="landing-phone">
+        {/* ── هدر اپ — سلام بر پایهٔ ساعت + نام کاربر + اعلان‌ها ── */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <Avatar size={42} ring />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <span style={{ display: 'block', color: 'var(--ink-3)', fontSize: 10.5 }}>سلام، خوش آمدید</span>
-            <strong style={{ display: 'block', marginTop: 1, fontSize: 13.5 }}>مسیر یادگیری شما 🌿</strong>
+            <span style={{ display: 'block', color: 'var(--ink-3)', fontSize: 10.5 }}>عصر بخیر · یکشنبه ۱ آذر</span>
+            <strong style={{ display: 'block', marginTop: 1, fontSize: 13.5, fontWeight: 900 }}>قرآن‌آموز جان 🌿</strong>
           </div>
-          <span style={{ width: 36, height: 36, display: 'grid', placeItems: 'center', borderRadius: 11, color: 'var(--olive-700)', background: 'var(--olive-50)' }}>
+          <span style={{ width: 36, height: 36, display: 'grid', placeItems: 'center', borderRadius: 11, color: 'var(--olive-700)', background: 'var(--olive-50)', border: '1px solid var(--olive-100)' }}>
             <Icon name="bell" size={18} />
           </span>
         </div>
 
-        <div className="landing-phone-hero">
-          <span style={{ color: 'rgba(255,255,255,.67)', fontSize: 10.5 }}>استاد مناسب خود را بیابید</span>
-          <strong style={{ display: 'block', marginTop: 4, color: '#fff', fontSize: 17, lineHeight: 1.65 }}>آموزش قرآن کریم،<br />در زمان دلخواه شما</strong>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 12, padding: '8px 11px', borderRadius: 11, color: 'var(--olive-800)', background: '#fff', fontSize: 10.5, fontWeight: 700 }}>
-            <Icon name="search" size={14} />
-            جستجوی استاد
+        {/* ── بنر کوچک منافسه — همان تم زیتونی بنر تازه ── */}
+        <div className="landing-mona-mini" aria-hidden="true">
+          <span className="landing-mona-mini-art">
+            <img src="/banners/monafeseh.png" alt="" loading="lazy" />
+          </span>
+          <div style={{ flex: 1, minWidth: 0, display: 'grid', gap: 4 }}>
+            <span className="landing-mona-mini-kicker"><Icon name="award" size={11} /> مسابقات قرآنی وُدّا</span>
+            <strong className="landing-mona-mini-title">مُنافَسه</strong>
+            <span className="landing-mona-mini-cta">همین حالا وارد شوید<Icon name="arrowL" size={12} /></span>
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
-          <div className="landing-mini-category"><Icon name="quran" size={19} />آموزش قرآن</div>
-        </div>
-
-        <div style={{ marginTop: 13 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 9 }}>
-            <strong style={{ fontSize: 11.5 }}>استادان پیشنهادی</strong>
-            <span style={{ color: 'var(--olive-600)', fontSize: 9.5 }}>مشاهده همه</span>
+        {/* ── دسته‌بندی موضوعات — کادر نئونی طلایی ۲×۲ مثل اپ ── */}
+        <div className="landing-mini-cats-wrap">
+          <div className="landing-mini-cats-head">
+            <strong>دسته‌بندی موضوعات قرآنی</strong>
+            <small>روی هر موضوع بزنید تا صفحهٔ زیردسته‌ها باز شود.</small>
           </div>
-          <div className="landing-mini-teacher">
-            <Avatar size={43} tier="international" />
-            <div style={{ minWidth: 0, flex: 1 }}>
-              <strong style={{ display: 'block', fontSize: 11.5 }}>استاد وُدّا</strong>
-              <span style={{ display: 'block', marginTop: 2, color: 'var(--olive-600)', fontSize: 9.5 }}>آموزش قرآن کریم</span>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, marginTop: 6, color: 'var(--gold)', fontSize: 9.5, fontWeight: 800 }}>
-                <Icon name="star" size={11} fill /> ۴٫۹
+          <div className="landing-mini-cats">
+            {catTiles.map((tile, index) => (
+              <span key={tile.name} className="landing-mini-cat" data-vline={index % 2 === 0 ? 'y' : undefined} data-hline={index < 2 ? 'y' : undefined}>
+                <span className="landing-mini-cat-icon">
+                  <Icon name={tile.icon} size={20} />
+                  <img src={tile.img} alt="" loading="lazy" />
+                </span>
+                <strong>{tile.name}</strong>
+                <span className="landing-mini-cat-count"><Icon name="users" size={11} /> {tile.count} استاد فعال</span>
               </span>
-            </div>
-            <span style={{ padding: '6px 8px', borderRadius: 8, color: '#fff', background: 'var(--olive-600)', fontSize: 9.5, fontWeight: 700 }}>رزرو</span>
+            ))}
           </div>
         </div>
 
+        {/* ── خدمات پرکاربرد — صحنهٔ زیتونی با هالهٔ طلایی ── */}
+        <div className="landing-mini-services">
+          <div className="landing-mini-services-head">
+            <strong>خدمات پرکاربرد</strong>
+            <small>پرترددترین خدمت‌های قرآنی وُدّا</small>
+          </div>
+          <div className="landing-mini-service">
+            <span className="landing-mini-service-tile">
+              <Icon name="quran" size={18} />
+            </span>
+            <span className="landing-mini-service-text">
+              <strong>نقرات و مفاهیم قرآن کریم</strong>
+              <small>استادان فعال: ۹</small>
+            </span>
+            <span className="landing-mini-service-btn">استادان این خدمت<Icon name="arrowL" size={11} /></span>
+          </div>
+          <div className="landing-mini-dots" aria-hidden="true">
+            {[0, 1, 2, 3, 4].map((d) => (
+              <i key={d} className={d === 0 ? 'active' : undefined} />
+            ))}
+          </div>
+        </div>
+
+        {/* ── نوار پایین اپ — با دکمهٔ میانی «فراخوان استاد» ── */}
         <div className="landing-mini-bottom-nav">
           {([
-            ['home', 'خانه'],
-            ['search', 'جستجو'],
-            ['calendar', 'جلسات'],
-            ['wallet', 'کیف پول'],
-            ['user', 'پروفایل'],
-          ] as const).map(([icon, label], index) => (
-            <span key={label} className={index === 0 ? 'active' : undefined}>
+            ['home', 'خانه', true],
+            ['search', 'جستجو', false],
+          ] as const).map(([icon, label, active]) => (
+            <span key={label} className={active ? 'active' : undefined}>
+              <Icon name={icon} size={15} />
+              <small>{label}</small>
+            </span>
+          ))}
+          <span className="landing-nav-fab-item">
+            <span className="landing-nav-fab">
+              <Icon name="megaphone" size={19} />
+            </span>
+            <small>فراخوان استاد</small>
+          </span>
+          {([
+            ['calendar', 'جلسات', false],
+            ['user', 'پروفایل', false],
+          ] as const).map(([icon, label]) => (
+            <span key={label}>
               <Icon name={icon} size={15} />
               <small>{label}</small>
             </span>
@@ -302,8 +350,8 @@ function AppPreview() {
         <span><strong>استاد درجه‌دار</strong><small>مهر بین‌المللی، درجه ۲ و درجه ۳</small></span>
       </div>
       <div className="landing-floating-card landing-floating-card-bottom">
-        <span className="landing-floating-icon gold"><Icon name="calendar" size={18} /></span>
-        <span><strong>رزرو زمان آزاد</strong><small>بر اساس برنامهٔ واقعی استاد</small></span>
+        <span className="landing-floating-icon gold"><Icon name="megaphone" size={18} /></span>
+        <span><strong>فراخوان استاد</strong><small>ثبت فوری درخواست جلسه</small></span>
       </div>
     </div>
   );

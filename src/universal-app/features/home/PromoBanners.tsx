@@ -1,65 +1,155 @@
 /*
- * بنرهای تبلیغاتی خانهٔ اپ — v1.12.0 (هم‌ترازی قاعدهٔ ① با وب)
- *   ۱) بالای خانه: «منافسه» — monafeseh.ir
- *   ۲) وسط خانه (بعد از خدمات پرکاربرد): «اینستا قرآن»
- * کل بنر لینک است (تب جدید)، گوشه‌ها مربع، دوزبانه با L() و تصویر با
- * resolveAssetUrl تا در WebView بومی هم درست بارگذاری شود.
+ * بنرهای تبلیغاتی خانهٔ اپ — v1.13.0 (بازطراحی «کارت‌محور»)
+ * هر دو بنر دقیقاً با آناتومی کارت‌های خانهٔ اپ هم‌خوان‌اند:
+ *   • گوشهٔ گرد ۲۲ (همان radius صحنهٔ «خدمات پرکاربرد»)
+ *   • حاشیهٔ طلایی نازک + سایهٔ عمیق با هالهٔ طلایی (همان توکن‌های صحنهٔ اپ)
+ *   • قاب هنرِ گردِ داخلی (radius ۱۳ — همان کاشی آیکون‌های دسته‌بندی)
+ * اندازهٔ هر دو یکسان است؛ فقط تم رنگی متفاوت:
+ *   • منافسه → تم زیتونی برند (gradients.hero + هالهٔ طلایی)
+ *   • اینستا قرآن → تم کِرِم (gradients.goldPanel)
+ * کل بنر لینک است (تب جدید)، دوزبانه با L() و تصویر با resolveAssetUrl.
  */
+
+import type { ReactNode } from "react";
 
 import { resolveAssetUrl } from "../../platform/asset";
 import { Icon } from "../../ui/Icon";
 import { useAppearance } from "../../ui/appearance";
-import { colors, typography } from "../../ui/theme";
+import { colors, gradients, typography } from "../../ui/theme";
 
 export const MONAFESEH_URL = "https://monafeseh.ir";
 export const INSTA_QURAN_URL = "https://q1uwk9k91ct0-d.space-z.ai";
 
-const SQUARE = 0; /* قاعدهٔ کارت مربع */
+/* ─── توکن‌های مشترک هر دو بنر (هم‌اندازگی کامل) ─── */
+const CARD_RADIUS = 22;          /* همان گوشهٔ کارت‌های اپ */
+const ART_RADIUS = 13;           /* همان گوشهٔ قاب آیکون‌های دسته‌بندی */
+const GOLD_BORDER = "1px solid rgba(216,184,105,.55)"; /* حاشیهٔ صحنهٔ خدمات */
+const GAP = 12;
 
-export function PromoBannerMonafeseh({ wide }: { wide?: boolean }) {
+type PromoTheme = {
+  background: string;
+  boxShadow: string;
+  kickerBg: string;
+  kickerBorder: string;
+  kickerColor: string;
+  titleColor: string;
+  titleShadow?: string;
+  descColor: string;
+  ctaBackground: string;
+  ctaColor: string;
+  ctaShadow: string;
+  artBorder: string;
+  artShadow: string;
+};
+
+const MONA_THEME: PromoTheme = {
+  background: gradients.hero,
+  boxShadow: "0 18px 40px rgba(46,54,34,.30), 0 0 20px rgba(191,149,64,.22)",
+  kickerBg: "rgba(191,149,64,.16)",
+  kickerBorder: "rgba(191,149,64,.4)",
+  kickerColor: colors.goldSoft,
+  titleColor: "#e7d5a8",
+  titleShadow: "0 2px 14px rgba(191,149,64,.35)",
+  descColor: "rgba(247,239,217,.88)",
+  ctaBackground: gradients.goldRich,
+  ctaColor: "#2a2415",
+  ctaShadow: "0 6px 16px rgba(191,149,64,.42), inset 0 1px 0 rgba(255,255,255,.45)",
+  artBorder: "1px solid rgba(231,213,168,.65)",
+  artShadow: "0 8px 18px rgba(30,36,18,.32)",
+};
+
+const INSTA_THEME: PromoTheme = {
+  background: gradients.goldPanel,
+  boxShadow: "0 18px 40px rgba(46,54,34,.12), 0 0 20px rgba(191,149,64,.14)",
+  kickerBg: colors.olive50,
+  kickerBorder: colors.olive100,
+  kickerColor: colors.olive700,
+  titleColor: colors.olive800,
+  descColor: colors.inkSecondary,
+  ctaBackground: gradients.oliveBtn,
+  ctaColor: "#f7f4e8",
+  ctaShadow: "0 6px 16px rgba(76,90,54,.35), inset 0 1px 0 rgba(255,255,255,.22)",
+  artBorder: "1px solid rgba(216,184,105,.65)",
+  artShadow: "0 8px 18px rgba(46,54,34,.16)",
+};
+
+function PromoCard({
+  href,
+  aria,
+  image,
+  imageAlt,
+  icon,
+  kicker,
+  title,
+  desc,
+  cta,
+  theme,
+  halos,
+  wide,
+}: {
+  href: string;
+  aria: string;
+  image: string;
+  imageAlt: string;
+  icon: "award" | "quran";
+  kicker: string;
+  title: string;
+  desc: string;
+  cta: string;
+  theme: PromoTheme;
+  halos: ReactNode;
+  wide?: boolean;
+}) {
   const { L } = useAppearance();
   return (
     <a
-      href={MONAFESEH_URL}
+      href={href}
       target="_blank"
       rel="noopener noreferrer"
-      aria-label="سکوی مسابقات قرآنی منافسه — ورود به monafeseh.ir"
+      aria-label={aria}
       style={{
         position: "relative",
         display: "flex",
-        flexDirection: wide ? "row" : "column-reverse",
-        alignItems: "stretch",
+        flexDirection: "row",
+        gap: GAP,
+        padding: 12,
         minHeight: wide ? 148 : 168,
-        borderRadius: SQUARE,
+        borderRadius: CARD_RADIUS,
         overflow: "hidden",
         textDecoration: "none",
-        background: "linear-gradient(115deg, #1d2409 0%, #2e3622 55%, #3c472b 100%)",
-        boxShadow: "0 10px 26px rgba(29,36,9,.28), inset 0 -1px 0 rgba(191,149,64,.35)",
+        background: theme.background,
+        border: GOLD_BORDER,
+        boxShadow: theme.boxShadow,
         isolation: "isolate",
+        minWidth: 0,
       }}
     >
-      {/* هنر پس‌زمینه — همیشه پوشاننده؛ سمت متن پوشش تیره می‌گیرد */}
+      {halos}
+
+      {/* قاب هنر — گوشهٔ گرد ۱۳، در سمت آغازین (راست در RTL) */}
       <span
         aria-hidden="true"
         style={{
-          position: "absolute",
-          inset: 0,
-          zIndex: 0,
-          background: `url("${resolveAssetUrl("/banners/monafeseh.png")}") center/cover no-repeat`,
-        }}
-      />
-      <span
-        aria-hidden="true"
-        style={{
-          position: "absolute",
-          inset: 0,
+          position: "relative",
           zIndex: 1,
-          background:
-            wide === false
-              ? "linear-gradient(to top, rgba(24,30,10,.96) 34%, rgba(24,30,10,.78) 66%, rgba(24,30,10,.3) 100%)"
-              : "linear-gradient(to left, rgba(24,30,10,.96) 32%, rgba(24,30,10,.72) 62%, rgba(24,30,10,.14) 100%)",
+          flex: `0 0 ${wide ? "30%" : "44%"}`,
+          borderRadius: ART_RADIUS,
+          overflow: "hidden",
+          border: theme.artBorder,
+          boxShadow: theme.artShadow,
+          background: `url("${resolveAssetUrl(image)}") center/cover no-repeat`,
+          minHeight: 120,
         }}
-      />
+      >
+        <img
+          src={resolveAssetUrl(image)}
+          alt={imageAlt}
+          loading="lazy"
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+        />
+      </span>
+
+      {/* بدنه */}
       <span
         style={{
           position: "relative",
@@ -67,202 +157,186 @@ export function PromoBannerMonafeseh({ wide }: { wide?: boolean }) {
           flex: "1 1 auto",
           minWidth: 0,
           display: "grid",
-          gap: 7,
           alignContent: "center",
-          padding: wide ? "18px 24px" : "18px 18px 16px",
+          gap: 7,
+          paddingInlineEnd: 4,
         }}
       >
         <span
           style={{
             display: "inline-flex",
             alignItems: "center",
-            gap: 7,
+            gap: 6,
             width: "fit-content",
-            padding: "5px 12px",
+            maxWidth: "100%",
+            padding: "4px 11px",
             borderRadius: 999,
             ...typography.caption,
+            fontSize: wide ? 12.5 : 11,
             fontWeight: 800,
-            color: colors.goldSoft,
-            background: "rgba(191,149,64,.16)",
-            border: "1px solid rgba(191,149,64,.4)",
+            color: theme.kickerColor,
+            background: theme.kickerBg,
+            border: `1px solid ${theme.kickerBorder}`,
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
           }}
         >
-          <Icon name="award" size={14} />
-          {L("سکوی رسمی مسابقات قرآنی وُدّا")}
+          <Icon name={icon} size={13} />
+          {L(kicker)}
         </span>
+
         <strong
           style={{
-            fontSize: wide ? 34 : 28,
+            fontSize: wide ? 28 : 24,
             fontWeight: 900,
-            lineHeight: 1.15,
-            letterSpacing: .5,
-            color: "#e7d5a8",
-            textShadow: "0 2px 16px rgba(191,149,64,.3)",
+            lineHeight: 1.2,
+            color: theme.titleColor,
+            textShadow: theme.titleShadow,
           }}
         >
-          مُنافَسه
+          {title}
         </strong>
+
         <span
           style={{
             ...typography.caption,
-            lineHeight: 1.8,
-            color: "rgba(247,239,217,.85)",
-            maxWidth: 420,
+            fontSize: wide ? 12.5 : 11,
+            lineHeight: 1.75,
+            color: theme.descColor,
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
           }}
         >
-          {L("رقابت قرآنی آنلاین؛ شرکت در مسابقات، بالا بردن سطح و شانس جوایز.")}
+          {L(desc)}
         </span>
+
         <span
           style={{
             display: "inline-flex",
             alignItems: "center",
-            gap: 9,
+            gap: 8,
             width: "fit-content",
-            marginTop: 5,
-            padding: "10px 20px",
+            marginTop: 4,
+            padding: "9px 18px",
             borderRadius: 999,
-            fontSize: 13.5,
+            fontSize: wide ? 13.5 : 12.5,
             fontWeight: 900,
             lineHeight: 1,
-            color: "#2a2415",
-            background: "linear-gradient(115deg,#f2dfae 0%,#e0bf6d 45%,#bf9540 100%)",
-            boxShadow: "0 6px 16px rgba(191,149,64,.42), inset 0 1px 0 rgba(255,255,255,.5)",
+            whiteSpace: "nowrap",
+            color: theme.ctaColor,
+            background: theme.ctaBackground,
+            boxShadow: theme.ctaShadow,
           }}
         >
-          {L("همین حالا وارد شوید")}
-          <Icon name="arrowL" size={15} />
+          {L(cta)}
+          <Icon name="arrowL" size={14} />
         </span>
       </span>
-      {wide ? (
-        <span
-          aria-hidden="true"
-          style={{
-            position: "relative",
-            zIndex: 1,
-            flex: "0 0 34%",
-            minWidth: 150,
-            background: `url("${resolveAssetUrl("/banners/monafeseh.png")}") center/cover no-repeat`,
-            borderInlineStart: "1px solid rgba(191,149,64,.35)",
-          }}
-        />
-      ) : null}
     </a>
   );
 }
 
-export function PromoBannerInstaQuran({ wide }: { wide?: boolean }) {
-  const { L } = useAppearance();
-  return (
-    <a
-      href={INSTA_QURAN_URL}
-      target="_blank"
-      rel="noopener noreferrer"
-      aria-label="اپلیکیشن اینستا قرآن — ورود به اینستا قرآن"
+/* هاله‌های تزئینی منافسه — همان زبان صحنهٔ خدمات پرکاربرد */
+const MonaHalos = () => (
+  <>
+    <span
+      aria-hidden="true"
       style={{
-        position: "relative",
-        display: "flex",
-        flexDirection: wide ? "row" : "column",
-        gap: wide ? 20 : 12,
-        padding: wide ? 20 : 16,
-        borderRadius: SQUARE,
-        overflow: "hidden",
-        textDecoration: "none",
-        background: "linear-gradient(120deg,#fffdf7 0%,#f7efd9 58%,#f2e6c8 100%)",
-        border: "1.5px solid rgba(231,213,168,.9)",
-        boxShadow: "0 10px 26px rgba(46,54,34,.12), inset 0 0 0 4px rgba(255,255,255,.55)",
-        isolation: "isolate",
+        position: "absolute",
+        top: -46,
+        insetInlineStart: -40,
+        width: 170,
+        height: 170,
+        borderRadius: "50%",
+        zIndex: 0,
+        background: "radial-gradient(circle, rgba(216,184,105,.30), transparent 70%)",
       }}
-    >
-      {/* گوشه‌های قاب طلایی (حاشیهٔ مصحف‌گونه) */}
-      <span aria-hidden="true" style={{ position: "absolute", top: 6, insetInlineStart: 6, width: 22, height: 22, borderTop: "2.5px solid " + colors.gold, borderInlineStart: "2.5px solid " + colors.gold, zIndex: 2 }} />
-      <span aria-hidden="true" style={{ position: "absolute", bottom: 6, insetInlineEnd: 6, width: 22, height: 22, borderBottom: "2.5px solid " + colors.gold, borderInlineEnd: "2.5px solid " + colors.gold, zIndex: 2 }} />
+    />
+    <span
+      aria-hidden="true"
+      style={{
+        position: "absolute",
+        bottom: -52,
+        insetInlineEnd: -36,
+        width: 190,
+        height: 190,
+        borderRadius: "50%",
+        zIndex: 0,
+        background: "radial-gradient(circle, rgba(214,220,196,.22), transparent 70%)",
+      }}
+    />
+  </>
+);
 
-      {wide ? (
-        <span
-          aria-hidden="true"
-          style={{
-            display: "block",
-            flex: "0 0 30%",
-            minWidth: 140,
-            borderRadius: SQUARE,
-            overflow: "hidden",
-            border: "1.5px solid rgba(231,213,168,.9)",
-            boxShadow: "0 8px 18px rgba(46,54,34,.16)",
-            background: `url("${resolveAssetUrl("/banners/insta-quran.png")}") center/cover no-repeat`,
-          }}
-        />
-      ) : (
-        <span
-          aria-hidden="true"
-          style={{
-            display: "block",
-            height: 140,
-            borderRadius: SQUARE,
-            overflow: "hidden",
-            border: "1.5px solid rgba(231,213,168,.9)",
-            boxShadow: "0 8px 18px rgba(46,54,34,.16)",
-            background: `url("${resolveAssetUrl("/banners/insta-quran.png")}") center/cover no-repeat`,
-          }}
-        />
-      )}
+/* هالهٔ ملایم کِرِم اینستا قرآن */
+const InstaHalos = () => (
+  <>
+    <span
+      aria-hidden="true"
+      style={{
+        position: "absolute",
+        top: -44,
+        insetInlineEnd: -36,
+        width: 160,
+        height: 160,
+        borderRadius: "50%",
+        zIndex: 0,
+        background: "radial-gradient(circle, rgba(216,184,105,.20), transparent 70%)",
+      }}
+    />
+    <span
+      aria-hidden="true"
+      style={{
+        position: "absolute",
+        bottom: -48,
+        insetInlineStart: -34,
+        width: 170,
+        height: 170,
+        borderRadius: "50%",
+        zIndex: 0,
+        background: "radial-gradient(circle, rgba(231,213,168,.24), transparent 70%)",
+      }}
+    />
+  </>
+);
 
-      <span
-        style={{
-          position: "relative",
-          zIndex: 2,
-          flex: "1 1 auto",
-          minWidth: 0,
-          display: "grid",
-          gap: 7,
-          alignContent: "center",
-          paddingInlineEnd: 14,
-        }}
-      >
-        <span
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 7,
-            width: "fit-content",
-            padding: "5px 12px",
-            borderRadius: 999,
-            ...typography.caption,
-            fontWeight: 800,
-            color: colors.olive700,
-            background: "rgba(242,245,234,.9)",
-            border: "1px solid " + colors.olive200,
-          }}
-        >
-          <Icon name="quran" size={14} />
-          {L("اپلیکیشن همراه قرآنی")}
-        </span>
-        <strong style={{ fontSize: wide ? 30 : 25, fontWeight: 900, lineHeight: 1.2, color: colors.olive800 }}>
-          {L("اینستا قرآن")}
-        </strong>
-        <span style={{ ...typography.caption, lineHeight: 1.8, color: colors.inkSecondary, maxWidth: 400 }}>
-          {L("قرآن در جیب شما؛ هر روز یک صفحه، با یادآوری و انگیزهٔ پیوسته.")}
-        </span>
-        <span
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 9,
-            width: "fit-content",
-            marginTop: 5,
-            padding: "10px 20px",
-            borderRadius: 999,
-            fontSize: 13.5,
-            fontWeight: 900,
-            lineHeight: 1,
-            color: "#f7f4e8",
-            background: "linear-gradient(115deg,#5e6e43 0%,#4c5a36 55%,#3c472b 100%)",
-            boxShadow: "0 6px 16px rgba(76,90,54,.38), inset 0 1px 0 rgba(255,255,255,.18)",
-          }}
-        >
-          {L("ورود به اینستا قرآن")}
-          <Icon name="arrowL" size={15} />
-        </span>
-      </span>
-    </a>
+export function PromoBannerMonafeseh({ wide }: { wide?: boolean }) {
+  return (
+    <PromoCard
+      href={MONAFESEH_URL}
+      aria="سکوی مسابقات قرآنی منافسه — ورود به monafeseh.ir"
+      image="/banners/monafeseh.png"
+      imageAlt="تندیس طلایی منافسه"
+      icon="award"
+      kicker="مسابقات قرآنی وُدّا"
+      title="مُنافَسه"
+      desc="رقابت قرآنی آنلاین؛ شرکت در مسابقات، بالا بردن سطح و شانس جوایز."
+      cta="همین حالا وارد شوید"
+      theme={MONA_THEME}
+      halos={<MonaHalos />}
+      wide={wide}
+    />
+  );
+}
+
+export function PromoBannerInstaQuran({ wide }: { wide?: boolean }) {
+  return (
+    <PromoCard
+      href={INSTA_QURAN_URL}
+      aria="اپلیکیشن اینستا قرآن — ورود به اینستا قرآن"
+      image="/banners/insta-quran.png"
+      imageAlt="گوشی همراه با صفحهٔ نورانی قرآن"
+      icon="quran"
+      kicker="اپلیکیشن همراه قرآنی"
+      title="اینستا قرآن"
+      desc="قرآن در جیب شما؛ هر روز یک صفحه، با یادآوری و انگیزهٔ پیوسته."
+      cta="ورود به اینستا قرآن"
+      theme={INSTA_THEME}
+      halos={<InstaHalos />}
+      wide={wide}
+    />
   );
 }
