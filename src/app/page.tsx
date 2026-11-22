@@ -8,6 +8,7 @@ import {
   FreeServicesSection, RecommendedTeachers, BanoTeachers, HowItWorks, WhyVodda,
   BecomeTeacher, DownloadApp, Footer,
 } from '@/components/web/sections';
+import { MonafesehPromoBanner, InstaQuranPromoBanner } from '@/components/web/promo-banners';
 
 /* ۱.ب — فهرست کامل استادان برای موتور کشف: برتر + رایگان + پرکاربرد + خانه‌های دسته. */
 async function getTeachers(): Promise<{ teachers: Teacher[]; unavailable: boolean }> {
@@ -45,12 +46,16 @@ export default async function Home() {
   return (
     <div style={{ background: 'var(--sand-50)' }}>
       <Nav />
+      {/* ۱.۱۲.۰ — بنر تبلیغاتی «منافسه» بالای صفحه — کلیک به monafeseh.ir */}
+      <MonafesehPromoBanner />
       <Hero />
       {/* ۱.ب.۲ — ترتیب بخش‌های کشف: آیه ← خانه‌های دسته ← اساتید برتر ← پرکاربرد ← اساتید بانو ← رایگان ← پیشنهادی */}
       <VerseOfDayCard />
       <CategoryTiles categories={categories} teachers={teachers} />
       <FeaturedTeachers teachers={tier1First.slice(0, 8)} unavailable={unavailable} />
       <PopularServices services={popular} />
+      {/* ۱.۱۲.۰ — بنر تبلیغاتی «اینستا قرآن» وسط صفحه — کلیک به اپ اینستا قرآن */}
+      <InstaQuranPromoBanner />
       {/* ۱.ب.۴ — «اساتید بانو» بالای خدمات رایگان — هم‌گامی با ترتیب تازهٔ اپ */}
       <BanoTeachers teachers={tier1First} unavailable={unavailable} />
       <FreeServicesSection services={freeCards} />
