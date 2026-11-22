@@ -589,6 +589,7 @@ f["صدا متصل شد"] = "Voice connected";
 f["شمارهٔ شما هرگز نمایش داده نمی‌شود"] = "Your number is never shown";
 f["شمارهٔ شما هیچ‌گاه نمایش داده نمی‌شود"] = "Your number is never shown";
 f["همین حالا وقت می‌خواهید؟"] = "Need a time right now?";
+f["مسابقات قرآنی وُدّا"] = "Vodda Quran competitions";
 f["سکوی رسمی مسابقات قرآنی وُدّا"] = "Vodda's official Quran competitions platform";
 f["رقابت قرآنی آنلاین؛ شرکت در مسابقات، بالا بردن سطح و شانس جوایز."] = "Online Quran contests — compete, level up, and win prizes.";
 f["همین حالا وارد شوید"] = "Enter now";

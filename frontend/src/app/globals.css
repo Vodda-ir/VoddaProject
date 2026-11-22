@@ -445,12 +445,14 @@ textarea::placeholder {
   position: relative;
   z-index: 2;
   width: min(350px, 88%);
-  min-height: 592px;
-  padding: 20px 18px 80px;
+  min-height: 656px;
+  padding: 20px 18px 92px;
   border: 9px solid var(--olive-900);
   border-radius: 42px;
   background: var(--sand-50);
   box-shadow: 0 36px 80px rgba(46,54,34,.19);
+  display: grid;
+  gap: 10px;
 }
 
 .landing-phone::before {
@@ -465,64 +467,304 @@ textarea::placeholder {
   background: rgba(255,255,255,.14);
 }
 
-.landing-phone-hero {
-  margin-top: 18px;
-  padding: 17px;
-  border-radius: 22px;
+/* ── بنر کوچک منافسه داخل mockup — همان تم بنر تازه ── */
+.landing-mona-mini {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px;
+  border-radius: 16px;
   background: linear-gradient(145deg, var(--olive-700), var(--olive-600), var(--olive-500));
+  border: 1px solid rgba(216,184,105,.55);
+  box-shadow: 0 10px 22px rgba(46,54,34,.24), 0 0 12px rgba(191,149,64,.18);
+}
+.landing-mona-mini-art {
+  flex: 0 0 58px;
+  height: 58px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(231,213,168,.65);
+}
+.landing-mona-mini-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.landing-mona-mini-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: fit-content;
+  padding: 2px 7px;
+  border-radius: 999px;
+  color: var(--gold-soft);
+  background: rgba(191,149,64,.16);
+  border: 1px solid rgba(191,149,64,.4);
+  font-size: 7.5px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.landing-mona-mini-title {
+  font-size: 15px;
+  font-weight: 900;
+  color: #e7d5a8;
+  text-shadow: 0 1px 8px rgba(191,149,64,.4);
+  letter-spacing: .3px;
+}
+.landing-mona-mini-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: fit-content;
+  padding: 4px 9px;
+  border-radius: 999px;
+  color: #2a2415;
+  background: linear-gradient(145deg, #d4ab52 0%, #bf9540 52%, #8b681f 100%);
+  box-shadow: 0 4px 10px rgba(191,149,64,.4), inset 0 1px 0 rgba(255,255,255,.45);
+  font-size: 7.5px;
+  font-weight: 900;
 }
 
-.landing-mini-category {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  margin-top: 10px;
-  padding: 11px;
-  border: 1px solid var(--sand-150);
-  border-radius: 14px;
+/* ── دسته‌بندی موضوعات — کادر نئونی طلایی ۲×۲ ── */
+.landing-mini-cats-wrap {
+  border: 1px solid rgba(191,149,64,.5);
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 0 14px rgba(191,149,64,.14);
+  overflow: hidden;
+}
+.landing-mini-cats-head {
+  padding: 10px 12px 8px;
+}
+.landing-mini-cats-head strong {
+  display: block;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--ink);
+}
+.landing-mini-cats-head small {
+  display: block;
+  margin-top: 2px;
+  font-size: 8px;
+  color: var(--ink-4);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.landing-mini-cats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+}
+.landing-mini-cat {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+  padding: 10px 8px 12px;
+  text-align: center;
+}
+.landing-mini-cat[data-vline="y"]::after {
+  content: '';
+  position: absolute;
+  inset-inline-end: 0;
+  top: 16%;
+  height: 68%;
+  width: 1px;
+  background: linear-gradient(180deg, transparent, rgba(191,149,64,.45), transparent);
+}
+.landing-mini-cat[data-hline="y"]::before {
+  content: '';
+  position: absolute;
+  inset-inline: 14%;
+  bottom: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(191,149,64,.45), transparent);
+}
+.landing-mini-cat-icon {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
   color: var(--olive-700);
-  background: #fff;
-  font-size: 10.5px;
-  font-weight: 700;
+  background: linear-gradient(140deg, #f2f5ea, #f7f0dc);
+  border: 1px solid var(--gold-soft);
+  box-shadow: 0 0 8px rgba(191,149,64,.18);
+  overflow: hidden;
+}
+.landing-mini-cat-icon img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.landing-mini-cat strong {
+  font-size: 9px;
+  font-weight: 800;
+  color: var(--ink);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.landing-mini-cat-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  color: var(--olive-600);
+  background: var(--olive-50);
+  border: 1px solid var(--olive-100);
+  font-size: 7.5px;
+  font-weight: 800;
+  white-space: nowrap;
 }
 
-.landing-mini-teacher {
+/* ── خدمات پرکاربرد — صحنهٔ زیتونی با هالهٔ طلایی ── */
+.landing-mini-services {
+  position: relative;
+  padding: 10px;
+  border-radius: 18px;
+  background: linear-gradient(145deg, var(--olive-700), var(--olive-600), var(--olive-500));
+  border: 1px solid rgba(216,184,105,.55);
+  box-shadow: 0 12px 26px rgba(46,54,34,.28), 0 0 14px rgba(191,149,64,.2);
+  overflow: hidden;
+  isolation: isolate;
+}
+.landing-mini-services::before {
+  content: '';
+  position: absolute;
+  top: -30px;
+  inset-inline-start: -26px;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  z-index: -1;
+  background: radial-gradient(circle, rgba(216,184,105,.3), transparent 70%);
+}
+.landing-mini-services-head { padding: 0 2px 6px; }
+.landing-mini-services-head strong {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #fff;
+}
+.landing-mini-services-head small {
+  display: block;
+  font-size: 8px;
+  color: rgba(255,255,255,.66);
+}
+.landing-mini-service {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px;
-  border-radius: 18px;
-  background: #fff;
-  box-shadow: 0 2px 8px rgba(46,54,34,.045);
+  gap: 8px;
+  padding: 8px;
+  border-radius: 13px;
+  background: rgba(255,255,255,.94);
+  box-shadow: 0 4px 12px rgba(30,36,18,.2);
+}
+.landing-mini-service-tile {
+  flex: 0 0 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  color: var(--olive-700);
+  background: linear-gradient(140deg, #f2f5ea, #f7f0dc);
+  border: 1px solid var(--gold-soft);
+}
+.landing-mini-service-text { flex: 1; min-width: 0; }
+.landing-mini-service-text strong {
+  display: block;
+  font-size: 9.5px;
+  font-weight: 800;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.landing-mini-service-text small {
+  display: block;
+  font-size: 8px;
+  color: var(--ink-4);
+}
+.landing-mini-service-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex: 0 0 auto;
+  padding: 5px 8px;
+  border-radius: 999px;
+  color: #2a2415;
+  background: linear-gradient(145deg, #d4ab52 0%, #bf9540 52%, #8b681f 100%);
+  font-size: 7.5px;
+  font-weight: 900;
+}
+.landing-mini-dots {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+  padding-top: 8px;
+}
+.landing-mini-dots i {
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.35);
+}
+.landing-mini-dots i.active {
+  width: 14px;
+  background: var(--gold-soft);
 }
 
+/* ── نوار پایین — با دکمهٔ میانی برجستهٔ «فراخوان استاد» ── */
 .landing-mini-bottom-nav {
   position: absolute;
   inset-inline: 0;
   bottom: 0;
-  min-height: 65px;
+  min-height: 68px;
   display: grid;
-  grid-template-columns: repeat(5,1fr);
+  grid-template-columns: repeat(5, 1fr);
   align-items: center;
-  padding: 4px 9px 7px;
+  padding: 4px 9px 8px;
   border-top: 1px solid var(--sand-150);
   border-radius: 0 0 32px 32px;
   background: #fff;
 }
-
 .landing-mini-bottom-nav span {
   display: grid;
   justify-items: center;
   gap: 2px;
   color: var(--ink-4);
 }
-
 .landing-mini-bottom-nav span.active {
   color: var(--olive-600);
 }
-
 .landing-mini-bottom-nav small {
   font-size: 7.5px;
+}
+.landing-nav-fab-item { position: relative; }
+.landing-nav-fab {
+  position: absolute;
+  top: -26px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  color: #f7f4e8;
+  background: linear-gradient(145deg, var(--olive-600), var(--olive-700));
+  border: 3px solid #fff;
+  box-shadow: 0 10px 20px rgba(46,54,34,.32);
+}
+.landing-nav-fab-item small {
+  padding-top: 18px;
 }
 
 .landing-floating-card {
@@ -7304,270 +7546,182 @@ a.blog-card:hover .blog-card-action {
   border-color: var(--olive-100);
 }
 
-/* ═══ ۱.۱۲.۰ — بنرهای تبلیغاتی صفحهٔ اصلی (منافسه + اینستا قرآن) ═══ */
-.promo-band {
+/* ═══ ۱.۱۳.۰ — بنرهای تبلیغاتی «کارت‌محور» (منافسه + اینستا قرآن) ═══
+ * هر دو بنر با آناتومی کارت‌های اپ: گوشهٔ گرد ۲۲، حاشیهٔ طلایی نازک، سایهٔ عمیق
+ * با هالهٔ طلایی، قاب هنرِ گردِ داخلی؛ اندازهٔ یکسان، فقط تم رنگی متفاوت. */
+.promo-top-wrap { margin-block: clamp(14px, 2.5vw, 26px); }
+.promo-card {
   position: relative;
-  display: block;
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 12px;
+  min-height: 168px;
+  padding: 12px;
+  border-radius: 22px;
   overflow: hidden;
-  border-radius: 0; /* قاعدهٔ کارت مربع */
   text-decoration: none;
-  -webkit-tap-highlight-color: transparent;
+  isolation: isolate;
+  min-width: 0;
 }
-.promo-band:focus-visible {
-  outline: 3px solid var(--gold);
-  outline-offset: 3px;
+.promo-card:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(191, 149, 64, .45);
 }
+.promo-card::before,
+.promo-card::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  z-index: 0;
+  pointer-events: none;
+}
+.promo-card::before { top: -46px; inset-inline-start: -40px; width: 170px; height: 170px; }
+.promo-card::after { bottom: -52px; inset-inline-end: -36px; width: 190px; height: 190px; }
+.promo-mona {
+  background: linear-gradient(145deg, #4c5a36 0%, #5e6e43 52%, #728350 100%);
+  border: 1px solid rgba(216, 184, 105, .55);
+  box-shadow: 0 18px 40px rgba(46, 54, 34, .30), 0 0 20px rgba(191, 149, 64, .22);
+}
+.promo-mona::before { background: radial-gradient(circle, rgba(216, 184, 105, .30), transparent 70%); }
+.promo-mona::after { background: radial-gradient(circle, rgba(214, 220, 196, .22), transparent 70%); }
+.promo-insta {
+  margin-block: clamp(20px, 3vw, 34px);
+  background: linear-gradient(150deg, #f7efd9 0%, #fffdf8 70%);
+  border: 1px solid rgba(216, 184, 105, .55);
+  box-shadow: 0 18px 40px rgba(46, 54, 34, .12), 0 0 20px rgba(191, 149, 64, .14);
+}
+.promo-insta::before { background: radial-gradient(circle, rgba(216, 184, 105, .20), transparent 70%); }
+.promo-insta::after { background: radial-gradient(circle, rgba(231, 213, 168, .24), transparent 70%); }
 
-/* ─── کیکر مشترک ─── */
+/* قاب هنر — radius ۱۳ همان کاشی‌های اپ؛ سمت آغازین (راست در RTL) */
+.promo-art {
+  position: relative;
+  z-index: 1;
+  flex: 0 0 44%;
+  min-width: 0;
+  min-height: 120px;
+  border-radius: 13px;
+  overflow: hidden;
+  border: 1px solid rgba(231, 213, 168, .65);
+  box-shadow: 0 8px 18px rgba(30, 36, 18, .32);
+}
+.promo-insta .promo-art {
+  border-color: rgba(216, 184, 105, .65);
+  box-shadow: 0 8px 18px rgba(46, 54, 34, .16);
+}
+.promo-art img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform .3s ease;
+}
+.promo-card:hover .promo-art img { transform: scale(1.04); }
+
+/* بدنه */
+.promo-body {
+  position: relative;
+  z-index: 2;
+  flex: 1 1 auto;
+  min-width: 0;
+  display: grid;
+  align-content: center;
+  gap: 7px;
+  padding-inline-end: 4px;
+}
 .promo-kicker {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
   width: fit-content;
-  padding: 5px 12px;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: .2px;
+  max-width: 100%;
+  padding: 4px 11px;
   border-radius: 999px;
-  line-height: 1.4;
-}
-
-/* ─── ۱) بنر منافسه — تمام‌عرض، بالای صفحه ─── */
-.promo-mona {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(200px, 340px);
-  min-height: clamp(160px, 21vw, 216px);
-  background:
-    radial-gradient(120% 180% at 85% -20%, rgba(191, 149, 64, .22), transparent 55%),
-    linear-gradient(115deg, #1d2409 0%, #2e3622 52%, #3c472b 100%);
-  color: #f7efd9;
-  box-shadow: inset 0 -1px 0 rgba(191, 149, 64, .35), 0 10px 30px rgba(29, 36, 9, .25);
-}
-.promo-mona-body {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: flex-start;
-  gap: 9px;
-  padding: clamp(18px, 4vw, 40px) clamp(18px, 5.5vw, 64px);
-  min-width: 0;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.7;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .promo-mona .promo-kicker {
-  color: var(--gold-soft);
+  color: #e7d5a8;
   background: rgba(191, 149, 64, .16);
   border: 1px solid rgba(191, 149, 64, .4);
 }
-.promo-mona-title {
-  position: relative;
-  display: inline-block;
-  font-size: clamp(30px, 5vw, 46px);
+.promo-insta .promo-kicker {
+  color: var(--olive-700);
+  background: var(--olive-50);
+  border: 1px solid var(--olive-100);
+}
+.promo-title {
+  font-size: 24px;
   font-weight: 900;
-  line-height: 1.15;
-  letter-spacing: .5px;
-  background: linear-gradient(100deg, #f7efd9 10%, #e7d5a8 45%, #bf9540 90%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  text-shadow: 0 2px 18px rgba(191, 149, 64, .25);
+  line-height: 1.2;
 }
-.promo-mona-title-glow {
-  position: absolute;
-  inset-inline-start: -14px;
-  top: 50%;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--gold);
-  box-shadow: 0 0 0 5px rgba(191, 149, 64, .22), 0 0 22px rgba(191, 149, 64, .7);
-  animation: promo-pulse 2.8s ease-in-out infinite;
+.promo-mona .promo-title {
+  color: #e7d5a8;
+  text-shadow: 0 2px 14px rgba(191, 149, 64, .35);
 }
-.promo-mona-sub {
-  max-width: 56ch;
-  font-size: clamp(12.5px, 1.5vw, 15px);
-  line-height: 1.9;
-  color: rgba(247, 239, 217, .85);
+.promo-insta .promo-title { color: var(--olive-800); }
+.promo-desc {
+  font-size: 11px;
+  line-height: 1.75;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
-.promo-mona-art {
-  position: relative;
-  display: block;
-  min-width: 0;
-}
-.promo-mona-art img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform .7s ease;
-}
-.promo-mona-art::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(to right, rgba(29, 36, 9, 0) 55%, rgba(29, 36, 9, .55) 100%);
-}
-.promo-mona:hover .promo-mona-art img,
-.promo-band:focus-visible .promo-mona-art img { transform: scale(1.05); }
-
-/* ─── CTA مشترک ─── */
+.promo-mona .promo-desc { color: rgba(247, 239, 217, .88); }
+.promo-insta .promo-desc { color: var(--ink-3); }
 .promo-cta {
   display: inline-flex;
   align-items: center;
-  gap: 9px;
-  margin-top: 6px;
-  padding: 11px 22px;
-  font-size: 14px;
-  font-weight: 900;
+  gap: 8px;
+  width: fit-content;
+  margin-top: 4px;
+  padding: 9px 18px;
   border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 900;
   line-height: 1;
+  white-space: nowrap;
   transition: transform .25s ease, box-shadow .25s ease;
 }
-.promo-band:hover .promo-cta { transform: translateY(-2px); }
 .promo-cta svg { transition: transform .25s ease; }
-.promo-band:hover .promo-cta svg { transform: translateX(-4px); }
-.promo-cta-gold {
+.promo-card:hover .promo-cta { transform: translateY(-2px); }
+.promo-card:hover .promo-cta svg { transform: translateX(-4px); }
+.promo-mona .promo-cta {
   color: #2a2415;
-  background: linear-gradient(115deg, #f2dfae 0%, #e0bf6d 45%, #bf9540 100%);
-  box-shadow: 0 6px 18px rgba(191, 149, 64, .4), inset 0 1px 0 rgba(255, 255, 255, .5);
+  background: linear-gradient(145deg, #d4ab52 0%, #bf9540 52%, #8b681f 100%);
+  box-shadow: 0 6px 16px rgba(191, 149, 64, .42), inset 0 1px 0 rgba(255, 255, 255, .45);
 }
-.promo-band:hover .promo-cta-gold { box-shadow: 0 10px 26px rgba(191, 149, 64, .55), inset 0 1px 0 rgba(255, 255, 255, .5); }
-.promo-cta-olive {
+.promo-card:hover.promo-mona .promo-cta {
+  box-shadow: 0 10px 26px rgba(191, 149, 64, .55), inset 0 1px 0 rgba(255, 255, 255, .5);
+}
+.promo-insta .promo-cta {
   color: #f7f4e8;
-  background: linear-gradient(115deg, #5e6e43 0%, #4c5a36 55%, #3c472b 100%);
-  box-shadow: 0 6px 18px rgba(76, 90, 54, .35), inset 0 1px 0 rgba(255, 255, 255, .18);
+  background: linear-gradient(145deg, #8fa873 0%, #5f7a48 100%);
+  box-shadow: 0 6px 16px rgba(76, 90, 54, .35), inset 0 1px 0 rgba(255, 255, 255, .22);
 }
-.promo-band:hover .promo-cta-olive { box-shadow: 0 10px 26px rgba(76, 90, 54, .5), inset 0 1px 0 rgba(255, 255, 255, .18); }
-
-/* ─── ۲) بنر اینستا قرآن — وسط صفحه، قاب طلایی ─── */
-.promo-insta-wrap { margin-block: clamp(20px, 3vw, 34px); }
-.promo-insta {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(170px, 300px);
-  gap: clamp(14px, 2.5vw, 30px);
-  min-height: clamp(150px, 18vw, 190px);
-  padding: clamp(16px, 2.5vw, 26px);
-  background:
-    radial-gradient(90% 160% at 8% 120%, rgba(191, 149, 64, .12), transparent 60%),
-    linear-gradient(120deg, #fffdf7 0%, #f7efd9 60%, #f2e6c8 100%);
-  border: 1.5px solid var(--gold-soft);
-  box-shadow: 0 10px 28px rgba(46, 54, 34, .1), inset 0 0 0 4px rgba(255, 255, 255, .55);
-  color: var(--ink);
-  isolation: isolate;
-}
-.promo-insta::before,
-.promo-insta::after {
-  content: '';
-  position: absolute;
-  width: 26px;
-  height: 26px;
-  border: 2.5px solid var(--gold);
-  z-index: 3;
-  pointer-events: none;
-}
-.promo-insta::before { top: 7px; inset-inline-start: 7px; border-left: 0; border-bottom: 0; }
-.promo-insta::after { bottom: 7px; inset-inline-end: 7px; border-right: 0; border-top: 0; }
-.promo-insta-body {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: flex-start;
-  gap: 8px;
-  min-width: 0;
-}
-.promo-kicker-olive {
-  color: var(--olive-700);
-  background: var(--olive-50);
-  border: 1px solid var(--olive-200);
-}
-.promo-insta-title {
-  position: relative;
-  font-size: clamp(24px, 3.6vw, 36px);
-  font-weight: 900;
-  line-height: 1.2;
-  color: var(--olive-800);
-}
-.promo-insta-title-underline {
-  position: absolute;
-  inset-inline-start: 2px;
-  bottom: -4px;
-  width: 100%;
-  height: 7px;
-  border-radius: 4px;
-  background: linear-gradient(90deg, rgba(191, 149, 64, .55), rgba(191, 149, 64, .08));
-}
-.promo-insta-sub {
-  max-width: 52ch;
-  font-size: clamp(12.5px, 1.4vw, 14.5px);
-  line-height: 1.9;
-  color: var(--ink-2s);
-}
-.promo-insta-art {
-  position: relative;
-  display: block;
-  min-width: 0;
-  border: 1.5px solid var(--gold-soft);
-  box-shadow: 0 8px 20px rgba(46, 54, 34, .16);
-  overflow: hidden;
-}
-.promo-insta-art img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform .7s ease;
-}
-.promo-insta:hover .promo-insta-art img,
-.promo-band:focus-visible .promo-insta-art img { transform: scale(1.06); }
-
-/* ─── درخشش عبوری ─── */
-.promo-shine {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  width: 42%;
-  z-index: 4;
-  pointer-events: none;
-  background: linear-gradient(105deg, transparent 20%, rgba(255, 255, 255, .16) 48%, transparent 76%);
-  transform: translateX(-140%);
-  animation: promo-shine 5.2s ease-in-out infinite;
-}
-.promo-insta .promo-shine {
-  background: linear-gradient(105deg, transparent 20%, rgba(191, 149, 64, .14) 48%, transparent 76%);
+.promo-card:hover.promo-insta .promo-cta {
+  box-shadow: 0 10px 26px rgba(76, 90, 54, .5), inset 0 1px 0 rgba(255, 255, 255, .28);
 }
 
-@keyframes promo-shine {
-  0% { transform: translateX(-140%); }
-  52%, 100% { transform: translateX(280%); }
-}
-@keyframes promo-pulse {
-  0%, 100% { box-shadow: 0 0 0 5px rgba(191, 149, 64, .22), 0 0 22px rgba(191, 149, 64, .7); }
-  50% { box-shadow: 0 0 0 9px rgba(191, 149, 64, .12), 0 0 30px rgba(191, 149, 64, .95); }
-}
-
-/* ─── موبایل ─── */
-@media (max-width: 639px) {
-  .promo-mona { grid-template-columns: 1fr; }
-  .promo-mona-art {
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-  }
-  .promo-mona-art img { object-position: 30% center; }
-  .promo-mona-art::after {
-    background: linear-gradient(to left, rgba(24, 30, 10, .96) 30%, rgba(24, 30, 10, .8) 62%, rgba(24, 30, 10, .3) 100%);
-  }
-  .promo-mona-body { padding: 20px 18px; }
-  .promo-insta { grid-template-columns: 1fr; }
-  .promo-insta-art { height: 150px; order: -1; }
+/* ─── دسکتاپ — همان اندازهٔ بنرها در اپِ عریض ─── */
+@media (min-width: 1024px) {
+  .promo-card { min-height: 148px; }
+  .promo-art { flex-basis: 30%; }
+  .promo-kicker { font-size: 12.5px; }
+  .promo-title { font-size: 28px; }
+  .promo-desc { font-size: 12.5px; }
+  .promo-cta { font-size: 13.5px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .promo-shine { animation: none; opacity: 0; }
-  .promo-mona-title-glow { animation: none; }
-  .promo-mona-art img,
-  .promo-insta-art img,
+  .promo-art img,
   .promo-cta,
   .promo-cta svg { transition: none; }
 }
