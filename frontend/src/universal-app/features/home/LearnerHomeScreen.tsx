@@ -68,6 +68,7 @@ import { StoryRail, markStorySeen } from "../stories/StoryRail";
 import { StoryViewer } from "../stories/StoryViewer";
 import { fetchStoriesEnabled, fetchStoriesFeed, type Story } from "../stories/api";
 import { StoryComposer } from "../stories/StoryComposer";
+import { PromoBannerMonafeseh, PromoBannerInstaQuran } from "./PromoBanners";
 import { BanoTeachersCarousel } from "./BanoTeachersCarousel";
 import type { Teacher } from "../teachers/types";
 import { nearestCity } from "@/lib/cities";
@@ -1459,6 +1460,9 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
         </div>
       </header>
 
+      {/* ۱.۱۲.۰ — بنر تبلیغاتی «منافسه» بالای خانه — کلیک به monafeseh.ir (هم‌تراز وب) */}
+      <PromoBannerMonafeseh wide={wide} />
+
       {/* E1/E2 — بخش ② استوری‌های وُدّا — کاشی جدا برای هر استوری خودم + کاشی هر نویسنده
        * ۱.ب.۳ — کلید خاموش = سیستم استوری کامل پنهان (ریل، نمایشگر و انتشار). */}
       {storiesEnabled ? (
@@ -1497,6 +1501,9 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
 
       {/* ۱.ب.۲ — بخش ۵ خدمات پرکاربرد */}
       <PopularServicesGrid services={popular} loading={discoverLoading} wide={wide} config={config} />
+
+      {/* ۱.۱۲.۰ — بنر تبلیغاتی «اینستا قرآن» وسط خانه — کلیک به اپ اینستا قرآن (هم‌تراز وب) */}
+      <PromoBannerInstaQuran wide={wide} />
 
       {/* ۱.ب.۴ — کاروسل «اساتید بانو» — بالای خدمات رایگان (جابه‌جایی به درخواست مدیر)؛ پالت رز مستقل */}
       <BanoTeachersCarousel
