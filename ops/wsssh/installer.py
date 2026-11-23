@@ -357,19 +357,8 @@ def patch_nginx() -> None:
             break
     if api_idx is None:
         fail("nginx-conf", "api.vodda.ir server block not found")
-    depth = 0
-    insert_at = None
-    for i in range(api_idx, len(lines)):
-        line = lines[i]
-        depth += line.count("{") - line.count("}")
-        if depth == 1 and line.strip().startswith("location / {"):
-            insert_at = i
-            break
-        if depth == 0 and i > api_idx:
-            break
-    if insert_at is None:
-        fail("nginx-conf", "catch-all location not found in api block")
-    lines.insert(insert_at, loc.rstrip("\n"))
+    # درج بلافاصله پس از server_name بلاک api — همیشه داخل بلاک است و ^~ اولویت طول دارد
+    lines.insert(api_idx + 1, loc.rstrip("\n"))
     with open(conf_path, "w", encoding="utf-8") as f:
         f.write("\n".join(lines))
     print("NGINX_PATCHED")
