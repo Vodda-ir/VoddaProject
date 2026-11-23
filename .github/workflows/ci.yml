@@ -96,41 +96,24 @@ jobs:
   flutter:
     name: App · Flutter
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: app
     steps:
       - uses: actions/checkout@v4
-      - name: Guard — اپ موبایل به‌صورت flutter-app.zip است؛ فقط با app/ واقعی اجرا می‌شود
-        run: |
-          if [ ! -f pubspec.yaml ]; then
-            echo "app/ در ریپو موجود نیست (flutter-app.zip) — شغل Flutter به‌صورت امن رد می‌شود"
-          fi
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
       - name: Install dependencies
-        run: |
-          if [ -f pubspec.yaml ]; then
-            flutter pub get --enforce-lockfile
-          else
-            echo "SKIP: app/ missing"
-          fi
+        working-directory: app
+        if: ${{ hashFiles('app/pubspec.yaml') != '' }}
+        run: flutter pub get --enforce-lockfile
       - name: Analyze
-        run: |
-          if [ -f pubspec.yaml ]; then
-            flutter analyze
-          else
-            echo "SKIP: app/ missing"
-          fi
+        working-directory: app
+        if: ${{ hashFiles('app/pubspec.yaml') != '' }}
+        run: flutter analyze
       - name: Test
-        run: |
-          if [ -f pubspec.yaml ]; then
-            flutter test
-          else
-            echo "SKIP: app/ missing"
-          fi
+        working-directory: app
+        if: ${{ hashFiles('app/pubspec.yaml') != '' }}
+        run: flutter test
 
   deployment:
     name: Deployment configuration

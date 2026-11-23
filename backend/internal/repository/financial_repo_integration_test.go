@@ -31,10 +31,12 @@ func integrationDB(t *testing.T) *gorm.DB {
 		&domain.Session{},
 		&domain.Transaction{},
 		&domain.Withdrawal{},
+		&domain.Review{},
 	); err != nil {
 		t.Fatalf("migrate: %v", err)
 	}
 	for _, model := range []any{
+		&domain.Review{},
 		&domain.Transaction{},
 		&domain.Withdrawal{},
 		&domain.Session{},
