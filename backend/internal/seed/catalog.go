@@ -71,14 +71,14 @@ var officialCatalog = []domain.OfficialService{
 	{ID: 38, Category: "آمادگی و مشاوره قرآنی", Title: "آمادگی مسابقات اذان و صوت و لحن", Description: "تمرین تخصصی برای رشته‌های اذان و صوت و لحن مسابقات", Icon: "award", SortOrder: 38, Active: true},
 	{ID: 39, Category: "آمادگی و مشاوره قرآنی", Title: "مشاوره و برنامه‌ریزی مسیر قرآنی", Description: "طراحی مسیر شخصی یادگیری قرآن با ارزیابی نقاط ضعف و قوت", Icon: "list", SortOrder: 39, Active: true},
 	{ID: 40, Category: "آمادگی و مشاوره قرآنی", Title: "ارزیابی و رتبه‌بندی سطح قرآنی", Description: "ارزیابی دقیق سطح فعلی روخوانی، تجوید یا حفظ شما", Icon: "trending", SortOrder: 40, Active: true},
-		// ── خدمات حضوری قرآنی (in-person ceremonies) ──
-		{ID: 101, Category: "خدمات حضوری قرآنی", Title: "تلاوت مجلسی قرآن کریم", Description: "تلاوت مجلسی با صوت و لحن برای مراسم‌های شما؛ از جشن تا محافل انس", Icon: "mic", SortOrder: 101, Active: true, Mode: domain.OfficialServiceModeInPerson, RequiresAudio: true},
-		{ID: 102, Category: "خدمات حضوری قرآنی", Title: "ختم قرآن برای درگذشتگان", Description: "اجرای ختم قرآن انفرادی یا گروهی در مراسم سوم، هفتم و چهلم", Icon: "quran", SortOrder: 102, Active: true, Mode: domain.OfficialServiceModeInPerson, RequiresAudio: true},
-		{ID: 103, Category: "خدمات حضوری قرآنی", Title: "تلاوت در جشن‌ها و جشنواره‌های قرآنی", Description: "اجرای تلاوت افتتاحیه و برنامه‌های قرآنی در جشن‌ها و جشنواره‌ها", Icon: "award", SortOrder: 103, Active: true, Mode: domain.OfficialServiceModeInPerson, RequiresAudio: true},
-		{ID: 104, Category: "خدمات حضوری قرآنی", Title: "اذان و اقامه در مراسم", Description: "اذان و اقامه با صوت دلنشین در مراسم‌ها و مساجد", Icon: "bell", SortOrder: 104, Active: true, Mode: domain.OfficialServiceModeInPerson, RequiresAudio: true},
-		{ID: 105, Category: "خدمات حضوری قرآنی", Title: "تواشیح و همخوانی مجلسی", Description: "گروه تواشیح و همخوانی قرآنی برای مراسم‌های بزرگ", Icon: "users", SortOrder: 105, Active: true, Mode: domain.OfficialServiceModeInPerson, RequiresAudio: true, GroupCapable: true},
-		{ID: 106, Category: "خدمات حضوری قرآنی", Title: "قرائت دعا و زیارت در مراسم", Description: "خواندن دعاهای قرآنی و زیارت (کمیل، جوشن، عرفه) در محافل", Icon: "heart", SortOrder: 106, Active: true, Mode: domain.OfficialServiceModeInPerson, RequiresAudio: true},
-		{ID: 107, Category: "خدمات حضوری قرآنی", Title: "کلاس حضوری قرآن در مؤسسه", Description: "تدریس حضوری روخوانی، تجوید و حفظ در مؤسسات و مدارس", Icon: "book", SortOrder: 107, Active: true, Mode: domain.OfficialServiceModeInPerson, RequiresAudio: false},
+	// ── خدمات حضوری قرآنی (in-person ceremonies) ──
+	{ID: 101, Category: "خدمات حضوری قرآنی", Title: "تلاوت مجلسی قرآن کریم", Description: "تلاوت مجلسی با صوت و لحن برای مراسم‌های شما؛ از جشن تا محافل انس", Icon: "mic", SortOrder: 101, Active: true, Mode: domain.OfficialServiceModeInPerson, RequiresAudio: true},
+	{ID: 102, Category: "خدمات حضوری قرآنی", Title: "ختم قرآن برای درگذشتگان", Description: "اجرای ختم قرآن انفرادی یا گروهی در مراسم سوم، هفتم و چهلم", Icon: "quran", SortOrder: 102, Active: true, Mode: domain.OfficialServiceModeInPerson, RequiresAudio: true},
+	{ID: 103, Category: "خدمات حضوری قرآنی", Title: "تلاوت در جشن‌ها و جشنواره‌های قرآنی", Description: "اجرای تلاوت افتتاحیه و برنامه‌های قرآنی در جشن‌ها و جشنواره‌ها", Icon: "award", SortOrder: 103, Active: true, Mode: domain.OfficialServiceModeInPerson, RequiresAudio: true},
+	{ID: 104, Category: "خدمات حضوری قرآنی", Title: "اذان و اقامه در مراسم", Description: "اذان و اقامه با صوت دلنشین در مراسم‌ها و مساجد", Icon: "bell", SortOrder: 104, Active: true, Mode: domain.OfficialServiceModeInPerson, RequiresAudio: true},
+	{ID: 105, Category: "خدمات حضوری قرآنی", Title: "تواشیح و همخوانی مجلسی", Description: "گروه تواشیح و همخوانی قرآنی برای مراسم‌های بزرگ", Icon: "users", SortOrder: 105, Active: true, Mode: domain.OfficialServiceModeInPerson, RequiresAudio: true, GroupCapable: true},
+	{ID: 106, Category: "خدمات حضوری قرآنی", Title: "قرائت دعا و زیارت در مراسم", Description: "خواندن دعاهای قرآنی و زیارت (کمیل، جوشن، عرفه) در محافل", Icon: "heart", SortOrder: 106, Active: true, Mode: domain.OfficialServiceModeInPerson, RequiresAudio: true},
+	{ID: 107, Category: "خدمات حضوری قرآنی", Title: "کلاس حضوری قرآن در مؤسسه", Description: "تدریس حضوری روخوانی، تجوید و حفظ در مؤسسات و مدارس", Icon: "book", SortOrder: 107, Active: true, Mode: domain.OfficialServiceModeInPerson, RequiresAudio: false},
 }
 
 // legacyServiceRules maps free-text service titles that existed before the

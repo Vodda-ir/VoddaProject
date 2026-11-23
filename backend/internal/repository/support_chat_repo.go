@@ -24,7 +24,9 @@ func (r *supportChatRepo) CreateTicket(ctx context.Context, ticket *domain.Suppo
 
 func (r *supportChatRepo) ticketPreload(q *gorm.DB) *gorm.DB {
 	return q.
-		Preload("User", func(tx *gorm.DB) *gorm.DB { return tx.Select("id, name, mobile, role, city, avatar_url, is_support_agent") }).
+		Preload("User", func(tx *gorm.DB) *gorm.DB {
+			return tx.Select("id, name, mobile, role, city, avatar_url, is_support_agent")
+		}).
 		Preload("Assignee", func(tx *gorm.DB) *gorm.DB { return tx.Select("id, name, mobile, role, avatar_url") })
 }
 

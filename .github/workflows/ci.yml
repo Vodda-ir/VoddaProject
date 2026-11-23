@@ -96,6 +96,8 @@ jobs:
   flutter:
     name: App · Flutter
     runs-on: ubuntu-latest
+    # اپ موبایل به‌صورت flutter-app.zip نگه‌داری می‌شود؛ شغل فقط وقتی app/ واقعاً موجود است اجرا می‌شود
+    if: ${{ hashFiles('app/pubspec.yaml') != '' }}
     defaults:
       run:
         working-directory: app
