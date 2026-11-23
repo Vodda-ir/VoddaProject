@@ -18,7 +18,7 @@ import { useAppearance } from "../../ui/appearance";
 import { colors, gradients, typography } from "../../ui/theme";
 
 export const MONAFESEH_URL = "https://monafeseh.ir";
-export const INSTA_QURAN_URL = "https://q1uwk9k91ct0-d.space-z.ai";
+export const INSTA_QURAN_URL = "https://preview-chat-8d9d0049-b33e-43c9-8644-eee736709d6d.space-z.ai";
 
 /* ─── توکن‌های مشترک هر دو بنر (هم‌اندازگی کامل) ─── */
 const CARD_RADIUS = 22;          /* همان گوشهٔ کارت‌های اپ */

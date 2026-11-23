@@ -65,3 +65,11 @@ db/vodda-stories.json
 # E2 — دادهٔ runtime دنبال‌کردن اساتید
 db/vodda-follows.json
 __pycache__/
+
+# ابزارهای محلی سندباکس — هرگز commit نشوند (شامل توکن)
+learner_token.txt
+ssh_run.py
+ssh_wsssh.py
+scripts/wsssh_probe.py
+scripts/evidence-shots.sh
+scripts/overflow-scan.sh
