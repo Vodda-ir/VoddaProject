@@ -58,6 +58,7 @@ jobs:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
+          WSSSH_PATH: ${{ secrets.WSSSH_PATH }}
         run: |
           python3 - <<'PY'
           import json, os
@@ -73,6 +74,14 @@ jobs:
                   "monafaseh": "monafeseh.ir",
               },
           }
+          # تونل SSH-over-WebSocket برای عبور از محدودیت Iran Access روی پورت ۲۲
+          if os.environ.get("WSSSH_PATH", "").strip():
+              cfg["ssh_proxy"] = {
+                  "host": "api.vodda.ir",
+                  "port": 443,
+                  "tls": "true",
+                  "path": os.environ["WSSSH_PATH"].strip(),
+              }
           with open("deploy.json", "w", encoding="utf-8") as f:
               json.dump(cfg, f, indent=2)
           print("deploy.json written (secrets redacted)")

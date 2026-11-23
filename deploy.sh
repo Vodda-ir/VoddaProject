@@ -16,6 +16,9 @@ DEPLOY_CONFIG_FILE="$PROJECT_DIR/deploy.json"
 ENV_PRODUCTION="$PROJECT_DIR/.env.production"
 BUNDLE_FILE="$PROJECT_DIR/vodda-docker-bundle.tar.gz"
 SSH_OPTIONS=(-o StrictHostKeyChecking=accept-new -o ServerAliveInterval=15 -o ServerAliveCountMax=20 -o TCPKeepAlive=yes -o IPQoS=throughput)
+# تونل SSH-over-WebSocket (دور زدن محدودیت Iran Access روی پورت ۲۲)
+# با مقداردهی ssh_proxy در deploy.json فعال می‌شود؛ در غیر این صورت مستقیم وصل می‌شود.
+SSH_PROXY_OPTIONS=()
 
 print_header() { echo ""; echo -e "${BLUE}========================================${NC}"; echo -e "${BLUE}$1${NC}"; echo -e "${BLUE}========================================${NC}"; echo ""; }
 print_step()    { echo -e "${GREEN}$1${NC}"; }
@@ -133,18 +136,33 @@ load_deploy_config() {
     validate_domain "$DOMAIN_APP"
     validate_domain "$DOMAIN_API"
     validate_domain "$DOMAIN_MONAFASEH"
+    # تونل SSH-over-WebSocket — اختیاری؛ اگر ssh_proxy در deploy.json باشد فعال می‌شود
+    SSH_PROXY_OPTIONS=()
+    SSH_PROXY_HOST=$(json_get "ssh_proxy.host" 2>/dev/null) || SSH_PROXY_HOST=""
+    if [ -n "$SSH_PROXY_HOST" ]; then
+        SSH_PROXY_PORT=$(json_get "ssh_proxy.port" 2>/dev/null) || SSH_PROXY_PORT="443"
+        SSH_PROXY_TLS=$(json_get "ssh_proxy.tls" 2>/dev/null) || SSH_PROXY_TLS="true"
+        SSH_PROXY_PATH=$(json_get "ssh_proxy.path" 2>/dev/null) || { print_error "deploy.json ssh_proxy.path is required when ssh_proxy.host is set."; exit 1; }
+        [ -f "$PROJECT_DIR/scripts/wssh_proxy.py" ] || { print_error "scripts/wssh_proxy.py not found — tunnel client missing."; exit 1; }
+        SSH_PROXY_OPTIONS=(-o "ProxyCommand=python3 $PROJECT_DIR/scripts/wssh_proxy.py $SSH_PROXY_HOST $SSH_PROXY_PORT $SSH_PROXY_TLS $SSH_PROXY_PATH")
+    fi
 }
 
 check_sshpass() { command -v sshpass &> /dev/null || { print_error "sshpass is required for password-based SSH deploys."; exit 1; }; }
-ssh_cmd() { SSHPASS="$SSH_PASSWORD" sshpass -e ssh "${SSH_OPTIONS[@]}" "$@"; }
+ssh_cmd() { SSHPASS="$SSH_PASSWORD" sshpass -e ssh "${SSH_PROXY_OPTIONS[@]}" "${SSH_OPTIONS[@]}" "$@"; }
 
 scp_cmd_with_progress() {
     local src="$1" dest="$2"
     if command -v rsync &> /dev/null; then
+        # رشتهٔ فرمان ssh برای rsync به‌صورت shell-safe ساخته می‌شود (قفل‌کردن ProxyCommand دارای فاصله)
+        local -a rsync_ssh_opts=("ssh" "-o" "StrictHostKeyChecking=accept-new" "-o" "ServerAliveInterval=15" "-o" "ServerAliveCountMax=20" "-o" "TCPKeepAlive=yes" "-o" "IPQoS=throughput")
+        if [ -n "$SSH_PROXY_HOST" ]; then
+            rsync_ssh_opts+=("-o" "ProxyCommand=python3 $PROJECT_DIR/scripts/wssh_proxy.py $SSH_PROXY_HOST $SSH_PROXY_PORT $SSH_PROXY_TLS $SSH_PROXY_PATH")
+        fi
         SSHPASS="$SSH_PASSWORD" sshpass -e rsync -a --partial --append-verify --progress --info=progress2 --timeout=600 \
-            -e "ssh -o StrictHostKeyChecking=accept-new -o ServerAliveInterval=15 -o ServerAliveCountMax=20 -o TCPKeepAlive=yes -o IPQoS=throughput" "$src" "$dest"
+            -e "$(printf '%q ' "${rsync_ssh_opts[@]}")" "$src" "$dest"
     else
-        SSHPASS="$SSH_PASSWORD" sshpass -e scp "${SSH_OPTIONS[@]}" "$src" "$dest"
+        SSHPASS="$SSH_PASSWORD" sshpass -e scp "${SSH_PROXY_OPTIONS[@]}" "${SSH_OPTIONS[@]}" "$src" "$dest"
     fi
 }
 
@@ -223,7 +241,7 @@ configure_domain_proxy() {
     local proxy_config
     proxy_config=$(mktemp)
     render_domain_proxy "$proxy_config"
-    SSHPASS="$SSH_PASSWORD" sshpass -e scp -o StrictHostKeyChecking=accept-new \
+    SSHPASS="$SSH_PASSWORD" sshpass -e scp "${SSH_PROXY_OPTIONS[@]}" -o StrictHostKeyChecking=accept-new \
         "$proxy_config" "$SERVER_USER@$SERVER_IP:/tmp/vodda-nginx.conf"
     rm -f "$proxy_config"
     ssh_cmd "$SERVER_USER@$SERVER_IP" "set -euo pipefail; apt-get update; DEBIAN_FRONTEND=noninteractive apt-get install -y nginx curl; install -m 0644 /tmp/vodda-nginx.conf /etc/nginx/sites-available/vodda.conf; ln -sfn /etc/nginx/sites-available/vodda.conf /etc/nginx/sites-enabled/vodda.conf; rm -f /etc/nginx/sites-enabled/default; if command -v ufw >/dev/null 2>&1 && ufw status | grep -q 'Status: active'; then ufw allow 80/tcp; fi; nginx -t; systemctl enable --now nginx; systemctl reload nginx; test \$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' -H 'Host: $DOMAIN_SITE' http://127.0.0.1/) = 200; test \$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' -H 'Host: $DOMAIN_APP' http://127.0.0.1/) = 200; test \$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' -H 'Host: $DOMAIN_API' http://127.0.0.1/ready) = 200; test \$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' -H 'Host: $DOMAIN_MONAFASEH' http://127.0.0.1/api/health) = 200; test \$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' -H 'Host: $BASHAR_HOST' http://127.0.0.1/) = 200; rm -f /tmp/vodda-nginx.conf"
@@ -293,7 +311,7 @@ deploy_to_server() {
     ssh_cmd "$SERVER_USER@$SERVER_IP" "mkdir -p '$SERVER_PATH'"
 
     print_step "[2/7] Uploading compose file and env..."
-    SSHPASS="$SSH_PASSWORD" sshpass -e scp -o StrictHostKeyChecking=accept-new \
+    SSHPASS="$SSH_PASSWORD" sshpass -e scp "${SSH_PROXY_OPTIONS[@]}" -o StrictHostKeyChecking=accept-new \
         docker-compose.deploy.yml .env.production \
         "$SERVER_USER@$SERVER_IP:$SERVER_PATH/"
     ssh_cmd "$SERVER_USER@$SERVER_IP" "chmod 600 '$SERVER_PATH/.env.production'"
@@ -364,7 +382,7 @@ deploy_bashar_only() {
 
     print_step "[1/5] Uploading compose file and env..."
     ssh_cmd "$SERVER_USER@$SERVER_IP" "mkdir -p '$SERVER_PATH'"
-    SSHPASS="$SSH_PASSWORD" sshpass -e scp -o StrictHostKeyChecking=accept-new \
+    SSHPASS="$SSH_PASSWORD" sshpass -e scp "${SSH_PROXY_OPTIONS[@]}" -o StrictHostKeyChecking=accept-new \
         docker-compose.deploy.yml .env.production \
         "$SERVER_USER@$SERVER_IP:$SERVER_PATH/"
     ssh_cmd "$SERVER_USER@$SERVER_IP" "chmod 600 '$SERVER_PATH/.env.production'"
@@ -386,7 +404,7 @@ deploy_bashar_only() {
     apk_file=$(ls -t "$PROJECT_DIR/bashar/apk/"BasijNews*.apk 2>/dev/null | head -n 1)
     if [ -n "${apk_file:-}" ]; then
         ssh_cmd "$SERVER_USER@$SERVER_IP" "mkdir -p /var/www/bashar-download"
-        SSHPASS="$SSH_PASSWORD" sshpass -e scp -o StrictHostKeyChecking=accept-new \
+        SSHPASS="$SSH_PASSWORD" sshpass -e scp "${SSH_PROXY_OPTIONS[@]}" -o StrictHostKeyChecking=accept-new \
             "$apk_file" "$SERVER_USER@$SERVER_IP:/var/www/bashar-download/BasijNews.apk"
         ssh_cmd "$SERVER_USER@$SERVER_IP" "cp -f /var/www/bashar-download/BasijNews.apk '/var/www/bashar-download/$(basename "$apk_file")'"
         echo "  ✓ http://$BASHAR_HOST/download/BasijNews.apk"
@@ -427,7 +445,7 @@ deploy_domains_only() {
 
     print_step "Preparing server path and uploading runtime configuration..."
     ssh_cmd "$SERVER_USER@$SERVER_IP" "mkdir -p '$SERVER_PATH'"
-    SSHPASS="$SSH_PASSWORD" sshpass -e scp -o StrictHostKeyChecking=accept-new \
+    SSHPASS="$SSH_PASSWORD" sshpass -e scp "${SSH_PROXY_OPTIONS[@]}" -o StrictHostKeyChecking=accept-new \
         docker-compose.deploy.yml .env.production \
         "$SERVER_USER@$SERVER_IP:$SERVER_PATH/"
     ssh_cmd "$SERVER_USER@$SERVER_IP" "chmod 600 '$SERVER_PATH/.env.production'"
@@ -531,7 +549,7 @@ deploy_prod() {
 
     print_header "Phase 1: Server-side build & deploy (ref=$ref)"
     [ -f "$PROJECT_DIR/ops/deploy/server-build-deploy.sh" ] || { print_error "ops/deploy/server-build-deploy.sh not found — run git pull."; exit 1; }
-    SSHPASS="$SSH_PASSWORD" sshpass -e scp -o StrictHostKeyChecking=accept-new \
+    SSHPASS="$SSH_PASSWORD" sshpass -e scp "${SSH_PROXY_OPTIONS[@]}" -o StrictHostKeyChecking=accept-new \
         "$PROJECT_DIR/ops/deploy/server-build-deploy.sh" \
         "$SERVER_USER@$SERVER_IP:$SERVER_PATH/server-build-deploy.sh"
     ssh_cmd "$SERVER_USER@$SERVER_IP" \

@@ -106,6 +106,18 @@ server {
     server_name __API_DOMAIN__;
     client_max_body_size 10m;
 
+    # تونل SSH-over-WebSocket برای دیپلوی (دور زدن محدودیت Iran Access روی پورت ۲۲)
+    # مسیر دقیق شامل توکن است و پل سمت سرور مسیر را اعتبارسنجی می‌کند.
+    location ^~ /wsssh/ {
+        proxy_pass http://127.0.0.1:8123;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+        proxy_buffering off;
+    }
+
     proxy_http_version 1.1;
     proxy_set_header Host $host;
     proxy_set_header X-Forwarded-Host $host;
