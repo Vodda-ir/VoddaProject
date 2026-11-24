@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!--
+    نشان اپ «اینستا قرآن» — Instaquran
+    کادر گرادیان رسمی اینستاگرام + مصحف سفید (به‌جای لنز دوربین) + نقطه‌ی امضا
+  -->
+  <defs>
+    <radialGradient id="ig" cx="0.3" cy="1.07" r="1.15">
+      <stop offset="0" stop-color="#fdf497"/>
+      <stop offset="0.05" stop-color="#fdf497"/>
+      <stop offset="0.45" stop-color="#fd5949"/>
+      <stop offset="0.6" stop-color="#d6249f"/>
+      <stop offset="0.9" stop-color="#285AEB"/>
+    </radialGradient>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="url(#ig)"/>
+  <g fill="none" stroke="#ffffff" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="13.5" y="13.5" width="37" height="37" rx="11" strokeWidth="3.4"/>
+    <path d="M32 27.5c3.1-2.3 7.9-2.4 10.8-.6v12.4c-2.9-1.8-7.7-1.7-10.8.6" strokeWidth="2.6"/>
+    <path d="M32 27.5c-3.1-2.3-7.9-2.4-10.8-.6v12.4c2.9-1.8 7.7-1.7 10.8.6" strokeWidth="2.6"/>
+    <path d="M32 27.5v12.4" strokeWidth="2.6"/>
+  </g>
+  <circle cx="42.8" cy="20.8" r="2.4" fill="#ffffff"/>
+</svg>

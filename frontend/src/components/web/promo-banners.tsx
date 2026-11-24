@@ -1,10 +1,11 @@
 /*
- * بنرهای تبلیغاتی صفحهٔ اصلی وب — v1.13.0 (بازطراحی «کارت‌محور» — هم‌ترازی قاعدهٔ ① با اپ)
- * هر دو بنر دقیقاً با آناتومی کارت‌های اپ هم‌خوان‌اند: گوشهٔ گرد ۲۲، حاشیهٔ طلایی نازک،
- * سایهٔ عمیق با هالهٔ طلایی، قاب هنرِ گردِ داخلی (radius ۱۳)؛ اندازهٔ یکسان و فقط تم رنگی متفاوت:
- *   ۱) بالای صفحه: «منافسه» — تم زیتونی برند (monafeseh.ir)
- *   ۲) وسط صفحه: «اینستا قرآن» — تم کِرِم روشن
+ * بنرهای تبلیغاتی صفحهٔ اصلی وب — v1.13.1 (بازطراحی «لوگو-محور» — هم‌ترازی قاعدهٔ ① با اپ)
+ * هر بنر با حال‌وهوای تم و لوگوی رسمی خودش طراحی شده و لوگو با contain و اندازهٔ نسبتاً بزرگ
+ * در قاب هنرِ گرد (radius ۱۳) به نمایش درمی‌آید؛ اندازهٔ یکسان و فقط تم متفاوت:
+ *   ۱) بالای صفحه: «منافسه» — تم تیرهٔ سلطنتی هم‌رنگ لوگو (monafeseh.ir)
+ *   ۲) وسط صفحه: «اینستا قرآن» — تم روشن با ته‌رنگ گرادیان رسمی لوگو
  * کل بنر یک لینک است (کلیک در تب جدید) و انیمیشن‌ها با prefers-reduced-motion خاموش می‌شوند.
+ * اصلاح متنی: عنوان «منافسه» بدون اعراب.
  */
 
 export const MONAFESEH_URL = 'https://monafeseh.ir';
@@ -14,8 +15,8 @@ function PromoCard({
   className,
   href,
   aria,
-  image,
-  imageAlt,
+  logo,
+  logoAlt,
   kickerIcon,
   kicker,
   title,
@@ -25,8 +26,8 @@ function PromoCard({
   className: string;
   href: string;
   aria: string;
-  image: string;
-  imageAlt: string;
+  logo: string;
+  logoAlt: string;
   kickerIcon: 'award' | 'quran';
   kicker: string;
   title: string;
@@ -36,7 +37,7 @@ function PromoCard({
   return (
     <a className={`promo-card ${className}`} href={href} target="_blank" rel="noopener noreferrer" aria-label={aria}>
       <span className="promo-art" aria-hidden="true">
-        <img src={image} alt={imageAlt} loading="lazy" />
+        <img src={logo} alt={logoAlt} loading="lazy" />
       </span>
       <span className="promo-body">
         <span className="promo-kicker">
@@ -75,12 +76,12 @@ export function MonafesehPromoBanner() {
       className="promo-mona"
       href={MONAFESEH_URL}
       aria="سکوی مسابقات قرآنی منافسه — ورود به monafeseh.ir"
-      image="/banners/monafeseh.png"
-      imageAlt="تندیس طلایی منافسه"
+      logo="/banners/monafeseh-logo.webp"
+      logoAlt="لوگوی رسمی منافسه"
       kickerIcon="award"
-      kicker="مسابقات قرآنی وُدّا"
-      title="مُنافَسه"
-      desc="رقابت قرآنی آنلاین؛ شرکت در مسابقات، بالا بردن سطح و شانس جوایز."
+      kicker="سکوی رسمی مسابقات قرآنی"
+      title="منافسه"
+      desc="رقابت قرآنی آنلاین؛ ثبت‌نام در مسابقات، ارتقای سطح و شانس جوایز."
       cta="همین حالا وارد شوید"
     />
   );
@@ -92,8 +93,8 @@ export function InstaQuranPromoBanner() {
       className="promo-insta"
       href={INSTA_QURAN_URL}
       aria="اپلیکیشن اینستا قرآن — ورود به اینستا قرآن"
-      image="/banners/insta-quran.png"
-      imageAlt="گوشی همراه با صفحهٔ نورانی قرآن"
+      logo="/banners/insta-quran-logo.svg"
+      logoAlt="لوگوی رسمی اینستا قرآن"
       kickerIcon="quran"
       kicker="اپلیکیشن همراه قرآنی"
       title="اینستا قرآن"

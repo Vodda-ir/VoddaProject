@@ -261,14 +261,14 @@ function AppPreview() {
           </span>
         </div>
 
-        {/* ── بنر کوچک منافسه — همان تم زیتونی بنر تازه ── */}
+        {/* ── بنر کوچک منافسه — تم تیرهٔ لوگوی رسمی ── */}
         <div className="landing-mona-mini" aria-hidden="true">
           <span className="landing-mona-mini-art">
-            <img src="/banners/monafeseh.png" alt="" loading="lazy" />
+            <img src="/banners/monafeseh-logo.webp" alt="" loading="lazy" />
           </span>
           <div style={{ flex: 1, minWidth: 0, display: 'grid', gap: 4 }}>
-            <span className="landing-mona-mini-kicker"><Icon name="award" size={11} /> مسابقات قرآنی وُدّا</span>
-            <strong className="landing-mona-mini-title">مُنافَسه</strong>
+            <span className="landing-mona-mini-kicker"><Icon name="award" size={11} /> سکوی رسمی مسابقات قرآنی</span>
+            <strong className="landing-mona-mini-title">منافسه</strong>
             <span className="landing-mona-mini-cta">همین حالا وارد شوید<Icon name="arrowL" size={12} /></span>
           </div>
         </div>
