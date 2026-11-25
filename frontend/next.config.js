@@ -40,6 +40,7 @@ const nextConfig = {
       ['/panel/user', '/app'],
       ['/panel/user/wallet', '/app/wallet'],
       ['/panel/user/sessions', '/app/sessions'],
+      ['/panel/user/challenges', '/app/challenges'],
       ['/panel/user/teachers', '/app/search'],
       ['/panel/user/book', '/app/search'],
       ['/panel/user/settings', '/app/profile'],
