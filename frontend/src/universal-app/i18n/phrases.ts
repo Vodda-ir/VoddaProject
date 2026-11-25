@@ -8,6 +8,7 @@
  */
 import areaAuthProfile from "./fragments/auth-profile";
 import areaCeremony from "./fragments/ceremony";
+import areaChallenge from "./fragments/challenge";
 import areaHomeSessions from "./fragments/home-sessions";
 import areaParityA from "./fragments/parity-a";
 import areaParityB from "./fragments/parity-b";
@@ -31,6 +32,8 @@ const fragments: Array<Record<string, string>> = [
   areaSessionsBooking,
   areaTeacherPanel,
   areaWalletMisc,
+  // چالش‌های قرآنی — آخرین فرگمنت تا معادل‌های حوزهٔ چالش در تداخل‌ها اولویت دارند
+  areaChallenge,
 ];
 
 export const phraseMap: Map<string, string> = new Map(

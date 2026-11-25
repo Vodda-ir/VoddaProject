@@ -24,6 +24,8 @@ export type AppRouteName =
   | "ceremony-booking"
   | "presence"
   | "presence-provider"
+  | "challenges"
+  | "challenge"
   | "teacher-home"
   | "teacher-requests"
   | "teacher-sessions"
@@ -59,6 +61,7 @@ export const appRoutePaths = {
   "call-hub": "/call",
   "ceremony-new": "/ceremony/new",
   "ceremony-calls": "/ceremony/calls",
+  "challenges": "/challenges",
   presence: "/presence",
   "teacher-home": "/t",
   "teacher-requests": "/t/requests",
@@ -83,7 +86,8 @@ export type DynamicAppRouteName =
   | "session"
   | "ceremony-call"
   | "ceremony-booking"
-  | "presence-provider";
+  | "presence-provider"
+  | "challenge";
 
 /** مسیرهای داینامیک: الگوی matching + پیشوند ساخت URL از نام مسیر. */
 const dynamicRoutes: Record<DynamicAppRouteName, { pattern: RegExp; prefix: string }> = {
@@ -94,6 +98,7 @@ const dynamicRoutes: Record<DynamicAppRouteName, { pattern: RegExp; prefix: stri
   "ceremony-call": { pattern: /^\/ceremony\/calls\/(?<id>[^/]+)$/, prefix: "/ceremony/calls" },
   "ceremony-booking": { pattern: /^\/ceremony\/bookings\/(?<id>[^/]+)$/, prefix: "/ceremony/bookings" },
   "presence-provider": { pattern: /^\/presence\/(?<id>[^/]+)$/, prefix: "/presence" },
+  challenge: { pattern: /^\/challenge\/(?<id>[^/]+)$/, prefix: "/challenge" },
 };
 
 function isDynamicAppRouteName(name: AppRouteName): name is DynamicAppRouteName {

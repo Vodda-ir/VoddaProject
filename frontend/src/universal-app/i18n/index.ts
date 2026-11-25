@@ -115,6 +115,7 @@ export const fa = {
 
   // ── فراخوان ──
   dispatch_title: "فراخوان اساتید",
+  challenge_title: "چالش‌های قرآنی",
   dispatch_now: "جلسهٔ فوری — همین حالا",
   dispatch_later: "زمان مشخص",
   dispatch_send: "ارسال فراخوان",
@@ -264,6 +265,7 @@ export const en: Partial<Record<TranslationKey, string>> = {
 
   // ── Dispatch ──
   dispatch_title: "Call for teachers",
+  challenge_title: "Quran Challenges",
   dispatch_now: "Instant session — right now",
   dispatch_later: "Specific time",
   dispatch_send: "Send call",

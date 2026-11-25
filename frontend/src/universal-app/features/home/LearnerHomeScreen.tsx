@@ -13,8 +13,9 @@ import {
 import type { UniversalAppConfig } from "../../config";
 import { usePlatform } from "../../platform/context";
 import type { AuthUser } from "../../platform/types";
-import { navigateApp } from "../../router";
+import { navigateApp, navigateAppRoute } from "../../router";
 import {
+  ActionTile,
   Avatar,
   Button,
   Card,
@@ -1468,6 +1469,15 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
 
       {/* ۱.۱۲.۰ — بنر تبلیغاتی «منافسه» بالای خانه — کلیک به monafeseh.ir (هم‌تراز وب) */}
       <PromoBannerMonafeseh wide={wide} />
+
+      {/* چالش‌های قرآنی — ورودی درون‌اپی رقابت‌ها (سبک ActionTile موجود خانه) */}
+      <ActionTile
+        icon="sparkle"
+        tone="gold"
+        title={L("چالش‌های قرآنی")}
+        description={L("رقابت‌های تلاوت و تشریح — ثبت‌نام، ارسال، رأی و امتیاز اینستاقرآن")}
+        onClick={() => navigateAppRoute("challenges", config)}
+      />
 
       {/* E1/E2 — بخش ② استوری‌های وُدّا — کاشی جدا برای هر استوری خودم + کاشی هر نویسنده
        * ۱.ب.۳ — کلید خاموش = سیستم استوری کامل پنهان (ریل، نمایشگر و انتشار). */}

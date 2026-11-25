@@ -16,7 +16,7 @@ type IconName = Parameters<typeof Icon>[0]["name"];
 
 type StaticTabTarget = Exclude<
   AppRouteName,
-  "teacher" | "book" | "service" | "session" | "ceremony-call" | "ceremony-booking" | "presence-provider" | "not-found"
+  "teacher" | "book" | "service" | "session" | "ceremony-call" | "ceremony-booking" | "presence-provider" | "challenge" | "not-found"
 >;
 
 type NavigationItem = {

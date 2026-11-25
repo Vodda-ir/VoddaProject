@@ -13,6 +13,7 @@ import {
   AdminAuditSection,
 } from "./sections/AdminAuditSection";
 import { AdminBlogSection } from "./sections/AdminBlogSection";
+import { AdminChallengesSection } from "./sections/AdminChallengesSection";
 import { AdminFinanceSection } from "./sections/AdminFinanceSection";
 import { AdminOverviewSection } from "./sections/AdminOverviewSection";
 import { AdminReviewsSection } from "./sections/AdminReviewsSection";
@@ -37,6 +38,7 @@ type AdminSectionKey =
   | "sessions"
   | "reviews"
   | "services"
+  | "challenges"
   | "withdrawals"
   | "support"
   | "finance"
@@ -51,6 +53,7 @@ const SECTIONS: Array<{ key: AdminSectionKey; label: string; description: string
   { key: "sessions", label: "جلسات", description: "نظارت بر چرخهٔ جلسه", icon: "calendar" },
   { key: "reviews", label: "نظرات", description: "نظارت بر کیفیت و حذف نظر", icon: "star" },
   { key: "services", label: "خدمات", description: "صف تأیید و انتشار", icon: "book" },
+  { key: "challenges", label: "چالش‌ها", description: "ایجاد و داوری رقابت‌های قرآنی", icon: "sparkle" },
   { key: "withdrawals", label: "برداشت‌ها", description: "ثبت پرداخت و بازگشت وجه", icon: "download" },
   { key: "support", label: "پشتیبانی", description: "تیکت‌ها و گفت‌وگوی زنده", icon: "message" },
   { key: "finance", label: "گزارش مالی", description: "شارژ، کارمزد و تعهد کیف پول", icon: "coins" },
@@ -270,6 +273,7 @@ export function AdminDashboardScreen({ config: _config }: { config: UniversalApp
           {section === "sessions" ? <AdminSessionsSection /> : null}
           {section === "reviews" ? <AdminReviewsSection /> : null}
           {section === "services" ? <AdminServicesSection /> : null}
+          {section === "challenges" ? <AdminChallengesSection /> : null}
           {section === "withdrawals" ? <AdminWithdrawalsSection /> : null}
           {section === "support" ? <AdminSupportSection /> : null}
           {section === "finance" ? <AdminFinanceSection /> : null}

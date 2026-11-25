@@ -325,7 +325,7 @@ export function AdminLoadMore({
 
 /* ── حالت خالی/خطا ── */
 
-export function AdminEmpty({ icon = "doc", title, description }: { icon?: "doc" | "users" | "calendar" | "star" | "wallet" | "book" | "message" | "shield" | "award" | "coins" | "checkCircle" | "headphones"; title: string; description?: string }) {
+export function AdminEmpty({ icon = "doc", title, description }: { icon?: "doc" | "users" | "calendar" | "star" | "wallet" | "book" | "message" | "shield" | "award" | "coins" | "checkCircle" | "headphones" | "sparkle"; title: string; description?: string }) {
   return (
     <EmptyState
       icon={<Icon name={icon} size={30} />}

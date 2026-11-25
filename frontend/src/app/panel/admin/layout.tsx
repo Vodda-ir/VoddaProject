@@ -36,6 +36,7 @@ const NAV_GROUPS: AdminNavigationGroup[] = [
       { id: 'teachers', icon: 'award' as const, label: 'اساتید', href: '/panel/admin/teachers' },
       { id: 'sessions', icon: 'calendar' as const, label: 'جلسات', href: '/panel/admin/sessions' },
       { id: 'reviews', icon: 'star' as const, label: 'نظرات', href: '/panel/admin/reviews' },
+      { id: 'challenges', icon: 'sparkle' as const, label: 'چالش‌ها', href: '/panel/admin/challenges' },
       { id: 'blog', icon: 'doc' as const, label: 'وبلاگ', href: '/panel/admin/blog' },
     ],
   },

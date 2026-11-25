@@ -35,6 +35,7 @@ const NAV_GROUPS: NavigationGroup[] = [
       { id: 'sessions', icon: 'calendar' as const, label: 'جلسات من', href: '/panel/user/sessions' },
       { id: 'book', icon: 'plus' as const, label: 'رزرو جلسه', href: '/panel/user/book' },
       { id: 'teachers', icon: 'users' as const, label: 'اساتید', href: '/panel/user/teachers' },
+      { id: 'challenges', icon: 'sparkle' as const, label: 'چالش‌ها', href: '/panel/user/challenges' },
     ],
   },
   {

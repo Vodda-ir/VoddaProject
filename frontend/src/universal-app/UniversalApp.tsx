@@ -15,6 +15,8 @@ import { PresenceScreen } from "./features/ceremony/PresenceScreen";
 import { TeacherPresenceScreen } from "./features/ceremony/TeacherPresenceScreen";
 import { LearnerDispatchScreen } from "./features/dispatch/LearnerDispatchScreen";
 import { FreeServicesScreen } from "./features/discover/FreeServicesScreen";
+import { ChallengeDetailScreen } from "./features/challenge/ChallengeDetailScreen";
+import { ChallengeListScreen } from "./features/challenge/ChallengeListScreen";
 import { LearnerHomeScreen } from "./features/home/LearnerHomeScreen";
 import { ServiceTeachersScreen } from "./features/discover/ServiceTeachersScreen";
 import { LearnerProfileScreen } from "./features/profile/LearnerProfileScreen";
@@ -70,6 +72,8 @@ const routeTitleKeys: Record<AppRouteName, string> = {
   "ceremony-booking": "dispatch_title",
   presence: "dispatch_title",
   "presence-provider": "dispatch_title",
+  challenges: "challenge_title",
+  challenge: "challenge_title",
   "teacher-home": "nav_teacher_home",
   "teacher-requests": "session_accept",
   "teacher-sessions": "nav_sessions",
@@ -193,6 +197,10 @@ function UniversalAppShellContent({
     <PresenceScreen config={config} />
   ) : route.name === "presence-provider" ? (
     <PresenceProviderScreen providerId={route.params.id ?? ""} config={config} />
+  ) : route.name === "challenges" ? (
+    <ChallengeListScreen config={config} />
+  ) : route.name === "challenge" ? (
+    <ChallengeDetailScreen challengeId={route.params.id ?? ""} config={config} />
   ) : route.name === "teacher-home" ? (
     <TeacherDashboardScreen config={config} />
   ) : route.name === "teacher-requests" ? (
