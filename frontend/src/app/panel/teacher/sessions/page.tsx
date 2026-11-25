@@ -106,7 +106,7 @@ export default function TeacherSessionsPage() {
                   </div>
                   {session.reject_note && <div style={{ marginTop: 7, color: 'var(--clay)', fontSize: 10.5 }}>دلیل لغو: {session.reject_note}</div>}
                 </div>
-                {session.status === 'confirmed' && (
+                {session.status === 'confirmed' && session.mode !== 'in_person' && (
                   <div className="ops-row-actions">
                     <Link href={`/panel/live/${session.id}`} style={{ display: 'inline-flex' }}>
                       <PanelButton tone="primary" icon="video">

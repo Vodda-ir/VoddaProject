@@ -314,7 +314,7 @@ export default function UserSessionsPage() {
                       ثبت نظر
                     </PanelButton>
                   )}
-                  {session.status === 'confirmed' && (
+                  {session.status === 'confirmed' && session.mode !== 'in_person' && (
                     <Link href={`/panel/live/${session.id}`}><PanelButton tone="primary" icon="video">ورود به کلاس</PanelButton></Link>
                   )}
                   {session.status === 'awaiting_payment' && (

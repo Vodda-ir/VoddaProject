@@ -49,6 +49,7 @@ import { LiveRoom } from "./LiveRoom";
 import { SessionChat } from "./SessionChat";
 import { useAppearance } from "../../ui/appearance";
 import type { TranslationKey } from "../../i18n";
+import { VODDA_LIVE_ROOM_ENABLED } from "../../../lib/feature-flags";
 
 function statusLabel(status: string, t: (key: TranslationKey) => string): string {
   switch (status) {
@@ -309,7 +310,8 @@ export function SessionDetailScreen({
   }, [loadMessages, messagePollMs]);
 
   // کلاس کامل بیگ‌بلوباتن — URL امضاشده از سرور گرفته و در مرورگر باز می‌شود
-  // (اپ: مرورگر سیستم؛ وب: تب جدید). اتاق P2P وُدّا دست‌نخورده می‌ماند.
+  // (اپ: مرورگر سیستم؛ وب: تب جدید). برگزاری جلسات تصویری فعلاً فقط روی
+  // بیگ‌بلوباتن است؛ اتاق P2P وُدّا پنهان ولی دست‌نخورده مانده (پرچم feature-flags).
   const openBbb = useCallback(async () => {
     if (!detail) return;
     setBbbBusy(true);
@@ -390,6 +392,9 @@ export function SessionDetailScreen({
   const joinReady = canJoinVideo(detail);
   const endReady = canEndSession(detail);
   const hint = timeHint(detail, lang, L);
+  // اتاق وُدّا فقط در حالت صوتی (تماس امن) یا با فعال‌شدن پرچم دیده می‌شود؛
+  // در حالت تصویری، برگزاری کلاس فعلاً فقط از مسیر بیگ‌بلوباتن است.
+  const voddaRoomVisible = VODDA_LIVE_ROOM_ENABLED || detail.mode === "voice";
   const showSurvey = isLearner && detail.status === "done" && !detail.rated;
 
   return (
@@ -538,7 +543,7 @@ export function SessionDetailScreen({
         </Card>
       ) : null}
 
-      {/* جلسهٔ آنلاین — کلاس تصویری یا تماس صوتی امن (حالت متنی چت اختصاصی دارد) */}
+      {/* جلسهٔ آنلاین — کلاس تصویری (بیگ‌بلوباتن) یا تماس صوتی امن وُدّا (حالت متنی چت اختصاصی دارد) */}
       {detail.status === "confirmed" && detail.mode !== "text" ? (
         <Card style={{ display: "grid", gap: 12, padding: 16, borderRadius: 22 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -559,32 +564,47 @@ export function SessionDetailScreen({
             </span>
             <div style={{ minWidth: 0, flex: 1 }}>
               <strong style={{ display: "block", fontSize: 13.5, fontWeight: 800, color: colors.ink }}>
-                {detail.mode === "voice" ? L("تماس صوتی امن وُدّا") : L("کلاس تصویری وُدّا")}
+                {detail.mode === "voice" ? L("تماس صوتی امن وُدّا") : voddaRoomVisible ? L("کلاس تصویری وُدّا") : t("session_bbb_video_title")}
               </strong>
               <span style={{ display: "block", fontSize: 11.5, color: colors.inkMuted, marginTop: 1 }}>
                 {joinReady
                   ? detail.mode === "voice"
                     ? L("تماس باز است — از داخل اپ برقرار می‌شود؛ شمارهٔ شما پنهان می‌ماند.")
-                    : L("کلاس باز است — همین حالا وارد شوید.")
+                    : voddaRoomVisible
+                      ? L("کلاس باز است — همین حالا وارد شوید.")
+                      : t("session_bbb_video_ready_hint")
                   : hint || L("پنجرهٔ ورود از ۱۰ دقیقه قبل از شروع باز می‌شود.")}
               </span>
             </div>
           </div>
-          <Button
-            fullWidth
-            disabled={!joinReady || busy}
-            loading={busy && liveOpen}
-            onClick={() => setLiveOpen(true)}
-            style={{ minHeight: 48 }}
-          >
-            <Icon name={detail.mode === "voice" ? "phone" : "video"} size={19} />
-            {joinReady
-              ? detail.mode === "voice"
-                ? t("session_start_voice")
-                : t("session_start_video")
-              : t("session_not_time_yet")}
-          </Button>
-          {joinReady ? (
+          {voddaRoomVisible ? (
+            <Button
+              fullWidth
+              disabled={!joinReady || busy}
+              loading={busy && liveOpen}
+              onClick={() => setLiveOpen(true)}
+              style={{ minHeight: 48 }}
+            >
+              <Icon name={detail.mode === "voice" ? "phone" : "video"} size={19} />
+              {joinReady
+                ? detail.mode === "voice"
+                  ? t("session_start_voice")
+                  : t("session_start_video")
+                : t("session_not_time_yet")}
+            </Button>
+          ) : (
+            <Button
+              fullWidth
+              disabled={!joinReady || bbbBusy}
+              loading={bbbBusy}
+              onClick={() => void openBbb()}
+              style={{ minHeight: 48 }}
+            >
+              <Icon name="play" size={19} />
+              {joinReady ? t("session_bbb_join") : t("session_not_time_yet")}
+            </Button>
+          )}
+          {voddaRoomVisible && joinReady ? (
             <Button
               variant="secondary"
               fullWidth
@@ -744,7 +764,7 @@ export function SessionDetailScreen({
         />
       )}
 
-      {/* پوشش کلاس تصویری/تماس صوتی */}
+      {/* پوشش کلاس تصویری وُدّا/تماس صوتی — در حالت تصویری تا اطلاع ثانوی پنهان است */}
       {liveOpen ? (
         <LiveRoom
           sessionId={detail.id}

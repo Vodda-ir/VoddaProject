@@ -9,6 +9,7 @@ import { LiveClient, type LiveEvent, type LiveStatus } from '@/lib/live/client';
 import { LiveEngine, type EngineRole } from '@/lib/live/engine';
 import { confirmDialog } from '@/lib/confirm';
 import { acquireMediaStream } from '@/universal-app/platform/media-permissions';
+import { VODDA_LIVE_ROOM_ENABLED } from '@/lib/feature-flags';
 
 type ChatMessage = { id: string; from: number; role: string; text: string; at: number; mine: boolean };
 type Reaction = { id: string; emoji: string; at: number };
@@ -103,6 +104,9 @@ export default function LiveClassroomPage() {
   // اتاق P2P وُدّا که بدون دوربین/میکروفون محلی هم کار می‌کند.
   const [bbbUrl, setBbbUrl] = useState('');
   const [bbbBusy, setBbbBusy] = useState(false);
+  // خطای پایدار ورود به بیگ‌بلوباتن — در حالت «فقط بیگ‌بلوباتن» باید با دکمهٔ تلاش دوباره بماند
+  const [bbbError, setBbbError] = useState('');
+  const bbbAutoJoinRef = useRef(false);
 
   // refs (non-rendering objects)
   const clientRef = useRef<LiveClient | null>(null);
@@ -192,7 +196,8 @@ export default function LiveClassroomPage() {
   }, [previewStream]);
 
   useEffect(() => {
-    if (phase !== 'preflight' || !ready || loadError) return;
+    // اتاق وُدّا پنهان است (پرچم feature-flags) — پیش‌آزمون دوربینِ P2P لازم نیست
+    if (!VODDA_LIVE_ROOM_ENABLED || phase !== 'preflight' || !ready || loadError) return;
     let stream: MediaStream | null = null;
     let raf = 0;
     let ctx: AudioContext | null = null;
@@ -590,10 +595,11 @@ export default function LiveClassroomPage() {
   }
 
   /* ---------------- بیگ‌بلوباتن: ورود و پایان کلاس ---------------- */
-  async function joinBbb() {
+  const joinBbb = useCallback(async () => {
     const token = getToken();
     if (!token || !session) return;
     setBbbBusy(true);
+    setBbbError('');
     try {
       const response = await api.bbbJoin(token, session.id);
       const url = response.data?.join_url || '';
@@ -601,12 +607,23 @@ export default function LiveClassroomPage() {
       setBbbUrl(url);
       setPhase('bbb');
     } catch (cause) {
-      setNotice(cause instanceof Error ? cause.message : 'ورود به بیگ‌بلوباتن ممکن نشد.');
+      const message = cause instanceof Error ? cause.message : 'ورود به بیگ‌بلوباتن ممکن نشد.';
+      setBbbError(message);
+      setNotice(message);
       window.setTimeout(() => setNotice(''), 6000);
     } finally {
       setBbbBusy(false);
     }
-  }
+  }, [session]);
+
+  // برگزاری جلسات تصویری فعلاً فقط روی بیگ‌بلوباتن است (پرچم feature-flags) —
+  // صفحهٔ کلاس بدون گذر از پیش‌آزمون P2P، مستقیم کلاس بیگ‌بلوباتن را می‌سازد و باز می‌کند.
+  useEffect(() => {
+    if (!VODDA_LIVE_ROOM_ENABLED && ready && session && phase === 'preflight' && !bbbAutoJoinRef.current) {
+      bbbAutoJoinRef.current = true;
+      void joinBbb();
+    }
+  }, [ready, session, phase, joinBbb]);
 
   async function endBbb() {
     const token = getToken();
@@ -657,6 +674,35 @@ export default function LiveClassroomPage() {
     { key: 'closed', text: 'پایان', dot: 'var(--ink-3)' },
   ];
   const currentStatus = statusMeta.find((item) => item.key === status) ?? statusMeta[2];
+
+  if (phase === 'preflight' && !VODDA_LIVE_ROOM_ENABLED) {
+    // اتاق تصویری وُدّا موقتاً پنهان است (پرچم feature-flags) — به‌جای پیش‌آزمون
+    // دوربین P2P، تنها مسیر برگزاری یعنی بیگ‌بلوباتن مستقیم باز می‌شود.
+    return (
+      <main style={{ padding: '24px 16px calc(32px + env(safe-area-inset-bottom))', maxWidth: 620, margin: '0 auto', display: 'grid', gap: 14 }}>
+        <section style={{ background: STAGE_BG, borderRadius: 26, padding: 24, boxShadow: '0 22px 60px rgba(30,36,20,.35)', display: 'grid', gap: 16 }}>
+          <div style={{ display: 'grid', gap: 3 }}>
+            <span style={{ fontSize: 11, fontWeight: 800, color: '#b6c09b', letterSpacing: .4 }}>کلاس بیگ‌بلوباتن</span>
+            <strong style={{ fontSize: 17, fontWeight: 900, color: '#fffaf0' }}>{session.service}</strong>
+            <span style={{ fontSize: 12, color: '#a9b39b' }}>{session.local_date}{session.local_start && <> · ساعت {faDigits(session.local_start)}</>}</span>
+          </div>
+          {bbbError ? (
+            <div style={{ padding: '14px 16px', borderRadius: 16, background: 'rgba(191,149,64,.13)', border: '1px solid rgba(191,149,64,.35)', display: 'grid', gap: 9 }}>
+              <strong style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#e7d5a8', fontSize: 12.5 }}>ورود به کلاس ممکن نشد</strong>
+              <span style={{ fontSize: 11.8, lineHeight: 2, color: '#e8dcbc' }}>{bbbError}</span>
+              <button type="button" disabled={bbbBusy} onClick={() => void joinBbb()} style={{ justifySelf: 'start', border: 0, borderRadius: 12, padding: '9px 18px', background: 'var(--gold)', color: '#221a08', fontWeight: 800, fontSize: 12.5, cursor: 'pointer' }}>تلاش دوباره</button>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', justifyItems: 'center', gap: 12, padding: '30px 0' }}>
+              <span style={{ width: 44, height: 44, borderRadius: '50%', border: '3px solid rgba(255,255,255,.16)', borderTopColor: '#d8b869', animation: 'liveSpin .9s linear infinite' }} />
+              <span style={{ fontSize: 12.5, color: '#c9d1ba', fontWeight: 600 }}>{bbbBusy ? 'در حال ساخت کلاس بیگ‌بلوباتن…' : 'آماده‌سازی کلاس…'}</span>
+            </div>
+          )}
+        </section>
+        <style jsx global>{`@keyframes liveSpin { to { transform: rotate(360deg); } }`}</style>
+      </main>
+    );
+  }
 
   if (phase === 'preflight') {
     return (
@@ -745,9 +791,11 @@ export default function LiveClassroomPage() {
                 پایان جلسه
               </button>
             )}
-            <button type="button" onClick={() => { setNotice(''); setPhase('preflight'); }} style={{ border: 0, borderRadius: 12, padding: '9px 14px', background: 'var(--olive-600)', color: '#fff', fontWeight: 800, fontSize: 12, cursor: 'pointer' }}>
-              بازگشت
-            </button>
+            {!VODDA_LIVE_ROOM_ENABLED ? null : (
+              <button type="button" onClick={() => { setNotice(''); setPhase('preflight'); }} style={{ border: 0, borderRadius: 12, padding: '9px 14px', background: 'var(--olive-600)', color: '#fff', fontWeight: 800, fontSize: 12, cursor: 'pointer' }}>
+                بازگشت
+              </button>
+            )}
           </div>
         </header>
         <section style={{ position: 'relative', borderRadius: 26, overflow: 'hidden', background: STAGE_BG, border: '1px solid rgba(255,255,255,.08)', boxShadow: '0 22px 60px rgba(30,36,20,.35)', height: 'min(72vh, 820px)', minHeight: 480 }}>

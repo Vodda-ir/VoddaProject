@@ -102,6 +102,9 @@ export const fa = {
   session_start_voice: "شروع تماس صوتی",
   session_bbb_join: "ورود با بیگ‌بلوباتن (کلاس کامل)",
   session_bbb_popup_blocked: "باز کردن مرورگر مسدود شد؛ اجازهٔ پاپ‌آپ بدهید و دوباره تلاش کنید.",
+  // کلاس تصویری روی زیرساخت بیگ‌بلوباتن — اتاق وُدّا موقتاً پنهان است (پرچم VODDA_LIVE_ROOM_ENABLED)
+  session_bbb_video_title: "کلاس تصویری بیگ‌بلوباتن",
+  session_bbb_video_ready_hint: "کلاس روی زیرساخت بیگ‌بلوباتن باز است — همین حالا وارد شوید.",
   session_chat: "گفت‌وگو",
   session_accept: "تأیید جلسه",
   session_reject: "رد جلسه",
@@ -248,6 +251,9 @@ export const en: Partial<Record<TranslationKey, string>> = {
   session_start_voice: "Start voice call",
   session_bbb_join: "Join via BigBlueButton (full classroom)",
   session_bbb_popup_blocked: "The browser blocked opening the link; allow pop-ups and try again.",
+  // BigBlueButton video class — Vodda P2P room is temporarily hidden (VODDA_LIVE_ROOM_ENABLED flag)
+  session_bbb_video_title: "BigBlueButton video class",
+  session_bbb_video_ready_hint: "The class is open on BigBlueButton infrastructure — join now.",
   session_chat: "Chat",
   session_accept: "Accept session",
   session_reject: "Decline session",
