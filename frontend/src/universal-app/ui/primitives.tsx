@@ -216,7 +216,7 @@ export function Avatar({ name, size = 48, ring = true, src, alt, style, tier, on
       name={name}
       size={size}
       ring={ring}
-      src={src}
+      src={typeof src === "string" ? src : undefined}
       alt={alt}
       style={style}
       tier={tier ?? undefined}
