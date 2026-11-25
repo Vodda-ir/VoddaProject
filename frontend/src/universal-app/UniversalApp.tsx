@@ -39,6 +39,7 @@ import type { PlatformRuntime } from "./platform/types";
 import { createWebPlatformRuntime } from "./platform/web";
 import { navigateApp, useAppRoute, type AppRouteName } from "./router";
 import { AppearanceProvider, useAppearance } from "./ui/appearance";
+import { AppErrorBoundary } from "./ui/AppErrorBoundary";
 import { useBuildVersionGuard } from "./useBuildVersionGuard";
 import { MobileAppShell, TeacherAppShell, Card, UniversalVisualStyles, colors, typography } from "./ui";
 
@@ -288,7 +289,11 @@ export function UniversalApp({ config: configOverrides, platform }: UniversalApp
     <PlatformProvider runtime={runtime}>
       <AppearanceProvider>
         <UniversalVisualStyles />
-        <UniversalAppContent config={config} runtime={runtime} />
+        {/* مرز خطای اپ — هر خطای رندر داخل پوستهٔ اپ گرفته می‌شود؛ هرگز به مرز
+         * خطای صفحهٔ وب (نوار و فوتر لندینگ) سرریز نمی‌کند. */}
+        <AppErrorBoundary>
+          <UniversalAppContent config={config} runtime={runtime} />
+        </AppErrorBoundary>
       </AppearanceProvider>
     </PlatformProvider>
   );

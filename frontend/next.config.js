@@ -5,6 +5,13 @@ const nextConfig = {
   poweredByHeader: false,
   compress: true,
 
+  // ریشهٔ فضای کاری تربوپک — در مونوریپو (اجرا از داخل frontend/) بدون این
+  // مقدار، تربوپک قفل‌فایل والد را می‌بیند و tailwind نسخهٔ ۴ ریشه را به‌جای
+  // نسخهٔ ۳ خود فرانت لود می‌کند و CSS لندینگ با خطای PostCSS می‌شکند.
+  turbopack: {
+    root: __dirname,
+  },
+
   async rewrites() {
     // Public media is proxied directly. API traffic must pass through the
     // /api/auth and /api/backend route handlers so JWTs remain HttpOnly.
@@ -20,15 +27,13 @@ const nextConfig = {
   },
 
   async redirects() {
-    // همسان‌سازی کامل وب با اپ — پنل‌های قدیمی بازنشسته شدند و هر مسیر /panel
+    // بازنشستگی رابط‌های قدیمی وب — لندینگ در ریشه می‌ماند و مسیرهای پنل قدیمی
     // به معادل همان صفحه در اپ یونیورسال (/app) نگاشت می‌شود تا هیچ کاربر وب
     // دیگر رابط قدیمی را نبیند. ۳۰۲ است نه ۳۰۱، تا در صورت نیاز به اصلاح نقشه،
     // مرورگرها کش نکنند. پارامترهای query به‌صورت خودکار حفظ می‌شوند.
     const panelRedirects = [
-      // ریشهٔ دامنهٔ اصلی هم دقیقاً به خود اپ می‌رود (رابط یکسان با اپ).
-      // روی ساب‌دامین اپ (app.vodda.ir) این مسیر هرگز اجرا نمی‌شود چون nginx
-      // درخواستِ ریشه را پیش از Next به /app بازنویسی می‌کند.
-      ['/', '/app'],
+      // ریشهٔ دامنهٔ اصلی = لندینگ تبلیغاتی (خودِ اپ در ریشهٔ وب نمایش داده نمی‌شود؛
+      // تجربهٔ کامل اپ فقط در /app و ساب‌دامین app.vodda.ir است).
       ['/panel', '/app'],
       ['/panel/login', '/app'],
       ['/panel/live/:id', '/app/session/:id'],
@@ -52,6 +57,10 @@ const nextConfig = {
       ['/panel/admin', '/app/a'],
       ['/panel/admin/:path*', '/app/a'],
       ['/panel/:path*', '/app'],
+      // صفحهٔ قدیمی «فراخوان اساتید» وب هم بازنشسته شد — فراخوان در رابط تازهٔ
+      // اپ (ویزارد مرحله‌ای + صفحهٔ انتظار رادار) انجام می‌شود؛ لینک‌های لندینگ
+      // مستقیماً به /app/dispatch می‌روند و این مسیر هم برای بوکمارک‌های قدیمی است.
+      ['/dispatch', '/app/dispatch'],
     ];
     return panelRedirects.map(([source, destination]) => ({
       source,

@@ -479,6 +479,31 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
     [busyOffer, call, runtime],
   );
 
+  /* قاعدهٔ قلاب‌ها — «dispatch-hooks-crash»: هر useMemo/useState باید پیش از
+   * بازگشت‌های شرطی (matched/searching) فراخوانی شود؛ در غیر این صورت گذار
+   * idle→searching شمارش قلاب‌ها را عوض می‌کند، React با خطای «Rendered fewer
+   * hooks than expected» کل درخت را می‌بندد و کاربر به‌جای صفحهٔ انتظار فراخوان،
+   * مرز خطای وب («بارگذاری این صفحه کامل نشد») را می‌بیند. */
+  const composerSteps = useMemo(
+    () => [
+      { key: "topic", title: L("موضوع"), icon: "book" as const },
+      { key: "time", title: L("زمان"), icon: "calendar" as const },
+      { key: "submit", title: L("ثبت"), icon: "checkCircle" as const },
+    ],
+    [L],
+  );
+  const topicGroups = useMemo<MenuGroup[]>(
+    () => grouped.map(([category, items]) => ({
+      title: L(category),
+      items: items.map((item) => ({
+        key: String(item.id),
+        title: L(item.title),
+        icon: item.icon,
+      })),
+    })),
+    [grouped, L],
+  );
+
   // ── success state ──
   if (mode === "matched" && call) {
     const candidate = (view?.candidates ?? []).find((item) => item.teacher_id === call.matched_teacher_id);
@@ -747,14 +772,6 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
 
   // ── idle: ویزارد مرحله‌ای فراخوان — موضوع → زمان → ثبت ──
   const topic = selectedTopic;
-  const composerSteps = useMemo(
-    () => [
-      { key: "topic", title: L("موضوع"), icon: "book" as const },
-      { key: "time", title: L("زمان"), icon: "calendar" as const },
-      { key: "submit", title: L("ثبت"), icon: "checkCircle" as const },
-    ],
-    [L],
-  );
   const composerValid = (step: number): boolean => {
     switch (step) {
       case 0: return topic !== null;
@@ -769,17 +786,6 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
           const option = dayOptions.find((item) => item.value === when.localDate);
           return `${option?.label ?? when.localDate} · ${localizedDigits(String(when.hh).padStart(2, "0"), lang)}:${localizedDigits(String(when.mm).padStart(2, "0"), lang)}`;
         })();
-  const topicGroups = useMemo<MenuGroup[]>(
-    () => grouped.map(([category, items]) => ({
-      title: L(category),
-      items: items.map((item) => ({
-        key: String(item.id),
-        title: L(item.title),
-        icon: item.icon,
-      })),
-    })),
-    [grouped, L],
-  );
   return (
     <div className="vodda-screen" style={{ display: "grid", gap: spacing.lg }}>
       <div

@@ -191,6 +191,95 @@ function jsonResponse(payload: unknown): Response {
 /* وضعیت جلسات نمونهٔ پیش‌نمایش — «پایان جلسه» استاد وضعیت را به done می‌برد */
 const completedMockSessions = new Set<number>();
 
+/* ═══ فراخوان اساتید — ماشین حالت نمونهٔ پیش‌نمایش ═══
+ * ثبت فراخوان → وضعیت «searching» → پذیرش استادان به‌مرور زمان (تا صفحهٔ انتظار
+ * با polling زنده‌اش واقعاً رسیدن پذیرش‌ها را نشان دهد) → انتخاب استاد → جلسهٔ
+ * نمونه. فقط پیش‌نمایش؛ در تولید هیچ‌کدام از این مسیرها فعال نمی‌شود. */
+type MockDispatchCall = {
+  id: number;
+  official_service_id: number;
+  topic_title: string;
+  topic_icon: string;
+  note: string;
+  flexible: boolean;
+  scheduled_at: string | null;
+  status: 'searching' | 'matched' | 'canceled';
+  matched_teacher_id: number | null;
+  session_id: number | null;
+  created_at: number;
+};
+
+let mockDispatchCall: MockDispatchCall | null = null;
+let mockDispatchSeq = 8800;
+const mockDeclinedOffers = new Set<number>();
+
+function mockDispatchTopic(serviceId: number): { title: string; icon: string } {
+  for (const group of MOCK_CATALOG_CATEGORIES) {
+    const found = group.services.find((service) => service.id === serviceId);
+    if (found) return { title: found.title, icon: 'book' };
+  }
+  return { title: 'روخوانی قرآن کریم', icon: 'book' };
+}
+
+function mockDispatchCandidate(teacherId: number, offerId: number): Record<string, unknown> {
+  const teacher = MOCK_TEACHERS.find((row) => row.id === teacherId) ?? MOCK_TEACHERS[0];
+  const service = teacher.services[0];
+  return {
+    offer_id: offerId,
+    responded_at: new Date().toISOString(),
+    service_id: service.id,
+    duration: service.duration,
+    price: service.price,
+    teacher_id: teacher.id,
+    name: teacher.user.name,
+    avatar_url: teacher.user.avatar_url,
+    tag: teacher.tag,
+    field: teacher.field,
+    city: teacher.city,
+    level: teacher.level,
+    tier: teacher.tier,
+    female: teacher.female,
+    rating: teacher.rating,
+    reviews: teacher.reviews,
+    sessions: teacher.sessions,
+    bio: teacher.bio,
+  };
+}
+
+function mockDispatchView(): Record<string, unknown> {
+  if (!mockDispatchCall) return { data: { call: null, candidates: [], topic_teachable: true } };
+  const call = mockDispatchCall;
+  /* پذیرش‌های تدریجی — نخستین استاد ~۳ ثانیه و دومی ~۹ ثانیه پس از ثبت پاسخ می‌دهد */
+  const elapsed = Date.now() - call.created_at;
+  const responders = elapsed > 9_000 ? [4, 1] : elapsed > 3_000 ? [4] : [];
+  const candidates = responders
+    .filter((teacherId) => !mockDeclinedOffers.has(teacherId))
+    .map((teacherId) => mockDispatchCandidate(teacherId, 7000 + teacherId));
+  return {
+    data: {
+      call: {
+        id: call.id,
+        learner_id: 95,
+        official_service_id: call.official_service_id,
+        topic_title: call.topic_title,
+        topic_icon: call.topic_icon,
+        note: call.note,
+        flexible: call.flexible,
+        scheduled_at: call.scheduled_at,
+        status: call.status,
+        matched_teacher_id: call.matched_teacher_id,
+        session_id: call.session_id,
+        expires_at: new Date(call.created_at + 10 * 60_000).toISOString(),
+        offer_count: candidates.length,
+        created_at: new Date(call.created_at).toISOString(),
+      },
+      candidates,
+      topic_teachable: true,
+      ...(call.status === 'matched' ? { payment_state: 'paid' } : {}),
+    },
+  };
+}
+
 /** جلسهٔ نمونهٔ پیش‌نمایش — جزئیات جلسهٔ فوری تازه‌ثبت‌شده برای پرش از ویزارد؛
  *  نقش نمایشگر از توکن کوکی خوانده می‌شود تا نمای استاد/شاگرد هر دو تست شود. */
 function mockSession(id: number, request: NextRequest): Record<string, unknown> {
@@ -257,7 +346,7 @@ function mockAvailability(): Array<Record<string, unknown>> {
 }
 
 /** پاسخ نمونه برای مسیرهای GET پیش‌نمایش — null یعنی این مسیر mock ندارد. */
-export function previewMockResponse(request: NextRequest, path: string[]): Response | null {
+export async function previewMockResponse(request: NextRequest, path: string[]): Promise<Response | null> {
   const head = path[0] ?? '';
 
   /* POST رزرو در پیش‌نمایش — جلسهٔ فوری/زمان‌دار نمونه ثبت می‌شود */
@@ -292,7 +381,58 @@ export function previewMockResponse(request: NextRequest, path: string[]): Respo
   if (request.method === 'DELETE' && head === 'admin' && path[1] === 'reviews' && path.length === 3) {
     return jsonResponse({ data: { ok: true } });
   }
+  /* ═══ فراخوان اساتید — پیش‌نمایش چرخهٔ کامل (فقط mock) ═══ */
+  if (request.method === 'POST' && head === 'dispatch' && path[1] === 'calls' && path.length === 2) {
+    let body: Record<string, unknown> = {};
+    try {
+      body = JSON.parse(await request.text()) as Record<string, unknown>;
+    } catch { /* بدنهٔ خالی مجاز است */ }
+    const serviceId = Number(body.official_service_id) || 1;
+    const topic = mockDispatchTopic(serviceId);
+    mockDispatchSeq += 1;
+    mockDeclinedOffers.clear();
+    mockDispatchCall = {
+      id: mockDispatchSeq,
+      official_service_id: serviceId,
+      topic_title: topic.title,
+      topic_icon: topic.icon,
+      note: String(body.note ?? ''),
+      flexible: body.flexible !== false,
+      scheduled_at: typeof body.scheduled_at === 'string' ? body.scheduled_at : null,
+      status: 'searching',
+      matched_teacher_id: null,
+      session_id: null,
+      created_at: Date.now(),
+    };
+    return jsonResponse(mockDispatchView());
+  }
+  if (request.method === 'POST' && head === 'dispatch' && path[1] === 'calls' && path.length === 4 && path[3] === 'decline') {
+    /* شناسهٔ پاسخ در بدنهٔ درخواست است — در mock شناسهٔ پاسخ = شناسهٔ استاد */
+    let declineBody: Record<string, unknown> = {};
+    try {
+      declineBody = JSON.parse(await request.text()) as Record<string, unknown>;
+    } catch { /* بدون بدنه هم مجاز */ }
+    mockDeclinedOffers.add(Number(declineBody.offer_id) || 0);
+    return jsonResponse(mockDispatchView());
+  }
+  if (request.method === 'POST' && head === 'dispatch' && path[1] === 'calls' && path.length === 4 && path[3] === 'cancel') {
+    mockDispatchCall = null;
+    return jsonResponse({ data: { ok: true } });
+  }
+  if (request.method === 'POST' && head === 'dispatch' && path[1] === 'calls' && path.length === 4 && path[3] === 'choose') {
+    if (mockDispatchCall) {
+      mockDispatchCall.status = 'matched';
+      mockDispatchCall.matched_teacher_id = 4;
+      mockDispatchCall.session_id = 9002;
+    }
+    return jsonResponse({ data: { session: { id: 9002, status: 'awaiting_confirmation', price: 360_000 }, paid_via_wallet: true } });
+  }
   if (request.method !== 'GET') return null;
+
+  /* GET وضعیت فعلی فراخوان — صفحهٔ انتظار با polling هر ۲.۵ ثانیه این را می‌خواند */
+  if (head === 'dispatch' && path[1] === 'calls' && path[2] === 'current' && path.length === 3) {
+    return jsonResponse(mockDispatchView());
+  }
 
   if (head === 'me' && path.length === 1) {
     /* E1 — نقش جلسهٔ پیش‌نمایش از payload توکن خوانده می‌شود تا UI ادمین/کاربر

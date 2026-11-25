@@ -181,7 +181,7 @@ export function Nav() {
           {links.map(([label, href]) => (
             <Link key={href} href={href} className="public-nav-link">{label}</Link>
           ))}
-          <Link href="/dispatch" className="nav-dispatch-btn" aria-label="فراخوان اساتید — درخواست زنده استاد">
+          <Link href="/app/dispatch" className="nav-dispatch-btn" aria-label="فراخوان اساتید — درخواست زنده استاد">
             <span className="nav-dispatch-dot" aria-hidden="true" />
             <Icon name="bell" size={15} />
             فراخوان اساتید
@@ -216,7 +216,7 @@ export function Nav() {
                 <Icon name="chevronL" size={16} />
               </Link>
             ))}
-            <Link href="/dispatch" onClick={() => setMobileOpen(false)} className="mobile-menu-dispatch">
+            <Link href="/app/dispatch" onClick={() => setMobileOpen(false)} className="mobile-menu-dispatch">
               <Icon name="bell" size={18} />
               <span style={{ flex: 1 }}>فراخوان اساتید</span>
               <span style={{ fontSize: 10, fontWeight: 800, color: '#8b681f', background: 'var(--gold-bg)', borderRadius: 999, padding: '3px 8px' }}>جدید</span>
@@ -233,9 +233,11 @@ export function Nav() {
 }
 
 function AppPreview() {
-  /* ۱.۱۳.۰ — بازسازی دقیق نمایی از رابط فعلی اپ (گزینهٔ A): هدر تازه با سلام
-   * بر پایهٔ ساعت، بنر کوچک منافسه، دسته‌بندی موضوعات با نئون طلایی، صحنهٔ
-   * خدمات پرکاربرد زیتونی و نوار پایین با دکمهٔ میانی «فراخوان استاد». */
+  /* «landing-app-preview-v2» — نمونهٔ دقیق رابط تازهٔ اپ یونیورسال (نه نسخهٔ قدیمی):
+   * هدر خانهٔ اپ (chip شهر + آواتار حرف‌نشان طلایی + سلام ساعت‌محور + اعلان‌ها)،
+   * بنر تیرهٔ لوگو-محور «منافسه»، کارت اسلایدی صوتی/تلاوت با پس‌زمینهٔ تصویری و
+   * دکمهٔ شیشه‌ای، کادر نئونی طلایی دسته‌بندی ۲×۲ و نوار پایین با دکمهٔ میانی
+   * «فراخوان استاد» — همه با توکن‌های همان پالت اپ (متغیرهای زیتونی و طلایی). */
   const catTiles: Array<{ icon: IconName; name: string; count: string; img: string }> = [
     { icon: 'quran', name: 'قرآن‌آموزی پایه', count: '۱۹۶', img: '/images/home/cat-quran.webp' },
     { icon: 'book', name: 'تجوید و علوم قرائت', count: '۶۶', img: '/images/home/cat-tajweed.webp' },
@@ -244,34 +246,50 @@ function AppPreview() {
   ];
 
   return (
-    <div className="landing-app-stage" aria-label="نمایی از رابط اپ وُدّا">
+    <div className="landing-app-stage" aria-label="نمایی از رابط تازهٔ اپ وُدّا">
       <div className="landing-orb landing-orb-gold" />
       <div className="landing-orb landing-orb-olive" />
 
-      <span className="landing-preview-label">نمونه رابط اپ</span>
+      <span className="landing-preview-label">نمونه رابط تازهٔ اپ</span>
       <div className="landing-phone">
-        {/* ── هدر اپ — سلام بر پایهٔ ساعت + نام کاربر + اعلان‌ها ── */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Avatar size={42} ring />
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <span style={{ display: 'block', color: 'var(--ink-3)', fontSize: 10.5 }}>عصر بخیر · یکشنبه ۱ آذر</span>
-            <strong style={{ display: 'block', marginTop: 1, fontSize: 13.5, fontWeight: 900 }}>قرآن‌آموز جان 🌿</strong>
-          </div>
-          <span style={{ width: 36, height: 36, display: 'grid', placeItems: 'center', borderRadius: 11, color: 'var(--olive-700)', background: 'var(--olive-50)', border: '1px solid var(--olive-100)' }}>
-            <Icon name="bell" size={18} />
+        {/* ── هدر خانهٔ اپ — chip شهر + آواتار حرف‌نشان + سلام + اعلان ── */}
+        <div className="landing-app-head">
+          <span className="landing-app-city"><Icon name="pin" size={11} /> تهران</span>
+          <span className="landing-app-user">
+            <span className="landing-app-avatar" aria-hidden="true">ق</span>
+            <span className="landing-app-user-text">
+              <small>عصر بخیر · یکشنبه ۱ آذر</small>
+              <strong>قرآن‌آموز جان 🌿</strong>
+            </span>
           </span>
+          <span className="landing-app-bell"><Icon name="bell" size={17} /></span>
         </div>
 
-        {/* ── بنر کوچک منافسه — تم تیرهٔ لوگوی رسمی ── */}
+        {/* ── بنر تیرهٔ لوگو-محور «منافسه» — هنر در سمت انتهایی مثل خود اپ ── */}
         <div className="landing-mona-mini" aria-hidden="true">
+          <div className="landing-mona-mini-body">
+            <span className="landing-mona-mini-kicker"><Icon name="award" size={10} /> سکوی رسمی مسابقات قرآنی</span>
+            <strong className="landing-mona-mini-title">منافسه</strong>
+            <small className="landing-mona-mini-desc">رقابت قرآنی آنلاین؛ ثبت‌نام، ارتقای سطح و جوایز.</small>
+            <span className="landing-mona-mini-cta">همین حالا وارد شوید<Icon name="arrowL" size={11} /></span>
+          </div>
           <span className="landing-mona-mini-art">
             <img src="/banners/monafeseh-logo.webp" alt="" loading="lazy" />
           </span>
-          <div style={{ flex: 1, minWidth: 0, display: 'grid', gap: 4 }}>
-            <span className="landing-mona-mini-kicker"><Icon name="award" size={11} /> سکوی رسمی مسابقات قرآنی</span>
-            <strong className="landing-mona-mini-title">منافسه</strong>
-            <span className="landing-mona-mini-cta">همین حالا وارد شوید<Icon name="arrowL" size={12} /></span>
-          </div>
+        </div>
+
+        {/* ── کارت اسلاید تلاوت — صحنهٔ تصویری با دکمهٔ شیشه‌ای (مثل ریل خانهٔ اپ) ── */}
+        <div className="landing-picks" aria-hidden="true">
+          <img src="/avatars/services/srv-quran.png" alt="" loading="lazy" />
+          <span className="landing-picks-veil" />
+          <span className="landing-picks-count"><Icon name="users" size={10} /> ۲۵ استاد</span>
+          <strong className="landing-picks-title">تلاوت و روخوانی قرآن کریم</strong>
+          <span className="landing-picks-cta">استاد این خدمت<Icon name="arrowL" size={11} /></span>
+        </div>
+        <div className="landing-mini-dots" aria-hidden="true">
+          {[0, 1, 2, 3, 4].map((d) => (
+            <i key={d} className={d === 0 ? 'active' : undefined} />
+          ))}
         </div>
 
         {/* ── دسته‌بندی موضوعات — کادر نئونی طلایی ۲×۲ مثل اپ ── */}
@@ -290,29 +308,6 @@ function AppPreview() {
                 <strong>{tile.name}</strong>
                 <span className="landing-mini-cat-count"><Icon name="users" size={11} /> {tile.count} استاد فعال</span>
               </span>
-            ))}
-          </div>
-        </div>
-
-        {/* ── خدمات پرکاربرد — صحنهٔ زیتونی با هالهٔ طلایی ── */}
-        <div className="landing-mini-services">
-          <div className="landing-mini-services-head">
-            <strong>خدمات پرکاربرد</strong>
-            <small>پرترددترین خدمت‌های قرآنی وُدّا</small>
-          </div>
-          <div className="landing-mini-service">
-            <span className="landing-mini-service-tile">
-              <Icon name="quran" size={18} />
-            </span>
-            <span className="landing-mini-service-text">
-              <strong>نقرات و مفاهیم قرآن کریم</strong>
-              <small>استادان فعال: ۹</small>
-            </span>
-            <span className="landing-mini-service-btn">استادان این خدمت<Icon name="arrowL" size={11} /></span>
-          </div>
-          <div className="landing-mini-dots" aria-hidden="true">
-            {[0, 1, 2, 3, 4].map((d) => (
-              <i key={d} className={d === 0 ? 'active' : undefined} />
             ))}
           </div>
         </div>
@@ -455,7 +450,7 @@ export function DispatchCallout() {
           </div>
 
           <div className="landing-dispatch-actions">
-            <Link href="/dispatch" className="dispatch-special-btn">
+            <Link href="/app/dispatch" className="dispatch-special-btn">
               <span className="dispatch-btn-icon"><Icon name="bell" size={18} /></span>
               فراخوان اساتید
             </Link>
@@ -1106,7 +1101,7 @@ export function DownloadApp() {
 
 export function Footer() {
   const productLinks = [
-    ['فراخوان اساتید', '/dispatch'],
+    ['فراخوان اساتید', '/app/dispatch'],
     ['جستجوی استاد', '/search'],
     ['اپ وُدّا', '/app'],
     ['استاد شوید', '/panel/teacher/register'],

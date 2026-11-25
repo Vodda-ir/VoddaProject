@@ -464,7 +464,7 @@ async function proxy(request: NextRequest, context: RouteContext): Promise<Respo
 
   /* پیش‌نمایش محلی (فقط dev) — پاسخ نمونه بدون تماس با بک‌اند */
   if (previewMockEnabled()) {
-    const mocked = previewMockResponse(request, path);
+    const mocked = await previewMockResponse(request, path);
     if (mocked) return mocked;
   }
 
