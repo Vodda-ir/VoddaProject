@@ -19,6 +19,47 @@ const nextConfig = {
     ];
   },
 
+  async redirects() {
+    // همسان‌سازی کامل وب با اپ — پنل‌های قدیمی بازنشسته شدند و هر مسیر /panel
+    // به معادل همان صفحه در اپ یونیورسال (/app) نگاشت می‌شود تا هیچ کاربر وب
+    // دیگر رابط قدیمی را نبیند. ۳۰۲ است نه ۳۰۱، تا در صورت نیاز به اصلاح نقشه،
+    // مرورگرها کش نکنند. پارامترهای query به‌صورت خودکار حفظ می‌شوند.
+    const panelRedirects = [
+      // ریشهٔ دامنهٔ اصلی هم دقیقاً به خود اپ می‌رود (رابط یکسان با اپ).
+      // روی ساب‌دامین اپ (app.vodda.ir) این مسیر هرگز اجرا نمی‌شود چون nginx
+      // درخواستِ ریشه را پیش از Next به /app بازنویسی می‌کند.
+      ['/', '/app'],
+      ['/panel', '/app'],
+      ['/panel/login', '/app'],
+      ['/panel/live/:id', '/app/session/:id'],
+      ['/panel/user', '/app'],
+      ['/panel/user/wallet', '/app/wallet'],
+      ['/panel/user/sessions', '/app/sessions'],
+      ['/panel/user/teachers', '/app/search'],
+      ['/panel/user/book', '/app/search'],
+      ['/panel/user/settings', '/app/profile'],
+      ['/panel/teacher', '/app/t'],
+      ['/panel/teacher/requests', '/app/t/requests'],
+      ['/panel/teacher/sessions', '/app/t/sessions'],
+      ['/panel/teacher/services', '/app/t/services'],
+      ['/panel/teacher/worktimes', '/app/t/work-times'],
+      ['/panel/teacher/wallet', '/app/t/wallet'],
+      ['/panel/teacher/withdrawals', '/app/t/withdraw'],
+      ['/panel/teacher/reviews', '/app/t/reviews'],
+      ['/panel/teacher/profile', '/app/t/profile'],
+      ['/panel/teacher/dispatch', '/app/t/dispatch'],
+      ['/panel/teacher/register', '/app/profile'],
+      ['/panel/admin', '/app/a'],
+      ['/panel/admin/:path*', '/app/a'],
+      ['/panel/:path*', '/app'],
+    ];
+    return panelRedirects.map(([source, destination]) => ({
+      source,
+      destination,
+      permanent: false,
+    }));
+  },
+
   async headers() {
     // حالت پیش‌نمایش محلی (VODDA_PREVIEW_MOCK=1): پنل پیش‌نمایش، اپ را داخل
     // iframe نشان می‌دهد و X-Frame-Options/frame-ancestors رندر آن را منع
