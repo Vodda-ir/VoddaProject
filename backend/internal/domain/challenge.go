@@ -16,8 +16,10 @@ const (
 )
 
 // ChallengeStatus چرخهٔ عمر چالش:
-//   registration (ثبت‌نام) → active (در حال اجرا؛ مهلت ارسال اثر) →
-//   judging (رأی‌گیری مخاطبان و اساتید داور) → finished (اعلان نتایج و کارنامه).
+//
+//	registration (ثبت‌نام) → active (در حال اجرا؛ مهلت ارسال اثر) →
+//	judging (رأی‌گیری مخاطبان و اساتید داور) → finished (اعلان نتایج و کارنامه).
+//
 // رسیدن شمار شرکت‌کنندگان به ظرفیت ثبت‌نام، چالش را به‌طور خودکار به active می‌برد.
 type ChallengeStatus string
 
@@ -81,9 +83,9 @@ func RankBonusPoints(rank uint) int {
 
 // Challenge یک رقابت قرآنی که فقط مدیر ادمین آن را می‌سازد.
 type Challenge struct {
-	ID          uint   `gorm:"primaryKey" json:"id"`
-	Title       string `gorm:"size:160" json:"title"`
-	Description string `gorm:"type:text" json:"description"`
+	ID          uint          `gorm:"primaryKey" json:"id"`
+	Title       string        `gorm:"size:160" json:"title"`
+	Description string        `gorm:"type:text" json:"description"`
 	Mode        ChallengeMode `gorm:"size:16;default:description" json:"mode"`
 	// AudioURL مقطع صوتی استاد معروف (فقط برای حالت audio) — زیر /uploads/challenge/.
 	AudioURL         string `gorm:"size:255;default:''" json:"audio_url"`
@@ -95,39 +97,39 @@ type Challenge struct {
 	// VotingHours مهلت رأی‌گیری پس از ورود به مرحلهٔ داوری (ساعت).
 	VotingHours int `json:"voting_hours"`
 	// وزن‌های سه منبع مستقل امتیازدهی (مجموعشان ۱۰۰ فرض می‌شود).
-	WeightAudience int             `json:"weight_audience"`
-	WeightJudges   int             `json:"weight_judges"`
-	WeightAdmin    int             `json:"weight_admin"`
-	Status         ChallengeStatus `gorm:"size:16;default:registration;index" json:"status"`
-	StartedAt          *time.Time `gorm:"index" json:"started_at,omitempty"`
-	SubmissionDeadline *time.Time `json:"submission_deadline,omitempty"`
-	VotingDeadline     *time.Time `json:"voting_deadline,omitempty"`
-	PublishedAt        *time.Time `json:"published_at,omitempty"`
-	CreatedBy          uint       `json:"created_by"`
-	CreatedAt          time.Time  `json:"created_at"`
-	UpdatedAt          time.Time  `json:"updated_at"`
+	WeightAudience     int             `json:"weight_audience"`
+	WeightJudges       int             `json:"weight_judges"`
+	WeightAdmin        int             `json:"weight_admin"`
+	Status             ChallengeStatus `gorm:"size:16;default:registration;index" json:"status"`
+	StartedAt          *time.Time      `gorm:"index" json:"started_at,omitempty"`
+	SubmissionDeadline *time.Time      `json:"submission_deadline,omitempty"`
+	VotingDeadline     *time.Time      `json:"voting_deadline,omitempty"`
+	PublishedAt        *time.Time      `json:"published_at,omitempty"`
+	CreatedBy          uint            `json:"created_by"`
+	CreatedAt          time.Time       `json:"created_at"`
+	UpdatedAt          time.Time       `json:"updated_at"`
 }
 
 // ChallengeParticipant یک شرکت‌کنندهٔ چالش و اثر ثبت‌شدهٔ او.
 type ChallengeParticipant struct {
-	ID          uint `gorm:"primaryKey" json:"id"`
-	ChallengeID uint `gorm:"uniqueIndex:idx_challenge_participant_unique;index" json:"challenge_id"`
-	UserID      uint `gorm:"uniqueIndex:idx_challenge_participant_unique;index" json:"user_id"`
-	Status      ParticipantStatus `gorm:"size:16;default:joined" json:"status"`
-	SubmissionText      string     `gorm:"size:2000;default:''" json:"submission_text"`
-	SubmissionAudioURL  string     `gorm:"size:255;default:''" json:"submission_audio_url"`
-	SubmittedAt         *time.Time `json:"submitted_at,omitempty"`
+	ID                 uint              `gorm:"primaryKey" json:"id"`
+	ChallengeID        uint              `gorm:"uniqueIndex:idx_challenge_participant_unique;index" json:"challenge_id"`
+	UserID             uint              `gorm:"uniqueIndex:idx_challenge_participant_unique;index" json:"user_id"`
+	Status             ParticipantStatus `gorm:"size:16;default:joined" json:"status"`
+	SubmissionText     string            `gorm:"size:2000;default:''" json:"submission_text"`
+	SubmissionAudioURL string            `gorm:"size:255;default:''" json:"submission_audio_url"`
+	SubmittedAt        *time.Time        `json:"submitted_at,omitempty"`
 	// AdminScore نظر مستقیم مدیریت ادمین (۰ تا ۱۰۰) — منبع سوم امتیازدهی.
 	AdminScore int `gorm:"default:0" json:"admin_score"`
 	// مقادیر نهایی هنگام اعلان نتایج ثبت می‌شوند (کارنامهٔ همیشه‌در دسترس).
-	AudienceVotes int     `gorm:"default:0" json:"audience_votes"`
-	JudgeVotes    int     `gorm:"default:0" json:"judge_votes"`
-	AudienceScore float64 `gorm:"default:0" json:"audience_score"`
-	JudgeScore    float64 `gorm:"default:0" json:"judge_score"`
-	FinalScore    float64 `gorm:"default:0" json:"final_score"`
-	Rank          uint    `gorm:"default:0;index" json:"rank"`
-	PointsJoin    int     `gorm:"default:0" json:"points_join"`
-	PointsBonus   int     `gorm:"default:0" json:"points_bonus"`
+	AudienceVotes int       `gorm:"default:0" json:"audience_votes"`
+	JudgeVotes    int       `gorm:"default:0" json:"judge_votes"`
+	AudienceScore float64   `gorm:"default:0" json:"audience_score"`
+	JudgeScore    float64   `gorm:"default:0" json:"judge_score"`
+	FinalScore    float64   `gorm:"default:0" json:"final_score"`
+	Rank          uint      `gorm:"default:0;index" json:"rank"`
+	PointsJoin    int       `gorm:"default:0" json:"points_join"`
+	PointsBonus   int       `gorm:"default:0" json:"points_bonus"`
 	CreatedAt     time.Time `json:"created_at"`
 	UpdatedAt     time.Time `json:"updated_at"`
 
