@@ -7,6 +7,7 @@ import type { UniversalAppConfig } from "../../config";
 import { navigateApp } from "../../router";
 import { Icon } from "../../ui/Icon";
 import { colors, shadows, spacing, typography } from "../../ui/theme";
+import { useL } from "../../ui/appearance";
 import { DispatchPairCards } from "../dispatch/DispatchPairCards";
 
 function SecondaryLink({
@@ -70,12 +71,13 @@ function SecondaryLink({
 }
 
 export function CallHubScreen({ config }: { config: UniversalAppConfig }) {
+  const L = useL();
   return (
     <div className="vodda-screen" style={{ display: "grid", gap: spacing.lg }}>
       {/* معرفی کوتاه — عنوان صفحه در هدر وُدّا تکرار نمی‌شود (B4) */}
       <p className="vodda-enter" style={{ margin: 0, ...typography.body, color: colors.inkSecondary, lineHeight: 2 }}>
-        دو مسیر دارید: یک <strong style={{ color: colors.olive700 }}>استاد آنلاین</strong> برای یادگیری، یا یک{" "}
-        <strong style={{ color: colors.goldDark }}>قاری حضوری</strong> برای مراسم. فراخوان ثبت کنید و از پاسخ‌ها انتخاب کنید.
+        {L("دو مسیر دارید: یک ")}<strong style={{ color: colors.olive700 }}>{L("استاد آنلاین")}</strong>{L(" برای یادگیری، یا یک")}{" "}
+        <strong style={{ color: colors.goldDark }}>{L("قاری حضوری")}</strong>{L(" برای مراسم. فراخوان ثبت کنید و از پاسخ‌ها انتخاب کنید.")}
       </p>
 
       <DispatchPairCards config={config} />
@@ -83,22 +85,22 @@ export function CallHubScreen({ config }: { config: UniversalAppConfig }) {
       <div style={{ display: "grid", gap: spacing.sm }}>
         <SecondaryLink
           icon="list"
-          label="فراخوان‌های من"
-          description="پیگیری فراخوان‌های ثبت‌شده و پذیرش‌های رسیده"
-          ariaLabel="پیگیری فراخوان‌های ثبت‌شدهٔ من"
+          label={L("فراخوان‌های من")}
+          description={L("پیگیری فراخوان‌های ثبت‌شده و پذیرش‌های رسیده")}
+          ariaLabel={L("پیگیری فراخوان‌های ثبت‌شدهٔ من")}
           onClick={() => navigateApp("/ceremony/calls", config)}
         />
         <SecondaryLink
           icon="users"
-          label="قاریان حضوری"
-          description="فهرست قاریان تأییدشده و رزرو مستقیم مراسم"
-          ariaLabel="فهرست قاریان حضوری و رزرو مستقیم"
+          label={L("قاریان حضوری")}
+          description={L("فهرست قاریان تأییدشده و رزرو مستقیم مراسم")}
+          ariaLabel={L("فهرست قاریان حضوری و رزرو مستقیم")}
           onClick={() => navigateApp("/presence", config)}
         />
       </div>
 
       <p style={{ margin: 0, fontSize: 12, color: colors.inkMuted, lineHeight: 1.9 }}>
-        در فراخوان مراسم، قاریان حق‌الزحمهٔ خود را اعلام می‌کنند؛ یکی را انتخاب می‌کنید، ودیعه را از طریق درگاه امن پرداخت می‌کنید و پس از برگزاری مراسم، تسویهٔ نهایی انجام می‌شود.
+        {L("در فراخوان مراسم، قاریان حق‌الزحمهٔ خود را اعلام می‌کنند؛ یکی را انتخاب می‌کنید، ودیعه را از طریق درگاه امن پرداخت می‌کنید و پس از برگزاری مراسم، تسویهٔ نهایی انجام می‌شود.")}
       </p>
     </div>
   );

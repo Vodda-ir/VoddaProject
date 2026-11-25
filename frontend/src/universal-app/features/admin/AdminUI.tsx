@@ -8,6 +8,7 @@
 import type { CSSProperties, ReactNode } from "react";
 import { Card, EmptyState, Icon } from "../../ui";
 import { colors, gradients, shadows, typography } from "../../ui";
+import { useL } from "../../ui/appearance";
 import { formatNumber } from "@/lib/datetime";
 
 /* ── قالب‌بندی اعداد ── */
@@ -229,6 +230,7 @@ export function AdminToggle({
   offLabel?: string;
   onToggle: () => void;
 }) {
+  const L = useL();
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 9 }}>
       <button
@@ -265,7 +267,7 @@ export function AdminToggle({
           }}
         />
       </button>
-      <small style={{ color: colors.inkMuted, fontSize: 10.5, fontWeight: 700 }}>{checked ? onLabel : offLabel}</small>
+      <small style={{ color: colors.inkMuted, fontSize: 10.5, fontWeight: 700 }}>{L(checked ? onLabel : offLabel)}</small>
     </span>
   );
 }
@@ -283,6 +285,7 @@ export function AdminLoadMore({
   loading: boolean;
   onLoadMore: () => void;
 }) {
+  const L = useL();
   if (shown >= total) {
     return total > 0 ? (
       <span style={{ display: "block", textAlign: "center", color: colors.inkFaint, fontSize: 10.5, fontWeight: 700, padding: "4px 0" }}>
@@ -315,7 +318,7 @@ export function AdminLoadMore({
       }}
     >
       <Icon name="refresh" size={14} />
-      {loading ? "در حال دریافت…" : `نمایش موارد بیشتر (${faNumber(Math.max(0, total - shown))} باقی‌مانده)`}
+      {loading ? L("در حال دریافت…") : `نمایش موارد بیشتر (${faNumber(Math.max(0, total - shown))} باقی‌مانده)`}
     </button>
   );
 }
@@ -333,6 +336,7 @@ export function AdminEmpty({ icon = "doc", title, description }: { icon?: "doc" 
 }
 
 export function AdminError({ message, onRetry }: { message: string; onRetry?: () => void }) {
+  const L = useL();
   return (
     <span
       role="alert"
@@ -359,7 +363,7 @@ export function AdminError({ message, onRetry }: { message: string; onRetry?: ()
           style={{ flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 4, border: 0, background: "transparent", color: colors.danger, fontSize: 11.5, fontWeight: 800, cursor: "pointer", fontFamily: typography.fontFamily }}
         >
           <Icon name="refresh" size={13} />
-          تلاش دوباره
+          {L("تلاش دوباره")}
         </button>
       ) : null}
     </span>
@@ -386,12 +390,13 @@ export type DayPoint = { label: string; value: number };
 
 /** نمودار میلهٔ گروهی — هم‌ارز BarsChart پنل وب. */
 export function DayBars({ data, secondary, height = 150 }: { data: DayPoint[]; secondary?: DayPoint[]; height?: number }) {
+  const L = useL();
   if (!data.length) return null;
   const max = Math.max(1, ...data.map((point) => point.value), ...(secondary ?? []).map((point) => point.value));
   const slot = 100 / data.length;
   return (
     <div style={{ display: "grid", gap: 6 }}>
-      <svg viewBox={`0 0 100 ${height}`} preserveAspectRatio="none" style={{ width: "100%", height, display: "block" }} role="img" aria-label="نمودار روزانه">
+      <svg viewBox={`0 0 100 ${height}`} preserveAspectRatio="none" style={{ width: "100%", height, display: "block" }} role="img" aria-label={L("نمودار روزانه")}>
         {data.map((point, index) => {
           const h = Math.max(point.value > 0 ? 1.5 : 0, (point.value / max) * (height - 14));
           const x = index * slot;
@@ -417,6 +422,7 @@ export function DayBars({ data, secondary, height = 150 }: { data: DayPoint[]; s
 
 /** نمودار سطحی — هم‌ارز AreaChart پنل وب. */
 export function DayArea({ data, height = 150, tone = "olive" }: { data: DayPoint[]; height?: number; tone?: "olive" | "gold" }) {
+  const L = useL();
   if (!data.length) return null;
   const max = Math.max(1, ...data.map((point) => point.value));
   const stroke = tone === "gold" ? colors.goldDark : colors.olive600;
@@ -428,7 +434,7 @@ export function DayArea({ data, height = 150, tone = "olive" }: { data: DayPoint
   });
   return (
     <div style={{ display: "grid", gap: 6 }}>
-      <svg viewBox={`0 0 100 ${height}`} preserveAspectRatio="none" style={{ width: "100%", height, display: "block" }} role="img" aria-label="نمودار روند">
+      <svg viewBox={`0 0 100 ${height}`} preserveAspectRatio="none" style={{ width: "100%", height, display: "block" }} role="img" aria-label={L("نمودار روند")}>
         <polygon points={`0,${height - 12} ${points.join(" ")} 100,${height - 12}`} fill={fillTop} />
         <polyline points={points.join(" ")} fill="none" stroke={stroke} strokeWidth={1.4} strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
       </svg>

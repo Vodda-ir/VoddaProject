@@ -222,7 +222,7 @@ function FreeServiceBigCard({
       type="button"
       onClick={() => navigateApp(`/teacher/${card.teacherId}?service=${card.id}`, config)}
       className="vodda-tappable"
-      aria-label={`${card.title} رایگان با ${card.teacherName}`}
+      aria-label={`${L(card.title)}${L(" رایگان با ")}${L(card.teacherName)}`}
       style={{
         position: "relative",
         display: "flex",

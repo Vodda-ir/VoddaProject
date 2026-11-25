@@ -374,7 +374,7 @@ export function LearnerBookingScreen({ teacherId, config }: { teacherId: string;
         ) : (
           <div style={{ marginTop: 2 }}>
             <MenuSelect
-              ariaLabel="انتخاب خدمت برای شروع رزرو"
+              ariaLabel={L("انتخاب خدمت برای شروع رزرو")}
               placeholder={L("برای شروع رزرو، یک خدمت را انتخاب کنید…")}
               displayTitle={wizardService?.title ?? inPersonService?.title ?? undefined}
               displaySub={

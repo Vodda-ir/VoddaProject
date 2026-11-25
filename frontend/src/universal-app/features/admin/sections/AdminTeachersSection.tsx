@@ -128,7 +128,7 @@ export function AdminTeachersSection() {
 
   async function review(row: AdminTeacherRow, approve: boolean) {
     if (busyId !== null || row.status !== "pending") return;
-    const action = approve ? "تأیید" : "رد";
+    const action = approve ? L("تأیید") : L("رد");
     if (!(await confirmDialog(`پروفایل «${row.name}» ${action} شود؟`, { danger: !approve, confirmLabel: action }))) return;
     setBusyId(row.id);
     setError(null);
@@ -254,7 +254,7 @@ export function AdminTeachersSection() {
                   </span>
                   <span style={{ minWidth: 0, flex: 1, display: "grid", gap: 3 }}>
                     <span style={{ display: "inline-flex", alignItems: "center", gap: 6, minWidth: 0 }}>
-                      <strong style={{ fontSize: 13.5, fontWeight: 800, color: colors.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.name}</strong>
+                      <strong style={{ fontSize: 13.5, fontWeight: 800, color: colors.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{L(row.name)}</strong>
                       {row.verified ? <Icon name="checkCircle" size={14} style={{ color: colors.olive600, flexShrink: 0 }} /> : null}
                       {row.isTier1 ? <span aria-hidden="true" style={{ fontSize: 12 }}>🏆</span> : null}
                     </span>
@@ -268,8 +268,8 @@ export function AdminTeachersSection() {
                     </span>
                   </span>
                   <span style={{ flexShrink: 0, display: "grid", gap: 4, justifyItems: "end" }}>
-                    <AdminBadge tone={badge.tone}>{badge.label}</AdminBadge>
-                    {row.tier && TIER_BADGE[row.tier] ? <AdminBadge tone={TIER_BADGE[row.tier].tone}>{TIER_BADGE[row.tier].label}</AdminBadge> : null}
+                    <AdminBadge tone={badge.tone}>{L(badge.label)}</AdminBadge>
+                    {row.tier && TIER_BADGE[row.tier] ? <AdminBadge tone={TIER_BADGE[row.tier].tone}>{L(TIER_BADGE[row.tier].label)}</AdminBadge> : null}
                   </span>
                 </button>
                 {normalized === "pending" ? (
@@ -319,9 +319,9 @@ export function AdminTeachersSection() {
           <div style={{ display: "grid", gap: 4, paddingBottom: 10 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", padding: "4px 0 10px" }}>
               <AdminBadge tone={(STATUS_BADGE[selected.status || "pending"] ?? STATUS_BADGE.pending).tone}>
-                {(STATUS_BADGE[selected.status || "pending"] ?? STATUS_BADGE.pending).label}
+                {L((STATUS_BADGE[selected.status || "pending"] ?? STATUS_BADGE.pending).label)}
               </AdminBadge>
-              {selected.tier && TIER_BADGE[selected.tier] ? <AdminBadge tone={TIER_BADGE[selected.tier].tone}>{TIER_BADGE[selected.tier].label}</AdminBadge> : null}
+              {selected.tier && TIER_BADGE[selected.tier] ? <AdminBadge tone={TIER_BADGE[selected.tier].tone}>{L(TIER_BADGE[selected.tier].label)}</AdminBadge> : null}
               {selected.isTier1 ? <AdminBadge tone="gold">🏆 {L("کارت درجه ۱")}</AdminBadge> : null}
               {!selected.active ? <AdminBadge tone="rose">{L("حساب غیرفعال")}</AdminBadge> : null}
             </div>
@@ -363,7 +363,7 @@ export function AdminTeachersSection() {
                     style={{ minHeight: 42, padding: "8px 11px", border: `1px solid ${colors.sand200}`, borderRadius: 11, background: colors.surface, color: colors.ink, fontFamily: typography.fontFamily, fontSize: 12, fontWeight: 700 }}
                   >
                     {TIER_OPTIONS.map((option) => (
-                      <option key={option.value || "none"} value={option.value}>{option.label}</option>
+                      <option key={option.value || "none"} value={option.value}>{L(option.label)}</option>
                     ))}
                   </select>
                 </label>

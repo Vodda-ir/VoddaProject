@@ -1544,7 +1544,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
             style={{ ...chipStyle(filters.sort === value), fontSize: 11.5, minHeight: 34, padding: "6px 11px" }}
           >
             <Icon name={filters.sort === value ? "check" : "trending"} size={13} stroke={2} />
-            {label}
+            {L(label)}
           </button>
         ))}
       </div>
@@ -1560,7 +1560,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
           style={{ ...chipStyle(filters.availableOnly), fontSize: 11.5, minHeight: 34, padding: "6px 11px" }}
         >
           <Icon name="checkCircle" size={13} stroke={2} />
-          فقط آمادهٔ رزرو
+          {L("فقط آمادهٔ رزرو")}
         </button>
         {TIER_PRESETS.map(([value, label, color]) => (
           <button
@@ -1576,7 +1576,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
                 style={{ width: 9, height: 9, borderRadius: "50%", background: color, flex: "0 0 auto" }}
               />
             ) : null}
-            {label}
+            {L(label)}
           </button>
         ))}
       </div>
@@ -1645,7 +1645,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
               onClick={() => setFilters((current) => ({ ...current, tier: "" }))}
               style={{ ...chipStyle(false), background: colors.sand100 }}
             >
-              درجه: {TIER_LABELS[filters.tier]}
+              {L("درجه: {n}").replace("{n}", L(TIER_LABELS[filters.tier]))}
               <Icon name="x" size={14} />
             </button>
           ) : null}
@@ -1656,7 +1656,7 @@ export function LearnerSearchScreen({ config }: { config: UniversalAppConfig }) 
               onClick={() => setFilters((current) => ({ ...current, availableOnly: false }))}
               style={{ ...chipStyle(false), background: colors.sand100 }}
             >
-              فقط آمادهٔ رزرو
+              {L("فقط آمادهٔ رزرو")}
               <Icon name="x" size={14} />
             </button>
           ) : null}

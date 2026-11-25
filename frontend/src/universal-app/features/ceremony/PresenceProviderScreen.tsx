@@ -95,7 +95,7 @@ function DirectBookingForm({
 
   return (
     <div style={{ display: "grid", gap: spacing.lg, marginTop: spacing.md, padding: 14, background: colors.surfaceSoft, border: `1px solid ${colors.olive200}`, borderRadius: 16 }}>
-      <JalaliWhenPicker value={when} onChange={setWhen} label="تاریخ و ساعت مراسم" />
+      <JalaliWhenPicker value={when} onChange={setWhen} label={L("تاریخ و ساعت مراسم")} />
       <TimePresetSelect hh={when.hh} mm={when.mm} onPick={({ hh, mm }) => setWhen((current) => ({ ...current, hh, mm }))} />
       <VenuePicker
         city={city}

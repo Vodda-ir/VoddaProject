@@ -158,7 +158,7 @@ export function AdminSupportSection() {
                     <Icon name="headphones" size={16} />
                   </span>
                   <div style={{ minWidth: 0, flex: 1, display: "grid", gap: 1 }}>
-                    <strong style={{ fontSize: 12.5, fontWeight: 800, color: colors.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{agent.name}</strong>
+                    <strong style={{ fontSize: 12.5, fontWeight: 800, color: colors.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{L(agent.name)}</strong>
                     <span dir="ltr" style={{ fontSize: 10, fontWeight: 700, color: colors.inkMuted, textAlign: "start" }}>{agent.mobile || "—"}</span>
                   </div>
                   <button
@@ -278,7 +278,7 @@ export function AdminSupportSection() {
                     <Icon name="message" size={16} />
                   </span>
                   <div style={{ minWidth: 0, flex: 1, display: "grid", gap: 1 }}>
-                    <strong style={{ fontSize: 12.5, fontWeight: 800, color: colors.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.name}</strong>
+                    <strong style={{ fontSize: 12.5, fontWeight: 800, color: colors.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{L(row.name)}</strong>
                     <span dir="ltr" style={{ fontSize: 10, fontWeight: 700, color: colors.inkMuted, textAlign: "start" }}>{row.contact || "—"}</span>
                   </div>
                   <AdminBadge tone={row.status === "resolved" ? "green" : "gold"}>{row.status === "resolved" ? L("رسیدگی‌شده") : L("جدید")}</AdminBadge>
@@ -433,13 +433,13 @@ function StaffTickets() {
                       <Icon name="headphones" size={17} />
                     </span>
                     <span style={{ minWidth: 0, flex: 1, display: "grid", gap: 2 }}>
-                      <strong style={{ fontSize: 12.5, fontWeight: 800, color: colors.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.subject}</strong>
+                      <strong style={{ fontSize: 12.5, fontWeight: 800, color: colors.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{L(row.subject)}</strong>
                       <span style={{ fontSize: 10, fontWeight: 600, color: colors.inkMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {row.userName}{row.userMobile ? ` · ${row.userMobile}` : ""} · {faDateTime(row.lastMessageAt)}
+                        {L(row.userName)}{row.userMobile ? ` · ${row.userMobile}` : ""} · {faDateTime(row.lastMessageAt)}
                       </span>
                     </span>
                     <span style={{ flexShrink: 0, display: "grid", gap: 4, justifyItems: "end" }}>
-                      <AdminBadge tone={badge.tone}>{badge.label}</AdminBadge>
+                      <AdminBadge tone={badge.tone}>{L(badge.label)}</AdminBadge>
                       {row.unreadStaff > 0 ? <AdminBadge tone="rose">{faNumber(row.unreadStaff)} پیام تازه</AdminBadge> : null}
                       {row.assigneeName ? <AdminBadge tone="info">{row.assigneeName}</AdminBadge> : null}
                     </span>
@@ -623,12 +623,12 @@ function TicketThreadSheet({ ticketId, onClose, onChanged }: { ticketId: number 
   if (ticketId === null) return null;
 
   return (
-    <Sheet open={true} onClose={onClose} title={ticket?.subject || L("گفت‌وگوی پشتیبانی")}>
+    <Sheet open={true} onClose={onClose} title={L(ticket?.subject || "گفت‌وگوی پشتیبانی")}>
       <div style={{ display: "grid", gap: 10, paddingBottom: 10 }}>
         {ticket ? (
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-            <AdminBadge tone={(STATUS_META[ticket.status] ?? STATUS_META.open).tone}>{(STATUS_META[ticket.status] ?? STATUS_META.open).label}</AdminBadge>
-            <AdminBadge tone="muted">{ticket.userName}</AdminBadge>
+            <AdminBadge tone={(STATUS_META[ticket.status] ?? STATUS_META.open).tone}>{L((STATUS_META[ticket.status] ?? STATUS_META.open).label)}</AdminBadge>
+            <AdminBadge tone="muted">{L(ticket.userName)}</AdminBadge>
             {ticket.assigneeName ? <AdminBadge tone="info">{ticket.assigneeName}</AdminBadge> : null}
           </div>
         ) : null}
@@ -659,7 +659,7 @@ function TicketThreadSheet({ ticketId, onClose, onChanged }: { ticketId: number 
                       }}
                     >
                       <span style={{ fontSize: 9, fontWeight: 800, opacity: 0.8 }}>
-                        {mine ? L("پشتیبانی وُدّا") : message.senderName} · {faDateTime(message.createdAt)}
+                        {mine ? L("پشتیبانی وُدّا") : L(message.senderName)} · {faDateTime(message.createdAt)}
                       </span>
                       {message.kind === "text" ? (
                         <span style={{ fontSize: 12, fontWeight: 600, lineHeight: 1.9, whiteSpace: "pre-wrap" }}>{message.body || "—"}</span>

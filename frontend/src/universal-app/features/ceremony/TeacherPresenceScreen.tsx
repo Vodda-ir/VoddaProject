@@ -138,8 +138,8 @@ function ServiceForm({
       </div>
 
       <AmountPicker
-        label="حق‌الزحمهٔ پایه"
-        hint="تومان — مبنای پیشنهاد شما در فراخوان‌ها و رزرو مستقیم"
+        label={L("حق‌الزحمهٔ پایه")}
+        hint={L("تومان — مبنای پیشنهاد شما در فراخوان‌ها و رزرو مستقیم")}
         value={form.basePrice}
         onChange={(next) => onChange({ ...form, basePrice: next })}
         presets={[500_000, 1_000_000, 1_500_000, 2_000_000, 3_000_000, 5_000_000]}

@@ -818,7 +818,7 @@ export function SessionDetailScreen({
       </Sheet>
 
       {/* شیت نظرسنجی (قرآن‌آموز) */}
-      <Sheet open={surveyOpen} title={L("نظرسنجی جلسه با {name}").replace("{name}", detail.teacherName)} onClose={() => { if (!reviewSaving) setSurveyOpen(false); }}>
+      <Sheet open={surveyOpen} title={L("نظرسنجی جلسه با {name}").replace("{name}", L(detail.teacherName))} onClose={() => { if (!reviewSaving) setSurveyOpen(false); }}>
         <div style={{ display: "grid", gap: spacing.lg }}>
           <div style={{ display: "flex", justifyContent: "center", gap: spacing.sm, direction: "ltr" }}>
             {[1, 2, 3, 4, 5].map((value) => (

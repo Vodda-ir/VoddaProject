@@ -293,10 +293,10 @@ export function AdminUsersSection() {
                       <Icon name="user" size={18} />
                     </span>
                     <span style={{ minWidth: 0, flex: 1, display: "grid", gap: 2 }}>
-                      <strong style={{ fontSize: 13, fontWeight: 800, color: colors.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.name}</strong>
+                      <strong style={{ fontSize: 13, fontWeight: 800, color: colors.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{L(row.name)}</strong>
                       <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 10.5, fontWeight: 600, color: colors.inkMuted, flexWrap: "wrap" }}>
                         <span dir="ltr">{row.mobile || "—"}</span>
-                        <AdminBadge tone={roleBadge.tone}>{roleBadge.label}</AdminBadge>
+                        <AdminBadge tone={roleBadge.tone}>{L(roleBadge.label)}</AdminBadge>
                         <span>{faToman(row.wallet)}</span>
                       </span>
                     </span>
@@ -325,12 +325,12 @@ export function AdminUsersSection() {
         {selected ? (
           <div style={{ display: "grid", gap: 4, paddingBottom: 10 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", padding: "4px 0 10px" }}>
-              <AdminBadge tone={(ROLE_BADGE[selected.role] ?? ROLE_BADGE.learner).tone}>{(ROLE_BADGE[selected.role] ?? ROLE_BADGE.learner).label}</AdminBadge>
+              <AdminBadge tone={(ROLE_BADGE[selected.role] ?? ROLE_BADGE.learner).tone}>{L((ROLE_BADGE[selected.role] ?? ROLE_BADGE.learner).label)}</AdminBadge>
               <AdminBadge tone={selected.active ? "green" : "rose"}>{selected.active ? L("حساب فعال") : L("حساب غیرفعال")}</AdminBadge>
               <AdminBadge tone="clay">{faToman(selected.wallet)}</AdminBadge>
             </div>
 
-            <AdminKeyValue label={L("نام")}>{selected.name}</AdminKeyValue>
+            <AdminKeyValue label={L("نام")}>{L(selected.name)}</AdminKeyValue>
             <AdminKeyValue label={L("موبایل")}><span dir="ltr">{selected.mobile || "—"}</span></AdminKeyValue>
             <AdminKeyValue label={L("شهر")}>{selected.city || "—"}</AdminKeyValue>
             <AdminKeyValue label={L("تاریخ عضویت")}>{faDate(selected.createdAt)}</AdminKeyValue>
@@ -450,7 +450,7 @@ export function AdminUsersSection() {
                   detail.sessions.slice(0, 6).map((session) => (
                     <div key={session.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "8px 11px", borderRadius: 12, background: colors.surfaceSoft, border: `1px solid ${colors.sand150}` }}>
                       <div style={{ minWidth: 0, display: "grid", gap: 1 }}>
-                        <strong style={{ fontSize: 11.5, fontWeight: 800, color: colors.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{session.service}</strong>
+                        <strong style={{ fontSize: 11.5, fontWeight: 800, color: colors.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{L(session.service)}</strong>
                         <span style={{ fontSize: 9.5, fontWeight: 600, color: colors.inkMuted }}>{faDate(session.scheduledAt)} · {faNumber(session.duration)} دقیقه</span>
                       </div>
                       <strong style={{ fontSize: 11.5, fontWeight: 800, color: colors.olive700, flexShrink: 0 }}>{faToman(session.price)}</strong>

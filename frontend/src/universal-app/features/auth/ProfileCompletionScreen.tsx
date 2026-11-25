@@ -62,7 +62,7 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
         setCity(restored.city ?? "");
         setBio(restored.bio ?? "");
       } catch (loadError) {
-        if (!cancelled) setError(messageOf(loadError, "ذخیره پروفایل انجام نشد. دوباره تلاش کنید."));
+        if (!cancelled) setError(messageOf(loadError, L("ذخیره پروفایل انجام نشد. دوباره تلاش کنید.")));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -107,7 +107,7 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
       setError(
         convertError instanceof AvatarPrepareError
           ? convertError.message
-          : messageOf(convertError, "تصویر انتخاب‌شده قابل استفاده نیست."),
+          : messageOf(convertError, L("تصویر انتخاب‌شده قابل استفاده نیست.")),
       );
     } finally {
       setPreparingAvatar(false);
@@ -133,7 +133,7 @@ export function ProfileCompletionScreen({ config }: ProfileCompletionScreenProps
       let response: unknown;
       if (avatar) {
         if (!platform.requestWithProgress) {
-          throw new Error("آپلود تصویر در این محیط پشتیبانی نمی‌شود.");
+          throw new Error(L("آپلود تصویر در این محیط پشتیبانی نمی‌شود."));
         }
         const form = new FormData();
         form.set("name", profile.name);

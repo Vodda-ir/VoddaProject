@@ -5,7 +5,7 @@ import type { UniversalAppConfig } from "../../config";
 import { navigateApp } from "../../router";
 import { resolveAssetUrl } from "../../platform/asset";
 import { Avatar, Button, Icon, colors, typography } from "../../ui";
-import { useAppearance } from "../../ui/appearance";
+import { useAppearance, useL } from "../../ui/appearance";
 import { useMinWidth } from "../../ui/useMediaQuery";
 import { neonRingStyle } from "../../ui/neon";
 import { localizeCityName } from "../../i18n/transliterate";
@@ -32,6 +32,7 @@ import type { Teacher } from "./types";
  * Capacitor (بدون globals.css) هم دقیقاً همین شکل دیده شود. */
 
 function VerifiedTick({ size = 16 }: { size?: number }) {
+  const L = useL();
   /* ستارهٔ ۱۲پر با گوشه‌های نرم — سبز برند (هم‌رنگ هدر اپ) به‌جای آبی اینستاگرامی */
   const spikes = Array.from({ length: 24 }, (_, i) => {
     const radius = i % 2 === 0 ? 12 : 10.1;
@@ -44,7 +45,7 @@ function VerifiedTick({ size = 16 }: { size?: number }) {
       height={size}
       viewBox="0 0 24 24"
       role="img"
-      aria-label="حساب تأییدشده"
+      aria-label={L("حساب تأییدشده")}
       style={{ flex: "0 0 auto", display: "block" }}
     >
       <polygon
@@ -171,7 +172,7 @@ function SquareTeacherCard({
         ref={rootRef}
         className={tier1 ? "vodda-neon-gold" : "vodda-card--interactive"}
         onClick={handleCardClick}
-        aria-label={`${localName}${headline ? ` — ${headline}` : ""}${teacher.verified ? " — حساب تأییدشده" : ""}`}
+        aria-label={`${localName}${headline ? ` — ${headline}` : ""}${teacher.verified ? ` — ${L("حساب تأییدشده")}` : ""}`}
         style={{
           width: "100%",
           /* مربعی ترجیحی: حداقلِ ارتفاع = عرض واقعی کارت؛ اگر محتوا بیشتر بخواهد
@@ -721,7 +722,7 @@ function TallTeacherCard({
         className={tier1 ? "vodda-neon-gold" : "vodda-card--interactive"}
         onClick={handleCardClick}
         style={cardFrame}
-        aria-label={`${localName}${teacher.verified ? " — حساب تأییدشده" : ""}`}
+        aria-label={`${localName}${teacher.verified ? ` — ${L("حساب تأییدشده")}` : ""}`}
       >
         {/* بلوک پروفایل مربعی ۱:۱ — آواتار با رینگ استوری طلایی + چیپ امتیاز/درجهٔ شناور */}
         <span

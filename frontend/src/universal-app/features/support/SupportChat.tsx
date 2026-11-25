@@ -692,7 +692,7 @@ export function SupportChat({ routeName }: { routeName: string }) {
             )}
             <div style={{ minWidth: 0, flex: 1 }}>
               <strong style={{ display: "block", fontSize: 13, color: colors.ink }}>
-                {view === "thread" && ticket ? ticket.subject : L("پشتیبانی وُدّا")}
+                {view === "thread" && ticket ? L(ticket.subject) : L("پشتیبانی وُدّا")}
               </strong>
               <span style={{ display: "block", fontSize: 10.5, color: colors.inkMuted }}>
                 {view === "thread"
@@ -845,7 +845,7 @@ export function SupportChat({ routeName }: { routeName: string }) {
                     >
                       <span style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                         <strong style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 12.5, color: colors.ink }}>
-                          {row.subject}
+                          {L(row.subject)}
                         </strong>
                         <span style={{ flex: "0 0 auto", fontSize: 10, fontWeight: 800, padding: "3px 8px", borderRadius: 999, color: chip.ink, background: chip.bg }}>
                           {L(chip.label)}
@@ -1039,7 +1039,7 @@ export function SupportChat({ routeName }: { routeName: string }) {
                             paddingInline: 6,
                           }}
                         >
-                          {mine ? L("شما") : `${L("پشتیبانی وُدّا")}${message.senderName ? ` · ${message.senderName}` : ""}`}
+                          {mine ? L("شما") : `${L("پشتیبانی وُدّا")}${message.senderName ? ` · ${L(message.senderName)}` : ""}`}
                           {" · "}
                           {shortTime(message.createdAt)}
                         </span>

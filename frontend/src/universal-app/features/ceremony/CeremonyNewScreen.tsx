@@ -237,8 +237,8 @@ export function CeremonyNewScreen({ config }: { config: UniversalAppConfig }) {
             <TopicIcon icon={topic.icon} size={21} />
           </div>
           <div style={{ minWidth: 0, flex: 1 }}>
-            <strong style={{ display: "block", fontSize: 15, fontWeight: 800, color: colors.ink }}>{topic.title}</strong>
-            <span style={{ fontSize: 12, color: colors.inkMuted, lineHeight: 1.8, display: "block" }}>{topic.description || topic.category}</span>
+            <strong style={{ display: "block", fontSize: 15, fontWeight: 800, color: colors.ink }}>{L(topic.title)}</strong>
+            <span style={{ fontSize: 12, color: colors.inkMuted, lineHeight: 1.8, display: "block" }}>{L(topic.description || topic.category)}</span>
           </div>
           <button
             type="button"
@@ -314,7 +314,7 @@ export function CeremonyNewScreen({ config }: { config: UniversalAppConfig }) {
               {formatAppDate(when.localDate, lang)} · {L("ساعت {time}").replace("{time}", `${localizedDigits(String(when.hh).padStart(2, "0"), lang)}:${localizedDigits(String(when.mm).padStart(2, "0"), lang)}`)}
             </span>
           </div>
-          <JalaliWhenPicker value={when} onChange={setWhen} label="تاریخ و ساعت برگزاری" />
+          <JalaliWhenPicker value={when} onChange={setWhen} label={L("تاریخ و ساعت برگزاری")} />
           <TimePresetSelect hh={when.hh} mm={when.mm} onPick={({ hh, mm }) => setWhen((current) => ({ ...current, hh, mm }))} />
         </div>
 
@@ -330,16 +330,16 @@ export function CeremonyNewScreen({ config }: { config: UniversalAppConfig }) {
         <strong style={{ fontSize: 15, fontWeight: 800, color: colors.ink }}>{L("۳. مهمانان و قاریان")}</strong>
 
         <CountField
-          label="تعداد مهمانان"
-          hint="انتخاب سریع یا دکمه‌های + و −"
+          label={L("تعداد مهمانان")}
+          hint={L("انتخاب سریع یا دکمه‌های + و −")}
           value={guests}
           onChange={setGuests}
           presets={[30, 50, 100, 200, 500, 1000]}
           min={1}
           max={100000}
           step={10}
-          unit="نفر"
-          ariaLabel="تعداد مهمانان"
+          unit={L("نفر")}
+          ariaLabel={L("تعداد مهمانان")}
         />
 
         <div>
@@ -350,7 +350,7 @@ export function CeremonyNewScreen({ config }: { config: UniversalAppConfig }) {
           <div style={{ display: "flex", alignItems: "flex-start", gap: spacing.md }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <SelectField
-                ariaLabel="تعداد قاریان موردنیاز"
+                ariaLabel={L("تعداد قاریان موردنیاز")}
                 value={String(reciters)}
                 onChange={(next) => {
                   const parsed = Number(next);
@@ -412,7 +412,7 @@ export function CeremonyNewScreen({ config }: { config: UniversalAppConfig }) {
         />
 
         <div>
-          <FieldLabel hint="برای رعایت شرعی فضای مراسم">مخاطبان مراسم</FieldLabel>
+          <FieldLabel hint={L("برای رعایت شرعی فضای مراسم")}>مخاطبان مراسم</FieldLabel>
           <div role="radiogroup" aria-label={L("مخاطبان مراسم")} style={{ display: "flex", gap: spacing.sm, flexWrap: "wrap" }}>
             {audienceOptions.map((option) => (
               <button

@@ -9,6 +9,8 @@ import type { PlatformRuntime } from "../../platform/types";
 import type { UniversalAppConfig } from "../../config";
 import { navigateAppRoute, type StaticAppRouteName } from "../../router";
 import { Icon, colors, shadows, typography } from "../../ui";
+import { useAppearance } from "../../ui/appearance";
+import { translateLoose } from "../../i18n/phrases";
 
 const POLL_INTERVAL_MS = 20_000;
 const AUTO_DISMISS_MS = 5_000;
@@ -43,6 +45,7 @@ export function routeForNotification(
 }
 
 export function AppNotificationBanner({ runtime, active, role, config }: BannerProps) {
+  const { lang } = useAppearance();
   const [banner, setBanner] = useState<AppNotification | null>(null);
   const [expanded, setExpanded] = useState(false);
   const dismissedIds = useRef<Set<number>>(new Set());
@@ -221,7 +224,7 @@ export function AppNotificationBanner({ runtime, active, role, config }: BannerP
         </span>
         <div style={{ minWidth: 0, flex: 1 }}>
           <strong style={{ display: "block", fontSize: 13.5, fontWeight: 800, lineHeight: 1.6 }}>
-            {banner.title}
+            {translateLoose(banner.title, lang)}
           </strong>
           {/* ارتفاع پویا؛ حداکثر دو سطر با بیضی؛ long-press متن کامل */}
           <p
@@ -237,12 +240,12 @@ export function AppNotificationBanner({ runtime, active, role, config }: BannerP
               overflow: "hidden",
             }}
           >
-            {banner.body}
+            {translateLoose(banner.body, lang)}
           </p>
         </div>
         <button
           type="button"
-          aria-label="بستن اعلان"
+          aria-label={translateLoose("بستن اعلان", lang)}
           onPointerDown={(event) => event.stopPropagation()}
           onPointerUp={(event) => event.stopPropagation()}
           onClick={(event) => {

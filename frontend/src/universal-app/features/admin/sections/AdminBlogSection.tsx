@@ -191,7 +191,7 @@ export function AdminBlogSection() {
 
   async function remove(row: AdminPostRow) {
     if (busyId !== null) return;
-    if (!(await confirmDialog(`حذف «${row.title}» بازگشت‌پذیر نیست. ادامه می‌دهید؟`, { danger: true, confirmLabel: "حذف" }))) return;
+    if (!(await confirmDialog(`حذف «${row.title}» بازگشت‌پذیر نیست. ادامه می‌دهید؟`, { danger: true, confirmLabel: L("حذف") }))) return;
     setBusyId(row.id);
     setError(null);
     try {
@@ -290,7 +290,7 @@ export function AdminBlogSection() {
                     <Icon name="doc" size={18} />
                   </span>
                   <div style={{ minWidth: 0, flex: 1, display: "grid", gap: 3 }}>
-                    <strong style={{ fontSize: 13, fontWeight: 800, color: colors.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.title}</strong>
+                    <strong style={{ fontSize: 13, fontWeight: 800, color: colors.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{L(row.title)}</strong>
                     {row.category ? <span style={{ fontSize: 10, fontWeight: 700, color: colors.inkMuted }}>{row.category} · {faNumber(row.readMinutes)} دقیقه مطالعه · {faNumber(row.views)} بازدید</span> : null}
                     <span dir="ltr" style={{ fontSize: 9.5, fontWeight: 600, color: colors.inkFaint, textAlign: "end" }}>/{row.slug}</span>
                   </div>

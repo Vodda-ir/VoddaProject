@@ -18,6 +18,7 @@ import {
 } from "../../ui";
 import { messageOf } from "../../ui/errorMessage";
 import { useMinWidth } from "../../ui/useMediaQuery";
+import { useL } from "../../ui/appearance";
 import { readStoredCity, storedCityUsable } from "@/lib/userCity";
 import { getCatalog } from "../dispatch/api";
 import { TeacherCard } from "../teachers/TeacherCard";
@@ -37,6 +38,7 @@ export type ServiceTeachersScreenProps = {
  */
 export function ServiceTeachersScreen({ serviceId, config }: ServiceTeachersScreenProps) {
   const runtime = usePlatform();
+  const L = useL();
   const parsedId = Number.parseInt(serviceId, 10);
 
   const [city, setCity] = useState("");
@@ -112,16 +114,16 @@ export function ServiceTeachersScreen({ serviceId, config }: ServiceTeachersScre
   }, [teachers, city]);
 
   if (loading && !serviceTitle) {
-    return <LoadingState label="در حال دریافت اساتید خدمت…" />;
+    return <LoadingState label={L("در حال دریافت اساتید خدمت…")} />;
   }
 
   if (error) {
     return (
       <Card elevated style={{ display: "grid", gap: spacing.md, textAlign: "center", padding: spacing.huge }}>
         <IconBadge icon="info" tone="clay" size={52} />
-        <strong style={{ ...typography.title, color: colors.ink }}>دریافت خدمت ناموفق بود</strong>
-        <span style={{ ...typography.caption, color: colors.inkMuted }}>{error}</span>
-        <Button variant="secondary" onClick={() => setReloadKey((value) => value + 1)}>تلاش دوباره</Button>
+        <strong style={{ ...typography.title, color: colors.ink }}>{L("دریافت خدمت ناموفق بود")}</strong>
+        <span style={{ ...typography.caption, color: colors.inkMuted }}>{L(error)}</span>
+        <Button variant="secondary" onClick={() => setReloadKey((value) => value + 1)}>{L("تلاش دوباره")}</Button>
       </Card>
     );
   }
@@ -133,7 +135,7 @@ export function ServiceTeachersScreen({ serviceId, config }: ServiceTeachersScre
           type="button"
           onClick={() => navigateApp("/", config)}
           className="vodda-tappable"
-          aria-label="بازگشت به صفحهٔ نخست"
+          aria-label={L("بازگشت به صفحهٔ نخست")}
           style={{
             justifySelf: "start",
             display: "inline-flex",
@@ -152,30 +154,30 @@ export function ServiceTeachersScreen({ serviceId, config }: ServiceTeachersScre
           <span aria-hidden="true" style={{ display: "inline-flex", transform: "scaleX(-1)" }}>
             <Icon name="chevronL" size={15} />
           </span>
-          صفحهٔ نخست
+          {L("صفحهٔ نخست")}
         </button>
         <div style={{ display: "flex", alignItems: "center", gap: 11, minWidth: 0 }}>
           <IconBadge icon="book" tone="olive" size={46} />
           <div style={{ minWidth: 0, flex: 1 }}>
             <h1 style={{ fontSize: 20, fontWeight: 800, margin: 0, color: colors.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              اساتید «{serviceTitle}»
+              {L("اساتید")}«{L(serviceTitle)}»
             </h1>
             <span style={{ fontSize: 12.5, color: colors.inkMuted }}>
-              {serviceCategory ? `${serviceCategory} · ` : ""}فقط اساتید همین خدمت رسمی
+              {serviceCategory ? `${L(serviceCategory)} · ` : ""}{L("فقط اساتید همین خدمت رسمی")}
             </span>
           </div>
         </div>
         <span style={{ ...typography.caption, color: colors.inkMuted }}>
-          {city.trim() ? `اساتید ${city.trim()} در ابتدای فهرست اولویت دارند · ` : ""}
-          {visible.length} استاد
+          {city.trim() ? `${L("اساتید")} ${L(city.trim())}${L(" در ابتدای فهرست اولویت دارند · ")}` : ""}
+          {visible.length} {L("استاد")}
         </span>
       </header>
 
       {visible.length === 0 ? (
         <EmptyState
           icon={<Icon name="users" size={30} />}
-          title="هنوز استادی برای این خدمت منتشر نشده"
-          description="به‌زودی اساتید این خدمت در همین صفحه دیده می‌شوند."
+          title={L("هنوز استادی برای این خدمت منتشر نشده")}
+          description={L("به‌زودی اساتید این خدمت در همین صفحه دیده می‌شوند.")}
         />
       ) : (
         <div

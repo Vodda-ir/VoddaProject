@@ -34,6 +34,7 @@ import {
 import { useMinWidth } from "../../ui/useMediaQuery";
 import { messageOf } from "../../ui/errorMessage";
 import { useAppearance } from "../../ui/appearance";
+import { translateLoose } from "../../i18n/phrases";
 import { localizedDigits } from "../../ui/persian";
 import { neonDivider } from "../../ui/neon";
 import { todayAppDateLabel } from "../../ui/jalali";
@@ -135,6 +136,7 @@ function Skeleton({ style }: { style?: CSSProperties }) {
 
 /* ۱.ب.۲ — skeleton هر بخش، هم‌ساختار با صفحهٔ واقعی */
 function HomeSkeleton({ wide }: { wide: boolean }) {
+  const { L } = useAppearance();
   return (
     <div
       style={{
@@ -142,7 +144,7 @@ function HomeSkeleton({ wide }: { wide: boolean }) {
         gridTemplateColumns: "minmax(0, 1fr)",
         gap: wide ? 32 : 24,
       }}
-      aria-label="در حال بارگذاری"
+      aria-label={L("در حال بارگذاری")}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
         <Skeleton style={{ width: 44, height: 34, borderRadius: 999 }} />
@@ -184,6 +186,7 @@ function CategoryTileGrid({
   loading: boolean;
   wide: boolean;
 }) {
+  const { L } = useAppearance();
   if (loading) {
     return (
       <div
@@ -192,7 +195,7 @@ function CategoryTileGrid({
           gridTemplateColumns: wide ? "repeat(3, minmax(0,1fr))" : "repeat(2, minmax(0, 1fr))",
           gap: 10,
         }}
-        aria-label="در حال بارگذاری دسته‌ها"
+        aria-label={L("در حال بارگذاری دسته‌ها")}
       >
         {Array.from({ length: 6 }).map((_, index) => (
           <Skeleton key={index} style={{ height: 100, borderRadius: 16 }} />
@@ -203,8 +206,8 @@ function CategoryTileGrid({
   if (tiles.length === 0) return null;
 
   return (
-    <section aria-label="دسته‌بندی موضوعات قرآنی" style={{ display: "grid", gap: spacing.sm, minWidth: 0 }}>
-      <SectionHeader title="دسته‌بندی موضوعات قرآنی" description="روی هر موضوع بزنید تا صفحهٔ زیردسته‌های تخصصی آن باز شود." />
+    <section aria-label={L("دسته‌بندی موضوعات قرآنی")} style={{ display: "grid", gap: spacing.sm, minWidth: 0 }}>
+      <SectionHeader title={L("دسته‌بندی موضوعات قرآنی")} description={L("روی هر موضوع بزنید تا صفحهٔ زیردسته‌های تخصصی آن باز شود.")} />
       {/* کادر نئونی طلایی — فقط موضوع‌های اصلی + تعداد استاد؛ زیردسته‌ها در صفحهٔ خودِ موضوع */}
       <div
         className="vodda-neon-gold"
@@ -347,11 +350,12 @@ function PopularServicesGrid({
   wide: boolean;
   config: UniversalAppConfig;
 }) {
+  const { L } = useAppearance();
   const [activeSlide, setActiveSlide] = useState(0);
 
   if (loading) {
     return (
-      <section aria-label="در حال بارگذاری خدمات پرکاربرد" style={{ display: "grid", gap: 12 }}>
+      <section aria-label={L("در حال بارگذاری خدمات پرکاربرد")} style={{ display: "grid", gap: 12 }}>
         <Skeleton style={{ width: 150, height: 18 }} />
         <Skeleton style={{ height: wide ? 292 : 252, borderRadius: 20 }} />
       </section>
@@ -371,8 +375,8 @@ function PopularServicesGrid({
   };
 
   return (
-    <section aria-label="خدمات پرکاربرد" style={{ display: "grid", gap: spacing.sm, minWidth: 0 }}>
-      <SectionHeader title="خدمات پرکاربرد" description="پرترددترین خدمت‌های قرآنی وُدّا" />
+    <section aria-label={L("خدمات پرکاربرد")} style={{ display: "grid", gap: spacing.sm, minWidth: 0 }}>
+      <SectionHeader title={L("خدمات پرکاربرد")} description={L("پرترددترین خدمت‌های قرآنی وُدّا")} />
       {/* ─── صحنهٔ رنگی کاروسل — زیتونی برند با هالهٔ طلایی ─── */}
       <div
         style={{
@@ -579,6 +583,7 @@ function FreeServicesShowcase({
   config: UniversalAppConfig;
   wide: boolean;
 }) {
+  const { L } = useAppearance();
   /* E3 — گروه‌بندی خدمت‌های رایگان بر اساس نوع (عنوان خدمت) برای کاشی‌های مربعی */
   const typeGroups = useMemo(() => {
     const map = new Map<string, number>();
@@ -588,7 +593,7 @@ function FreeServicesShowcase({
 
   if (loading) {
     return (
-      <section aria-label="در حال بارگذاری خدمات رایگان" style={{ display: "grid", gap: 12 }}>
+      <section aria-label={L("در حال بارگذاری خدمات رایگان")} style={{ display: "grid", gap: 12 }}>
         <Skeleton style={{ width: 140, height: 18 }} />
         <Skeleton style={{ height: wide ? 218 : 196, borderRadius: 22 }} />
       </section>
@@ -599,13 +604,13 @@ function FreeServicesShowcase({
   const faceCards = cards.slice(0, 3);
 
   return (
-    <section aria-label="خدمات رایگان" style={{ display: "grid", gap: spacing.sm, minWidth: 0 }}>
-      <SectionHeader title="خدمات رایگان" description="بدون هزینه — برای شروع مسیر قرآن" />
+    <section aria-label={L("خدمات رایگان")} style={{ display: "grid", gap: spacing.sm, minWidth: 0 }}>
+      <SectionHeader title={L("خدمات رایگان")} description={L("بدون هزینه — برای شروع مسیر قرآن")} />
       <button
         type="button"
         onClick={() => navigateApp("/free-services", config)}
         className="vodda-tappable vodda-enter"
-        aria-label="مشاهدهٔ همهٔ خدمات رایگان وُدّا"
+        aria-label={L("مشاهدهٔ همهٔ خدمات رایگان وُدّا")}
         style={{
           position: "relative",
           display: "flex",
@@ -668,7 +673,7 @@ function FreeServicesShowcase({
             boxShadow: "0 2px 8px rgba(139,104,31,.30)",
           }}
         >
-          هدیهٔ وُدّا
+          {L("هدیهٔ وُدّا")}
         </span>
 
         {/* ردیف اصلی: نشان هدیهٔ طلایی + متن + خوشهٔ آواتار استادها */}
@@ -691,7 +696,7 @@ function FreeServicesShowcase({
           </span>
           <span style={{ flex: "1 1 auto", minWidth: 0, display: "grid", gap: 4 }}>
             <span style={{ fontSize: 10.5, fontWeight: 800, color: "#7a5e1e", letterSpacing: 0.2 }}>
-              جلسهٔ آغازین هدیه
+              {L("جلسهٔ آغازین هدیه")}
             </span>
             <strong
               style={{
@@ -701,7 +706,7 @@ function FreeServicesShowcase({
                 color: colors.olive800,
               }}
             >
-              خدمات رایگان وُدّا
+              {L("خدمات رایگان وُدّا")}
             </strong>
             <span
               style={{
@@ -713,7 +718,7 @@ function FreeServicesShowcase({
                 whiteSpace: "nowrap",
               }}
             >
-              شروع مسیر قرآن با اساتید تأییدشده — بدون هیچ هزینه
+              {L("شروع مسیر قرآن با اساتید تأییدشده — بدون هیچ هزینه")}
             </span>
           </span>
           <span
@@ -773,7 +778,7 @@ function FreeServicesShowcase({
               }}
             >
               <Icon name="quran" size={11} />
-              {faNumber(cards.length, 0)} خدمت رایگان
+              {faNumber(cards.length, 0)} {L("خدمت رایگان")}
             </span>
             <span
               style={{
@@ -791,7 +796,7 @@ function FreeServicesShowcase({
               }}
             >
               <Icon name="clock" size={11} />
-              ۳۰ تا ۴۵ دقیقه
+              {L("۳۰ تا ۴۵ دقیقه")}
             </span>
             <span
               style={{
@@ -809,7 +814,7 @@ function FreeServicesShowcase({
               }}
             >
               <Icon name="shield" size={11} />
-              اساتید تأییدشده
+              {L("اساتید تأییدشده")}
             </span>
           </span>
           <span
@@ -827,7 +832,7 @@ function FreeServicesShowcase({
               boxShadow: "0 8px 18px rgba(139,104,31,.32)",
             }}
           >
-            مشاهدهٔ همهٔ خدمات رایگان
+            {L("مشاهدهٔ همهٔ خدمات رایگان")}
             <Icon name="chevronL" size={13} />
           </span>
         </span>
@@ -838,7 +843,7 @@ function FreeServicesShowcase({
       {typeGroups.length > 0 ? (
         <div style={{ display: "grid", gap: 7, minWidth: 0 }}>
           <span style={{ fontSize: 11, fontWeight: 800, color: colors.inkSecondary, paddingInlineStart: 2 }}>
-            ورود بر اساس نوع خدمت
+            {L("ورود بر اساس نوع خدمت")}
           </span>
           <div
             className="vodda-scroll-rail"
@@ -852,7 +857,7 @@ function FreeServicesShowcase({
                   type="button"
                   onClick={() => navigateApp(`/free-services?type=${encodeURIComponent(group.title)}`, config)}
                   className="vodda-tappable vodda-enter"
-                  aria-label={`خدمات رایگان ${group.title} — ${faNumber(group.count, 0)} خدمت`}
+                  aria-label={`${L("خدمات رایگان")} ${group.title} — ${faNumber(group.count, 0)} ${L("خدمت")}`}
                   style={{
                     width: 86,
                     aspectRatio: "1 / 1",
@@ -901,7 +906,7 @@ function FreeServicesShowcase({
                     {group.title}
                   </strong>
                   <span style={{ fontSize: 8.5, fontWeight: 700, color: colors.goldInk }}>
-                    {faNumber(group.count, 0)} خدمت
+                    {faNumber(group.count, 0)} {L("خدمت")}
                   </span>
                 </button>
               );
@@ -920,6 +925,7 @@ function NotificationsBell({
   runtime: ReturnType<typeof usePlatform>;
   user: AuthUser | null;
 }) {
+  const { L, lang } = useAppearance();
   const [unread, setUnread] = useState(0);
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<AppNotification[] | null>(null);
@@ -977,7 +983,7 @@ function NotificationsBell({
     <>
       <button
         type="button"
-        aria-label="اعلان‌ها"
+        aria-label={L("اعلان‌ها")}
         className="vodda-tappable"
         onClick={openSheet}
         style={{
@@ -1016,20 +1022,20 @@ function NotificationsBell({
               lineHeight: 1,
             }}
           >
-            {unread > 9 ? "۹+" : faNumber(unread, 0)}
+            {unread > 9 ? L("۹+") : faNumber(unread, 0)}
           </span>
         ) : null}
       </button>
-      <Sheet open={open} title="اعلان‌ها" onClose={() => setOpen(false)}>
+      <Sheet open={open} title={L("اعلان‌ها")} onClose={() => setOpen(false)}>
         <div style={{ display: "grid", gap: spacing.md }}>
           {loading ? (
-            <LoadingState label="در حال دریافت اعلان‌ها…" style={{ minHeight: 140 }} />
+            <LoadingState label={L("در حال دریافت اعلان‌ها…")} style={{ minHeight: 140 }} />
           ) : items === null || items.length === 0 ? (
             <div style={{ display: "grid", justifyItems: "center", gap: spacing.sm, paddingBlock: spacing.xl, textAlign: "center" }}>
               <IconBadge icon="bell" tone="olive" size={52} />
-              <strong style={{ ...typography.body, color: colors.ink }}>اعلانی نداری</strong>
+              <strong style={{ ...typography.body, color: colors.ink }}>{L("اعلانی نداری")}</strong>
               <span style={{ ...typography.caption, color: colors.inkMuted }}>
-                وقتی خبر تازه‌ای داشته باشیم اینجا می‌بینی.
+                {L("وقتی خبر تازه‌ای داشته باشیم اینجا می‌بینی.")}
               </span>
             </div>
           ) : (
@@ -1051,17 +1057,17 @@ function NotificationsBell({
                       {!notification.read ? (
                         <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: "50%", background: colors.olive600, flex: "0 0 auto" }} />
                       ) : null}
-                      {notification.title}
+                      {translateLoose(notification.title, lang)}
                     </span>
                     {notification.body ? (
-                      <span style={{ ...typography.caption, color: colors.inkMuted, lineHeight: 1.7 }}>{notification.body}</span>
+                      <span style={{ ...typography.caption, color: colors.inkMuted, lineHeight: 1.7 }}>{translateLoose(notification.body, lang)}</span>
                     ) : null}
                   </div>
                 ))}
               </div>
               {unread > 0 ? (
                 <Button variant="secondary" disabled={marking} onClick={markAllRead} style={{ minHeight: 42 }}>
-                  {marking ? "در حال ثبت…" : "علامت‌گذاری همه به‌عنوان خوانده‌شده"}
+                  {marking ? L("در حال ثبت…") : L("علامت‌گذاری همه به‌عنوان خوانده‌شده")}
                 </Button>
               ) : null}
             </>
@@ -1174,7 +1180,7 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
       .catch((error: unknown) => {
         if (!active || teachersCacheFresh()) return;
         setTeachers([]);
-        setTeachersError(messageOf(error, "دریافت استادان ناموفق بود."));
+        setTeachersError(messageOf(error, L("دریافت استادان ناموفق بود.")));
       })
       .finally(() => {
         if (active) setTeachersLoading(false);
@@ -1287,7 +1293,7 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
   const useMyLocation = async () => {
     const geo = runtime.capabilities?.geo;
     if (!geo) {
-      setCityDetectNote("موقعیت‌یاب در این دستگاه در دسترس نیست؛ شهر را از فهرست انتخاب کنید.");
+      setCityDetectNote(L("موقعیت‌یاب در این دستگاه در دسترس نیست؛ شهر را از فهرست انتخاب کنید."));
       return;
     }
     setCityDetecting(true);
@@ -1295,7 +1301,7 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
     try {
       const granted = (await geo.hasPermission()) || (await geo.requestPermission());
       if (!granted) {
-        setCityDetectNote("مجوز موقعیت داده نشد؛ شهر پروفایل شما استفاده می‌شود.");
+        setCityDetectNote(L("مجوز موقعیت داده نشد؛ شهر پروفایل شما استفاده می‌شود."));
         const profileCity = user?.city?.trim();
         if (profileCity) applyCity(profileCity, "saved");
         return;
@@ -1340,7 +1346,7 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
     [teachers, withCityPriority],
   );
 
-  const firstName = user?.name?.trim().split(/\s+/)[0] || "دوست";
+  const firstName = user?.name?.trim().split(/\s+/)[0] || L("دوست");
   const today = todayLabel();
   const discoverLoading = teachersLoading || (catalogGroups.length === 0 && teachers.length === 0);
 
@@ -1374,7 +1380,7 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
           <button
             type="button"
             onClick={() => { if (user) setRoleSheetOpen(true); }}
-            aria-label="تغییر حساب"
+            aria-label={L("تغییر حساب")}
             className="vodda-tappable"
             style={{
               display: "flex",
@@ -1438,7 +1444,7 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
                   textAlign: "start",
                 }}
               >
-                {greetingLabel()}{today ? ` · ${today}` : ""}
+                {L(greetingLabel())}{today ? ` · ${today}` : ""}
               </span>
               <strong
                 style={{
@@ -1451,7 +1457,7 @@ export function LearnerHomeScreen({ config }: LearnerHomeScreenProps) {
                   fontWeight: 900,
                 }}
               >
-                {firstName} جان 🌿
+                {L("{n} جان").replace("{n}", firstName)} 🌿
               </strong>
             </span>
           </button>

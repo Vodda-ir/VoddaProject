@@ -100,7 +100,7 @@ export function AdminAuditSection() {
                   </span>
                   <div style={{ minWidth: 0, flex: 1, display: "grid", gap: 2 }}>
                     <span dir="ltr" style={{ fontSize: 10.5, fontWeight: 700, color: colors.inkSecondary, textAlign: "start", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.action}</span>
-                    <strong style={{ fontSize: 12, fontWeight: 800, color: colors.ink }}>{meta.label}</strong>
+                    <strong style={{ fontSize: 12, fontWeight: 800, color: colors.ink }}>{L(meta.label)}</strong>
                   </div>
                   <AdminBadge tone={meta.tone}>#{faNumber(row.actorId)}</AdminBadge>
                 </div>

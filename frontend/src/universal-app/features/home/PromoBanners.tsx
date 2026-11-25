@@ -12,7 +12,7 @@ import type { ReactNode } from "react";
 
 import { resolveAssetUrl } from "../../platform/asset";
 import { Icon } from "../../ui/Icon";
-import { useAppearance } from "../../ui/appearance";
+import { useAppearance, useL } from "../../ui/appearance";
 import { typography } from "../../ui/theme";
 
 export const MONAFESEH_URL = "https://monafeseh.ir";
@@ -315,17 +315,18 @@ const InstaHalos = () => (
 );
 
 export function PromoBannerMonafeseh({ wide }: { wide?: boolean }) {
+  const L = useL();
   return (
     <PromoCard
       href={MONAFESEH_URL}
-      aria="سکوی مسابقات قرآنی منافسه — ورود به monafeseh.ir"
+      aria={L("سکوی مسابقات قرآنی منافسه — ورود به monafeseh.ir")}
       logo="/banners/monafeseh-logo.webp"
-      logoAlt="لوگوی رسمی منافسه"
+      logoAlt={L("لوگوی رسمی منافسه")}
       icon="award"
-      kicker="سکوی رسمی مسابقات قرآنی"
-      title="منافسه"
-      desc="رقابت قرآنی آنلاین؛ ثبت‌نام در مسابقات، ارتقای سطح و شانس جوایز."
-      cta="همین حالا وارد شوید"
+      kicker={L("سکوی رسمی مسابقات قرآنی")}
+      title={L("منافسه")}
+      desc={L("رقابت قرآنی آنلاین؛ ثبت‌نام در مسابقات، ارتقای سطح و شانس جوایز.")}
+      cta={L("همین حالا وارد شوید")}
       theme={MONA_THEME}
       halos={<MonaHalos />}
       wide={wide}
@@ -334,17 +335,18 @@ export function PromoBannerMonafeseh({ wide }: { wide?: boolean }) {
 }
 
 export function PromoBannerInstaQuran({ wide }: { wide?: boolean }) {
+  const L = useL();
   return (
     <PromoCard
       href={INSTA_QURAN_URL}
-      aria="اپلیکیشن اینستا قرآن — ورود به اینستا قرآن"
+      aria={L("اپلیکیشن اینستا قرآن — ورود به اینستا قرآن")}
       logo="/banners/insta-quran-logo.svg"
-      logoAlt="لوگوی رسمی اینستا قرآن"
+      logoAlt={L("لوگوی رسمی اینستا قرآن")}
       icon="quran"
-      kicker="اپلیکیشن همراه قرآنی"
-      title="اینستا قرآن"
-      desc="قرآن در جیب شما؛ هر روز یک صفحه، با یادآوری و انگیزهٔ پیوسته."
-      cta="ورود به اینستا قرآن"
+      kicker={L("اپلیکیشن همراه قرآنی")}
+      title={L("اینستا قرآن")}
+      desc={L("قرآن در جیب شما؛ هر روز یک صفحه، با یادآوری و انگیزهٔ پیوسته.")}
+      cta={L("ورود به اینستا قرآن")}
       theme={INSTA_THEME}
       halos={<InstaHalos />}
       wide={wide}

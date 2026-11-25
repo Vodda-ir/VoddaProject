@@ -2,6 +2,7 @@
 
 import type { UniversalAppConfig } from "../../config";
 import { TeacherShowcaseCarousel, type TeacherShowcaseTheme } from "./TeacherShowcaseCarousel";
+import { useL } from "../../ui/appearance";
 import type { Teacher } from "../teachers/types";
 
 /* ═══ ۱.ب.۳ — «اساتید بانو» — کاروسل اختصاصی بانوان استاد، بالای خدمات رایگان ═══
@@ -39,6 +40,7 @@ export function BanoTeachersCarousel({
   wide: boolean;
   config: UniversalAppConfig;
 }) {
+  const L = useL();
   return (
     <TeacherShowcaseCarousel
       teachers={teachers}
@@ -46,11 +48,11 @@ export function BanoTeachersCarousel({
       wide={wide}
       config={config}
       theme={SHOWCASE_THEME_BANO}
-      ariaLabel="اساتید بانو"
-      loadingLabel="در حال بارگذاری اساتید بانو"
-      title="اساتید بانو"
-      subtitle="قرآن‌آموزی در محضر استادان بانوی وُدّا"
-      slogan="قرآن را با مهرِ بانوانِ وُدّا بیاموزید"
+      ariaLabel={L("اساتید بانو")}
+      loadingLabel={L("در حال بارگذاری اساتید بانو")}
+      title={L("اساتید بانو")}
+      subtitle={L("قرآن‌آموزی در محضر استادان بانوی وُدّا")}
+      slogan={L("قرآن را با مهرِ بانوانِ وُدّا بیاموزید")}
       icon="heart"
       seeAllHref="/search?female=true"
     />

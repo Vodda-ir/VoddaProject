@@ -98,7 +98,7 @@ export function AdminFinanceSection() {
     <div style={{ display: "grid", gap: 14, minWidth: 0 }}>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
         {RANGES.map(([value, label]) => (
-          <AdminChip key={value} active={range === value} label={label} onClick={() => setRange(value)} />
+          <AdminChip key={value} active={range === value} label={L(label)} onClick={() => setRange(value)} />
         ))}
         <button
           type="button"
@@ -121,8 +121,8 @@ export function AdminFinanceSection() {
       ) : analytics ? (
         <>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10, minWidth: 0 }}>
-            <AdminTile icon="wallet" label={`شارژ ${RANGES.find((item) => item[0] === range)?.[1] ?? ""}`} value={faToman(chargeTotal)} tone="info" hint={`مجموع تاریخ: ${faCompact(finance?.chargeVolume ?? 0)}`} />
-            <AdminTile icon="coins" label={`کارمزد ${RANGES.find((item) => item[0] === range)?.[1] ?? ""}`} value={faToman(commissionTotal)} tone="gold" hint={commissionDelta !== null ? `${faNumber(commissionDelta)}٪ نسبت به نیمهٔ قبل` : "مجموع تاریخ: " + faCompact(finance?.commission ?? 0)} />
+            <AdminTile icon="wallet" label={`شارژ ${RANGES.find((item) => item[0] === range)?.[1] ?? ""}`} value={faToman(chargeTotal)} tone="info" hint={L("مجموع تاریخ: ") + faCompact(finance?.chargeVolume ?? 0)} />
+            <AdminTile icon="coins" label={`کارمزد ${RANGES.find((item) => item[0] === range)?.[1] ?? ""}`} value={faToman(commissionTotal)} tone="gold" hint={commissionDelta !== null ? `${faNumber(commissionDelta)}٪ نسبت به نیمهٔ قبل` : L("مجموع تاریخ: ") + faCompact(finance?.commission ?? 0)} />
             <AdminTile icon="trending" label={L("درآمد تسویه‌شده استادان")} value={faCompact(finance?.earnings ?? 0)} />
             <AdminTile icon="users" label={L("تعهد کیف پول کاربران")} value={faCompact(finance?.walletLiability ?? 0)} tone="clay" />
             <AdminTile icon="download" label={L("برداشت‌های در صف")} value={faNumber(finance?.pendingWithdrawals ?? 0)} tone="rose" hint={faToman(finance?.pendingWithdrawalAmount ?? 0)} />

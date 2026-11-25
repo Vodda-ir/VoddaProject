@@ -17,6 +17,7 @@ import { POPULAR_CITIES, allCityNames, searchCityNames } from "@/lib/cities";
 import { formatNumber } from "@/lib/datetime";
 import { Icon } from "../../ui/Icon";
 import { Button, Sheet } from "../../ui/primitives";
+import { useL } from "../../ui/appearance";
 import { colors, radii, spacing, typography } from "../../ui/theme";
 
 function faCount(value: number) {
@@ -38,14 +39,15 @@ export function CityChipButton({
   onClick: () => void;
   style?: CSSProperties;
 }) {
-  const label = city.trim() || "انتخاب شهر";
+  const L = useL();
+  const label = city.trim() || L("انتخاب شهر");
   return (
     <button
       type="button"
       onClick={onClick}
-      aria-label={`شهر فعلی: ${label} — تغییر شهر`}
+      aria-label={`${L("شهر فعلی")}: ${label} — ${L("تغییر شهر")}`}
       className="vodda-tappable vodda-enter"
-      title={city.trim() ? `شهر فعلی: ${label}` : "برای انتخاب شهر بزنید"}
+      title={city.trim() ? `${L("شهر فعلی")}: ${label}` : L("برای انتخاب شهر بزنید")}
       style={{
         display: "inline-flex",
         alignItems: "center",
@@ -101,6 +103,7 @@ export function CityPickerSheet({
   detecting,
   detectNote,
 }: CityPickerSheetProps) {
+  const L = useL();
   const [query, setQuery] = useState("");
 
   /* همهٔ شهرها = دیتاست استاتیک + شهرهای واقعی استادها (بدون تکرار، ترتیب فارسی) */
@@ -121,12 +124,12 @@ export function CityPickerSheet({
   };
 
   return (
-    <Sheet open={open} title="انتخاب شهر" onClose={onClose}>
+    <Sheet open={open} title={L("انتخاب شهر")} onClose={onClose}>
       <div style={{ display: "grid", gap: spacing.lg }}>
         {/* ① استفاده از موقعیت من */}
         <Button variant="primary" onClick={onUseLocation} disabled={detecting} style={{ minHeight: 48, fontWeight: 800 }}>
           <Icon name="pin" size={17} stroke={2} />
-          {detecting ? "در حال دریافت موقعیت…" : "استفاده از موقعیت من"}
+          {detecting ? L("در حال دریافت موقعیت…") : L("استفاده از موقعیت من")}
         </Button>
 
         {detectNote ? (
@@ -147,13 +150,13 @@ export function CityPickerSheet({
             }}
           >
             <Icon name="info" size={15} style={{ flex: "0 0 auto" }} />
-            <span>{detectNote}</span>
+            <span>{L(detectNote)}</span>
           </div>
         ) : null}
 
         {/* ② جستجوی شهر — هر دو بخش (پرتردد + همه) فیلتر می‌شود */}
         <label style={{ display: "grid", gap: 6 }}>
-          <span style={{ fontSize: 13, fontWeight: 800, color: colors.inkSecondary }}>جستجوی شهر</span>
+          <span style={{ fontSize: 13, fontWeight: 800, color: colors.inkSecondary }}>{L("جستجوی شهر")}</span>
           <div style={{ position: "relative" }}>
             <Icon
               name="search"
@@ -165,8 +168,8 @@ export function CityPickerSheet({
               type="search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="مثلاً مشهد…"
-              aria-label="جستجوی شهر"
+              placeholder={L("مثلاً مشهد…")}
+              aria-label={L("جستجوی شهر")}
               style={{
                 width: "100%",
                 minHeight: 48,
@@ -186,8 +189,8 @@ export function CityPickerSheet({
 
         {/* ③ ۱۲ شهر پرتردد */}
         {popular.length > 0 ? (
-          <section aria-label="شهرهای پرتردد" style={{ display: "grid", gap: spacing.sm }}>
-            <strong style={{ fontSize: 13, fontWeight: 800, color: colors.inkSecondary }}>شهرهای پرتردد</strong>
+          <section aria-label={L("شهرهای پرتردد")} style={{ display: "grid", gap: spacing.sm }}>
+            <strong style={{ fontSize: 13, fontWeight: 800, color: colors.inkSecondary }}>{L("شهرهای پرتردد")}</strong>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
               {popular.map((city) => (
                 <button
@@ -220,14 +223,14 @@ export function CityPickerSheet({
         ) : null}
 
         {/* ④ همهٔ شهرها با جستجو */}
-        <section aria-label="همهٔ شهرها" style={{ display: "grid", gap: spacing.sm }}>
+        <section aria-label={L("همهٔ شهرها")} style={{ display: "grid", gap: spacing.sm }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: spacing.sm }}>
-            <strong style={{ fontSize: 13, fontWeight: 800, color: colors.inkSecondary }}>همهٔ شهرها</strong>
-            <span style={{ fontSize: 11.5, color: colors.inkFaint, fontWeight: 700 }}>{faCount(rest.length)} شهر</span>
+            <strong style={{ fontSize: 13, fontWeight: 800, color: colors.inkSecondary }}>{L("همهٔ شهرها")}</strong>
+            <span style={{ fontSize: 11.5, color: colors.inkFaint, fontWeight: 700 }}>{faCount(rest.length)} {L("شهر")}</span>
           </div>
           {rest.length === 0 ? (
             <span style={{ fontSize: 12.5, color: colors.inkMuted, paddingBlock: spacing.md }}>
-              شهری با این نام پیدا نشد.
+              {L("شهری با این نام پیدا نشد.")}
             </span>
           ) : (
             <div

@@ -19,6 +19,7 @@ import { localizedDigits } from "../../ui/persian";
 import { neonCellActiveBackground, neonDivider } from "../../ui/neon";
 import { messageOf } from "../../ui/errorMessage";
 import { useMinWidth } from "../../ui/useMediaQuery";
+import { useL } from "../../ui/appearance";
 import { getCatalog } from "../dispatch/api";
 import { TeacherCard } from "../teachers/TeacherCard";
 import { getAllTeachersCached } from "../teachers/cached";
@@ -45,6 +46,7 @@ export type CategoryScreenProps = {
  */
 export function CategoryScreen({ config }: CategoryScreenProps) {
   const runtime = usePlatform();
+  const L = useL();
   const categoryName = useMemo(() => {
     if (typeof window === "undefined") return "";
     return new URLSearchParams(window.location.search).get("name")?.trim() ?? "";
@@ -109,8 +111,8 @@ export function CategoryScreen({ config }: CategoryScreenProps) {
 
   if (loading && categories.length === 0) {
     return (
-      <section style={{ display: "grid", gap: 14 }} aria-label="در حال دریافت دسته‌بندی">
-        <LoadingState label="در حال دریافت موضوعات…" />
+      <section style={{ display: "grid", gap: 14 }} aria-label={L("در حال دریافت دسته‌بندی")}>
+        <LoadingState label={L("در حال دریافت موضوعات…")} />
       </section>
     );
   }
@@ -118,9 +120,9 @@ export function CategoryScreen({ config }: CategoryScreenProps) {
   if (error) {
     return (
       <ErrorCard
-        title="دریافت دسته‌بندی ناموفق بود"
+        title={L("دریافت دسته‌بندی ناموفق بود")}
         description={error}
-        action={<Button variant="secondary" onClick={() => setReloadKey((value) => value + 1)}>تلاش دوباره</Button>}
+        action={<Button variant="secondary" onClick={() => setReloadKey((value) => value + 1)}>{L("تلاش دوباره")}</Button>}
       />
     );
   }
@@ -128,9 +130,9 @@ export function CategoryScreen({ config }: CategoryScreenProps) {
   if (!category) {
     return (
       <ErrorCard
-        title="دسته‌بندی پیدا نشد"
-        description="این دسته در فهرست رسمی خدمات وُدّا موجود نیست؛ از صفحهٔ نخست یکی از دسته‌های فعال را انتخاب کنید."
-        action={<Button variant="secondary" onClick={() => navigateApp("/", config)}>بازگشت به صفحهٔ نخست</Button>}
+        title={L("دسته‌بندی پیدا نشد")}
+        description={L("این دسته در فهرست رسمی خدمات وُدّا موجود نیست؛ از صفحهٔ نخست یکی از دسته‌های فعال را انتخاب کنید.")}
+        action={<Button variant="secondary" onClick={() => navigateApp("/", config)}>{L("بازگشت به صفحهٔ نخست")}</Button>}
       />
     );
   }
@@ -153,7 +155,7 @@ export function CategoryScreen({ config }: CategoryScreenProps) {
           type="button"
           onClick={() => navigateApp("/", config)}
           className="vodda-tappable"
-          aria-label="بازگشت به صفحهٔ نخست"
+          aria-label={L("بازگشت به صفحهٔ نخست")}
           style={{
             justifySelf: "start",
             display: "inline-flex",
@@ -172,14 +174,14 @@ export function CategoryScreen({ config }: CategoryScreenProps) {
           <span aria-hidden="true" style={{ display: "inline-flex", transform: "scaleX(-1)" }}>
             <Icon name="chevronL" size={15} />
           </span>
-          صفحهٔ نخست
+          {L("صفحهٔ نخست")}
         </button>
         <div style={{ display: "flex", alignItems: "center", gap: 11, minWidth: 0 }}>
           <IconBadge icon="quran" tone="gold" size={46} />
           <div style={{ minWidth: 0, flex: 1 }}>
             <h1 style={{ fontSize: 21, fontWeight: 800, margin: 0, color: colors.ink }}>{category.category}</h1>
             <span style={{ fontSize: 12.5, color: colors.inkMuted }}>
-              {localizedDigits(category.topics.length, "fa")} زیردسته · {localizedDigits(categoryTeachers.length, "fa")} استاد در این دسته
+              {localizedDigits(category.topics.length, "fa")} {L("زیردسته")} · {localizedDigits(categoryTeachers.length, "fa")} {L("استاد در این دسته")}
             </span>
           </div>
         </div>
@@ -189,7 +191,7 @@ export function CategoryScreen({ config }: CategoryScreenProps) {
        * کلیک روی هر زیردسته، فهرست اساتید را به همان زیردسته محدود می‌کند. */}
       <div
         className="vodda-neon-gold vodda-enter"
-        aria-label="زیردسته‌های این دسته"
+        aria-label={L("زیردسته‌های این دسته")}
         style={{
           display: "grid",
           gridTemplateColumns: threeCol ? "repeat(3, minmax(0,1fr))" : "repeat(2, minmax(0,1fr))",
@@ -215,7 +217,7 @@ export function CategoryScreen({ config }: CategoryScreenProps) {
               className="vodda-tappable"
               onClick={() => setActiveTopicId(cell.id === 0 || cell.id === activeTopicId ? 0 : cell.id)}
               aria-pressed={active}
-              aria-label={`${cell.title} — ${localizedDigits(cell.count, "fa")} استاد`}
+              aria-label={`${L(cell.title)} — ${localizedDigits(cell.count, "fa")} ${L("استاد")}`}
               style={{
                 position: "relative",
                 display: "grid",
@@ -267,7 +269,7 @@ export function CategoryScreen({ config }: CategoryScreenProps) {
                   overflowWrap: "anywhere",
                 }}
               >
-                {cell.title}
+                {L(cell.title)}
               </strong>
 
               <span
@@ -286,7 +288,7 @@ export function CategoryScreen({ config }: CategoryScreenProps) {
                 }}
               >
                 <Icon name="users" size={11} stroke={2.2} />
-                {localizedDigits(cell.count, "fa")} استاد
+                {localizedDigits(cell.count, "fa")} {L("استاد")}
               </span>
             </button>
           );
@@ -295,18 +297,18 @@ export function CategoryScreen({ config }: CategoryScreenProps) {
 
       <div style={{ ...typography.bodySmall, color: colors.inkMuted }}>
         {activeTopicId > 0 && category
-          ? `فقط اساتیدِ «${category.topics.find((topic) => topic.id === activeTopicId)?.title ?? ""}» — کارت هر استاد را بزنید تا جلسهٔ آنلاین رزرو کنید`
-          : "اساتیدی که حداقل یکی از زیردسته‌های این دسته را تدریس می‌کنند — کارت هر استاد را بزنید تا جلسهٔ آنلاین رزرو کنید"}
+          ? `${L("فقط اساتیدِ «")}${L(category.topics.find((topic) => topic.id === activeTopicId)?.title ?? "")}${L("» — کارت هر استاد را بزنید تا جلسهٔ آنلاین رزرو کنید")}`
+          : L("اساتیدی که حداقل یکی از زیردسته‌های این دسته را تدریس می‌کنند — کارت هر استاد را بزنید تا جلسهٔ آنلاین رزرو کنید")}
         {" · "}
-        {visibleTeachers.length} استاد
+        {visibleTeachers.length} {L("استاد")}
       </div>
 
       {visibleTeachers.length === 0 ? (
         <EmptyState
           icon={<Icon name="users" size={30} />}
-          title="استادی برای این انتخاب پیدا نشد"
-          description={activeTopicId > 0 ? "زیردستهٔ دیگری از همین دسته را انتخاب کنید." : "به‌زودی اساتید این دسته اضافه می‌شوند."}
-          action={activeTopicId > 0 ? <Button variant="secondary" onClick={() => setActiveTopicId(0)}>نمایش همهٔ زیردسته‌ها</Button> : undefined}
+          title={L("استادی برای این انتخاب پیدا نشد")}
+          description={activeTopicId > 0 ? L("زیردستهٔ دیگری از همین دسته را انتخاب کنید.") : L("به‌زودی اساتید این دسته اضافه می‌شوند.")}
+          action={activeTopicId > 0 ? <Button variant="secondary" onClick={() => setActiveTopicId(0)}>{L("نمایش همهٔ زیردسته‌ها")}</Button> : undefined}
         />
       ) : (
         /* ۰.۸.۰ — قاب هم‌خانوادهٔ نئونی دور شبکهٔ اساتید همین دسته */

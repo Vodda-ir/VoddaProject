@@ -925,7 +925,7 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
             ) : (
               <>
                 <MenuSelect
-                  ariaLabel="انتخاب موضوع آموزش"
+                  ariaLabel={L("انتخاب موضوع آموزش")}
                   placeholder={L("موضوع را از فهرست رسمی وُدّا انتخاب کنید…")}
                   displayTitle={topic ? L(topic.title) : undefined}
                   displaySub={topic ? topic.category : undefined}

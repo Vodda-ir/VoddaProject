@@ -102,7 +102,7 @@ export function StoryComposer({
       setMediaUrl(compressed);
     } catch (readError) {
       setMediaUrl("");
-      setError(messageOf(readError, "انتخاب تصویر ناموفق بود."));
+      setError(messageOf(readError, L("انتخاب تصویر ناموفق بود.")));
     } finally {
       setReading(false);
     }
@@ -123,7 +123,7 @@ export function StoryComposer({
       reset();
       onPublished();
     } catch (publishError) {
-      setError(messageOf(publishError, "انتشار استوری ناموفق بود. دوباره تلاش کنید."));
+      setError(messageOf(publishError, L("انتشار استوری ناموفق بود. دوباره تلاش کنید.")));
     } finally {
       setBusy(false);
     }
@@ -311,7 +311,7 @@ export function StoryComposer({
 
         {error ? (
           <p role="alert" style={{ margin: 0, fontSize: 12, fontWeight: 700, color: colors.danger }}>
-            {error}
+            {L(error)}
           </p>
         ) : null}
 

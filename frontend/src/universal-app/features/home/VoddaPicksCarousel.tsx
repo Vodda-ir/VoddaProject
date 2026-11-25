@@ -2,6 +2,7 @@
 
 import type { UniversalAppConfig } from "../../config";
 import { TeacherShowcaseCarousel, SHOWCASE_THEME_GOLD } from "./TeacherShowcaseCarousel";
+import { useL } from "../../ui/appearance";
 import type { Teacher } from "../teachers/types";
 
 /* ═══ ۱.۱ — «پیشنهاد وُدّا» — کروسل یکپارچهٔ اساتید برتر + پیشنهادی ═══
@@ -23,6 +24,7 @@ export function VoddaPicksCarousel({
   wide: boolean;
   config: UniversalAppConfig;
 }) {
+  const L = useL();
   return (
     <TeacherShowcaseCarousel
       teachers={teachers}
@@ -30,11 +32,11 @@ export function VoddaPicksCarousel({
       wide={wide}
       config={config}
       theme={SHOWCASE_THEME_GOLD}
-      ariaLabel="پیشنهاد وُدّا"
-      loadingLabel="در حال بارگذاری پیشنهادها"
-      title="پیشنهاد وُدّا"
-      subtitle="برگزیدهٔ برترین و پیشنهادی‌ترین استادها برای شما"
-      slogan="قرآن را از برترین‌ها بیاموزید"
+      ariaLabel={L("پیشنهاد وُدّا")}
+      loadingLabel={L("در حال بارگذاری پیشنهادها")}
+      title={L("پیشنهاد وُدّا")}
+      subtitle={L("برگزیدهٔ برترین و پیشنهادی‌ترین استادها برای شما")}
+      slogan={L("قرآن را از برترین‌ها بیاموزید")}
       icon="sparkle"
       seeAllHref="/search"
     />

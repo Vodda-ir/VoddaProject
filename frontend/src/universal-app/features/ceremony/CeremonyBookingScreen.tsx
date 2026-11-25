@@ -366,7 +366,7 @@ export function CeremonyBookingScreen({ bookingId, config }: { bookingId: string
       <Card className="vodda-enter vodda-enter-delay-2" style={{ display: "grid", gap: spacing.lg, borderRadius: 22 }}>
         <PersonRow
           title={L("قاری مراسم")}
-          name={booking.provider.name}
+          name={L(booking.provider.name)}
           avatar={booking.provider.avatar_url}
           tag={booking.provider.tier}
           phone={booking.provider.phone}
@@ -374,7 +374,7 @@ export function CeremonyBookingScreen({ bookingId, config }: { bookingId: string
         <div style={{ height: 1, background: colors.sand150 }} />
         <PersonRow
           title={L("برگزارکننده")}
-          name={booking.organizer.name}
+          name={L(booking.organizer.name)}
           avatar={booking.organizer.avatar_url}
           phone={booking.organizer.phone}
         />

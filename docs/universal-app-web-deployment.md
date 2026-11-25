@@ -2,6 +2,16 @@
 
 This document defines the web deployment contract for the Universal App without changing the public site, `/panel`, or the native Capacitor runtime.
 
+## همسان‌سازی کامل وب با اپ (2026-11)
+
+از این نسخه، رابط وب **دقیقاً همان اپ یونیورسال** است:
+
+- ریشهٔ `vodda.ir` با ۳۰۷ به `/app` هدایت می‌شود (در `next.config.js`)؛ لندینگ تبلیغاتی قدیمی بازنشسته است و کد آن در تاریخ گیت باقی است.
+- همهٔ مسیرهای `/panel/*` در `next.config.js` به معادل اپ نگاشت شده‌اند: `/panel/user/wallet` → `/app/wallet`، `/panel/teacher/*` → `/app/t/*`، `/panel/admin/*` → `/app/a`، `/panel/live/:id` → `/app/session/:id` و… (۳۰۲؛ query حفظ می‌شود). middleware پنل حذف شده است.
+- فال‌بک پرداخت بک‌اند (`/panel/user/wallet` بدون `return_to`) هم از همین نگاشت عبور می‌کند و به `/app/wallet` می‌رسد.
+- صفحات عمومی محتوایی (`/blog`، `/faq`، `/about`، `/terms`، …) بدون تغییر باقی‌مانده‌اند؛ فقط لینک‌های پنل داخل Nav به `/app`، `/app/t` و `/app/a` اشاره می‌کنند.
+- i18n اپ کامل شده است: در حالت انگلیسی هیچ متن فارسی به کاربر نمی‌رسد (پوشش phraseMap + `messageOf`/`translateLoose`) و در حالت فارسی هیچ متن انگلیسی تزریقی نمایش داده نمی‌شود.
+
 ## Invariants
 
 - Universal source stays in `frontend/src/universal-app/` and must not import `next/*`.

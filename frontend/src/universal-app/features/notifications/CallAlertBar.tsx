@@ -8,7 +8,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { UniversalAppConfig } from "../../config";
 import { usePlatform } from "../../platform/context";
-import { navigateApp } from "../../router";
+import { appRouteUrl, navigateApp } from "../../router";
 import { Icon } from "../../ui/Icon";
 import { useAppearance } from "../../ui/appearance";
 import { getNotifications, markNotificationRead } from "./api";
@@ -176,8 +176,8 @@ export function CallAlertBar({ config }: { config: UniversalAppConfig }) {
       // خواندن ناموفق؛ هدایت همچنان انجام می‌شود
     });
     if (current.kind === "admin") {
-      // رویدادهای پنل مدیریت → پنل مدیریت در تب/مرورگر خارجی باز می‌شود.
-      window.open("/panel/admin", "_blank");
+      // رویدادهای پنل مدیریت → داشبورد مدیریت اپ یونیورسال در تب/مرورگر خارجی باز می‌شود.
+      window.open(appRouteUrl("admin-home", config), "_blank");
       return;
     }
     const target =
@@ -244,12 +244,12 @@ export function CallAlertBar({ config }: { config: UniversalAppConfig }) {
   if (!alert) return null;
 
   const labelByKind: Record<CallAlert["kind"], string> = {
-    ceremony: "فراخوان مراسم",
-    dispatch: "درخواست جلسهٔ آنلاین",
-    session: "درخواست جلسهٔ جدید",
-    instant: "جلسهٔ فوری — همین حالا",
-    admin: "اعلان زندهٔ پنل مدیریت",
-    ready: "آمادهٔ جلسه — هم‌وقت منتظر است",
+    ceremony: L("فراخوان مراسم"),
+    dispatch: L("درخواست جلسهٔ آنلاین"),
+    session: L("درخواست جلسهٔ جدید"),
+    instant: L("جلسهٔ فوری — همین حالا"),
+    admin: L("اعلان زندهٔ پنل مدیریت"),
+    ready: L("آمادهٔ جلسه — هم‌وقت منتظر است"),
   };
   const label = L(labelByKind[alert.kind]);
 

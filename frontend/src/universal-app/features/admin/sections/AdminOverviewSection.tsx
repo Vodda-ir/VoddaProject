@@ -135,7 +135,7 @@ export function AdminOverviewSection() {
   return (
     <div style={{ display: "grid", gap: 14, minWidth: 0 }}>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-        {([["7", "۷ روز"], ["14", "۱۴ روز"], ["30", "۳۰ روز"]] as Array<[RangeKey, string]>).map(([value, label]) => (
+        {([["7", L("۷ روز")], ["14", L("۱۴ روز")], ["30", L("۳۰ روز")]] as Array<[RangeKey, string]>).map(([value, label]) => (
           <AdminChip key={value} active={range === value} label={label} onClick={() => setRange(value)} />
         ))}
         <button
@@ -202,7 +202,7 @@ export function AdminOverviewSection() {
                   {statusSegments.map((item) => (
                     <div key={item.status} style={{ display: "grid", gap: 4 }}>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                        <AdminBadge tone={item.meta.tone}>{item.meta.label}</AdminBadge>
+                        <AdminBadge tone={item.meta.tone}>{L(item.meta.label)}</AdminBadge>
                         <strong style={{ fontSize: 11.5, fontWeight: 800, color: colors.ink }}>{faNumber(item.count)}</strong>
                       </div>
                       <span style={{ display: "block", height: 7, borderRadius: 999, background: colors.sand100, overflow: "hidden" }}>
@@ -240,7 +240,7 @@ export function AdminOverviewSection() {
           {/* فعالیت اخیر */}
           <AdminPanel>
             <AdminSectionHead title={L("فعالیت اخیر")} description={L("تازه‌ترین عضویت‌ها و جلسات سامانه.")} />
-            <RecentFeed analytics={analytics} />
+            <RecentFeed analytics={analytics} L={L} />
           </AdminPanel>
 
           {/* برترین استادان */}
@@ -258,7 +258,7 @@ export function AdminOverviewSection() {
                     <div style={{ minWidth: 0, flex: 1, display: "grid", gap: 2 }}>
                       <span style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
                         <strong style={{ fontSize: 12.5, fontWeight: 800, color: colors.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{teacher.name}</strong>
-                        {TIER_BADGE[teacher.tier] ? <AdminBadge tone={TIER_BADGE[teacher.tier].tone}>{TIER_BADGE[teacher.tier].label}</AdminBadge> : null}
+                        {TIER_BADGE[teacher.tier] ? <AdminBadge tone={TIER_BADGE[teacher.tier].tone}>{L(TIER_BADGE[teacher.tier].label)}</AdminBadge> : null}
                       </span>
                       <span style={{ fontSize: 10, fontWeight: 600, color: colors.inkMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {[teacher.field, teacher.city].filter(Boolean).join(" · ") || "—"}
@@ -386,28 +386,28 @@ function ReviewButton({ busy, label, approve, onClick }: { busy: boolean; label:
   );
 }
 
-function RecentFeed({ analytics }: { analytics: AdminAnalytics }) {
+function RecentFeed({ analytics, L }: { analytics: AdminAnalytics; L: (text: string) => string }) {
   const feed = [
     ...(analytics.recentUsers ?? []).map((user) => ({
       key: `user-${user.id}`,
       icon: "user" as const,
-      badge: ROLE_BADGE[user.role]?.label ?? "کاربر",
+      badge: L(ROLE_BADGE[user.role]?.label ?? "کاربر"),
       tone: (ROLE_BADGE[user.role]?.tone ?? "muted") as "gold",
-      title: user.name,
+      title: L(user.name),
       sub: `عضویت در ${faDateTime(user.createdAt)}`,
     })),
     ...(analytics.recentSessions ?? []).map((session) => ({
       key: `session-${session.id}`,
       icon: "calendar" as const,
-      badge: SESSION_STATUS_META[session.status]?.label ?? session.status,
+      badge: L(SESSION_STATUS_META[session.status]?.label ?? session.status),
       tone: (session.status === "done" ? "green" : session.status === "canceled" ? "rose" : "gold") as "gold",
-      title: session.title,
+      title: L(session.title),
       sub: `${session.learnerName} × ${session.teacherName} · ${faDateTime(session.scheduledAt)}`,
     })),
   ].slice(0, 9);
 
   if (feed.length === 0) {
-    return <AdminEmpty icon="shield" title="فعالیتی ثبت نشده" />;
+    return <AdminEmpty icon="shield" title={L("فعالیتی ثبت نشده")} />;
   }
   return (
     <div style={{ display: "grid", gap: 7 }}>

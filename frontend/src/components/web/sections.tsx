@@ -54,9 +54,10 @@ function UserMenu({ name, role, avatar, avatarVersion, hasTeacherProfile }: { na
               </div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {role === 'admin' && <PanelLink href="/panel/admin" icon="shield" label="پنل مدیریت" />}
-              {hasTeacherProfile && <PanelLink href="/panel/teacher" icon="award" label="پنل استاد" />}
-              <PanelLink href="/panel/user" icon="user" label="پنل کاربری" />
+              {/* همسان‌سازی با اپ — پنل‌های قدیمی بازنشسته شدند؛ همهٔ نقش‌ها به رابط اپ می‌روند */}
+              {role === 'admin' && <PanelLink href="/app/a" icon="shield" label="پنل مدیریت" />}
+              {hasTeacherProfile && <PanelLink href="/app/t" icon="award" label="پنل استاد" />}
+              <PanelLink href="/app" icon="user" label="پنل کاربری" />
             </div>
             <div style={{ borderTop: '1px solid var(--sand-100)', marginTop: 8, paddingTop: 8 }}>
               <button

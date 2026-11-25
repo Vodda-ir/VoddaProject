@@ -39,7 +39,7 @@ export function AdminServicesSection() {
 
   async function moderate(row: AdminPendingService, approve: boolean) {
     if (busyId !== null) return;
-    const action = approve ? "تأیید و انتشار" : "رد و حذف";
+    const action = approve ? L("تأیید و انتشار") : L("رد و حذف");
     if (!(await confirmDialog(`خدمت «${row.title}» ${action} شود؟`, { danger: !approve, confirmLabel: action }))) return;
     setBusyId(row.id);
     setError(null);
@@ -92,11 +92,11 @@ export function AdminServicesSection() {
                     </span>
                     <div style={{ minWidth: 0, flex: 1, display: "grid", gap: 3 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 7, minWidth: 0 }}>
-                        <strong style={{ fontSize: 13, fontWeight: 800, color: colors.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.title}</strong>
+                        <strong style={{ fontSize: 13, fontWeight: 800, color: colors.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{L(row.title)}</strong>
                         <AdminBadge tone="gold">{L("در انتظار تأیید")}</AdminBadge>
                       </div>
                       <span style={{ fontSize: 10.5, fontWeight: 600, color: colors.inkMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {row.teacherName}{[row.teacherTag, row.teacherCity].filter(Boolean).length ? ` · ${[row.teacherTag, row.teacherCity].filter(Boolean).join(" · ")}` : ""}
+                        {L(row.teacherName)}{[row.teacherTag, row.teacherCity].filter(Boolean).length ? ` · ${[row.teacherTag, row.teacherCity].filter(Boolean).join(" · ")}` : ""}
                       </span>
                       <span style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 10, fontWeight: 700, color: colors.inkMuted }}>
                         <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><Icon name="clock" size={12} />{faNumber(row.duration)} دقیقه</span>

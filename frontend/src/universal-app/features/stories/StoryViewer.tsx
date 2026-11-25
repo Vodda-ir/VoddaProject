@@ -255,7 +255,7 @@ export function StoryViewer({
         </span>
         <span style={{ flex: "1 1 auto", minWidth: 0, display: "grid", gap: 1 }}>
           <strong style={{ fontSize: 13.5, fontWeight: 900, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {story.author.name || L("وُدّا")}
+            {L(story.author.name) || L("وُدّا")}
           </strong>
           <span style={{ fontSize: 10.5, fontWeight: 600, color: "rgba(255,253,246,.72)" }}>
             {timeAgoLabel(story.createdAt, lang)}

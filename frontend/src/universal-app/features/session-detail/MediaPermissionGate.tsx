@@ -21,6 +21,7 @@ import {
 } from "../../platform/media-permissions";
 import { colors } from "../../ui/theme";
 import { Icon } from "../../ui";
+import { useL } from "../../ui/appearance";
 
 type PermState = "granted" | "denied" | "prompt" | "unknown";
 
@@ -47,6 +48,7 @@ function permMeta(state: PermState): { label: string; dot: string } {
 }
 
 function PermChip({ state, label, icon }: { state: PermState; label: string; icon: "mic" | "video" }) {
+  const L = useL();
   const meta = permMeta(state);
   return (
     <span
@@ -64,10 +66,10 @@ function PermChip({ state, label, icon }: { state: PermState; label: string; ico
       }}
     >
       <Icon name={icon} size={12} stroke={2.1} style={{ opacity: 0.85 }} />
-      {label}
+      {L(label)}
       <span
         aria-hidden="true"
-        title={meta.label}
+        title={L(meta.label)}
         style={{
           width: 8,
           height: 8,
@@ -77,7 +79,7 @@ function PermChip({ state, label, icon }: { state: PermState; label: string; ico
           flex: "0 0 auto",
         }}
       />
-      <span style={{ opacity: 0.85 }}>{meta.label}</span>
+      <span style={{ opacity: 0.85 }}>{L(meta.label)}</span>
     </span>
   );
 }
@@ -100,6 +102,7 @@ export function MediaPermissionGate({
   const [asking, setAsking] = useState(false);
   const mountedRef = useRef(true);
   const autoTriedRef = useRef(false);
+  const L = useL();
 
   const refreshSnapshot = useCallback(() => {
     void queryMediaPermissions()
@@ -135,8 +138,8 @@ export function MediaPermissionGate({
         setBlocked("");
         setSoftHint(
           audioOnly
-            ? "برای باز شدن پنجرهٔ مجوز میکروفون، دکمهٔ «اجازهٔ میکروفون» را بزنید — پنجرهٔ مجوز فوراً نمایش داده می‌شود."
-            : "برای باز شدن پنجرهٔ مجوز دوربین و میکروفون، دکمهٔ «اجازهٔ دسترسی» را بزنید — پنجرهٔ مجوز فوراً نمایش داده می‌شود.",
+            ? L("برای باز شدن پنجرهٔ مجوز میکروفون، دکمهٔ «اجازهٔ میکروفون» را بزنید — پنجرهٔ مجوز فوراً نمایش داده می‌شود.")
+            : L("برای باز شدن پنجرهٔ مجوز دوربین و میکروفون، دکمهٔ «اجازهٔ دسترسی» را بزنید — پنجرهٔ مجوز فوراً نمایش داده می‌شود."),
         );
       } else {
         setBlocked(result.message);
@@ -170,8 +173,8 @@ export function MediaPermissionGate({
     <div style={{ padding: "10px 20px 0", display: "grid", gap: 10 }}>
       {/* نشانگر وضعیت مجوزها — کاربر می‌بیند کدام دسترسی داده شده/نشده */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
-        <PermChip state={snapshot?.mic ?? "unknown"} label="میکروفون" icon="mic" />
-        {!audioOnly ? <PermChip state={snapshot?.camera ?? "unknown"} label="دوربین" icon="video" /> : null}
+        <PermChip state={snapshot?.mic ?? "unknown"} label={L("میکروفون")} icon="mic" />
+        {!audioOnly ? <PermChip state={snapshot?.camera ?? "unknown"} label={L("دوربین")} icon="video" /> : null}
         {stream ? (
           <span
             style={{
@@ -187,7 +190,7 @@ export function MediaPermissionGate({
             }}
           >
             <Icon name="check" size={12} stroke={2.4} />
-            {audioOnly ? "میکروفون آماده است" : "دوربین و میکروفون آماده‌اند"}
+            {audioOnly ? L("میکروفون آماده است") : L("دوربین و میکروفون آماده‌اند")}
           </span>
         ) : null}
       </div>
@@ -221,17 +224,17 @@ export function MediaPermissionGate({
             <Icon name={audioOnly ? "mic" : "camera"} size={17} stroke={2.1} />
             {asking
               ? audioOnly
-                ? "در حال بازکردن پنجرهٔ مجوز میکروفون…"
-                : "در حال بازکردن پنجرهٔ مجوز دوربین…"
+                ? L("در حال بازکردن پنجرهٔ مجوز میکروفون…")
+                : L("در حال بازکردن پنجرهٔ مجوز دوربین…")
               : audioOnly
-                ? "اجازهٔ میکروفون + تست صدا"
-                : "اجازهٔ دوربین و میکروفون + تست"}
+                ? L("اجازهٔ میکروفون + تست صدا")
+                : L("اجازهٔ دوربین و میکروفون + تست")}
           </button>
           {!blocked && !softHint ? (
             <span style={{ fontSize: 11, lineHeight: 1.9, color: "#a9b39b", textAlign: "center" }}>
               {audioOnly
-                ? "پنجرهٔ مجوز میکروفون به‌صورت خودکار باز می‌شود؛ «اجازه دادن» را بزنید."
-                : "پنجرهٔ مجوز دوربین و میکروفون به‌صورت خودکار باز می‌شود؛ «اجازه دادن» را بزنید."}
+                ? L("پنجرهٔ مجوز میکروفون به‌صورت خودکار باز می‌شود؛ «اجازه دادن» را بزنید.")
+                : L("پنجرهٔ مجوز دوربین و میکروفون به‌صورت خودکار باز می‌شود؛ «اجازه دادن» را بزنید.")}
             </span>
           ) : null}
         </>
@@ -272,9 +275,15 @@ export function MediaPermissionGate({
         >
           <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#e7d5a8", fontSize: 12.5, fontWeight: 800 }}>
             <Icon name="info" size={15} />
-            دسترسی مسدود شده است
+            {L("دسترسی مسدود شده است")}
           </div>
-          <span style={{ fontSize: 11.8, lineHeight: 2, color: "#e8dcbc", whiteSpace: "pre-line" }}>{blocked}</span>
+          <span style={{ fontSize: 11.8, lineHeight: 2, color: "#e8dcbc", whiteSpace: "pre-line" }}>
+            {blocked.split("\n").map((line, index) => (
+              <span key={index} style={{ display: "block" }}>
+                {L(line)}
+              </span>
+            ))}
+          </span>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <button
               type="button"
@@ -291,7 +300,7 @@ export function MediaPermissionGate({
                 fontFamily: "inherit",
               }}
             >
-              تلاش دوباره برای دریافت مجوز
+              {L("تلاش دوباره برای دریافت مجوز")}
             </button>
             <button
               type="button"
@@ -308,12 +317,14 @@ export function MediaPermissionGate({
                 fontFamily: "inherit",
               }}
             >
-              بررسی وضعیت مجوزها
+              {L("بررسی وضعیت مجوزها")}
             </button>
           </div>
           <span style={{ fontSize: 10.5, color: micMeta.dot === "#e08a7a" ? "#e08a7a" : "#a9b39b", fontWeight: 700 }}>
-            وضعیت: میکروفون {micMeta.label}
-            {!audioOnly ? ` · دوربین ${permMeta(snapshot?.camera ?? "unknown").label}` : " · تماس درون‌اپی — شماره‌ها پنهان می‌مانند"}
+            {L("وضعیت")}: {L("میکروفون")} {L(micMeta.label)}
+            {!audioOnly
+              ? ` · ${L("دوربین")} ${L(permMeta(snapshot?.camera ?? "unknown").label)}`
+              : L(" · تماس درون‌اپی — شماره‌ها پنهان می‌مانند")}
           </span>
         </div>
       ) : null}

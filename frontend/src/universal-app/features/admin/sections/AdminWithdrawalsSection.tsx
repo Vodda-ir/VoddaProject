@@ -85,7 +85,7 @@ export function AdminWithdrawalsSection() {
     const warning = paid
       ? L("فقط پس از انجام واقعی انتقال بانکی، وضعیت را پرداخت‌شده کنید. ادامه می‌دهید؟")
       : L("با رد درخواست، مبلغ رزروشده به کیف پول استاد بازمی‌گردد. ادامه می‌دهید؟");
-    if (!(await confirmDialog(warning, { danger: !paid, confirmLabel: paid ? "ثبت پرداخت" : "رد و بازگشت" }))) return;
+    if (!(await confirmDialog(warning, { danger: !paid, confirmLabel: paid ? L("ثبت پرداخت") : L("رد و بازگشت") }))) return;
     setBusyId(row.id);
     setError(null);
     try {
@@ -153,10 +153,10 @@ export function AdminWithdrawalsSection() {
                       <Icon name="wallet" size={18} />
                     </span>
                     <span style={{ minWidth: 0, flex: 1, display: "grid", gap: 2 }}>
-                      <strong style={{ fontSize: 13, fontWeight: 800, color: colors.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.userName}</strong>
+                      <strong style={{ fontSize: 13, fontWeight: 800, color: colors.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{L(row.userName)}</strong>
                       <span style={{ fontSize: 10, fontWeight: 700, color: colors.inkMuted }}>#{faNumber(row.id)} · {faDateTime(row.createdAt)}</span>
                     </span>
-                    <AdminBadge tone={badge.tone}>{badge.label}</AdminBadge>
+                    <AdminBadge tone={badge.tone}>{L(badge.label)}</AdminBadge>
                   </span>
                   <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
                     <strong style={{ fontSize: 13, fontWeight: 900, color: colors.olive700 }}>{faToman(row.amount)}</strong>
@@ -210,17 +210,17 @@ export function AdminWithdrawalsSection() {
         </div>
       )}
 
-      <Sheet open={selected !== null} onClose={() => setSelected(null)} title={selected?.userName || L("جزئیات برداشت")}>
+      <Sheet open={selected !== null} onClose={() => setSelected(null)} title={L(selected?.userName || "جزئیات برداشت")}>
         {selected ? (
           <div style={{ display: "grid", gap: 4, paddingBottom: 10 }}>
             <div style={{ display: "grid", gap: 6, padding: "4px 0 12px" }}>
               <strong style={{ fontSize: 16, fontWeight: 900, color: colors.olive700 }}>{faToman(selected.amount)}</strong>
               <AdminBadge tone={(STATUS_BADGE[selected.status || "pending"] ?? STATUS_BADGE.pending).tone}>
-                {(STATUS_BADGE[selected.status || "pending"] ?? STATUS_BADGE.pending).label}
+                {L((STATUS_BADGE[selected.status || "pending"] ?? STATUS_BADGE.pending).label)}
               </AdminBadge>
             </div>
             <AdminKeyValue label={L("شناسه درخواست")}>#{faNumber(selected.id)}</AdminKeyValue>
-            <AdminKeyValue label={L("استاد")}>{selected.userName}</AdminKeyValue>
+            <AdminKeyValue label={L("استاد")}>{L(selected.userName)}</AdminKeyValue>
             <AdminKeyValue label={L("شبا")}><span dir="ltr">{selected.sheba || "—"}</span></AdminKeyValue>
             <AdminKeyValue label={L("شماره کارت")}><span dir="ltr">{selected.card || "—"}</span></AdminKeyValue>
             <AdminKeyValue label={L("تاریخ درخواست")}>{faDateTime(selected.createdAt)}</AdminKeyValue>

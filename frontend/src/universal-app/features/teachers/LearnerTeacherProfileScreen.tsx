@@ -478,8 +478,8 @@ export function LearnerTeacherProfileScreen({
         ) : serviceFilterId > 0 ? (
           <EmptyState
             icon={<Icon name="filter" size={30} />}
-            title="این خدمت فعال نیست"
-            description="خدمت انتخاب‌شده از بخش خدمات رایگان در حال حاضر فعال نیست؛ فیلتر را بردارید."
+            title={L("این خدمت فعال نیست")}
+            description={L("خدمت انتخاب‌شده از بخش خدمات رایگان در حال حاضر فعال نیست؛ فیلتر را بردارید.")}
           />
         ) : (
           <EmptyState

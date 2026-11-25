@@ -93,15 +93,15 @@ export function IconBadge({
 export function StatusPill({ status, label }: { status: string; label?: string }) {
   const { L } = useAppearance();
   const map: Record<string, { text: string; fg: string; bg: string }> = {
-    confirmed: { text: "تأیید شده", fg: colors.olive700, bg: colors.olive100 },
-    pending: { text: "در انتظار تأیید", fg: colors.goldDark, bg: colors.goldBackground },
-    done: { text: "برگزار شده", fg: colors.inkMuted, bg: colors.sand100 },
-    completed: { text: "برگزار شده", fg: colors.inkMuted, bg: colors.sand100 },
-    canceled: { text: "لغو شده", fg: colors.danger, bg: colors.clayBackground },
-    rejected: { text: "رد شده", fg: colors.danger, bg: colors.dangerBackground },
-    approved: { text: "تأییدشده", fg: colors.olive700, bg: colors.olive100 },
-    paid: { text: "پرداخت‌شده", fg: colors.olive700, bg: colors.olive100 },
-    awaiting_payment: { text: "در انتظار پرداخت", fg: colors.goldDark, bg: colors.goldBackground },
+    confirmed: { text: L("تأیید شده"), fg: colors.olive700, bg: colors.olive100 },
+    pending: { text: L("در انتظار تأیید"), fg: colors.goldDark, bg: colors.goldBackground },
+    done: { text: L("برگزار شده"), fg: colors.inkMuted, bg: colors.sand100 },
+    completed: { text: L("برگزار شده"), fg: colors.inkMuted, bg: colors.sand100 },
+    canceled: { text: L("لغو شده"), fg: colors.danger, bg: colors.clayBackground },
+    rejected: { text: L("رد شده"), fg: colors.danger, bg: colors.dangerBackground },
+    approved: { text: L("تأییدشده"), fg: colors.olive700, bg: colors.olive100 },
+    paid: { text: L("پرداخت‌شده"), fg: colors.olive700, bg: colors.olive100 },
+    awaiting_payment: { text: L("در انتظار پرداخت"), fg: colors.goldDark, bg: colors.goldBackground },
   };
   const tone = map[status] ?? { text: label ?? status, fg: colors.inkSecondary, bg: colors.sand100 };
   return (

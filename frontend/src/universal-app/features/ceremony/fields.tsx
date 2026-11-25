@@ -319,9 +319,9 @@ export function PriceRangePicker({
     onChange({ min: tier.min > 0 ? String(tier.min) : "", max: tier.max > 0 ? String(tier.max) : "" });
   };
   return (
-    <FieldShell label="بودجهٔ پیشنهادی" hint="حق‌الزحمهٔ منصفانه برای قاریان">
+    <FieldShell label={L("بودجهٔ پیشنهادی")} hint={L("حق‌الزحمهٔ منصفانه برای قاریان")}>
       <SelectField
-        ariaLabel="بازهٔ بودجهٔ پیشنهادی"
+        ariaLabel={L("بازهٔ بودجهٔ پیشنهادی")}
         value={activeKey}
         onChange={(next) => select(BUDGET_TIERS.find((tier) => tier.key === next) ?? BUDGET_TIERS[0])}
         options={BUDGET_TIERS.map((tier) => ({
@@ -332,8 +332,8 @@ export function PriceRangePicker({
 
       {activeKey === "custom" ? (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: spacing.md, marginTop: spacing.xs }}>
-          <AmountInput value={minValue > 0 ? String(minValue) : ""} onChange={(next) => onChange({ min: next, max: String(maxValue || "") })} ariaLabel="حداقل بودجه به تومان" placeholder="حداقل" />
-          <AmountInput value={maxValue > 0 ? String(maxValue) : ""} onChange={(next) => onChange({ min: String(minValue || ""), max: next })} ariaLabel="حداکثر بودجه به تومان" placeholder="حداکثر" />
+          <AmountInput value={minValue > 0 ? String(minValue) : ""} onChange={(next) => onChange({ min: next, max: String(maxValue || "") })} ariaLabel={L("حداقل بودجه به تومان")} placeholder={L("حداقل")} />
+          <AmountInput value={maxValue > 0 ? String(maxValue) : ""} onChange={(next) => onChange({ min: String(minValue || ""), max: next })} ariaLabel={L("حداکثر بودجه به تومان")} placeholder={L("حداکثر")} />
         </div>
       ) : null}
 
@@ -643,13 +643,13 @@ export function VenuePicker({
 
   return (
     <div style={{ display: "grid", gap: spacing.lg }}>
-      <CityPicker value={city} onChange={onCityChange} label={cityLabel ?? "شهر برگزاری"} hint="اجباری" />
+      <CityPicker value={city} onChange={onCityChange} label={cityLabel ?? L("شهر برگزاری")} hint={L("اجباری")} />
 
       <FieldShell label={label} hint={hint}>
         <SelectField
-          label="نوع مکان"
-          hint="برای پرکردن سریع"
-          ariaLabel="نوع مکان مراسم"
+          label={L("نوع مکان")}
+          hint={L("برای پرکردن سریع")}
+          ariaLabel={L("نوع مکان مراسم")}
           value={venueTypePrefix}
           onChange={(next) =>
             onVenueChange(next ? `${L(next)} ${stripVenuePrefix(venue)}`.trim() : stripVenuePrefix(venue))
@@ -806,9 +806,9 @@ export function TimePresetSelect({
   const { L } = useAppearance();
   return (
     <SelectField
-      label="ساعت پیشنهادی"
-      hint="یا از پیکر بالا انتخاب کنید"
-      ariaLabel="ساعت‌های پیشنهادی مراسم"
+      label={L("ساعت پیشنهادی")}
+      hint={L("یا از پیکر بالا انتخاب کنید")}
+      ariaLabel={L("ساعت‌های پیشنهادی مراسم")}
       value={value}
       onChange={(next) => {
         const preset = TIME_PRESETS.find((item) => `${item.hh}:${item.mm}` === next);
@@ -866,9 +866,9 @@ export function DurationPicker({ value, onChange }: { value: string; onChange: (
   const isPreset = presets.includes(numeric);
   const { L, lang } = useAppearance();
   return (
-    <FieldShell label="مدت اجرا" hint="دقیقه">
+    <FieldShell label={L("مدت اجرا")} hint={L("دقیقه")}>
       <SelectField
-        ariaLabel="مدت اجرا به دقیقه"
+        ariaLabel={L("مدت اجرا به دقیقه")}
         value={numeric > 0 && isPreset ? String(numeric) : numeric > 0 ? "__custom__" : ""}
         onChange={(next) => {
           if (next && next !== "__custom__") onChange(next);
@@ -910,12 +910,12 @@ export function CitiesChipsField({
     [value],
   );
   const available = POPULAR_CITIES.filter((cityOption) => !selected.includes(cityOption));
-  const add = (cityOption: string) => onChange([...selected, cityOption].join("، "));
-  const remove = (cityOption: string) => onChange(selected.filter((city) => city !== cityOption).join("، "));
+  const add = (cityOption: string) => onChange([...selected, cityOption].join(L("، ")));
+  const remove = (cityOption: string) => onChange(selected.filter((city) => city !== cityOption).join(L("، ")));
   const customSelected = selected.filter((city) => !POPULAR_CITIES.includes(city));
   const { L } = useAppearance();
   return (
-    <FieldShell label={label} hint="از فهرست انتخاب یا بنویسید">
+    <FieldShell label={label} hint={L("از فهرست انتخاب یا بنویسید")}>
       {selected.length === 0 ? (
         <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700, color: colors.olive700, background: colors.olive50, border: `1px solid ${colors.olive200}`, borderRadius: 999, padding: "6px 12px" }}>
           <Icon name="checkCircle" size={14} />
@@ -944,7 +944,7 @@ export function CitiesChipsField({
       )}
       {available.length > 0 ? (
         <SelectField
-          ariaLabel="افزودن شهر پذیرش"
+          ariaLabel={L("افزودن شهر پذیرش")}
           value=""
           onChange={(next) => {
             if (next) add(next);
@@ -957,10 +957,10 @@ export function CitiesChipsField({
       ) : null}
       <input
         type="text"
-        value={customSelected.join("، ")}
+        value={customSelected.join(L("، "))}
         onChange={(event) => {
           const typed = event.target.value.split(/[،,]/).map((part) => part.trim()).filter(Boolean);
-          onChange([...selected.filter((city) => POPULAR_CITIES.includes(city)), ...typed].join("، "));
+          onChange([...selected.filter((city) => POPULAR_CITIES.includes(city)), ...typed].join(L("، ")));
         }}
         placeholder={L("شهر دیگر را اینجا بنویسید (با ویرگول جدا کنید)…")}
         style={{ ...inputStyle, minHeight: 46 }}

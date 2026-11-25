@@ -149,7 +149,7 @@ export function AdminSettingsSection() {
   async function toggleStories() {
     if (storiesBusy) return;
     const next = !storiesEnabled;
-    if (!next && !(await confirmDialog(L("استوری‌ها برای همه کاربران پنهان می‌شود. ادامه می‌دهید؟"), { danger: true, confirmLabel: "غیرفعال‌کردن" }))) return;
+    if (!next && !(await confirmDialog(L("استوری‌ها برای همه کاربران پنهان می‌شود. ادامه می‌دهید؟"), { danger: true, confirmLabel: L("غیرفعال‌کردن") }))) return;
     setStoriesBusy(true);
     setError(null);
     try {
@@ -288,7 +288,7 @@ export function AdminSettingsSection() {
                     ) : field.type === "textarea" ? (
                       <textarea
                         value={value}
-                        placeholder={field.placeholder}
+                        placeholder={field.placeholder ? L(field.placeholder) : undefined}
                         dir={field.ltr ? "ltr" : "rtl"}
                         maxLength={field.key === "announcement_text" ? 300 : 400}
                         rows={2}
@@ -300,7 +300,7 @@ export function AdminSettingsSection() {
                         value={value}
                         type={field.type === "url" ? "url" : "text"}
                         dir={field.ltr ? "ltr" : "rtl"}
-                        placeholder={field.placeholder}
+                        placeholder={field.placeholder ? L(field.placeholder) : undefined}
                         onChange={(event) => setValues((current) => ({ ...current, [field.key]: event.target.value }))}
                         style={{ ...inputStyle, direction: field.ltr ? "ltr" : "rtl", textAlign: field.ltr ? "left" : "right" }}
                       />
@@ -327,10 +327,11 @@ export function AdminSettingsSection() {
 }
 
 function AdminBadge2({ enabled, changed }: { enabled?: boolean; changed?: boolean }) {
+  const { L } = useAppearance();
   if (changed) {
     return (
       <span style={{ padding: "3px 9px", borderRadius: 999, background: colors.goldBackground, border: "1px solid rgba(191,149,64,.45)", color: colors.goldDark, fontSize: 10, fontWeight: 800 }}>
-        تغییر کرده
+        {L("تغییر کرده")}
       </span>
     );
   }
@@ -346,7 +347,7 @@ function AdminBadge2({ enabled, changed }: { enabled?: boolean; changed?: boolea
         fontWeight: 800,
       }}
     >
-      {enabled ? "فعال" : "غیرفعال"}
+      {enabled ? L("فعال") : L("غیرفعال")}
     </span>
   );
 }

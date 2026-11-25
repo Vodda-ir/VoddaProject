@@ -119,20 +119,20 @@ export function AdminSessionsSection() {
                       <Icon name="calendar" size={17} />
                     </span>
                     <span style={{ minWidth: 0, flex: 1, display: "grid", gap: 2 }}>
-                      <strong style={{ fontSize: 13, fontWeight: 800, color: colors.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.service}</strong>
+                      <strong style={{ fontSize: 13, fontWeight: 800, color: colors.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{L(row.service)}</strong>
                       <span style={{ fontSize: 10, fontWeight: 700, color: colors.inkMuted }}>#{faNumber(row.id)}</span>
                     </span>
-                    <AdminBadge tone={badge.tone}>{badge.label}</AdminBadge>
+                    <AdminBadge tone={badge.tone}>{L(badge.label)}</AdminBadge>
                   </span>
                   <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 10.5, fontWeight: 700, color: colors.inkMuted, flexWrap: "wrap" }}>
                     <span style={{ display: "inline-flex", alignItems: "center", gap: 4, minWidth: 0 }}>
                       <Icon name="user" size={12} />
-                      {row.learnerName}
+                      {L(row.learnerName)}
                     </span>
                     <Icon name="arrowL" size={11} />
                     <span style={{ display: "inline-flex", alignItems: "center", gap: 4, minWidth: 0 }}>
                       <Icon name="award" size={12} />
-                      {row.teacherName}
+                      {L(row.teacherName)}
                     </span>
                   </span>
                   <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, fontSize: 10, fontWeight: 700, color: colors.inkMuted }}>
@@ -150,15 +150,15 @@ export function AdminSessionsSection() {
         </div>
       )}
 
-      <Sheet open={selected !== null} onClose={() => setSelected(null)} title={selected?.service || L("جزئیات جلسه")}>
+      <Sheet open={selected !== null} onClose={() => setSelected(null)} title={L(selected?.service || "جزئیات جلسه")}>
         {selected ? (
           <div style={{ display: "grid", gap: 4, paddingBottom: 10 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", padding: "4px 0 10px" }}>
-              <AdminBadge tone={(STATUS_BADGE[selected.status] ?? { tone: "muted" }).tone}>{(STATUS_BADGE[selected.status] ?? { label: selected.status }).label}</AdminBadge>
+              <AdminBadge tone={(STATUS_BADGE[selected.status] ?? { tone: "muted" }).tone}>{L((STATUS_BADGE[selected.status] ?? { label: selected.status }).label)}</AdminBadge>
               <AdminBadge tone="muted">#{faNumber(selected.id)}</AdminBadge>
             </div>
-            <AdminKeyValue label={L("قرآن‌آموز")}>{selected.learnerName}</AdminKeyValue>
-            <AdminKeyValue label={L("استاد")}>{selected.teacherName}</AdminKeyValue>
+            <AdminKeyValue label={L("قرآن‌آموز")}>{L(selected.learnerName)}</AdminKeyValue>
+            <AdminKeyValue label={L("استاد")}>{L(selected.teacherName)}</AdminKeyValue>
             <AdminKeyValue label={L("زمان رسمی")}>{faDateTime(selected.scheduledAt)}</AdminKeyValue>
             <AdminKeyValue label={L("بازه محلی")}>{`${selected.localDate} · ${selected.localStart} تا ${selected.localEnd}`}</AdminKeyValue>
             <AdminKeyValue label={L("مدت")}>{faNumber(selected.duration)} دقیقه</AdminKeyValue>

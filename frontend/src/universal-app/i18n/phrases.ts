@@ -9,6 +9,10 @@
 import areaAuthProfile from "./fragments/auth-profile";
 import areaCeremony from "./fragments/ceremony";
 import areaHomeSessions from "./fragments/home-sessions";
+import areaParityA from "./fragments/parity-a";
+import areaParityB from "./fragments/parity-b";
+import areaParityC from "./fragments/parity-c";
+import areaParityD from "./fragments/parity-d";
 import areaSearchTeachers from "./fragments/search-teachers";
 import areaSessionsBooking from "./fragments/sessions-booking";
 import areaTeacherPanel from "./fragments/teacher-panel";
@@ -19,6 +23,10 @@ const fragments: Array<Record<string, string>> = [
   areaAuthProfile,
   areaCeremony,
   areaHomeSessions,
+  areaParityA,
+  areaParityB,
+  areaParityC,
+  areaParityD,
   areaSearchTeachers,
   areaSessionsBooking,
   areaTeacherPanel,

@@ -65,7 +65,7 @@ export function AdminReviewsSection() {
 
   async function removeReview(row: AdminReviewRow) {
     if (busyId !== null) return;
-    if (!(await confirmDialog(L("حذف نظر بازگشت‌پذیر نیست؛ امتیاز استاد بازمحاسبه و جلسه برای ثبت نظر تازه باز می‌شود. ادامه می‌دهید؟"), { danger: true, confirmLabel: "حذف" }))) return;
+    if (!(await confirmDialog(L("حذف نظر بازگشت‌پذیر نیست؛ امتیاز استاد بازمحاسبه و جلسه برای ثبت نظر تازه باز می‌شود. ادامه می‌دهید؟"), { danger: true, confirmLabel: L("حذف") }))) return;
     setBusyId(row.id);
     setError(null);
     try {
@@ -92,8 +92,8 @@ export function AdminReviewsSection() {
     <div style={{ display: "grid", gap: 12, minWidth: 0 }}>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0,1fr))", gap: 10, minWidth: 0 }}>
         <AdminTile icon="star" label={L("نظرات ثبت‌شده")} value={faNumber(total)} tone="gold" />
-        <AdminTile icon="trending" label={L("نیازمند توجه")} value={faNumber(lowCount)} tone={lowCount ? "rose" : "olive"} hint="امتیاز ۳ یا کمتر" />
-        <AdminTile icon="checkCircle" label={L("میانگین صفحه")} value={faNumber(pageAvg, 1)} hint="از ۵ در این صفحه" />
+        <AdminTile icon="trending" label={L("نیازمند توجه")} value={faNumber(lowCount)} tone={lowCount ? "rose" : "olive"} hint={L("امتیاز ۳ یا کمتر")} />
+        <AdminTile icon="checkCircle" label={L("میانگین صفحه")} value={faNumber(pageAvg, 1)} hint={L("از ۵ در این صفحه")} />
       </div>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
@@ -129,7 +129,7 @@ export function AdminReviewsSection() {
                       <Icon name="user" size={17} />
                     </span>
                     <span style={{ minWidth: 0, flex: 1, display: "grid", gap: 2 }}>
-                      <strong style={{ fontSize: 12.5, fontWeight: 800, color: colors.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.learnerName}</strong>
+                      <strong style={{ fontSize: 12.5, fontWeight: 800, color: colors.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{L(row.learnerName)}</strong>
                       <span style={{ fontSize: 10, fontWeight: 600, color: colors.inkMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {L("استاد")}: {row.teacherName}{row.teacherField ? ` · ${row.teacherField}` : ""}
                       </span>
@@ -197,7 +197,7 @@ export function AdminReviewsSection() {
                 <Icon name="user" size={21} />
               </span>
               <div style={{ display: "grid", gap: 3 }}>
-                <strong style={{ fontSize: 13.5, fontWeight: 800, color: colors.ink }}>{selected.learnerName}</strong>
+                <strong style={{ fontSize: 13.5, fontWeight: 800, color: colors.ink }}>{L(selected.learnerName)}</strong>
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 4, color: colors.goldDark }}>
                   <Icon name="star" size={13} fill />
                   <strong style={{ fontSize: 12.5 }}>{faNumber(selected.rating)}</strong>

@@ -186,8 +186,8 @@ export function PresenceScreen({ config }: { config: UniversalAppConfig }) {
         </form>
         {catalog.length > 0 ? (
           <SelectField
-            label="فیلتر خدمت حضوری"
-            ariaLabel="فیلتر خدمت حضوری"
+            label={L("فیلتر خدمت حضوری")}
+            ariaLabel={L("فیلتر خدمت حضوری")}
             value={serviceId === 0 ? "" : String(serviceId)}
             onChange={(next) => setServiceId(Number(next) || 0)}
             options={[
