@@ -317,6 +317,27 @@
       "streakDays": 0,
       "updatedAt": "2026-11-17T22:45:20.973Z",
       "seededFrom": "teacher_stats"
+    },
+    "46": {
+      "points": 0,
+      "highestLevel": 0,
+      "streakDays": 0,
+      "updatedAt": "2026-11-25T17:41:46.894Z",
+      "seededFrom": "teacher_stats"
+    },
+    "47": {
+      "points": 0,
+      "highestLevel": 0,
+      "streakDays": 0,
+      "updatedAt": "2026-11-25T17:41:46.894Z",
+      "seededFrom": "teacher_stats"
+    },
+    "48": {
+      "points": 0,
+      "highestLevel": 0,
+      "streakDays": 0,
+      "updatedAt": "2026-11-25T17:41:46.894Z",
+      "seededFrom": "teacher_stats"
     }
   },
   "teacher_score_events": [
