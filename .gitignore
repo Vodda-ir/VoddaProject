@@ -73,3 +73,4 @@ ssh_wsssh.py
 scripts/wsssh_probe.py
 scripts/evidence-shots.sh
 scripts/overflow-scan.sh
+deploy-logs/
