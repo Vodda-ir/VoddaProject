@@ -299,6 +299,8 @@ export type DispatchCallItem = {
 export type DispatchCallViewData = {
   call: DispatchCallItem | null;
   candidates: DispatchCandidateItem[];
+  /** وضعیت جلسهٔ رزروشده در حالت matched — «awaiting_payment» یعنی پنجرهٔ درگاه رها شده. */
+  payment_state?: string;
 };
 
 export type DispatchOfferItem = {
@@ -555,7 +557,8 @@ export const api = {
     request<{ data: DispatchChooseResult }>(`/dispatch/calls/${callId}/choose`, {
       method: 'POST',
       headers: auth(token),
-      body: JSON.stringify({ offer_id: offerId, payment_method: paymentMethod }),
+      // لندینگ برگشت از درگاه — هم‌سو با اپ: پس از پرداخت به جلسات وب برمی‌گردد
+      body: JSON.stringify({ offer_id: offerId, payment_method: paymentMethod, return_to: '/app/sessions' }),
     }),
   dispatchDecline: (token: string, callId: number, offerId: number) =>
     request<{ data: DispatchCallViewData }>(`/dispatch/calls/${callId}/decline`, {

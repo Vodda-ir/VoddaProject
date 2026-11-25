@@ -88,12 +88,40 @@ func (r *dispatchRepo) UpdateCall(ctx context.Context, call *domain.DispatchCall
 	return r.db.WithContext(ctx).Save(call).Error
 }
 
-// ExpireStaleCalls flips searching calls past their deadline to expired.
+// ClaimCallForMatch atomically claims a searching call for the learner's
+// choose action. The conditional UPDATE makes the choose race safe: of two
+// concurrent chooses only the first lands, the second reports zero rows and
+// the usecase answers with a conflict instead of double-booking.
+func (r *dispatchRepo) ClaimCallForMatch(ctx context.Context, callID uint) (bool, error) {
+	res := r.db.WithContext(ctx).Model(&domain.DispatchCall{}).
+		Where("id = ? AND status = ? AND expires_at > ?", callID, domain.DispatchSearching, time.Now()).
+		Update("status", domain.DispatchMatched)
+	if res.Error != nil {
+		return false, res.Error
+	}
+	return res.RowsAffected > 0, nil
+}
+
+// ExpireStaleCalls flips searching calls past their deadline to expired and
+// releases every offer still waiting on them — without the second UPDATE the
+// teacher inbox would keep serving zombie «فراخوان بسته شد» cards forever.
 // Called lazily before every read and by the background sweeper.
 func (r *dispatchRepo) ExpireStaleCalls(ctx context.Context, now time.Time) (int64, error) {
 	res := r.db.WithContext(ctx).Model(&domain.DispatchCall{}).
 		Where("status = ? AND expires_at < ?", domain.DispatchSearching, now).
 		Update("status", domain.DispatchExpired)
+	if res.Error != nil {
+		return 0, res.Error
+	}
+	if res.RowsAffected > 0 {
+		r.db.WithContext(ctx).Model(&domain.DispatchOffer{}).
+			Where("status = ? AND call_id IN (?)", domain.DispatchOfferWaiting,
+				r.db.Model(&domain.DispatchCall{}).
+					Select("id").
+					Where("status = ?", domain.DispatchExpired),
+			).
+			Update("status", domain.DispatchOfferReleased)
+	}
 	return res.RowsAffected, res.Error
 }
 

@@ -61,6 +61,8 @@ export async function getCurrentDispatchCall(runtime: PlatformRuntime): Promise<
     call: call && Number(call.id) > 0 ? (call as unknown as DispatchCallView["call"]) : null,
     candidates: candidates.map(asObject) as unknown as DispatchCallView["candidates"],
     topic_teachable: data.topic_teachable !== false,
+    // وضعیت پرداخت جلسهٔ رزروشده — کلید تمایز موفقیت واقعی از پنجرهٔ درگاه رهاشده.
+    payment_state: typeof data.payment_state === "string" ? data.payment_state : undefined,
   };
 }
 
@@ -118,6 +120,7 @@ export async function declineDispatchOffer(
   return {
     call: asObject(data.call ?? {}) as unknown as DispatchCallView["call"],
     candidates: asArray(data.candidates).map(asObject) as unknown as DispatchCallView["candidates"],
+    payment_state: typeof data.payment_state === "string" ? data.payment_state : undefined,
   };
 }
 

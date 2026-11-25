@@ -636,7 +636,13 @@ func (r *financialRepo) SettleBookingPaymentOrder(ctx context.Context, orderID u
 			settled = order
 			return nil
 		}
-		if order.Status != domain.PaymentPending || order.OrderType != domain.PaymentOrderBooking {
+		// توکن قدیمی ممکن است پس از شکست‌خورده‌شدن سفارش (مثلاً وقتی
+		// کاربر برای همان جلسه پرداخت تازه‌ای آغاز کرده) در بانک کامل
+		// شود؛ پول واقعاً دریافت شده است، پس به‌جای تعارضِ خالی، سفارش
+		// تسویه می‌شود و اگر جلسه دیگر قابل فعال‌سازی نباشد مبلغ در
+		// ادامه به‌عنوان جبران به کیف پول پرداخت‌کننده می‌رود.
+		if order.OrderType != domain.PaymentOrderBooking ||
+			(order.Status != domain.PaymentPending && order.Status != domain.PaymentFailed) {
 			return domain.ErrConflict
 		}
 		var replay int64
@@ -788,7 +794,13 @@ func (r *financialRepo) SettleCeremonyDepositOrder(ctx context.Context, orderID 
 			settled = order
 			return nil
 		}
-		if order.Status != domain.PaymentPending || order.OrderType != domain.PaymentOrderCeremony {
+		// توکن قدیمی ممکن است پس از شکست‌خورده‌شدن سفارش (مثلاً وقتی
+		// پرداخت تازه‌ای برای همان قرارداد آغاز شده) در بانک کامل شود؛
+		// پول واقعاً دریافت شده است، پس به‌جای تعارضِ خالی، سفارش تسویه
+		// می‌شود و اگر قرارداد دیگر قابل قطعی‌سازی نباشد مبلغ در ادامه
+		// به‌عنوان جبران به کیف پول پرداخت‌کننده می‌رود.
+		if order.OrderType != domain.PaymentOrderCeremony ||
+			(order.Status != domain.PaymentPending && order.Status != domain.PaymentFailed) {
 			return domain.ErrConflict
 		}
 		var replay int64

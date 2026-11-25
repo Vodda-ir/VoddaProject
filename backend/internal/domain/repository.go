@@ -93,6 +93,11 @@ type DispatchRepository interface {
 	SearchingCallForLearner(ctx context.Context, learnerID uint) (*DispatchCall, error)
 	UpdateCall(ctx context.Context, call *DispatchCall) error
 	ExpireStaleCalls(ctx context.Context, now time.Time) (int64, error)
+	// ClaimCallForMatch atomically flips a searching call to matched —
+	// the UPDATE only lands when the row is still searching and unexpired.
+	// It is the double-book guard of ChooseOffer: under concurrent chooses
+	// exactly one caller gets true, everyone else gets a clean conflict.
+	ClaimCallForMatch(ctx context.Context, callID uint) (bool, error)
 
 	CountOffers(ctx context.Context, callID uint) (int64, error)
 	CreateOffer(ctx context.Context, offer *DispatchOffer) error

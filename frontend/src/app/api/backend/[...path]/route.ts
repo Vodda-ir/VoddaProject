@@ -50,6 +50,10 @@ function isPublicRequest(method: string, path: string[]): boolean {
   if (method === 'GET' && path[0] === 'catalog' && path[1] === 'services' && path.length === 2) return true;
   // «خدمات رایگان» — تابلوی عمومی جلسات رایگان اساتید در صفحهٔ نخست.
   if (method === 'GET' && path[0] === 'catalog' && path[1] === 'free' && path.length === 2) return true;
+  // کاتالوگ قاریان حضوری — مسیر عمومی بک‌اند؛ بدون این سفیدلیست بازدیدکنندهٔ
+  // لاگ‌اوت‌شدهٔ وب با ۴۰۱ از پروکسی مواجه می‌شد (باگ نمایش ارائه‌دهندگان حضوری).
+  if (method === 'GET' && path[0] === 'presence' && path[1] === 'providers') return true;
+  if (method === 'GET' && path[0] === 'catalog' && path[1] === 'services' && path[2] === 'in_person') return true;
   return method === 'POST' && path[0] === 'support' && path[1] === 'messages' && path.length === 2;
 }
 

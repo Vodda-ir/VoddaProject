@@ -55,6 +55,9 @@ export type DispatchCallView = {
   call: DispatchCall | null;
   candidates: DispatchCandidate[];
   topic_teachable?: boolean;
+  /** وضعیت جلسهٔ رزروشده در حالت matched — «awaiting_payment» یعنی پنجرهٔ
+   * درگاه رها شده و کارت موفقیت نباید نمایش داده شود. */
+  payment_state?: string;
 };
 
 export type DispatchOfferStatus = "waiting" | "chosen" | "released" | "declined";

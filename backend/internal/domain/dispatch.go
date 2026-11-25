@@ -106,11 +106,15 @@ type Candidate struct {
 }
 
 // DispatchCallView is the learner-facing payload of a call with its live
-// candidates in acceptance order.
+// candidates in acceptance order. PaymentState mirrors the booked session's
+// status when the call is matched — the client uses it to tell a genuinely
+// reserved session (pending/confirmed) from an abandoned gateway window
+// (awaiting_payment) instead of showing a premature success card.
 type DispatchCallView struct {
 	Call           *DispatchCall `json:"call"`
 	Candidates     []Candidate   `json:"candidates"`
 	TopicTeachable bool          `json:"topic_teachable"`
+	PaymentState   string        `json:"payment_state,omitempty"`
 }
 
 // TeacherCallView is the teacher-facing projection of an open call, with a

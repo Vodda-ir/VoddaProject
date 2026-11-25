@@ -108,12 +108,14 @@ function CandidateCard({
   candidate,
   index,
   busy,
+  call,
   onChoose,
   onDecline,
 }: {
   candidate: DispatchCandidate;
   index: number;
   busy: boolean;
+  call: { flexible: boolean; scheduled_at?: string | null } | null;
   onChoose: () => void;
   onDecline: () => void;
 }) {
@@ -163,7 +165,8 @@ function CandidateCard({
       </div>
 
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-        <span style={chipStyle}>{timeLabelOf({ flexible: true }, lang, L)}</span>
+        {/* ساعت واقعی فراخوان — نه همیشه «فوری»؛ فراخوان زمان‌مند ساعت خودش را نشان می‌دهد */}
+        <span style={chipStyle}>{timeLabelOf(call ?? { flexible: true }, lang, L)}</span>
         <span style={chipStyle}>
           <Icon name="clock" size={11} /> {L("{n} دقیقه").replace("{n}", fa(candidate.duration, lang))}
         </span>
@@ -479,6 +482,57 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
   // ── success state ──
   if (mode === "matched" && call) {
     const candidate = (view?.candidates ?? []).find((item) => item.teacher_id === call.matched_teacher_id);
+    // پنجرهٔ درگاه رها شده — کارت موفقیت دروغ است؛ کارت «پرداخت ناتمام» با
+    // راهنمای پرداخت دوباره نمایش داده می‌شود تا جلسهٔ awaiting گم نشود.
+    const awaitingPayment = view?.payment_state === "awaiting_payment";
+    if (awaitingPayment) {
+      return (
+        <div className="vodda-screen" style={{ display: "grid", gap: spacing.xl }}>
+          <Card elevated className="vodda-enter" style={{ display: "grid", gap: spacing.lg, textAlign: "center", padding: 22 }}>
+            <div
+              aria-hidden="true"
+              style={{
+                width: 76, height: 76, display: "grid", placeItems: "center", marginInline: "auto",
+                borderRadius: "50%", color: "#fffaf0", background: "linear-gradient(145deg,#d8b869,#b8923c)",
+                boxShadow: "0 10px 26px rgba(184,146,60,.38)",
+              }}
+            >
+              <Icon name="clock" size={34} stroke={2.2} />
+            </div>
+            <div>
+              <h2 style={{ ...typography.title, margin: 0 }}>{L("پرداخت رزرو ناتمام ماند")}</h2>
+              <p style={{ ...typography.body, color: colors.inkSecondary, marginBottom: 0, marginTop: 6 }}>
+                {L("انتخاب استاد ثبت شد اما پرداخت آنلاین کامل نشد. تا {n} دقیقه فرصت دارید از بخش جلسات، پرداخت را دوباره انجام دهید تا رزرو قطعی شود؛ پس از آن رزرو آزاد می‌شود.")
+                  .replace("{n}", fa(45, lang))}
+              </p>
+            </div>
+            {candidate ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 12, textAlign: "right", background: colors.sand100, borderRadius: 16, padding: 12 }}>
+                <Avatar name={candidate.name} src={candidate.avatar_url || undefined} size={48} ring={false} />
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <strong style={{ display: "block", fontSize: 14.5, color: colors.ink }}>{N(candidate.name)}</strong>
+                  <span style={{ fontSize: 12, color: colors.inkMuted }}>
+                    {priceLabel(candidate.price, lang, L)} · {timeLabelOf(call, lang, L)}
+                  </span>
+                </div>
+              </div>
+            ) : null}
+            <Button fullWidth onClick={() => navigateApp("/sessions", config)}>{L("پرداخت دوباره از جلسات من")}</Button>
+            <Button
+              variant="secondary"
+              fullWidth
+              onClick={() => {
+                if (call) dismissedCallIdRef.current = call.id;
+                setView({ call: null, candidates: [] });
+                void refresh();
+              }}
+            >
+              {L("فراخوان جدید")}
+            </Button>
+          </Card>
+        </div>
+      );
+    }
     return (
       <div className="vodda-screen" style={{ display: "grid", gap: spacing.xl }}>
         <Card elevated className="vodda-enter" style={{ display: "grid", gap: spacing.lg, textAlign: "center", padding: 22 }}>
@@ -662,6 +716,7 @@ export function LearnerDispatchScreen({ config }: { config: UniversalAppConfig }
                 candidate={candidate}
                 index={index}
                 busy={busyOffer === candidate.offer_id}
+                call={call}
                 onChoose={() => void choose(candidate.offer_id)}
                 onDecline={() => void decline(candidate.offer_id)}
               />

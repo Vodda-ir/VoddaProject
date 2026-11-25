@@ -56,6 +56,21 @@ func (r *ceremonyRepo) ExpireStaleCalls(ctx context.Context, now time.Time) (int
 	result := r.db.WithContext(ctx).Model(&domain.CeremonyCall{}).
 		Where("status = ? AND deadline < ?", domain.CeremonySearching, now).
 		Update("status", domain.CeremonyExpired)
+	if result.Error != nil {
+		return 0, result.Error
+	}
+	if result.RowsAffected > 0 {
+		// پذیرش‌های منتظرِ فراخوان‌های منقضی را هم آزاد کن — در غیر این
+		// صورت صندوق قاریان برای همیشه کارت‌های زامبی «در انتظار برگزارکننده»
+		// را نشان می‌دهد.
+		r.db.WithContext(ctx).Model(&domain.CeremonyOffer{}).
+			Where("status = ? AND call_id IN (?)", domain.CeremonyOfferWaiting,
+				r.db.Model(&domain.CeremonyCall{}).
+					Select("id").
+					Where("status = ?", domain.CeremonyExpired),
+			).
+			Update("status", domain.CeremonyOfferReleased)
+	}
 	return result.RowsAffected, result.Error
 }
 
@@ -111,6 +126,21 @@ func (r *ceremonyRepo) OfferByID(ctx context.Context, id uint) (*domain.Ceremony
 
 func (r *ceremonyRepo) UpdateOffer(ctx context.Context, offer *domain.CeremonyOffer) error {
 	return r.db.WithContext(ctx).Save(offer).Error
+}
+
+// ClaimOfferForChoose atomically claims a waiting offer for the organizer's
+// choose action. The conditional UPDATE makes the choose race safe: of two
+// concurrent chooses (double tap, two tabs) only the first lands and mints
+// the booking; the second gets a clean conflict instead of a duplicate
+// deposit_pending contract.
+func (r *ceremonyRepo) ClaimOfferForChoose(ctx context.Context, offerID uint) (bool, error) {
+	res := r.db.WithContext(ctx).Model(&domain.CeremonyOffer{}).
+		Where("id = ? AND status = ?", offerID, domain.CeremonyOfferWaiting).
+		Update("status", domain.CeremonyOfferChosen)
+	if res.Error != nil {
+		return false, res.Error
+	}
+	return res.RowsAffected > 0, nil
 }
 
 func (r *ceremonyRepo) OffersOfCall(ctx context.Context, callID uint) ([]domain.CeremonyOffer, error) {

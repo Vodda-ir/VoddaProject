@@ -267,7 +267,29 @@ func (uc *CeremonyUsecase) callView(ctx context.Context, call *domain.CeremonyCa
 	for i := range offers {
 		views = append(views, *uc.offerView(&offers[i]))
 	}
+	uc.applyOrganizerDisplay(ctx, call)
 	return &domain.CeremonyCallView{Call: call, Offers: views}, nil
+}
+
+// applyOrganizerDisplay fills the display-only organizer fields of calls.
+// The raw organizer user row is never serialized (json:"-") — only its
+// public name and avatar reach the client, so the reciters' inbox no longer
+// leaks the organizer's mobile number and wallet balance.
+func (uc *CeremonyUsecase) applyOrganizerDisplay(ctx context.Context, calls ...*domain.CeremonyCall) {
+	for _, call := range calls {
+		if call == nil || call.OrganizerID == 0 {
+			continue
+		}
+		if call.Organizer != nil {
+			call.OrganizerName = call.Organizer.Name
+			call.OrganizerAvatarURL = call.Organizer.AvatarURL
+			continue
+		}
+		if user, err := uc.users.ByID(ctx, call.OrganizerID); err == nil && user != nil {
+			call.OrganizerName = user.Name
+			call.OrganizerAvatarURL = user.AvatarURL
+		}
+	}
 }
 
 func (uc *CeremonyUsecase) offerView(offer *domain.CeremonyOffer) *domain.CeremonyOfferView {
@@ -346,6 +368,14 @@ func (uc *CeremonyUsecase) ChooseOffer(ctx context.Context, organizerID, callID,
 	if offer.Status != domain.CeremonyOfferWaiting {
 		return nil, domain.ErrConflict
 	}
+	// ادعای اتمیک پیشنهاد — با دو تپ/دو تب همزمان فقط یک رزرو ساخته می‌شود.
+	claimed, err := uc.ceremonies.ClaimOfferForChoose(ctx, offer.ID)
+	if err != nil {
+		return nil, err
+	}
+	if !claimed {
+		return nil, domain.ErrConflict
+	}
 	teacher := offer.Teacher
 	if teacher == nil {
 		return nil, domain.ErrNotFound
@@ -373,10 +403,12 @@ func (uc *CeremonyUsecase) ChooseOffer(ctx context.Context, organizerID, callID,
 		Status:            domain.CeremonyBookingDepositPending,
 	}
 	if err := uc.ceremonies.CreateBooking(ctx, booking); err != nil {
-		return nil, err
-	}
-	offer.Status = domain.CeremonyOfferChosen
-	if err := uc.ceremonies.UpdateOffer(ctx, offer); err != nil {
+		// ساخت قرارداد شکست خورد — ادعا را پس بگیر تا برگزارکننده
+		// بتواند دوباره تلاش کند، نه اینکه در تعارض همیشگی بماند.
+		offer.Status = domain.CeremonyOfferWaiting
+		if revertErr := uc.ceremonies.UpdateOffer(ctx, offer); revertErr != nil {
+			log.Printf("ceremony: unclaim offer=%d after failed booking: %v", offer.ID, revertErr)
+		}
 		return nil, err
 	}
 
@@ -839,6 +871,8 @@ func (uc *CeremonyUsecase) TeacherCeremonyInbox(ctx context.Context, userID uint
 			offerView := uc.offerView(myOffer)
 			view.MyOffer = offerView
 		}
+		// نام و آواتار عمومی برگزارکننده — بدون نشت موبایل/کیف پول.
+		uc.applyOrganizerDisplay(ctx, call)
 		inbox.Calls = append(inbox.Calls, view)
 	}
 	placed, err := uc.ceremonies.OffersOfTeacher(ctx, teacher.ID, 50)
@@ -874,9 +908,6 @@ func (uc *CeremonyUsecase) TeacherAccept(ctx context.Context, userID, callID uin
 	if !audienceAdmits(call.Audience, teacher.Female) {
 		return nil, domain.ErrForbidden
 	}
-	if existing, err := uc.ceremonies.MyOfferOfCall(ctx, call.ID, teacher.ID); err == nil && existing != nil {
-		return uc.offerView(existing), nil // idempotent re-accept
-	}
 
 	// Quality note: audio-bearing ceremonies prefer reciters with published
 	// work samples, but samples cannot be uploaded anywhere in the product
@@ -907,6 +938,40 @@ func (uc *CeremonyUsecase) TeacherAccept(ctx context.Context, userID, callID uin
 	}
 	if len(message) > 300 {
 		return nil, domain.ErrValidation
+	}
+
+	if existing, err := uc.ceremonies.MyOfferOfCall(ctx, call.ID, teacher.ID); err == nil && existing != nil {
+		if existing.Status == domain.CeremonyOfferWaiting || existing.Status == domain.CeremonyOfferChosen {
+			return uc.offerView(existing), nil // idempotent re-accept
+		}
+		// پذیرش مجدد: پیشنهادِ آزادشده (انصراف قبلی) دوباره فعال می‌شود
+		// تا بن‌بست «برگزارکننده منتظر است» برای همیشه باقی نماند و
+		// قاری بتواند با قیمت تازه دوباره اعلام آمادگی کند.
+		existing.Status = domain.CeremonyOfferWaiting
+		if agreed > 0 {
+			existing.Price = agreed
+		}
+		if msg := strings.TrimSpace(message); msg != "" {
+			existing.Message = msg
+		}
+		existing.RespondedAt = time.Now()
+		if err := uc.ceremonies.UpdateOffer(ctx, existing); err != nil {
+			return nil, err
+		}
+		if n, err := uc.ceremonies.CountOffers(ctx, call.ID); err == nil && int(n) != call.OfferCount {
+			call.OfferCount = int(n)
+			if err := uc.ceremonies.UpdateCall(ctx, call); err != nil {
+				log.Printf("ceremony: offer count update: %v", err)
+			}
+		}
+		existing.Teacher = full
+		if call.Organizer != nil {
+			name := providerDisplayName(full)
+			uc.notify(ctx, call.OrganizerID,
+				"پذیرش جدید برای مراسم",
+				name+" برای «"+call.Title+"» دوباره پذیرش داد. پروفایل و قیمت را ببینید و انتخاب کنید.")
+		}
+		return uc.offerView(existing), nil
 	}
 
 	offer := &domain.CeremonyOffer{
@@ -958,6 +1023,13 @@ func (uc *CeremonyUsecase) TeacherWithdraw(ctx context.Context, userID, offerID 
 	}
 	call := offer.Call
 	if call != nil && call.OrganizerID > 0 {
+		// شمارندهٔ پذیرش‌ها بعد از انصراف هم باید کم شود.
+		if n, err := uc.ceremonies.CountOffers(ctx, call.ID); err == nil && int(n) != call.OfferCount {
+			call.OfferCount = int(n)
+			if err := uc.ceremonies.UpdateCall(ctx, call); err != nil {
+				log.Printf("ceremony: offer count update: %v", err)
+			}
+		}
 		uc.notify(ctx, call.OrganizerID,
 			"انصراف قاری",
 			providerDisplayName(teacher)+" از فراخوان «"+call.Title+"» انصراف داد؛ پذیرش‌های دیگران همچنان فعال است.")

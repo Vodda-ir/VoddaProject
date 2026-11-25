@@ -327,6 +327,7 @@ export default function DispatchPage() {
           <MatchedCard
             call={call}
             candidates={candidates}
+            paymentState={view?.payment_state ?? ''}
             onNew={() => { setView({ call: null, candidates: [] }); void refresh(); }}
             onCancel={() => void cancel()}
             canceling={canceling}
@@ -692,17 +693,42 @@ function CandidateRow({
 function MatchedCard({
   call,
   candidates,
+  paymentState,
   onNew,
   onCancel,
   canceling,
 }: {
   call: DispatchCallItem;
   candidates: DispatchCandidateItem[];
+  paymentState?: string;
   onNew: () => void;
   onCancel: () => void;
   canceling: boolean;
 }) {
   const chosen = candidates.find((item) => item.teacher_id === call.matched_teacher_id);
+  // پنجرهٔ درگاه رها شده — به‌جای کارت موفقیتِ دروغ، کارت «پرداخت ناتمام»
+  // با راهنمای پرداخت دوباره نمایش داده می‌شود تا رزرو awaiting گم نشود.
+  if (paymentState === 'awaiting_payment') {
+    return (
+      <section className="ops-data-surface neon-frame-gold" style={{ textAlign: 'center', padding: '26px 18px' }}>
+        <span style={{ color: '#b8923c' }}><Icon name="clock" size={38} /></span>
+        <h2 style={{ margin: '10px 0 6px', fontSize: 21 }}>پرداخت رزرو ناتمام ماند</h2>
+        <p style={{ margin: '0 0 16px', color: 'var(--ink-2)', lineHeight: 1.9 }}>
+          انتخاب استاد ثبت شد اما پرداخت آنلاین کامل نشد. تا ۴۵ دقیقه فرصت دارید از بخش جلسات،
+          پرداخت را دوباره انجام دهید تا رزرو قطعی شود؛ پس از آن رزرو آزاد می‌شود.
+        </p>
+        {chosen ? (
+          <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--ink-2)' }}>
+            {toman(chosen.price)} تومان · {whenLabel(call)}
+          </p>
+        ) : null}
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+          <Link href="/app/sessions" className="web-fancy-btn" style={{ display: 'inline-flex', textDecoration: 'none' }}>پرداخت دوباره از جلسات</Link>
+          <button type="button" className="web-fancy-ghost" onClick={onNew}>فراخوان جدید</button>
+        </div>
+      </section>
+    );
+  }
   return (
     <section className="ops-data-surface neon-frame-gold" style={{ textAlign: 'center', padding: '26px 18px' }}>
       <span style={{ color: 'var(--olive-500)' }}><Icon name="checkCircle" size={40} /></span>

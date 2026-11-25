@@ -322,6 +322,17 @@ func (uc *SessionUsecase) BookingPayment(ctx context.Context, learnerID, session
 	return uc.payments.CreateBookingPayment(ctx, learner, s, returnPath)
 }
 
+// SessionStatusOf reports a session's lifecycle state (pending, confirmed,
+// awaiting_payment, canceled, …). The dispatch learner view uses it to tell a
+// genuinely reserved session from an abandoned gateway window.
+func (uc *SessionUsecase) SessionStatusOf(ctx context.Context, sessionID uint) (string, error) {
+	s, err := uc.sessions.ByID(ctx, sessionID)
+	if err != nil {
+		return "", err
+	}
+	return string(s.Status), nil
+}
+
 // ConfirmInstantDispatch auto-confirms an instant session created through the
 // فراخوان: the teacher already committed by submitting the offer, so the class
 // is ready the same moment the learner confirms — no second accept needed.

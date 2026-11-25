@@ -26,6 +26,9 @@ const (
 type SessionBooker interface {
 	Book(ctx context.Context, learnerID uint, in BookInput) (*BookResult, error)
 	ConfirmInstantDispatch(ctx context.Context, sessionID, teacherID uint) error
+	// SessionStatusOf lets the learner view distinguish a genuinely
+	// reserved session from an abandoned gateway window.
+	SessionStatusOf(ctx context.Context, sessionID uint) (string, error)
 }
 
 // DispatchUsecase implements the فراخوان اساتید flow: a learner broadcasts a
@@ -164,6 +167,11 @@ func (uc *DispatchUsecase) CurrentCallForLearner(ctx context.Context, learnerID 
 	return uc.view(ctx, call)
 }
 
+// dispatchMinBookLead mirrors the regular booking floor (now + 5 min) plus a
+// one-minute buffer, so a near-term scheduled call is slid forward instead of
+// dead-ending in a generic validation error at choose time.
+const dispatchMinBookLead = 6 * time.Minute
+
 // view assembles the learner-facing call projection.
 func (uc *DispatchUsecase) view(ctx context.Context, call *domain.DispatchCall) (*domain.DispatchCallView, error) {
 	offers, err := uc.dispatch.OffersOfCall(ctx, call.ID)
@@ -201,11 +209,22 @@ func (uc *DispatchUsecase) view(ctx context.Context, call *domain.DispatchCall) 
 		}
 		candidates = append(candidates, candidate)
 	}
-	return &domain.DispatchCallView{Call: call, Candidates: candidates}, nil
+	view := &domain.DispatchCallView{Call: call, Candidates: candidates}
+	// وضعیت پرداخت جلسهٔ رزروشده را ضمیمه کن — کلاینت با آن بین «رزرو
+	// واقعی» و «پنجرهٔ پرداخت رهاشدهٔ درگاه» تمایز می‌گذارد.
+	if call.SessionID != nil {
+		if state, err := uc.sessions.SessionStatusOf(ctx, *call.SessionID); err == nil {
+			view.PaymentState = state
+		}
+	}
+	return view, nil
 }
 
 // ChooseOffer confirms a candidate: creates the booking through the regular
 // pipeline, marks the call matched and releases every other waiting teacher.
+// The call row is claimed atomically first (ClaimCallForMatch) so concurrent
+// chooses — double tap, two devices — cannot both pass the searching check
+// and mint two bookings; a failed booking releases the claim again.
 func (uc *DispatchUsecase) ChooseOffer(ctx context.Context, learnerID, callID, offerID uint, paymentMethod, returnPath string) (*BookResult, error) {
 	call, err := uc.dispatch.CallByID(ctx, callID)
 	if err != nil {
@@ -238,6 +257,21 @@ func (uc *DispatchUsecase) ChooseOffer(ctx context.Context, learnerID, callID, o
 		at := time.Now().Add(DispatchInstantOffset).Truncate(time.Minute)
 		scheduledAt = &at
 	}
+	// فراخوان زمان‌مند ممکن است در جریان جستجوی ۱۲ دقیقه‌ای به نقطه‌ای
+	// برسد که رزرو معمولی (حداقل ۵ دقیقه جلوتر) دیگر ممکن نیست — به‌جای
+	// بن‌بست «اطلاعات نامعتبر»، جلسه به نزدیک‌ترین زمان مجاز لغزانده می‌شود.
+	if !instant && scheduledAt.Before(time.Now().Add(dispatchMinBookLead)) {
+		at := time.Now().Add(dispatchMinBookLead).Truncate(time.Minute)
+		scheduledAt = &at
+	}
+
+	claimed, err := uc.dispatch.ClaimCallForMatch(ctx, call.ID)
+	if err != nil {
+		return nil, err
+	}
+	if !claimed {
+		return nil, domain.ErrConflict // another choose already won
+	}
 
 	result, err := uc.sessions.Book(ctx, learnerID, BookInput{
 		TeacherID:         offer.TeacherID,
@@ -251,6 +285,14 @@ func (uc *DispatchUsecase) ChooseOffer(ctx context.Context, learnerID, callID, o
 		ViaDispatch:       true,
 	})
 	if err != nil {
+		// Booking failed (wallet empty, overlap, validation…) — unclaim so
+		// the learner can pick another candidate instead of a stuck call.
+		call.Status = domain.DispatchSearching
+		call.MatchedTeacherID = nil
+		call.SessionID = nil
+		if revertErr := uc.dispatch.UpdateCall(ctx, call); revertErr != nil {
+			log.Printf("dispatch: unclaim call=%d after failed booking: %v", call.ID, revertErr)
+		}
 		return nil, err
 	}
 
@@ -300,8 +342,12 @@ func (uc *DispatchUsecase) DeclineOffer(ctx context.Context, learnerID, callID, 
 	if err != nil {
 		return nil, err
 	}
-	if call.LearnerID != learnerID || call.Status != domain.DispatchSearching {
+	if call.LearnerID != learnerID {
 		return nil, domain.ErrForbidden
+	}
+	// وضعیت نادرست فراخوان تعارض است نه دسترسی — ۴۰۹ نه ۴۰۳.
+	if call.Status != domain.DispatchSearching {
+		return nil, domain.ErrConflict
 	}
 	offer, err := uc.dispatch.OfferByID(ctx, offerID)
 	if err != nil || offer.CallID != call.ID || offer.Status != domain.DispatchOfferWaiting {
@@ -478,7 +524,18 @@ func (uc *DispatchUsecase) TeacherWithdraw(ctx context.Context, userID, offerID 
 	}
 	call, err := uc.dispatch.CallByID(ctx, offer.CallID)
 	if err == nil && call.LearnerID > 0 {
-		name := teacher.User.Name
+		// شمارندهٔ پیشنهادها بعد از انصراف هم باید کم شود، وگرنه
+		// کاربر تعداد پاسخ‌های ناموجود را می‌بیند.
+		if n, err := uc.dispatch.CountOffers(ctx, call.ID); err == nil && int(n) != call.OfferCount {
+			call.OfferCount = int(n)
+			if err := uc.dispatch.UpdateCall(ctx, call); err != nil {
+				log.Printf("dispatch: offer count update: %v", err)
+			}
+		}
+		name := "استاد"
+		if teacher.User != nil {
+			name = teacher.User.Name
+		}
 		uc.notify(ctx, call.LearnerID,
 			"انصراف استاد",
 			name+" از فراخوان «"+call.TopicTitle+"» انصراف داد؛ پاسخ‌های دیگران همچنان فعال است.")

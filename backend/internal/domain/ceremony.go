@@ -86,8 +86,16 @@ type CeremonyCall struct {
 	CreatedAt         time.Time          `json:"created_at"`
 	UpdatedAt         time.Time          `json:"updated_at"`
 
-	Organizer *User           `gorm:"foreignKey:OrganizerID" json:"organizer,omitempty"`
+	Organizer *User           `gorm:"foreignKey:OrganizerID" json:"-"`
 	Offers    []CeremonyOffer `gorm:"foreignKey:CallID" json:"offers,omitempty"`
+
+	// OrganizerName / OrganizerAvatarURL are display-only projections of
+	// the organizer (populated by the usecase before serialization). The
+	// full Organizer user row is never serialized: it carries the mobile
+	// number and wallet balance, which must not leak into the reciters'
+	// فراخوان inbox.
+	OrganizerName      string `gorm:"-" json:"organizer_name,omitempty"`
+	OrganizerAvatarURL string `gorm:"-" json:"organizer_avatar,omitempty"`
 }
 
 // CeremonyOffer is one reciter's پذیرش of a ceremony call. The unique
@@ -291,6 +299,10 @@ type CeremonyRepository interface {
 	OffersOfCall(ctx context.Context, callID uint) ([]CeremonyOffer, error)
 	MyOfferOfCall(ctx context.Context, callID, teacherID uint) (*CeremonyOffer, error)
 	OffersOfTeacher(ctx context.Context, teacherID uint, limit int) ([]CeremonyOffer, error)
+	// ClaimOfferForChoose atomically flips a waiting offer to chosen — the
+	// double-tap guard of ChooseOffer: under concurrent chooses exactly one
+	// caller wins the offer and mints the booking.
+	ClaimOfferForChoose(ctx context.Context, offerID uint) (bool, error)
 
 	CreateBooking(ctx context.Context, b *CeremonyBooking) error
 	BookingByID(ctx context.Context, id uint) (*CeremonyBooking, error)
