@@ -46,6 +46,17 @@ func (r *challengeRepo) Delete(ctx context.Context, id uint) error {
 	return r.db.WithContext(ctx).Delete(&domain.Challenge{}, id).Error
 }
 
+// PurgeParticipants حذف کامل شرکت‌کنندگان و رأی‌های چالش در یک تراکنش —
+// رأی‌ها به دلیل ارجاع به شرکت‌کننده‌ها باید اول پاک شوند.
+func (r *challengeRepo) PurgeParticipants(ctx context.Context, challengeID uint) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("challenge_id = ?", challengeID).Delete(&domain.ChallengeVote{}).Error; err != nil {
+			return err
+		}
+		return tx.Where("challenge_id = ?", challengeID).Delete(&domain.ChallengeParticipant{}).Error
+	})
+}
+
 func (r *challengeRepo) ByID(ctx context.Context, id uint) (*domain.Challenge, error) {
 	var ch domain.Challenge
 	err := r.db.WithContext(ctx).First(&ch, id).Error

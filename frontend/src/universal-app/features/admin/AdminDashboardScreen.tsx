@@ -102,7 +102,7 @@ function StatCard({ icon, label, value }: { icon: AdminTileIcon; label: string; 
 /* ═══ مدیریت سامانهٔ وُدّا — درون‌اپی، هم‌ارز کامل پنل وب ═══
  * ۱۲ بخش کامل با همان APIهای ادمین از مسیر BFF؛ بک‌اند فقط نقش ادمین را
  * می‌پذیرد (fail-closed). جایگزین پرش به پنل وب — همه‌چیز داخل وُدّا. */
-export function AdminDashboardScreen({ config: _config }: { config: UniversalAppConfig }) {
+export function AdminDashboardScreen({ config }: { config: UniversalAppConfig }) {
   const runtime = usePlatform();
   const { L } = useAppearance();
   const wide = useMinWidth(768);
@@ -273,7 +273,7 @@ export function AdminDashboardScreen({ config: _config }: { config: UniversalApp
           {section === "sessions" ? <AdminSessionsSection /> : null}
           {section === "reviews" ? <AdminReviewsSection /> : null}
           {section === "services" ? <AdminServicesSection /> : null}
-          {section === "challenges" ? <AdminChallengesSection /> : null}
+          {section === "challenges" ? <AdminChallengesSection config={config} /> : null}
           {section === "withdrawals" ? <AdminWithdrawalsSection /> : null}
           {section === "support" ? <AdminSupportSection /> : null}
           {section === "finance" ? <AdminFinanceSection /> : null}

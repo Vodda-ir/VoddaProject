@@ -808,10 +808,56 @@ export function TeacherDashboardScreen({ config }: { config: UniversalAppConfig 
         </section>
       ) : null}
 
+      {/* بنر داوری چالش‌ها — استاد داور رأی جداگانه در نتایج دارد */}
+      <button
+        type="button"
+        className="vodda-tappable vodda-enter"
+        onClick={() => navigateApp("/challenges", config)}
+        aria-label={L("داوری چالش‌ها")}
+        style={{
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          padding: 14,
+          borderRadius: 18,
+          border: "1px solid rgba(191,149,64,.45)",
+          background: gradients.gold,
+          cursor: "pointer",
+          fontFamily: typography.fontFamily,
+          textAlign: "right",
+        }}
+      >
+        <span
+          aria-hidden="true"
+          style={{
+            display: "grid",
+            placeItems: "center",
+            width: 42,
+            height: 42,
+            flex: "0 0 42px",
+            borderRadius: "50%",
+            background: colors.goldBackground,
+            border: "1px solid rgba(191,149,64,.45)",
+            color: colors.goldDark,
+          }}
+        >
+          <Icon name="award" size={20} />
+        </span>
+        <span style={{ flex: 1, minWidth: 0 }}>
+          <strong style={{ display: "block", fontSize: 13, fontWeight: 800, color: colors.goldDark }}>{L("داوری چالش‌ها")}</strong>
+          <span style={{ display: "block", marginTop: 2, fontSize: 11.5, color: colors.goldInkSoft, lineHeight: 1.7 }}>
+            {L("به‌عنوان استاد داور، رأی شما جداگانه در نتایج شمرده می‌شود.")}
+          </span>
+        </span>
+        <Icon name="chevronL" size={16} style={{ flex: "0 0 auto", color: colors.inkFaint }} />
+      </button>
+
       <section>
         <SectionHeader title={L("مدیریت سریع")} />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12, marginTop: spacing.md }}>
           {([
+            ["award" as const, "داوری چالش‌ها", "/challenges"],
             ["book" as const, "خدمات من", "/t/services"],
             ["clock" as const, "زمان‌های کاری", "/t/work-times"],
             ["wallet" as const, "کیف پول", "/t/wallet"],

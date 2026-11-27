@@ -49,9 +49,10 @@ const (
 
 // دلایل ثبت امتیاز در دفتر اینستاقرآن (PointLedger.reason).
 const (
-	PointReasonChallengeJoin = "challenge_join"
-	PointReasonChallengeRank = "challenge_rank"
-	PointReasonAdminGrant    = "admin_grant"
+	PointReasonChallengeJoin       = "challenge_join"
+	PointReasonChallengeJoinRefund = "challenge_join_refund"
+	PointReasonChallengeRank       = "challenge_rank"
+	PointReasonAdminGrant          = "admin_grant"
 )
 
 // پاداش امتیاز اینستاقرآن — شرکت در چالش و رتبه‌های ۱ تا ۵.
@@ -189,6 +190,10 @@ type ChallengeRepository interface {
 	ByID(ctx context.Context, id uint) (*Challenge, error)
 	List(ctx context.Context, f ChallengeFilter) ([]Challenge, int64, error)
 	CountByStatus(ctx context.Context) (map[ChallengeStatus]int64, error)
+
+	// PurgeParticipants همهٔ شرکت‌کنندگان و رأی‌های یک چالش را با یک تراکنش حذف
+	// می‌کند — مقدمهٔ حذف کامل چالش در ثبت‌نام یا پاک‌سازی چالش لغوشده.
+	PurgeParticipants(ctx context.Context, challengeID uint) error
 
 	// JoinChallenge با یک تراکنش: عضویت یگانه، سقف ظرفیت و آغاز خودکار
 	// چالش هنگام تکمیل ظرفیت. مقدار started فقط برای اعلان است.

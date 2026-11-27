@@ -17,7 +17,7 @@ import { localizedDigits } from "../../ui/persian";
 export type ChallengeMode = "audio" | "description";
 export type ChallengeStatus = "registration" | "active" | "judging" | "finished" | "canceled";
 export type ParticipantStatus = "joined" | "submitted";
-export type PointLedgerReason = "challenge_join" | "challenge_rank" | "admin_grant";
+export type PointLedgerReason = "challenge_join" | "challenge_join_refund" | "challenge_rank" | "admin_grant";
 
 export type ChallengeData = {
   id: number;
@@ -333,6 +333,7 @@ export function challengeRankLabel(rank: number, lang: "fa" | "en", L: (text: st
 export function pointReasonLabel(reason: string, L: (text: string) => string): string {
   switch (reason) {
     case "challenge_join": return L("امتیاز شرکت در چالش");
+    case "challenge_join_refund": return L("بازگشت امتیاز ثبت‌نام چالش");
     case "challenge_rank": return L("پاداش رتبه در چالش");
     case "admin_grant": return L("امتیاز مدیریت");
     default: return L(reason);
@@ -511,6 +512,14 @@ export async function adminUpdateChallenge(runtime: PlatformRuntime, id: number,
 
 export async function adminDeleteChallenge(runtime: PlatformRuntime, id: number): Promise<void> {
   await runtime.request<ApiEnvelope>(`/admin/challenges/${id}`, { method: "DELETE" });
+}
+
+export async function adminCancelChallenge(runtime: PlatformRuntime, id: number): Promise<void> {
+  await runtime.request<ApiEnvelope>(`/admin/challenges/${id}/cancel`, { method: "POST" });
+}
+
+export async function adminRestoreChallenge(runtime: PlatformRuntime, id: number): Promise<void> {
+  await runtime.request<ApiEnvelope>(`/admin/challenges/${id}/restore`, { method: "POST" });
 }
 
 export async function adminStartChallenge(runtime: PlatformRuntime, id: number): Promise<void> {

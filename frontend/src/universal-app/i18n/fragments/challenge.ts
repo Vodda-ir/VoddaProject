@@ -22,6 +22,7 @@ f["شما"] = "You";
 
 /* ───────────  امتیاز اینستاقرآن (pointReasonLabel)  ─────────── */
 f["امتیاز شرکت در چالش"] = "Challenge participation points";
+f["بازگشت امتیاز ثبت‌نام چالش"] = "Challenge registration refund";
 f["پاداش رتبه در چالش"] = "Rank reward in challenge";
 f["امتیاز مدیریت"] = "Admin score";
 f["امتیاز اینستاقرآن"] = "InstaQuran points";
@@ -30,6 +31,51 @@ f["امتیاز پاداش رتبه"] = "Rank bonus points";
 f["تاریخچهٔ امتیاز"] = "Points history";
 f["هنوز امتیازی ثبت نشده است"] = "No points recorded yet";
 f["۱۰ امتیاز اینستاقرآن برای ثبت‌نام ثبت شد"] = "10 InstaQuran points recorded for registering";
+
+/* ───────────  کارت جذاب چالش و هیرؤ جزئیات  ─────────── */
+f["پاداش ثبت‌نام"] = "Registration reward";
+f["۱۰ امتیاز اینستاقرآن"] = "10 InstaQuran points";
+f["تلاوت نمونهٔ استاد"] = "Sample recitation by a teacher";
+f["مسابقهٔ فعال"] = "Live contest";
+f["تا پایان مهلت ارسال"] = "Until the submission deadline";
+f["ظرفیت تکمیل شد"] = "Capacity is full";
+f["آمادهٔ آغاز"] = "Ready to start";
+f["با تکمیل ظرفیت، چالش خودکار آغاز می‌شود"] = "The challenge starts automatically when capacity fills";
+f["به رقابت بپیوندید"] = "Join the contest";
+f["جزئیات و ثبت‌نام"] = "Details & registration";
+f["امتیاز لازم نیست — فقط شرکت کنید"] = "No entry cost — just participate";
+
+/* ───────────  کارت امتیاز پروفایل  ─────────── */
+f["امتیاز اینستاقرآن شما"] = "Your InstaQuran points";
+f["امتیازِ شما از رقابت‌های قرآنی وُدّا — شرکت، رتبه و پاداش"] =
+  "Your points from Vodda Quran contests — participation, rank and rewards";
+f["مشاهدهٔ چالش‌ها"] = "View challenges";
+f["آخرین تغییرهای امتیاز"] = "Recent point changes";
+f["چگونه امتیاز بگیرم؟"] = "How do I earn points?";
+f["شرکت در هر چالش ۱۰ امتیاز و رتبهٔ اول تا پنجم تا ۱۰۰ امتیاز پاداش دارد."] =
+  "Joining a challenge earns 10 points; ranks 1–5 earn up to 100 bonus points.";
+
+/* ───────────  ورودی چالش در داشبورد مدیر و استاد  ─────────── */
+f["مشاهده و شرکت در چالش‌ها"] = "View and join challenges";
+f["به‌عنوان کاربر وارد فهرست چالش‌ها شوید؛ ثبت‌نام، ارسال اثر و رأی همین‌جاست."] =
+  "Open the participant-side challenge list; registering, submitting and voting happen there.";
+f["داوری چالش‌ها"] = "Judge challenges";
+f["به‌عنوان استاد داور، رأی شما جداگانه در نتایج شمرده می‌شود."] =
+  "As a judge teacher, your vote counts separately in the results.";
+
+/* ───────────  مدیریت — لغو، بازگشایی و حذف کامل  ─────────── */
+f["لغو چالش"] = "Cancel challenge";
+f["لغو چالش بازگشت‌پذیر نیست؛ امتیاز ثبت‌نام شرکت‌کنندگان بازگردانده می‌شود. ادامه می‌دهید؟"] =
+  "Canceling cannot be undone; participants' registration points will be refunded. Continue?";
+f["چالش لغو شد."] = "Challenge canceled.";
+f["لغو چالش انجام نشد."] = "Canceling the challenge failed.";
+f["بازگشایی چالش"] = "Reopen challenge";
+f["چالش به مرحلهٔ ثبت‌نام بازگشت."] = "The challenge is back to the registration stage.";
+f["بازگشایی چالش انجام نشد."] = "Reopening the challenge failed.";
+f["با حذف چالش، همهٔ شرکت‌کنندگان و رأی‌های آن هم حذف می‌شوند. ادامه می‌دهید؟"] =
+  "Deleting the challenge also removes all its participants and votes. Continue?";
+f["حذف چالش‌های لغوشده"] = "Delete canceled challenge";
+f["سهمیهٔ رأی شما"] = "Your vote quota";
 
 /* ───────────  فهرست چالش‌ها  ─────────── */
 f["چالش‌های قرآنی"] = "Quran Challenges";

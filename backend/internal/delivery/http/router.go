@@ -357,6 +357,8 @@ func NewRouter(cfg *config.Config, h *Handler, tm *token.Manager, readiness func
 		admin.GET("/challenges/:id", h.AdminChallengeDetail)
 		admin.PUT("/challenges/:id", mutationLimiter.Middleware("admin-mutation"), h.AdminChallengeUpdate)
 		admin.DELETE("/challenges/:id", mutationLimiter.Middleware("admin-mutation"), h.AdminChallengeDelete)
+		admin.POST("/challenges/:id/cancel", mutationLimiter.Middleware("admin-mutation"), h.AdminChallengeCancel)
+		admin.POST("/challenges/:id/restore", mutationLimiter.Middleware("admin-mutation"), h.AdminChallengeRestore)
 		admin.POST("/challenges/:id/start", mutationLimiter.Middleware("admin-mutation"), h.AdminChallengeStart)
 		admin.POST("/challenges/:id/judging", mutationLimiter.Middleware("admin-mutation"), h.AdminChallengeJudging)
 		admin.POST("/challenges/:id/publish", mutationLimiter.Middleware("admin-mutation"), h.AdminChallengePublish)

@@ -20,7 +20,10 @@ import {
 import { useAppearance } from "../../ui/appearance";
 import { localizeCityName } from "../../i18n/transliterate";
 import { messageOf } from "../../ui/errorMessage";
+import { formatAppDateTime } from "../../ui/jalali";
+import { localizedDigits } from "../../ui/persian";
 import { RoleModeSheet } from "../auth/RoleModeSheet";
+import { fetchMyPoints, pointReasonLabel, type PointSnapshotData } from "../challenge/api";
 import { avatarSrc, onAvatarUpdated, uploadsOriginOf } from "@/lib/avatarImage";
 
 export type LearnerProfileScreenProps = {
@@ -37,6 +40,7 @@ export function LearnerProfileScreen({ config }: LearnerProfileScreenProps) {
   const [loggingOut, setLoggingOut] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [roleSheetOpen, setRoleSheetOpen] = useState(false);
+  const [points, setPoints] = useState<PointSnapshotData | null>(null);
 
   const loadProfile = useCallback(
     async (isCancelled: () => boolean = () => false) => {
@@ -71,6 +75,22 @@ export function LearnerProfileScreen({ config }: LearnerProfileScreenProps) {
       offAvatarUpdated();
     };
   }, [loadProfile]);
+
+  /* امتیاز اینستاقرآن — پس از ورود موفق بارگذاری می‌شود؛ خطا بی‌صدا کارت را پنهان می‌کند. */
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    fetchMyPoints(platform)
+      .then((snapshot) => {
+        if (!cancelled) setPoints(snapshot);
+      })
+      .catch(() => {
+        if (!cancelled) setPoints(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [platform, user]);
 
   async function logout() {
     setLoggingOut(true);
@@ -156,6 +176,89 @@ export function LearnerProfileScreen({ config }: LearnerProfileScreenProps) {
           </span>
           <Icon name="refresh" size={20} style={{ color: colors.olive600 }} />
         </button>
+      ) : null}
+
+      {/* امتیاز اینستاقرآن — موجودی، دفتر رویدادها و میان‌بر چالش‌ها */}
+      {points ? (
+        <Card elevated className="vodda-enter vodda-enter-delay-1" style={{ padding: 16, borderRadius: 24, display: "grid", gap: 11 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+            <span
+              aria-hidden="true"
+              style={{
+                width: 42,
+                height: 42,
+                flex: "0 0 42px",
+                display: "grid",
+                placeItems: "center",
+                borderRadius: 14,
+                background: colors.goldBackground,
+                border: "1px solid rgba(191,149,64,.35)",
+                color: colors.goldDark,
+              }}
+            >
+              <Icon name="coins" size={20} />
+            </span>
+            <span style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: 800, color: colors.ink }}>{L("امتیاز اینستاقرآن شما")}</span>
+            <strong style={{ flexShrink: 0, fontSize: 21, fontWeight: 900, color: colors.goldDark, lineHeight: 1.2 }}>
+              {localizedDigits(points.balance, lang)}
+            </strong>
+          </div>
+
+          <span style={{ fontSize: 11.5, fontWeight: 600, color: colors.inkMuted, lineHeight: 1.8 }}>
+            {L("امتیازِ شما از رقابت‌های قرآنی وُدّا — شرکت، رتبه و پاداش")}
+          </span>
+
+          {points.ledger.length > 0 ? (
+            <div style={{ display: "grid", gap: 8, paddingTop: 10, borderTop: `1px dashed ${colors.sand200}` }}>
+              <span style={{ fontSize: 11, fontWeight: 800, color: colors.inkSecondary }}>{L("آخرین تغییرهای امتیاز")}</span>
+              {points.ledger.slice(0, 5).map((entry) => (
+                <div key={entry.id} style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                  <span style={{ flex: 1, minWidth: 0, fontSize: 11.5, fontWeight: 700, color: colors.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {pointReasonLabel(entry.reason, L)}
+                  </span>
+                  <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 600, color: colors.inkMuted }}>
+                    {formatAppDateTime(entry.createdAt, lang)}
+                  </span>
+                  <span
+                    dir="ltr"
+                    style={{ flexShrink: 0, minWidth: 40, textAlign: "right", fontSize: 12, fontWeight: 900, color: entry.amount >= 0 ? colors.success : colors.danger }}
+                  >
+                    {entry.amount >= 0 ? "+" : "−"}
+                    {localizedDigits(Math.abs(entry.amount), lang)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <span style={{ fontSize: 11.5, fontWeight: 600, color: colors.inkMuted }}>{L("هنوز امتیازی ثبت نشده است")}</span>
+          )}
+
+          <div
+            style={{
+              display: "flex",
+              alignItems: "flex-start",
+              gap: 7,
+              padding: "10px 12px",
+              borderRadius: 13,
+              background: colors.goldBackground,
+              border: "1px solid rgba(191,149,64,.3)",
+              color: colors.goldDark,
+              fontSize: 11,
+              fontWeight: 700,
+              lineHeight: 1.8,
+            }}
+          >
+            <Icon name="info" size={14} style={{ flexShrink: 0, marginTop: 3 }} />
+            <span>
+              {L("چگونه امتیاز بگیرم؟")} {L("شرکت در هر چالش ۱۰ امتیاز و رتبهٔ اول تا پنجم تا ۱۰۰ امتیاز پاداش دارد.")}
+            </span>
+          </div>
+
+          <Button variant="secondary" fullWidth onClick={() => navigateApp("/challenges", config)}>
+            <Icon name="sparkle" size={17} />
+            {L("مشاهدهٔ چالش‌ها")}
+          </Button>
+        </Card>
       ) : null}
 
       {/* تنظیمات ظاهر — زبان و حالت نمایش */}

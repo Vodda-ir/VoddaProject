@@ -297,9 +297,11 @@ export default function AdminChallengesPage() {
     }
   }
 
-  async function phaseAction(row: AdminChallengeRow, action: 'start' | 'judging' | 'publish') {
+  async function phaseAction(row: AdminChallengeRow, action: 'start' | 'judging' | 'publish' | 'cancel' | 'restore') {
     if (busyId !== null) return;
     if (action === 'publish' && !window.confirm('اعلان نتایج: محاسبهٔ رتبه‌ها و امتیازها برگشت‌پذیر نیست. ادامه می‌دهید؟')) return;
+    if (action === 'cancel' && !window.confirm('لغو چالش بازگشت‌پذیر نیست؛ امتیاز ثبت‌نام شرکت‌کنندگان بازگردانده می‌شود. ادامه می‌دهید؟')) return;
+    if (action === 'restore' && !window.confirm('چالش به مرحلهٔ ثبت‌نام بازگشته و ظرفیت از نو باز می‌شود. ادامه می‌دهید؟')) return;
     setBusyId(row.id);
     setError('');
     try {
@@ -309,7 +311,11 @@ export default function AdminChallengesPage() {
           ? 'چالش شروع شد و به فاز اجرا رفت.'
           : action === 'judging'
             ? 'چالش به فاز رأی‌گیری رفت.'
-            : 'نتایج چالش اعلام شد و امتیازها ثبت شدند.',
+            : action === 'cancel'
+              ? 'چالش لغو شد.'
+              : action === 'restore'
+                ? 'چالش به مرحلهٔ ثبت‌نام بازگشت.'
+                : 'نتایج چالش اعلام شد و امتیازها ثبت شدند.',
       );
       await load();
       if (detailId === row.id) await openDetail(row.id, true);
@@ -322,7 +328,10 @@ export default function AdminChallengesPage() {
 
   async function remove(row: AdminChallengeRow) {
     if (busyId !== null) return;
-    if (!window.confirm(`حذف «${row.title}» بازگشت‌پذیر نیست. ادامه می‌دهید؟`)) return;
+    const confirmMessage = row.participants_count > 0
+      ? `حذف «${row.title}»: با حذف چالش، همهٔ شرکت‌کنندگان و رأی‌های آن هم حذف می‌شوند. ادامه می‌دهید؟`
+      : `حذف «${row.title}» بازگشت‌پذیر نیست. ادامه می‌دهید؟`;
+    if (!window.confirm(confirmMessage)) return;
     setBusyId(row.id);
     setError('');
     try {
@@ -651,8 +660,20 @@ export default function AdminChallengesPage() {
                         {busyId === row.id ? '…' : 'شروع دستوری'}
                       </PanelButton>
                       <PanelButton icon="edit" onClick={() => openEdit(row)}>ویرایش</PanelButton>
-                      <PanelButton tone="danger" icon="trash" disabled={busyId === row.id} onClick={() => void remove(row)}>حذف</PanelButton>
                     </>
+                  )}
+                  {(row.status === 'registration' || row.status === 'active' || row.status === 'judging') && (
+                    <PanelButton icon="x" disabled={busyId === row.id} onClick={() => void phaseAction(row, 'cancel')}>
+                      لغو
+                    </PanelButton>
+                  )}
+                  {row.status === 'canceled' && (
+                    <PanelButton tone="primary" icon="refresh" disabled={busyId === row.id} onClick={() => void phaseAction(row, 'restore')}>
+                      بازگشایی
+                    </PanelButton>
+                  )}
+                  {(row.status === 'registration' || row.status === 'canceled') && (
+                    <PanelButton tone="danger" icon="trash" disabled={busyId === row.id} onClick={() => void remove(row)}>حذف</PanelButton>
                   )}
                   {row.status === 'active' && (
                     <PanelButton tone="primary" icon="megaphone" disabled={busyId === row.id} onClick={() => void phaseAction(row, 'judging')}>

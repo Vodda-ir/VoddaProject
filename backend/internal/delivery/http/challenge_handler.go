@@ -208,13 +208,36 @@ func (h *Handler) AdminChallengeUpdate(c *gin.Context) {
 	ok(c, ch)
 }
 
-// AdminChallengeDelete handles DELETE /admin/challenges/:id — فقط ثبت‌نامِ بدون عضو.
+// AdminChallengeDelete handles DELETE /admin/challenges/:id — حذف کامل؛ در
+// ثبت‌نام حتی با شرکت‌کننده (حذف آبشاری) و برای چالش لغوشده.
 func (h *Handler) AdminChallengeDelete(c *gin.Context) {
 	if err := h.Challenge.Delete(c.Request.Context(), paramID(c)); err != nil {
 		fail(c, err)
 		return
 	}
 	ok(c, gin.H{"deleted": true})
+}
+
+// AdminChallengeCancel handles POST /admin/challenges/:id/cancel — لغو چالش
+// پیش از اعلام نتایج با بازگشت امتیاز ثبت‌نام شرکت‌کنندگان.
+func (h *Handler) AdminChallengeCancel(c *gin.Context) {
+	ch, err := h.Challenge.Cancel(c.Request.Context(), paramID(c))
+	if err != nil {
+		fail(c, err)
+		return
+	}
+	ok(c, ch)
+}
+
+// AdminChallengeRestore handles POST /admin/challenges/:id/restore — بازگشایی
+// چالش لغوشده به مرحلهٔ ثبت‌نام.
+func (h *Handler) AdminChallengeRestore(c *gin.Context) {
+	ch, err := h.Challenge.Restore(c.Request.Context(), paramID(c))
+	if err != nil {
+		fail(c, err)
+		return
+	}
+	ok(c, ch)
 }
 
 // AdminChallengeStart handles POST /admin/challenges/:id/start — آغاز دستوری.

@@ -172,23 +172,83 @@ func (uc *ChallengeUsecase) Update(ctx context.Context, id uint, in ChallengeInp
 	return ch, nil
 }
 
-// Delete حذف چالش — فقط در ثبت‌نام و بدون هیچ شرکت‌کننده.
+// Delete حذف کامل چالش — در ثبت‌نام حتی با شرکت‌کننده (با حذف آبشاریِ اعضا و
+// رأی‌ها) و برای پاک‌سازی چالش لغوشده مجاز است. در اجرا/رأی‌گیری/پایان باید
+// اول لغو شود (نتایجِ پایان‌یافته سابقهٔ امتیاز دارد و پاک نمی‌شود).
 func (uc *ChallengeUsecase) Delete(ctx context.Context, id uint) error {
 	ch, err := uc.challenges.ByID(ctx, id)
 	if err != nil {
 		return err
 	}
-	if ch.Status != domain.ChallengeRegistration {
+	if ch.Status != domain.ChallengeRegistration && ch.Status != domain.ChallengeCanceled {
 		return domain.ErrChallengePhase
 	}
-	count, err := uc.challenges.ParticipantCount(ctx, id)
-	if err != nil {
+	if err := uc.challenges.PurgeParticipants(ctx, id); err != nil {
 		return err
 	}
-	if count > 0 {
-		return domain.ErrConflict
-	}
 	return uc.challenges.Delete(ctx, id)
+}
+
+// Cancel لغو چالش در هر مرحلهٔ پیش از اعلام نتایج: شرکت‌کنندگان مطلع و امتیاز
+// ثبت‌نامِ اینستاقرآنشان (۱۰ امتیاز) بازگردانده می‌شود.
+func (uc *ChallengeUsecase) Cancel(ctx context.Context, id uint) (*domain.Challenge, error) {
+	ch, err := uc.challenges.ByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if ch.Status != domain.ChallengeRegistration &&
+		ch.Status != domain.ChallengeActive &&
+		ch.Status != domain.ChallengeJudging {
+		return nil, domain.ErrChallengePhase
+	}
+	ch.Status = domain.ChallengeCanceled
+	if err := uc.challenges.ApplyStatusUpdate(ctx, ch, map[string]any{
+		"submission_deadline": nil,
+		"voting_deadline":     nil,
+	}); err != nil {
+		return nil, err
+	}
+
+	// بازگشت امتیاز مشارکت — فقط برای هر کس که امتیازِ عضویت گرفته باشد.
+	participants, err := uc.challenges.Participants(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	for _, p := range participants {
+		if p.PointsJoin <= 0 {
+			continue
+		}
+		if _, gerr := uc.points.Grant(ctx, p.UserID, -domain.PointsChallengeJoin, domain.PointReasonChallengeJoinRefund, id); gerr == nil {
+			p.PointsJoin = 0
+			_ = uc.challenges.UpdateParticipant(ctx, &p)
+		}
+	}
+	uc.notifyParticipants(ctx, id, "چالش لغو شد",
+		"چالش «"+ch.Title+"» توسط مدیریت لغو شد؛ امتیاز ثبت‌نام شما بازگردانده شد.")
+	return ch, nil
+}
+
+// Restore بازگشایی چالش لغوشده به مرحلهٔ ثبت‌نام — ظرفیت آزاد و چرخه از نو.
+func (uc *ChallengeUsecase) Restore(ctx context.Context, id uint) (*domain.Challenge, error) {
+	ch, err := uc.challenges.ByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if ch.Status != domain.ChallengeCanceled {
+		return nil, domain.ErrChallengePhase
+	}
+	ch.Status = domain.ChallengeRegistration
+	ch.StartedAt = nil
+	ch.SubmissionDeadline = nil
+	ch.VotingDeadline = nil
+	if err := uc.challenges.ApplyStatusUpdate(ctx, ch, map[string]any{
+		"started_at":          nil,
+		"submission_deadline": nil,
+		"voting_deadline":     nil,
+	}); err != nil {
+		return nil, err
+	}
+	return ch, nil
 }
 
 // Start آغاز دستوری چالش پیش از تکمیل ظرفیت (اختیار مدیر).

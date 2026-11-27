@@ -16,6 +16,7 @@ import {
   Icon,
   LoadingState,
   colors,
+  gradients,
   radii,
   shadows,
   spacing,
@@ -42,7 +43,6 @@ import {
   type RankRowData,
   type SubmissionViewData,
 } from "./api";
-import { PhaseBadge, ModeBadge } from "./badges";
 
 const MAX_AUDIO_BYTES = 5 * 1024 * 1024;
 
@@ -51,6 +51,59 @@ const clampTwoLines: CSSProperties = {
   WebkitLineClamp: 2,
   WebkitBoxOrient: "vertical",
   overflow: "hidden",
+};
+
+/* تراشهٔ روشن روی نوار تیرهٔ قهرمانی — وضعیت مرحله با پس‌زمینهٔ سفیدِ نیمه‌شفاف */
+const heroChip: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 4,
+  padding: "3px 9px",
+  borderRadius: radii.pill,
+  background: "rgba(255,250,240,.16)",
+  border: "1px solid rgba(255,250,240,.35)",
+  color: colors.onOlive,
+  fontSize: 10,
+  fontWeight: 800,
+  whiteSpace: "nowrap",
+};
+
+/* تراشهٔ سبز «ثبت‌نام‌شده» روی همان نوار تیره */
+const joinedChip: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 4,
+  padding: "3px 9px",
+  borderRadius: radii.pill,
+  background: colors.greenChip,
+  border: `1px solid ${colors.greenBorder}`,
+  color: colors.greenInk,
+  fontSize: 10,
+  fontWeight: 800,
+  whiteSpace: "nowrap",
+};
+
+/* نشان دایره‌ای طلاییِ حوزه (ستاره/میکروفون) با حلقهٔ روشن */
+const emblemStyle: CSSProperties = {
+  flex: "0 0 46px",
+  width: 46,
+  height: 46,
+  display: "grid",
+  placeItems: "center",
+  borderRadius: "50%",
+  background: gradients.goldRich,
+  border: "2px solid rgba(231,213,168,.65)",
+  color: colors.onGold,
+  boxShadow: "0 4px 10px rgba(34,26,8,.24)",
+};
+
+/* نقطهٔ طلایی «مسابقهٔ فعال» روی تراشهٔ وضعیت */
+const liveDot: CSSProperties = {
+  flex: "0 0 auto",
+  width: 6,
+  height: 6,
+  borderRadius: "50%",
+  background: colors.goldSoft,
 };
 
 function ScoreColumn({ label, value, lang, highlight }: { label: string; value: number; lang: "fa" | "en"; highlight?: boolean }) {
@@ -414,46 +467,122 @@ export function ChallengeDetailScreen({
       : 0;
   const capacityFull = challenge.capacity > 0 && detail.participantsCount >= challenge.capacity;
   const deadline = challenge.status === "judging" ? challenge.votingDeadline : challenge.submissionDeadline;
+  const stateLabel =
+    challenge.status === "active"
+      ? L("مسابقهٔ فعال")
+      : challenge.status === "registration" && capacityFull
+        ? L("آمادهٔ آغاز")
+        : challengePhaseLabel(challenge.status, L);
 
   return (
     <section className="vodda-screen" style={{ display: "grid", gap: spacing.lg, minWidth: 0 }}>
-      {/* سربرگ — بازگشت به فهرست + عنوان و نشان‌ها */}
+      {/* سربرگ قهرمانی — بازگشت، نشان طلایی حوزه، عنوان و تراشه‌های وضعیت */}
       <header style={{ display: "grid", gap: 10, minWidth: 0 }}>
-        <button
-          type="button"
-          onClick={() => navigateAppRoute("challenges", config)}
-          className="vodda-tappable"
+        <div
           style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 6,
-            width: "fit-content",
-            padding: "7px 12px",
-            borderRadius: radii.pill,
-            border: `1px solid ${colors.sand200}`,
-            background: colors.surface,
-            color: colors.olive700,
-            fontSize: 12,
-            fontWeight: 800,
-            fontFamily: typography.fontFamily,
-            cursor: "pointer",
+            display: "grid",
+            gap: 12,
+            padding: 16,
+            borderRadius: 24,
+            background: gradients.hero,
+            color: colors.onOlive,
+            boxShadow: `inset 0 1px 0 rgba(255,250,240,.16), ${shadows.olive}`,
           }}
         >
-          <Icon name="arrowL" size={15} />
-          {L("بازگشت به چالش‌ها")}
-        </button>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          <h2 style={{ ...typography.heading, margin: 0, color: colors.ink, minWidth: 0 }}>{L(challenge.title)}</h2>
-          <PhaseBadge status={challenge.status} />
-          <ModeBadge mode={challenge.mode} />
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <button
+              type="button"
+              onClick={() => navigateAppRoute("challenges", config)}
+              className="vodda-tappable"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "7px 12px",
+                borderRadius: radii.pill,
+                border: "1px solid rgba(255,250,240,.3)",
+                background: "rgba(255,250,240,.14)",
+                color: colors.onOlive,
+                fontSize: 12,
+                fontWeight: 800,
+                fontFamily: typography.fontFamily,
+                cursor: "pointer",
+              }}
+            >
+              <Icon name="arrowL" size={15} />
+              {L("بازگشت به چالش‌ها")}
+            </button>
+            <span aria-hidden="true" style={{ marginInlineStart: "auto", ...emblemStyle }}>
+              <Icon name={challenge.mode === "audio" ? "mic" : "sparkle"} size={22} />
+            </span>
+          </div>
+          <h2 style={{ ...typography.heading, margin: 0, color: colors.onOlive, minWidth: 0 }}>{L(challenge.title)}</h2>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+            <span style={heroChip}>
+              {challenge.status === "active" ? <span aria-hidden="true" style={liveDot} /> : null}
+              {stateLabel}
+            </span>
+            <span style={heroChip}>
+              <Icon name={challenge.mode === "audio" ? "headphones" : "edit"} size={11} stroke={2.1} />
+              {challengeModeLabel(challenge.mode, L)}
+            </span>
+            {detail.joined ? (
+              <span style={joinedChip}>
+                <Icon name="check" size={11} stroke={2.4} />
+                {L("ثبت‌نام‌شده")}
+              </span>
+            ) : null}
+          </div>
+          {deadline ? (
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: 6,
+                fontSize: 12,
+                fontWeight: 700,
+                color: "#e7d5a8",
+              }}
+            >
+              <Icon name="clock" size={13} />
+              {challenge.status === "judging" ? L("مهلت رأی‌گیری") : L("مهلت ارسال")}: {formatAppDateTime(deadline, lang)}
+            </span>
+          ) : null}
         </div>
         {challenge.description ? (
-          <p style={{ ...typography.body, margin: 0, color: colors.inkSecondary, whiteSpace: "pre-line" }}>
+          <p
+            style={{
+              ...typography.body,
+              margin: 0,
+              padding: 12,
+              borderRadius: 16,
+              background: colors.surfaceSoft,
+              border: `1px solid ${colors.sand150}`,
+              color: colors.inkSecondary,
+              whiteSpace: "pre-line",
+            }}
+          >
             {L(challenge.description)}
           </p>
         ) : null}
         {challenge.mode === "audio" && challenge.audioTeacherName ? (
-          <span style={{ ...typography.caption, color: colors.inkMuted }}>
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              width: "fit-content",
+              padding: "6px 11px",
+              borderRadius: radii.pill,
+              background: colors.goldBackground,
+              border: "1px solid rgba(191,149,64,.4)",
+              color: colors.goldDark,
+              fontSize: 11,
+              fontWeight: 800,
+            }}
+          >
+            <Icon name="headphones" size={13} />
             {L("تلاوت نمونهٔ استاد: {n}").replace("{n}", N(challenge.audioTeacherName))}
           </span>
         ) : null}

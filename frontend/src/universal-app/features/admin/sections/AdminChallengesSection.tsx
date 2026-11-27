@@ -7,6 +7,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
+import type { UniversalAppConfig } from "../../../config";
+import { navigateAppRoute } from "../../../router";
 import { confirmDialog } from "@/lib/confirm";
 import { usePlatform } from "../../../platform/context";
 import { Icon, Sheet, colors, typography } from "../../../ui";
@@ -16,12 +18,14 @@ import { showToast } from "../../../ui/toast";
 import { toLatinDigits } from "../../../ui/persian";
 import { resolveAssetUrl } from "../../../platform/asset";
 import {
+  adminCancelChallenge,
   adminCreateChallenge,
   adminDeleteChallenge,
   adminFetchChallenge,
   adminFetchChallenges,
   adminJudgingChallenge,
   adminPublishChallenge,
+  adminRestoreChallenge,
   adminSetScore,
   adminStartChallenge,
   adminUpdateChallenge,
@@ -179,7 +183,7 @@ function ScoreEditor({
   );
 }
 
-export function AdminChallengesSection() {
+export function AdminChallengesSection({ config }: { config: UniversalAppConfig }) {
   const runtime = usePlatform();
   const { L } = useAppearance();
 
@@ -374,9 +378,57 @@ export function AdminChallengesSection() {
     }
   }
 
+  /** لغو بازگشت‌پذیر — امتیاز ثبت‌نام شرکت‌کنندگان بازگردانده می‌شود. */
+  async function cancel(row: AdminChallengeData) {
+    if (busyId !== null) return;
+    if (
+      !(await confirmDialog(
+        L("لغو چالش بازگشت‌پذیر نیست؛ امتیاز ثبت‌نام شرکت‌کنندگان بازگردانده می‌شود. ادامه می‌دهید؟"),
+        { danger: true, confirmLabel: L("لغو چالش"), cancelLabel: L("انصراف") },
+      ))
+    ) {
+      return;
+    }
+    setBusyId(row.id);
+    setError(null);
+    try {
+      await adminCancelChallenge(runtime, row.id);
+      showToast(L("چالش لغو شد."), "success");
+      await fetchRows();
+      if (openId === row.id) await loadDetail(row.id);
+    } catch (cause) {
+      setError(messageOf(cause, L("لغو چالش انجام نشد.")));
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  /** بازگشایی چالش لغوشده به مرحلهٔ ثبت‌نام. */
+  async function restore(row: AdminChallengeData) {
+    if (busyId !== null) return;
+    setBusyId(row.id);
+    setError(null);
+    try {
+      await adminRestoreChallenge(runtime, row.id);
+      showToast(L("چالش به مرحلهٔ ثبت‌نام بازگشت."), "success");
+      await fetchRows();
+      if (openId === row.id) await loadDetail(row.id);
+    } catch (cause) {
+      setError(messageOf(cause, L("بازگشایی چالش انجام نشد.")));
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   async function remove(row: AdminChallengeData) {
     if (busyId !== null) return;
-    if (!(await confirmDialog(L("حذف چالش بازگشت‌پذیر نیست. ادامه می‌دهید؟"), { danger: true, confirmLabel: L("حذف"), cancelLabel: L("انصراف") }))) return;
+    const confirmMessage =
+      row.status === "registration" && row.participantsCount > 0
+        ? L("با حذف چالش، همهٔ شرکت‌کنندگان و رأی‌های آن هم حذف می‌شوند. ادامه می‌دهید؟")
+        : row.status === "canceled"
+          ? `${L("حذف چالش‌های لغوشده")} — ${L("حذف چالش بازگشت‌پذیر نیست. ادامه می‌دهید؟")}`
+          : L("حذف چالش بازگشت‌پذیر نیست. ادامه می‌دهید؟");
+    if (!(await confirmDialog(confirmMessage, { danger: true, confirmLabel: L("حذف"), cancelLabel: L("انصراف") }))) return;
     setBusyId(row.id);
     setError(null);
     try {
@@ -403,6 +455,51 @@ export function AdminChallengesSection() {
 
   return (
     <div style={{ display: "grid", gap: 12, minWidth: 0 }}>
+      {/* میان‌بر کاربری — ورود به فهرست چالش‌ها به‌عنوان کاربر برای ثبت‌نام و رأی */}
+      <button
+        type="button"
+        onClick={() => navigateAppRoute("challenges", config)}
+        className="vodda-tappable"
+        style={{
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          gap: 11,
+          padding: "12px 14px",
+          borderRadius: 16,
+          border: "1px solid rgba(191,149,64,.4)",
+          background: colors.goldBackground,
+          color: colors.ink,
+          fontFamily: typography.fontFamily,
+          textAlign: "start",
+          cursor: "pointer",
+        }}
+      >
+        <span
+          aria-hidden="true"
+          style={{
+            width: 38,
+            height: 38,
+            flexShrink: 0,
+            display: "grid",
+            placeItems: "center",
+            borderRadius: "50%",
+            background: colors.surface,
+            border: "1px solid rgba(191,149,64,.45)",
+            color: colors.goldDark,
+          }}
+        >
+          <Icon name="sparkle" size={18} />
+        </span>
+        <span style={{ flex: 1, minWidth: 0, display: "grid", gap: 2 }}>
+          <strong style={{ fontSize: 12.5, fontWeight: 800, color: colors.goldDark }}>{L("مشاهده و شرکت در چالش‌ها")}</strong>
+          <span style={{ fontSize: 10, fontWeight: 600, color: colors.goldInkSoft, lineHeight: 1.7 }}>
+            {L("به‌عنوان کاربر وارد فهرست چالش‌ها شوید؛ ثبت‌نام، ارسال اثر و رأی همین‌جاست.")}
+          </span>
+        </span>
+        <Icon name="chevronL" size={16} style={{ flexShrink: 0, color: colors.goldDark }} />
+      </button>
+
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: 10, minWidth: 0 }}>
         <AdminTile icon="sparkle" label={L("کل چالش‌ها")} value={faNumber(totals.all)} />
         <AdminTile icon="clock" label={L("در ثبت‌نام")} value={faNumber(totals.registration)} tone="gold" />
@@ -453,7 +550,8 @@ export function AdminChallengesSection() {
             const busy = busyId === row.id;
             const expanded = openId === row.id;
             const canEdit = row.status === "registration";
-            const canDelete = row.status === "registration" && row.participantsCount === 0;
+            const canDelete = row.status === "registration" || row.status === "canceled";
+            const canCancel = row.status === "registration" || row.status === "active" || row.status === "judging";
             return (
               <AdminPanel key={row.id} style={{ padding: 14, gap: 9, opacity: busy ? 0.55 : 1 }}>
                 <div style={{ display: "flex", alignItems: "flex-start", gap: 10, minWidth: 0 }}>
@@ -616,6 +714,56 @@ export function AdminChallengesSection() {
                     >
                       <Icon name="award" size={13} />
                       {L("انتشار نتایج")}
+                    </button>
+                  ) : null}
+                  {canCancel ? (
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => void cancel(row)}
+                      className="vodda-tappable"
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 5,
+                        padding: "8px 11px",
+                        borderRadius: 11,
+                        border: "1px solid rgba(191,149,64,.45)",
+                        background: colors.goldBackground,
+                        color: colors.goldDark,
+                        fontSize: 11,
+                        fontWeight: 800,
+                        fontFamily: typography.fontFamily,
+                        cursor: busy ? "wait" : "pointer",
+                      }}
+                    >
+                      <Icon name="x" size={13} />
+                      {L("لغو چالش")}
+                    </button>
+                  ) : null}
+                  {row.status === "canceled" ? (
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => void restore(row)}
+                      className="vodda-tappable"
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 5,
+                        padding: "8px 11px",
+                        borderRadius: 11,
+                        border: "1px solid rgba(94,110,67,.4)",
+                        background: colors.successBackground,
+                        color: colors.success,
+                        fontSize: 11,
+                        fontWeight: 800,
+                        fontFamily: typography.fontFamily,
+                        cursor: busy ? "wait" : "pointer",
+                      }}
+                    >
+                      <Icon name="refresh" size={13} />
+                      {L("بازگشایی چالش")}
                     </button>
                   ) : null}
                   {canDelete ? (
