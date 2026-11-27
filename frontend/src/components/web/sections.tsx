@@ -1148,7 +1148,7 @@ export function Footer() {
               referrerPolicy="origin"
               src="https://trustseal.enamad.ir/logo.aspx?id=347889&Code=VR2ZLPGKpieibMTazPEF"
               alt="نماد اعتماد الکترونیکی اینماد"
-              code="VR2ZLPGKpieibMTazPEF"
+              {...{ code: 'VR2ZLPGKpieibMTazPEF' }}
               style={{ height: 44, width: 'auto', display: 'block', cursor: 'pointer' }}
             />
           </a>
