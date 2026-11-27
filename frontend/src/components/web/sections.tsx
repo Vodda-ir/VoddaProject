@@ -1137,6 +1137,21 @@ export function Footer() {
 
         <div className="public-footer-bottom">
           <span>© {toFaDigits(new Date().getFullYear())} وُدّا</span>
+          <a
+            referrerPolicy="origin"
+            target="_blank"
+            rel="noopener noreferrer"
+            href="https://trustseal.enamad.ir/?id=347889&Code=VR2ZLPGKpieibMTazPEF"
+            style={{ display: 'inline-flex', alignItems: 'center', background: '#fff', borderRadius: 10, padding: '4px 10px' }}
+          >
+            <img
+              referrerPolicy="origin"
+              src="https://trustseal.enamad.ir/logo.aspx?id=347889&Code=VR2ZLPGKpieibMTazPEF"
+              alt="نماد اعتماد الکترونیکی اینماد"
+              code="VR2ZLPGKpieibMTazPEF"
+              style={{ height: 44, width: 'auto', display: 'block', cursor: 'pointer' }}
+            />
+          </a>
           <span>همراه فارسی آموزش و خدمات قرآن کریم</span>
         </div>
       </div>
